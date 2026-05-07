@@ -144,11 +144,12 @@ var _ = Describe("ApprovalExpiration Controller", Ordered, func() {
 			g.Expect(ae.OwnerReferences[0].Kind).To(Equal("Approval"))
 			g.Expect(*ae.OwnerReferences[0].Controller).To(BeTrue())
 
-			By("checking ApprovalExpiration has expiration dates set")
+			By("checking ApprovalExpiration has expiration and thresholds set")
 			g.Expect(ae.Spec.Expiration.Time).To(BeTemporally(">", time.Now()))
-			g.Expect(ae.Spec.WeeklyReminder.Time).To(BeTemporally("<", ae.Spec.Expiration.Time))
-			g.Expect(ae.Spec.DailyReminder.Time).To(BeTemporally("<", ae.Spec.Expiration.Time))
-			g.Expect(ae.Spec.DailyReminder.Time).To(BeTemporally(">", ae.Spec.WeeklyReminder.Time))
+			g.Expect(ae.Spec.Thresholds).To(HaveLen(2))
+			g.Expect(ae.Spec.Thresholds[0].Before.Duration).To(BeNumerically(">", 0))
+			g.Expect(ae.Spec.Thresholds[1].Before.Duration).To(BeNumerically(">", 0))
+			g.Expect(ae.Spec.Thresholds[1].Repeat).NotTo(BeNil())
 
 			By("checking ApprovalExpiration references the Approval")
 			g.Expect(ae.Spec.Approval.Name).To(Equal(resourceName))

@@ -58,7 +58,7 @@ func NewSemigrantedCondition() metav1.Condition {
 func NewExpiredCondition() metav1.Condition {
 	return metav1.Condition{
 		Type:    "Approved",
-		Status:  metav1.ConditionTrue,
+		Status:  metav1.ConditionFalse,
 		Reason:  "Expired",
 		Message: "Request has expired and requires re-approval",
 	}

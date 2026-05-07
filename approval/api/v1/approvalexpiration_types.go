@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,11 +19,11 @@ type ApprovalExpirationSpec struct {
 	// Expiration is the absolute date when the approval expires
 	Expiration metav1.Time `json:"expiration"`
 
-	// WeeklyReminder is the date from which weekly reminders start
-	WeeklyReminder metav1.Time `json:"weeklyReminder"`
-
-	// DailyReminder is the date from which daily reminders start
-	DailyReminder metav1.Time `json:"dailyReminder"`
+	// Thresholds defines when reminders should be sent relative to the expiration deadline.
+	// For example: [{Before: "720h"}, {Before: "168h", Repeat: "24h"}] sends one reminder
+	// 30 days before expiration, then daily reminders starting 7 days before.
+	// +optional
+	Thresholds []reminder.Threshold `json:"thresholds,omitempty"`
 }
 
 // ApprovalExpirationStatus defines the observed state of ApprovalExpiration
@@ -34,13 +35,9 @@ type ApprovalExpirationStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	// LastReminder is the timestamp when the last reminder was sent
+	// SentReminders tracks which reminder thresholds have been triggered and when
 	// +optional
-	LastReminder *metav1.Time `json:"lastReminder,omitempty"`
-
-	// LastNotificationRef is a reference to the last sent reminder notification
-	// +optional
-	LastNotificationRef *types.ObjectRef `json:"lastNotificationRef,omitempty"`
+	SentReminders []reminder.SentReminder `json:"sentReminders,omitempty"`
 }
 
 // +kubebuilder:object:root=true

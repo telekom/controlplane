@@ -87,9 +87,8 @@ func main() {
 		os.Exit(1)
 	}
 	setupLog.Info("loaded expiration config",
-		"expirationPeriodMonths", expirationConfig.ExpirationPeriodMonths,
-		"weeklyReminderMonths", expirationConfig.LastMonthsWithWeeklyReminder,
-		"dailyReminderWeeks", expirationConfig.LastWeeksWithDailyReminder)
+		"expirationDuration", expirationConfig.ExpirationDuration,
+		"thresholds", len(expirationConfig.DefaultThresholds))
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -134,8 +133,9 @@ func main() {
 	}
 
 	if err = (&controller.ApprovalReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		ExpirationConfig: expirationConfig,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Approval")
 		os.Exit(1)
@@ -148,9 +148,8 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controller.ApprovalExpirationReconciler{
-		Client:           mgr.GetClient(),
-		Scheme:           mgr.GetScheme(),
-		ExpirationConfig: expirationConfig,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ApprovalExpiration")
 		os.Exit(1)

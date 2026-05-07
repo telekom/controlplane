@@ -52,7 +52,7 @@ func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approv
 		obj.Spec.State = approvalv1.ApprovalStateGranted
 		if len(obj.Spec.Decisions) == 0 {
 			obj.Spec.Decisions = append(obj.Spec.Decisions, approvalv1.Decision{
-				Name:           "System",
+				Name:           approvalv1.SystemDecisionName,
 				Comment:        approvalv1.AutoApprovedComment,
 				ResultingState: approvalv1.ApprovalStateGranted,
 			})

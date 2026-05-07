@@ -69,25 +69,38 @@ spec:
                 - name
                 - namespace
                 type: object
-              dailyReminder:
-                description: DailyReminder is the date from which daily reminders
-                  start
-                format: date-time
-                type: string
               expiration:
                 description: Expiration is the absolute date when the approval expires
                 format: date-time
                 type: string
-              weeklyReminder:
-                description: WeeklyReminder is the date from which weekly reminders
-                  start
-                format: date-time
-                type: string
+              thresholds:
+                description: |-
+                  Thresholds defines when reminders should be sent relative to the expiration deadline.
+                  For example: [{Before: "720h"}, {Before: "168h", Repeat: "24h"}] sends one reminder
+                  30 days before expiration, then daily reminders starting 7 days before.
+                items:
+                  description: Threshold defines when a reminder should fire relative
+                    to a deadline.
+                  properties:
+                    before:
+                      description: |-
+                        Before is how long before the deadline this reminder fires.
+                        For example, "720h" means 30 days before the deadline.
+                      type: string
+                    repeat:
+                      description: |-
+                        Repeat optionally re-sends the reminder at this interval once the
+                        "Before" window is entered. For example, Before=168h + Repeat=24h
+                        sends a reminder at 7d, 6d, 5d, … , 1d before the deadline.
+                        If omitted, the reminder fires exactly once for this threshold.
+                      type: string
+                  required:
+                  - before
+                  type: object
+                type: array
             required:
             - approval
-            - dailyReminder
             - expiration
-            - weeklyReminder
             type: object
           status:
             description: ApprovalExpirationStatus defines the observed state of ApprovalExpiration
@@ -151,29 +164,47 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              lastNotificationRef:
-                description: LastNotificationRef is a reference to the last sent reminder
-                  notification
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    description: |-
-                      UID is a type that holds unique ID values, including UUIDs.  Because we
-                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                      intent and helps make sure that UIDs and names do not get conflated.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
-              lastReminder:
-                description: LastReminder is the timestamp when the last reminder
-                  was sent
-                format: date-time
-                type: string
+              sentReminders:
+                description: SentReminders tracks which reminder thresholds have been
+                  triggered and when
+                items:
+                  description: SentReminder tracks a reminder that was sent for a
+                    specific threshold.
+                  properties:
+                    ref:
+                      description: Ref is the reference to the created notification
+                        or other resource.
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        uid:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
+                    sentAt:
+                      description: SentAt is when this reminder was last sent for
+                        this threshold.
+                      format: date-time
+                      type: string
+                    threshold:
+                      description: |-
+                        Threshold is the key identifying which threshold triggered this reminder.
+                        It is the string representation of the Threshold.Before duration (e.g. "720h0m0s").
+                      type: string
+                  required:
+                  - ref
+                  - sentAt
+                  - threshold
+                  type: object
+                type: array
             type: object
         type: object
     served: true

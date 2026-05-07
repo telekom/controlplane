@@ -17,6 +17,7 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
+	"github.com/telekom/controlplane/approval/internal/config"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
 	commonclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -27,7 +28,16 @@ import (
 
 var _ handler.Handler[*approvalv1.Approval] = &ApprovalHandler{}
 
-type ApprovalHandler struct{}
+type ApprovalHandler struct {
+	cfg *config.ExpirationConfig
+}
+
+// NewHandler creates a new ApprovalHandler with the provided configuration
+func NewHandler(client client.Client, cfg *config.ExpirationConfig) *ApprovalHandler {
+	return &ApprovalHandler{
+		cfg: cfg,
+	}
+}
 
 func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approvalv1.Approval) error {
 	// handle the notifications first
@@ -149,7 +159,7 @@ func (h *ApprovalHandler) Delete(ctx context.Context, approval *approvalv1.Appro
 
 // filterSystemActions removes system-only actions (Expire) from the available transitions
 func filterSystemActions(transitions approvalv1.AvailableTransitions) approvalv1.AvailableTransitions {
-	filtered := make(approvalv1.AvailableTransitions, 0, len(transitions))
+	var filtered approvalv1.AvailableTransitions
 	for _, t := range transitions {
 		if t.Action != approvalv1.ApprovalActionExpire {
 			filtered = append(filtered, t)
@@ -172,7 +182,7 @@ func (h *ApprovalHandler) handleExpiration(ctx context.Context, approval *approv
 		if stateChanged {
 			// Create or update ApprovalExpiration with fresh dates
 			// (covers initial GRANTED and REALLOW from EXPIRED)
-			return createOrUpdateApprovalExpiration(ctx, c, approval)
+			return createOrUpdateApprovalExpiration(ctx, c, approval, h.cfg)
 		}
 		// State unchanged, leave ApprovalExpiration alone
 
@@ -198,17 +208,9 @@ func (h *ApprovalHandler) handleExpiration(ctx context.Context, approval *approv
 }
 
 // createOrUpdateApprovalExpiration creates or updates an ApprovalExpiration with fresh dates
-func createOrUpdateApprovalExpiration(ctx context.Context, c commonclient.JanitorClient, approval *approvalv1.Approval) error {
-	// TODO: Load expiration config from environment or use defaults
-	// For now, hardcode defaults: 12 months expiration, 2 months weekly, 2 weeks daily
-	expirationPeriodMonths := 12
-	weeklyReminderMonths := 2
-	dailyReminderWeeks := 2
-
+func createOrUpdateApprovalExpiration(ctx context.Context, c commonclient.JanitorClient, approval *approvalv1.Approval, cfg *config.ExpirationConfig) error {
 	now := time.Now()
-	expirationDate := now.AddDate(0, expirationPeriodMonths, 0)
-	weeklyReminderDate := expirationDate.AddDate(0, -weeklyReminderMonths, 0)
-	dailyReminderDate := expirationDate.AddDate(0, 0, -dailyReminderWeeks*7)
+	expirationDate := now.Add(cfg.ExpirationDuration)
 
 	ae := &approvalv1.ApprovalExpiration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -226,9 +228,8 @@ func createOrUpdateApprovalExpiration(ctx context.Context, c commonclient.Janito
 				Name:      approval.Name,
 				Namespace: approval.Namespace,
 			},
-			Expiration:     metav1.Time{Time: expirationDate},
-			WeeklyReminder: metav1.Time{Time: weeklyReminderDate},
-			DailyReminder:  metav1.Time{Time: dailyReminderDate},
+			Expiration: metav1.Time{Time: expirationDate},
+			Thresholds: cfg.DefaultThresholds,
 		}
 		return nil
 	}

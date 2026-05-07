@@ -22,6 +22,9 @@ const (
 	ApprovalStrategyFourEyes ApprovalStrategy = "FourEyes"
 )
 
+// SystemDecisionName is the decision name used for system-generated decisions (auto-approval, expiration).
+const SystemDecisionName = "System"
+
 // AutoApprovedComment is the comment added to auto-approved ApprovalRequests.
 const AutoApprovedComment = "Auto-approved: The approval strategy does not require manual review."
 

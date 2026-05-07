@@ -240,7 +240,7 @@ func initializeProperties() map[string]any {
 }
 
 // SendReminderNotification sends an expiration reminder notification
-func SendReminderNotification(ctx context.Context, c client.Client, data *NotificationData) (*types.ObjectRef, error) {
+func SendReminderNotification(ctx context.Context, data *NotificationData) (*types.ObjectRef, error) {
 	properties := initializeProperties()
 
 	properties[TemplatePlaceholderEnvironment] = contextutil.EnvFromContextOrDie(ctx)
@@ -289,7 +289,7 @@ func SendReminderNotification(ctx context.Context, c client.Client, data *Notifi
 		WithOwner(data.Owner).
 		WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
 		WithDefaultChannels(ctx, data.SendToChannelNamespace).
-		WithPurpose(purpose).
+		WithPurpose(strings.ToLower(purpose)).
 		WithName(labelutil.NormalizeNameValue(name)).
 		WithProperties(properties)
 

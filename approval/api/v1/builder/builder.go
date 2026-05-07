@@ -192,7 +192,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			approvalReq.Spec.State = v1.ApprovalStateGranted
 			if len(approvalReq.Spec.Decisions) == 0 {
 				approvalReq.Spec.Decisions = append(approvalReq.Spec.Decisions, v1.Decision{
-					Name:           "System",
+					Name:           v1.SystemDecisionName,
 					Comment:        v1.AutoApprovedComment,
 					ResultingState: v1.ApprovalStateGranted,
 				})
