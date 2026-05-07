@@ -26,3 +26,8 @@ packages:
     interfaces:
       ResetSecretHandler:
         config:
+  github.com/telekom/controlplane/rover-ctl/pkg/commands/get-secret:
+    config:
+    interfaces:
+      SecretStatusHandler:
+        config:

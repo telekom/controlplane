@@ -15,9 +15,10 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/apply"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/delete"
 	getinfo "github.com/telekom/controlplane/rover-ctl/pkg/commands/get-info"
+	getsecret "github.com/telekom/controlplane/rover-ctl/pkg/commands/get-secret"
 	resetsecret "github.com/telekom/controlplane/rover-ctl/pkg/commands/reset-secret"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/resource"
-	secretstatus "github.com/telekom/controlplane/rover-ctl/pkg/commands/secret-status"
+	rotatesecret "github.com/telekom/controlplane/rover-ctl/pkg/commands/rotate-secret"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 )
@@ -111,7 +112,8 @@ This tool allows you to apply, delete, and manage resources in the Rover Control
 		resource.NewCommand(),
 		getinfo.NewCommand(),
 		resetsecret.NewCommand(),
-		secretstatus.NewCommand(),
+		rotatesecret.NewCommand(),
+		getsecret.NewCommand(),
 	)
 
 	return rootCmd

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package secretstatus
+package getsecret
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
 	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
@@ -26,10 +27,10 @@ type Command struct {
 	Name string
 }
 
-// NewCommand creates a new secret-status command
+// NewCommand creates a new get-secret command
 func NewCommand() *cobra.Command {
 	baseCmd := base.NewCommand(
-		"secret-status",
+		"get-secret",
 		"Get secret rotation status",
 		"Get the current secret rotation status for an application. Waits until the rotation has converged before returning.",
 	)
