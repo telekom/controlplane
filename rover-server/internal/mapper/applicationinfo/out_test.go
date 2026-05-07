@@ -21,6 +21,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
@@ -66,6 +67,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				},
 			}
 			apiExpMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedExp, fmt.Errorf("store error")).Maybe()
+			apiExpMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "api", Version: "v1", Kind: "ApiExposure"}).Maybe()
 			errStores.APIExposureStore = apiExpMock
 
 			eventExpMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
@@ -211,6 +213,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 			eventExpMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 			eventExpMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedExp, fmt.Errorf("event store error")).Maybe()
+			eventExpMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "event.2.2", Version: "v1", Kind: "EventExposure"}).Maybe()
 			localStores.EventExposureStore = eventExpMock
 
 			roverWithEventExp := rover.DeepCopy()
@@ -283,6 +286,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 			apiSubMock := mocks.NewMockObjectStore[*apiv1.ApiSubscription](GinkgoT())
 			apiSubMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedSub, fmt.Errorf("api sub error")).Maybe()
+			apiSubMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "api", Version: "v1", Kind: "ApiSubscription"}).Maybe()
 			localStores.APISubscriptionStore = apiSubMock
 
 			eventSubMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
@@ -320,6 +324,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 			eventSubMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
 			eventSubMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedSub, fmt.Errorf("event sub error")).Maybe()
+			eventSubMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "event.2.2", Version: "v1", Kind: "EventSubscription"}).Maybe()
 			localStores.EventSubscriptionStore = eventSubMock
 
 			roverWithSub := rover.DeepCopy()
@@ -376,6 +381,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 			appMock := mocks.NewMockObjectStore[*applicationv1.Application](GinkgoT())
 			appMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedApp, fmt.Errorf("app store error")).Maybe()
+			appMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "application", Version: "v1", Kind: "Application"}).Maybe()
 			localStores.ApplicationSecretStore = appMock
 
 			appInfo := &api.ApplicationInfo{}
@@ -407,6 +413,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
 			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedZone, fmt.Errorf("zone error")).Maybe()
+			zoneMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "admin", Version: "v1", Kind: "Zone"}).Maybe()
 			localStores.ZoneStore = zoneMock
 
 			appInfo := &api.ApplicationInfo{}
@@ -449,6 +456,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 			appMock := mocks.NewMockObjectStore[*applicationv1.Application](GinkgoT())
 			appMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedApp, fmt.Errorf("app error")).Maybe()
+			appMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "application", Version: "v1", Kind: "Application"}).Maybe()
 			localStores.ApplicationSecretStore = appMock
 
 			output, err := MapApplicationInfo(ctx, rover, localStores)

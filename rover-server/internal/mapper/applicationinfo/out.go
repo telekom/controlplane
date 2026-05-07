@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -17,6 +18,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
@@ -28,21 +30,46 @@ const (
 	HorizonPublishEventPathSuffix = "horizon/events/v1"
 )
 
-func WriteStatus(obj types.Object, appInfo *api.ApplicationInfo, err error) {
+// ResourceRefFromObject builds an api.ResourceRef from a non-nil types.Object.
+func ResourceRefFromObject(obj types.Object) api.ResourceRef {
 	gvk := obj.GetObjectKind().GroupVersionKind()
-	ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
-	appInfo.Errors = append(appInfo.Errors, api.Problem{
-		Resource: api.ResourceRef{
-			ApiVersion: gvk.GroupVersion().String(),
-			Kind:       gvk.Kind,
-			Name:       obj.GetName(),
-			Namespace:  obj.GetNamespace(),
-		},
-		Message: err.Error(),
-		Cause:   ready.Message,
-	})
+	return ResourceRefFromGVK(gvk, obj.GetNamespace(), obj.GetName())
+}
 
+// ResourceRefFromGVK builds an api.ResourceRef when only the GVK and object coordinates are known.
+func ResourceRefFromGVK(gvk schema.GroupVersionKind, namespace, name string) api.ResourceRef {
+	return api.ResourceRef{
+		ApiVersion: gvk.GroupVersion().String(),
+		Kind:       gvk.Kind,
+		Name:       name,
+		Namespace:  namespace,
+	}
+}
+
+// WriteStatus records an error for a resource that failed readiness checks.
+// The object must be non-nil; use WriteStatusWithRef when the object may be nil.
+func WriteStatus(obj types.Object, appInfo *api.ApplicationInfo, err error) {
+	ref := ResourceRefFromObject(obj)
+	ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+	cause := ""
+	if ready != nil {
+		cause = ready.Message
+	}
+	appInfo.Errors = append(appInfo.Errors, api.Problem{
+		Resource: ref,
+		Message:  err.Error(),
+		Cause:    cause,
+	})
 	appInfo.Status = status.CompareAndReturn(appInfo.Status, status.GetOverallStatus(obj.GetConditions()))
+}
+
+// WriteStatusWithRef records an error for a resource using an explicit ResourceRef.
+// Use this when the object may be nil (e.g. store returned not-found).
+func WriteStatusWithRef(ref api.ResourceRef, appInfo *api.ApplicationInfo, err error) {
+	appInfo.Errors = append(appInfo.Errors, api.Problem{
+		Resource: ref,
+		Message:  err.Error(),
+	})
 }
 
 func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store.Stores) (*api.ApplicationInfo, error) {
@@ -80,20 +107,30 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 
 	app, err := stores.ApplicationSecretStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
 	if err != nil {
-		WriteStatus(app, appInfo, err)
+		_, gvk := stores.ApplicationSecretStore.Info()
+		WriteStatusWithRef(ResourceRefFromGVK(gvk, rover.Status.Application.Namespace, rover.Status.Application.Name), appInfo, err)
 		return errors.Wrap(err, "failed to get application")
 	}
 
 	zone, err := stores.ZoneStore.Get(ctx, rover.Labels[config.EnvironmentLabelKey], rover.Spec.Zone)
 	if err != nil {
-		if zone != nil {
-			WriteStatus(zone, appInfo, err)
-		}
+		_, gvk := stores.ZoneStore.Info()
+		WriteStatusWithRef(ResourceRefFromGVK(gvk, rover.Labels[config.EnvironmentLabelKey], rover.Spec.Zone), appInfo, err)
 		return errors.Wrap(err, "failed to get zone")
 	}
 
 	appInfo.IrisClientId = app.Status.ClientId
 	appInfo.IrisClientSecret = app.Status.ClientSecret
+	appInfo.SecretInfo = api.SecretInfo{
+		ClientSecret:        app.Status.ClientSecret,
+		RotatedClientSecret: app.Status.RotatedClientSecret,
+	}
+	if app.Status.RotatedExpiresAt != nil {
+		appInfo.SecretInfo.RotatedExpiresAt = app.Status.RotatedExpiresAt.Time.UTC()
+	}
+	if app.Status.CurrentExpiresAt != nil {
+		appInfo.SecretInfo.CurrentExpiresAt = app.Status.CurrentExpiresAt.Time.UTC()
+	}
 	appInfo.IrisIssuerUrl = zone.Status.Links.Issuer
 	appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
 
@@ -119,7 +156,8 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 	for _, sub := range rover.Status.ApiSubscriptions {
 		apiSub, err := stores.APISubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
 		if err != nil {
-			WriteStatus(apiSub, appInfo, err)
+			_, gvk := stores.APISubscriptionStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, sub.Namespace, sub.Name), appInfo, err)
 			continue
 		}
 
@@ -142,7 +180,8 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 	for _, sub := range rover.Status.EventSubscriptions {
 		eventSub, err := stores.EventSubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
 		if err != nil {
-			WriteStatus(eventSub, appInfo, err)
+			_, gvk := stores.EventSubscriptionStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, sub.Namespace, sub.Name), appInfo, err)
 			continue
 		}
 
@@ -195,7 +234,8 @@ func fillAPIExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 	for _, exp := range rover.Status.ApiExposures {
 		apiExp, err := stores.APIExposureStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
-			WriteStatus(apiExp, appInfo, err)
+			_, gvk := stores.APIExposureStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, exp.Namespace, exp.Name), appInfo, err)
 			continue
 		}
 
@@ -225,7 +265,8 @@ func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.
 	for _, exp := range rover.Status.EventExposures {
 		eventExp, err := stores.EventExposureStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
-			WriteStatus(eventExp, appInfo, err)
+			_, gvk := stores.EventExposureStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, exp.Namespace, exp.Name), appInfo, err)
 			continue
 		}
 
@@ -260,6 +301,11 @@ func fillPublishEventURL(ctx context.Context, rover *roverv1.Rover, appInfo *api
 	if appInfo.StargatePublishEventUrl == "" {
 		eventCfg, err := stores.EventConfigStore.Get(ctx, zone.Status.Namespace, bCtx.Environment)
 		if err != nil {
+			if problems.IsNotFound(err) {
+				// If the event config is not found, we can skip setting the URL but should log it for visibility
+				// as it may indicate that the event system is not fully set up in this zone/environment.
+				return nil
+			}
 			return errors.Wrap(err, "failed to get event config")
 		}
 		appInfo.StargatePublishEventUrl = eventCfg.Status.PublishURL

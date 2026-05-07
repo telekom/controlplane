@@ -2,21 +2,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package v0_test
+package getsecret_test
 
 import (
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 )
 
-func TestV0Handlers(t *testing.T) {
+func TestGetSecretCommand(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "V0 Handlers Suite")
+	RunSpecs(t, "Get-Secret Command Suite")
 }
-
-var _ = BeforeSuite(func() {
-	config.Initialize()
-})

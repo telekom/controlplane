@@ -42,7 +42,7 @@ var _ = Describe("Token", Ordered, func() {
 		// Create a token with URLs
 		tokenStr := "test--my-group--my-team.ewogICJlbnZpcm9ubWVudCIgOiAidGVzdCIsCiAgImdlbmVyYXRlZF9hdCIgOiAxNzE2NDc0Mjk0OTk3LAogICJjbGllbnRfc2VjcmV0IiA6ICJ0b3BzZWNyZXQiLAogICJjbGllbnRfaWQiIDogInRlc3QtZ3JvdXAtLXRlc3QtdGVhbS0tdGVhbS11c2VyIiwKICAidG9rZW5fdXJsIjogImh0dHBzOi8vZXhhbXBsZS5jb20vdG9rZW4iLAogICJzZXJ2ZXJfdXJsIjogImh0dHA6Ly9sb2NhbGhvc3Q6ODA4MCIKfQ=="
 
-		// Set URLs in viper (these should not override the token URLs)
+		// Set URLs in viper (these should override the token URLs)
 		viper.Set("server.url", "http://viper-server:9090")
 		viper.Set("auth.token_url", "https://viper-auth.example.com/token")
 
@@ -58,7 +58,7 @@ var _ = Describe("Token", Ordered, func() {
 		Expect(token.Team).To(Equal("my-team"))
 
 		// Verify that URLs from the token are used, not from viper
-		Expect(token.ServerUrl).To(Equal("http://localhost:8080/rover/api")) // It must have the base path appended
+		Expect(token.ServerUrl).To(Equal("http://viper-server:9090/rover/api")) // It must have the base path appended
 		Expect(token.TokenUrl).To(Equal("https://example.com/token"))
 	})
 

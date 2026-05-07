@@ -1,21 +1,22 @@
-## roverctl delete
+## roverctl get-secret
 
-Delete a resource
+Get secret rotation status
 
 ### Synopsis
 
-Delete a resource defined in a file or directory from the server
+Get the current secret rotation status for an application. Waits until the rotation has converged before returning.
 
 ```
-roverctl delete [flags]
+roverctl get-secret [flags]
 ```
 
 ### Options
 
 ```
-      --fail-fast     Stop processing on the first error encountered
-  -f, --file string   Path to the file or directory containing resource definitions
-  -h, --help          help for delete
+  -a, --application string   Name of the application to check secret rotation status for
+      --fail-fast            Stop processing on the first error encountered
+  -h, --help                 help for get-secret
+  -n, --name string          Name of the application to check secret rotation status for
 ```
 
 ### Options inherited from parent commands

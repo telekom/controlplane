@@ -28,7 +28,8 @@ type RoverController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 	GetApplicationInfo(ctx context.Context, resourceId string, params api.GetApplicationInfoParams) (api.RoverInfoResponse, error)
 	GetApplicationsInfo(ctx context.Context, params api.GetApplicationsInfoParams) (api.RoverInfoResponse, error)
-	ResetRoverSecret(ctx context.Context, resourceId string) (api.RoverSecretResponse, error)
+	ResetRoverSecret(ctx context.Context, resourceId string) (api.RoverSecretRotationAcceptedResponse, error)
+	GetSecretRotationStatus(ctx context.Context, resourceId string) (api.RoverSecretRotationStatusResponse, error)
 }
 
 type ApiSpecificationController interface {
@@ -152,6 +153,7 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Get("/rovers/:resourceId/status", checkAccess, s.GetRoverStatus)
 	router.Get("/rovers/:resourceId/info", checkAccess, s.GetApplicationInfo)
 	router.Patch("/rovers/:resourceId/secret", checkAccess, s.ResetRoverSecret)
+	router.Get("/rovers/:resourceId/secret/status", checkAccess, s.GetSecretRotationStatus)
 
 	router.Delete("/rovers/:resourceId", checkAccess, s.DeleteRover)
 	router.Get("/rovers/:resourceId", checkAccess, s.GetRover)

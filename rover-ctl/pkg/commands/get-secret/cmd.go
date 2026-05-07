@@ -2,25 +2,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package resetsecret
+package getsecret
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
 	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 )
 
-type ResetSecretHandler interface {
+type SecretStatusHandler interface {
 	handlers.ResourceHandler
-	ResetSecret(ctx context.Context, name string) (*v0.SecretRotationStatusResponse, error)
+	WaitForSecretConvergence(ctx context.Context, name string) (*v0.SecretRotationStatusResponse, error)
 }
 
 type Command struct {
@@ -28,19 +27,19 @@ type Command struct {
 	Name string
 }
 
-// NewCommand creates a new reset-secret command
+// NewCommand creates a new get-secret command
 func NewCommand() *cobra.Command {
 	baseCmd := base.NewCommand(
-		"reset-secret",
-		"Reset a secret",
-		"Reset a secret for an application and wait until the new secret has converged.",
+		"get-secret",
+		"Get secret rotation status",
+		"Get the current secret rotation status for an application. Waits until the rotation has converged before returning.",
 	)
 	cmd := &Command{
 		BaseCommand: baseCmd,
 	}
 
-	cmd.Cmd.Flags().StringVarP(&cmd.Name, "application", "a", "", "Name of the application to reset the secret for")
-	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the application to reset the secret for")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "application", "a", "", "Name of the application to check secret rotation status for")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the application to check secret rotation status for")
 	cmd.Cmd.MarkFlagsMutuallyExclusive("application", "name")
 	cmd.Cmd.MarkFlagsOneRequired("application", "name")
 
@@ -50,25 +49,21 @@ func NewCommand() *cobra.Command {
 }
 
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
-	// We cannot use the built-in deprecation mechanism of cobra, because it would print the message to stdout
-	// potentially breaking pipes.
-	fmt.Fprintln(os.Stderr, "Command \"reset-secret\" is deprecated, use \"rotate-secret\" instead.")
-
 	handler, err := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
 	if err != nil {
 		return errors.Wrap(err, "failed to get rover handler")
 	}
 
-	roverHandler, ok := handler.(ResetSecretHandler)
+	roverHandler, ok := handler.(SecretStatusHandler)
 	if !ok {
 		return errors.New("invalid rover handler type")
 	}
 
-	c.Logger().Info("Resetting secret", "name", c.Name)
+	c.Logger().Info("Waiting for secret rotation to converge", "name", c.Name)
 
-	status, err := roverHandler.ResetSecret(cmd.Context(), c.Name)
+	status, err := roverHandler.WaitForSecretConvergence(cmd.Context(), c.Name)
 	if err != nil {
-		return c.HandleError(err, "reset secret")
+		return c.HandleError(err, "get secret rotation status")
 	}
 
 	prettyString, err := util.FormatOutput(status, viper.GetString("output.format"))

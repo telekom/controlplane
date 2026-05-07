@@ -194,6 +194,14 @@ func GetOverallStatus(conditions []metav1.Condition) api.OverallStatus {
 	return CalculateOverallStatus(status.State, status.ProcessingState)
 }
 
+// GetProcessingState computes the ProcessingState from a set of Kubernetes conditions.
+// Note: staleness detection is not performed here because the object's generation
+// is not available. Callers that need staleness detection should use MapStatus directly.
+func GetProcessingState(conditions []metav1.Condition) api.ProcessingState {
+	status := MapStatus(conditions, 0)
+	return status.ProcessingState
+}
+
 // CalculateOverallStatus collapses a State and ProcessingState into a single OverallStatus.
 func CalculateOverallStatus(s api.State, ps api.ProcessingState) api.OverallStatus {
 	if ps == api.ProcessingStateProcessing {

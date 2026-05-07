@@ -1,21 +1,22 @@
-## roverctl delete
+## roverctl rotate-secret
 
-Delete a resource
+Rotate a secret
 
 ### Synopsis
 
-Delete a resource defined in a file or directory from the server
+Rotate a secret for an application and wait until the new secret has converged.
 
 ```
-roverctl delete [flags]
+roverctl rotate-secret [flags]
 ```
 
 ### Options
 
 ```
-      --fail-fast     Stop processing on the first error encountered
-  -f, --file string   Path to the file or directory containing resource definitions
-  -h, --help          help for delete
+  -a, --application string   Name of the application to rotate the secret for
+      --fail-fast            Stop processing on the first error encountered
+  -h, --help                 help for rotate-secret
+  -n, --name string          Name of the application to rotate the secret for
 ```
 
 ### Options inherited from parent commands
