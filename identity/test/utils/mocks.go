@@ -116,6 +116,78 @@ func ConfigureKeycloakClientMock(mockedClient *keycloakclient.MockKeycloakClient
 		mock.AnythingOfType("string")).
 		Return(mockGetRealmClientsIdClientSecretRotatedResponse(), nil).Maybe()
 
+	// Client scope operations used by ConfigureClientScopes.
+	mockedClient.EXPECT().GetRealmClientScopesWithResponse(
+		mock.Anything,
+		realmMatcher).
+		Return(&api.GetRealmClientScopesResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusOK}),
+			JSON2XX:      &[]api.ClientScopeRepresentation{},
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().PostRealmClientScopesWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("api.ClientScopeRepresentation")).
+		Return(&api.PostRealmClientScopesResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusCreated,
+				Header:     http.Header{"Location": {fmt.Sprintf("/realms/%s/client-scopes/mock-scope-id", Realm)}},
+			},
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string")).
+		Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string")).
+		Return(&api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().DeleteRealmClientScopesIdWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string")).
+		Return(&api.DeleteRealmClientScopesIdResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().PostRealmClientScopesIdProtocolMappersModelsWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string"),
+		mock.AnythingOfType("api.ProtocolMapperRepresentation")).
+		Return(&api.PostRealmClientScopesIdProtocolMappersModelsResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusCreated}),
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string"),
+		mock.AnythingOfType("string"),
+		mock.AnythingOfType("api.ProtocolMapperRepresentation")).
+		Return(&api.PutRealmClientScopesId1ProtocolMappersModelsId2Response{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string"),
+		mock.AnythingOfType("string")).
+		Return(&api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
+		}, nil).Maybe()
+
 }
 
 func mockGetRealmResponse(realm string, body []byte) *api.GetRealmResponse {

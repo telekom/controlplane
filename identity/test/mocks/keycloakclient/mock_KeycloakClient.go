@@ -27,6 +27,157 @@ func (_m *MockKeycloakClient) EXPECT() *MockKeycloakClient_Expecter {
 	return &MockKeycloakClient_Expecter{mock: &_m.Mock}
 }
 
+// DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse provides a mock function with given fields: ctx, realm, id1, id2, reqEditors
+func (_m *MockKeycloakClient) DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx context.Context, realm string, id1 string, id2 string, reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm, id1, id2)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse")
+	}
+
+	var r0 *api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, ...api.RequestEditorFn) (*api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response, error)); ok {
+		return rf(ctx, realm, id1, id2, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, ...api.RequestEditorFn) *api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response); ok {
+		r0 = rf(ctx, realm, id1, id2, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, id1, id2, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse'
+type MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call struct {
+	*mock.Call
+}
+
+// DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - id1 string
+//   - id2 string
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx interface{}, realm interface{}, id1 interface{}, id2 interface{}, reqEditors ...interface{}) *MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call {
+	return &MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call{Call: _e.mock.On("DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse",
+		append([]interface{}{ctx, realm, id1, id2}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call) Run(run func(ctx context.Context, realm string, id1 string, id2 string, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-4)
+		for i, a := range args[4:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call) Return(_a0 *api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response, _a1 error) *MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call) RunAndReturn(run func(context.Context, string, string, string, ...api.RequestEditorFn) (*api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response, error)) *MockKeycloakClient_DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteRealmClientScopesIdWithResponse provides a mock function with given fields: ctx, realm, id, reqEditors
+func (_m *MockKeycloakClient) DeleteRealmClientScopesIdWithResponse(ctx context.Context, realm string, id string, reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientScopesIdResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm, id)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteRealmClientScopesIdWithResponse")
+	}
+
+	var r0 *api.DeleteRealmClientScopesIdResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...api.RequestEditorFn) (*api.DeleteRealmClientScopesIdResponse, error)); ok {
+		return rf(ctx, realm, id, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...api.RequestEditorFn) *api.DeleteRealmClientScopesIdResponse); ok {
+		r0 = rf(ctx, realm, id, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.DeleteRealmClientScopesIdResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, id, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteRealmClientScopesIdWithResponse'
+type MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call struct {
+	*mock.Call
+}
+
+// DeleteRealmClientScopesIdWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - id string
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) DeleteRealmClientScopesIdWithResponse(ctx interface{}, realm interface{}, id interface{}, reqEditors ...interface{}) *MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call {
+	return &MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call{Call: _e.mock.On("DeleteRealmClientScopesIdWithResponse",
+		append([]interface{}{ctx, realm, id}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call) Run(run func(ctx context.Context, realm string, id string, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call) Return(_a0 *api.DeleteRealmClientScopesIdResponse, _a1 error) *MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call) RunAndReturn(run func(context.Context, string, string, ...api.RequestEditorFn) (*api.DeleteRealmClientScopesIdResponse, error)) *MockKeycloakClient_DeleteRealmClientScopesIdWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteRealmClientsIdClientSecretRotatedWithResponse provides a mock function with given fields: ctx, realm, id, reqEditors
 func (_m *MockKeycloakClient) DeleteRealmClientsIdClientSecretRotatedWithResponse(ctx context.Context, realm string, id string, reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientsIdClientSecretRotatedResponse, error) {
 	_va := make([]interface{}, len(reqEditors))
@@ -173,6 +324,81 @@ func (_c *MockKeycloakClient_DeleteRealmClientsIdWithResponse_Call) Return(_a0 *
 }
 
 func (_c *MockKeycloakClient_DeleteRealmClientsIdWithResponse_Call) RunAndReturn(run func(context.Context, string, string, ...api.RequestEditorFn) (*api.DeleteRealmClientsIdResponse, error)) *MockKeycloakClient_DeleteRealmClientsIdWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse provides a mock function with given fields: ctx, realm, clientScopeId, reqEditors
+func (_m *MockKeycloakClient) DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm string, clientScopeId string, reqEditors ...api.RequestEditorFn) (*api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm, clientScopeId)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse")
+	}
+
+	var r0 *api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...api.RequestEditorFn) (*api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse, error)); ok {
+		return rf(ctx, realm, clientScopeId, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...api.RequestEditorFn) *api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse); ok {
+		r0 = rf(ctx, realm, clientScopeId, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, clientScopeId, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse'
+type MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call struct {
+	*mock.Call
+}
+
+// DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - clientScopeId string
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx interface{}, realm interface{}, clientScopeId interface{}, reqEditors ...interface{}) *MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call {
+	return &MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call{Call: _e.mock.On("DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse",
+		append([]interface{}{ctx, realm, clientScopeId}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call) Run(run func(ctx context.Context, realm string, clientScopeId string, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call) Return(_a0 *api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse, _a1 error) *MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call) RunAndReturn(run func(context.Context, string, string, ...api.RequestEditorFn) (*api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse, error)) *MockKeycloakClient_DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -397,6 +623,80 @@ func (_c *MockKeycloakClient_GetRealmClientPoliciesProfilesWithResponse_Call) Re
 }
 
 func (_c *MockKeycloakClient_GetRealmClientPoliciesProfilesWithResponse_Call) RunAndReturn(run func(context.Context, string, *api.GetRealmClientPoliciesProfilesParams, ...api.RequestEditorFn) (*api.GetRealmClientPoliciesProfilesResponse, error)) *MockKeycloakClient_GetRealmClientPoliciesProfilesWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetRealmClientScopesWithResponse provides a mock function with given fields: ctx, realm, reqEditors
+func (_m *MockKeycloakClient) GetRealmClientScopesWithResponse(ctx context.Context, realm string, reqEditors ...api.RequestEditorFn) (*api.GetRealmClientScopesResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRealmClientScopesWithResponse")
+	}
+
+	var r0 *api.GetRealmClientScopesResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...api.RequestEditorFn) (*api.GetRealmClientScopesResponse, error)); ok {
+		return rf(ctx, realm, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...api.RequestEditorFn) *api.GetRealmClientScopesResponse); ok {
+		r0 = rf(ctx, realm, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.GetRealmClientScopesResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_GetRealmClientScopesWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRealmClientScopesWithResponse'
+type MockKeycloakClient_GetRealmClientScopesWithResponse_Call struct {
+	*mock.Call
+}
+
+// GetRealmClientScopesWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) GetRealmClientScopesWithResponse(ctx interface{}, realm interface{}, reqEditors ...interface{}) *MockKeycloakClient_GetRealmClientScopesWithResponse_Call {
+	return &MockKeycloakClient_GetRealmClientScopesWithResponse_Call{Call: _e.mock.On("GetRealmClientScopesWithResponse",
+		append([]interface{}{ctx, realm}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_GetRealmClientScopesWithResponse_Call) Run(run func(ctx context.Context, realm string, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_GetRealmClientScopesWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_GetRealmClientScopesWithResponse_Call) Return(_a0 *api.GetRealmClientScopesResponse, _a1 error) *MockKeycloakClient_GetRealmClientScopesWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_GetRealmClientScopesWithResponse_Call) RunAndReturn(run func(context.Context, string, ...api.RequestEditorFn) (*api.GetRealmClientScopesResponse, error)) *MockKeycloakClient_GetRealmClientScopesWithResponse_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -696,6 +996,157 @@ func (_c *MockKeycloakClient_GetRealmWithResponse_Call) Return(_a0 *api.GetRealm
 }
 
 func (_c *MockKeycloakClient_GetRealmWithResponse_Call) RunAndReturn(run func(context.Context, string, ...api.RequestEditorFn) (*api.GetRealmResponse, error)) *MockKeycloakClient_GetRealmWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// PostRealmClientScopesIdProtocolMappersModelsWithResponse provides a mock function with given fields: ctx, realm, id, body, reqEditors
+func (_m *MockKeycloakClient) PostRealmClientScopesIdProtocolMappersModelsWithResponse(ctx context.Context, realm string, id string, body api.ProtocolMapperRepresentation, reqEditors ...api.RequestEditorFn) (*api.PostRealmClientScopesIdProtocolMappersModelsResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm, id, body)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PostRealmClientScopesIdProtocolMappersModelsWithResponse")
+	}
+
+	var r0 *api.PostRealmClientScopesIdProtocolMappersModelsResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.ProtocolMapperRepresentation, ...api.RequestEditorFn) (*api.PostRealmClientScopesIdProtocolMappersModelsResponse, error)); ok {
+		return rf(ctx, realm, id, body, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, api.ProtocolMapperRepresentation, ...api.RequestEditorFn) *api.PostRealmClientScopesIdProtocolMappersModelsResponse); ok {
+		r0 = rf(ctx, realm, id, body, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.PostRealmClientScopesIdProtocolMappersModelsResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, api.ProtocolMapperRepresentation, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, id, body, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PostRealmClientScopesIdProtocolMappersModelsWithResponse'
+type MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call struct {
+	*mock.Call
+}
+
+// PostRealmClientScopesIdProtocolMappersModelsWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - id string
+//   - body api.ProtocolMapperRepresentation
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) PostRealmClientScopesIdProtocolMappersModelsWithResponse(ctx interface{}, realm interface{}, id interface{}, body interface{}, reqEditors ...interface{}) *MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call {
+	return &MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call{Call: _e.mock.On("PostRealmClientScopesIdProtocolMappersModelsWithResponse",
+		append([]interface{}{ctx, realm, id, body}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call) Run(run func(ctx context.Context, realm string, id string, body api.ProtocolMapperRepresentation, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-4)
+		for i, a := range args[4:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(api.ProtocolMapperRepresentation), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call) Return(_a0 *api.PostRealmClientScopesIdProtocolMappersModelsResponse, _a1 error) *MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call) RunAndReturn(run func(context.Context, string, string, api.ProtocolMapperRepresentation, ...api.RequestEditorFn) (*api.PostRealmClientScopesIdProtocolMappersModelsResponse, error)) *MockKeycloakClient_PostRealmClientScopesIdProtocolMappersModelsWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// PostRealmClientScopesWithResponse provides a mock function with given fields: ctx, realm, body, reqEditors
+func (_m *MockKeycloakClient) PostRealmClientScopesWithResponse(ctx context.Context, realm string, body api.ClientScopeRepresentation, reqEditors ...api.RequestEditorFn) (*api.PostRealmClientScopesResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm, body)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PostRealmClientScopesWithResponse")
+	}
+
+	var r0 *api.PostRealmClientScopesResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.ClientScopeRepresentation, ...api.RequestEditorFn) (*api.PostRealmClientScopesResponse, error)); ok {
+		return rf(ctx, realm, body, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, api.ClientScopeRepresentation, ...api.RequestEditorFn) *api.PostRealmClientScopesResponse); ok {
+		r0 = rf(ctx, realm, body, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.PostRealmClientScopesResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, api.ClientScopeRepresentation, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, body, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_PostRealmClientScopesWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PostRealmClientScopesWithResponse'
+type MockKeycloakClient_PostRealmClientScopesWithResponse_Call struct {
+	*mock.Call
+}
+
+// PostRealmClientScopesWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - body api.ClientScopeRepresentation
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) PostRealmClientScopesWithResponse(ctx interface{}, realm interface{}, body interface{}, reqEditors ...interface{}) *MockKeycloakClient_PostRealmClientScopesWithResponse_Call {
+	return &MockKeycloakClient_PostRealmClientScopesWithResponse_Call{Call: _e.mock.On("PostRealmClientScopesWithResponse",
+		append([]interface{}{ctx, realm, body}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_PostRealmClientScopesWithResponse_Call) Run(run func(ctx context.Context, realm string, body api.ClientScopeRepresentation, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_PostRealmClientScopesWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(api.ClientScopeRepresentation), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_PostRealmClientScopesWithResponse_Call) Return(_a0 *api.PostRealmClientScopesResponse, _a1 error) *MockKeycloakClient_PostRealmClientScopesWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_PostRealmClientScopesWithResponse_Call) RunAndReturn(run func(context.Context, string, api.ClientScopeRepresentation, ...api.RequestEditorFn) (*api.PostRealmClientScopesResponse, error)) *MockKeycloakClient_PostRealmClientScopesWithResponse_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1074,6 +1525,83 @@ func (_c *MockKeycloakClient_PutRealmClientPoliciesProfilesWithResponse_Call) Ru
 	return _c
 }
 
+// PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse provides a mock function with given fields: ctx, realm, id1, id2, body, reqEditors
+func (_m *MockKeycloakClient) PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx context.Context, realm string, id1 string, id2 string, body api.ProtocolMapperRepresentation, reqEditors ...api.RequestEditorFn) (*api.PutRealmClientScopesId1ProtocolMappersModelsId2Response, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm, id1, id2, body)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse")
+	}
+
+	var r0 *api.PutRealmClientScopesId1ProtocolMappersModelsId2Response
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, api.ProtocolMapperRepresentation, ...api.RequestEditorFn) (*api.PutRealmClientScopesId1ProtocolMappersModelsId2Response, error)); ok {
+		return rf(ctx, realm, id1, id2, body, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, api.ProtocolMapperRepresentation, ...api.RequestEditorFn) *api.PutRealmClientScopesId1ProtocolMappersModelsId2Response); ok {
+		r0 = rf(ctx, realm, id1, id2, body, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.PutRealmClientScopesId1ProtocolMappersModelsId2Response)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, api.ProtocolMapperRepresentation, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, id1, id2, body, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse'
+type MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call struct {
+	*mock.Call
+}
+
+// PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - id1 string
+//   - id2 string
+//   - body api.ProtocolMapperRepresentation
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx interface{}, realm interface{}, id1 interface{}, id2 interface{}, body interface{}, reqEditors ...interface{}) *MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call {
+	return &MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call{Call: _e.mock.On("PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse",
+		append([]interface{}{ctx, realm, id1, id2, body}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call) Run(run func(ctx context.Context, realm string, id1 string, id2 string, body api.ProtocolMapperRepresentation, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-5)
+		for i, a := range args[5:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), args[4].(api.ProtocolMapperRepresentation), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call) Return(_a0 *api.PutRealmClientScopesId1ProtocolMappersModelsId2Response, _a1 error) *MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call) RunAndReturn(run func(context.Context, string, string, string, api.ProtocolMapperRepresentation, ...api.RequestEditorFn) (*api.PutRealmClientScopesId1ProtocolMappersModelsId2Response, error)) *MockKeycloakClient_PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // PutRealmClientsIdWithResponse provides a mock function with given fields: ctx, realm, id, body, reqEditors
 func (_m *MockKeycloakClient) PutRealmClientsIdWithResponse(ctx context.Context, realm string, id string, body api.ClientRepresentation, reqEditors ...api.RequestEditorFn) (*api.PutRealmClientsIdResponse, error) {
 	_va := make([]interface{}, len(reqEditors))
@@ -1146,6 +1674,81 @@ func (_c *MockKeycloakClient_PutRealmClientsIdWithResponse_Call) Return(_a0 *api
 }
 
 func (_c *MockKeycloakClient_PutRealmClientsIdWithResponse_Call) RunAndReturn(run func(context.Context, string, string, api.ClientRepresentation, ...api.RequestEditorFn) (*api.PutRealmClientsIdResponse, error)) *MockKeycloakClient_PutRealmClientsIdWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse provides a mock function with given fields: ctx, realm, clientScopeId, reqEditors
+func (_m *MockKeycloakClient) PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm string, clientScopeId string, reqEditors ...api.RequestEditorFn) (*api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm, clientScopeId)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse")
+	}
+
+	var r0 *api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...api.RequestEditorFn) (*api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse, error)); ok {
+		return rf(ctx, realm, clientScopeId, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...api.RequestEditorFn) *api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse); ok {
+		r0 = rf(ctx, realm, clientScopeId, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, clientScopeId, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse'
+type MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call struct {
+	*mock.Call
+}
+
+// PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - clientScopeId string
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx interface{}, realm interface{}, clientScopeId interface{}, reqEditors ...interface{}) *MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call {
+	return &MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call{Call: _e.mock.On("PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse",
+		append([]interface{}{ctx, realm, clientScopeId}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call) Run(run func(ctx context.Context, realm string, clientScopeId string, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call) Return(_a0 *api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse, _a1 error) *MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call) RunAndReturn(run func(context.Context, string, string, ...api.RequestEditorFn) (*api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse, error)) *MockKeycloakClient_PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse_Call {
 	_c.Call.Return(run)
 	return _c
 }

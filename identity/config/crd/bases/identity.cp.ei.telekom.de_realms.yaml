@@ -42,6 +42,43 @@ spec:
           spec:
             description: RealmSpec defines the desired state of Realm
             properties:
+              claims:
+                description: |-
+                  Claims defines claims that are added to all tokens issued for
+                  clients in this realm. Each claim can be a static value
+                  (HardcodedClaim) or derived from a Keycloak session note
+                  (SessionNote). The controller manages a dedicated Keycloak
+                  client scope with protocol mappers for each claim.
+                items:
+                  description: |-
+                    ClaimConfig defines a claim that is added to all tokens issued for
+                    clients in this realm.
+                  properties:
+                    name:
+                      description: Name is the claim name as it appears in the token
+                        (e.g. "team", "env").
+                      minLength: 1
+                      type: string
+                    type:
+                      default: HardcodedClaim
+                      description: |-
+                        Type selects the protocol mapper used for this claim.
+                        Defaults to HardcodedClaim when omitted.
+                      enum:
+                      - HardcodedClaim
+                      - SessionNote
+                      type: string
+                    value:
+                      description: |-
+                        Value depends on the claim type:
+                          - HardcodedClaim: the static value written into every token (required).
+                          - SessionNote: the Keycloak session-note key to read from (e.g. "clientId").
+                            When omitted, defaults to the claim Name.
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
               identityProvider:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
