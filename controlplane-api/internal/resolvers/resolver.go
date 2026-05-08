@@ -7,6 +7,7 @@ package resolvers
 import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/internal/secrets"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
 )
 
@@ -14,20 +15,22 @@ import (
 type Resolver struct {
 	client   *ent.Client
 	services service.Services
+	secrets  *secrets.Resolver
 }
 
-// NewResolver creates a new root resolver with the given ent client and services.
-func NewResolver(client *ent.Client, services ...service.Services) *Resolver {
-	r := &Resolver{client: client}
-	if len(services) > 0 {
-		r.services = services[0]
+// NewResolver creates a new root resolver with the given ent client, services,
+// and secret resolver.
+func NewResolver(client *ent.Client, services service.Services, secretResolver *secrets.Resolver) *Resolver {
+	return &Resolver{
+		client:   client,
+		services: services,
+		secrets:  secretResolver,
 	}
-	return r
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(client *ent.Client, services service.Services) graphql.ExecutableSchema {
+func NewSchema(client *ent.Client, services service.Services, secretResolver *secrets.Resolver) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: NewResolver(client, services),
+		Resolvers: NewResolver(client, services, secretResolver),
 	})
 }

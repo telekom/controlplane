@@ -6,11 +6,24 @@ package application
 
 import (
 	"context"
+	"time"
 
 	appv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
+)
+
+// Secret rotation phase constants.
+const (
+	RotationPhaseDone        = "DONE"
+	RotationPhaseInProgress  = "IN_PROGRESS"
+	RotationPhaseGracePeriod = "GRACE_PERIOD"
+	RotationPhaseFailed      = "FAILED"
+
+	// secretRotationConditionType is the condition type on the Application CR.
+	secretRotationConditionType = "SecretRotation"
 )
 
 // Translator maps an Application CR to an ApplicationData DTO and derives
@@ -31,7 +44,7 @@ func (t *Translator) ShouldSkip(_ *appv1.Application) (bool, string) {
 
 // Translate converts an Application CR into an ApplicationData DTO.
 // ClientID is nil when Status.ClientId is empty (populated asynchronously by
-// the identity controller). IssuerURL is always nil — the CR never carries it.
+// the identity controller).
 func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*ApplicationData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
@@ -45,6 +58,26 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 		clientSecret = &obj.Spec.Secret
 	}
 
+	// Secret rotation fields
+	rotationPhase, rotationMessage := deriveRotationState(obj)
+
+	var rotatedClientSecret *string
+	if obj.Status.RotatedClientSecret != "" {
+		rotatedClientSecret = &obj.Status.RotatedClientSecret
+	}
+
+	var rotatedExpiresAt *time.Time
+	if obj.Status.RotatedExpiresAt != nil {
+		t := obj.Status.RotatedExpiresAt.Time
+		rotatedExpiresAt = &t
+	}
+
+	var currentExpiresAt *time.Time
+	if obj.Status.CurrentExpiresAt != nil {
+		t := obj.Status.CurrentExpiresAt.Time
+		currentExpiresAt = &t
+	}
+
 	return &ApplicationData{
 		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:   phase,
@@ -52,10 +85,50 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 		Name:          obj.Name,
 		ClientID:      clientID,
 		ClientSecret:  clientSecret,
-		IssuerURL:     nil,
 		TeamName:      obj.Spec.Team,
 		ZoneName:      obj.Spec.Zone.Name,
+
+		RotatedClientSecret:   rotatedClientSecret,
+		RotatedExpiresAt:      rotatedExpiresAt,
+		CurrentExpiresAt:      currentExpiresAt,
+		SecretRotationPhase:   rotationPhase,
+		SecretRotationMessage: rotationMessage,
 	}, nil
+}
+
+// deriveRotationState maps the SecretRotation condition to an FSM phase.
+//
+// Rules:
+//  1. Condition absent → DONE
+//  2. Reason "InProgress" → IN_PROGRESS
+//  3. Reason "Success" + RotatedClientSecret non-empty → GRACE_PERIOD
+//  4. Reason "Success" + RotatedClientSecret empty → DONE
+//  5. Reason "Failed" or "Error" → FAILED
+//  6. Unknown reason → IN_PROGRESS (safe fallback)
+func deriveRotationState(obj *appv1.Application) (phase string, message *string) {
+	cond := meta.FindStatusCondition(obj.Status.Conditions, secretRotationConditionType)
+	if cond == nil {
+		return RotationPhaseDone, nil
+	}
+
+	var msg *string
+	if cond.Message != "" {
+		msg = &cond.Message
+	}
+
+	switch cond.Reason {
+	case "InProgress":
+		return RotationPhaseInProgress, msg
+	case "Success":
+		if obj.Status.RotatedClientSecret != "" {
+			return RotationPhaseGracePeriod, msg
+		}
+		return RotationPhaseDone, nil
+	case "Failed", "Error":
+		return RotationPhaseFailed, msg
+	default:
+		return RotationPhaseInProgress, msg
+	}
 }
 
 // KeyFromObject derives the composite identity key from a live Application.

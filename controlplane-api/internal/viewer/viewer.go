@@ -12,11 +12,32 @@ import (
 
 type viewerKey struct{}
 
+type forwardedUserKey struct{}
+
+// ForwardedUser holds the user identity extracted from X-Forwarded-User-* headers.
+type ForwardedUser struct {
+	Name  string
+	Email string
+}
+
+// NewForwardedUserContext stores forwarded user identity in the context.
+func NewForwardedUserContext(ctx context.Context, u ForwardedUser) context.Context {
+	return context.WithValue(ctx, forwardedUserKey{}, u)
+}
+
+// ForwardedUserFromContext returns the forwarded user identity, if present.
+func ForwardedUserFromContext(ctx context.Context) (ForwardedUser, bool) {
+	u, ok := ctx.Value(forwardedUserKey{}).(ForwardedUser)
+	return u, ok
+}
+
 // Viewer represents the authenticated user and their accessible teams.
 type Viewer struct {
-	Teams []string
-	Group string // Group name from BusinessContext (set for group-level viewers)
-	Admin bool
+	Teams     []string
+	Group     string // Group name from BusinessContext (set for group-level viewers)
+	Admin     bool
+	UserName  string // Display name from X-Forwarded-User-Name header
+	UserEmail string // Email from X-Forwarded-User-Email header
 }
 
 // NewContext returns a new context with the viewer attached.

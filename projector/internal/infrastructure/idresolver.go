@@ -17,6 +17,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	entgroup "github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -361,5 +363,112 @@ func (r *IDResolver) FindAPISubscriptionByMeta(ctx context.Context, namespace, n
 		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
 		r.cache.Set(et, lk, sub.ID)
 		return sub.ID, nil
+	})
+}
+
+// FindEventSubscriptionByMeta looks up the DB primary key for an EventSubscription
+// by its Kubernetes metadata (namespace + name). The (namespace, name) pair
+// forms a unique composite index, so at most one row can match.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindEventSubscriptionByMeta(ctx context.Context, namespace, name string) (int, error) {
+	et, lk := cachekeys.EventSubscriptionMeta(namespace, name)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("event_subscription %s/%s", namespace, name), func() (int, error) {
+		sub, err := r.client.EventSubscription.Query().
+			Where(
+				eventsubscription.NamespaceEQ(namespace),
+				eventsubscription.NameEQ(name),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("event_subscription %s/%s: %w", namespace, name, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find event_subscription %s/%s: %w", namespace, name, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, sub.ID)
+		return sub.ID, nil
+	})
+}
+
+// EvictAPISubscription removes the cached DB primary key for an ApiSubscription
+// identified by namespace + name. This is called when a FK constraint violation
+// indicates the cached ID is stale (e.g. the referenced row was deleted and
+// re-created with a different ID).
+func (r *IDResolver) EvictAPISubscription(namespace, name string) {
+	et, lk := cachekeys.APISubscriptionMeta(namespace, name)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
+}
+
+// EvictEventSubscription removes the cached DB primary key for an
+// EventSubscription identified by namespace + name.
+func (r *IDResolver) EvictEventSubscription(namespace, name string) {
+	et, lk := cachekeys.EventSubscriptionMeta(namespace, name)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
+}
+
+// FindEventExposureID looks up the DB primary key for an EventExposure by event
+// type, application name, and team name. Event types are unique per application,
+// and applications per team, so all three are required.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindEventExposureID(ctx context.Context, eventType, appName, teamName string) (int, error) {
+	et, lk := cachekeys.EventExposure(eventType, appName, teamName)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("event_exposure %q (app %q, team %q)", eventType, appName, teamName), func() (int, error) {
+		exposure, err := r.client.EventExposure.Query().
+			Where(
+				eventexposure.EventTypeEQ(eventType),
+				eventexposure.HasOwnerWith(
+					application.NameEQ(appName),
+					application.HasOwnerTeamWith(team.NameEQ(teamName)),
+				),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("event_exposure %q (app %q, team %q): %w", eventType, appName, teamName, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find event_exposure %q (app %q, team %q): %w", eventType, appName, teamName, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, exposure.ID)
+		return exposure.ID, nil
+	})
+}
+
+// FindEventExposureByEventType looks up the DB primary key for an EventExposure
+// by event type alone (without requiring the owning application or team name).
+// This is needed by EventSubscription because the CR does not carry target
+// app/team information. Only active exposures are matched.
+// Returns ErrEntityNotFound (wrapped) if no matching active row exists.
+func (r *IDResolver) FindEventExposureByEventType(ctx context.Context, eventType string) (int, error) {
+	et, lk := cachekeys.EventExposureByEventType(eventType)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("event_exposure eventType %q", eventType), func() (int, error) {
+		exposure, err := r.client.EventExposure.Query().
+			Where(eventexposure.EventTypeEQ(eventType)).
+			Where(eventexposure.ActiveEQ(true)).
+			First(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("event_exposure eventType %q: %w", eventType, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find event_exposure eventType %q: %w", eventType, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, exposure.ID)
+		return exposure.ID, nil
 	})
 }

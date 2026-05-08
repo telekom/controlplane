@@ -37,10 +37,17 @@ func (t *Translator) Translate(_ context.Context, obj *adminv1.Zone) (*ZoneData,
 		gatewayURL = &url
 	}
 
+	var issuerURL *string
+	if obj.Status.Links.Issuer != "" {
+		u := obj.Status.Links.Issuer
+		issuerURL = &u
+	}
+
 	return &ZoneData{
 		Meta:       shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		Name:       obj.Name,
 		GatewayURL: gatewayURL,
+		IssuerURL:  issuerURL,
 		Visibility: strings.ToUpper(string(obj.Spec.Visibility)),
 	}, nil
 }

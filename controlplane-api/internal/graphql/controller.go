@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
@@ -55,7 +56,14 @@ func httpHandlerWithUserContext(h http.Handler) fiber.Handler {
 		if err := fasthttpadaptor.ConvertRequest(c.Context(), &req, true); err != nil {
 			return err
 		}
-		req = *req.WithContext(c.UserContext())
+		ctx := c.UserContext()
+
+		// Propagate forwarded user identity headers into context for the Viewer middleware.
+		if name, email := c.Get("X-Forwarded-User-Name"), c.Get("X-Forwarded-User-Email"); name != "" || email != "" {
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{Name: name, Email: email})
+		}
+
+		req = *req.WithContext(ctx)
 		rec := &responseRecorder{ctx: c}
 		h.ServeHTTP(rec, &req)
 		return nil

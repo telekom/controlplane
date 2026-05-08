@@ -26,34 +26,38 @@ func ViewerFromBusinessContext(client *ent.Client, securityEnabled ...bool) grap
 		secEnabled = securityEnabled[0]
 	}
 	return func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+		v := &viewer.Viewer{}
+
 		bCtx, ok := security.FromContext(ctx)
-		if !ok {
-			if !secEnabled {
-				ctx = viewer.NewContext(ctx, &viewer.Viewer{Admin: true})
+		if ok {
+			switch bCtx.ClientType {
+			case security.ClientTypeAdmin:
+				v.Admin = true
+			case security.ClientTypeGroup:
+				v.Group = bCtx.Group
+				sysCtx := viewer.SystemContext(ctx)
+				teams, err := client.Team.Query().
+					Where(entteam.HasGroupWith(entgroup.Name(bCtx.Group))).
+					Select(entteam.FieldName).
+					Strings(sysCtx)
+				if err != nil {
+					logr.FromContextOrDiscard(ctx).Error(err, "failed to resolve teams for group", "group", bCtx.Group)
+				} else {
+					v.Teams = teams
+				}
+			case security.ClientTypeTeam:
+				v.Teams = []string{bCtx.Team}
 			}
+		} else if !secEnabled {
+			v.Admin = true
+		} else {
 			return next(ctx)
 		}
 
-		v := &viewer.Viewer{}
-
-		switch bCtx.ClientType {
-		case security.ClientTypeAdmin:
-			v.Admin = true
-		case security.ClientTypeGroup:
-			v.Group = bCtx.Group
-			// Look up all teams in the group
-			sysCtx := viewer.SystemContext(ctx)
-			teams, err := client.Team.Query().
-				Where(entteam.HasGroupWith(entgroup.Name(bCtx.Group))).
-				Select(entteam.FieldName).
-				Strings(sysCtx)
-			if err != nil {
-				logr.FromContextOrDiscard(ctx).Error(err, "failed to resolve teams for group", "group", bCtx.Group)
-			} else {
-				v.Teams = teams
-			}
-		case security.ClientTypeTeam:
-			v.Teams = []string{bCtx.Team}
+		// Populate forwarded user identity if present in context.
+		if fu, ok := viewer.ForwardedUserFromContext(ctx); ok {
+			v.UserName = fu.Name
+			v.UserEmail = fu.Email
 		}
 
 		ctx = viewer.NewContext(ctx, v)

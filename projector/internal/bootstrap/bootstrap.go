@@ -29,9 +29,11 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	appv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/migrate"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
 
 	"github.com/telekom/controlplane/projector/internal/config"
@@ -40,6 +42,8 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/application"
 	"github.com/telekom/controlplane/projector/internal/domain/approval"
 	"github.com/telekom/controlplane/projector/internal/domain/approvalrequest"
+	"github.com/telekom/controlplane/projector/internal/domain/eventexposure"
+	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
@@ -59,6 +63,10 @@ func init() {
 	_ = appv1.AddToScheme(scheme)
 	_ = approvalv1.AddToScheme(scheme)
 	_ = orgv1.AddToScheme(scheme)
+
+	if cconfig.FeaturePubSub.IsEnabled() {
+		_ = eventv1.AddToScheme(scheme)
+	}
 }
 
 // modules is the ordered list of resource modules to register.
@@ -71,6 +79,20 @@ var modules = []module.Module{
 	apisubscription.Module,
 	approval.Module,
 	approvalrequest.Module,
+}
+
+func init() {
+	// Register all CR schemes used by the projector modules.
+	_ = adminv1.AddToScheme(scheme)
+	_ = apiv1.AddToScheme(scheme)
+	_ = appv1.AddToScheme(scheme)
+	_ = approvalv1.AddToScheme(scheme)
+	_ = orgv1.AddToScheme(scheme)
+
+	if cconfig.FeaturePubSub.IsEnabled() {
+		_ = eventv1.AddToScheme(scheme)
+		modules = append(modules, eventexposure.Module, eventsubscription.Module)
+	}
 }
 
 // Run is the projector entry point. It sets up the database, caches,

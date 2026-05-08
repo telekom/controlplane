@@ -131,7 +131,7 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to set secret value")
 		}
-		log.V(1).Info("Replaced secret", "jsonPath", jsonPath, "secretValue", secretValue)
+		log.V(1).Info("Replaced secret", "jsonPath", jsonPath)
 	}
 
 	return b, nil

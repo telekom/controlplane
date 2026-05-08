@@ -49,6 +49,7 @@ func (t *Translator) Translate(_ context.Context, obj *orgv1.Team) (*TeamData, e
 		Email:         obj.Spec.Email,
 		Category:      strings.ToUpper(string(obj.Spec.Category)),
 		GroupName:     obj.Spec.Group,
+		TeamToken:     obj.GetTeamToken(),
 		Members:       members,
 	}, nil
 }

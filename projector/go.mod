@@ -33,6 +33,7 @@ require (
 	github.com/telekom/controlplane/approval/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/controlplane-api v0.0.0
+	github.com/telekom/controlplane/event/api v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/organization/api v0.0.0
 )
 

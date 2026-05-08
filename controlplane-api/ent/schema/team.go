@@ -43,7 +43,7 @@ func (Team) Fields() []ent.Field {
 				"Infrastructure", "INFRASTRUCTURE",
 			).
 			Default("CUSTOMER"),
-		field.Text("rover_token_ref").
+		field.Text("team_token").
 			Optional().
 			Nillable(),
 	}

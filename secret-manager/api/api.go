@@ -31,7 +31,7 @@ const (
 
 var (
 	// ErrNotFound is returned when a secret is not found in the secret manager.
-	ErrNotFound = client.BlockedErrorf("resource not found")
+	ErrNotFound = client.BlockedErrorf("resource not found").WithStatusCode(404)
 )
 
 type OnboardingOptions struct {

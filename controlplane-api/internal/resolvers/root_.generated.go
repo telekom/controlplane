@@ -8,6 +8,7 @@ package resolvers
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync/atomic"
 
 	"entgo.io/contrib/entgql"
@@ -36,16 +37,22 @@ type ResolverRoot interface {
 	ApprovalRequest() ApprovalRequestResolver
 	AvailableTransition() AvailableTransitionResolver
 	Decision() DecisionResolver
+	EventSubscriptionInfo() EventSubscriptionInfoResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
-	DecideApprovalInput() DecideApprovalInputResolver
-	DecideApprovalRequestInput() DecideApprovalRequestInputResolver
+	Team() TeamResolver
+	Zone() ZoneResolver
 }
 
 type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AddTeamMemberPayload struct {
+		Errors func(childComplexity int) int
+		Team   func(childComplexity int) int
+	}
+
 	ApiExposure struct {
 		APIVersion     func(childComplexity int) int
 		Active         func(childComplexity int) int
@@ -128,21 +135,27 @@ type ComplexityRoot struct {
 	}
 
 	Application struct {
-		ClientID       func(childComplexity int) int
-		ClientSecret   func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		Environment    func(childComplexity int) int
-		ExposedApis    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
-		ID             func(childComplexity int) int
-		IssuerURL      func(childComplexity int) int
-		LastModifiedAt func(childComplexity int) int
-		Name           func(childComplexity int) int
-		Namespace      func(childComplexity int) int
-		OwnerTeam      func(childComplexity int) int
-		StatusMessage  func(childComplexity int) int
-		StatusPhase    func(childComplexity int) int
-		SubscribedApis func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
-		Zone           func(childComplexity int) int
+		ClientID              func(childComplexity int) int
+		ClientSecret          func(childComplexity int) int
+		CreatedAt             func(childComplexity int) int
+		CurrentExpiresAt      func(childComplexity int) int
+		Environment           func(childComplexity int) int
+		ExposedApis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
+		ExposedEvents         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
+		ID                    func(childComplexity int) int
+		LastModifiedAt        func(childComplexity int) int
+		Name                  func(childComplexity int) int
+		Namespace             func(childComplexity int) int
+		OwnerTeam             func(childComplexity int) int
+		RotatedClientSecret   func(childComplexity int) int
+		RotatedExpiresAt      func(childComplexity int) int
+		SecretRotationMessage func(childComplexity int) int
+		SecretRotationPhase   func(childComplexity int) int
+		StatusMessage         func(childComplexity int) int
+		StatusPhase           func(childComplexity int) int
+		SubscribedApis        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
+		SubscribedEvents      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
+		Zone                  func(childComplexity int) int
 	}
 
 	ApplicationConnection struct {
@@ -157,7 +170,6 @@ type ComplexityRoot struct {
 	}
 
 	Approval struct {
-		APISubscription      func(childComplexity int) int
 		Action               func(childComplexity int) int
 		AvailableTransitions func(childComplexity int) int
 		CreatedAt            func(childComplexity int) int
@@ -174,6 +186,7 @@ type ComplexityRoot struct {
 		StatusMessage        func(childComplexity int) int
 		StatusPhase          func(childComplexity int) int
 		Strategy             func(childComplexity int) int
+		Subscription         func(childComplexity int) int
 	}
 
 	ApprovalConfig struct {
@@ -192,16 +205,7 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
-	ApprovalMutationResult struct {
-		Message      func(childComplexity int) int
-		Namespace    func(childComplexity int) int
-		NewState     func(childComplexity int) int
-		ResourceName func(childComplexity int) int
-		Success      func(childComplexity int) int
-	}
-
 	ApprovalRequest struct {
-		APISubscription      func(childComplexity int) int
 		Action               func(childComplexity int) int
 		Approval             func(childComplexity int) int
 		AvailableTransitions func(childComplexity int) int
@@ -219,6 +223,7 @@ type ComplexityRoot struct {
 		StatusMessage        func(childComplexity int) int
 		StatusPhase          func(childComplexity int) int
 		Strategy             func(childComplexity int) int
+		Subscription         func(childComplexity int) int
 	}
 
 	ApprovalRequestConnection struct {
@@ -237,6 +242,24 @@ type ComplexityRoot struct {
 		ToState func(childComplexity int) int
 	}
 
+	CreateTeamPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+		Team     func(childComplexity int) int
+	}
+
+	DecideApprovalPayload struct {
+		Accepted func(childComplexity int) int
+		Approval func(childComplexity int) int
+		Errors   func(childComplexity int) int
+	}
+
+	DecideApprovalRequestPayload struct {
+		Accepted        func(childComplexity int) int
+		ApprovalRequest func(childComplexity int) int
+		Errors          func(childComplexity int) int
+	}
+
 	DeciderInfo struct {
 		TeamEmail func(childComplexity int) int
 		TeamName  func(childComplexity int) int
@@ -248,6 +271,70 @@ type ComplexityRoot struct {
 		Name           func(childComplexity int) int
 		ResultingState func(childComplexity int) int
 		Timestamp      func(childComplexity int) int
+	}
+
+	EventExposure struct {
+		Active         func(childComplexity int) int
+		ApprovalConfig func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		EventType      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		Owner          func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
+		Visibility     func(childComplexity int) int
+	}
+
+	EventExposureConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	EventExposureEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	EventSubscription struct {
+		Approval         func(childComplexity int) int
+		ApprovalRequests func(childComplexity int) int
+		CallbackURL      func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		DeliveryType     func(childComplexity int) int
+		Environment      func(childComplexity int) int
+		EventType        func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+	}
+
+	EventSubscriptionConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	EventSubscriptionEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	EventSubscriptionInfo struct {
+		DeliveryType         func(childComplexity int) int
+		EventType            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
 	}
 
 	Group struct {
@@ -269,12 +356,20 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		AddTeamMember           func(childComplexity int, teamID int, member model.MemberInput) int
 		CreateTeam              func(childComplexity int, input model.CreateTeamInput) int
-		DecideApproval          func(childComplexity int, input model.DecideApprovalInput) int
-		DecideApprovalRequest   func(childComplexity int, input model.DecideApprovalRequestInput) int
-		RotateApplicationSecret func(childComplexity int, input model.RotateApplicationSecretInput) int
-		RotateTeamToken         func(childComplexity int, input model.RotateTeamTokenInput) int
+		DecideApproval          func(childComplexity int, approvalID int, input model.DecisionInput) int
+		DecideApprovalRequest   func(childComplexity int, approvalRequestID int, input model.DecisionInput) int
+		RemoveTeamMember        func(childComplexity int, teamID int, memberEmail string) int
+		RotateApplicationSecret func(childComplexity int, applicationID int) int
+		RotateTeamToken         func(childComplexity int, teamID int) int
 		UpdateTeam              func(childComplexity int, input model.UpdateTeamInput) int
+	}
+
+	MutationError struct {
+		Code    func(childComplexity int) int
+		Field   func(childComplexity int) int
+		Message func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -285,15 +380,22 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		APIExposures     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
-		APISubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
-		Applications     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
-		ApprovalRequests func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalRequestOrder, where *ent.ApprovalRequestWhereInput) int
-		Approvals        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalOrder, where *ent.ApprovalWhereInput) int
-		Node             func(childComplexity int, id int) int
-		Nodes            func(childComplexity int, ids []int) int
-		Teams            func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) int
-		Zones            func(childComplexity int) int
+		APIExposures       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
+		APISubscriptions   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
+		Applications       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
+		ApprovalRequests   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalRequestOrder, where *ent.ApprovalRequestWhereInput) int
+		Approvals          func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalOrder, where *ent.ApprovalWhereInput) int
+		EventExposures     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
+		EventSubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
+		Node               func(childComplexity int, id int) int
+		Nodes              func(childComplexity int, ids []int) int
+		Teams              func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) int
+		Zones              func(childComplexity int) int
+	}
+
+	RemoveTeamMemberPayload struct {
+		Errors func(childComplexity int) int
+		Team   func(childComplexity int) int
 	}
 
 	RequesterInfo struct {
@@ -303,11 +405,16 @@ type ComplexityRoot struct {
 		TeamName        func(childComplexity int) int
 	}
 
-	RotateApplicationSecretResult struct {
-		Message      func(childComplexity int) int
-		Namespace    func(childComplexity int) int
-		ResourceName func(childComplexity int) int
-		Success      func(childComplexity int) int
+	RotateApplicationSecretPayload struct {
+		Accepted    func(childComplexity int) int
+		Application func(childComplexity int) int
+		Errors      func(childComplexity int) int
+	}
+
+	RotateTeamTokenPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+		Team     func(childComplexity int) int
 	}
 
 	Team struct {
@@ -322,9 +429,9 @@ type ComplexityRoot struct {
 		Members        func(childComplexity int) int
 		Name           func(childComplexity int) int
 		Namespace      func(childComplexity int) int
-		RoverTokenRef  func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
+		TeamToken      func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -345,11 +452,10 @@ type ComplexityRoot struct {
 		Name      func(childComplexity int) int
 	}
 
-	TeamMutationResult struct {
-		Message      func(childComplexity int) int
-		Namespace    func(childComplexity int) int
-		ResourceName func(childComplexity int) int
-		Success      func(childComplexity int) int
+	UpdateTeamPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+		Team     func(childComplexity int) int
 	}
 
 	Upstream struct {
@@ -362,7 +468,9 @@ type ComplexityRoot struct {
 		Environment  func(childComplexity int) int
 		GatewayURL   func(childComplexity int) int
 		ID           func(childComplexity int) int
+		IssuerURL    func(childComplexity int) int
 		Name         func(childComplexity int) int
+		TokenURL     func(childComplexity int) int
 		Visibility   func(childComplexity int) int
 	}
 }
@@ -380,6 +488,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AddTeamMemberPayload.errors":
+		if e.ComplexityRoot.AddTeamMemberPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AddTeamMemberPayload.Errors(childComplexity), true
+
+	case "AddTeamMemberPayload.team":
+		if e.ComplexityRoot.AddTeamMemberPayload.Team == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AddTeamMemberPayload.Team(childComplexity), true
 
 	case "ApiExposure.apiVersion":
 		if e.ComplexityRoot.ApiExposure.APIVersion == nil {
@@ -801,6 +923,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Application.CreatedAt(childComplexity), true
 
+	case "Application.currentExpiresAt":
+		if e.ComplexityRoot.Application.CurrentExpiresAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.CurrentExpiresAt(childComplexity), true
+
 	case "Application.environment":
 		if e.ComplexityRoot.Application.Environment == nil {
 			break
@@ -820,19 +949,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Application.ExposedApis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiExposureOrder), args["where"].(*ent.ApiExposureWhereInput)), true
 
+	case "Application.exposedEvents":
+		if e.ComplexityRoot.Application.ExposedEvents == nil {
+			break
+		}
+
+		args, err := ec.field_Application_exposedEvents_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.ExposedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
+
 	case "Application.id":
 		if e.ComplexityRoot.Application.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ID(childComplexity), true
-
-	case "Application.issuerURL":
-		if e.ComplexityRoot.Application.IssuerURL == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Application.IssuerURL(childComplexity), true
 
 	case "Application.lastModifiedAt":
 		if e.ComplexityRoot.Application.LastModifiedAt == nil {
@@ -862,6 +996,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Application.OwnerTeam(childComplexity), true
 
+	case "Application.rotatedClientSecret":
+		if e.ComplexityRoot.Application.RotatedClientSecret == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.RotatedClientSecret(childComplexity), true
+
+	case "Application.rotatedExpiresAt":
+		if e.ComplexityRoot.Application.RotatedExpiresAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.RotatedExpiresAt(childComplexity), true
+
+	case "Application.secretRotationMessage":
+		if e.ComplexityRoot.Application.SecretRotationMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.SecretRotationMessage(childComplexity), true
+
+	case "Application.secretRotationPhase":
+		if e.ComplexityRoot.Application.SecretRotationPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.SecretRotationPhase(childComplexity), true
+
 	case "Application.statusMessage":
 		if e.ComplexityRoot.Application.StatusMessage == nil {
 			break
@@ -887,6 +1049,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedApis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiSubscriptionOrder), args["where"].(*ent.ApiSubscriptionWhereInput)), true
+
+	case "Application.subscribedEvents":
+		if e.ComplexityRoot.Application.SubscribedEvents == nil {
+			break
+		}
+
+		args, err := ec.field_Application_subscribedEvents_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.SubscribedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
 
 	case "Application.zone":
 		if e.ComplexityRoot.Application.Zone == nil {
@@ -929,13 +1103,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
-
-	case "Approval.apiSubscription":
-		if e.ComplexityRoot.Approval.APISubscription == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Approval.APISubscription(childComplexity), true
 
 	case "Approval.action":
 		if e.ComplexityRoot.Approval.Action == nil {
@@ -1049,6 +1216,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Approval.Strategy(childComplexity), true
 
+	case "Approval.subscription":
+		if e.ComplexityRoot.Approval.Subscription == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.Subscription(childComplexity), true
+
 	case "ApprovalConfig.strategy":
 		if e.ComplexityRoot.ApprovalConfig.Strategy == nil {
 			break
@@ -1097,48 +1271,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalEdge.Node(childComplexity), true
-
-	case "ApprovalMutationResult.message":
-		if e.ComplexityRoot.ApprovalMutationResult.Message == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApprovalMutationResult.Message(childComplexity), true
-
-	case "ApprovalMutationResult.namespace":
-		if e.ComplexityRoot.ApprovalMutationResult.Namespace == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApprovalMutationResult.Namespace(childComplexity), true
-
-	case "ApprovalMutationResult.newState":
-		if e.ComplexityRoot.ApprovalMutationResult.NewState == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApprovalMutationResult.NewState(childComplexity), true
-
-	case "ApprovalMutationResult.resourceName":
-		if e.ComplexityRoot.ApprovalMutationResult.ResourceName == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApprovalMutationResult.ResourceName(childComplexity), true
-
-	case "ApprovalMutationResult.success":
-		if e.ComplexityRoot.ApprovalMutationResult.Success == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApprovalMutationResult.Success(childComplexity), true
-
-	case "ApprovalRequest.apiSubscription":
-		if e.ComplexityRoot.ApprovalRequest.APISubscription == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApprovalRequest.APISubscription(childComplexity), true
 
 	case "ApprovalRequest.action":
 		if e.ComplexityRoot.ApprovalRequest.Action == nil {
@@ -1259,6 +1391,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApprovalRequest.Strategy(childComplexity), true
 
+	case "ApprovalRequest.subscription":
+		if e.ComplexityRoot.ApprovalRequest.Subscription == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.Subscription(childComplexity), true
+
 	case "ApprovalRequestConnection.edges":
 		if e.ComplexityRoot.ApprovalRequestConnection.Edges == nil {
 			break
@@ -1308,6 +1447,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AvailableTransition.ToState(childComplexity), true
 
+	case "CreateTeamPayload.accepted":
+		if e.ComplexityRoot.CreateTeamPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateTeamPayload.Accepted(childComplexity), true
+
+	case "CreateTeamPayload.errors":
+		if e.ComplexityRoot.CreateTeamPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateTeamPayload.Errors(childComplexity), true
+
+	case "CreateTeamPayload.team":
+		if e.ComplexityRoot.CreateTeamPayload.Team == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateTeamPayload.Team(childComplexity), true
+
+	case "DecideApprovalPayload.accepted":
+		if e.ComplexityRoot.DecideApprovalPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DecideApprovalPayload.Accepted(childComplexity), true
+
+	case "DecideApprovalPayload.approval":
+		if e.ComplexityRoot.DecideApprovalPayload.Approval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DecideApprovalPayload.Approval(childComplexity), true
+
+	case "DecideApprovalPayload.errors":
+		if e.ComplexityRoot.DecideApprovalPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DecideApprovalPayload.Errors(childComplexity), true
+
+	case "DecideApprovalRequestPayload.accepted":
+		if e.ComplexityRoot.DecideApprovalRequestPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DecideApprovalRequestPayload.Accepted(childComplexity), true
+
+	case "DecideApprovalRequestPayload.approvalRequest":
+		if e.ComplexityRoot.DecideApprovalRequestPayload.ApprovalRequest == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DecideApprovalRequestPayload.ApprovalRequest(childComplexity), true
+
+	case "DecideApprovalRequestPayload.errors":
+		if e.ComplexityRoot.DecideApprovalRequestPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DecideApprovalRequestPayload.Errors(childComplexity), true
+
 	case "DeciderInfo.teamEmail":
 		if e.ComplexityRoot.DeciderInfo.TeamEmail == nil {
 			break
@@ -1356,6 +1558,307 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Decision.Timestamp(childComplexity), true
+
+	case "EventExposure.active":
+		if e.ComplexityRoot.EventExposure.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.Active(childComplexity), true
+
+	case "EventExposure.approvalConfig":
+		if e.ComplexityRoot.EventExposure.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.ApprovalConfig(childComplexity), true
+
+	case "EventExposure.createdAt":
+		if e.ComplexityRoot.EventExposure.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.CreatedAt(childComplexity), true
+
+	case "EventExposure.environment":
+		if e.ComplexityRoot.EventExposure.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.Environment(childComplexity), true
+
+	case "EventExposure.eventType":
+		if e.ComplexityRoot.EventExposure.EventType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.EventType(childComplexity), true
+
+	case "EventExposure.id":
+		if e.ComplexityRoot.EventExposure.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.ID(childComplexity), true
+
+	case "EventExposure.lastModifiedAt":
+		if e.ComplexityRoot.EventExposure.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.LastModifiedAt(childComplexity), true
+
+	case "EventExposure.namespace":
+		if e.ComplexityRoot.EventExposure.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.Namespace(childComplexity), true
+
+	case "EventExposure.owner":
+		if e.ComplexityRoot.EventExposure.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.Owner(childComplexity), true
+
+	case "EventExposure.statusMessage":
+		if e.ComplexityRoot.EventExposure.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.StatusMessage(childComplexity), true
+
+	case "EventExposure.statusPhase":
+		if e.ComplexityRoot.EventExposure.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.StatusPhase(childComplexity), true
+
+	case "EventExposure.visibility":
+		if e.ComplexityRoot.EventExposure.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.Visibility(childComplexity), true
+
+	case "EventExposureConnection.edges":
+		if e.ComplexityRoot.EventExposureConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureConnection.Edges(childComplexity), true
+
+	case "EventExposureConnection.pageInfo":
+		if e.ComplexityRoot.EventExposureConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureConnection.PageInfo(childComplexity), true
+
+	case "EventExposureConnection.totalCount":
+		if e.ComplexityRoot.EventExposureConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureConnection.TotalCount(childComplexity), true
+
+	case "EventExposureEdge.cursor":
+		if e.ComplexityRoot.EventExposureEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureEdge.Cursor(childComplexity), true
+
+	case "EventExposureEdge.node":
+		if e.ComplexityRoot.EventExposureEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureEdge.Node(childComplexity), true
+
+	case "EventSubscription.approval":
+		if e.ComplexityRoot.EventSubscription.Approval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Approval(childComplexity), true
+
+	case "EventSubscription.approvalRequests":
+		if e.ComplexityRoot.EventSubscription.ApprovalRequests == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.ApprovalRequests(childComplexity), true
+
+	case "EventSubscription.callbackURL":
+		if e.ComplexityRoot.EventSubscription.CallbackURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.CallbackURL(childComplexity), true
+
+	case "EventSubscription.createdAt":
+		if e.ComplexityRoot.EventSubscription.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.CreatedAt(childComplexity), true
+
+	case "EventSubscription.deliveryType":
+		if e.ComplexityRoot.EventSubscription.DeliveryType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.DeliveryType(childComplexity), true
+
+	case "EventSubscription.environment":
+		if e.ComplexityRoot.EventSubscription.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Environment(childComplexity), true
+
+	case "EventSubscription.eventType":
+		if e.ComplexityRoot.EventSubscription.EventType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.EventType(childComplexity), true
+
+	case "EventSubscription.id":
+		if e.ComplexityRoot.EventSubscription.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.ID(childComplexity), true
+
+	case "EventSubscription.lastModifiedAt":
+		if e.ComplexityRoot.EventSubscription.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.LastModifiedAt(childComplexity), true
+
+	case "EventSubscription.name":
+		if e.ComplexityRoot.EventSubscription.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Name(childComplexity), true
+
+	case "EventSubscription.namespace":
+		if e.ComplexityRoot.EventSubscription.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Namespace(childComplexity), true
+
+	case "EventSubscription.owner":
+		if e.ComplexityRoot.EventSubscription.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Owner(childComplexity), true
+
+	case "EventSubscription.statusMessage":
+		if e.ComplexityRoot.EventSubscription.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.StatusMessage(childComplexity), true
+
+	case "EventSubscription.statusPhase":
+		if e.ComplexityRoot.EventSubscription.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.StatusPhase(childComplexity), true
+
+	case "EventSubscriptionConnection.edges":
+		if e.ComplexityRoot.EventSubscriptionConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionConnection.Edges(childComplexity), true
+
+	case "EventSubscriptionConnection.pageInfo":
+		if e.ComplexityRoot.EventSubscriptionConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionConnection.PageInfo(childComplexity), true
+
+	case "EventSubscriptionConnection.totalCount":
+		if e.ComplexityRoot.EventSubscriptionConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionConnection.TotalCount(childComplexity), true
+
+	case "EventSubscriptionEdge.cursor":
+		if e.ComplexityRoot.EventSubscriptionEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionEdge.Cursor(childComplexity), true
+
+	case "EventSubscriptionEdge.node":
+		if e.ComplexityRoot.EventSubscriptionEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionEdge.Node(childComplexity), true
+
+	case "EventSubscriptionInfo.deliveryType":
+		if e.ComplexityRoot.EventSubscriptionInfo.DeliveryType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.DeliveryType(childComplexity), true
+
+	case "EventSubscriptionInfo.eventType":
+		if e.ComplexityRoot.EventSubscriptionInfo.EventType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.EventType(childComplexity), true
+
+	case "EventSubscriptionInfo.id":
+		if e.ComplexityRoot.EventSubscriptionInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.ID(childComplexity), true
+
+	case "EventSubscriptionInfo.ownerApplicationName":
+		if e.ComplexityRoot.EventSubscriptionInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.OwnerApplicationName(childComplexity), true
+
+	case "EventSubscriptionInfo.ownerTeam":
+		if e.ComplexityRoot.EventSubscriptionInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.OwnerTeam(childComplexity), true
+
+	case "EventSubscriptionInfo.statusMessage":
+		if e.ComplexityRoot.EventSubscriptionInfo.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.StatusMessage(childComplexity), true
+
+	case "EventSubscriptionInfo.statusPhase":
+		if e.ComplexityRoot.EventSubscriptionInfo.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.StatusPhase(childComplexity), true
 
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
@@ -1441,6 +1944,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Member.Team(childComplexity), true
 
+	case "Mutation.addTeamMember":
+		if e.ComplexityRoot.Mutation.AddTeamMember == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addTeamMember_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.AddTeamMember(childComplexity, args["teamId"].(int), args["member"].(model.MemberInput)), true
+
 	case "Mutation.createTeam":
 		if e.ComplexityRoot.Mutation.CreateTeam == nil {
 			break
@@ -1463,7 +1978,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.DecideApproval(childComplexity, args["input"].(model.DecideApprovalInput)), true
+		return e.ComplexityRoot.Mutation.DecideApproval(childComplexity, args["approvalId"].(int), args["input"].(model.DecisionInput)), true
 
 	case "Mutation.decideApprovalRequest":
 		if e.ComplexityRoot.Mutation.DecideApprovalRequest == nil {
@@ -1475,7 +1990,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.DecideApprovalRequest(childComplexity, args["input"].(model.DecideApprovalRequestInput)), true
+		return e.ComplexityRoot.Mutation.DecideApprovalRequest(childComplexity, args["approvalRequestId"].(int), args["input"].(model.DecisionInput)), true
+
+	case "Mutation.removeTeamMember":
+		if e.ComplexityRoot.Mutation.RemoveTeamMember == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeTeamMember_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RemoveTeamMember(childComplexity, args["teamId"].(int), args["memberEmail"].(string)), true
 
 	case "Mutation.rotateApplicationSecret":
 		if e.ComplexityRoot.Mutation.RotateApplicationSecret == nil {
@@ -1487,7 +2014,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.RotateApplicationSecret(childComplexity, args["input"].(model.RotateApplicationSecretInput)), true
+		return e.ComplexityRoot.Mutation.RotateApplicationSecret(childComplexity, args["applicationId"].(int)), true
 
 	case "Mutation.rotateTeamToken":
 		if e.ComplexityRoot.Mutation.RotateTeamToken == nil {
@@ -1499,7 +2026,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.RotateTeamToken(childComplexity, args["input"].(model.RotateTeamTokenInput)), true
+		return e.ComplexityRoot.Mutation.RotateTeamToken(childComplexity, args["teamId"].(int)), true
 
 	case "Mutation.updateTeam":
 		if e.ComplexityRoot.Mutation.UpdateTeam == nil {
@@ -1512,6 +2039,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateTeam(childComplexity, args["input"].(model.UpdateTeamInput)), true
+
+	case "MutationError.code":
+		if e.ComplexityRoot.MutationError.Code == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MutationError.Code(childComplexity), true
+
+	case "MutationError.field":
+		if e.ComplexityRoot.MutationError.Field == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MutationError.Field(childComplexity), true
+
+	case "MutationError.message":
+		if e.ComplexityRoot.MutationError.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MutationError.Message(childComplexity), true
 
 	case "PageInfo.endCursor":
 		if e.ComplexityRoot.PageInfo.EndCursor == nil {
@@ -1601,6 +2149,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Approvals(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApprovalOrder), args["where"].(*ent.ApprovalWhereInput)), true
 
+	case "Query.eventExposures":
+		if e.ComplexityRoot.Query.EventExposures == nil {
+			break
+		}
+
+		args, err := ec.field_Query_eventExposures_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.EventExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
+
+	case "Query.eventSubscriptions":
+		if e.ComplexityRoot.Query.EventSubscriptions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_eventSubscriptions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.EventSubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
+
 	case "Query.node":
 		if e.ComplexityRoot.Query.Node == nil {
 			break
@@ -1644,6 +2216,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Zones(childComplexity), true
 
+	case "RemoveTeamMemberPayload.errors":
+		if e.ComplexityRoot.RemoveTeamMemberPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RemoveTeamMemberPayload.Errors(childComplexity), true
+
+	case "RemoveTeamMemberPayload.team":
+		if e.ComplexityRoot.RemoveTeamMemberPayload.Team == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RemoveTeamMemberPayload.Team(childComplexity), true
+
 	case "RequesterInfo.applicationName":
 		if e.ComplexityRoot.RequesterInfo.ApplicationName == nil {
 			break
@@ -1672,33 +2258,47 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.RequesterInfo.TeamName(childComplexity), true
 
-	case "RotateApplicationSecretResult.message":
-		if e.ComplexityRoot.RotateApplicationSecretResult.Message == nil {
+	case "RotateApplicationSecretPayload.accepted":
+		if e.ComplexityRoot.RotateApplicationSecretPayload.Accepted == nil {
 			break
 		}
 
-		return e.ComplexityRoot.RotateApplicationSecretResult.Message(childComplexity), true
+		return e.ComplexityRoot.RotateApplicationSecretPayload.Accepted(childComplexity), true
 
-	case "RotateApplicationSecretResult.namespace":
-		if e.ComplexityRoot.RotateApplicationSecretResult.Namespace == nil {
+	case "RotateApplicationSecretPayload.application":
+		if e.ComplexityRoot.RotateApplicationSecretPayload.Application == nil {
 			break
 		}
 
-		return e.ComplexityRoot.RotateApplicationSecretResult.Namespace(childComplexity), true
+		return e.ComplexityRoot.RotateApplicationSecretPayload.Application(childComplexity), true
 
-	case "RotateApplicationSecretResult.resourceName":
-		if e.ComplexityRoot.RotateApplicationSecretResult.ResourceName == nil {
+	case "RotateApplicationSecretPayload.errors":
+		if e.ComplexityRoot.RotateApplicationSecretPayload.Errors == nil {
 			break
 		}
 
-		return e.ComplexityRoot.RotateApplicationSecretResult.ResourceName(childComplexity), true
+		return e.ComplexityRoot.RotateApplicationSecretPayload.Errors(childComplexity), true
 
-	case "RotateApplicationSecretResult.success":
-		if e.ComplexityRoot.RotateApplicationSecretResult.Success == nil {
+	case "RotateTeamTokenPayload.accepted":
+		if e.ComplexityRoot.RotateTeamTokenPayload.Accepted == nil {
 			break
 		}
 
-		return e.ComplexityRoot.RotateApplicationSecretResult.Success(childComplexity), true
+		return e.ComplexityRoot.RotateTeamTokenPayload.Accepted(childComplexity), true
+
+	case "RotateTeamTokenPayload.errors":
+		if e.ComplexityRoot.RotateTeamTokenPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateTeamTokenPayload.Errors(childComplexity), true
+
+	case "RotateTeamTokenPayload.team":
+		if e.ComplexityRoot.RotateTeamTokenPayload.Team == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateTeamTokenPayload.Team(childComplexity), true
 
 	case "Team.applications":
 		if e.ComplexityRoot.Team.Applications == nil {
@@ -1782,13 +2382,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.Namespace(childComplexity), true
 
-	case "Team.roverTokenRef":
-		if e.ComplexityRoot.Team.RoverTokenRef == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Team.RoverTokenRef(childComplexity), true
-
 	case "Team.statusMessage":
 		if e.ComplexityRoot.Team.StatusMessage == nil {
 			break
@@ -1802,6 +2395,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.StatusPhase(childComplexity), true
+
+	case "Team.teamToken":
+		if e.ComplexityRoot.Team.TeamToken == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.TeamToken(childComplexity), true
 
 	case "TeamConnection.edges":
 		if e.ComplexityRoot.TeamConnection.Edges == nil {
@@ -1866,33 +2466,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TeamInfo.Name(childComplexity), true
 
-	case "TeamMutationResult.message":
-		if e.ComplexityRoot.TeamMutationResult.Message == nil {
+	case "UpdateTeamPayload.accepted":
+		if e.ComplexityRoot.UpdateTeamPayload.Accepted == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TeamMutationResult.Message(childComplexity), true
+		return e.ComplexityRoot.UpdateTeamPayload.Accepted(childComplexity), true
 
-	case "TeamMutationResult.namespace":
-		if e.ComplexityRoot.TeamMutationResult.Namespace == nil {
+	case "UpdateTeamPayload.errors":
+		if e.ComplexityRoot.UpdateTeamPayload.Errors == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TeamMutationResult.Namespace(childComplexity), true
+		return e.ComplexityRoot.UpdateTeamPayload.Errors(childComplexity), true
 
-	case "TeamMutationResult.resourceName":
-		if e.ComplexityRoot.TeamMutationResult.ResourceName == nil {
+	case "UpdateTeamPayload.team":
+		if e.ComplexityRoot.UpdateTeamPayload.Team == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TeamMutationResult.ResourceName(childComplexity), true
-
-	case "TeamMutationResult.success":
-		if e.ComplexityRoot.TeamMutationResult.Success == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TeamMutationResult.Success(childComplexity), true
+		return e.ComplexityRoot.UpdateTeamPayload.Team(childComplexity), true
 
 	case "Upstream.url":
 		if e.ComplexityRoot.Upstream.URL == nil {
@@ -1936,12 +2529,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Zone.ID(childComplexity), true
 
+	case "Zone.issuerURL":
+		if e.ComplexityRoot.Zone.IssuerURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.IssuerURL(childComplexity), true
+
 	case "Zone.name":
 		if e.ComplexityRoot.Zone.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.Name(childComplexity), true
+
+	case "Zone.tokenURL":
+		if e.ComplexityRoot.Zone.TokenURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.TokenURL(childComplexity), true
 
 	case "Zone.visibility":
 		if e.ComplexityRoot.Zone.Visibility == nil {
@@ -1969,14 +2576,14 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApprovalRequestWhereInput,
 		ec.unmarshalInputApprovalWhereInput,
 		ec.unmarshalInputCreateTeamInput,
-		ec.unmarshalInputDecideApprovalInput,
-		ec.unmarshalInputDecideApprovalRequestInput,
 		ec.unmarshalInputDecisionInput,
+		ec.unmarshalInputEventExposureOrder,
+		ec.unmarshalInputEventExposureWhereInput,
+		ec.unmarshalInputEventSubscriptionOrder,
+		ec.unmarshalInputEventSubscriptionWhereInput,
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
-		ec.unmarshalInputRotateApplicationSecretInput,
-		ec.unmarshalInputRotateTeamTokenInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
 		ec.unmarshalInputUpdateTeamInput,
@@ -2044,8 +2651,8 @@ func newExecutionContext(
 	opCtx *graphql.OperationContext,
 	execSchema *executableSchema,
 	deferredResults chan graphql.DeferredResult,
-) executionContext {
-	return executionContext{
+) *executionContext {
+	return &executionContext{
 		ExecutionContextState: graphql.NewExecutionContextState[ResolverRoot, DirectiveRoot, ComplexityRoot](
 			opCtx,
 			(*graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot])(execSchema),
@@ -2566,7 +3173,11 @@ type Application implements Node {
   name: String!
   clientID: String
   clientSecret: String
-  issuerURL: String
+  rotatedClientSecret: String
+  rotatedExpiresAt: Time
+  currentExpiresAt: Time
+  secretRotationPhase: ApplicationSecretRotationPhase!
+  secretRotationMessage: String
   zone: Zone!
   exposedApis(
     """
@@ -2630,6 +3241,68 @@ type Application implements Node {
     """
     where: ApiSubscriptionWhereInput
   ): ApiSubscriptionConnection!
+  exposedEvents(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventExposures returned from the connection.
+    """
+    orderBy: EventExposureOrder
+
+    """
+    Filtering options for EventExposures returned from the connection.
+    """
+    where: EventExposureWhereInput
+  ): EventExposureConnection!
+  subscribedEvents(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventSubscriptions returned from the connection.
+    """
+    orderBy: EventSubscriptionOrder
+
+    """
+    Filtering options for EventSubscriptions returned from the connection.
+    """
+    where: EventSubscriptionWhereInput
+  ): EventSubscriptionConnection!
 }
 """
 A connection to a list of items.
@@ -2681,6 +3354,15 @@ enum ApplicationOrderField {
   CREATED_AT
   LAST_MODIFIED_AT
   NAME
+}
+"""
+ApplicationSecretRotationPhase is enum for the field secret_rotation_phase
+"""
+enum ApplicationSecretRotationPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/application.SecretRotationPhase") {
+  DONE
+  IN_PROGRESS
+  GRACE_PERIOD
+  FAILED
 }
 """
 ApplicationStatusPhase is enum for the field status_phase
@@ -2828,41 +3510,56 @@ input ApplicationWhereInput {
   clientIDEqualFold: String
   clientIDContainsFold: String
   """
-  client_secret field predicates
+  rotated_expires_at field predicates
   """
-  clientSecret: String
-  clientSecretNEQ: String
-  clientSecretIn: [String!]
-  clientSecretNotIn: [String!]
-  clientSecretGT: String
-  clientSecretGTE: String
-  clientSecretLT: String
-  clientSecretLTE: String
-  clientSecretContains: String
-  clientSecretHasPrefix: String
-  clientSecretHasSuffix: String
-  clientSecretIsNil: Boolean
-  clientSecretNotNil: Boolean
-  clientSecretEqualFold: String
-  clientSecretContainsFold: String
+  rotatedExpiresAt: Time
+  rotatedExpiresAtNEQ: Time
+  rotatedExpiresAtIn: [Time!]
+  rotatedExpiresAtNotIn: [Time!]
+  rotatedExpiresAtGT: Time
+  rotatedExpiresAtGTE: Time
+  rotatedExpiresAtLT: Time
+  rotatedExpiresAtLTE: Time
+  rotatedExpiresAtIsNil: Boolean
+  rotatedExpiresAtNotNil: Boolean
   """
-  issuer_url field predicates
+  current_expires_at field predicates
   """
-  issuerURL: String
-  issuerURLNEQ: String
-  issuerURLIn: [String!]
-  issuerURLNotIn: [String!]
-  issuerURLGT: String
-  issuerURLGTE: String
-  issuerURLLT: String
-  issuerURLLTE: String
-  issuerURLContains: String
-  issuerURLHasPrefix: String
-  issuerURLHasSuffix: String
-  issuerURLIsNil: Boolean
-  issuerURLNotNil: Boolean
-  issuerURLEqualFold: String
-  issuerURLContainsFold: String
+  currentExpiresAt: Time
+  currentExpiresAtNEQ: Time
+  currentExpiresAtIn: [Time!]
+  currentExpiresAtNotIn: [Time!]
+  currentExpiresAtGT: Time
+  currentExpiresAtGTE: Time
+  currentExpiresAtLT: Time
+  currentExpiresAtLTE: Time
+  currentExpiresAtIsNil: Boolean
+  currentExpiresAtNotNil: Boolean
+  """
+  secret_rotation_phase field predicates
+  """
+  secretRotationPhase: ApplicationSecretRotationPhase
+  secretRotationPhaseNEQ: ApplicationSecretRotationPhase
+  secretRotationPhaseIn: [ApplicationSecretRotationPhase!]
+  secretRotationPhaseNotIn: [ApplicationSecretRotationPhase!]
+  """
+  secret_rotation_message field predicates
+  """
+  secretRotationMessage: String
+  secretRotationMessageNEQ: String
+  secretRotationMessageIn: [String!]
+  secretRotationMessageNotIn: [String!]
+  secretRotationMessageGT: String
+  secretRotationMessageGTE: String
+  secretRotationMessageLT: String
+  secretRotationMessageLTE: String
+  secretRotationMessageContains: String
+  secretRotationMessageHasPrefix: String
+  secretRotationMessageHasSuffix: String
+  secretRotationMessageIsNil: Boolean
+  secretRotationMessageNotNil: Boolean
+  secretRotationMessageEqualFold: String
+  secretRotationMessageContainsFold: String
   """
   zone edge predicates
   """
@@ -2883,6 +3580,16 @@ input ApplicationWhereInput {
   """
   hasSubscribedApis: Boolean
   hasSubscribedApisWith: [ApiSubscriptionWhereInput!]
+  """
+  exposed_events edge predicates
+  """
+  hasExposedEvents: Boolean
+  hasExposedEventsWith: [EventExposureWhereInput!]
+  """
+  subscribed_events edge predicates
+  """
+  hasSubscribedEvents: Boolean
+  hasSubscribedEventsWith: [EventSubscriptionWhereInput!]
 }
 type Approval implements Node {
   id: ID!
@@ -3215,6 +3922,11 @@ input ApprovalRequestWhereInput {
   """
   hasAPISubscription: Boolean
   hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
+  """
+  event_subscription edge predicates
+  """
+  hasEventSubscription: Boolean
+  hasEventSubscriptionWith: [EventSubscriptionWhereInput!]
 }
 """
 ApprovalState is enum for the field state
@@ -3413,12 +4125,503 @@ input ApprovalWhereInput {
   """
   hasAPISubscription: Boolean
   hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
+  """
+  event_subscription edge predicates
+  """
+  hasEventSubscription: Boolean
+  hasEventSubscriptionWith: [EventSubscriptionWhereInput!]
 }
 """
 Define a Relay Cursor type:
 https://relay.dev/graphql/connections.htm#sec-Cursor
 """
 scalar Cursor
+type EventExposure implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: EventExposureStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  eventType: String!
+  visibility: EventExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  owner: Application!
+}
+"""
+A connection to a list of items.
+"""
+type EventExposureConnection {
+  """
+  A list of edges.
+  """
+  edges: [EventExposureEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type EventExposureEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: EventExposure
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for EventExposure connections
+"""
+input EventExposureOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order EventExposures.
+  """
+  field: EventExposureOrderField!
+}
+"""
+Properties by which EventExposure connections can be ordered.
+"""
+enum EventExposureOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+EventExposureStatusPhase is enum for the field status_phase
+"""
+enum EventExposureStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventexposure.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+EventExposureVisibility is enum for the field visibility
+"""
+enum EventExposureVisibility @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventexposure.Visibility") {
+  WORLD
+  ZONE
+  ENTERPRISE
+}
+"""
+EventExposureWhereInput is used for filtering EventExposure objects.
+Input was generated by ent.
+"""
+input EventExposureWhereInput {
+  not: EventExposureWhereInput
+  and: [EventExposureWhereInput!]
+  or: [EventExposureWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: EventExposureStatusPhase
+  statusPhaseNEQ: EventExposureStatusPhase
+  statusPhaseIn: [EventExposureStatusPhase!]
+  statusPhaseNotIn: [EventExposureStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  event_type field predicates
+  """
+  eventType: String
+  eventTypeNEQ: String
+  eventTypeIn: [String!]
+  eventTypeNotIn: [String!]
+  eventTypeGT: String
+  eventTypeGTE: String
+  eventTypeLT: String
+  eventTypeLTE: String
+  eventTypeContains: String
+  eventTypeHasPrefix: String
+  eventTypeHasSuffix: String
+  eventTypeEqualFold: String
+  eventTypeContainsFold: String
+  """
+  visibility field predicates
+  """
+  visibility: EventExposureVisibility
+  visibilityNEQ: EventExposureVisibility
+  visibilityIn: [EventExposureVisibility!]
+  visibilityNotIn: [EventExposureVisibility!]
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  activeIsNil: Boolean
+  activeNotNil: Boolean
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  subscriptions edge predicates
+  """
+  hasSubscriptions: Boolean
+  hasSubscriptionsWith: [EventSubscriptionWhereInput!]
+}
+type EventSubscription implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: EventSubscriptionStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  name: String!
+  eventType: String!
+  deliveryType: EventSubscriptionDeliveryType!
+  callbackURL: String
+  owner: Application!
+  approval: Approval
+  approvalRequests: [ApprovalRequest!]
+}
+"""
+A connection to a list of items.
+"""
+type EventSubscriptionConnection {
+  """
+  A list of edges.
+  """
+  edges: [EventSubscriptionEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+EventSubscriptionDeliveryType is enum for the field delivery_type
+"""
+enum EventSubscriptionDeliveryType @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventsubscription.DeliveryType") {
+  CALLBACK
+  SERVER_SENT_EVENT
+}
+"""
+An edge in a connection.
+"""
+type EventSubscriptionEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: EventSubscription
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for EventSubscription connections
+"""
+input EventSubscriptionOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order EventSubscriptions.
+  """
+  field: EventSubscriptionOrderField!
+}
+"""
+Properties by which EventSubscription connections can be ordered.
+"""
+enum EventSubscriptionOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+EventSubscriptionStatusPhase is enum for the field status_phase
+"""
+enum EventSubscriptionStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventsubscription.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+EventSubscriptionWhereInput is used for filtering EventSubscription objects.
+Input was generated by ent.
+"""
+input EventSubscriptionWhereInput {
+  not: EventSubscriptionWhereInput
+  and: [EventSubscriptionWhereInput!]
+  or: [EventSubscriptionWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: EventSubscriptionStatusPhase
+  statusPhaseNEQ: EventSubscriptionStatusPhase
+  statusPhaseIn: [EventSubscriptionStatusPhase!]
+  statusPhaseNotIn: [EventSubscriptionStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  """
+  event_type field predicates
+  """
+  eventType: String
+  eventTypeNEQ: String
+  eventTypeIn: [String!]
+  eventTypeNotIn: [String!]
+  eventTypeGT: String
+  eventTypeGTE: String
+  eventTypeLT: String
+  eventTypeLTE: String
+  eventTypeContains: String
+  eventTypeHasPrefix: String
+  eventTypeHasSuffix: String
+  eventTypeEqualFold: String
+  eventTypeContainsFold: String
+  """
+  delivery_type field predicates
+  """
+  deliveryType: EventSubscriptionDeliveryType
+  deliveryTypeNEQ: EventSubscriptionDeliveryType
+  deliveryTypeIn: [EventSubscriptionDeliveryType!]
+  deliveryTypeNotIn: [EventSubscriptionDeliveryType!]
+  """
+  callback_url field predicates
+  """
+  callbackURL: String
+  callbackURLNEQ: String
+  callbackURLIn: [String!]
+  callbackURLNotIn: [String!]
+  callbackURLGT: String
+  callbackURLGTE: String
+  callbackURLLT: String
+  callbackURLLTE: String
+  callbackURLContains: String
+  callbackURLHasPrefix: String
+  callbackURLHasSuffix: String
+  callbackURLIsNil: Boolean
+  callbackURLNotNil: Boolean
+  callbackURLEqualFold: String
+  callbackURLContainsFold: String
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  target edge predicates
+  """
+  hasTarget: Boolean
+  hasTargetWith: [EventExposureWhereInput!]
+  """
+  approval edge predicates
+  """
+  hasApproval: Boolean
+  hasApprovalWith: [ApprovalWhereInput!]
+  """
+  approval_requests edge predicates
+  """
+  hasApprovalRequests: Boolean
+  hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
+}
 type Group implements Node {
   id: ID!
   environment: String
@@ -3836,6 +5039,68 @@ type Query {
     """
     where: ApprovalRequestWhereInput
   ): ApprovalRequestConnection!
+  eventExposures(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventExposures returned from the connection.
+    """
+    orderBy: EventExposureOrder
+
+    """
+    Filtering options for EventExposures returned from the connection.
+    """
+    where: EventExposureWhereInput
+  ): EventExposureConnection!
+  eventSubscriptions(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventSubscriptions returned from the connection.
+    """
+    orderBy: EventSubscriptionOrder
+
+    """
+    Filtering options for EventSubscriptions returned from the connection.
+    """
+    where: EventSubscriptionWhereInput
+  ): EventSubscriptionConnection!
   teams(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -3880,7 +5145,7 @@ type Team implements Node {
   name: String!
   email: String!
   category: TeamCategory!
-  roverTokenRef: String
+  teamToken: String
   group: Group
   members: [Member!]
   applications(
@@ -4124,23 +5389,23 @@ input TeamWhereInput {
   categoryIn: [TeamCategory!]
   categoryNotIn: [TeamCategory!]
   """
-  rover_token_ref field predicates
+  team_token field predicates
   """
-  roverTokenRef: String
-  roverTokenRefNEQ: String
-  roverTokenRefIn: [String!]
-  roverTokenRefNotIn: [String!]
-  roverTokenRefGT: String
-  roverTokenRefGTE: String
-  roverTokenRefLT: String
-  roverTokenRefLTE: String
-  roverTokenRefContains: String
-  roverTokenRefHasPrefix: String
-  roverTokenRefHasSuffix: String
-  roverTokenRefIsNil: Boolean
-  roverTokenRefNotNil: Boolean
-  roverTokenRefEqualFold: String
-  roverTokenRefContainsFold: String
+  teamToken: String
+  teamTokenNEQ: String
+  teamTokenIn: [String!]
+  teamTokenNotIn: [String!]
+  teamTokenGT: String
+  teamTokenGTE: String
+  teamTokenLT: String
+  teamTokenLTE: String
+  teamTokenContains: String
+  teamTokenHasPrefix: String
+  teamTokenHasSuffix: String
+  teamTokenIsNil: Boolean
+  teamTokenNotNil: Boolean
+  teamTokenEqualFold: String
+  teamTokenContainsFold: String
   """
   group edge predicates
   """
@@ -4166,6 +5431,7 @@ type Zone implements Node {
   environment: String
   name: String!
   gatewayURL: String
+  issuerURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
 }
@@ -4248,6 +5514,24 @@ input ZoneWhereInput {
   gatewayURLEqualFold: String
   gatewayURLContainsFold: String
   """
+  issuer_url field predicates
+  """
+  issuerURL: String
+  issuerURLNEQ: String
+  issuerURLIn: [String!]
+  issuerURLNotIn: [String!]
+  issuerURLGT: String
+  issuerURLGTE: String
+  issuerURLLT: String
+  issuerURLLTE: String
+  issuerURLContains: String
+  issuerURLHasPrefix: String
+  issuerURLHasSuffix: String
+  issuerURLIsNil: Boolean
+  issuerURLNotNil: Boolean
+  issuerURLEqualFold: String
+  issuerURLContainsFold: String
+  """
   visibility field predicates
   """
   visibility: ZoneVisibility
@@ -4265,30 +5549,22 @@ input ZoneWhereInput {
 #
 # SPDX-License-Identifier: Apache-2.0
 
-input CreateTeamInput {
-  "Target environment (used for namespace derivation)"
-  environment: String!
-  "Group this team belongs to"
-  group: String!
-  "Team name"
-  name: String!
-  "Team contact email"
-  email: String!
-  "Team members (at least one required)"
-  members: [MemberInput!]!
+# ──────────────────────────────────────────────────────────────────────────────
+# Shared types
+# ──────────────────────────────────────────────────────────────────────────────
+
+type MutationError {
+  code: ErrorCode!
+  message: String!
+  field: String
 }
 
-input UpdateTeamInput {
-  "Target environment"
-  environment: String!
-  "Group this team belongs to"
-  group: String!
-  "Team name (identifies which team to update)"
-  name: String!
-  "Updated team contact email"
-  email: String
-  "Updated team members"
-  members: [MemberInput!]
+enum ErrorCode {
+  NOT_FOUND
+  FORBIDDEN
+  CONFLICT
+  VALIDATION_FAILED
+  PRECONDITION_FAILED
 }
 
 input MemberInput {
@@ -4296,110 +5572,111 @@ input MemberInput {
   email: String!
 }
 
-"Result of a team mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
-type TeamMutationResult {
-  "Whether the K8s API accepted the request"
-  success: Boolean!
-  "Human-readable message"
-  message: String!
-  "The namespace where the Team CRD was created/updated"
-  namespace: String
-  "The Team CRD resource name"
-  resourceName: String
-}
-
-input RotateTeamTokenInput {
-  "Target environment"
-  environment: String!
-  "Group this team belongs to"
-  group: String!
-  "Team name"
-  name: String!
-}
-
-input RotateApplicationSecretInput {
-  "Target environment"
-  environment: String!
-  "Team that owns this application"
-  team: String!
-  "Application resource name"
-  name: String!
-}
-
-"Result of an application mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
-type RotateApplicationSecretResult {
-  "Whether the K8s API accepted the request"
-  success: Boolean!
-  "Human-readable message"
-  message: String!
-  "The namespace where the Application CRD was updated"
-  namespace: String
-  "The Application CRD resource name"
-  resourceName: String
-}
-
-input DecideApprovalRequestInput {
-  "Target environment"
-  environment: String!
-  "Requester team that owns the namespace where the ApprovalRequest lives"
-  team: String!
-  "ApprovalRequest resource name"
-  name: String!
-  "Action to take"
-  action: ApprovalAction!
-  "Decision details"
-  decision: DecisionInput!
-}
-
-input DecideApprovalInput {
-  "Target environment"
-  environment: String!
-  "Requester team that owns the namespace where the Approval lives"
-  team: String!
-  "Approval resource name"
-  name: String!
-  "Action to take (Allow, Deny, Suspend, Resume)"
-  action: ApprovalAction!
-  "Decision details"
-  decision: DecisionInput!
-}
-
 input DecisionInput {
-  "Name of the person making the decision"
-  name: String!
-  "Email of the person making the decision"
-  email: String!
-  "Optional comment"
+  action: ApprovalAction!
+  "Optional comment from the decider"
   comment: String
 }
 
-"Result of an approval mutation."
-type ApprovalMutationResult {
-  "Whether the K8s API accepted the request"
-  success: Boolean!
-  "Human-readable message"
-  message: String!
-  "The new state after the transition"
-  newState: String
-  "The namespace of the resource"
-  namespace: String
-  "The resource name"
-  resourceName: String
+# ──────────────────────────────────────────────────────────────────────────────
+# Team mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+input CreateTeamInput {
+  environment: String!
+  group: String!
+  name: String!
+  email: String!
+  members: [MemberInput!]!
 }
+
+input UpdateTeamInput {
+  teamId: ID!
+  email: String
+}
+
+type CreateTeamPayload {
+  team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type UpdateTeamPayload {
+  team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type AddTeamMemberPayload {
+  team: Team
+  errors: [MutationError!]!
+}
+
+type RemoveTeamMemberPayload {
+  team: Team
+  errors: [MutationError!]!
+}
+
+type RotateTeamTokenPayload {
+  team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Application mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+type RotateApplicationSecretPayload {
+  application: Application
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Approval mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+type DecideApprovalRequestPayload {
+  approvalRequest: ApprovalRequest
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DecideApprovalPayload {
+  approval: Approval
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Mutation type
+# ──────────────────────────────────────────────────────────────────────────────
 
 type Mutation {
   "Create a new Team in Kubernetes"
-  createTeam(input: CreateTeamInput!): TeamMutationResult!
-  "Update an existing Team in Kubernetes"
-  updateTeam(input: UpdateTeamInput!): TeamMutationResult!
-  "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
-  rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
-  "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
-  rotateApplicationSecret(input: RotateApplicationSecretInput!): RotateApplicationSecretResult!
+  createTeam(input: CreateTeamInput!): CreateTeamPayload!
+
+  "Update team metadata (email). Does not manage members."
+  updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
+
+  "Add a member to a team. Takes effect immediately."
+  addTeamMember(teamId: ID!, member: MemberInput!): AddTeamMemberPayload!
+
+  "Remove a member from a team by email. Takes effect immediately."
+  removeTeamMember(teamId: ID!, memberEmail: String!): RemoveTeamMemberPayload!
+
+  "Rotate the token for a team. Triggers async secret regeneration."
+  rotateTeamToken(teamId: ID!): RotateTeamTokenPayload!
+
+  "Rotate the client secret for an application. Triggers async secret regeneration."
+  rotateApplicationSecret(applicationId: ID!): RotateApplicationSecretPayload!
+
   "Decide on an ApprovalRequest (approve or deny initial access)."
-  decideApprovalRequest(input: DecideApprovalRequestInput!): ApprovalMutationResult!
+  decideApprovalRequest(approvalRequestId: ID!, input: DecisionInput!): DecideApprovalRequestPayload!
+
   "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."
-  decideApproval(input: DecideApprovalInput!): ApprovalMutationResult!
+  decideApproval(approvalId: ID!, input: DecisionInput!): DecideApprovalPayload!
 }
 `, BuiltIn: false},
 	{Name: "../../schema.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH
@@ -4507,11 +5784,29 @@ type ApiSubscriptionInfo {
   ownerTeam: TeamInfo!
 }
 
+"Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type EventSubscriptionInfo {
+  id: ID!
+  eventType: String!
+  deliveryType: EventSubscriptionDeliveryType!
+  statusPhase: EventSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
 # -- Cross-tenant edge overrides --
 
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+}
+
+extend type Zone {
+  "Token endpoint URL derived from the issuer URL. Returns null if no issuer URL is set."
+  tokenURL: String @goField(forceResolver: true)
 }
 
 extend type ApiSubscription {
@@ -4524,18 +5819,919 @@ extend type ApiExposure {
   subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
+"A subscription related to an approval — either an API or event subscription."
+union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo
+
 extend type Approval {
   "Related subscription (reduced view — cross-tenant boundary)"
-  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
+  subscription: SubscriptionInfo! @goField(forceResolver: true)
 }
 
 extend type ApprovalRequest {
   "Related subscription (reduced view — cross-tenant boundary)"
-  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
-  "The corresponding approval, if one exists (traverses via ApiSubscription)"
+  subscription: SubscriptionInfo! @goField(forceResolver: true)
+  "The corresponding approval, if one exists (traverses via the related subscription)"
   approval: Approval @goField(forceResolver: true)
 }
 
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
+
+// childFields_* functions provide shared child field context lookups.
+// Each function is generated once per unique object type, deduplicating the
+// switch statements that were previously inlined in every fieldContext_* function.
+
+func (ec *executionContext) childFields_AddTeamMemberPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "team":
+		return ec.fieldContext_AddTeamMemberPayload_team(ctx, field)
+	case "errors":
+		return ec.fieldContext_AddTeamMemberPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AddTeamMemberPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ApiExposure_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_ApiExposure_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_ApiExposure_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_ApiExposure_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_ApiExposure_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_ApiExposure_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_ApiExposure_namespace(ctx, field)
+	case "basePath":
+		return ec.fieldContext_ApiExposure_basePath(ctx, field)
+	case "visibility":
+		return ec.fieldContext_ApiExposure_visibility(ctx, field)
+	case "active":
+		return ec.fieldContext_ApiExposure_active(ctx, field)
+	case "features":
+		return ec.fieldContext_ApiExposure_features(ctx, field)
+	case "upstreams":
+		return ec.fieldContext_ApiExposure_upstreams(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_ApiExposure_approvalConfig(ctx, field)
+	case "apiVersion":
+		return ec.fieldContext_ApiExposure_apiVersion(ctx, field)
+	case "owner":
+		return ec.fieldContext_ApiExposure_owner(ctx, field)
+	case "subscriptions":
+		return ec.fieldContext_ApiExposure_subscriptions(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiExposure", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiExposureConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_ApiExposureConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_ApiExposureConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_ApiExposureConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiExposureConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiExposureEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_ApiExposureEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_ApiExposureEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiExposureEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiExposureInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ApiExposureInfo_id(ctx, field)
+	case "basePath":
+		return ec.fieldContext_ApiExposureInfo_basePath(ctx, field)
+	case "visibility":
+		return ec.fieldContext_ApiExposureInfo_visibility(ctx, field)
+	case "active":
+		return ec.fieldContext_ApiExposureInfo_active(ctx, field)
+	case "apiVersion":
+		return ec.fieldContext_ApiExposureInfo_apiVersion(ctx, field)
+	case "features":
+		return ec.fieldContext_ApiExposureInfo_features(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_ApiExposureInfo_approvalConfig(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_ApiExposureInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_ApiExposureInfo_ownerTeam(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiExposureInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ApiSubscription_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_ApiSubscription_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_ApiSubscription_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_ApiSubscription_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_ApiSubscription_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_ApiSubscription_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_ApiSubscription_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_ApiSubscription_name(ctx, field)
+	case "basePath":
+		return ec.fieldContext_ApiSubscription_basePath(ctx, field)
+	case "m2mAuthMethod":
+		return ec.fieldContext_ApiSubscription_m2mAuthMethod(ctx, field)
+	case "approvedScopes":
+		return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
+	case "owner":
+		return ec.fieldContext_ApiSubscription_owner(ctx, field)
+	case "failoverZones":
+		return ec.fieldContext_ApiSubscription_failoverZones(ctx, field)
+	case "approval":
+		return ec.fieldContext_ApiSubscription_approval(ctx, field)
+	case "approvalRequests":
+		return ec.fieldContext_ApiSubscription_approvalRequests(ctx, field)
+	case "target":
+		return ec.fieldContext_ApiSubscription_target(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiSubscription", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiSubscriptionConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_ApiSubscriptionConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_ApiSubscriptionConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_ApiSubscriptionConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiSubscriptionEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_ApiSubscriptionEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_ApiSubscriptionEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiSubscriptionInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ApiSubscriptionInfo_id(ctx, field)
+	case "basePath":
+		return ec.fieldContext_ApiSubscriptionInfo_basePath(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_ApiSubscriptionInfo_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_ApiSubscriptionInfo_statusMessage(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_ApiSubscriptionInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_ApiSubscriptionInfo_ownerTeam(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_Application(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_Application_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_Application_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_Application_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_Application_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_Application_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_Application_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_Application_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_Application_name(ctx, field)
+	case "clientID":
+		return ec.fieldContext_Application_clientID(ctx, field)
+	case "clientSecret":
+		return ec.fieldContext_Application_clientSecret(ctx, field)
+	case "rotatedClientSecret":
+		return ec.fieldContext_Application_rotatedClientSecret(ctx, field)
+	case "rotatedExpiresAt":
+		return ec.fieldContext_Application_rotatedExpiresAt(ctx, field)
+	case "currentExpiresAt":
+		return ec.fieldContext_Application_currentExpiresAt(ctx, field)
+	case "secretRotationPhase":
+		return ec.fieldContext_Application_secretRotationPhase(ctx, field)
+	case "secretRotationMessage":
+		return ec.fieldContext_Application_secretRotationMessage(ctx, field)
+	case "zone":
+		return ec.fieldContext_Application_zone(ctx, field)
+	case "exposedApis":
+		return ec.fieldContext_Application_exposedApis(ctx, field)
+	case "subscribedApis":
+		return ec.fieldContext_Application_subscribedApis(ctx, field)
+	case "exposedEvents":
+		return ec.fieldContext_Application_exposedEvents(ctx, field)
+	case "subscribedEvents":
+		return ec.fieldContext_Application_subscribedEvents(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_Application_ownerTeam(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Application", field.Name)
+}
+
+func (ec *executionContext) childFields_ApplicationConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_ApplicationConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_ApplicationConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_ApplicationConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApplicationConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_ApplicationEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_ApplicationEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_ApplicationEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApplicationEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_Approval(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_Approval_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_Approval_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_Approval_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_Approval_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_Approval_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_Approval_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_Approval_namespace(ctx, field)
+	case "action":
+		return ec.fieldContext_Approval_action(ctx, field)
+	case "strategy":
+		return ec.fieldContext_Approval_strategy(ctx, field)
+	case "requester":
+		return ec.fieldContext_Approval_requester(ctx, field)
+	case "decider":
+		return ec.fieldContext_Approval_decider(ctx, field)
+	case "deciderTeamName":
+		return ec.fieldContext_Approval_deciderTeamName(ctx, field)
+	case "decisions":
+		return ec.fieldContext_Approval_decisions(ctx, field)
+	case "availableTransitions":
+		return ec.fieldContext_Approval_availableTransitions(ctx, field)
+	case "name":
+		return ec.fieldContext_Approval_name(ctx, field)
+	case "state":
+		return ec.fieldContext_Approval_state(ctx, field)
+	case "subscription":
+		return ec.fieldContext_Approval_subscription(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Approval", field.Name)
+}
+
+func (ec *executionContext) childFields_ApprovalConfig(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "strategy":
+		return ec.fieldContext_ApprovalConfig_strategy(ctx, field)
+	case "trustedTeams":
+		return ec.fieldContext_ApprovalConfig_trustedTeams(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApprovalConfig", field.Name)
+}
+
+func (ec *executionContext) childFields_ApprovalConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_ApprovalConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_ApprovalConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_ApprovalConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApprovalConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_ApprovalEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_ApprovalEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_ApprovalEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApprovalEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_ApprovalRequest(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ApprovalRequest_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_ApprovalRequest_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_ApprovalRequest_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_ApprovalRequest_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_ApprovalRequest_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_ApprovalRequest_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_ApprovalRequest_namespace(ctx, field)
+	case "action":
+		return ec.fieldContext_ApprovalRequest_action(ctx, field)
+	case "strategy":
+		return ec.fieldContext_ApprovalRequest_strategy(ctx, field)
+	case "requester":
+		return ec.fieldContext_ApprovalRequest_requester(ctx, field)
+	case "decider":
+		return ec.fieldContext_ApprovalRequest_decider(ctx, field)
+	case "deciderTeamName":
+		return ec.fieldContext_ApprovalRequest_deciderTeamName(ctx, field)
+	case "decisions":
+		return ec.fieldContext_ApprovalRequest_decisions(ctx, field)
+	case "availableTransitions":
+		return ec.fieldContext_ApprovalRequest_availableTransitions(ctx, field)
+	case "name":
+		return ec.fieldContext_ApprovalRequest_name(ctx, field)
+	case "state":
+		return ec.fieldContext_ApprovalRequest_state(ctx, field)
+	case "subscription":
+		return ec.fieldContext_ApprovalRequest_subscription(ctx, field)
+	case "approval":
+		return ec.fieldContext_ApprovalRequest_approval(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApprovalRequest", field.Name)
+}
+
+func (ec *executionContext) childFields_ApprovalRequestConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_ApprovalRequestConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_ApprovalRequestConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_ApprovalRequestConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApprovalRequestConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_ApprovalRequestEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_ApprovalRequestEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_ApprovalRequestEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApprovalRequestEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_AvailableTransition(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "action":
+		return ec.fieldContext_AvailableTransition_action(ctx, field)
+	case "toState":
+		return ec.fieldContext_AvailableTransition_toState(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AvailableTransition", field.Name)
+}
+
+func (ec *executionContext) childFields_CreateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "team":
+		return ec.fieldContext_CreateTeamPayload_team(ctx, field)
+	case "accepted":
+		return ec.fieldContext_CreateTeamPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_CreateTeamPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CreateTeamPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_DecideApprovalPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "approval":
+		return ec.fieldContext_DecideApprovalPayload_approval(ctx, field)
+	case "accepted":
+		return ec.fieldContext_DecideApprovalPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_DecideApprovalPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DecideApprovalPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_DecideApprovalRequestPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "approvalRequest":
+		return ec.fieldContext_DecideApprovalRequestPayload_approvalRequest(ctx, field)
+	case "accepted":
+		return ec.fieldContext_DecideApprovalRequestPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_DecideApprovalRequestPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DecideApprovalRequestPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_DeciderInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "teamName":
+		return ec.fieldContext_DeciderInfo_teamName(ctx, field)
+	case "teamEmail":
+		return ec.fieldContext_DeciderInfo_teamEmail(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DeciderInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_Decision(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_Decision_name(ctx, field)
+	case "email":
+		return ec.fieldContext_Decision_email(ctx, field)
+	case "comment":
+		return ec.fieldContext_Decision_comment(ctx, field)
+	case "timestamp":
+		return ec.fieldContext_Decision_timestamp(ctx, field)
+	case "resultingState":
+		return ec.fieldContext_Decision_resultingState(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Decision", field.Name)
+}
+
+func (ec *executionContext) childFields_EventExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_EventExposure_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_EventExposure_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_EventExposure_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_EventExposure_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_EventExposure_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_EventExposure_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_EventExposure_namespace(ctx, field)
+	case "eventType":
+		return ec.fieldContext_EventExposure_eventType(ctx, field)
+	case "visibility":
+		return ec.fieldContext_EventExposure_visibility(ctx, field)
+	case "active":
+		return ec.fieldContext_EventExposure_active(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_EventExposure_approvalConfig(ctx, field)
+	case "owner":
+		return ec.fieldContext_EventExposure_owner(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventExposure", field.Name)
+}
+
+func (ec *executionContext) childFields_EventExposureConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_EventExposureConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_EventExposureConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_EventExposureConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventExposureConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_EventExposureEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_EventExposureEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_EventExposureEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventExposureEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_EventSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_EventSubscription_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_EventSubscription_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_EventSubscription_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_EventSubscription_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_EventSubscription_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_EventSubscription_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_EventSubscription_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_EventSubscription_name(ctx, field)
+	case "eventType":
+		return ec.fieldContext_EventSubscription_eventType(ctx, field)
+	case "deliveryType":
+		return ec.fieldContext_EventSubscription_deliveryType(ctx, field)
+	case "callbackURL":
+		return ec.fieldContext_EventSubscription_callbackURL(ctx, field)
+	case "owner":
+		return ec.fieldContext_EventSubscription_owner(ctx, field)
+	case "approval":
+		return ec.fieldContext_EventSubscription_approval(ctx, field)
+	case "approvalRequests":
+		return ec.fieldContext_EventSubscription_approvalRequests(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventSubscription", field.Name)
+}
+
+func (ec *executionContext) childFields_EventSubscriptionConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_EventSubscriptionConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_EventSubscriptionConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_EventSubscriptionConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventSubscriptionConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_EventSubscriptionEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_EventSubscriptionEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_EventSubscriptionEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventSubscriptionEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_Group_id(ctx, field)
+	case "environment":
+		return ec.fieldContext_Group_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_Group_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_Group_name(ctx, field)
+	case "displayName":
+		return ec.fieldContext_Group_displayName(ctx, field)
+	case "description":
+		return ec.fieldContext_Group_description(ctx, field)
+	case "teams":
+		return ec.fieldContext_Group_teams(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+}
+
+func (ec *executionContext) childFields_Member(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_Member_id(ctx, field)
+	case "environment":
+		return ec.fieldContext_Member_environment(ctx, field)
+	case "name":
+		return ec.fieldContext_Member_name(ctx, field)
+	case "email":
+		return ec.fieldContext_Member_email(ctx, field)
+	case "team":
+		return ec.fieldContext_Member_team(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Member", field.Name)
+}
+
+func (ec *executionContext) childFields_MutationError(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "code":
+		return ec.fieldContext_MutationError_code(ctx, field)
+	case "message":
+		return ec.fieldContext_MutationError_message(ctx, field)
+	case "field":
+		return ec.fieldContext_MutationError_field(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type MutationError", field.Name)
+}
+
+func (ec *executionContext) childFields_PageInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "hasNextPage":
+		return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+	case "hasPreviousPage":
+		return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+	case "startCursor":
+		return ec.fieldContext_PageInfo_startCursor(ctx, field)
+	case "endCursor":
+		return ec.fieldContext_PageInfo_endCursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_RemoveTeamMemberPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "team":
+		return ec.fieldContext_RemoveTeamMemberPayload_team(ctx, field)
+	case "errors":
+		return ec.fieldContext_RemoveTeamMemberPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RemoveTeamMemberPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_RequesterInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "teamName":
+		return ec.fieldContext_RequesterInfo_teamName(ctx, field)
+	case "teamEmail":
+		return ec.fieldContext_RequesterInfo_teamEmail(ctx, field)
+	case "reason":
+		return ec.fieldContext_RequesterInfo_reason(ctx, field)
+	case "applicationName":
+		return ec.fieldContext_RequesterInfo_applicationName(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RequesterInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_RotateApplicationSecretPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "application":
+		return ec.fieldContext_RotateApplicationSecretPayload_application(ctx, field)
+	case "accepted":
+		return ec.fieldContext_RotateApplicationSecretPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_RotateApplicationSecretPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RotateApplicationSecretPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_RotateTeamTokenPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "team":
+		return ec.fieldContext_RotateTeamTokenPayload_team(ctx, field)
+	case "accepted":
+		return ec.fieldContext_RotateTeamTokenPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_RotateTeamTokenPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RotateTeamTokenPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_Team_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_Team_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_Team_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_Team_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_Team_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_Team_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_Team_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_Team_name(ctx, field)
+	case "email":
+		return ec.fieldContext_Team_email(ctx, field)
+	case "category":
+		return ec.fieldContext_Team_category(ctx, field)
+	case "teamToken":
+		return ec.fieldContext_Team_teamToken(ctx, field)
+	case "group":
+		return ec.fieldContext_Team_group(ctx, field)
+	case "members":
+		return ec.fieldContext_Team_members(ctx, field)
+	case "applications":
+		return ec.fieldContext_Team_applications(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
+}
+
+func (ec *executionContext) childFields_TeamConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_TeamConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_TeamConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_TeamConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TeamConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_TeamEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_TeamEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_TeamEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TeamEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_TeamInfo_id(ctx, field)
+	case "name":
+		return ec.fieldContext_TeamInfo_name(ctx, field)
+	case "groupName":
+		return ec.fieldContext_TeamInfo_groupName(ctx, field)
+	case "email":
+		return ec.fieldContext_TeamInfo_email(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TeamInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_UpdateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "team":
+		return ec.fieldContext_UpdateTeamPayload_team(ctx, field)
+	case "accepted":
+		return ec.fieldContext_UpdateTeamPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_UpdateTeamPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type UpdateTeamPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_Upstream(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "url":
+		return ec.fieldContext_Upstream_url(ctx, field)
+	case "weight":
+		return ec.fieldContext_Upstream_weight(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Upstream", field.Name)
+}
+
+func (ec *executionContext) childFields_Zone(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_Zone_id(ctx, field)
+	case "environment":
+		return ec.fieldContext_Zone_environment(ctx, field)
+	case "name":
+		return ec.fieldContext_Zone_name(ctx, field)
+	case "gatewayURL":
+		return ec.fieldContext_Zone_gatewayURL(ctx, field)
+	case "issuerURL":
+		return ec.fieldContext_Zone_issuerURL(ctx, field)
+	case "visibility":
+		return ec.fieldContext_Zone_visibility(ctx, field)
+	case "applications":
+		return ec.fieldContext_Zone_applications(ctx, field)
+	case "tokenURL":
+		return ec.fieldContext_Zone_tokenURL(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Zone", field.Name)
+}
+
+func (ec *executionContext) childFields___Directive(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext___Directive_name(ctx, field)
+	case "description":
+		return ec.fieldContext___Directive_description(ctx, field)
+	case "isRepeatable":
+		return ec.fieldContext___Directive_isRepeatable(ctx, field)
+	case "locations":
+		return ec.fieldContext___Directive_locations(ctx, field)
+	case "args":
+		return ec.fieldContext___Directive_args(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type __Directive", field.Name)
+}
+
+func (ec *executionContext) childFields___EnumValue(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext___EnumValue_name(ctx, field)
+	case "description":
+		return ec.fieldContext___EnumValue_description(ctx, field)
+	case "isDeprecated":
+		return ec.fieldContext___EnumValue_isDeprecated(ctx, field)
+	case "deprecationReason":
+		return ec.fieldContext___EnumValue_deprecationReason(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type __EnumValue", field.Name)
+}
+
+func (ec *executionContext) childFields___Field(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext___Field_name(ctx, field)
+	case "description":
+		return ec.fieldContext___Field_description(ctx, field)
+	case "args":
+		return ec.fieldContext___Field_args(ctx, field)
+	case "type":
+		return ec.fieldContext___Field_type(ctx, field)
+	case "isDeprecated":
+		return ec.fieldContext___Field_isDeprecated(ctx, field)
+	case "deprecationReason":
+		return ec.fieldContext___Field_deprecationReason(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type __Field", field.Name)
+}
+
+func (ec *executionContext) childFields___InputValue(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext___InputValue_name(ctx, field)
+	case "description":
+		return ec.fieldContext___InputValue_description(ctx, field)
+	case "type":
+		return ec.fieldContext___InputValue_type(ctx, field)
+	case "defaultValue":
+		return ec.fieldContext___InputValue_defaultValue(ctx, field)
+	case "isDeprecated":
+		return ec.fieldContext___InputValue_isDeprecated(ctx, field)
+	case "deprecationReason":
+		return ec.fieldContext___InputValue_deprecationReason(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type __InputValue", field.Name)
+}
+
+func (ec *executionContext) childFields___Schema(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "description":
+		return ec.fieldContext___Schema_description(ctx, field)
+	case "types":
+		return ec.fieldContext___Schema_types(ctx, field)
+	case "queryType":
+		return ec.fieldContext___Schema_queryType(ctx, field)
+	case "mutationType":
+		return ec.fieldContext___Schema_mutationType(ctx, field)
+	case "subscriptionType":
+		return ec.fieldContext___Schema_subscriptionType(ctx, field)
+	case "directives":
+		return ec.fieldContext___Schema_directives(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+}
+
+func (ec *executionContext) childFields___Type(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "kind":
+		return ec.fieldContext___Type_kind(ctx, field)
+	case "name":
+		return ec.fieldContext___Type_name(ctx, field)
+	case "description":
+		return ec.fieldContext___Type_description(ctx, field)
+	case "specifiedByURL":
+		return ec.fieldContext___Type_specifiedByURL(ctx, field)
+	case "fields":
+		return ec.fieldContext___Type_fields(ctx, field)
+	case "interfaces":
+		return ec.fieldContext___Type_interfaces(ctx, field)
+	case "possibleTypes":
+		return ec.fieldContext___Type_possibleTypes(ctx, field)
+	case "enumValues":
+		return ec.fieldContext___Type_enumValues(ctx, field)
+	case "inputFields":
+		return ec.fieldContext___Type_inputFields(ctx, field)
+	case "ofType":
+		return ec.fieldContext___Type_ofType(ctx, field)
+	case "isOneOf":
+		return ec.fieldContext___Type_isOneOf(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
+}

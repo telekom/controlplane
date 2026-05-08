@@ -28,3 +28,19 @@ type ApiSubscriptionInfo struct {
 	OwnerApplicationName string    `json:"ownerApplicationName"`
 	OwnerTeam            *TeamInfo `json:"ownerTeam"`
 }
+
+func (ApiSubscriptionInfo) IsSubscriptionInfo() {}
+
+// EventSubscriptionInfo provides a reduced cross-tenant safe view of an event subscription.
+// No navigable edges — traversal terminates here.
+type EventSubscriptionInfo struct {
+	ID                   int       `json:"id"`
+	EventType            string    `json:"eventType"`
+	DeliveryType         string    `json:"deliveryType"`
+	StatusPhase          *string   `json:"statusPhase,omitempty"`
+	StatusMessage        *string   `json:"statusMessage,omitempty"`
+	OwnerApplicationName string    `json:"ownerApplicationName"`
+	OwnerTeam            *TeamInfo `json:"ownerTeam"`
+}
+
+func (EventSubscriptionInfo) IsSubscriptionInfo() {}

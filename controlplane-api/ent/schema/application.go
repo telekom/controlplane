@@ -42,8 +42,23 @@ func (Application) Fields() []ent.Field {
 		field.Text("client_secret").
 			Optional().
 			Nillable().
-			NotEmpty(),
-		field.Text("issuer_url").
+			NotEmpty().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.Text("rotated_client_secret").
+			Optional().
+			Nillable().
+			NotEmpty().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.Time("rotated_expires_at").
+			Optional().
+			Nillable(),
+		field.Time("current_expires_at").
+			Optional().
+			Nillable(),
+		field.Enum("secret_rotation_phase").
+			Values("DONE", "IN_PROGRESS", "GRACE_PERIOD", "FAILED").
+			Default("DONE"),
+		field.Text("secret_rotation_message").
 			Optional().
 			Nillable(),
 	}
@@ -63,6 +78,10 @@ func (Application) Edges() []ent.Edge {
 		edge.To("exposed_apis", ApiExposure.Type).
 			Annotations(entgql.RelayConnection()),
 		edge.To("subscribed_apis", ApiSubscription.Type).
+			Annotations(entgql.RelayConnection()),
+		edge.To("exposed_events", EventExposure.Type).
+			Annotations(entgql.RelayConnection()),
+		edge.To("subscribed_events", EventSubscription.Type).
 			Annotations(entgql.RelayConnection()),
 	}
 }

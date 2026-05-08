@@ -18,6 +18,7 @@ import (
 	entapiexposure "github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	entapproval "github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -30,8 +31,11 @@ import (
 
 // mockApprovalDeps implements approval.ApprovalDeps for testing.
 type mockApprovalDeps struct {
-	subIDs map[string]int // key: "namespace:name"
-	subErr error          // if non-nil, FindAPISubscriptionByMeta always returns this error
+	subIDs      map[string]int // key: "namespace:name"
+	subErr      error          // if non-nil, FindAPISubscriptionByMeta always returns this error
+	eventSubIDs map[string]int // key: "namespace:name"
+	eventSubErr error          // if non-nil, FindEventSubscriptionByMeta always returns this error
+	evicted     []string       // tracks eviction calls as "namespace:name"
 }
 
 func (m *mockApprovalDeps) FindAPISubscriptionByMeta(_ context.Context, namespace, name string) (int, error) {
@@ -43,6 +47,25 @@ func (m *mockApprovalDeps) FindAPISubscriptionByMeta(_ context.Context, namespac
 		return id, nil
 	}
 	return 0, fmt.Errorf("api_subscription %s/%s: %w", namespace, name, infrastructure.ErrEntityNotFound)
+}
+
+func (m *mockApprovalDeps) FindEventSubscriptionByMeta(_ context.Context, namespace, name string) (int, error) {
+	if m.eventSubErr != nil {
+		return 0, m.eventSubErr
+	}
+	key := namespace + ":" + name
+	if id, ok := m.eventSubIDs[key]; ok {
+		return id, nil
+	}
+	return 0, fmt.Errorf("event_subscription %s/%s: %w", namespace, name, infrastructure.ErrEntityNotFound)
+}
+
+func (m *mockApprovalDeps) EvictAPISubscription(namespace, name string) {
+	m.evicted = append(m.evicted, namespace+":"+name)
+}
+
+func (m *mockApprovalDeps) EvictEventSubscription(namespace, name string) {
+	m.evicted = append(m.evicted, namespace+":"+name)
 }
 
 var _ = Describe("Approval Repository", func() {
@@ -113,7 +136,8 @@ var _ = Describe("Approval Repository", func() {
 		subID = sub.ID
 
 		deps = &mockApprovalDeps{
-			subIDs: map[string]int{"prod--platform--narvi:my-sub": subID},
+			subIDs:      map[string]int{"prod--platform--narvi:my-sub": subID},
+			eventSubIDs: map[string]int{},
 		}
 
 		repo = approval.NewRepository(client, cache, deps)
@@ -145,6 +169,7 @@ var _ = Describe("Approval Repository", func() {
 			},
 			Decisions:             []model.Decision{},
 			AvailableTransitions:  []model.AvailableTransition{},
+			TargetKind:            "ApiSubscription",
 			SubscriptionNamespace: "prod--platform--narvi",
 			SubscriptionName:      "my-sub",
 		}
@@ -176,9 +201,56 @@ var _ = Describe("Approval Repository", func() {
 			Expect(a.Edges.APISubscription.ID).To(Equal(subID))
 		})
 
+		It("should create a new approval with event subscription FK", func() {
+			// Seed an EventSubscription.
+			z, err := client.Zone.Query().Where(zone.NameEQ("caas")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			t, err := client.Team.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			subscriberApp, err := client.Application.Create().
+				SetName("event-consumer").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(t.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			eventSub, err := client.EventSubscription.Create().
+				SetEventType("user.created").
+				SetNamespace("platform--narvi").
+				SetName("my-event-sub").
+				SetDeliveryType(eventsubscription.DeliveryTypeCallback).
+				SetOwnerID(subscriberApp.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			deps.eventSubIDs["prod--platform--narvi:my-event-sub"] = eventSub.ID
+
+			data := baseData()
+			data.Meta.Name = "eventsubscription--my-event-sub"
+			data.TargetKind = "EventSubscription"
+			data.SubscriptionNamespace = "prod--platform--narvi"
+			data.SubscriptionName = "my-event-sub"
+
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Verify the approval was created with event subscription FK.
+			a, err := client.Approval.Query().
+				Where(
+					entapproval.NamespaceEQ("prod--platform--narvi"),
+					entapproval.NameEQ("eventsubscription--my-event-sub"),
+				).
+				WithEventSubscription().
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(a.Edges.EventSubscription).NotTo(BeNil())
+			Expect(a.Edges.EventSubscription.ID).To(Equal(eventSub.ID))
+		})
+
 		It("should return ErrDependencyMissing when subscription is not cached", func() {
 			missingDeps := &mockApprovalDeps{
-				subIDs: map[string]int{}, // empty — no subscription found
+				subIDs:      map[string]int{}, // empty — no subscription found
+				eventSubIDs: map[string]int{},
 			}
 			repo = approval.NewRepository(client, cache, missingDeps)
 
@@ -188,15 +260,42 @@ var _ = Describe("Approval Repository", func() {
 			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
 		})
 
+		It("should return ErrDependencyMissing when event subscription is not cached", func() {
+			data := baseData()
+			data.TargetKind = "EventSubscription"
+			data.SubscriptionName = "missing-event-sub"
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
+		})
+
 		It("should propagate non-ErrEntityNotFound errors from FindAPISubscriptionByMeta", func() {
 			dbErr := errors.New("connection refused")
 			failDeps := &mockApprovalDeps{
-				subIDs: map[string]int{},
-				subErr: dbErr,
+				subIDs:      map[string]int{},
+				subErr:      dbErr,
+				eventSubIDs: map[string]int{},
 			}
 			failRepo := approval.NewRepository(client, cache, failDeps)
 
 			data := baseData()
+			err := failRepo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeFalse())
+			Expect(errors.Is(err, dbErr)).To(BeTrue())
+		})
+
+		It("should propagate non-ErrEntityNotFound errors from FindEventSubscriptionByMeta", func() {
+			dbErr := errors.New("connection refused")
+			failDeps := &mockApprovalDeps{
+				subIDs:      map[string]int{},
+				eventSubIDs: map[string]int{},
+				eventSubErr: dbErr,
+			}
+			failRepo := approval.NewRepository(client, cache, failDeps)
+
+			data := baseData()
+			data.TargetKind = "EventSubscription"
 			err := failRepo.Upsert(ctx, data)
 			Expect(err).To(HaveOccurred())
 			Expect(runtime.IsDependencyMissing(err)).To(BeFalse())

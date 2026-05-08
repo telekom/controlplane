@@ -53,7 +53,7 @@ var _ = Describe("Approval Translator", func() {
 			Expect(reason).To(ContainSubstring("action"))
 		})
 
-		It("should skip when target kind is not ApiSubscription", func() {
+		It("should skip when target kind is unsupported", func() {
 			obj := &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{
 					Action: "subscribe",
@@ -65,10 +65,10 @@ var _ = Describe("Approval Translator", func() {
 			}
 			skip, reason := t.ShouldSkip(obj)
 			Expect(skip).To(BeTrue())
-			Expect(reason).To(ContainSubstring("ApiSubscription"))
+			Expect(reason).To(ContainSubstring("ApiSubscription or EventSubscription"))
 		})
 
-		It("should not skip a valid Approval CR", func() {
+		It("should not skip a valid Approval CR targeting ApiSubscription", func() {
 			obj := &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{
 					Action: "subscribe",
@@ -83,10 +83,26 @@ var _ = Describe("Approval Translator", func() {
 			Expect(skip).To(BeFalse())
 			Expect(reason).To(BeEmpty())
 		})
+
+		It("should not skip a valid Approval CR targeting EventSubscription", func() {
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-event-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
 	})
 
 	Describe("Translate", func() {
-		It("should populate all fields from the CR", func() {
+		It("should populate all fields from the CR targeting ApiSubscription", func() {
 			reason := "need access"
 			obj := &approvalv1.Approval{
 				ObjectMeta: metav1.ObjectMeta{
@@ -148,6 +164,7 @@ var _ = Describe("Approval Translator", func() {
 			Expect(data.State).To(Equal("GRANTED"))
 			Expect(data.Action).To(Equal("subscribe"))
 			Expect(data.Strategy).To(Equal("FOUR_EYES"))
+			Expect(data.TargetKind).To(Equal("ApiSubscription"))
 			Expect(data.Requester.TeamName).To(Equal("narvi"))
 			Expect(data.Requester.TeamEmail).To(Equal("narvi@example.com"))
 			Expect(*data.Requester.Reason).To(Equal("need access"))
@@ -163,6 +180,38 @@ var _ = Describe("Approval Translator", func() {
 			Expect(data.AvailableTransitions[0].ToState).To(Equal("Suspended"))
 			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
 			Expect(data.SubscriptionName).To(Equal("my-sub"))
+		})
+
+		It("should set TargetKind to EventSubscription when target kind is EventSubscription", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "eventsubscription--my-event-sub",
+					Namespace: "prod--platform--narvi",
+					Labels: map[string]string{
+						"cp.ei.telekom.de/environment": "prod",
+					},
+				},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{
+							Namespace: "prod--platform--narvi",
+							Name:      "my-event-sub",
+						},
+					},
+					Requester: approvalv1.Requester{TeamName: "narvi"},
+					Decider:   approvalv1.Decider{TeamName: "provider"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.TargetKind).To(Equal("EventSubscription"))
+			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+			Expect(data.SubscriptionName).To(Equal("my-event-sub"))
 		})
 
 		It("should fall back to own namespace when target namespace is empty", func() {

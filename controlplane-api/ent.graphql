@@ -1,7 +1,6 @@
-# Copyright 2026 Deutsche Telekom IT GmbH
+# SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
 #
 # SPDX-License-Identifier: Apache-2.0
-
 directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 directive @goModel(model: String, models: [String!], forceGenerate: Boolean) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
 type ApiExposure implements Node {
@@ -512,7 +511,11 @@ type Application implements Node {
   name: String!
   clientID: String
   clientSecret: String
-  issuerURL: String
+  rotatedClientSecret: String
+  rotatedExpiresAt: Time
+  currentExpiresAt: Time
+  secretRotationPhase: ApplicationSecretRotationPhase!
+  secretRotationMessage: String
   zone: Zone!
   exposedApis(
     """
@@ -576,6 +579,68 @@ type Application implements Node {
     """
     where: ApiSubscriptionWhereInput
   ): ApiSubscriptionConnection!
+  exposedEvents(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventExposures returned from the connection.
+    """
+    orderBy: EventExposureOrder
+
+    """
+    Filtering options for EventExposures returned from the connection.
+    """
+    where: EventExposureWhereInput
+  ): EventExposureConnection!
+  subscribedEvents(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventSubscriptions returned from the connection.
+    """
+    orderBy: EventSubscriptionOrder
+
+    """
+    Filtering options for EventSubscriptions returned from the connection.
+    """
+    where: EventSubscriptionWhereInput
+  ): EventSubscriptionConnection!
 }
 """
 A connection to a list of items.
@@ -627,6 +692,15 @@ enum ApplicationOrderField {
   CREATED_AT
   LAST_MODIFIED_AT
   NAME
+}
+"""
+ApplicationSecretRotationPhase is enum for the field secret_rotation_phase
+"""
+enum ApplicationSecretRotationPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/application.SecretRotationPhase") {
+  DONE
+  IN_PROGRESS
+  GRACE_PERIOD
+  FAILED
 }
 """
 ApplicationStatusPhase is enum for the field status_phase
@@ -774,41 +848,56 @@ input ApplicationWhereInput {
   clientIDEqualFold: String
   clientIDContainsFold: String
   """
-  client_secret field predicates
+  rotated_expires_at field predicates
   """
-  clientSecret: String
-  clientSecretNEQ: String
-  clientSecretIn: [String!]
-  clientSecretNotIn: [String!]
-  clientSecretGT: String
-  clientSecretGTE: String
-  clientSecretLT: String
-  clientSecretLTE: String
-  clientSecretContains: String
-  clientSecretHasPrefix: String
-  clientSecretHasSuffix: String
-  clientSecretIsNil: Boolean
-  clientSecretNotNil: Boolean
-  clientSecretEqualFold: String
-  clientSecretContainsFold: String
+  rotatedExpiresAt: Time
+  rotatedExpiresAtNEQ: Time
+  rotatedExpiresAtIn: [Time!]
+  rotatedExpiresAtNotIn: [Time!]
+  rotatedExpiresAtGT: Time
+  rotatedExpiresAtGTE: Time
+  rotatedExpiresAtLT: Time
+  rotatedExpiresAtLTE: Time
+  rotatedExpiresAtIsNil: Boolean
+  rotatedExpiresAtNotNil: Boolean
   """
-  issuer_url field predicates
+  current_expires_at field predicates
   """
-  issuerURL: String
-  issuerURLNEQ: String
-  issuerURLIn: [String!]
-  issuerURLNotIn: [String!]
-  issuerURLGT: String
-  issuerURLGTE: String
-  issuerURLLT: String
-  issuerURLLTE: String
-  issuerURLContains: String
-  issuerURLHasPrefix: String
-  issuerURLHasSuffix: String
-  issuerURLIsNil: Boolean
-  issuerURLNotNil: Boolean
-  issuerURLEqualFold: String
-  issuerURLContainsFold: String
+  currentExpiresAt: Time
+  currentExpiresAtNEQ: Time
+  currentExpiresAtIn: [Time!]
+  currentExpiresAtNotIn: [Time!]
+  currentExpiresAtGT: Time
+  currentExpiresAtGTE: Time
+  currentExpiresAtLT: Time
+  currentExpiresAtLTE: Time
+  currentExpiresAtIsNil: Boolean
+  currentExpiresAtNotNil: Boolean
+  """
+  secret_rotation_phase field predicates
+  """
+  secretRotationPhase: ApplicationSecretRotationPhase
+  secretRotationPhaseNEQ: ApplicationSecretRotationPhase
+  secretRotationPhaseIn: [ApplicationSecretRotationPhase!]
+  secretRotationPhaseNotIn: [ApplicationSecretRotationPhase!]
+  """
+  secret_rotation_message field predicates
+  """
+  secretRotationMessage: String
+  secretRotationMessageNEQ: String
+  secretRotationMessageIn: [String!]
+  secretRotationMessageNotIn: [String!]
+  secretRotationMessageGT: String
+  secretRotationMessageGTE: String
+  secretRotationMessageLT: String
+  secretRotationMessageLTE: String
+  secretRotationMessageContains: String
+  secretRotationMessageHasPrefix: String
+  secretRotationMessageHasSuffix: String
+  secretRotationMessageIsNil: Boolean
+  secretRotationMessageNotNil: Boolean
+  secretRotationMessageEqualFold: String
+  secretRotationMessageContainsFold: String
   """
   zone edge predicates
   """
@@ -829,6 +918,16 @@ input ApplicationWhereInput {
   """
   hasSubscribedApis: Boolean
   hasSubscribedApisWith: [ApiSubscriptionWhereInput!]
+  """
+  exposed_events edge predicates
+  """
+  hasExposedEvents: Boolean
+  hasExposedEventsWith: [EventExposureWhereInput!]
+  """
+  subscribed_events edge predicates
+  """
+  hasSubscribedEvents: Boolean
+  hasSubscribedEventsWith: [EventSubscriptionWhereInput!]
 }
 type Approval implements Node {
   id: ID!
@@ -1161,6 +1260,11 @@ input ApprovalRequestWhereInput {
   """
   hasAPISubscription: Boolean
   hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
+  """
+  event_subscription edge predicates
+  """
+  hasEventSubscription: Boolean
+  hasEventSubscriptionWith: [EventSubscriptionWhereInput!]
 }
 """
 ApprovalState is enum for the field state
@@ -1359,12 +1463,503 @@ input ApprovalWhereInput {
   """
   hasAPISubscription: Boolean
   hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
+  """
+  event_subscription edge predicates
+  """
+  hasEventSubscription: Boolean
+  hasEventSubscriptionWith: [EventSubscriptionWhereInput!]
 }
 """
 Define a Relay Cursor type:
 https://relay.dev/graphql/connections.htm#sec-Cursor
 """
 scalar Cursor
+type EventExposure implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: EventExposureStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  eventType: String!
+  visibility: EventExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  owner: Application!
+}
+"""
+A connection to a list of items.
+"""
+type EventExposureConnection {
+  """
+  A list of edges.
+  """
+  edges: [EventExposureEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type EventExposureEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: EventExposure
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for EventExposure connections
+"""
+input EventExposureOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order EventExposures.
+  """
+  field: EventExposureOrderField!
+}
+"""
+Properties by which EventExposure connections can be ordered.
+"""
+enum EventExposureOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+EventExposureStatusPhase is enum for the field status_phase
+"""
+enum EventExposureStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventexposure.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+EventExposureVisibility is enum for the field visibility
+"""
+enum EventExposureVisibility @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventexposure.Visibility") {
+  WORLD
+  ZONE
+  ENTERPRISE
+}
+"""
+EventExposureWhereInput is used for filtering EventExposure objects.
+Input was generated by ent.
+"""
+input EventExposureWhereInput {
+  not: EventExposureWhereInput
+  and: [EventExposureWhereInput!]
+  or: [EventExposureWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: EventExposureStatusPhase
+  statusPhaseNEQ: EventExposureStatusPhase
+  statusPhaseIn: [EventExposureStatusPhase!]
+  statusPhaseNotIn: [EventExposureStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  event_type field predicates
+  """
+  eventType: String
+  eventTypeNEQ: String
+  eventTypeIn: [String!]
+  eventTypeNotIn: [String!]
+  eventTypeGT: String
+  eventTypeGTE: String
+  eventTypeLT: String
+  eventTypeLTE: String
+  eventTypeContains: String
+  eventTypeHasPrefix: String
+  eventTypeHasSuffix: String
+  eventTypeEqualFold: String
+  eventTypeContainsFold: String
+  """
+  visibility field predicates
+  """
+  visibility: EventExposureVisibility
+  visibilityNEQ: EventExposureVisibility
+  visibilityIn: [EventExposureVisibility!]
+  visibilityNotIn: [EventExposureVisibility!]
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  activeIsNil: Boolean
+  activeNotNil: Boolean
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  subscriptions edge predicates
+  """
+  hasSubscriptions: Boolean
+  hasSubscriptionsWith: [EventSubscriptionWhereInput!]
+}
+type EventSubscription implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: EventSubscriptionStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  name: String!
+  eventType: String!
+  deliveryType: EventSubscriptionDeliveryType!
+  callbackURL: String
+  owner: Application!
+  approval: Approval
+  approvalRequests: [ApprovalRequest!]
+}
+"""
+A connection to a list of items.
+"""
+type EventSubscriptionConnection {
+  """
+  A list of edges.
+  """
+  edges: [EventSubscriptionEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+EventSubscriptionDeliveryType is enum for the field delivery_type
+"""
+enum EventSubscriptionDeliveryType @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventsubscription.DeliveryType") {
+  CALLBACK
+  SERVER_SENT_EVENT
+}
+"""
+An edge in a connection.
+"""
+type EventSubscriptionEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: EventSubscription
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for EventSubscription connections
+"""
+input EventSubscriptionOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order EventSubscriptions.
+  """
+  field: EventSubscriptionOrderField!
+}
+"""
+Properties by which EventSubscription connections can be ordered.
+"""
+enum EventSubscriptionOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+EventSubscriptionStatusPhase is enum for the field status_phase
+"""
+enum EventSubscriptionStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventsubscription.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+EventSubscriptionWhereInput is used for filtering EventSubscription objects.
+Input was generated by ent.
+"""
+input EventSubscriptionWhereInput {
+  not: EventSubscriptionWhereInput
+  and: [EventSubscriptionWhereInput!]
+  or: [EventSubscriptionWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: EventSubscriptionStatusPhase
+  statusPhaseNEQ: EventSubscriptionStatusPhase
+  statusPhaseIn: [EventSubscriptionStatusPhase!]
+  statusPhaseNotIn: [EventSubscriptionStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  """
+  event_type field predicates
+  """
+  eventType: String
+  eventTypeNEQ: String
+  eventTypeIn: [String!]
+  eventTypeNotIn: [String!]
+  eventTypeGT: String
+  eventTypeGTE: String
+  eventTypeLT: String
+  eventTypeLTE: String
+  eventTypeContains: String
+  eventTypeHasPrefix: String
+  eventTypeHasSuffix: String
+  eventTypeEqualFold: String
+  eventTypeContainsFold: String
+  """
+  delivery_type field predicates
+  """
+  deliveryType: EventSubscriptionDeliveryType
+  deliveryTypeNEQ: EventSubscriptionDeliveryType
+  deliveryTypeIn: [EventSubscriptionDeliveryType!]
+  deliveryTypeNotIn: [EventSubscriptionDeliveryType!]
+  """
+  callback_url field predicates
+  """
+  callbackURL: String
+  callbackURLNEQ: String
+  callbackURLIn: [String!]
+  callbackURLNotIn: [String!]
+  callbackURLGT: String
+  callbackURLGTE: String
+  callbackURLLT: String
+  callbackURLLTE: String
+  callbackURLContains: String
+  callbackURLHasPrefix: String
+  callbackURLHasSuffix: String
+  callbackURLIsNil: Boolean
+  callbackURLNotNil: Boolean
+  callbackURLEqualFold: String
+  callbackURLContainsFold: String
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  target edge predicates
+  """
+  hasTarget: Boolean
+  hasTargetWith: [EventExposureWhereInput!]
+  """
+  approval edge predicates
+  """
+  hasApproval: Boolean
+  hasApprovalWith: [ApprovalWhereInput!]
+  """
+  approval_requests edge predicates
+  """
+  hasApprovalRequests: Boolean
+  hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
+}
 type Group implements Node {
   id: ID!
   environment: String
@@ -1782,6 +2377,68 @@ type Query {
     """
     where: ApprovalRequestWhereInput
   ): ApprovalRequestConnection!
+  eventExposures(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventExposures returned from the connection.
+    """
+    orderBy: EventExposureOrder
+
+    """
+    Filtering options for EventExposures returned from the connection.
+    """
+    where: EventExposureWhereInput
+  ): EventExposureConnection!
+  eventSubscriptions(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventSubscriptions returned from the connection.
+    """
+    orderBy: EventSubscriptionOrder
+
+    """
+    Filtering options for EventSubscriptions returned from the connection.
+    """
+    where: EventSubscriptionWhereInput
+  ): EventSubscriptionConnection!
   teams(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -1826,7 +2483,7 @@ type Team implements Node {
   name: String!
   email: String!
   category: TeamCategory!
-  roverTokenRef: String
+  teamToken: String
   group: Group
   members: [Member!]
   applications(
@@ -2070,23 +2727,23 @@ input TeamWhereInput {
   categoryIn: [TeamCategory!]
   categoryNotIn: [TeamCategory!]
   """
-  rover_token_ref field predicates
+  team_token field predicates
   """
-  roverTokenRef: String
-  roverTokenRefNEQ: String
-  roverTokenRefIn: [String!]
-  roverTokenRefNotIn: [String!]
-  roverTokenRefGT: String
-  roverTokenRefGTE: String
-  roverTokenRefLT: String
-  roverTokenRefLTE: String
-  roverTokenRefContains: String
-  roverTokenRefHasPrefix: String
-  roverTokenRefHasSuffix: String
-  roverTokenRefIsNil: Boolean
-  roverTokenRefNotNil: Boolean
-  roverTokenRefEqualFold: String
-  roverTokenRefContainsFold: String
+  teamToken: String
+  teamTokenNEQ: String
+  teamTokenIn: [String!]
+  teamTokenNotIn: [String!]
+  teamTokenGT: String
+  teamTokenGTE: String
+  teamTokenLT: String
+  teamTokenLTE: String
+  teamTokenContains: String
+  teamTokenHasPrefix: String
+  teamTokenHasSuffix: String
+  teamTokenIsNil: Boolean
+  teamTokenNotNil: Boolean
+  teamTokenEqualFold: String
+  teamTokenContainsFold: String
   """
   group edge predicates
   """
@@ -2112,6 +2769,7 @@ type Zone implements Node {
   environment: String
   name: String!
   gatewayURL: String
+  issuerURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
 }
@@ -2193,6 +2851,24 @@ input ZoneWhereInput {
   gatewayURLNotNil: Boolean
   gatewayURLEqualFold: String
   gatewayURLContainsFold: String
+  """
+  issuer_url field predicates
+  """
+  issuerURL: String
+  issuerURLNEQ: String
+  issuerURLIn: [String!]
+  issuerURLNotIn: [String!]
+  issuerURLGT: String
+  issuerURLGTE: String
+  issuerURLLT: String
+  issuerURLLTE: String
+  issuerURLContains: String
+  issuerURLHasPrefix: String
+  issuerURLHasSuffix: String
+  issuerURLIsNil: Boolean
+  issuerURLNotNil: Boolean
+  issuerURLEqualFold: String
+  issuerURLContainsFold: String
   """
   visibility field predicates
   """

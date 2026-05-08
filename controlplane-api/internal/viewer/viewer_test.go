@@ -57,3 +57,19 @@ var _ = Describe("SystemContext", func() {
 		Expect(decision).ToNot(HaveOccurred())
 	})
 })
+
+var _ = Describe("ForwardedUser context", func() {
+	It("should round-trip forwarded user through context", func() {
+		fu := viewer.ForwardedUser{Name: "Jane Doe", Email: "jane@example.com"}
+		ctx := viewer.NewForwardedUserContext(context.Background(), fu)
+		got, ok := viewer.ForwardedUserFromContext(ctx)
+		Expect(ok).To(BeTrue())
+		Expect(got.Name).To(Equal("Jane Doe"))
+		Expect(got.Email).To(Equal("jane@example.com"))
+	})
+
+	It("should return false when no forwarded user is in context", func() {
+		_, ok := viewer.ForwardedUserFromContext(context.Background())
+		Expect(ok).To(BeFalse())
+	})
+})

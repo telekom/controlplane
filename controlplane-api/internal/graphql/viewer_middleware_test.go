@@ -110,4 +110,31 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			Expect(v.Teams).To(BeEmpty())
 		})
 	})
+
+	Context("when ForwardedUser is in context", func() {
+		It("should populate UserName and UserEmail on the viewer", func() {
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeAdmin,
+			})
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
+				Name:  "Jane Doe",
+				Email: "jane@example.com",
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.UserName).To(Equal("Jane Doe"))
+			Expect(v.UserEmail).To(Equal("jane@example.com"))
+		})
+
+		It("should leave UserName and UserEmail empty when no ForwardedUser", func() {
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeTeam,
+				Team:       "team-alpha",
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.UserName).To(BeEmpty())
+			Expect(v.UserEmail).To(BeEmpty())
+		})
+	})
 })
