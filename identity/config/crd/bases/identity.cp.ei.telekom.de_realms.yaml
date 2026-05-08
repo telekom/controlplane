@@ -70,15 +70,17 @@ spec:
                       type: string
                     value:
                       description: |-
-                        Value depends on the claim type:
-                          - HardcodedClaim: the static value written into every token (required).
-                          - SessionNote: the Keycloak session-note key to read from (e.g. "clientId").
-                            When omitted, defaults to the claim Name.
+                        Value is the static claim value written into every token.
+                        Only used for HardcodedClaim; ignored for SessionNote (which
+                        reads the value from the Keycloak session note keyed by Name).
                       type: string
                   required:
                   - name
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               identityProvider:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object

@@ -62,10 +62,9 @@ type ClaimConfig struct {
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 
-	// Value depends on the claim type:
-	//   - HardcodedClaim: the static value written into every token (required).
-	//   - SessionNote: the Keycloak session-note key to read from (e.g. "clientId").
-	//     When omitted, defaults to the claim Name.
+	// Value is the static claim value written into every token.
+	// Only used for HardcodedClaim; ignored for SessionNote (which
+	// reads the value from the Keycloak session note keyed by Name).
 	// +optional
 	Value string `json:"value,omitempty"`
 
@@ -93,6 +92,8 @@ type RealmSpec struct {
 	// (SessionNote). The controller manages a dedicated Keycloak
 	// client scope with protocol mappers for each claim.
 	// +optional
+	// +listType=map
+	// +listMapKey=name
 	Claims []ClaimConfig `json:"claims,omitempty"`
 }
 

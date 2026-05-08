@@ -17,12 +17,12 @@ import (
 )
 
 // ManagedClientScopeName is the name of the Keycloak client scope managed by
-// the controller for hardcoded claims.
+// the controller for custom claim injection (HardcodedClaim and SessionNote).
 const ManagedClientScopeName = "controlplane-claims"
 
-// ConfigureClientScopes ensures that a Keycloak client scope with hardcoded
-// claim mappers exists and is assigned as a realm default scope. When claims
-// is empty any previously managed scope is removed.
+// ConfigureClientScopes ensures that a Keycloak client scope with protocol
+// mappers for the configured claims exists and is assigned as a realm default
+// scope. When claims is empty any previously managed scope is removed.
 func (k *keycloakService) ConfigureClientScopes(ctx context.Context, realmName string, claims []identityv1.ClaimConfig) error {
 	logger := logr.FromContextOrDiscard(ctx).WithValues("realm", realmName, "scope", ManagedClientScopeName)
 
@@ -47,7 +47,18 @@ func (k *keycloakService) ConfigureClientScopes(ctx context.Context, realmName s
 		return k.createManagedClientScope(ctx, realmName, desired, logger)
 	}
 
-	logger.Info("configuring client-scope", "claimsCount", len(claims), "existingID", existingID, "existingCount", len(*existing.ProtocolMappers))
+	existingCount := 0
+	if existing.ProtocolMappers != nil {
+		existingCount = len(*existing.ProtocolMappers)
+	}
+	logger.Info("configuring client-scope", "claimsCount", len(claims), "existingID", existingID, "existingCount", existingCount)
+
+	// Ensure the scope is assigned as realm default (idempotent). This
+	// covers drift where the scope exists but was manually removed from
+	// realm defaults.
+	if err := k.assignAsRealmDefault(ctx, realmName, existingID, logger); err != nil {
+		return err
+	}
 
 	// Scope exists — reconcile individual protocol mappers.
 	// Keycloak's PUT on a client scope does NOT update embedded protocol
@@ -78,11 +89,10 @@ func (k *keycloakService) findManagedClientScope(ctx context.Context, realmName 
 	}
 	for i, cs := range *resp.JSON2XX {
 		if cs.Name != nil && *cs.Name == ManagedClientScopeName {
-			id := ""
-			if cs.Id != nil {
-				id = *cs.Id
+			if cs.Id == nil || *cs.Id == "" {
+				return nil, "", fmt.Errorf("managed client scope %q exists in realm %q but has no ID", ManagedClientScopeName, realmName)
 			}
-			return &(*resp.JSON2XX)[i], id, nil
+			return &(*resp.JSON2XX)[i], *cs.Id, nil
 		}
 	}
 	return nil, "", nil

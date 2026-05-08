@@ -145,6 +145,13 @@ var _ = Describe("ConfigureClientScopes", func() {
 					}),
 				}), nil)
 
+			// Idempotent realm-default assignment.
+			mockClient.EXPECT().
+				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
+				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
+					HTTPResponse: httpResp(204),
+				}, nil)
+
 			err := svc.ConfigureClientScopes(ctx, testRealm, claims)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -165,6 +172,13 @@ var _ = Describe("ConfigureClientScopes", func() {
 						mapperWithID("m1", "env", "prod"),
 					}),
 				}), nil)
+
+			// Idempotent realm-default assignment.
+			mockClient.EXPECT().
+				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
+				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
+					HTTPResponse: httpResp(204),
+				}, nil)
 
 			// Only the new mapper should be created.
 			mockClient.EXPECT().
@@ -196,6 +210,13 @@ var _ = Describe("ConfigureClientScopes", func() {
 					}),
 				}), nil)
 
+			// Idempotent realm-default assignment.
+			mockClient.EXPECT().
+				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
+				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
+					HTTPResponse: httpResp(204),
+				}, nil)
+
 			// Only the removed mapper should be deleted.
 			mockClient.EXPECT().
 				DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse(mock.Anything, testRealm, scopeID, "m2").
@@ -222,6 +243,13 @@ var _ = Describe("ConfigureClientScopes", func() {
 						mapperWithID("m1", "env", "prod"),
 					}),
 				}), nil)
+
+			// Idempotent realm-default assignment.
+			mockClient.EXPECT().
+				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
+				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
+					HTTPResponse: httpResp(204),
+				}, nil)
 
 			mockClient.EXPECT().
 				PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse(mock.Anything, testRealm, scopeID, "m1", mock.MatchedBy(func(m api.ProtocolMapperRepresentation) bool {
@@ -254,6 +282,13 @@ var _ = Describe("ConfigureClientScopes", func() {
 						mapperWithID("m2", "team", "hyperion"),
 					}),
 				}), nil)
+
+			// Idempotent realm-default assignment.
+			mockClient.EXPECT().
+				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
+				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
+					HTTPResponse: httpResp(204),
+				}, nil)
 
 			// Delete removed mapper.
 			mockClient.EXPECT().
@@ -410,6 +445,13 @@ var _ = Describe("ConfigureClientScopes", func() {
 				Return(scopeResp([]api.ClientScopeRepresentation{
 					managedScope(scopeID, []api.ProtocolMapperRepresentation{existingMapper}),
 				}), nil)
+
+			// Idempotent realm-default assignment.
+			mockClient.EXPECT().
+				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
+				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
+					HTTPResponse: httpResp(204),
+				}, nil)
 
 			// The mapper type changed, so it should be updated.
 			mockClient.EXPECT().
