@@ -926,6 +926,80 @@ func (_c *MockKeycloakClient_GetRealmClientsWithResponse_Call) RunAndReturn(run 
 	return _c
 }
 
+// GetRealmDefaultDefaultClientScopesWithResponse provides a mock function with given fields: ctx, realm, reqEditors
+func (_m *MockKeycloakClient) GetRealmDefaultDefaultClientScopesWithResponse(ctx context.Context, realm string, reqEditors ...api.RequestEditorFn) (*api.GetRealmDefaultDefaultClientScopesResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, realm)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRealmDefaultDefaultClientScopesWithResponse")
+	}
+
+	var r0 *api.GetRealmDefaultDefaultClientScopesResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...api.RequestEditorFn) (*api.GetRealmDefaultDefaultClientScopesResponse, error)); ok {
+		return rf(ctx, realm, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...api.RequestEditorFn) *api.GetRealmDefaultDefaultClientScopesResponse); ok {
+		r0 = rf(ctx, realm, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.GetRealmDefaultDefaultClientScopesResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...api.RequestEditorFn) error); ok {
+		r1 = rf(ctx, realm, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRealmDefaultDefaultClientScopesWithResponse'
+type MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call struct {
+	*mock.Call
+}
+
+// GetRealmDefaultDefaultClientScopesWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realm string
+//   - reqEditors ...api.RequestEditorFn
+func (_e *MockKeycloakClient_Expecter) GetRealmDefaultDefaultClientScopesWithResponse(ctx interface{}, realm interface{}, reqEditors ...interface{}) *MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call {
+	return &MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call{Call: _e.mock.On("GetRealmDefaultDefaultClientScopesWithResponse",
+		append([]interface{}{ctx, realm}, reqEditors...)...)}
+}
+
+func (_c *MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call) Run(run func(ctx context.Context, realm string, reqEditors ...api.RequestEditorFn)) *MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]api.RequestEditorFn, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call) Return(_a0 *api.GetRealmDefaultDefaultClientScopesResponse, _a1 error) *MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call) RunAndReturn(run func(context.Context, string, ...api.RequestEditorFn) (*api.GetRealmDefaultDefaultClientScopesResponse, error)) *MockKeycloakClient_GetRealmDefaultDefaultClientScopesWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetRealmWithResponse provides a mock function with given fields: ctx, realm, reqEditors
 func (_m *MockKeycloakClient) GetRealmWithResponse(ctx context.Context, realm string, reqEditors ...api.RequestEditorFn) (*api.GetRealmResponse, error) {
 	_va := make([]interface{}, len(reqEditors))

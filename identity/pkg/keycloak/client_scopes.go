@@ -344,8 +344,39 @@ func (k *keycloakService) deleteManagedClientScope(ctx context.Context, realmNam
 	return nil
 }
 
+// isAlreadyRealmDefault checks whether the given scope ID is already assigned as
+// a realm-level default client scope.
+func (k *keycloakService) isAlreadyRealmDefault(ctx context.Context, realmName, scopeID string) (bool, error) {
+	resp, err := k.Client.GetRealmDefaultDefaultClientScopesWithResponse(ctx, realmName)
+	if err != nil {
+		return false, fmt.Errorf("listing default client scopes in realm %q: %w", realmName, err)
+	}
+	if responseErr := CheckStatusCode(resp, http.StatusOK); responseErr != nil {
+		return false, fmt.Errorf("listing default client scopes in realm %q: %w", realmName, responseErr)
+	}
+	if resp.JSON2XX != nil {
+		for _, s := range *resp.JSON2XX {
+			if s.Id != nil && *s.Id == scopeID {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
 // assignAsRealmDefault assigns the client scope as a realm-level default scope.
+// It first checks whether the scope is already assigned to avoid a 409 Conflict
+// from Keycloak.
 func (k *keycloakService) assignAsRealmDefault(ctx context.Context, realmName, scopeID string, logger logr.Logger) error {
+	alreadyDefault, err := k.isAlreadyRealmDefault(ctx, realmName, scopeID)
+	if err != nil {
+		return err
+	}
+	if alreadyDefault {
+		logger.V(1).Info("client scope already assigned as realm default, skipping", "realm", realmName, "scopeId", scopeID)
+		return nil
+	}
+
 	resp, err := k.Client.PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx, realmName, scopeID)
 	if err != nil {
 		return fmt.Errorf("failed to assign client scope %q as realm default in %q: %w", ManagedClientScopeName, realmName, err)

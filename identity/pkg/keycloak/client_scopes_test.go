@@ -34,6 +34,19 @@ func emptyScopeResp() *api.GetRealmClientScopesResponse {
 	return scopeResp([]api.ClientScopeRepresentation{})
 }
 
+// defaultScopesResp builds a GetRealmDefaultDefaultClientScopesResponse.
+func defaultScopesResp(scopes []api.ClientScopeRepresentation) *api.GetRealmDefaultDefaultClientScopesResponse {
+	return &api.GetRealmDefaultDefaultClientScopesResponse{
+		HTTPResponse: httpResp(200),
+		JSON2XX:      &scopes,
+	}
+}
+
+// emptyDefaultScopesResp returns a response with no default scopes.
+func emptyDefaultScopesResp() *api.GetRealmDefaultDefaultClientScopesResponse {
+	return defaultScopesResp([]api.ClientScopeRepresentation{})
+}
+
 // managedScope builds a ClientScopeRepresentation mimicking the managed scope
 // in Keycloak, with the given mappers and a Keycloak-assigned scope ID.
 func managedScope(scopeID string, mappers []api.ProtocolMapperRepresentation) api.ClientScopeRepresentation {
@@ -120,6 +133,10 @@ var _ = Describe("ConfigureClientScopes", func() {
 				}, nil)
 
 			mockClient.EXPECT().
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(emptyDefaultScopesResp(), nil)
+
+			mockClient.EXPECT().
 				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, "new-id").
 				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
 					HTTPResponse: httpResp(204),
@@ -145,12 +162,12 @@ var _ = Describe("ConfigureClientScopes", func() {
 					}),
 				}), nil)
 
-			// Idempotent realm-default assignment.
+			// Scope is already a realm default — no PUT needed.
 			mockClient.EXPECT().
-				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
-				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
-					HTTPResponse: httpResp(204),
-				}, nil)
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(defaultScopesResp([]api.ClientScopeRepresentation{
+					{Id: ptr.To(scopeID)},
+				}), nil)
 
 			err := svc.ConfigureClientScopes(ctx, testRealm, claims)
 			Expect(err).NotTo(HaveOccurred())
@@ -173,12 +190,12 @@ var _ = Describe("ConfigureClientScopes", func() {
 					}),
 				}), nil)
 
-			// Idempotent realm-default assignment.
+			// Scope is already a realm default — no PUT needed.
 			mockClient.EXPECT().
-				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
-				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
-					HTTPResponse: httpResp(204),
-				}, nil)
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(defaultScopesResp([]api.ClientScopeRepresentation{
+					{Id: ptr.To(scopeID)},
+				}), nil)
 
 			// Only the new mapper should be created.
 			mockClient.EXPECT().
@@ -210,12 +227,12 @@ var _ = Describe("ConfigureClientScopes", func() {
 					}),
 				}), nil)
 
-			// Idempotent realm-default assignment.
+			// Scope is already a realm default — no PUT needed.
 			mockClient.EXPECT().
-				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
-				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
-					HTTPResponse: httpResp(204),
-				}, nil)
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(defaultScopesResp([]api.ClientScopeRepresentation{
+					{Id: ptr.To(scopeID)},
+				}), nil)
 
 			// Only the removed mapper should be deleted.
 			mockClient.EXPECT().
@@ -244,12 +261,12 @@ var _ = Describe("ConfigureClientScopes", func() {
 					}),
 				}), nil)
 
-			// Idempotent realm-default assignment.
+			// Scope is already a realm default — no PUT needed.
 			mockClient.EXPECT().
-				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
-				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
-					HTTPResponse: httpResp(204),
-				}, nil)
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(defaultScopesResp([]api.ClientScopeRepresentation{
+					{Id: ptr.To(scopeID)},
+				}), nil)
 
 			mockClient.EXPECT().
 				PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse(mock.Anything, testRealm, scopeID, "m1", mock.MatchedBy(func(m api.ProtocolMapperRepresentation) bool {
@@ -283,12 +300,12 @@ var _ = Describe("ConfigureClientScopes", func() {
 					}),
 				}), nil)
 
-			// Idempotent realm-default assignment.
+			// Scope is already a realm default — no PUT needed.
 			mockClient.EXPECT().
-				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
-				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
-					HTTPResponse: httpResp(204),
-				}, nil)
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(defaultScopesResp([]api.ClientScopeRepresentation{
+					{Id: ptr.To(scopeID)},
+				}), nil)
 
 			// Delete removed mapper.
 			mockClient.EXPECT().
@@ -344,6 +361,10 @@ var _ = Describe("ConfigureClientScopes", func() {
 				}, nil)
 
 			mockClient.EXPECT().
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(emptyDefaultScopesResp(), nil)
+
+			mockClient.EXPECT().
 				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, "new-id").
 				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
 					HTTPResponse: httpResp(204),
@@ -372,6 +393,10 @@ var _ = Describe("ConfigureClientScopes", func() {
 				Return(&api.PostRealmClientScopesResponse{
 					HTTPResponse: httpRespWithLocation(201, "/realms/test-realm/client-scopes/new-id"),
 				}, nil)
+
+			mockClient.EXPECT().
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(emptyDefaultScopesResp(), nil)
 
 			mockClient.EXPECT().
 				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, "new-id").
@@ -420,6 +445,10 @@ var _ = Describe("ConfigureClientScopes", func() {
 				}, nil)
 
 			mockClient.EXPECT().
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(emptyDefaultScopesResp(), nil)
+
+			mockClient.EXPECT().
 				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, "new-id").
 				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
 					HTTPResponse: httpResp(204),
@@ -446,12 +475,12 @@ var _ = Describe("ConfigureClientScopes", func() {
 					managedScope(scopeID, []api.ProtocolMapperRepresentation{existingMapper}),
 				}), nil)
 
-			// Idempotent realm-default assignment.
+			// Scope is already a realm default — no PUT needed.
 			mockClient.EXPECT().
-				PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, testRealm, scopeID).
-				Return(&api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse{
-					HTTPResponse: httpResp(204),
-				}, nil)
+				GetRealmDefaultDefaultClientScopesWithResponse(mock.Anything, testRealm).
+				Return(defaultScopesResp([]api.ClientScopeRepresentation{
+					{Id: ptr.To(scopeID)},
+				}), nil)
 
 			// The mapper type changed, so it should be updated.
 			mockClient.EXPECT().

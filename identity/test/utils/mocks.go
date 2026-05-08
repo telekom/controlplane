@@ -136,6 +136,14 @@ func ConfigureKeycloakClientMock(mockedClient *keycloakclient.MockKeycloakClient
 			},
 		}, nil).Maybe()
 
+	mockedClient.EXPECT().GetRealmDefaultDefaultClientScopesWithResponse(
+		mock.Anything,
+		realmMatcher).
+		Return(&api.GetRealmDefaultDefaultClientScopesResponse{
+			HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+			JSON2XX:      ptr.To([]api.ClientScopeRepresentation{}),
+		}, nil).Maybe()
+
 	mockedClient.EXPECT().PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(
 		mock.Anything,
 		realmMatcher,

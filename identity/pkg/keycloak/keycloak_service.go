@@ -82,6 +82,8 @@ type KeycloakClient interface {
 		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response, error)
 
 	// Realm default client scope assignment
+	GetRealmDefaultDefaultClientScopesWithResponse(ctx context.Context, realm string,
+		reqEditors ...api.RequestEditorFn) (*api.GetRealmDefaultDefaultClientScopesResponse, error)
 	PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm string, clientScopeId string,
 		reqEditors ...api.RequestEditorFn) (*api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse, error)
 	DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm string, clientScopeId string,
