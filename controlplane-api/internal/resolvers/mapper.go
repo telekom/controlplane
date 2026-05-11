@@ -79,6 +79,21 @@ func mapEventSubscriptionInfo(sub *ent.EventSubscription, app *ent.Application, 
 	}
 }
 
+func mapEventExposureInfo(exposure *ent.EventExposure, app *ent.Application, team *ent.Team, group *ent.Group) *model.EventExposureInfo {
+	return &model.EventExposureInfo{
+		ID:         exposure.ID,
+		EventType:  exposure.EventType,
+		Visibility: string(exposure.Visibility),
+		Active:     exposure.Active,
+		ApprovalConfig: model.ApprovalConfig{
+			Strategy:     exposure.ApprovalConfig.Strategy,
+			TrustedTeams: exposure.ApprovalConfig.TrustedTeams,
+		},
+		OwnerApplicationName: app.Name,
+		OwnerTeam:            mapTeamInfo(team, group),
+	}
+}
+
 // loadOwnerChain traverses subscription → owner application → team → group.
 // Used by both API and event subscription info loaders.
 func loadOwnerChain(ctx context.Context, ownerQuery interface {
@@ -118,4 +133,13 @@ func loadEventSubscriptionInfo(ctx context.Context, sub *ent.EventSubscription) 
 		return nil, fmt.Errorf("event subscription %d: %w", sub.ID, err)
 	}
 	return mapEventSubscriptionInfo(sub, app, team, group), nil
+}
+
+// loadEventExposureInfo loads the full owner chain for an event exposure and maps it to EventExposureInfo.
+func loadEventExposureInfo(ctx context.Context, exposure *ent.EventExposure) (*model.EventExposureInfo, error) {
+	app, team, group, err := loadOwnerChain(ctx, exposure.QueryOwner())
+	if err != nil {
+		return nil, fmt.Errorf("event exposure %d: %w", exposure.ID, err)
+	}
+	return mapEventExposureInfo(exposure, app, team, group), nil
 }

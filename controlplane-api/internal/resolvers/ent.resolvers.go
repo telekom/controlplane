@@ -148,6 +148,14 @@ func (r *Resolver) Approval() ApprovalResolver { return &approvalResolver{r} }
 // ApprovalRequest returns ApprovalRequestResolver implementation.
 func (r *Resolver) ApprovalRequest() ApprovalRequestResolver { return &approvalRequestResolver{r} }
 
+// EventExposure returns EventExposureResolver implementation.
+func (r *Resolver) EventExposure() EventExposureResolver { return &eventExposureResolver{r} }
+
+// EventSubscription returns EventSubscriptionResolver implementation.
+func (r *Resolver) EventSubscription() EventSubscriptionResolver {
+	return &eventSubscriptionResolver{r}
+}
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -162,6 +170,8 @@ type apiSubscriptionResolver struct{ *Resolver }
 type applicationResolver struct{ *Resolver }
 type approvalResolver struct{ *Resolver }
 type approvalRequestResolver struct{ *Resolver }
+type eventExposureResolver struct{ *Resolver }
+type eventSubscriptionResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
 type zoneResolver struct{ *Resolver }

@@ -37,6 +37,9 @@ type ResolverRoot interface {
 	ApprovalRequest() ApprovalRequestResolver
 	AvailableTransition() AvailableTransitionResolver
 	Decision() DecisionResolver
+	EventExposure() EventExposureResolver
+	EventExposureInfo() EventExposureInfoResolver
+	EventSubscription() EventSubscriptionResolver
 	EventSubscriptionInfo() EventSubscriptionInfoResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
@@ -285,6 +288,7 @@ type ComplexityRoot struct {
 		Owner          func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
+		Subscriptions  func(childComplexity int) int
 		Visibility     func(childComplexity int) int
 	}
 
@@ -297,6 +301,16 @@ type ComplexityRoot struct {
 	EventExposureEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	EventExposureInfo struct {
+		Active               func(childComplexity int) int
+		ApprovalConfig       func(childComplexity int) int
+		EventType            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		Visibility           func(childComplexity int) int
 	}
 
 	EventSubscription struct {
@@ -314,6 +328,7 @@ type ComplexityRoot struct {
 		Owner            func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
+		Target           func(childComplexity int) int
 	}
 
 	EventSubscriptionConnection struct {
@@ -1636,6 +1651,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventExposure.StatusPhase(childComplexity), true
 
+	case "EventExposure.subscriptions":
+		if e.ComplexityRoot.EventExposure.Subscriptions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.Subscriptions(childComplexity), true
+
 	case "EventExposure.visibility":
 		if e.ComplexityRoot.EventExposure.Visibility == nil {
 			break
@@ -1677,6 +1699,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureEdge.Node(childComplexity), true
+
+	case "EventExposureInfo.active":
+		if e.ComplexityRoot.EventExposureInfo.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.Active(childComplexity), true
+
+	case "EventExposureInfo.approvalConfig":
+		if e.ComplexityRoot.EventExposureInfo.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.ApprovalConfig(childComplexity), true
+
+	case "EventExposureInfo.eventType":
+		if e.ComplexityRoot.EventExposureInfo.EventType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.EventType(childComplexity), true
+
+	case "EventExposureInfo.id":
+		if e.ComplexityRoot.EventExposureInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.ID(childComplexity), true
+
+	case "EventExposureInfo.ownerApplicationName":
+		if e.ComplexityRoot.EventExposureInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.OwnerApplicationName(childComplexity), true
+
+	case "EventExposureInfo.ownerTeam":
+		if e.ComplexityRoot.EventExposureInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.OwnerTeam(childComplexity), true
+
+	case "EventExposureInfo.visibility":
+		if e.ComplexityRoot.EventExposureInfo.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.Visibility(childComplexity), true
 
 	case "EventSubscription.approval":
 		if e.ComplexityRoot.EventSubscription.Approval == nil {
@@ -1775,6 +1846,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscription.StatusPhase(childComplexity), true
+
+	case "EventSubscription.target":
+		if e.ComplexityRoot.EventSubscription.Target == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Target(childComplexity), true
 
 	case "EventSubscriptionConnection.edges":
 		if e.ComplexityRoot.EventSubscriptionConnection.Edges == nil {
@@ -3360,8 +3438,9 @@ ApplicationSecretRotationPhase is enum for the field secret_rotation_phase
 """
 enum ApplicationSecretRotationPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/application.SecretRotationPhase") {
   DONE
-  IN_PROGRESS
-  GRACE_PERIOD
+  ROTATING
+  GRACE_PERIOD_ACTIVE
+  GRACE_PERIOD_EXPIRING
   FAILED
 }
 """
@@ -5797,6 +5876,19 @@ type EventSubscriptionInfo {
   ownerTeam: TeamInfo!
 }
 
+"Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
+type EventExposureInfo {
+  id: ID!
+  eventType: String!
+  visibility: EventExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
 # -- Cross-tenant edge overrides --
 
 extend type Application {
@@ -5817,6 +5909,16 @@ extend type ApiSubscription {
 extend type ApiExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type EventSubscription {
+  "Target exposure (reduced view — cross-tenant boundary)"
+  target: EventExposureInfo! @goField(forceResolver: true)
+}
+
+extend type EventExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
 "A subscription related to an approval — either an API or event subscription."
@@ -6318,6 +6420,8 @@ func (ec *executionContext) childFields_EventExposure(ctx context.Context, field
 		return ec.fieldContext_EventExposure_approvalConfig(ctx, field)
 	case "owner":
 		return ec.fieldContext_EventExposure_owner(ctx, field)
+	case "subscriptions":
+		return ec.fieldContext_EventExposure_subscriptions(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventExposure", field.Name)
 }
@@ -6342,6 +6446,26 @@ func (ec *executionContext) childFields_EventExposureEdge(ctx context.Context, f
 		return ec.fieldContext_EventExposureEdge_cursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventExposureEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_EventExposureInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_EventExposureInfo_id(ctx, field)
+	case "eventType":
+		return ec.fieldContext_EventExposureInfo_eventType(ctx, field)
+	case "visibility":
+		return ec.fieldContext_EventExposureInfo_visibility(ctx, field)
+	case "active":
+		return ec.fieldContext_EventExposureInfo_active(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_EventExposureInfo_approvalConfig(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_EventExposureInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_EventExposureInfo_ownerTeam(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventExposureInfo", field.Name)
 }
 
 func (ec *executionContext) childFields_EventSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -6374,6 +6498,8 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_approval(ctx, field)
 	case "approvalRequests":
 		return ec.fieldContext_EventSubscription_approvalRequests(ctx, field)
+	case "target":
+		return ec.fieldContext_EventSubscription_target(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventSubscription", field.Name)
 }
@@ -6398,6 +6524,26 @@ func (ec *executionContext) childFields_EventSubscriptionEdge(ctx context.Contex
 		return ec.fieldContext_EventSubscriptionEdge_cursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventSubscriptionEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_EventSubscriptionInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_EventSubscriptionInfo_id(ctx, field)
+	case "eventType":
+		return ec.fieldContext_EventSubscriptionInfo_eventType(ctx, field)
+	case "deliveryType":
+		return ec.fieldContext_EventSubscriptionInfo_deliveryType(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_EventSubscriptionInfo_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_EventSubscriptionInfo_statusMessage(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_EventSubscriptionInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_EventSubscriptionInfo_ownerTeam(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventSubscriptionInfo", field.Name)
 }
 
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

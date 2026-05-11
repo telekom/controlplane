@@ -6,6 +6,7 @@ package graphql
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -60,7 +61,15 @@ func httpHandlerWithUserContext(h http.Handler) fiber.Handler {
 
 		// Propagate forwarded user identity headers into context for the Viewer middleware.
 		if name, email := c.Get("X-Forwarded-User-Name"), c.Get("X-Forwarded-User-Email"); name != "" || email != "" {
-			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{Name: name, Email: email})
+			fu := viewer.ForwardedUser{Name: name, Email: email}
+			fu.IsAdmin = strings.EqualFold(c.Get("X-Forwarded-User-Is-Admin"), "true")
+			if roles := c.Get("X-Forwarded-User-Roles"); roles != "" {
+				fu.Roles = strings.Split(roles, ",")
+			}
+			if groups := c.Get("X-Forwarded-User-Groups"); groups != "" {
+				fu.Groups = strings.Split(groups, ",")
+			}
+			ctx = viewer.NewForwardedUserContext(ctx, fu)
 		}
 
 		req = *req.WithContext(ctx)

@@ -207,10 +207,11 @@ const DefaultSecretRotationPhase = SecretRotationPhaseDONE
 
 // SecretRotationPhase values.
 const (
-	SecretRotationPhaseDONE         SecretRotationPhase = "DONE"
-	SecretRotationPhaseIN_PROGRESS  SecretRotationPhase = "IN_PROGRESS"
-	SecretRotationPhaseGRACE_PERIOD SecretRotationPhase = "GRACE_PERIOD"
-	SecretRotationPhaseFAILED       SecretRotationPhase = "FAILED"
+	SecretRotationPhaseDONE                  SecretRotationPhase = "DONE"
+	SecretRotationPhaseROTATING              SecretRotationPhase = "ROTATING"
+	SecretRotationPhaseGRACE_PERIOD_ACTIVE   SecretRotationPhase = "GRACE_PERIOD_ACTIVE"
+	SecretRotationPhaseGRACE_PERIOD_EXPIRING SecretRotationPhase = "GRACE_PERIOD_EXPIRING"
+	SecretRotationPhaseFAILED                SecretRotationPhase = "FAILED"
 )
 
 func (srp SecretRotationPhase) String() string {
@@ -220,7 +221,7 @@ func (srp SecretRotationPhase) String() string {
 // SecretRotationPhaseValidator is a validator for the "secret_rotation_phase" field enum values. It is called by the builders before save.
 func SecretRotationPhaseValidator(srp SecretRotationPhase) error {
 	switch srp {
-	case SecretRotationPhaseDONE, SecretRotationPhaseIN_PROGRESS, SecretRotationPhaseGRACE_PERIOD, SecretRotationPhaseFAILED:
+	case SecretRotationPhaseDONE, SecretRotationPhaseROTATING, SecretRotationPhaseGRACE_PERIOD_ACTIVE, SecretRotationPhaseGRACE_PERIOD_EXPIRING, SecretRotationPhaseFAILED:
 		return nil
 	default:
 		return fmt.Errorf("application: invalid enum value for secret_rotation_phase field: %q", srp)

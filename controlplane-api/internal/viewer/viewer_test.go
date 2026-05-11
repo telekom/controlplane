@@ -68,6 +68,22 @@ var _ = Describe("ForwardedUser context", func() {
 		Expect(got.Email).To(Equal("jane@example.com"))
 	})
 
+	It("should round-trip all extended fields", func() {
+		fu := viewer.ForwardedUser{
+			Name:    "Jane Doe",
+			Email:   "jane@example.com",
+			IsAdmin: true,
+			Roles:   []string{"editor", "viewer"},
+			Groups:  []string{"group-1", "group-2"},
+		}
+		ctx := viewer.NewForwardedUserContext(context.Background(), fu)
+		got, ok := viewer.ForwardedUserFromContext(ctx)
+		Expect(ok).To(BeTrue())
+		Expect(got.IsAdmin).To(BeTrue())
+		Expect(got.Roles).To(ConsistOf("editor", "viewer"))
+		Expect(got.Groups).To(ConsistOf("group-1", "group-2"))
+	})
+
 	It("should return false when no forwarded user is in context", func() {
 		_, ok := viewer.ForwardedUserFromContext(context.Background())
 		Expect(ok).To(BeFalse())

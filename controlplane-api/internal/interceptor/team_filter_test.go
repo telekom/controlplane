@@ -29,9 +29,10 @@ var _ = Describe("TeamFilterInterceptor", func() {
 		client.Close()
 	})
 
-	// viewerCtx creates a context with the given viewer and privacy bypass.
+	// viewerCtx creates a context with the given viewer (no privacy bypass,
+	// so the team-filter interceptor is exercised).
 	viewerCtx := func(v *viewer.Viewer) context.Context {
-		return viewer.NewContext(testutil.AllowContext(), v)
+		return viewer.NewContext(context.Background(), v)
 	}
 
 	seed := func() {
@@ -51,8 +52,8 @@ var _ = Describe("TeamFilterInterceptor", func() {
 		})
 
 		It("should pass through without filtering", func() {
-			ctx := viewerCtx(&viewer.Viewer{Teams: []string{}})
-			// Interceptor passes through; privacy would deny in production.
+			// AllowContext bypasses privacy (which would deny empty teams in production).
+			ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{}})
 			teams, err := client.Team.Query().All(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(teams).To(HaveLen(2))
@@ -100,6 +101,14 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.Member.Query().All(ctx)
 				return len(r), e
 			}, 2),
+			Entry("event exposures", func(ctx context.Context) (int, error) {
+				r, e := client.EventExposure.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("event subscriptions", func(ctx context.Context) (int, error) {
+				r, e := client.EventSubscription.Query().All(ctx)
+				return len(r), e
+			}, 1),
 		)
 	})
 
@@ -144,6 +153,14 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.Member.Query().All(ctx)
 				return len(r), e
 			}, 1),
+			Entry("event exposures (team-alpha owns one)", func(ctx context.Context) (int, error) {
+				r, e := client.EventExposure.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("event subscriptions (team-alpha has none)", func(ctx context.Context) (int, error) {
+				r, e := client.EventSubscription.Query().All(ctx)
+				return len(r), e
+			}, 0),
 		)
 	})
 
@@ -174,6 +191,14 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			}, 2),
 			Entry("subscriptions", func(ctx context.Context) (int, error) {
 				r, e := client.ApiSubscription.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("event exposures", func(ctx context.Context) (int, error) {
+				r, e := client.EventExposure.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("event subscriptions", func(ctx context.Context) (int, error) {
+				r, e := client.EventSubscription.Query().All(ctx)
 				return len(r), e
 			}, 1),
 		)

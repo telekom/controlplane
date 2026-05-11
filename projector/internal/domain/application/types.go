@@ -36,6 +36,6 @@ type ApplicationData struct {
 	RotatedClientSecret   *string    // secret-manager reference to previous secret
 	RotatedExpiresAt      *time.Time // when the rotated (old) secret stops being valid
 	CurrentExpiresAt      *time.Time // when the current secret will auto-expire
-	SecretRotationPhase   string     // FSM state: DONE, IN_PROGRESS, GRACE_PERIOD, FAILED
+	SecretRotationPhase   string     // FSM state: DONE, ROTATING, GRACE_PERIOD_ACTIVE, GRACE_PERIOD_EXPIRING, FAILED
 	SecretRotationMessage *string    // human-readable message (nil when DONE)
 }

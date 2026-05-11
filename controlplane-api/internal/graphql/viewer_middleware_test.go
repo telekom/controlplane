@@ -137,4 +137,80 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			Expect(v.UserEmail).To(BeEmpty())
 		})
 	})
+
+	Context("user-scoped access via ForwardedUser email", func() {
+		It("should scope admin JWT down to user's team memberships", func() {
+			s := testutil.SeedStandard(client)
+			_ = s
+
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeAdmin,
+			})
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
+				Email: "alice@test.dev",
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.Admin).To(BeFalse(), "admin should be overridden when user email is present")
+			Expect(v.Teams).To(ConsistOf("team-alpha"))
+		})
+
+		It("should keep admin=true when ForwardedUser has IsAdmin=true", func() {
+			testutil.SeedStandard(client)
+
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeAdmin,
+			})
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
+				Email:   "alice@test.dev",
+				IsAdmin: true,
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.Admin).To(BeTrue(), "admin bypass should be preserved when IsAdmin header is set")
+		})
+
+		It("should return empty teams when user has no memberships", func() {
+			testutil.SeedStandard(client)
+
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeAdmin,
+			})
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
+				Email: "unknown@test.dev",
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.Admin).To(BeFalse())
+			Expect(v.Teams).To(BeEmpty())
+		})
+
+		It("should scope group JWT down to user's team memberships", func() {
+			testutil.SeedStandard(client)
+
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeGroup,
+				Group:      "group-a",
+			})
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
+				Email: "alice@test.dev",
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.Admin).To(BeFalse())
+			Expect(v.Teams).To(ConsistOf("team-alpha"))
+		})
+
+		It("should not alter viewer when ForwardedUser has no email", func() {
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeAdmin,
+			})
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
+				Name: "Jane Doe",
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.Admin).To(BeTrue(), "admin should remain when no email is forwarded")
+		})
+	})
 })

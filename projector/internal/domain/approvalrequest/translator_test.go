@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,12 +86,50 @@ var _ = Describe("ApprovalRequest Translator", func() {
 		})
 
 		It("should not skip a valid ApprovalRequest CR targeting EventSubscription", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, true)
+			defer cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
 			obj := &approvalv1.ApprovalRequest{
 				Spec: approvalv1.ApprovalRequestSpec{
 					Action: "subscribe",
 					Target: ctypes.TypedObjectRef{
 						TypeMeta:  metav1.TypeMeta{Kind: "EventSubscription"},
 						ObjectRef: ctypes.ObjectRef{Name: "my-event-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+		It("should skip EventSubscription target when pubsub feature is disabled", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
+			obj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-event-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("pubsub feature is disabled"))
+		})
+
+		It("should not skip ApiSubscription target when pubsub feature is disabled", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
+			obj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-sub"},
 					},
 					Decider: approvalv1.Decider{TeamName: "some-team"},
 				},

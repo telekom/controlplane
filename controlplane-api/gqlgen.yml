@@ -116,3 +116,6 @@ models:
   EventSubscriptionInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.EventSubscriptionInfo
+  EventExposureInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventExposureInfo

@@ -186,7 +186,7 @@ var _ = Describe("Application Translator", func() {
 			Expect(data.CurrentExpiresAt).To(BeNil())
 		})
 
-		It("should return IN_PROGRESS when condition reason is InProgress", func() {
+		It("should return ROTATING when condition reason is InProgress", func() {
 			obj := baseApp()
 			obj.Status.Conditions = []metav1.Condition{
 				{
@@ -199,21 +199,24 @@ var _ = Describe("Application Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.SecretRotationPhase).To(Equal("IN_PROGRESS"))
+			Expect(data.SecretRotationPhase).To(Equal("ROTATING"))
 			Expect(data.SecretRotationMessage).ToNot(BeNil())
 			Expect(*data.SecretRotationMessage).To(Equal("waiting for identity"))
 		})
 
-		It("should return GRACE_PERIOD when condition is Success and rotated secret is present", func() {
-			expiresAt := metav1.NewTime(time.Now().Add(24 * time.Hour))
+		It("should return GRACE_PERIOD_ACTIVE when plenty of grace period remains", func() {
+			// Grace period started 10 min ago, expires in 50 min → 83% remaining
+			gracePeriodStart := time.Now().Add(-10 * time.Minute)
+			expiresAt := metav1.NewTime(time.Now().Add(50 * time.Minute))
 			currentExpiresAt := metav1.NewTime(time.Now().Add(72 * time.Hour))
 			obj := baseApp()
 			obj.Status.Conditions = []metav1.Condition{
 				{
-					Type:    "SecretRotation",
-					Status:  metav1.ConditionTrue,
-					Reason:  "Success",
-					Message: "rotation completed",
+					Type:               "SecretRotation",
+					Status:             metav1.ConditionTrue,
+					Reason:             "Success",
+					Message:            "rotation completed",
+					LastTransitionTime: metav1.NewTime(gracePeriodStart),
 				},
 			}
 			obj.Status.RotatedClientSecret = "secret-manager://old-secret-ref"
@@ -222,7 +225,7 @@ var _ = Describe("Application Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.SecretRotationPhase).To(Equal("GRACE_PERIOD"))
+			Expect(data.SecretRotationPhase).To(Equal("GRACE_PERIOD_ACTIVE"))
 			Expect(data.SecretRotationMessage).ToNot(BeNil())
 			Expect(*data.SecretRotationMessage).To(Equal("rotation completed"))
 			Expect(data.RotatedClientSecret).ToNot(BeNil())
@@ -231,7 +234,89 @@ var _ = Describe("Application Translator", func() {
 			Expect(data.CurrentExpiresAt).ToNot(BeNil())
 		})
 
-		It("should return DONE when condition is Success but rotated secret is empty", func() {
+		It("should return GRACE_PERIOD_EXPIRING when less than 20% of grace period remains", func() {
+			// Grace period started 100 min ago, expires in 10 min → 9% remaining
+			now := time.Now()
+			gracePeriodStart := now.Add(-100 * time.Minute)
+			expiresAt := metav1.NewTime(now.Add(10 * time.Minute))
+			obj := baseApp()
+			obj.Status.Conditions = []metav1.Condition{
+				{
+					Type:               "SecretRotation",
+					Status:             metav1.ConditionTrue,
+					Reason:             "Success",
+					Message:            "rotation completed",
+					LastTransitionTime: metav1.NewTime(gracePeriodStart),
+				},
+			}
+			obj.Status.RotatedClientSecret = "secret-manager://old-secret-ref"
+			obj.Status.RotatedExpiresAt = &expiresAt
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.SecretRotationPhase).To(Equal("GRACE_PERIOD_EXPIRING"))
+		})
+
+		It("should return DONE when expiry has passed", func() {
+			now := time.Now()
+			gracePeriodStart := now.Add(-2 * time.Hour)
+			expiresAt := metav1.NewTime(now.Add(-5 * time.Minute))
+			obj := baseApp()
+			obj.Status.Conditions = []metav1.Condition{
+				{
+					Type:               "SecretRotation",
+					Status:             metav1.ConditionTrue,
+					Reason:             "Success",
+					LastTransitionTime: metav1.NewTime(gracePeriodStart),
+				},
+			}
+			obj.Status.RotatedClientSecret = "secret-manager://old-secret-ref"
+			obj.Status.RotatedExpiresAt = &expiresAt
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.SecretRotationPhase).To(Equal("DONE"))
+		})
+
+		It("should return GRACE_PERIOD_ACTIVE when RotatedExpiresAt is nil but condition is Success with rotated secret", func() {
+			obj := baseApp()
+			obj.Status.Conditions = []metav1.Condition{
+				{
+					Type:   "SecretRotation",
+					Status: metav1.ConditionTrue,
+					Reason: "Success",
+				},
+			}
+			obj.Status.RotatedClientSecret = "secret-manager://old-secret-ref"
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			// RotatedExpiresAt is nil → grace period not trackable, falls through to DONE
+			Expect(data.SecretRotationPhase).To(Equal("DONE"))
+		})
+
+		It("should return DONE when condition is Success but grace period has expired", func() {
+			now := time.Now()
+			expiresAt := metav1.NewTime(now.Add(-1 * time.Hour))
+			obj := baseApp()
+			obj.Status.Conditions = []metav1.Condition{
+				{
+					Type:               "SecretRotation",
+					Status:             metav1.ConditionTrue,
+					Reason:             "Success",
+					LastTransitionTime: metav1.NewTime(now.Add(-3 * time.Hour)),
+				},
+			}
+			obj.Status.RotatedClientSecret = "secret-manager://old-secret-ref"
+			obj.Status.RotatedExpiresAt = &expiresAt
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.SecretRotationPhase).To(Equal("DONE"))
+			Expect(data.SecretRotationMessage).To(BeNil())
+		})
+
+		It("should return DONE when condition is Success and rotated secret is empty", func() {
 			obj := baseApp()
 			obj.Status.Conditions = []metav1.Condition{
 				{
@@ -265,7 +350,7 @@ var _ = Describe("Application Translator", func() {
 			Expect(*data.SecretRotationMessage).To(Equal("keycloak unavailable"))
 		})
 
-		It("should return IN_PROGRESS for unknown condition reason (fallback)", func() {
+		It("should return ROTATING for unknown condition reason (fallback)", func() {
 			obj := baseApp()
 			obj.Status.Conditions = []metav1.Condition{
 				{
@@ -278,7 +363,7 @@ var _ = Describe("Application Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.SecretRotationPhase).To(Equal("IN_PROGRESS"))
+			Expect(data.SecretRotationPhase).To(Equal("ROTATING"))
 			Expect(*data.SecretRotationMessage).To(Equal("something new"))
 		})
 	})

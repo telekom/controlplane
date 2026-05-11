@@ -171,6 +171,76 @@ var _ = Describe("ApiExposureInfo resolvers", func() {
 	})
 })
 
+var _ = Describe("EventExposure.Subscriptions resolver (cross-tenant)", func() {
+	var (
+		client *ent.Client
+		r      *resolvers.Resolver
+		s      *testutil.SeedData
+	)
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+		r = resolvers.NewResolver(client, service.Services{}, nil)
+		s = testutil.SeedStandard(client)
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should return EventSubscriptionInfo for an event exposure's subscriptions", func() {
+		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
+		subs, err := r.EventExposure().Subscriptions(ctx, s.EventExposureAlpha)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(subs).To(HaveLen(1))
+		Expect(subs[0].EventType).To(Equal("order.created"))
+		Expect(subs[0].OwnerApplicationName).To(Equal("app-beta"))
+		Expect(subs[0].OwnerTeam).NotTo(BeNil())
+		Expect(subs[0].OwnerTeam.Name).To(Equal("team-beta"))
+		Expect(subs[0].OwnerTeam.GroupName).To(Equal("group-b"))
+	})
+})
+
+var _ = Describe("EventSubscription.Target resolver (cross-tenant)", func() {
+	var (
+		client *ent.Client
+		r      *resolvers.Resolver
+		s      *testutil.SeedData
+	)
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+		r = resolvers.NewResolver(client, service.Services{}, nil)
+		s = testutil.SeedStandard(client)
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should return EventExposureInfo for an event subscription's target", func() {
+		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-beta"}})
+		info, err := r.EventSubscription().Target(ctx, s.EventSubscription)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info).NotTo(BeNil())
+		Expect(info.EventType).To(Equal("order.created"))
+		Expect(info.OwnerApplicationName).To(Equal("app-alpha"))
+		Expect(info.OwnerTeam).NotTo(BeNil())
+		Expect(info.OwnerTeam.Name).To(Equal("team-alpha"))
+		Expect(info.OwnerTeam.GroupName).To(Equal("group-a"))
+	})
+})
+
+var _ = Describe("EventExposureInfo.Visibility resolver", func() {
+	r := resolvers.NewResolver(nil, service.Services{}, nil)
+
+	It("should convert visibility string to enum", func() {
+		v, err := r.EventExposureInfo().Visibility(context.TODO(), &model.EventExposureInfo{Visibility: "WORLD"})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(v)).To(Equal("WORLD"))
+	})
+})
+
 var _ = Describe("ApiSubscriptionInfo.StatusPhase resolver", func() {
 	r := resolvers.NewResolver(nil, service.Services{}, nil)
 

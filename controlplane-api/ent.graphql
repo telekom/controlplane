@@ -698,8 +698,9 @@ ApplicationSecretRotationPhase is enum for the field secret_rotation_phase
 """
 enum ApplicationSecretRotationPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/application.SecretRotationPhase") {
   DONE
-  IN_PROGRESS
-  GRACE_PERIOD
+  ROTATING
+  GRACE_PERIOD_ACTIVE
+  GRACE_PERIOD_EXPIRING
   FAILED
 }
 """

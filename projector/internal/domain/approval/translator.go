@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -45,6 +46,9 @@ func (t *Translator) ShouldSkip(obj *approvalv1.Approval) (bool, string) {
 	}
 	if !isSupportedTargetKind(obj.Spec.Target.TypeMeta.Kind) {
 		return true, "spec.target.kind is not ApiSubscription or EventSubscription"
+	}
+	if !cconfig.FeaturePubSub.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindEventSubscription {
+		return true, "pubsub feature is disabled"
 	}
 
 	if obj.Spec.Decider.TeamName == "" {

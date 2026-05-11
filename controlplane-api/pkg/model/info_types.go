@@ -44,3 +44,15 @@ type EventSubscriptionInfo struct {
 }
 
 func (EventSubscriptionInfo) IsSubscriptionInfo() {}
+
+// EventExposureInfo provides a reduced cross-tenant safe view of an event exposure.
+// No navigable edges — traversal terminates here.
+type EventExposureInfo struct {
+	ID                   int            `json:"id"`
+	EventType            string         `json:"eventType"`
+	Visibility           string         `json:"visibility"`
+	Active               *bool          `json:"active,omitempty"`
+	ApprovalConfig       ApprovalConfig `json:"approvalConfig"`
+	OwnerApplicationName string         `json:"ownerApplicationName"`
+	OwnerTeam            *TeamInfo      `json:"ownerTeam"`
+}

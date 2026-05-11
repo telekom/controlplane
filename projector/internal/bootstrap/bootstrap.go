@@ -56,19 +56,6 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
-func init() {
-	// Register all CR schemes used by the projector modules.
-	_ = adminv1.AddToScheme(scheme)
-	_ = apiv1.AddToScheme(scheme)
-	_ = appv1.AddToScheme(scheme)
-	_ = approvalv1.AddToScheme(scheme)
-	_ = orgv1.AddToScheme(scheme)
-
-	if cconfig.FeaturePubSub.IsEnabled() {
-		_ = eventv1.AddToScheme(scheme)
-	}
-}
-
 // modules is the ordered list of resource modules to register.
 var modules = []module.Module{
 	zone.Module,

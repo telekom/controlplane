@@ -16,7 +16,10 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/privacy"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
@@ -25,6 +28,12 @@ import (
 func TeamFilterInterceptor() ent.Interceptor {
 	return ent.InterceptFunc(func(next ent.Querier) ent.Querier {
 		return ent.QuerierFunc(func(ctx context.Context, query ent.Query) (ent.Value, error) {
+
+			// If privacy.Allow set in the context? If so, skip team filtering (e.g. for system resolvers)
+			if _, ok := privacy.DecisionFromContext(ctx); ok {
+				return next.Query(ctx, query)
+			}
+
 			v := viewer.FromContext(ctx)
 			if v == nil || v.Admin {
 				return next.Query(ctx, query)
@@ -67,6 +76,18 @@ func TeamFilterInterceptor() ent.Interceptor {
 							),
 						),
 					),
+					approval.HasEventSubscriptionWith(
+						eventsubscription.HasOwnerWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+					approval.HasEventSubscriptionWith(
+						eventsubscription.HasTargetWith(
+							eventexposure.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
 				))
 
 			case *entgen.ApprovalRequestQuery:
@@ -83,10 +104,32 @@ func TeamFilterInterceptor() ent.Interceptor {
 							),
 						),
 					),
+					approvalrequest.HasEventSubscriptionWith(
+						eventsubscription.HasOwnerWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+					approvalrequest.HasEventSubscriptionWith(
+						eventsubscription.HasTargetWith(
+							eventexposure.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
 				))
 
 			case *entgen.MemberQuery:
 				q.Where(member.HasTeamWith(team.NameIn(teams...)))
+
+			case *entgen.EventExposureQuery:
+				q.Where(eventexposure.HasOwnerWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
+				))
+
+			case *entgen.EventSubscriptionQuery:
+				q.Where(eventsubscription.HasOwnerWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
+				))
 
 			case *entgen.GroupQuery, *entgen.ZoneQuery:
 				// No team filtering for public entities

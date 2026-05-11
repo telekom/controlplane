@@ -56,7 +56,7 @@ func (Application) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 		field.Enum("secret_rotation_phase").
-			Values("DONE", "IN_PROGRESS", "GRACE_PERIOD", "FAILED").
+			Values("DONE", "ROTATING", "GRACE_PERIOD_ACTIVE", "GRACE_PERIOD_EXPIRING", "FAILED").
 			Default("DONE"),
 		field.Text("secret_rotation_message").
 			Optional().

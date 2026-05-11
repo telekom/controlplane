@@ -7,6 +7,7 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -57,7 +58,8 @@ func (EventSubscription) Edges() []ent.Edge {
 			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.To("approval", Approval.Type).
 			Unique(),
-		edge.To("approval_requests", ApprovalRequest.Type),
+		edge.To("approval_requests", ApprovalRequest.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 
