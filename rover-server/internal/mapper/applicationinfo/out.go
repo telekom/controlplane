@@ -50,11 +50,11 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 	if rover == nil {
 		return nil, errors.New("input rover is nil")
 	}
-	psiid, _ := mapper.RoverExternalIdsToScalars(rover.Spec.ExternalIds)
+	scalars := mapper.RoverExternalIdsToScalars(rover.Spec.ExternalIds)
 	appInfo := &api.ApplicationInfo{
 		Name:  rover.Name,
 		Zone:  rover.Spec.Zone,
-		Psiid: psiid,
+		Psiid: scalars.Psiid,
 	}
 
 	if err := FillApplicationInfo(ctx, rover, appInfo, stores); err != nil {

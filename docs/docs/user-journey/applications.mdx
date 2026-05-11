@@ -64,7 +64,7 @@ Rover itself defines the primary `zone`. Failover is configured on individual AP
 
 ## External Identifiers
 
-Rover files can carry business identifiers that tie an application back to upstream inventory systems. Today two scalar fields are supported:
+Rover files can carry business identifiers that tie an application back to upstream inventory systems. Today, due to backwards compatibility, two scalar fields are supported:
 
 | Field | Description |
 | ----- | ----------- |
@@ -83,10 +83,6 @@ spec:
 ```
 
 Whether an identifier is *required* and the exact regex applied to its value are configured **per zone** by the platform administrator. If a zone has no policy for a scheme, supplying the field is optional and unvalidated. When a zone enforces a scheme, a Rover without that field (or with a malformed value) is rejected at admission time.
-
-:::note
-`kubectl apply --dry-run=client` does not fire admission webhooks, so format errors will only surface on server-side apply.
-:::
 
 ## Next Steps
 

@@ -379,18 +379,24 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 		Context("GetZone", func() {
 			It("should return the zone when it exists", func() {
-				zone, err := validator.GetZone(ctx, client.ObjectKey{Name: testZone.Name, Namespace: testZone.Namespace})
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				zone, err := validator.GetZone(ctx, valErr, client.ObjectKey{Name: testZone.Name, Namespace: testZone.Namespace})
 				Expect(err).To(BeNil())
 				Expect(zone).NotTo(BeNil())
 				Expect(zone.Name).To(Equal(testZone.Name))
+				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
-			It("should return BadRequest error when zone doesn't exist", func() {
+			It("should record a validation error when zone doesn't exist", func() {
 				nonExistentZoneRef := client.ObjectKey{Name: "non-existent", Namespace: testNamespace}
-				_, err := validator.GetZone(ctx, nonExistentZoneRef)
-				Expect(err).To(HaveOccurred())
-				Expect(apierrors.IsBadRequest(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Zone '%s' not found", nonExistentZoneRef)))
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				zone, err := validator.GetZone(ctx, valErr, nonExistentZoneRef)
+				Expect(err).To(BeNil())
+				Expect(zone).To(BeNil())
+				Expect(valErr.HasErrors()).To(BeTrue())
+				Expect(valErr.Errors).To(HaveLen(1))
+				Expect(valErr.Errors[0].Field).To(ContainSubstring("spec.zone"))
+				Expect(valErr.Errors[0].Detail).To(ContainSubstring(`zone "non-existent" not found`))
 			})
 		})
 

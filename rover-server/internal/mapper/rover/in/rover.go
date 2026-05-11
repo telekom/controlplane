@@ -74,7 +74,10 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 		}
 	}
 
-	out.Spec.ExternalIds = mapper.RoverScalarsToExternalIds(in.Psiid, in.Icto)
+	out.Spec.ExternalIds = mapper.RoverScalarsToExternalIds(mapper.ExternalIdScalars{
+		Psiid: in.Psiid,
+		Icto:  in.Icto,
+	})
 	return nil
 }
 
