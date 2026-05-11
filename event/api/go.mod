@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/event/api
 
-go 1.26.0
+go 1.26.3
 
 require (
 	github.com/onsi/ginkgo/v2 v2.28.3
