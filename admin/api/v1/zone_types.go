@@ -78,7 +78,23 @@ type GatewayConfig struct {
 	CircuitBreaker bool `json:"circuitBreaker"`
 }
 
-type ApiConfig struct {
+// ManagedRouteType defines the type of a managed route.
+// +kubebuilder:validation:Enum=TeamAPI;Proxy
+type ManagedRouteType string
+
+const (
+	// ManagedRouteTypeTeamAPI creates a route with authentication (PassThrough=false)
+	// and disabled access control on the zone's team-api gateway realm.
+	// Used for team APIs that require token validation but no per-consumer ACLs.
+	ManagedRouteTypeTeamAPI ManagedRouteType = "TeamAPI"
+
+	// ManagedRouteTypeProxy creates a fully passthrough route (PassThrough=true)
+	// on the zone's default gateway realm that acts as a pure reverse proxy
+	// without any authentication or authorization.
+	ManagedRouteTypeProxy ManagedRouteType = "Proxy"
+)
+
+type ManagedRouteConfig struct {
 	// Name is the name of the created route. It must be unique within the zone.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
@@ -91,10 +107,14 @@ type ApiConfig struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"url"`
+	// Type selects the route behavior: Api (authenticated, no ACL) or Proxy (passthrough reverse proxy).
+	// +kubebuilder:validation:Required
+	Type ManagedRouteType `json:"type"`
 }
 
-type TeamApiConfig struct {
-	Apis []ApiConfig `json:"apis"`
+type ManagedRoutesConfig struct {
+	// +kubebuilder:validation:MinItems=1
+	Routes []ManagedRouteConfig `json:"routes"`
 }
 
 type PermissionsConfig struct {
@@ -142,7 +162,7 @@ type ZoneSpec struct {
 	IdentityProvider IdentityProviderConfig `json:"identityProvider"`
 	Gateway          GatewayConfig          `json:"gateway"`
 	Redis            RedisConfig            `json:"redis"`
-	TeamApis         *TeamApiConfig         `json:"teamApis,omitempty"`
+	ManagedRoutes    *ManagedRoutesConfig   `json:"managedRoutes,omitempty"`
 	// +kubebuilder:validation:Enum=World;Enterprise
 	// Visibility controls what subscriptions are allowed from and to this zone. It's also relevant for features like failover
 	Visibility ZoneVisibility `json:"visibility"`
@@ -194,9 +214,10 @@ type ZoneStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	Namespace        string           `json:"namespace,omitempty"`
-	IdentityProvider *types.ObjectRef `json:"identityProvider,omitempty"`
-	IdentityRealm    *types.ObjectRef `json:"identityRealm,omitempty"`
+	Namespace             string           `json:"namespace,omitempty"`
+	IdentityProvider      *types.ObjectRef `json:"identityProvider,omitempty"`
+	IdentityRealm         *types.ObjectRef `json:"identityRealm,omitempty"`
+	InternalIdentityRealm *types.ObjectRef `json:"internalIdentityRealm,omitempty"`
 
 	Gateway         *types.ObjectRef `json:"gateway,omitempty"`
 	GatewayRealm    *types.ObjectRef `json:"gatewayRealm,omitempty"`
@@ -205,7 +226,7 @@ type ZoneStatus struct {
 
 	TeamApiIdentityRealm *types.ObjectRef  `json:"teamApiIdentityRealm,omitempty"`
 	TeamApiGatewayRealm  *types.ObjectRef  `json:"teamApiGatewayRealm,omitempty"`
-	TeamApiRoutes        []types.ObjectRef `json:"teamApiRoutes,omitempty"`
+	ManagedRoutes        []types.ObjectRef `json:"managedRoutes,omitempty"`
 	Links                Links             `json:"links,omitempty"`
 
 	// Features is a list of features that are enabled or disabled for this zone.

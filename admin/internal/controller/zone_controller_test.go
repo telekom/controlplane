@@ -59,11 +59,12 @@ func NewZone(name, namespace string) *adminv1.Zone {
 				Password:  "test-redis-password",
 				EnableTLS: true,
 			},
-			TeamApis: &adminv1.TeamApiConfig{
-				Apis: []adminv1.ApiConfig{{
+			ManagedRoutes: &adminv1.ManagedRoutesConfig{
+				Routes: []adminv1.ManagedRouteConfig{{
 					Name: "test-team-api1",
 					Path: "/test/team/api/v1",
 					Url:  "https://test-team-api-host.de/test-team-api-v1",
+					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}},
 			},
 			Visibility: adminv1.ZoneVisibilityWorld,
@@ -205,9 +206,44 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 			Name:      "test-zone",
 			Namespace: "test--test-zone",
 		},
+		Claims: []identityapi.ClaimConfig{
+			{
+				Name:  "originZone",
+				Value: zoneToVerify.Name,
+				Type:  identityapi.ClaimTypeHardcodedClaim,
+			},
+			{
+				Name:  "originStargate",
+				Value: zoneToVerify.Spec.Gateway.Url,
+				Type:  identityapi.ClaimTypeHardcodedClaim,
+			},
+			{
+				Name: "clientId",
+				Type: identityapi.ClaimTypeSessionNote,
+			},
+		},
 	}
 	g.Expect(identityProviderRealm.Spec).To(Equal(*identityProviderSpecRealm))
 	g.Expect(zone.Status.IdentityRealm).To(Equal(types.ObjectRefFromObject(identityProviderRealm)))
+
+	// Internal identity realm (rover) for admin-config clients
+	By("Checking if the internal identity realm (rover) is created and spec is valid")
+	internalIdentityRealm := &identityapi.Realm{}
+	internalIdentityRealmRef := client.ObjectKey{
+		Namespace: "test--test-zone",
+		Name:      "rover",
+	}
+	err = k8sClient.Get(ctx, internalIdentityRealmRef, internalIdentityRealm)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	internalIdentityRealmSpec := &identityapi.RealmSpec{
+		IdentityProvider: &types.ObjectRef{
+			Name:      "test-zone",
+			Namespace: "test--test-zone",
+		},
+	}
+	g.Expect(internalIdentityRealm.Spec).To(Equal(*internalIdentityRealmSpec))
+	g.Expect(zone.Status.InternalIdentityRealm).To(Equal(types.ObjectRefFromObject(internalIdentityRealm)))
 
 	// Identity provider client (gateway client)
 	By("Checking if the identity provider client (gateway) is created and spec is valid")

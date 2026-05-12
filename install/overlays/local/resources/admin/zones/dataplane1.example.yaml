@@ -27,6 +27,6 @@ spec:
     host: my-redis-host
     port: 6379
     password: somePassword
-  teamApis:
-    apis: []
+  managedRoutes:
+    routes: []
   visibility: Enterprise
