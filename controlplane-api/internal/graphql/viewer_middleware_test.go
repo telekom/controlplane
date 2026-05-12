@@ -21,6 +21,9 @@ import (
 var _ = Describe("ViewerFromBusinessContext", func() {
 	var client *ent.Client
 
+	const disableSecurity = false
+	const enableSecurity = true
+
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
 	})
@@ -30,8 +33,8 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 	})
 
 	// captureViewer invokes the middleware and returns the Viewer that was set in the context.
-	captureViewer := func(ctx context.Context, securityEnabled ...bool) *viewer.Viewer {
-		mw := cpgraphql.ViewerFromBusinessContext(client, securityEnabled...)
+	captureViewer := func(ctx context.Context, securityEnabled bool) *viewer.Viewer {
+		mw := cpgraphql.ViewerFromBusinessContext(client, securityEnabled)
 		var captured *viewer.Viewer
 		next := func(ctx context.Context) graphql.ResponseHandler {
 			captured = viewer.FromContext(ctx)
@@ -43,18 +46,18 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 
 	Context("when no BusinessContext is present", func() {
 		It("should inject admin viewer when security is disabled", func() {
-			v := captureViewer(context.Background(), false)
+			v := captureViewer(context.Background(), disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeTrue())
 		})
 
 		It("should not inject a viewer when security is enabled", func() {
-			v := captureViewer(context.Background(), true)
+			v := captureViewer(context.Background(), enableSecurity)
 			Expect(v).To(BeNil())
 		})
 
 		It("should default to security enabled", func() {
-			v := captureViewer(context.Background())
+			v := captureViewer(context.Background(), enableSecurity)
 			Expect(v).To(BeNil())
 		})
 	})
@@ -64,7 +67,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			ctx := security.ToContext(context.Background(), &security.BusinessContext{
 				ClientType: security.ClientTypeAdmin,
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeTrue())
 			Expect(v.Teams).To(BeEmpty())
@@ -77,7 +80,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 				ClientType: security.ClientTypeTeam,
 				Team:       "team-alpha",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeFalse())
 			Expect(v.Teams).To(ConsistOf("team-alpha"))
@@ -94,7 +97,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 				ClientType: security.ClientTypeGroup,
 				Group:      "group-a",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeFalse())
 			Expect(v.Teams).To(ConsistOf("team-alpha"))
@@ -105,7 +108,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 				ClientType: security.ClientTypeGroup,
 				Group:      "nonexistent-group",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Teams).To(BeEmpty())
 		})
@@ -120,7 +123,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 				Name:  "Jane Doe",
 				Email: "jane@example.com",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.UserName).To(Equal("Jane Doe"))
 			Expect(v.UserEmail).To(Equal("jane@example.com"))
@@ -131,7 +134,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 				ClientType: security.ClientTypeTeam,
 				Team:       "team-alpha",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.UserName).To(BeEmpty())
 			Expect(v.UserEmail).To(BeEmpty())
@@ -149,7 +152,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
 				Email: "alice@test.dev",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeFalse(), "admin should be overridden when user email is present")
 			Expect(v.Teams).To(ConsistOf("team-alpha"))
@@ -165,7 +168,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 				Email:   "alice@test.dev",
 				IsAdmin: true,
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeTrue(), "admin bypass should be preserved when IsAdmin header is set")
 		})
@@ -179,7 +182,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
 				Email: "unknown@test.dev",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeFalse())
 			Expect(v.Teams).To(BeEmpty())
@@ -195,7 +198,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
 				Email: "alice@test.dev",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeFalse())
 			Expect(v.Teams).To(ConsistOf("team-alpha"))
@@ -208,7 +211,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
 				Name: "Jane Doe",
 			})
-			v := captureViewer(ctx)
+			v := captureViewer(ctx, disableSecurity)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Admin).To(BeTrue(), "admin should remain when no email is forwarded")
 		})
