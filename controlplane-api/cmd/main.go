@@ -20,6 +20,7 @@ import (
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/server/serve"
+	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -41,8 +42,10 @@ import (
 	gqlcontroller "github.com/telekom/controlplane/controlplane-api/internal/graphql"
 	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	"github.com/telekom/controlplane/controlplane-api/internal/secrets"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var configFile string
@@ -76,18 +79,19 @@ func main() {
 			log.Error(err, "failed to create Kubernetes client")
 			os.Exit(1)
 		}
+		scopedClient := cc.NewScopedClient(k8sClient, cfg.Kubernetes.Environment)
 		services = service.Services{
-			Team:        service.NewTeamK8sService(k8sClient),
-			Application: service.NewApplicationK8sService(k8sClient),
-			Approval:    service.NewApprovalK8sService(k8sClient),
+			Team:        service.NewTeamK8sService(scopedClient),
+			Application: service.NewApplicationK8sService(scopedClient),
+			Approval:    service.NewApprovalK8sService(scopedClient),
 		}
 		log.Info("Kubernetes integration enabled")
 	} else {
 		log.Info("Kubernetes integration disabled, mutations will be unavailable")
 	}
 
-	srv := newGraphQLServer(client, services, cfg.Security.Enabled)
-
+	secretResolver := secrets.NewResolver(secretsapi.NewSecrets())
+	srv := newGraphQLServer(client, services, secretResolver, cfg.Security.Enabled)
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.EnableCors = true
@@ -176,8 +180,8 @@ func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }
 
-func newGraphQLServer(entClient *ent.Client, services service.Services, securityEnabled bool) *handler.Server {
-	srv := handler.New(resolvers.NewSchema(entClient, services))
+func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, securityEnabled bool) *handler.Server {
+	srv := handler.New(resolvers.NewSchema(entClient, services, secretResolver))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
@@ -187,8 +191,10 @@ func newGraphQLServer(entClient *ent.Client, services service.Services, security
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
+	srv.SetErrorPresenter(gqlcontroller.ErrorPresenter)
 
 	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(entClient, securityEnabled))
+	srv.AroundOperations(gqlcontroller.LogMutationUser())
 
 	return srv
 }

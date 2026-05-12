@@ -21,8 +21,9 @@ type ServerConfig struct {
 }
 
 type KubernetesConfig struct {
-	Enabled    bool   `yaml:"enabled"`
-	Kubeconfig string `yaml:"kubeconfig"` // optional, defaults to in-cluster config
+	Enabled     bool   `yaml:"enabled"`
+	Kubeconfig  string `yaml:"kubeconfig"`  // optional, defaults to in-cluster config
+	Environment string `yaml:"environment"` // environment scope for the scoped client
 }
 
 type DatabaseConfig struct {
@@ -56,7 +57,7 @@ type LogConfig struct {
 func DefaultConfig() *ServerConfig {
 	return &ServerConfig{
 		Database: DatabaseConfig{
-			URL: "postgres://localhost:5432/controlplane?sslmode=disable",
+			URL: "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable",
 		},
 		Server: HTTPServerConfig{
 			Address: ":8443",
@@ -74,6 +75,10 @@ func DefaultConfig() *ServerConfig {
 		},
 		Log: LogConfig{
 			Level: "info",
+		},
+		Kubernetes: KubernetesConfig{
+			Enabled:     true,
+			Environment: "poc", // TODO: for now, this is fine. Needs to be refined later
 		},
 	}
 }
