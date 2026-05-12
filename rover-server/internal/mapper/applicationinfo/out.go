@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -304,6 +305,8 @@ func fillPublishEventURL(ctx context.Context, rover *roverv1.Rover, appInfo *api
 			if problems.IsNotFound(err) {
 				// If the event config is not found, we can skip setting the URL but should log it for visibility
 				// as it may indicate that the event system is not fully set up in this zone/environment.
+				logr.FromContextOrDiscard(ctx).V(0).Info("EventConfig not found, skipping publish event URL",
+					"zone", rover.Spec.Zone, "environment", bCtx.Environment)
 				return nil
 			}
 			return errors.Wrap(err, "failed to get event config")

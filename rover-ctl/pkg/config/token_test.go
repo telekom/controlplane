@@ -43,8 +43,8 @@ var _ = Describe("Token", Ordered, func() {
 		tokenStr := "test--my-group--my-team.ewogICJlbnZpcm9ubWVudCIgOiAidGVzdCIsCiAgImdlbmVyYXRlZF9hdCIgOiAxNzE2NDc0Mjk0OTk3LAogICJjbGllbnRfc2VjcmV0IiA6ICJ0b3BzZWNyZXQiLAogICJjbGllbnRfaWQiIDogInRlc3QtZ3JvdXAtLXRlc3QtdGVhbS0tdGVhbS11c2VyIiwKICAidG9rZW5fdXJsIjogImh0dHBzOi8vZXhhbXBsZS5jb20vdG9rZW4iLAogICJzZXJ2ZXJfdXJsIjogImh0dHA6Ly9sb2NhbGhvc3Q6ODA4MCIKfQ=="
 
 		// Set URLs in viper (these should override the token URLs)
-		viper.Set("server.url", "http://viper-server:9090")
-		viper.Set("auth.token_url", "https://viper-auth.example.com/token")
+		viper.Set(config.ConfigKeyServerURL, "http://viper-server:9090")
+		viper.Set(config.ConfigKeyTokenURL, "https://viper-auth.example.com/token")
 
 		// Parse the token
 		token, err := config.ParseToken(tokenStr)
@@ -57,9 +57,9 @@ var _ = Describe("Token", Ordered, func() {
 		Expect(token.Group).To(Equal("my-group"))
 		Expect(token.Team).To(Equal("my-team"))
 
-		// Verify that URLs from the token are used, not from viper
+		// Verify that viper URLs override the token URLs
 		Expect(token.ServerUrl).To(Equal("http://viper-server:9090/rover/api")) // It must have the base path appended
-		Expect(token.TokenUrl).To(Equal("https://example.com/token"))
+		Expect(token.TokenUrl).To(Equal("https://viper-auth.example.com/token"))
 	})
 
 	It("should return an error for an invalid token format", func() {

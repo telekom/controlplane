@@ -265,6 +265,7 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		if problems.IsNotFound(err) {
 			return res, problems.NotFound(resourceId)
 		}
+		return res, err
 	}
 
 	if rover.Status.Application == nil {
@@ -275,6 +276,7 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		if problems.IsNotFound(err) {
 			return res, problems.NotFound(resourceId)
 		}
+		return res, err
 	}
 
 	// Check if a rotation is already in progress for the current generation
@@ -335,6 +337,7 @@ func (r *RoverController) GetSecretRotationStatus(ctx context.Context, resourceI
 		if problems.IsNotFound(err) {
 			return res, problems.NotFound(resourceId)
 		}
+		return res, err
 	}
 
 	if !condition.IsReady(app) {
