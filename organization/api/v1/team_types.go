@@ -19,9 +19,11 @@ import (
 type Member struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=100
 	Name string `json:"name"`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=320
 	// +kubebuilder:validation:Format=email
 	Email string `json:"email"`
 }
@@ -58,6 +60,12 @@ type TeamSpec struct {
 
 	// Members is the members of the team
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:XValidation:rule="self.all(e, self.filter(x, x.email.lowerAscii() == e.email.lowerAscii()).size() == 1)",message="member email addresses must be unique (case-insensitive)"
+	// +listType=map
+	// +listMapKey=email
+	// +patchStrategy=merge
+	// +patchMergeKey=email
 	Members []Member `json:"members"`
 
 	// Secret for the teamToken and passed towards the identity client.
