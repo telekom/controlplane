@@ -84,7 +84,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	}
 
 	if rotationInProgress {
-		completeRotation(ctx, app)
+		completeRotation(ctx, app, primaryClient)
 	} else if app.Spec.NeedsClient && app.Status.CurrentExpiresAt != nil {
 		handleSecretExpiringNotifications(ctx, app, zone)
 	}
@@ -176,12 +176,18 @@ func (h *ApplicationHandler) initiateRotationIfNeeded(app *application.Applicati
 	return rotationInProgress
 }
 
-func completeRotation(ctx context.Context, app *application.Application) {
+func completeRotation(ctx context.Context, app *application.Application, primaryClient *identity.Client) {
 	log := logr.FromContextOrDiscard(ctx)
 
-	// Expiry timestamps are already propagated by CreateIdentityClient.
-	// Check that they are available (identity controller has reconciled).
-	if app.Status.RotatedExpiresAt == nil {
+	// If the identity client has graceful rotation disabled, the old secret
+	// was replaced immediately — no expiry timestamps will ever arrive.
+	// Complete the rotation without waiting.
+	if primaryClient != nil && !primaryClient.SupportsSecretRotation() {
+		log.Info("Secret rotation: graceful rotation disabled on identity client, completing immediately",
+			"application", app.Name,
+		)
+		app.Status.RotatedExpiresAt = nil
+	} else if app.Status.RotatedExpiresAt == nil {
 		log.Info("Secret rotation: expiry timestamps not yet available from identity client, staying InProgress",
 			"application", app.Name,
 		)
@@ -329,8 +335,14 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 	// and the status fields would be stale.
 	if result == controllerutil.OperationResultNone && !options.Failover {
 		owner.Status.CurrentExpiresAt = idpClient.Status.SecretExpiresAt
+		owner.Status.RotatedExpiresAt = idpClient.Status.RotatedSecretExpiresAt
+
 		if owner.Spec.RotatedSecret != "" {
-			owner.Status.RotatedExpiresAt = idpClient.Status.RotatedSecretExpiresAt
+			// this value is set in the application-webhook if graceful-secret-rotation is used
+			owner.Status.RotatedClientSecret = owner.Spec.RotatedSecret
+		} else {
+			// only as fallback, this field is only set in identity when no secret-manager is configured.
+			owner.Status.RotatedClientSecret = idpClient.Status.RotatedClientSecret
 		}
 	}
 
