@@ -92,8 +92,9 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 		return nil
 	}
 
-	// Determine if this is a rotation request. Can only be a rotation if there is an older generation,
-	// otherwise it would be the initial creation of the secret.
+	// Determine if this is a rotation request. This is called from an admission webhook, so the
+	// admission request operation is available: a rotate keyword on anything other than Create is
+	// treated as a rotation request, while Create is the initial secret creation.
 	isRotation := strings.EqualFold(app.Spec.Secret, secret.KeywordRotate) && req.Operation != admissionv1.Create
 
 	// Guard: deny rotation if one is already in progress
