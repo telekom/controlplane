@@ -61,7 +61,7 @@ type TeamSpec struct {
 	// Members is the members of the team
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=50
-	// +kubebuilder:validation:XValidation:rule="self.all(e, self.filter(x, x.email == e.email).size() == 1)",message="member email addresses must be unique"
+	// +kubebuilder:validation:XValidation:rule="self.all(e, self.filter(x, x.email.lowerAscii() == e.email.lowerAscii()).size() == 1)",message="member email addresses must be unique (case-insensitive)"
 	// +listType=map
 	// +listMapKey=email
 	// +patchStrategy=merge
