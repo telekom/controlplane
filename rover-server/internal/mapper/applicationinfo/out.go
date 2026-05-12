@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 )
@@ -77,9 +78,11 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 	if rover == nil {
 		return nil, errors.New("input rover is nil")
 	}
+	scalars := mapper.RoverExternalIdsToScalars(rover.Spec.ExternalIds)
 	appInfo := &api.ApplicationInfo{
-		Name: rover.Name,
-		Zone: rover.Spec.Zone,
+		Name:  rover.Name,
+		Zone:  rover.Spec.Zone,
+		Psiid: scalars.Psiid,
 	}
 
 	if err := FillApplicationInfo(ctx, rover, appInfo, stores); err != nil {
