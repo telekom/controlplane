@@ -76,6 +76,10 @@ func (a *ApprovalCustomValidator) ValidateCreate(_ context.Context, obj *approva
 func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
 	approvallog.Info("validate update", "name", newObj.Name)
 
+	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && newObj.Spec.State != approvalv1.ApprovalStateGranted {
+		return warnings, apierrors.NewBadRequest("Auto strategy Approval must be in Granted state")
+	}
+
 	stateChanged := oldObj.Spec.State != newObj.Spec.State
 
 	// Validate FSM transitions on-the-fly using the canonical FSM definitions
