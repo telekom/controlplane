@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -19,7 +20,7 @@ import (
 // derives identity keys.
 //
 // ShouldSkip filters out CRs that lack the required fields for FK resolution:
-// empty spec.target.Name, empty spec.action, or spec.target.Kind != "ApiSubscription".
+// empty spec.target.Name, empty spec.action, or unsupported spec.target.Kind.
 //
 // KeyFromDelete uses lastKnown when available. When lastKnown is nil, returns
 // a key with only Namespace+Name (sufficient for DB delete by unique index)
@@ -29,9 +30,13 @@ type Translator struct{}
 // compile-time interface check.
 var _ runtime.Translator[*approvalv1.ApprovalRequest, *ApprovalRequestData, ApprovalRequestKey] = (*Translator)(nil)
 
+// isSupportedTargetKind returns true if the target kind is one we can resolve.
+func isSupportedTargetKind(kind string) bool {
+	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription
+}
+
 // ShouldSkip returns true if the ApprovalRequest CR lacks the required fields
-// for sync (missing target name, empty action, or non-ApiSubscription target
-// kind).
+// for sync (missing target name, empty action, or unsupported target kind).
 func (t *Translator) ShouldSkip(obj *approvalv1.ApprovalRequest) (bool, string) {
 	if obj.Spec.Target.Name == "" {
 		return true, "spec.target.name is empty"
@@ -39,9 +44,11 @@ func (t *Translator) ShouldSkip(obj *approvalv1.ApprovalRequest) (bool, string) 
 	if obj.Spec.Action == "" {
 		return true, "spec.action is empty"
 	}
-	// TODO: This filter should be removed in the future when other target kinds are supported.
-	if obj.Spec.Target.TypeMeta.Kind != "ApiSubscription" {
-		return true, "spec.target.kind is not ApiSubscription"
+	if !isSupportedTargetKind(obj.Spec.Target.TypeMeta.Kind) {
+		return true, "spec.target.kind is not ApiSubscription or EventSubscription"
+	}
+	if !cconfig.FeaturePubSub.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindEventSubscription {
+		return true, "pubsub feature is disabled"
 	}
 
 	if obj.Spec.Decider.TeamName == "" {
@@ -60,7 +67,7 @@ func (t *Translator) ShouldSkip(obj *approvalv1.ApprovalRequest) (bool, string) 
 // computed by the approval-operator's FSM.
 //
 // The subscription reference is derived from spec.target, which carries the
-// k8s namespace and name of the ApiSubscription CR being approved. If the
+// k8s namespace and name of the target subscription CR being approved. If the
 // target namespace is empty, it falls back to the ApprovalRequest CR's own
 // namespace (same-namespace reference).
 func (t *Translator) Translate(_ context.Context, obj *approvalv1.ApprovalRequest) (*ApprovalRequestData, error) {
@@ -82,6 +89,7 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.ApprovalReques
 		Decider:               mapDecider(obj.Spec.Decider),
 		Decisions:             mapDecisions(obj.Spec.Decisions),
 		AvailableTransitions:  mapAvailableTransitions(obj.Status.AvailableTransitions),
+		TargetKind:            obj.Spec.Target.TypeMeta.Kind,
 		SubscriptionNamespace: targetNamespace,
 		SubscriptionName:      obj.Spec.Target.Name,
 	}, nil

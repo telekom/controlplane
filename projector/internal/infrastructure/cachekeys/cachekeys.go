@@ -63,3 +63,25 @@ func Approval(namespace, name string) (entityType, lookupKey string) {
 func ApprovalRequest(namespace, name string) (entityType, lookupKey string) {
 	return "approvalrequest", namespace + ":" + name
 }
+
+// EventExposure returns the cache key components for an EventExposure entity
+// identified by event type, application name, and team name.
+// Event types are unique per application, and applications per team,
+// so all three are required.
+func EventExposure(eventType, appName, teamName string) (entityType, lookupKey string) {
+	return "eventexposure", eventType + ":" + appName + ":" + teamName
+}
+
+// EventExposureByEventType returns the cache key components for an
+// EventExposure entity looked up by event type alone. Uses an "et:" prefix
+// to avoid collisions with the full composite key used by [EventExposure].
+func EventExposureByEventType(eventType string) (entityType, lookupKey string) {
+	return "eventexposure", "et:" + eventType
+}
+
+// EventSubscriptionMeta returns the cache key components for an
+// EventSubscription entity looked up by its Kubernetes metadata
+// (namespace + name).
+func EventSubscriptionMeta(namespace, name string) (entityType, lookupKey string) {
+	return "eventsubscription", "meta:" + namespace + ":" + name
+}
