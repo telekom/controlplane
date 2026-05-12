@@ -8,6 +8,7 @@ import adminv1 "github.com/telekom/controlplane/admin/api/v1"
 
 const (
 	teamApiIdentityRealmPrefix = "team-"
+	internalIdentityRealmName  = "rover"
 	gatewayClientName          = "gateway"
 	gatewayAdminClientId       = "rover"
 	gateway                    = "gateway"
@@ -16,6 +17,10 @@ const (
 
 func ForDefaultIdentityRealm(environment *adminv1.Environment) string {
 	return environment.GetName()
+}
+
+func ForInternalIdentityRealm() string {
+	return internalIdentityRealmName
 }
 
 func ForTeamApiIdentityRealm(environment *adminv1.Environment) string {
@@ -50,6 +55,6 @@ func ForGatewayConsumer() string {
 	return gatewayConsumer
 }
 
-func ForGatewayRoute(config adminv1.ApiConfig) string {
+func ForGatewayRoute(config adminv1.ManagedRouteConfig) string {
 	return config.Name
 }

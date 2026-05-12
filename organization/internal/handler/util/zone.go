@@ -21,7 +21,7 @@ func GetZoneObjWithTeamInfo(ctx context.Context) (*adminv1.Zone, error) {
 	zoneList := &adminv1.ZoneList{}
 	clientFromContext := cclient.ClientFromContextOrDie(ctx)
 
-	err := clientFromContext.List(ctx, zoneList, client.MatchingFields{index.FieldSpecTeamApis: "true"})
+	err := clientFromContext.List(ctx, zoneList, client.MatchingFields{index.FieldSpecManagedRoutes: "true"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list zones: %w", err)
 	}
@@ -31,7 +31,7 @@ func GetZoneObjWithTeamInfo(ctx context.Context) (*adminv1.Zone, error) {
 		if !ok {
 			continue
 		}
-		if z.Spec.TeamApis != nil {
+		if z.Spec.ManagedRoutes != nil {
 			teamApiZone = z.DeepCopy()
 			break
 		}

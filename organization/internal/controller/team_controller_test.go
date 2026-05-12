@@ -78,10 +78,11 @@ var _ = Describe("Team Controller", Ordered, func() {
 				},
 			},
 			Spec: adminv1.ZoneSpec{
-				TeamApis: &adminv1.TeamApiConfig{Apis: []adminv1.ApiConfig{{
+				ManagedRoutes: &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{
 					Name: "team-api-1",
 					Path: "/teamAPI",
 					Url:  "http://example.org",
+					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
 			},
