@@ -27,14 +27,13 @@ autobind:
   - github.com/telekom/controlplane/controlplane-api/ent/application
   - github.com/telekom/controlplane/controlplane-api/ent/apiexposure
   - github.com/telekom/controlplane/controlplane-api/ent/apisubscription
+  - github.com/telekom/controlplane/controlplane-api/ent/eventexposure
+  - github.com/telekom/controlplane/controlplane-api/ent/eventsubscription
 
 models:
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.IntID
-  TeamMutationResult:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamMutationResult
   CreateTeamInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateTeamInput
@@ -44,27 +43,36 @@ models:
   MemberInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.MemberInput
-  RotateTeamTokenInput:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateTeamTokenInput
-  RotateApplicationSecretInput:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretInput
-  RotateApplicationSecretResult:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretResult
-  DecideApprovalRequestInput:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalRequestInput
-  DecideApprovalInput:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalInput
   DecisionInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecisionInput
-  ApprovalMutationResult:
+  MutationError:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApprovalMutationResult
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.MutationError
+  CreateTeamPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateTeamPayload
+  UpdateTeamPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateTeamPayload
+  AddTeamMemberPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AddTeamMemberPayload
+  RemoveTeamMemberPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RemoveTeamMemberPayload
+  RotateTeamTokenPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateTeamTokenPayload
+  RotateApplicationSecretPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretPayload
+  DecideApprovalRequestPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalRequestPayload
+  DecideApprovalPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalPayload
   Node:
     model:
       - github.com/telekom/controlplane/controlplane-api/ent.Noder
@@ -89,9 +97,25 @@ models:
   AvailableTransition:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.AvailableTransition
+  Application:
+    fields:
+      clientSecret:
+        resolver: true
+      rotatedClientSecret:
+        resolver: true
+  Team:
+    fields:
+      teamToken:
+        resolver: true
   ApiExposureInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiExposureInfo
   ApiSubscriptionInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionInfo
+  EventSubscriptionInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventSubscriptionInfo
+  EventExposureInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventExposureInfo

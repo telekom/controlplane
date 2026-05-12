@@ -103,11 +103,42 @@ type ApiSubscriptionInfo {
   ownerTeam: TeamInfo!
 }
 
+"Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type EventSubscriptionInfo {
+  id: ID!
+  eventType: String!
+  deliveryType: EventSubscriptionDeliveryType!
+  statusPhase: EventSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+"Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
+type EventExposureInfo {
+  id: ID!
+  eventType: String!
+  visibility: EventExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
 # -- Cross-tenant edge overrides --
 
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+}
+
+extend type Zone {
+  "Token endpoint URL derived from the issuer URL. Returns null if no issuer URL is set."
+  tokenURL: String @goField(forceResolver: true)
 }
 
 extend type ApiSubscription {
@@ -120,15 +151,28 @@ extend type ApiExposure {
   subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
+extend type EventSubscription {
+  "Target exposure (reduced view — cross-tenant boundary)"
+  target: EventExposureInfo! @goField(forceResolver: true)
+}
+
+extend type EventExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+"A subscription related to an approval — either an API or event subscription."
+union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo
+
 extend type Approval {
   "Related subscription (reduced view — cross-tenant boundary)"
-  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
+  subscription: SubscriptionInfo! @goField(forceResolver: true)
 }
 
 extend type ApprovalRequest {
   "Related subscription (reduced view — cross-tenant boundary)"
-  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
-  "The corresponding approval, if one exists (traverses via ApiSubscription)"
+  subscription: SubscriptionInfo! @goField(forceResolver: true)
+  "The corresponding approval, if one exists (traverses via the related subscription)"
   approval: Approval @goField(forceResolver: true)
 }
 
