@@ -70,6 +70,7 @@ var _ = Describe("GracefulSecrets (pure functions)", func() {
 			Expect(info.RotatedCreatedAt).To(BeNil())
 			Expect(info.RotatedExpiresAt).To(BeNil())
 			Expect(info.SecretCreationTime).To(BeNil())
+			Expect(info.SecretExpiresAt).To(BeNil())
 		})
 
 		It("should populate all fields from cred and client attributes", func() {
@@ -79,6 +80,7 @@ var _ = Describe("GracefulSecrets (pure functions)", func() {
 					attrRotatedCreationTime:   "1000",
 					attrRotatedExpirationTime: float64(2000),
 					attrSecretCreationTime:    "3000",
+					attrSecretExpirationTime:  "4000",
 				},
 			}
 			info := NewClientSecretRotationInfo(cred, client)
@@ -89,6 +91,8 @@ var _ = Describe("GracefulSecrets (pure functions)", func() {
 			Expect(*info.RotatedExpiresAt).To(Equal(int64(2000)))
 			Expect(info.SecretCreationTime).ToNot(BeNil())
 			Expect(*info.SecretCreationTime).To(Equal(int64(3000)))
+			Expect(info.SecretExpiresAt).ToNot(BeNil())
+			Expect(*info.SecretExpiresAt).To(Equal(int64(4000)))
 		})
 	})
 

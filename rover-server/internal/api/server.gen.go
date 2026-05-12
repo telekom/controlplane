@@ -1131,10 +1131,40 @@ type RoverResponse struct {
 	Zone          string         `json:"zone"`
 }
 
-// RoverSecretResponse defines model for RoverSecretResponse.
-type RoverSecretResponse struct {
-	Id     string `json:"id"`
-	Secret string `json:"secret"`
+// RoverSecretRotationAcceptedResponse defines model for RoverSecretRotationAcceptedResponse.
+type RoverSecretRotationAcceptedResponse struct {
+	UnderscoreLinks struct {
+		// Status URL to poll for the rotation status
+		Status string `json:"status"`
+	} `json:"_links"`
+
+	// ClientId The clientId of the application
+	ClientId string `json:"clientId"`
+
+	// Message Human-readable message about the initiated rotation
+	Message string `json:"message"`
+}
+
+// RoverSecretRotationStatusResponse defines model for RoverSecretRotationStatusResponse.
+type RoverSecretRotationStatusResponse struct {
+	// ClientId The clientId of the application
+	ClientId string `json:"clientId"`
+
+	// ClientSecret The current (new) client secret value
+	ClientSecret string `json:"clientSecret,omitempty,omitzero"`
+
+	// CurrentExpiresAt When the current secret will expire and should be rotated
+	CurrentExpiresAt time.Time `json:"currentExpiresAt,omitempty,omitzero"`
+
+	// OverallStatus Status of this resource and all its relevant sub-resources
+	OverallStatus   OverallStatus   `json:"overallStatus"`
+	ProcessingState ProcessingState `json:"processingState"`
+
+	// RotatedClientSecret The previous (rotated) client secret value, valid until rotatedExpiresAt
+	RotatedClientSecret string `json:"rotatedClientSecret,omitempty,omitzero"`
+
+	// RotatedExpiresAt When the rotated (old) secret stops being accepted
+	RotatedExpiresAt time.Time `json:"rotatedExpiresAt,omitempty,omitzero"`
 }
 
 // RoverUpdateRequest defines model for RoverUpdateRequest.
@@ -1154,6 +1184,21 @@ type RoverUpdateRequest struct {
 	Status        Status         `json:"status,omitempty,omitzero"`
 	Subscriptions []Subscription `json:"subscriptions,omitempty,omitzero"`
 	Zone          string         `json:"zone"`
+}
+
+// SecretInfo defines model for SecretInfo.
+type SecretInfo struct {
+	// ClientSecret The current client secret value
+	ClientSecret string `json:"clientSecret,omitempty,omitzero"`
+
+	// CurrentExpiresAt When the current secret will expire and should be rotated
+	CurrentExpiresAt time.Time `json:"currentExpiresAt,omitempty,omitzero"`
+
+	// RotatedClientSecret The previous (rotated) client secret value, valid until rotatedExpiresAt
+	RotatedClientSecret string `json:"rotatedClientSecret,omitempty,omitzero"`
+
+	// RotatedExpiresAt When the rotated (old) secret stops being accepted
+	RotatedExpiresAt time.Time `json:"rotatedExpiresAt,omitempty,omitzero"`
 }
 
 // Security defines model for Security.

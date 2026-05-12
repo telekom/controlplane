@@ -87,6 +87,12 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		}
 	}
 
+	// Configure the managed client scope for custom claims. This is
+	// always called — an empty claims slice removes the scope if it exists.
+	if err := realmClient.ConfigureClientScopes(ctx, realm.Name, realm.Spec.Claims); err != nil {
+		return fmt.Errorf("failed to configure client scopes: %w", err)
+	}
+
 	realm.SetCondition(condition.NewDoneProcessingCondition("Created Realm"))
 	realm.SetCondition(condition.NewReadyCondition("Ready", "Realm is ready"))
 

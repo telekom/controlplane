@@ -10,10 +10,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -53,6 +55,7 @@ func TestMutateSecret(t *testing.T) {
 		app                   *applicationv1.Application
 		env                   string
 		reader                client.Reader
+		operation             admissionv1.Operation
 		mock                  func(t *testing.T) api.SecretManager
 		mockFindSecretId      func(map[string]string, string) (string, bool)
 		expectedError         bool
@@ -68,8 +71,9 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "",
 				},
 			},
-			env:    "dev",
-			reader: newReader(),
+			env:       "dev",
+			reader:    newReader(),
+			operation: admissionv1.Create,
 			mock: func(t *testing.T) api.SecretManager {
 				m := fake.NewMockSecretManager(t)
 				m.EXPECT().
@@ -93,8 +97,9 @@ func TestMutateSecret(t *testing.T) {
 					ClientSecret: "$<old-ref>",
 				},
 			},
-			env:    "dev",
-			reader: newReader(zoneWithRotation.DeepCopy()),
+			env:       "dev",
+			reader:    newReader(zoneWithRotation.DeepCopy()),
+			operation: admissionv1.Update,
 			mock: func(t *testing.T) api.SecretManager {
 				m := fake.NewMockSecretManager(t)
 				m.EXPECT().
@@ -124,8 +129,9 @@ func TestMutateSecret(t *testing.T) {
 					ClientSecret: "$<old-ref>",
 				},
 			},
-			env:    "dev",
-			reader: newReader(zoneWithoutRotation.DeepCopy()),
+			env:       "dev",
+			reader:    newReader(zoneWithoutRotation.DeepCopy()),
+			operation: admissionv1.Update,
 			mock: func(t *testing.T) api.SecretManager {
 				m := fake.NewMockSecretManager(t)
 				m.EXPECT().
@@ -152,8 +158,9 @@ func TestMutateSecret(t *testing.T) {
 					ClientSecret: "",
 				},
 			},
-			env:    "dev",
-			reader: newReader(zoneWithRotation.DeepCopy()),
+			env:       "dev",
+			reader:    newReader(zoneWithRotation.DeepCopy()),
+			operation: admissionv1.Update,
 			mock: func(t *testing.T) api.SecretManager {
 				m := fake.NewMockSecretManager(t)
 				m.EXPECT().
@@ -189,8 +196,9 @@ func TestMutateSecret(t *testing.T) {
 					},
 				},
 			},
-			env:    "dev",
-			reader: newReader(zoneWithRotation.DeepCopy()),
+			env:       "dev",
+			reader:    newReader(zoneWithRotation.DeepCopy()),
+			operation: admissionv1.Update,
 			mock: func(t *testing.T) api.SecretManager {
 				return nil
 			},
@@ -205,8 +213,9 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "my-custom-secret",
 				},
 			},
-			env:    "dev",
-			reader: newReader(),
+			env:       "dev",
+			reader:    newReader(),
+			operation: admissionv1.Create,
 			mock: func(t *testing.T) api.SecretManager {
 				m := fake.NewMockSecretManager(t)
 				m.EXPECT().
@@ -225,8 +234,9 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "$<existing-ref>",
 				},
 			},
-			env:    "dev",
-			reader: newReader(),
+			env:       "dev",
+			reader:    newReader(),
+			operation: admissionv1.Update,
 			mock: func(t *testing.T) api.SecretManager {
 				return nil
 			},
@@ -246,8 +256,9 @@ func TestMutateSecret(t *testing.T) {
 					ClientSecret: "$<old-ref>",
 				},
 			},
-			env:    "dev",
-			reader: newReader(zoneWithRotation.DeepCopy()),
+			env:       "dev",
+			reader:    newReader(zoneWithRotation.DeepCopy()),
+			operation: admissionv1.Update,
 			mock: func(t *testing.T) api.SecretManager {
 				m := fake.NewMockSecretManager(t)
 				m.EXPECT().
@@ -274,8 +285,9 @@ func TestMutateSecret(t *testing.T) {
 					ClientSecret: "$<old-ref>",
 				},
 			},
-			env:    "dev",
-			reader: newReader(zoneWithRotation.DeepCopy()),
+			env:       "dev",
+			reader:    newReader(zoneWithRotation.DeepCopy()),
+			operation: admissionv1.Update,
 			mock: func(t *testing.T) api.SecretManager {
 				m := fake.NewMockSecretManager(t)
 				m.EXPECT().
@@ -299,8 +311,9 @@ func TestMutateSecret(t *testing.T) {
 					ClientSecret: "$<old-ref>",
 				},
 			},
-			env:    "dev",
-			reader: newReader(zoneWithRotation.DeepCopy()),
+			env:       "dev",
+			reader:    newReader(zoneWithRotation.DeepCopy()),
+			operation: admissionv1.Update,
 			mock: func(t *testing.T) api.SecretManager {
 				m := fake.NewMockSecretManager(t)
 				m.EXPECT().
@@ -330,7 +343,9 @@ func TestMutateSecret(t *testing.T) {
 			if tt.mockFindSecretId != nil {
 				secret.FindSecretId = tt.mockFindSecretId
 			}
-			err := MutateSecret(context.Background(), tt.env, tt.app, tt.reader)
+			err := MutateSecret(admission.NewContextWithRequest(context.Background(), admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{Operation: tt.operation},
+			}), tt.env, tt.app, tt.reader)
 			if tt.expectedError {
 				Expect(err).To(HaveOccurred())
 				if tt.expectedForbidden {
