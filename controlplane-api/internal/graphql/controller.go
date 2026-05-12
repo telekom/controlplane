@@ -6,14 +6,17 @@ package graphql
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
+
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"github.com/valyala/fasthttp/fasthttpadaptor"
+	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
 // Controller is a Fiber controller that wraps a gqlgen handler.
@@ -55,7 +58,22 @@ func httpHandlerWithUserContext(h http.Handler) fiber.Handler {
 		if err := fasthttpadaptor.ConvertRequest(c.Context(), &req, true); err != nil {
 			return err
 		}
-		req = *req.WithContext(c.UserContext())
+		ctx := c.UserContext()
+
+		// Propagate forwarded user identity headers into context for the Viewer middleware.
+		if name, email := c.Get("X-Forwarded-User-Name"), c.Get("X-Forwarded-User-Email"); name != "" || email != "" {
+			fu := viewer.ForwardedUser{Name: name, Email: email}
+			fu.IsAdmin = strings.EqualFold(c.Get("X-Forwarded-User-Is-Admin"), "true")
+			if roles := c.Get("X-Forwarded-User-Roles"); roles != "" {
+				fu.Roles = strings.Split(roles, ",")
+			}
+			if groups := c.Get("X-Forwarded-User-Groups"); groups != "" {
+				fu.Groups = strings.Split(groups, ",")
+			}
+			ctx = viewer.NewForwardedUserContext(ctx, fu)
+		}
+
+		req = *req.WithContext(ctx)
 		rec := &responseRecorder{ctx: c}
 		h.ServeHTTP(rec, &req)
 		return nil
