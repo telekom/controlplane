@@ -50,6 +50,11 @@ var (
 	FeatureFileManager   Feature = NewFeature("file_manager", true)   // File Manager feature enabled by default
 )
 
+// SetFeatureEnabled sets the enabled state for a feature. Intended for tests.
+func SetFeatureEnabled(f Feature, enabled bool) {
+	features[f] = enabled
+}
+
 // logFeatureStates logs the enabled/disabled state of all registered features.
 func logFeatureStates() {
 	for f, enabled := range features {
