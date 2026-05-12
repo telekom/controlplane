@@ -517,7 +517,7 @@ var _ = Describe("HandlerClient", func() {
 			Expect(cl.Status.RotatedClientSecret).To(Equal("old-secret-value"))
 		})
 
-		It("should set SecretExpiresAt when creation time attribute is present", func() {
+		It("should set SecretExpiresAt when expiration time attribute is present", func() {
 			cl := newValidClient()
 			cl.Spec.ClientSecret = "plain-secret"
 
@@ -533,15 +533,15 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			// Secret created at 2025-06-16T12:00:00Z = 1750075200
-			var creationEpoch int64 = 1750075200
+			// Secret expires at 2025-07-15T12:00:00Z = 1752580800
+			var expirationEpoch int64 = 1752580800
 			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
 			mockSvc.EXPECT().
 				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
-				Return(&keycloak.ClientSecretRotationInfo{SecretCreationTime: &creationEpoch}, nil)
+				Return(&keycloak.ClientSecretRotationInfo{SecretExpiresAt: &expirationEpoch}, nil)
 
 			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
 				return mockSvc, nil
@@ -552,14 +552,14 @@ var _ = Describe("HandlerClient", func() {
 
 			Expect(err).ToNot(HaveOccurred())
 
-			By("verifying SecretExpiresAt = creationTime + expirationPeriod")
-			expectedExpiry := time.Unix(creationEpoch, 0).Add(29 * 24 * time.Hour).UTC()
+			By("verifying SecretExpiresAt is set directly from Keycloak's expiration time attribute")
+			expectedExpiry := time.Unix(expirationEpoch, 0).UTC()
 			Expect(cl.Status.SecretExpiresAt).ToNot(BeNil())
 			Expect(cl.Status.SecretExpiresAt.Time.Equal(expectedExpiry)).To(BeTrue(),
 				"expected %v but got %v", expectedExpiry, cl.Status.SecretExpiresAt.Time)
 		})
 
-		It("should set SecretExpiresAt to nil when creation time attribute is missing", func() {
+		It("should set SecretExpiresAt to nil when expiration time attribute is missing", func() {
 			cl := newValidClient()
 			cl.Spec.ClientSecret = "plain-secret"
 
