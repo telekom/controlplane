@@ -67,17 +67,26 @@ spec:
                   properties:
                     email:
                       format: email
+                      maxLength: 320
                       minLength: 1
                       type: string
                     name:
+                      maxLength: 100
                       minLength: 1
                       type: string
                   required:
                   - email
                   - name
                   type: object
+                maxItems: 50
                 minItems: 1
                 type: array
+                x-kubernetes-list-map-keys:
+                - email
+                x-kubernetes-list-type: map
+                x-kubernetes-validations:
+                - message: member email addresses must be unique
+                  rule: self.all(e, self.filter(x, x.email == e.email).size() == 1)
               name:
                 description: Name is the name of the team
                 minLength: 1
