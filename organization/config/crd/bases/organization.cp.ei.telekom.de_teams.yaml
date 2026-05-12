@@ -85,8 +85,9 @@ spec:
                 - email
                 x-kubernetes-list-type: map
                 x-kubernetes-validations:
-                - message: member email addresses must be unique
-                  rule: self.all(e, self.filter(x, x.email == e.email).size() == 1)
+                - message: member email addresses must be unique (case-insensitive)
+                  rule: self.all(e, self.filter(x, x.email.lowerAscii() == e.email.lowerAscii()).size()
+                    == 1)
               name:
                 description: Name is the name of the team
                 minLength: 1
