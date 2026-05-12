@@ -47,4 +47,3 @@ func TestRoverExternalIdsToScalars(t *testing.T) {
 	// Missing schemes yield the zero value.
 	assert.Equal(t, mapper.ExternalIdScalars{}, mapper.RoverExternalIdsToScalars(nil))
 }
-
