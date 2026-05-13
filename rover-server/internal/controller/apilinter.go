@@ -50,6 +50,8 @@ type ApiLinter interface {
 type apiLinterImpl struct {
 	objStore     store.ObjectStore[*roverv1.ApiSpecification]
 	errorMessage string
+	url          string
+	dashboardURL string
 	httpClient   oaslint.HTTPDoer
 }
 
@@ -58,6 +60,8 @@ func NewApiLinter(objStore store.ObjectStore[*roverv1.ApiSpecification], lintCfg
 	return &apiLinterImpl{
 		objStore:     objStore,
 		errorMessage: lintCfg.ErrorMessage,
+		url:          lintCfg.URL,
+		dashboardURL: lintCfg.DashboardURL,
 		httpClient: commonclient.NewHttpClientOrDie(
 			commonclient.WithClientName("oaslint"),
 			commonclient.WithClientTimeout(lintCfg.Timeout),
@@ -72,7 +76,7 @@ func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecificat
 		"category", apiSpec.Spec.Category, "basepath", apiSpec.Spec.BasePath)
 
 	lintCfg := lintingConfigFromList(categoryList, apiSpec.Spec.Category)
-	if lintCfg == nil || lintCfg.URL == "" || lintCfg.Mode == apiv1.LintingModeNone {
+	if lintCfg == nil || l.url == "" || lintCfg.Mode == apiv1.LintingModeNone {
 		log.V(1).Info("No linting config or no URL, skipping linting", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
 		return LintSkipped, nil
 	}
@@ -84,7 +88,7 @@ func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecificat
 		return LintSkipped, nil
 	}
 
-	if err := l.runSyncLint(ctx, apiSpec, lintCfg.URL, lintCfg.Ruleset, specBytes); err != nil {
+	if err := l.runSyncLint(ctx, apiSpec, lintCfg.Ruleset, specBytes); err != nil {
 		_ = l.objStore.CreateOrReplace(ctx, apiSpec)
 		return LintCompleted, err
 	}
@@ -104,9 +108,9 @@ func (l *apiLinterImpl) prepareLinting(lintCfg *apiv1.LintingConfig, apiSpec *ro
 	return true
 }
 
-func (l *apiLinterImpl) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, linterURL, ruleset string, specBytes []byte) error {
+func (l *apiLinterImpl) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, ruleset string, specBytes []byte) error {
 	log := logr.FromContextOrDiscard(ctx).WithName("linting")
-	lintResult, err := l.executeLint(ctx, linterURL, ruleset, specBytes)
+	lintResult, err := l.executeLint(ctx, ruleset, specBytes)
 	apiSpec.Spec.Lint = lintResult
 	if err != nil {
 		log.Error(err, "Sync OAS linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
@@ -118,13 +122,13 @@ func (l *apiLinterImpl) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpe
 	return nil
 }
 
-func (l *apiLinterImpl) executeLint(ctx context.Context, linterURL, ruleset string, specBytes []byte) (*roverv1.LintResult, error) {
+func (l *apiLinterImpl) executeLint(ctx context.Context, ruleset string, specBytes []byte) (*roverv1.LintResult, error) {
 	var opts []oaslint.ExternalLinterOption
 	if ruleset != "" {
 		opts = append(opts, oaslint.WithRuleset(ruleset))
 	}
 	opts = append(opts, oaslint.WithHTTPClient(l.httpClient))
-	linter := oaslint.NewExternalLinter(linterURL, opts...)
+	linter := oaslint.NewExternalLinter(l.url, opts...)
 
 	result, err := linter.Lint(ctx, specBytes)
 	if err != nil {
@@ -133,16 +137,16 @@ func (l *apiLinterImpl) executeLint(ctx context.Context, linterURL, ruleset stri
 			Message: fmt.Sprintf("linter API error: %s", err),
 		}, fmt.Errorf("linter API error: %w", err)
 	}
-	return l.buildLintResult(result, linterURL), nil
+	return l.buildLintResult(result), nil
 }
 
-func (l *apiLinterImpl) buildLintResult(result *oaslint.LintResult, linterURL string) *roverv1.LintResult {
+func (l *apiLinterImpl) buildLintResult(result *oaslint.LintResult) *roverv1.LintResult {
 	lintResult := &roverv1.LintResult{
 		Passed:  result.Passed,
 		Message: result.Reason,
 	}
-	if linterURL != "" && result.LinterId != "" {
-		lintResult.DashboardURL = fmt.Sprintf("%s/scans/%s", strings.TrimRight(linterURL, "/"), result.LinterId)
+	if l.dashboardURL != "" && result.LinterId != "" {
+		lintResult.DashboardURL = fmt.Sprintf("%s/scans/%s", strings.TrimRight(l.dashboardURL, "/"), result.LinterId)
 	}
 	if !result.Passed {
 		lintResult.Message = strings.ReplaceAll(l.errorMessage, "RULESET_NAME_PLACEHOLDER", result.Ruleset)

@@ -59,7 +59,6 @@ var _ = Describe("Linting helpers", func() {
 
 		It("should skip linting for category-whitelisted basepath", func() {
 			lintCfg := &apiv1.LintingConfig{
-				URL:                  "https://linter.example.com",
 				WhitelistedBasepaths: []string{"/eni/internal/v1"},
 			}
 			apiSpec := &roverv1.ApiSpecification{
@@ -74,7 +73,7 @@ var _ = Describe("Linting helpers", func() {
 		})
 
 		It("should skip linting when spec hash is unchanged and previous result exists", func() {
-			lintCfg := &apiv1.LintingConfig{URL: "https://linter.example.com"}
+			lintCfg := &apiv1.LintingConfig{}
 			existing := &roverv1.ApiSpecification{
 				Spec: roverv1.ApiSpecificationSpec{
 					BasePath: "/eni/test/v1",
@@ -96,7 +95,7 @@ var _ = Describe("Linting helpers", func() {
 		})
 
 		It("should require linting when spec hash changed", func() {
-			lintCfg := &apiv1.LintingConfig{URL: "https://linter.example.com"}
+			lintCfg := &apiv1.LintingConfig{}
 			existing := &roverv1.ApiSpecification{
 				Spec: roverv1.ApiSpecificationSpec{
 					BasePath: "/eni/test/v1",
@@ -117,7 +116,7 @@ var _ = Describe("Linting helpers", func() {
 		})
 
 		It("should require linting for new spec (no existing object)", func() {
-			lintCfg := &apiv1.LintingConfig{URL: "https://linter.example.com"}
+			lintCfg := &apiv1.LintingConfig{}
 			apiSpec := &roverv1.ApiSpecification{
 				Spec: roverv1.ApiSpecificationSpec{
 					BasePath: "/eni/test/v1",
@@ -151,7 +150,6 @@ var _ = Describe("Linting helpers", func() {
 						Spec: apiv1.ApiCategorySpec{
 							LabelValue: "my-cat",
 							Linting: &apiv1.LintingConfig{
-								URL:  "https://linter.example.com",
 								Mode: apiv1.LintingModeWarn,
 							},
 						},
@@ -160,7 +158,6 @@ var _ = Describe("Linting helpers", func() {
 			}
 			result := lintingConfigFromList(list, "my-cat")
 			Expect(result).ToNot(BeNil())
-			Expect(result.URL).To(Equal("https://linter.example.com"))
 			Expect(result.Mode).To(Equal(apiv1.LintingModeWarn))
 		})
 

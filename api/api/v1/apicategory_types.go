@@ -27,12 +27,6 @@ const (
 
 // LintingConfig configures OAS specification linting for APIs in this category.
 type LintingConfig struct {
-	// URL is the base URL of the external linter service.
-	// When set, linting is enabled for this category.
-	// +kubebuilder:validation:Format=uri
-	// +optional
-	URL string `json:"url,omitempty"`
-
 	// Ruleset is the name of the linter ruleset to apply.
 	// If set, it is passed as a query parameter to the linter API.
 	Ruleset string `json:"ruleset"`
@@ -45,7 +39,7 @@ type LintingConfig struct {
 	Mode LintingMode `json:"mode,omitempty"`
 
 	// WhitelistedBasepaths is a list of API basepaths that are exempt from linting.
-	// APIs whose basePath matches an entry here will skip linting even when a linter URL is configured.
+	// APIs whose basePath matches an entry here will skip linting even when linting is configured.
 	// Each entry must start with a leading slash.
 	// +optional
 	// +listType=set
@@ -80,7 +74,6 @@ type ApiCategorySpec struct {
 	MustHaveGroupPrefix bool `json:"mustHaveGroupPrefix,omitempty"`
 
 	// Linting configures OAS specification linting for APIs in this category.
-	// If set with a URL, linting is enabled for this category.
 	// +optional
 	Linting *LintingConfig `json:"linting,omitempty"`
 }
