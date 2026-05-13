@@ -30,7 +30,7 @@ func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *gatewayv
 	}
 
 	if err := builder.BuildForConsumer(ctx); err != nil {
-		return errors.Wrap(err, "failed to build route")
+		return errors.Wrap(err, "failed to build consumer")
 	}
 
 	consumer.SetCondition(condition.NewDoneProcessingCondition("Consumer is ready"))
