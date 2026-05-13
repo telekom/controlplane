@@ -24,11 +24,11 @@ func MapResponse(ctx context.Context, obj types.Object) (api.ResourceStatusRespo
 	processing := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
-		processedAtTime = processing.LastTransitionTime.Time.UTC()
+		processedAtTime = processing.LastTransitionTime.Time
 	}
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       obj.GetCreationTimestamp().Time.UTC(),
+		CreatedAt:       obj.GetCreationTimestamp().Time,
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
@@ -58,45 +58,19 @@ func MapAPISpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 	processing := meta.FindStatusCondition(apiSpec.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
-		processedAtTime = processing.LastTransitionTime.Time.UTC()
+		processedAtTime = processing.LastTransitionTime.Time
 	}
 
 	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
-	// Combine problems from sub-resources with any errors from the parent's own conditions.
-	allErrors := make([]api.Problem, 0, len(result.Problems)+len(status.Errors))
-	allErrors = append(allErrors, result.Problems...)
-	for _, e := range status.Errors {
-		allErrors = append(allErrors, api.Problem{Message: e.Message, Cause: e.Cause})
-	}
-
-	// Include warnings from the parent's own conditions (e.g. blocked reason).
-	allWarnings := make([]api.Problem, 0, len(status.Warnings))
-	for _, w := range status.Warnings {
-		allWarnings = append(allWarnings, api.Problem{Message: w.Message, Cause: w.Cause})
-	}
-
-	// Surface lint failure as a warning when linting did not pass but the API was still created (warn mode).
-	if apiSpec.Spec.Lint != nil && !apiSpec.Spec.Lint.Passed && status.State == api.Complete {
-		msg := "OAS linting did not pass: " + apiSpec.Spec.Lint.Message
-		if apiSpec.Spec.Lint.DashboardURL != "" {
-			msg += ". View details: " + apiSpec.Spec.Lint.DashboardURL
-		}
-		allWarnings = append(allWarnings, api.Problem{
-			Cause:   "LintingFailed",
-			Message: msg,
-		})
-	}
-
 	return api.ResourceStatusResponse{
-		CreatedAt:       apiSpec.GetCreationTimestamp().Time.UTC(),
+		CreatedAt:       apiSpec.GetCreationTimestamp().Time,
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
 		OverallStatus:   finalOverall,
-		Errors:          allErrors,
-		Warnings:        allWarnings,
+		Errors:          result.Problems,
 	}, nil
 }
 
@@ -122,14 +96,14 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 	processing := meta.FindStatusCondition(rover.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
-		processedAtTime = processing.LastTransitionTime.Time.UTC()
+		processedAtTime = processing.LastTransitionTime.Time
 	}
 
 	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       rover.GetCreationTimestamp().Time.UTC(),
+		CreatedAt:       rover.GetCreationTimestamp().Time,
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
@@ -160,14 +134,14 @@ func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpeci
 	processing := meta.FindStatusCondition(eventSpec.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
-		processedAtTime = processing.LastTransitionTime.Time.UTC()
+		processedAtTime = processing.LastTransitionTime.Time
 	}
 
 	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       eventSpec.GetCreationTimestamp().Time.UTC(),
+		CreatedAt:       eventSpec.GetCreationTimestamp().Time,
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
