@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/go-logr/logr"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
@@ -27,35 +26,31 @@ const (
 	LintSkipped LintOutcome = iota
 	// LintCompleted means linting ran synchronously and the result is on apiSpec.Spec.Lint.
 	LintCompleted
-	// LintDispatched means the spec was stored and linting is running asynchronously.
-	// The caller should NOT store the spec again.
-	LintDispatched
 )
 
 // ApiLinter abstracts the full OAS linting lifecycle: config lookup,
-// whitelists, hash dedup, sync/async execution, and store interaction.
+// whitelists, hash dedup, execution, and store interaction.
+//
+// NOTE: Linting is currently synchronous only. Async linting was considered but
+// intentionally left out because the rover operator cannot self-heal if
+// rover-server dies mid-lint — the ApiSpecification would be stuck with a nil
+// Lint result forever. If async linting is needed in the future, it should be
+// implemented as a proper async reconciliation loop in the operator (requeue
+// until the lint result appears) rather than a fire-and-forget goroutine here.
 type ApiLinter interface {
 	// Lint performs the full linting lifecycle for an ApiSpecification.
 	// It looks up the linting config from the category list, checks whitelists
-	// and hash dedup, and either runs the linter synchronously or dispatches
-	// it asynchronously.
+	// and hash dedup, and runs the linter synchronously.
 	//
-	// Returns the outcome and an error for infrastructure failures during sync linting.
-	// When the outcome is LintDispatched, the spec has already been stored — the caller
-	// must not store it again.
+	// Returns the outcome and an error for infrastructure failures.
 	Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, categoryList *apiv1.ApiCategoryList, specBytes []byte) (LintOutcome, error)
-
-	// Shutdown waits for all in-flight async lint operations to complete.
-	Shutdown()
 }
 
 // apiLinterImpl is the production implementation of ApiLinter.
 type apiLinterImpl struct {
 	objStore     store.ObjectStore[*roverv1.ApiSpecification]
 	errorMessage string
-	async        bool
 	httpClient   oaslint.HTTPDoer
-	wg           sync.WaitGroup
 }
 
 // NewApiLinter creates an ApiLinter from the given linting configuration.
@@ -63,7 +58,6 @@ func NewApiLinter(objStore store.ObjectStore[*roverv1.ApiSpecification], lintCfg
 	return &apiLinterImpl{
 		objStore:     objStore,
 		errorMessage: lintCfg.ErrorMessage,
-		async:        lintCfg.Async,
 		httpClient: commonclient.NewHttpClientOrDie(
 			commonclient.WithClientName("oaslint"),
 			commonclient.WithClientTimeout(lintCfg.Timeout),
@@ -71,8 +65,6 @@ func NewApiLinter(objStore store.ObjectStore[*roverv1.ApiSpecification], lintCfg
 		),
 	}
 }
-
-func (l *apiLinterImpl) Shutdown() { l.wg.Wait() }
 
 func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, categoryList *apiv1.ApiCategoryList, specBytes []byte) (LintOutcome, error) {
 	log := logr.FromContextOrDiscard(ctx)
@@ -90,14 +82,6 @@ func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecificat
 	if !l.prepareLinting(lintCfg, apiSpec, existing) {
 		log.V(1).Info("Linting skipped (whitelisted or hash dedup)", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
 		return LintSkipped, nil
-	}
-
-	if l.async {
-		if err := l.objStore.CreateOrReplace(ctx, apiSpec); err != nil {
-			return LintSkipped, err
-		}
-		l.dispatchAsyncLint(ctx, apiSpec.Namespace, apiSpec.Name, lintCfg.URL, lintCfg.Ruleset, specBytes)
-		return LintDispatched, nil
 	}
 
 	if err := l.runSyncLint(ctx, apiSpec, lintCfg.URL, lintCfg.Ruleset, specBytes); err != nil {
@@ -132,30 +116,6 @@ func (l *apiLinterImpl) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpe
 		log.Info("Linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name, "message", lintResult.Message)
 	}
 	return nil
-}
-
-func (l *apiLinterImpl) dispatchAsyncLint(ctx context.Context, ns, name, linterURL, ruleset string, specBytes []byte) {
-	bgCtx := context.WithoutCancel(ctx)
-	l.wg.Add(1)
-	go func() {
-		defer l.wg.Done()
-		log := logr.FromContextOrDiscard(bgCtx).WithName("linting")
-
-		lintResult, err := l.executeLint(bgCtx, linterURL, ruleset, specBytes)
-		if err != nil {
-			log.Error(err, "Async OAS linting failed", "namespace", ns, "name", name)
-		} else if !lintResult.Passed {
-			log.Info("Linting failed", "namespace", ns, "name", name, "message", lintResult.Message)
-		}
-
-		if _, patchErr := l.objStore.Patch(bgCtx, ns, name, store.Patch{
-			Op:    store.OpReplace,
-			Path:  "/spec/lint",
-			Value: lintResult,
-		}); patchErr != nil {
-			log.Error(patchErr, "Failed to update lint result", "namespace", ns, "name", name)
-		}
-	}()
 }
 
 func (l *apiLinterImpl) executeLint(ctx context.Context, linterURL, ruleset string, specBytes []byte) (*roverv1.LintResult, error) {

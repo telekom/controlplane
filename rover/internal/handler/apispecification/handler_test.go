@@ -122,7 +122,8 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 	})
 
 	Context("when linting is pending (Spec.Lint nil, block mode)", func() {
-		It("should set not-ready condition", func() {
+		It("should proceed with Api creation to avoid blocking indefinitely", func() {
+			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{
 				GetApiCategory: getApiCategoryWith(newApiCategory("other", &apiapi.LintingConfig{
 					Mode: apiapi.LintingModeBlock,
@@ -130,10 +131,10 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 			}
 			apiSpec := newApiSpec("hash1", "other")
 
-			err := h.CreateOrUpdate(ctx, apiSpec)
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeReady)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeReady)).To(ContainSubstring("being linted"))
+			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
 		})
 	})
 

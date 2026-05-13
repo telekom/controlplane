@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -31,27 +30,12 @@ type ApiSpecificationHandler struct {
 }
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
-	log := logr.FromContextOrDiscard(ctx)
 	mode := h.lookupLintingMode(ctx, apiSpec.Spec.Category)
 
-	// Linting is pending (async) — Spec.Lint is nil, wait for rover-server to fill it in.
-	if apiSpec.Spec.Lint == nil {
-		if mode == apiapi.LintingModeNone {
-			// No linting configured for this category — proceed normally.
-			return h.createOrUpdateApi(ctx, apiSpec)
-		}
-		if mode == apiapi.LintingModeBlock {
-			apiSpec.SetCondition(condition.NewNotReadyCondition("LintingPending",
-				"API specification is being linted"))
-			return nil
-		}
-		// warn mode: proceed without waiting for lint result
-		log.V(0).Info("Linting pending in warn mode, proceeding with Api creation")
-		return h.createOrUpdateApi(ctx, apiSpec)
-	}
-
-	// Check if linting failed and the category config blocks on failure
-	if !apiSpec.Spec.Lint.Passed && mode == apiapi.LintingModeBlock {
+	// Check if linting failed and the category config blocks on failure.
+	// If Spec.Lint is nil (no result yet or linting not configured), proceed normally
+	// to avoid blocking indefinitely if the linter is unavailable.
+	if apiSpec.Spec.Lint != nil && !apiSpec.Spec.Lint.Passed && mode == apiapi.LintingModeBlock {
 		msg := fmt.Sprintf("OAS linting failed: %s", apiSpec.Spec.Lint.Message)
 		if apiSpec.Spec.Lint.DashboardURL != "" {
 			msg = fmt.Sprintf("%s. View details: %s", msg, apiSpec.Spec.Lint.DashboardURL)

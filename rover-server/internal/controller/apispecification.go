@@ -72,13 +72,6 @@ func NewApiSpecificationController(stores *s.Stores, lintCfg config.OasLintingCo
 	return ctrl
 }
 
-// Shutdown waits for all in-flight async lint operations to complete.
-func (a *ApiSpecificationController) Shutdown() {
-	if a.Linter != nil {
-		a.Linter.Shutdown()
-	}
-}
-
 // Create implements server.ApiSpecificationController.
 func (a *ApiSpecificationController) Create(ctx context.Context, req api.ApiSpecificationCreateRequest) (res api.ApiSpecificationResponse, err error) {
 	// Important Hint: This is a declarative API. The client should not create an ApiSpecification, but only use
@@ -244,12 +237,8 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 
 	// Lint the spec if the category has linting configured.
 	if a.Linter != nil {
-		outcome, lintErr := a.Linter.Lint(ctx, apiSpec, categoryList, specMarshaled)
-		if lintErr != nil {
+		if _, lintErr := a.Linter.Lint(ctx, apiSpec, categoryList, specMarshaled); lintErr != nil {
 			return res, problems.InternalServerError("Linting failed", lintErr.Error())
-		}
-		if outcome == LintDispatched {
-			return a.Get(ctx, resourceId)
 		}
 	}
 
