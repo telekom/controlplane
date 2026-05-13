@@ -28,6 +28,54 @@ func (_m *MockKeycloakService) EXPECT() *MockKeycloakService_Expecter {
 	return &MockKeycloakService_Expecter{mock: &_m.Mock}
 }
 
+// ConfigureClientScopes provides a mock function with given fields: ctx, realmName, claims
+func (_m *MockKeycloakService) ConfigureClientScopes(ctx context.Context, realmName string, claims []v1.ClaimConfig) error {
+	ret := _m.Called(ctx, realmName, claims)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ConfigureClientScopes")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []v1.ClaimConfig) error); ok {
+		r0 = rf(ctx, realmName, claims)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockKeycloakService_ConfigureClientScopes_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ConfigureClientScopes'
+type MockKeycloakService_ConfigureClientScopes_Call struct {
+	*mock.Call
+}
+
+// ConfigureClientScopes is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realmName string
+//   - claims []v1.ClaimConfig
+func (_e *MockKeycloakService_Expecter) ConfigureClientScopes(ctx interface{}, realmName interface{}, claims interface{}) *MockKeycloakService_ConfigureClientScopes_Call {
+	return &MockKeycloakService_ConfigureClientScopes_Call{Call: _e.mock.On("ConfigureClientScopes", ctx, realmName, claims)}
+}
+
+func (_c *MockKeycloakService_ConfigureClientScopes_Call) Run(run func(ctx context.Context, realmName string, claims []v1.ClaimConfig)) *MockKeycloakService_ConfigureClientScopes_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].([]v1.ClaimConfig))
+	})
+	return _c
+}
+
+func (_c *MockKeycloakService_ConfigureClientScopes_Call) Return(_a0 error) *MockKeycloakService_ConfigureClientScopes_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockKeycloakService_ConfigureClientScopes_Call) RunAndReturn(run func(context.Context, string, []v1.ClaimConfig) error) *MockKeycloakService_ConfigureClientScopes_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ConfigureSecretRotationPolicy provides a mock function with given fields: ctx, realmName, policy
 func (_m *MockKeycloakService) ConfigureSecretRotationPolicy(ctx context.Context, realmName string, policy *v1.SecretRotationConfig) error {
 	ret := _m.Called(ctx, realmName, policy)

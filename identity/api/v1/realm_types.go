@@ -40,6 +40,41 @@ type SecretRotationConfig struct {
 	RemainingRotationPeriod metav1.Duration `json:"remainingRotationPeriod"`
 }
 
+// ClaimType specifies the kind of protocol mapper used for a claim.
+// +kubebuilder:validation:Enum=HardcodedClaim;SessionNote
+type ClaimType string
+
+const (
+	// ClaimTypeHardcodedClaim injects a static value into every token.
+	ClaimTypeHardcodedClaim ClaimType = "HardcodedClaim"
+
+	// ClaimTypeSessionNote reads the claim value from a Keycloak user-session
+	// note (e.g. "clientId", "clientHost", "clientAddress"). The value is
+	// populated automatically by Keycloak during authentication.
+	ClaimTypeSessionNote ClaimType = "SessionNote"
+)
+
+// ClaimConfig defines a claim that is added to all tokens issued for
+// clients in this realm.
+type ClaimConfig struct {
+	// Name is the claim name as it appears in the token (e.g. "team", "env").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Value is the static claim value written into every token.
+	// Only used for HardcodedClaim; ignored for SessionNote (which
+	// reads the value from the Keycloak session note keyed by Name).
+	// +optional
+	Value string `json:"value,omitempty"`
+
+	// Type selects the protocol mapper used for this claim.
+	// Defaults to HardcodedClaim when omitted.
+	// +optional
+	// +kubebuilder:default=HardcodedClaim
+	Type ClaimType `json:"type,omitempty"`
+}
+
 // RealmSpec defines the desired state of Realm
 type RealmSpec struct {
 	IdentityProvider *types.ObjectRef `json:"identityProvider"`
@@ -50,6 +85,16 @@ type RealmSpec struct {
 	// When nil, the controller does not manage rotation policy.
 	// +optional
 	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
+
+	// Claims defines claims that are added to all tokens issued for
+	// clients in this realm. Each claim can be a static value
+	// (HardcodedClaim) or derived from a Keycloak session note
+	// (SessionNote). The controller manages a dedicated Keycloak
+	// client scope with protocol mappers for each claim.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	Claims []ClaimConfig `json:"claims,omitempty"`
 }
 
 // RealmStatus defines the observed state of Realm

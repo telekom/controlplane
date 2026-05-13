@@ -130,6 +130,13 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, valErr.BuildError()
 	}
 
+	// Validate externalIds against the zone's policies.
+	entries := make([]externalIdEntry, len(rover.Spec.ExternalIds))
+	for i, eid := range rover.Spec.ExternalIds {
+		entries[i] = externalIdEntry{Scheme: eid.Scheme, Id: eid.Id}
+	}
+	validateExternalIds(valErr, entries, zone, field.NewPath("spec").Child("externalIds"))
+
 	// Validate permission structure: nested entries must have required fields based on parent format
 	// This validation is done here in the webhook rather than via CEL in the CRD because CEL rules with
 	// .all() iteration over the entries array would exceed the Kubernetes validation cost budget by
@@ -421,9 +428,13 @@ func (r *RoverValidator) validateRemoveHeaders(ctx context.Context, valErr *cerr
 	}
 
 	// get zone
-	zone, err := r.GetZone(ctx, zoneRef)
+	zone, err := r.GetZone(ctx, valErr, zoneRef)
 	if err != nil {
 		return err
+	}
+	if zone == nil {
+		// Zone-missing error has been recorded on valErr; nothing further to check.
+		return nil
 	}
 	if exp.Api.Transformation != nil {
 		if len(exp.Api.Transformation.Request.Headers.Remove) > 0 {
@@ -443,17 +454,26 @@ func (r *RoverValidator) validateRemoveHeaders(ctx context.Context, valErr *cerr
 	return nil
 }
 
-func (r *RoverValidator) GetZone(ctx context.Context, zoneRef client.ObjectKey) (*adminv1.Zone, error) {
+// GetZone fetches the Zone referenced by zoneRef. A not-found Zone is recorded
+// on valErr against spec.zone so it joins any other accumulated validation
+// errors; the returned (*adminv1.Zone) is nil in that case and the returned
+// error is nil. A returned error means a real API failure (not a validation
+// failure).
+func (r *RoverValidator) GetZone(ctx context.Context, valErr *cerrors.ValidationError, zoneRef client.ObjectKey) (*adminv1.Zone, error) {
 	zone := &adminv1.Zone{}
 	err := r.client.Get(ctx, zoneRef, zone)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return nil, apierrors.NewBadRequest(fmt.Sprintf("Zone '%s' not found", zoneRef))
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("zone"),
+				zoneRef.Name,
+				fmt.Sprintf("zone %q not found", zoneRef.Name),
+			)
+			return nil, nil
 		}
 		return nil, apierrors.NewInternalError(err)
 	}
 	return zone, nil
-
 }
 
 func (r *RoverValidator) GetTeam(ctx context.Context, teamRef client.ObjectKey) (*organizationv1.Team, error) {

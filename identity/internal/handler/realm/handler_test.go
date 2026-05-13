@@ -271,6 +271,9 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
+			mockSvc.EXPECT().
+				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
+				Return(nil)
 
 			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
 				return mockSvc, nil
@@ -321,6 +324,9 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
+			mockSvc.EXPECT().
+				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
+				Return(nil)
 			// ConfigureSecretRotationPolicy should NOT be called — mockery
 			// will fail the test if it is called unexpectedly.
 
@@ -360,6 +366,9 @@ var _ = Describe("HandlerRealm", func() {
 				Return(nil)
 			mockSvc.EXPECT().
 				ConfigureSecretRotationPolicy(mock.Anything, "test-realm", realm.Spec.SecretRotation).
+				Return(nil)
+			mockSvc.EXPECT().
+				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
 				Return(nil)
 
 			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {

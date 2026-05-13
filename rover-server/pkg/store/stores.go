@@ -61,6 +61,7 @@ var secretsForKinds = map[string][]string{
 	},
 	"Application": {
 		"status.clientSecret",
+		"status.rotatedClientSecret",
 	},
 }
 
