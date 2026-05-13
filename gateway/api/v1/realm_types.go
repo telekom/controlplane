@@ -14,6 +14,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// RouteType defines the type of route to create for a realm.
+// It is used to determine the path format for the route and the downstream URL to use for the route.
+// +kubebuilder:validation:Enum=issuer;certs;discovery
+type RouteType string
+
+const (
+	RouteTypeIssuer    RouteType = "issuer"
+	RouteTypeCerts     RouteType = "certs"
+	RouteTypeDiscovery RouteType = "discovery"
+)
+
 // RealmSpec defines the desired state of Realm
 type RealmSpec struct {
 
@@ -34,6 +45,29 @@ type RealmSpec struct {
 	// +listType=set
 	// +kubebuilder:default={}
 	DefaultConsumers []string `json:"defaultConsumers"`
+
+	// RouteOverwrites is a list of route overwrites for this realm. If empty, the default routes will be used
+	// +listType=map
+	// +listMapKey=type
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	// +optional
+	RouteOverwrites []RouteOverwrite `json:"routeOverwrites,omitempty"`
+}
+
+// RouteOverwrite defines the configuration for overwriting a route for a realm.
+// It allows to enable/disable a route and to specify a custom path prefix for the route.
+// Per default all routes are enabled and use the default path prefix. If a route is disabled, it will not be created for the realm.
+type RouteOverwrite struct {
+	// Type is the type of route to overwrite. It is used to determine which route to overwrite
+	Type RouteType `json:"type"`
+	// Enabled indicates whether the route is enabled or not. If false, the route will be disabled and not created
+	// +kubebuilder:default=true
+	Enabled bool `json:"enabled"`
+	// PathPrefix is the path prefix to use for the route. If empty, no prefix will be used
+	// +kubebuilder:default=""
+	// +kubebuilder:validation:Pattern=`^(\/[a-zA-Z0-9\-\/]*)?$`
+	PathPrefix string `json:"pathPrefix,omitempty"`
 }
 
 // RealmStatus defines the observed state of Realm
