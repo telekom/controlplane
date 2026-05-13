@@ -18,11 +18,11 @@ type LintingMode string
 
 const (
 	// LintingModeBlock prevents Api creation when linting fails.
-	LintingModeBlock LintingMode = "block"
+	LintingModeBlock LintingMode = "Block"
 	// LintingModeWarn allows Api creation but surfaces linting issues in status.
-	LintingModeWarn LintingMode = "warn"
+	LintingModeWarn LintingMode = "Warn"
 	// LintingModeNone indicates that no linting is configured for this category.
-	LintingModeNone LintingMode = "none"
+	LintingModeNone LintingMode = "None"
 )
 
 // LintingConfig configures OAS specification linting for APIs in this category.
@@ -35,13 +35,12 @@ type LintingConfig struct {
 
 	// Ruleset is the name of the linter ruleset to apply.
 	// If set, it is passed as a query parameter to the linter API.
-	// +optional
-	Ruleset string `json:"ruleset,omitempty"`
+	Ruleset string `json:"ruleset"`
 
 	// Mode controls how linting failures affect API creation.
-	// "block" (default) prevents Api creation on failure; "warn" allows it but surfaces issues.
-	// +kubebuilder:validation:Enum=block;warn;none
-	// +kubebuilder:default:=block
+	// "Block" (default) prevents Api creation on failure; "Warn" allows it but surfaces issues.
+	// +kubebuilder:validation:Enum=Block;Warn;None
+	// +kubebuilder:default:=Block
 	// +optional
 	Mode LintingMode `json:"mode,omitempty"`
 
