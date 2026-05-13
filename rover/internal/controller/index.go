@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"os"
+	"strings"
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -16,7 +17,10 @@ import (
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+const FieldApiCategoryLabelValue = "spec.labelValue"
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 
@@ -39,6 +43,18 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &applicationv1.Application{})
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create ownerIndex for Application")
+		os.Exit(1)
+	}
+
+	err = mgr.GetFieldIndexer().IndexField(ctx, &apiapi.ApiCategory{}, FieldApiCategoryLabelValue, func(obj client.Object) []string {
+		cat := obj.(*apiapi.ApiCategory)
+		if cat.Spec.LabelValue == "" {
+			return nil
+		}
+		return []string{strings.ToLower(cat.Spec.LabelValue)}
+	})
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for ApiCategory", "field", FieldApiCategoryLabelValue)
 		os.Exit(1)
 	}
 

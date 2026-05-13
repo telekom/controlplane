@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -51,14 +52,13 @@ func (r *ApiSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		GetApiCategory: func(ctx context.Context, category string) (*apiapi.ApiCategory, error) {
 			c := cclient.ClientFromContextOrDie(ctx)
 			list := &apiapi.ApiCategoryList{}
-			if err := c.List(ctx, list); err != nil {
+			if err := c.List(ctx, list, client.MatchingFields{FieldApiCategoryLabelValue: strings.ToLower(category)}); err != nil {
 				return nil, err
 			}
-			found, ok := list.FindByLabelValue(category)
-			if !ok {
+			if len(list.Items) == 0 {
 				return nil, nil
 			}
-			return found, nil
+			return &list.Items[0], nil
 		},
 	}
 
