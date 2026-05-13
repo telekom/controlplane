@@ -12,24 +12,21 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
-	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
-	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/in"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/out"
@@ -48,31 +45,15 @@ type ApiSpecificationController struct {
 	// If nil, category validation is skipped.
 	ListApiCategories func(ctx context.Context) (*apiv1.ApiCategoryList, error)
 
-	// ErrorMessage is the template message shown when linting fails.
-	ErrorMessage string
-
-	// LintAsync controls whether linting runs asynchronously (true) or synchronously (false).
-	// When false (default), linting blocks the request so a single store operation includes the result.
-	LintAsync bool
-
-	// httpClient is reused across lint requests for connection pooling and metrics.
-	httpClient oaslint.HTTPDoer
-
-	// lintWg tracks in-flight async lint goroutines for graceful shutdown.
-	lintWg sync.WaitGroup
+	// Linter handles OAS linting operations. If nil, linting is disabled.
+	Linter ApiLinter
 }
 
-func NewApiSpecificationController(stores *s.Stores, errorMessage string, lintTimeout time.Duration, lintAsync bool) *ApiSpecificationController {
+func NewApiSpecificationController(stores *s.Stores, lintCfg config.OasLintingConfig) *ApiSpecificationController {
 	ctrl := &ApiSpecificationController{
-		stores:       stores,
-		Store:        stores.APISpecificationStore,
-		ErrorMessage: errorMessage,
-		LintAsync:    lintAsync,
-		httpClient: commonclient.NewHttpClientOrDie(
-			commonclient.WithClientName("oaslint"),
-			commonclient.WithClientTimeout(lintTimeout),
-			commonclient.WithSkipTlsVerify(true),
-		),
+		stores: stores,
+		Store:  stores.APISpecificationStore,
+		Linter: NewApiLinter(stores.APISpecificationStore, lintCfg),
 	}
 	if stores.APICategoryStore != nil {
 		ctrl.ListApiCategories = func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
@@ -93,7 +74,9 @@ func NewApiSpecificationController(stores *s.Stores, errorMessage string, lintTi
 
 // Shutdown waits for all in-flight async lint operations to complete.
 func (a *ApiSpecificationController) Shutdown() {
-	a.lintWg.Wait()
+	if a.Linter != nil {
+		a.Linter.Shutdown()
+	}
 }
 
 // Create implements server.ApiSpecificationController.
@@ -259,41 +242,14 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	}
 	EnsureLabelsOrDie(ctx, apiSpec)
 
-	// Look up the ApiCategory's linting config for this spec's category.
-	// If the category has a linter URL, proceed with linting.
-	var needsLint bool
-	log := logr.FromContextOrDiscard(ctx)
-	log.V(1).Info("Looking up linting config", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
-		"category", apiSpec.Spec.Category, "basepath", apiSpec.Spec.BasePath)
-	lintCfg := lintingConfigFromList(categoryList, apiSpec.Spec.Category)
-	if lintCfg != nil && lintCfg.URL != "" && lintCfg.Mode != apiv1.LintingModeNone {
-		log.V(1).Info("Linting config found, checking whitelists and hash dedup", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
-		// Fetch existing object for hash dedup comparison.
-		existing, _ := a.Store.Get(ctx, apiSpec.Namespace, apiSpec.Name)
-		needsLint = a.prepareLinting(lintCfg, apiSpec, existing)
-		log.V(1).Info("prepareLinting completed", "namespace", apiSpec.Namespace, "name", apiSpec.Name, "needsLint", needsLint)
-	} else {
-		log.V(1).Info("No linting config or no URL, skipping linting", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
-	}
-
-	// Run linting synchronously (default) so the result is included in the single store write,
-	// or dispatch asynchronously if configured.
-	if needsLint {
-		if a.LintAsync {
-			// Store first, then lint in the background and patch afterwards.
-			err = a.Store.CreateOrReplace(ctx, apiSpec)
-			if err != nil {
-				return res, err
-			}
-			a.dispatchAsyncLint(ctx, apiSpec.Namespace, apiSpec.Name, lintCfg.URL, lintCfg.Ruleset, specMarshaled)
-			return a.Get(ctx, resourceId)
+	// Lint the spec if the category has linting configured.
+	if a.Linter != nil {
+		outcome, lintErr := a.Linter.Lint(ctx, apiSpec, categoryList, specMarshaled)
+		if lintErr != nil {
+			return res, problems.InternalServerError("Linting failed", lintErr.Error())
 		}
-		// Synchronous: lint blocks until result is available, then store once.
-		if err := a.runSyncLint(ctx, apiSpec, lintCfg.URL, lintCfg.Ruleset, specMarshaled); err != nil {
-			// Store the spec with the failed lint result so it's persisted,
-			// then return 500 to inform the client about the infrastructure error.
-			_ = a.Store.CreateOrReplace(ctx, apiSpec)
-			return res, problems.InternalServerError("Linting failed", err.Error())
+		if outcome == LintDispatched {
+			return a.Get(ctx, resourceId)
 		}
 	}
 

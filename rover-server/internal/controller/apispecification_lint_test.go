@@ -51,10 +51,10 @@ var _ = Describe("Linting helpers", func() {
 	})
 
 	Describe("prepareLinting", func() {
-		var ctrl *ApiSpecificationController
+		var linter *apiLinterImpl
 
 		BeforeEach(func() {
-			ctrl = &ApiSpecificationController{}
+			linter = &apiLinterImpl{}
 		})
 
 		It("should skip linting for category-whitelisted basepath", func() {
@@ -66,7 +66,7 @@ var _ = Describe("Linting helpers", func() {
 				Spec: roverv1.ApiSpecificationSpec{BasePath: "/eni/internal/v1"},
 			}
 
-			result := ctrl.prepareLinting(lintCfg, apiSpec, nil)
+			result := linter.prepareLinting(lintCfg, apiSpec, nil)
 			Expect(result).To(BeFalse())
 			Expect(apiSpec.Spec.Lint).ToNot(BeNil())
 			Expect(apiSpec.Spec.Lint.Passed).To(BeTrue())
@@ -89,7 +89,7 @@ var _ = Describe("Linting helpers", func() {
 				},
 			}
 
-			result := ctrl.prepareLinting(lintCfg, apiSpec, existing)
+			result := linter.prepareLinting(lintCfg, apiSpec, existing)
 			Expect(result).To(BeFalse())
 			Expect(apiSpec.Spec.Lint).ToNot(BeNil())
 			Expect(apiSpec.Spec.Lint.Passed).To(BeTrue())
@@ -111,7 +111,7 @@ var _ = Describe("Linting helpers", func() {
 				},
 			}
 
-			result := ctrl.prepareLinting(lintCfg, apiSpec, existing)
+			result := linter.prepareLinting(lintCfg, apiSpec, existing)
 			Expect(result).To(BeTrue())
 			Expect(apiSpec.Spec.Lint).To(BeNil())
 		})
@@ -125,7 +125,7 @@ var _ = Describe("Linting helpers", func() {
 				},
 			}
 
-			result := ctrl.prepareLinting(lintCfg, apiSpec, nil)
+			result := linter.prepareLinting(lintCfg, apiSpec, nil)
 			Expect(result).To(BeTrue())
 			Expect(apiSpec.Spec.Lint).To(BeNil())
 		})
