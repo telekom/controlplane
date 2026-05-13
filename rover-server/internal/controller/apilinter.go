@@ -55,7 +55,7 @@ func NewApiLinter(lintCfg config.OasLintingConfig) ApiLinter {
 		httpClient: commonclient.NewHttpClientOrDie(
 			commonclient.WithClientName("oaslint"),
 			commonclient.WithClientTimeout(lintCfg.Timeout),
-			commonclient.WithSkipTlsVerify(true),
+			commonclient.WithSkipTlsVerify(lintCfg.SkipTLS),
 		),
 	}
 }

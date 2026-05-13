@@ -25,6 +25,7 @@ type OasLintingConfig struct {
 	Timeout      time.Duration `json:"timeout"`
 	URL          string        `json:"url"`
 	DashboardURL string        `json:"dashboardURL"`
+	SkipTLS      bool          `json:"skipTLS"`
 }
 
 type SecurityConfig struct {
@@ -86,6 +87,7 @@ func setDefaults() {
 	viper.SetDefault("oasLinting.timeout", 0) // 0 means block indefinitely until linter responds
 	viper.SetDefault("oasLinting.url", "")
 	viper.SetDefault("oasLinting.dashboardURL", "")
+	viper.SetDefault("oasLinting.skipTLS", false)
 
 	// Database
 	viper.SetDefault("database.filepath", "")        // empty string means in-memory only
