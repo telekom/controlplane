@@ -9,8 +9,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 )
 
 const (
@@ -103,25 +104,12 @@ func (l *ExternalLinter) Lint(ctx context.Context, spec []byte) (*LintResult, er
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading linter response: %w", err)
-	}
-
-	if resp.StatusCode == http.StatusRequestTimeout {
-		return nil, fmt.Errorf("linting timed out (HTTP 408)")
-	}
-
-	if resp.StatusCode >= 500 {
-		return nil, fmt.Errorf("linter service unavailable (HTTP %d)", resp.StatusCode)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("linter API returned unexpected status %d", resp.StatusCode)
+	if err := commonclient.HandleError(resp.StatusCode, "linter API"); err != nil {
+		return nil, fmt.Errorf("linter API error: %w", err)
 	}
 
 	var scan linterScanResponse
-	if err := json.Unmarshal(body, &scan); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&scan); err != nil {
 		return nil, fmt.Errorf("decoding linter response: %w", err)
 	}
 

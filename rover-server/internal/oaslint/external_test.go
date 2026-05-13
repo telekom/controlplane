@@ -123,23 +123,7 @@ servers:
 		It("should return an error", func() {
 			result, err := linter.Lint(ctx, spec)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("linter service unavailable"))
-			Expect(result).To(BeNil())
-		})
-	})
-
-	Context("when the linter API returns 408 timeout", func() {
-		BeforeEach(func() {
-			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusRequestTimeout)
-			}))
-			linter = NewExternalLinter(server.URL)
-		})
-
-		It("should return a timeout error", func() {
-			result, err := linter.Lint(ctx, spec)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("timed out"))
+			Expect(err.Error()).To(ContainSubstring("linter API error"))
 			Expect(result).To(BeNil())
 		})
 	})
