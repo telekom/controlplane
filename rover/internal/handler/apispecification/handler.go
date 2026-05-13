@@ -26,7 +26,7 @@ import (
 var _ handler.Handler[*roverv1.ApiSpecification] = (*ApiSpecificationHandler)(nil)
 
 // ApiSpecificationHandler reconciles ApiSpecification resources.
-// Linting is performed by rover-server at upload time and stored in the CRD status fields.
+// Linting is performed by rover-server at upload time and stored in Spec.Lint.
 // This handler reads the lint result and gates Api resource creation accordingly.
 type ApiSpecificationHandler struct{}
 

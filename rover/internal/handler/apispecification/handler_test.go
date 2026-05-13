@@ -53,7 +53,8 @@ func newApiCategory(name string, linting *apiapi.LintingConfig) *apiapi.ApiCateg
 			},
 		},
 		Spec: apiapi.ApiCategorySpec{
-			Linting: linting,
+			LabelValue: name,
+			Linting:    linting,
 		},
 	}
 }
