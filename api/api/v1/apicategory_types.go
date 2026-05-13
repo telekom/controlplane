@@ -28,7 +28,8 @@ const (
 // LintingConfig configures OAS specification linting for APIs in this category.
 type LintingConfig struct {
 	// Ruleset is the name of the linter ruleset to apply.
-	// If set, it is passed as a query parameter to the linter API.
+	// If set, it is passed as a URL-encoded query parameter to the linter API.
+	// +required
 	Ruleset string `json:"ruleset"`
 
 	// Mode controls how linting failures affect API creation.

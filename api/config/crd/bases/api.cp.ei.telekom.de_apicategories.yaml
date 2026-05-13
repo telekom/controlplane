@@ -96,7 +96,7 @@ spec:
                   ruleset:
                     description: |-
                       Ruleset is the name of the linter ruleset to apply.
-                      If set, it is passed as a query parameter to the linter API.
+                      If set, it is passed as a URL-encoded query parameter to the linter API.
                     type: string
                   whitelistedBasepaths:
                     description: |-
