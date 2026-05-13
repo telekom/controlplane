@@ -157,7 +157,7 @@ func NewApiExposure(apiBasePath, zoneName string, appName string) *apiv1.ApiExpo
 				M2M: &apiapi.Machine2MachineAuthentication{
 					ExternalIDP: &apiapi.ExternalIdentityProvider{
 						TokenEndpoint: "https://example.com/token",
-						TokenRequest:  "client_secret_basic",
+						TokenRequest:  apiapi.TokenRequestClientSecretBasic,
 						GrantType:     "client_credentials",
 						Client: &apiapi.OAuth2ClientCredentials{
 							ClientId:  "client-id",
@@ -393,7 +393,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 			By("Creating the second APIExposure resource")
 			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
 				ExternalIDP: &apiv1.ExternalIdentityProvider{
-					TokenRequest: "sky",
+					TokenRequest: apiv1.TokenRequestMethod("sky"),
 				},
 				Scopes: []string{"team:scope", "api:scope"},
 			}
@@ -414,7 +414,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
 				ExternalIDP: &apiv1.ExternalIdentityProvider{
 					TokenEndpoint: "https://example.com/token",
-					TokenRequest:  "client_secret_basic",
+					TokenRequest:  apiv1.TokenRequestClientSecretBasic,
 					GrantType:     "client_credentials",
 					Client: &apiv1.OAuth2ClientCredentials{
 						ClientId:     "team",
@@ -440,7 +440,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(route.Spec.Security.M2M.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
 
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
-				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("client_secret_basic"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal(gatewayapi.TokenRequestClientSecretBasic))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			}, timeout, interval).Should(Succeed())
 		})

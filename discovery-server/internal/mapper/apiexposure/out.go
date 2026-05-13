@@ -14,11 +14,11 @@ import (
 )
 
 // tokenRequestCRDToAPI converts CRD tokenRequest values to discovery-server API enum values.
-func tokenRequestCRDToAPI(value string) api.OAuth2TokenRequest {
-	switch strings.ToLower(value) {
-	case "client_secret_basic":
+func tokenRequestCRDToAPI(value apiv1.TokenRequestMethod) api.OAuth2TokenRequest {
+	switch value {
+	case apiv1.TokenRequestClientSecretBasic:
 		return api.Header
-	case "client_secret_post":
+	case apiv1.TokenRequestClientSecretPost:
 		return api.Body
 	default:
 		return api.OAuth2TokenRequest(value)

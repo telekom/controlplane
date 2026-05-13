@@ -219,9 +219,8 @@ type RoverM2MAuthentication struct {
 	// This feature is currently only documented but not parsed towards the application and identity domain as it is still in discussion whether
 	// this should will be enforced for IDPs.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=client_secret_basic;client_secret_post
 	// +kubebuilder:default=client_secret_basic
-	TokenRequest string `json:"tokenRequest,omitempty"`
+	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 }
 
 // Exposure defines a service that is exposed by this Rover

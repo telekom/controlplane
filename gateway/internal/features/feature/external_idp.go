@@ -189,11 +189,11 @@ func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettin
 }
 
 // tokenRequestToJumper converts CRD tokenRequest values to the values expected by the Jumper plugin.
-func tokenRequestToJumper(value string) (string, error) {
-	switch strings.ToLower(value) {
-	case "client_secret_basic":
+func tokenRequestToJumper(value gatewayv1.TokenRequestMethod) (string, error) {
+	switch value {
+	case gatewayv1.TokenRequestClientSecretBasic:
 		return "header", nil
-	case "client_secret_post":
+	case gatewayv1.TokenRequestClientSecretPost:
 		return "body", nil
 	default:
 		return "", fmt.Errorf("unsupported tokenRequest value %q", value)

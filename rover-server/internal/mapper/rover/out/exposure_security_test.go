@@ -51,7 +51,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 					M2M: &roverv1.Machine2MachineAuthentication{
 						ExternalIDP: &roverv1.ExternalIdentityProvider{
 							TokenEndpoint: "https://test.com/token",
-							TokenRequest:  "client_secret_basic",
+							TokenRequest:  roverv1.TokenRequestClientSecretBasic,
 							GrantType:     "client_credentials",
 							Client: &roverv1.OAuth2ClientCredentials{
 								ClientId:     "client-id",

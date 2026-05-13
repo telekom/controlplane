@@ -4,6 +4,15 @@
 
 package v1
 
+// TokenRequestMethod defines the token endpoint authentication method (RFC 7591).
+// +kubebuilder:validation:Enum=client_secret_basic;client_secret_post
+type TokenRequestMethod string
+
+const (
+	TokenRequestClientSecretBasic TokenRequestMethod = "client_secret_basic"
+	TokenRequestClientSecretPost  TokenRequestMethod = "client_secret_post"
+)
+
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type Security struct {
@@ -66,8 +75,7 @@ type ExternalIdentityProvider struct {
 
 	// TokenRequest configures the token endpoint authentication method (RFC 7591)
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=client_secret_basic;client_secret_post
-	TokenRequest string `json:"tokenRequest,omitempty"`
+	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 
 	// GrantType defines the OAuth2 grant type to use for the token request
 	// +kubebuilder:validation:Optional

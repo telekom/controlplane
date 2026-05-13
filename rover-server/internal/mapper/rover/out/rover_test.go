@@ -64,7 +64,7 @@ var _ = Describe("Rover Mapper", func() {
 			input := rover.DeepCopy()
 			input.Spec.Authentication = &roverv1.RoverAuthentication{
 				M2M: &roverv1.RoverM2MAuthentication{
-					TokenRequest: "client_secret_basic",
+					TokenRequest: roverv1.TokenRequestClientSecretBasic,
 				},
 			}
 			output := &api.Rover{}
@@ -79,7 +79,7 @@ var _ = Describe("Rover Mapper", func() {
 			input := rover.DeepCopy()
 			input.Spec.Authentication = &roverv1.RoverAuthentication{
 				M2M: &roverv1.RoverM2MAuthentication{
-					TokenRequest: "client_secret_post",
+					TokenRequest: roverv1.TokenRequestClientSecretPost,
 				},
 			}
 			output := &api.Rover{}

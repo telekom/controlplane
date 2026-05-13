@@ -155,7 +155,7 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output.Spec.Authentication).ToNot(BeNil())
 			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
-			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal("client_secret_basic"))
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal(roverv1.TokenRequestClientSecretBasic))
 		})
 
 		It("must map POST to client_secret_post in CRD", func() {
@@ -172,7 +172,7 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output.Spec.Authentication).ToNot(BeNil())
 			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
-			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal("client_secret_post"))
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal(roverv1.TokenRequestClientSecretPost))
 		})
 
 		It("must not set authentication when clientAuthMethod is empty", func() {
@@ -201,7 +201,7 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output.Spec.Authentication).ToNot(BeNil())
 			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
-			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal("client_secret_basic"))
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal(roverv1.TokenRequestClientSecretBasic))
 		})
 
 		It("must fuzzy-match 'body' to client_secret_post in CRD", func() {
@@ -218,7 +218,7 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output.Spec.Authentication).ToNot(BeNil())
 			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
-			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal("client_secret_post"))
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal(roverv1.TokenRequestClientSecretPost))
 		})
 	})
 

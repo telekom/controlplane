@@ -144,7 +144,7 @@ var _ = Describe("Route Controller", Ordered, func() {
 			})
 			It("should not accept a Route with TokenRequest=\"sky\"", func() {
 				By("Creating the Route with TokenRequest=\"sky\"")
-				route.Spec.Security.M2M.ExternalIDP.TokenRequest = "sky"
+				route.Spec.Security.M2M.ExternalIDP.TokenRequest = gatewayv1.TokenRequestMethod("sky")
 				err := k8sClient.Create(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(apierrors.IsInvalid(err)).To(BeTrue())

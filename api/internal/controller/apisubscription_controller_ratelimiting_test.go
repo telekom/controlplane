@@ -83,7 +83,7 @@ func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId string,
 				M2M: &apiapi.Machine2MachineAuthentication{
 					ExternalIDP: &apiapi.ExternalIdentityProvider{
 						TokenEndpoint: "https://example.com/token",
-						TokenRequest:  "client_secret_basic",
+						TokenRequest:  apiapi.TokenRequestClientSecretBasic,
 						GrantType:     "client_credentials",
 						Client: &apiapi.OAuth2ClientCredentials{
 							ClientId:  "client-id",
