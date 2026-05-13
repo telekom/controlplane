@@ -21,18 +21,17 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
-	"github.com/telekom/controlplane/rover-server/internal/file"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"gopkg.in/yaml.v3"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/config"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/in"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/out"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"gopkg.in/yaml.v3"
 )
 
 var _ server.ApiSpecificationController = &ApiSpecificationController{}
@@ -40,10 +39,6 @@ var _ server.ApiSpecificationController = &ApiSpecificationController{}
 type ApiSpecificationController struct {
 	stores *s.Stores
 	Store  store.ObjectStore[*roverv1.ApiSpecification]
-
-	// ListApiCategories is a function to list all ApiCategories for validation at upload time.
-	// If nil, category validation is skipped.
-	ListApiCategories func(ctx context.Context) (*apiv1.ApiCategoryList, error)
 
 	// Linter handles OAS linting operations. If nil, linting is disabled.
 	Linter ApiLinter
@@ -54,20 +49,6 @@ func NewApiSpecificationController(stores *s.Stores, lintCfg config.OasLintingCo
 		stores: stores,
 		Store:  stores.APISpecificationStore,
 		Linter: NewApiLinter(stores.APISpecificationStore, lintCfg),
-	}
-	if stores.APICategoryStore != nil {
-		ctrl.ListApiCategories = func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
-			listOpts := store.NewListOpts()
-			categoryList, err := stores.APICategoryStore.List(ctx, listOpts)
-			if err != nil {
-				return nil, err
-			}
-			result := &apiv1.ApiCategoryList{Items: make([]apiv1.ApiCategory, 0, len(categoryList.Items))}
-			for _, item := range categoryList.Items {
-				result.Items = append(result.Items, *item)
-			}
-			return result, nil
-		}
 	}
 	return ctrl
 }
@@ -269,17 +250,22 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	return status.MapAPISpecificationResponse(ctx, apiSpec, a.stores)
 }
 
-// fetchApiCategories fetches all ApiCategories. Returns nil if the store is not configured.
+// fetchApiCategories fetches all ApiCategories. Returns nil if the store is not configured or on error.
 func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *apiv1.ApiCategoryList {
-	if a.ListApiCategories == nil {
+	if a.stores.APICategoryStore == nil {
 		return nil
 	}
-	list, err := a.ListApiCategories(ctx)
+	listOpts := store.NewListOpts()
+	categoryList, err := a.stores.APICategoryStore.List(ctx, listOpts)
 	if err != nil {
 		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories", "error", err)
 		return nil
 	}
-	return list
+	result := &apiv1.ApiCategoryList{Items: make([]apiv1.ApiCategory, 0, len(categoryList.Items))}
+	for _, item := range categoryList.Items {
+		result.Items = append(result.Items, *item)
+	}
+	return result
 }
 
 // validateApiCategoryFromList validates that the given category is a known and active ApiCategory
