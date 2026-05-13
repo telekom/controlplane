@@ -7,6 +7,7 @@ package apispecification
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -16,7 +17,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	roverindex "github.com/telekom/controlplane/rover/internal/index"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -25,9 +28,7 @@ var _ handler.Handler[*roverv1.ApiSpecification] = (*ApiSpecificationHandler)(ni
 // ApiSpecificationHandler reconciles ApiSpecification resources.
 // Linting is performed by rover-server at upload time and stored in the CRD status fields.
 // This handler reads the lint result and gates Api resource creation accordingly.
-type ApiSpecificationHandler struct {
-	GetApiCategory func(ctx context.Context, category string) (*apiapi.ApiCategory, error)
-}
+type ApiSpecificationHandler struct{}
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
 	mode := h.lookupLintingMode(ctx, apiSpec.Spec.Category)
@@ -55,10 +56,7 @@ func (h *ApiSpecificationHandler) Delete(_ context.Context, _ *roverv1.ApiSpecif
 
 // lookupLintingMode finds the ApiCategory and returns the effective linting mode.
 func (h *ApiSpecificationHandler) lookupLintingMode(ctx context.Context, category string) apiapi.LintingMode {
-	if h.GetApiCategory == nil {
-		return apiapi.LintingModeNone
-	}
-	cat, err := h.GetApiCategory(ctx, category)
+	cat, err := h.getApiCategory(ctx, category)
 	if err != nil || cat == nil || cat.Spec.Linting == nil {
 		return apiapi.LintingModeNone
 	}
@@ -67,6 +65,18 @@ func (h *ApiSpecificationHandler) lookupLintingMode(ctx context.Context, categor
 		mode = apiapi.LintingModeBlock
 	}
 	return mode
+}
+
+func (h *ApiSpecificationHandler) getApiCategory(ctx context.Context, category string) (*apiapi.ApiCategory, error) {
+	c := client.ClientFromContextOrDie(ctx)
+	list := &apiapi.ApiCategoryList{}
+	if err := c.List(ctx, list, ctrlclient.MatchingFields{roverindex.FieldApiCategoryLabelValue: strings.ToLower(category)}); err != nil {
+		return nil, err
+	}
+	if len(list.Items) == 0 {
+		return nil, nil
+	}
+	return &list.Items[0], nil
 }
 
 // createOrUpdateApi contains the Api resource creation logic.

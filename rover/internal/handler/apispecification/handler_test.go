@@ -58,24 +58,6 @@ func newApiCategory(name string, linting *apiapi.LintingConfig) *apiapi.ApiCateg
 	}
 }
 
-func getApiCategoryWith(cat *apiapi.ApiCategory) func(context.Context, string) (*apiapi.ApiCategory, error) {
-	return func(_ context.Context, _ string) (*apiapi.ApiCategory, error) {
-		return cat, nil
-	}
-}
-
-func getApiCategoryNil() func(context.Context, string) (*apiapi.ApiCategory, error) {
-	return func(_ context.Context, _ string) (*apiapi.ApiCategory, error) {
-		return nil, nil
-	}
-}
-
-func getApiCategoryError() func(context.Context, string) (*apiapi.ApiCategory, error) {
-	return func(_ context.Context, _ string) (*apiapi.ApiCategory, error) {
-		return nil, fmt.Errorf("api category lookup failed")
-	}
-}
-
 func hasCondition(apiSpec *roverv1.ApiSpecification, condType string) bool {
 	for _, c := range apiSpec.GetConditions() {
 		if c.Type == condType {
@@ -96,7 +78,8 @@ func conditionMessage(apiSpec *roverv1.ApiSpecification, condType string) string
 
 // setupMockClient creates a mock JanitorClient injected into context.
 // The mock expects CreateOrUpdate and returns success.
-func setupMockClient(ctx context.Context) context.Context {
+// If a category is provided, the List call returns it; otherwise returns an empty list.
+func setupMockClient(ctx context.Context, cats ...*apiapi.ApiCategory) context.Context {
 	fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
 	testScheme := runtime.NewScheme()
 	_ = roverv1.AddToScheme(testScheme)
@@ -110,6 +93,38 @@ func setupMockClient(ctx context.Context) context.Context {
 			return controllerutil.OperationResultCreated, nil
 		}).Maybe()
 	fakeClient.EXPECT().AnyChanged().Return(true).Maybe()
+	fakeClient.EXPECT().
+		List(mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
+			catList := list.(*apiapi.ApiCategoryList)
+			for _, cat := range cats {
+				catList.Items = append(catList.Items, *cat)
+			}
+			return nil
+		}).Maybe()
+
+	return cclient.WithClient(ctx, fakeClient)
+}
+
+// setupMockClientWithListError creates a mock JanitorClient where List returns an error.
+// CreateOrUpdate still returns success for tests that proceed past linting.
+func setupMockClientWithListError(ctx context.Context, listErr error) context.Context {
+	fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
+	testScheme := runtime.NewScheme()
+	_ = roverv1.AddToScheme(testScheme)
+	_ = apiapi.AddToScheme(testScheme)
+
+	fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+	fakeClient.EXPECT().
+		CreateOrUpdate(mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, _ client.Object, fn controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+			_ = fn()
+			return controllerutil.OperationResultCreated, nil
+		}).Maybe()
+	fakeClient.EXPECT().AnyChanged().Return(true).Maybe()
+	fakeClient.EXPECT().
+		List(mock.Anything, mock.Anything, mock.Anything).
+		Return(listErr).Maybe()
 
 	return cclient.WithClient(ctx, fakeClient)
 }
@@ -123,12 +138,11 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 
 	Context("when linting is pending (Spec.Lint nil, block mode)", func() {
 		It("should proceed with Api creation to avoid blocking indefinitely", func() {
-			mockCtx := setupMockClient(ctx)
-			h := &handler.ApiSpecificationHandler{
-				GetApiCategory: getApiCategoryWith(newApiCategory("other", &apiapi.LintingConfig{
-					Mode: apiapi.LintingModeBlock,
-				})),
-			}
+			cat := newApiCategory("other", &apiapi.LintingConfig{
+				Mode: apiapi.LintingModeBlock,
+			})
+			mockCtx := setupMockClient(ctx, cat)
+			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "other")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
@@ -140,12 +154,11 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 
 	Context("when linting is pending (Spec.Lint nil, warn mode)", func() {
 		It("should proceed with Api creation", func() {
-			mockCtx := setupMockClient(ctx)
-			h := &handler.ApiSpecificationHandler{
-				GetApiCategory: getApiCategoryWith(newApiCategory("warn-cat", &apiapi.LintingConfig{
-					Mode: apiapi.LintingModeWarn,
-				})),
-			}
+			cat := newApiCategory("warn-cat", &apiapi.LintingConfig{
+				Mode: apiapi.LintingModeWarn,
+			})
+			mockCtx := setupMockClient(ctx, cat)
+			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "warn-cat")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
@@ -157,26 +170,26 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 
 	Context("when linting failed in block mode", func() {
 		It("should set blocked condition with explicit block mode", func() {
-			h := &handler.ApiSpecificationHandler{
-				GetApiCategory: getApiCategoryWith(newApiCategory("strict-cat", &apiapi.LintingConfig{
-					Mode: apiapi.LintingModeBlock,
-				})),
-			}
+			cat := newApiCategory("strict-cat", &apiapi.LintingConfig{
+				Mode: apiapi.LintingModeBlock,
+			})
+			mockCtx := setupMockClient(ctx, cat)
+			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "strict-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: false, Message: "found 3 errors"}
 
-			err := h.CreateOrUpdate(ctx, apiSpec)
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
 			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("found 3 errors"))
 		})
 
 		It("should set blocked condition with dashboard URL", func() {
-			h := &handler.ApiSpecificationHandler{
-				GetApiCategory: getApiCategoryWith(newApiCategory("strict-cat", &apiapi.LintingConfig{
-					Mode: apiapi.LintingModeBlock,
-				})),
-			}
+			cat := newApiCategory("strict-cat", &apiapi.LintingConfig{
+				Mode: apiapi.LintingModeBlock,
+			})
+			mockCtx := setupMockClient(ctx, cat)
+			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "strict-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{
 				Passed:       false,
@@ -184,7 +197,7 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 				DashboardURL: "https://linter.example.com/scans/scan-123",
 			}
 
-			err := h.CreateOrUpdate(ctx, apiSpec)
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
 			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("View details"))
@@ -192,15 +205,15 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 		})
 
 		It("should default to block mode when linting mode is empty string", func() {
-			h := &handler.ApiSpecificationHandler{
-				GetApiCategory: getApiCategoryWith(newApiCategory("test-cat", &apiapi.LintingConfig{
-					Mode: "",
-				})),
-			}
+			cat := newApiCategory("test-cat", &apiapi.LintingConfig{
+				Mode: "",
+			})
+			mockCtx := setupMockClient(ctx, cat)
+			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "test-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: false, Message: "found errors"}
 
-			err := h.CreateOrUpdate(ctx, apiSpec)
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
 		})
@@ -208,12 +221,11 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 
 	Context("when linting failed in warn mode", func() {
 		It("should proceed with Api creation", func() {
-			mockCtx := setupMockClient(ctx)
-			h := &handler.ApiSpecificationHandler{
-				GetApiCategory: getApiCategoryWith(newApiCategory("warn-cat", &apiapi.LintingConfig{
-					Mode: apiapi.LintingModeWarn,
-				})),
-			}
+			cat := newApiCategory("warn-cat", &apiapi.LintingConfig{
+				Mode: apiapi.LintingModeWarn,
+			})
+			mockCtx := setupMockClient(ctx, cat)
+			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "warn-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: false, Message: "found 2 warnings"}
 
@@ -239,7 +251,7 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 	})
 
 	Context("when no linting is configured (Spec.Lint nil, no category linting)", func() {
-		It("should proceed when GetApiCategory is nil", func() {
+		It("should proceed when no category is found", func() {
 			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "other")
@@ -251,10 +263,9 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 		})
 
 		It("should proceed when category has no linting config", func() {
-			mockCtx := setupMockClient(ctx)
-			h := &handler.ApiSpecificationHandler{
-				GetApiCategory: getApiCategoryNil(),
-			}
+			cat := newApiCategory("other", nil)
+			mockCtx := setupMockClient(ctx, cat)
+			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "other")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
@@ -264,10 +275,8 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 		})
 
 		It("should proceed when category lookup returns error", func() {
-			mockCtx := setupMockClient(ctx)
-			h := &handler.ApiSpecificationHandler{
-				GetApiCategory: getApiCategoryError(),
-			}
+			mockCtx := setupMockClientWithListError(ctx, fmt.Errorf("api category lookup failed"))
+			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "other")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)

@@ -6,8 +6,8 @@ package controller
 
 import (
 	"context"
-	"strings"
 
+	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,8 +18,6 @@ import (
 
 	apispec_handler "github.com/telekom/controlplane/rover/internal/handler/apispecification"
 
-	apiapi "github.com/telekom/controlplane/api/api/v1"
-	cclient "github.com/telekom/controlplane/common/pkg/client"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -48,19 +46,7 @@ func (r *ApiSpecificationReconciler) Reconcile(ctx context.Context, req ctrl.Req
 func (r *ApiSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("apispecification-controller")
 
-	h := &apispec_handler.ApiSpecificationHandler{
-		GetApiCategory: func(ctx context.Context, category string) (*apiapi.ApiCategory, error) {
-			c := cclient.ClientFromContextOrDie(ctx)
-			list := &apiapi.ApiCategoryList{}
-			if err := c.List(ctx, list, client.MatchingFields{FieldApiCategoryLabelValue: strings.ToLower(category)}); err != nil {
-				return nil, err
-			}
-			if len(list.Items) == 0 {
-				return nil, nil
-			}
-			return &list.Items[0], nil
-		},
-	}
+	h := &apispec_handler.ApiSpecificationHandler{}
 
 	r.Controller = cc.NewController(h, r.Client, r.Recorder)
 
