@@ -415,6 +415,27 @@ var _ = Describe("Approval Webhook", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should allow Auto strategy Granted -> Rejected (Deny)", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, nil)
+			newObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateRejected, nil)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow Auto strategy Granted -> Suspended (Suspend)", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, nil)
+			newObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateSuspended, nil)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow Auto strategy Suspended -> Granted (Resume)", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateSuspended, nil)
+			newObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, nil)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should reject Auto strategy invalid transition (Pending -> Granted has no FSM path)", func() {
 			// Auto FSM only has Rejected->Granted, Granted->Rejected, Granted->Suspended, Suspended->Granted
 			// Pending is not a valid source state in Auto FSM for Approval

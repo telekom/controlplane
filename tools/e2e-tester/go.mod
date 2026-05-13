@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/tools/e2e-tester
 
-go 1.26.0
+go 1.26.3
 
 require (
 	github.com/fatih/color v1.18.0

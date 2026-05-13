@@ -59,7 +59,7 @@ func (d *ApplicationCustomDefaulter) Default(ctx context.Context, app *applicati
 
 	env, ok := controller.GetEnvironment(app)
 	if !ok {
-		return fmt.Errorf("application %s does not have an environment label", app.GetName())
+		return fmt.Errorf("application %q does not have an environment label", app.GetName())
 	}
 
 	if err := mutator.MutateSecret(ctx, env, app, d.Reader); err != nil {

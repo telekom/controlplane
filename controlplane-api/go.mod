@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/controlplane-api
 
-go 1.26.0
+go 1.26.3
 
 require (
 	entgo.io/contrib v0.7.0

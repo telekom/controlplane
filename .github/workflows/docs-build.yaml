@@ -11,6 +11,9 @@ on:
       - '.github/workflows/docs-build.yaml'
       - '.github/workflows/docs-deploy.yaml'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Docusaurus

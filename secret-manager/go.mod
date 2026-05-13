@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/secret-manager
 
-go 1.26.0
+go 1.26.3
 
 require github.com/telekom/controlplane/common-server v0.0.0
 
