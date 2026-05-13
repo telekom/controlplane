@@ -166,6 +166,12 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		obj.Status.Links.TeamIssuer = ""
 	}
 
+	// Cleanup managed routes that were not created or updated during this reconciliation.
+	// Using OwnedByLabel because routes live in a different namespace than the Zone CR.
+	if _, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrapf(err, "failed to cleanup stale managed routes for zone %s", obj.Name)
+	}
+
 	// Populate Permissions URL if configured and feature enabled
 	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Permissions != nil {
 		// Use url.JoinPath to properly handle slashes when combining gateway URL with ApiBasePath
@@ -265,6 +271,7 @@ func createManagedRoute(ctx context.Context, handlingContext HandlingContext, ro
 		route.Labels = map[string]string{
 			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.OwnerUidLabelKey:             string(handlingContext.Zone.GetUID()),
 		}
 
 		upstreamUrl, err := url.Parse(routeConfig.Url)
