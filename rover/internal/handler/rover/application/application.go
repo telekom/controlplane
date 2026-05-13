@@ -85,14 +85,22 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
+		// Preserve existing Application secret on updates (write-once);
+		// only bootstrap from Rover on initial creation.
+		secretToApply := application.Spec.Secret
+		if secretToApply == "" {
+			secretToApply = owner.Spec.ClientSecret
+		}
+
 		application.Spec = applicationv1.ApplicationSpec{
 			Team:          team.Name,
 			TeamEmail:     team.Spec.Email,
 			Zone:          zoneRef,
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,
-			Secret:        owner.Spec.ClientSecret,
+			Secret:        secretToApply,
 			FailoverZones: subscriberFailoverZones,
+			RotatedSecret: application.Spec.RotatedSecret,
 		}
 
 		if owner.Spec.IpRestrictions != nil {
@@ -102,6 +110,15 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 					Deny:  owner.Spec.IpRestrictions.Deny,
 				},
 			}
+		}
+
+		if len(owner.Spec.ExternalIds) > 0 {
+			application.Spec.ExternalIds = make([]applicationv1.ExternalId, len(owner.Spec.ExternalIds))
+			for i, eid := range owner.Spec.ExternalIds {
+				application.Spec.ExternalIds[i] = applicationv1.ExternalId{Scheme: eid.Scheme, Id: eid.Id}
+			}
+		} else {
+			application.Spec.ExternalIds = nil
 		}
 
 		return nil

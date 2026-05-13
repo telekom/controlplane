@@ -21,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -152,8 +153,7 @@ var _ = Describe("Controller", func() {
 
 			var obj test.TestResource
 			Expect(k8sClient.Get(ctx, req.NamespacedName, &obj)).To(Succeed())
-			Expect(obj.GetConditions()).To(HaveLen(2))
-			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing).Status).To(Equal(metav1.ConditionUnknown))
+			Expect(obj.GetConditions()).To(HaveLen(1))
 			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady).Status).To(Equal(metav1.ConditionUnknown))
 		})
 
@@ -166,9 +166,27 @@ var _ = Describe("Controller", func() {
 
 			var obj test.TestResource
 			Expect(k8sClient.Get(ctx, req.NamespacedName, &obj)).To(Succeed())
-			Expect(obj.GetConditions()).To(HaveLen(2))
-			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing).Status).To(Equal(metav1.ConditionUnknown))
+			Expect(obj.GetConditions()).To(HaveLen(1))
 			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady).Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should use custom RequeueAfter when handler sets it via ReconcileHint", func() {
+			customRequeue := 10 * time.Second
+			customHandler := handler.NewCustomHandler(
+				func(ctx context.Context, object *test.TestResource) error {
+					contextutil.SetRequeueAfter(ctx, customRequeue)
+					return nil
+				},
+				func(ctx context.Context, obj *test.TestResource) error {
+					return nil
+				},
+			)
+			controller := NewController(customHandler, k8sClient, &recorder)
+
+			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+			// The hint value is used directly (no jitter) so the result should equal the hint.
+			Expect(res.RequeueAfter).To(Equal(customRequeue))
 		})
 	})
 

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"k8s.io/apimachinery/pkg/util/dump"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/utils/dump"
 )
 
 // ComputeHash computes a hash for the given content.

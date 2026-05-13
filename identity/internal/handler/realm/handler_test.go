@@ -271,6 +271,9 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
+			mockSvc.EXPECT().
+				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
+				Return(nil)
 
 			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
 				return mockSvc, nil
@@ -321,6 +324,9 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
+			mockSvc.EXPECT().
+				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
+				Return(nil)
 			// ConfigureSecretRotationPolicy should NOT be called — mockery
 			// will fail the test if it is called unexpectedly.
 
@@ -360,6 +366,9 @@ var _ = Describe("HandlerRealm", func() {
 				Return(nil)
 			mockSvc.EXPECT().
 				ConfigureSecretRotationPolicy(mock.Anything, "test-realm", realm.Spec.SecretRotation).
+				Return(nil)
+			mockSvc.EXPECT().
+				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
 				Return(nil)
 
 			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
@@ -531,34 +540,6 @@ var _ = Describe("HandlerRealm", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to delete realm"))
 			Expect(err.Error()).To(ContainSubstring("keycloak 500"))
-		})
-	})
-
-	Context("mapToRealmStatus", func() {
-
-		It("should map IdentityProvider fields correctly", func() {
-			identityProvider := &identityv1.IdentityProvider{
-				Spec: identityv1.IdentityProviderSpec{
-					AdminUrl:      "https://admin.example.com",
-					AdminClientId: "admin-client-id",
-					AdminUserName: "admin-username",
-					AdminPassword: "admin-password",
-				},
-				Status: identityv1.IdentityProviderStatus{
-					AdminUrl:      "https://admin.example.com",
-					AdminTokenUrl: "https://admin.example.com/token",
-				},
-			}
-			realmName := "test-realm"
-
-			realmStatus := mapToRealmStatus(identityProvider, realmName)
-
-			Expect(realmStatus.IssuerUrl).To(Equal(keycloak.DetermineIssuerUrlFrom(identityProvider.Spec.AdminUrl, realmName)))
-			Expect(realmStatus.AdminClientId).To(Equal("admin-client-id"))
-			Expect(realmStatus.AdminUserName).To(Equal("admin-username"))
-			Expect(realmStatus.AdminPassword).To(Equal("admin-password"))
-			Expect(realmStatus.AdminUrl).To(Equal("https://admin.example.com"))
-			Expect(realmStatus.AdminTokenUrl).To(Equal("https://admin.example.com/token"))
 		})
 	})
 })

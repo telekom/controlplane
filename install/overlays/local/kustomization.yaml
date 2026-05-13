@@ -29,6 +29,7 @@ resources:
 components:
   - ../../components/eventing
   - ../../components/database
+  - ../../components/mailpit
 
 configMapGenerator:
   - name: secret-manager-config
@@ -72,6 +73,16 @@ configMapGenerator:
     options:
       disableNameSuffixHash: true
 
+  - name: notification-smtp-config
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - SMTPCONNECTION_HOST=mailpit
+      - SMTPCONNECTION_PORT=1025
+      - SMTPSENDER_DEFAULTFROM=noreply@controlplane.local
+      - SMTPSENDER_DEFAULTNAME="Control Plane"
+      - SMTPSENDER_DRYRUN=false
+
 patches:
   # All deployments: use IfNotPresent for local images.
   - target:
@@ -80,6 +91,16 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: IfNotPresent
+  # Inject SMTP config into the notification controller.
+  - target:
+      kind: Deployment
+      name: notification-controller-manager
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/envFrom
+        value:
+          - configMapRef:
+              name: notification-smtp-config
 
 images:
   - name: ghcr.io/telekom/controlplane/approval

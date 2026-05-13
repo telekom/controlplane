@@ -27,6 +27,7 @@ const ApplicationPolicyTemplate = `
   id: {{AppId}}
   body:
   - !variable clientSecret
+  - !variable rotatedClientSecret
   - !variable externalSecrets
 `
 

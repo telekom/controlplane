@@ -27,10 +27,7 @@ import (
 	webhookv1 "github.com/telekom/controlplane/application/internal/webhook/v1"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -46,6 +43,7 @@ func init() {
 	utilruntime.Must(identity.AddToScheme(scheme))
 	utilruntime.Must(gateway.AddToScheme(scheme))
 	utilruntime.Must(admin.AddToScheme(scheme))
+	utilruntime.Must(notificationv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

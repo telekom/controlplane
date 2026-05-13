@@ -6,18 +6,21 @@ package resetsecret
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 )
 
 type ResetSecretHandler interface {
 	handlers.ResourceHandler
-	ResetSecret(ctx context.Context, name string) (clientId, clientSecret string, err error)
+	ResetSecret(ctx context.Context, name string) (*v0.SecretRotationStatusResponse, error)
 }
 
 type Command struct {
@@ -25,12 +28,12 @@ type Command struct {
 	Name string
 }
 
-// NewCommand creates a new delete command
+// NewCommand creates a new reset-secret command
 func NewCommand() *cobra.Command {
 	baseCmd := base.NewCommand(
 		"reset-secret",
 		"Reset a secret",
-		"Reset a secret for an application",
+		"Reset a secret for an application and wait until the new secret has converged.",
 	)
 	cmd := &Command{
 		BaseCommand: baseCmd,
@@ -47,6 +50,9 @@ func NewCommand() *cobra.Command {
 }
 
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
+	// We cannot use the built-in deprecation mechanism of cobra, because it would print the message to stdout
+	// potentially breaking pipes.
+	fmt.Fprintln(os.Stderr, "Command \"reset-secret\" is deprecated, use \"rotate-secret\" instead.")
 
 	handler, err := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
 	if err != nil {
@@ -58,18 +64,14 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		return errors.New("invalid rover handler type")
 	}
 
-	c.Logger().V(1).Info("Starting reset-secret command")
+	c.Logger().Info("Resetting secret", "name", c.Name)
 
-	clientId, clientSecret, err := roverHandler.ResetSecret(c.Cmd.Context(), c.Name)
+	status, err := roverHandler.ResetSecret(cmd.Context(), c.Name)
 	if err != nil {
 		return c.HandleError(err, "reset secret")
 	}
 
-	prettyString, err := util.FormatOutput(map[string]string{
-		"clientId":     clientId,
-		"clientSecret": clientSecret,
-	}, viper.GetString("output.format"))
-
+	prettyString, err := util.FormatOutput(status, viper.GetString("output.format"))
 	if err != nil {
 		return errors.Wrap(err, "failed to format output")
 	}
@@ -78,8 +80,6 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to write output")
 	}
-
-	c.Logger().V(1).Info("Successfully reset secret for application", "name", c.Name)
 
 	return nil
 }

@@ -40,6 +40,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -75,6 +76,7 @@
         },
         Subscriptions: nil,
         Permissions:   nil,
+        ExternalIds:   nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -103,6 +105,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -165,6 +168,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -252,6 +256,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -314,6 +319,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -338,6 +344,7 @@
                 Entries:  nil,
             },
         },
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -373,6 +380,7 @@
                 },
             },
         },
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -408,6 +416,7 @@
                 },
             },
         },
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }

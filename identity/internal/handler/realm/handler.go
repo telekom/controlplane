@@ -46,16 +46,22 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		return err
 	}
 
-	var realmStatus = mapToRealmStatus(identityProvider, realm.Name)
-	err = ValidateRealmStatus(&realmStatus)
+	realm.Status.IssuerUrl = keycloak.DetermineIssuerUrlFrom(identityProvider.Spec.AdminUrl, realm.Name)
+	realm.Status.AdminClientId = identityProvider.Spec.AdminClientId
+	realm.Status.AdminUserName = identityProvider.Spec.AdminUserName
+	realm.Status.AdminPassword = identityProvider.Spec.AdminPassword
+	realm.Status.AdminUrl = identityProvider.Status.AdminUrl
+	realm.Status.AdminTokenUrl = identityProvider.Status.AdminTokenUrl
+
+	err = ValidateRealmStatus(&realm.Status)
 	if err != nil {
 		return ctrlerrors.BlockedErrorf("IdentityProvider %q is not valid: %s", realm.Spec.IdentityProvider.String(), err)
 	}
 
 	// Create a copy of the realmStatus so that we NEVER modify the original status
 	// and accidentally write the secrets back to the cluster
-	replacedRealmStatus := realmStatus.DeepCopy()
-	replacedRealmStatus.AdminPassword, err = secrets.Get(ctx, realmStatus.AdminPassword)
+	replacedRealmStatus := realm.Status.DeepCopy()
+	replacedRealmStatus.AdminPassword, err = secrets.Get(ctx, realm.Status.AdminPassword)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve password from secret manager: %w", err)
 	}
@@ -81,9 +87,12 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		}
 	}
 
-	// Persist the computed status so that downstream controllers (e.g. client)
-	// can read IssuerUrl, AdminUrl, AdminTokenUrl, etc. from the realm status.
-	realm.Status = realmStatus
+	// Configure the managed client scope for custom claims. This is
+	// always called — an empty claims slice removes the scope if it exists.
+	if err := realmClient.ConfigureClientScopes(ctx, realm.Name, realm.Spec.Claims); err != nil {
+		return fmt.Errorf("failed to configure client scopes: %w", err)
+	}
+
 	realm.SetCondition(condition.NewDoneProcessingCondition("Created Realm"))
 	realm.SetCondition(condition.NewReadyCondition("Ready", "Realm is ready"))
 
@@ -117,15 +126,4 @@ func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) erro
 	}
 
 	return nil
-}
-
-func mapToRealmStatus(identityProvider *identityv1.IdentityProvider, realmName string) identityv1.RealmStatus {
-	return identityv1.RealmStatus{
-		IssuerUrl:     keycloak.DetermineIssuerUrlFrom(identityProvider.Spec.AdminUrl, realmName),
-		AdminClientId: identityProvider.Spec.AdminClientId,
-		AdminUserName: identityProvider.Spec.AdminUserName,
-		AdminPassword: identityProvider.Spec.AdminPassword,
-		AdminUrl:      identityProvider.Status.AdminUrl,
-		AdminTokenUrl: identityProvider.Status.AdminTokenUrl,
-	}
 }

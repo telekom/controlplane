@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,9 +32,38 @@ type IdentityProviderAdminConfig struct {
 	Password string  `json:"password"`
 }
 
+type SecretRotationConfig struct {
+	// Enabled controls whether secret rotation is enabled for this zone.
+	//  If false, secrets will not be rotated and the grace period and expiration period will be ignored.
+	Enabled bool `json:"enabled"`
+	// GracePeriod is the duration that a rotated secret is valid for.
+	// This allows to have a smooth transition when rotating secrets, as the old secret is still valid for a certain period of time after rotation.
+	// +kubebuilder:validation:Required
+	GracePeriod metav1.Duration `json:"gracePeriod"`
+
+	// ExpirationPeriod is the duration that the current secret is valid for.
+	// Once this period has elapsed, the secret is considered expired and should be rotated.
+	// +kubebuilder:validation:Required
+	ExpirationPeriod metav1.Duration `json:"expirationPeriod"`
+
+	// NotificationThresholds defines the schedule of reminder notifications before
+	// secret expiry. Each entry triggers a notification when the remaining time-to-expiry
+	// crosses that threshold. Only the tightest (smallest) matching threshold is evaluated
+	// per reconciliation cycle to avoid spamming.
+	//
+	// Example: [{before: "720h"}, {before: "168h", repeat: "24h"}]
+	// → single reminder at 30 days, then daily reminders starting at 7 days.
+	// +kubebuilder:validation:MinItems=1
+	NotificationThresholds []reminder.Threshold `json:"notificationThresholds"`
+}
+
 type IdentityProviderConfig struct {
 	Admin IdentityProviderAdminConfig `json:"admin"`
 	Url   string                      `json:"url"`
+
+	// SecretRotation contains the config for rotating secrets related to the default identity provider realm of this zone.
+	// If not set, secret rotation will be disabled.
+	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
 }
 
 type GatewayAdminConfig struct {
@@ -81,6 +111,32 @@ type PermissionsConfig struct {
 	ConsoleUrl *string `json:"consoleUrl,omitempty"`
 }
 
+// ExternalIdPolicy configures validation for a single external identifier scheme
+// on Rovers and Applications in this zone.
+type ExternalIdPolicy struct {
+	// Scheme names the identifier system (e.g. "psi", "icto").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:Pattern=`^[a-z][a-z0-9]*$`
+	Scheme string `json:"scheme"`
+
+	// Required acts as a per-zone feature flag controlling whether this scheme
+	// is mandatory in this zone. When true, every Rover/Application in this
+	// zone MUST carry an externalIds entry with this scheme. The id's format
+	// is always checked against Pattern whenever an entry with this scheme is
+	// supplied, regardless of Required.
+	// +kubebuilder:default=false
+	Required bool `json:"required"`
+
+	// Pattern is the ECMA 262 regex the id must match. Always enforced when an
+	// externalIds entry with this scheme is present; also drives the
+	// presence-check error when Required is true.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Pattern string `json:"pattern"`
+}
+
 // ZoneSpec defines the desired state of Zone
 type ZoneSpec struct {
 	IdentityProvider IdentityProviderConfig `json:"identityProvider"`
@@ -94,6 +150,15 @@ type ZoneSpec struct {
 	// Permissions configuration for permission service integration
 	// +kubebuilder:validation:Optional
 	Permissions *PermissionsConfig `json:"permissions,omitempty"`
+
+	// ExternalIdPolicies configures, per identifier scheme, the format and
+	// presence requirements for externalIds on Rovers and Applications bound to
+	// this zone. Empty means no enforcement for any scheme.
+	// +kubebuilder:validation:Optional
+	// +listType=map
+	// +listMapKey=scheme
+	// +kubebuilder:validation:MaxItems=16
+	ExternalIdPolicies []ExternalIdPolicy `json:"externalIdPolicies,omitempty"`
 }
 
 type Links struct {
@@ -142,6 +207,15 @@ type ZoneStatus struct {
 	TeamApiGatewayRealm  *types.ObjectRef  `json:"teamApiGatewayRealm,omitempty"`
 	TeamApiRoutes        []types.ObjectRef `json:"teamApiRoutes,omitempty"`
 	Links                Links             `json:"links,omitempty"`
+
+	// Features is a list of features that are enabled or disabled for this zone.
+	// This can be used to control the availability of certain features in the zone
+	// +listType=map
+	// +listMapKey=name
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +optional
+	Features []Feature `json:"features,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -189,4 +263,41 @@ func (l *ZoneList) GetItems() []types.Object {
 
 func init() {
 	SchemeBuilder.Register(&Zone{}, &ZoneList{})
+}
+
+// Feature Management
+
+type FeatureName string
+
+const (
+	// FeatureSecretRotation indicates that secret rotation is enabled for the zone.
+	FeatureSecretRotation FeatureName = "SecretRotation"
+)
+
+type Feature struct {
+	Name    FeatureName `json:"name"`
+	Enabled bool        `json:"enabled"`
+}
+
+func (z *Zone) IsFeatureEnabled(featureName FeatureName) bool {
+	for _, feature := range z.Status.Features {
+		if feature.Name == featureName {
+			return feature.Enabled
+		}
+	}
+	return false
+}
+
+func (z *Zone) EnableFeature(featureName FeatureName) {
+	z.ManageFeature(featureName, true)
+}
+
+func (z *Zone) ManageFeature(featureName FeatureName, enabled bool) {
+	for i, feature := range z.Status.Features {
+		if feature.Name == featureName {
+			z.Status.Features[i].Enabled = enabled
+			return
+		}
+	}
+	z.Status.Features = append(z.Status.Features, Feature{Name: featureName, Enabled: enabled})
 }

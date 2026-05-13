@@ -15,3 +15,4 @@ All features in this section are **optional**. You only need to configure them i
 | Feature | Description | Guide |
 | ------- | ----------- | ----- |
 | **API Categories** | Classify APIs by type, restrict which teams can use each category, enforce naming conventions, and enable API linting. | [API Categories](./api-categories.md) |
+| **Secret Rotation** | Configure automatic secret expiration, grace periods, and notification schedules for application credentials. | [Secret Rotation](./secret-rotation.md) |

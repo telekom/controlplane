@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common/pkg/test"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -21,7 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -48,12 +48,12 @@ var _ = BeforeSuite(func() {
 
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	err = (&crscheme.Builder{
-		GroupVersion: schema.GroupVersion{
-			Group:   "testgroup.cp.ei.telekom.de",
-			Version: "v1",
-		},
-	}).Register(&test.TestResource{}, &test.TestResourceList{}).AddToScheme(scheme.Scheme)
+	gv := schema.GroupVersion{
+		Group:   "testgroup.cp.ei.telekom.de",
+		Version: "v1",
+	}
+	scheme.Scheme.AddKnownTypes(gv, &test.TestResource{}, &test.TestResourceList{})
+	metav1.AddToGroupVersion(scheme.Scheme, gv)
 
 	Expect(err).NotTo(HaveOccurred())
 

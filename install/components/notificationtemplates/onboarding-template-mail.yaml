@@ -11,7 +11,7 @@ metadata:
 spec:
   purpose: onboarded
   channelType: Email
-  subjectTemplate: "Team {{.team}} onboarded to Control Plane on {{.environment}}"
+  subjectTemplate: "[{{.environment}}] Team {{.team}} onboarded to Control Plane"
   template: |
     <!DOCTYPE html>
     <html lang="en">

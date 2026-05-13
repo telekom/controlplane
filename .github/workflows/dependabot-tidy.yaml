@@ -11,6 +11,9 @@ on:
       - '**/go.sum'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   tidy:
     name: Run go mod tidy

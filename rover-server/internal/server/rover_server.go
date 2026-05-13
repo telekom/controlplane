@@ -126,3 +126,13 @@ func (s *Server) ResetRoverSecret(c *fiber.Ctx) error {
 
 	return c.Status(http.StatusAccepted).JSON(res)
 }
+
+func (s *Server) GetSecretRotationStatus(c *fiber.Ctx) error {
+	resourceId := c.Params("resourceId")
+	res, err := s.Rovers.GetSecretRotationStatus(c.UserContext(), resourceId)
+	if err != nil {
+		return server.ReturnWithProblem(c, nil, err)
+	}
+
+	return c.JSON(res)
+}

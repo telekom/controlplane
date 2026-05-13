@@ -9,6 +9,7 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  - events.k8s.io
   resources:
   - events
   verbs:
@@ -87,4 +88,24 @@ rules:
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notifications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch

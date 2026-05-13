@@ -335,9 +335,9 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				processingCondition := meta.FindStatusCondition(remoteApiSubscription.Status.Conditions, condition.ConditionTypeProcessing)
-				g.Expect(processingCondition).ToNot(BeNil())
-				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionUnknown))
+				readyCondition := meta.FindStatusCondition(remoteApiSubscription.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(readyCondition).ToNot(BeNil())
+				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionUnknown))
 
 			}, timeout, interval).Should(Succeed())
 

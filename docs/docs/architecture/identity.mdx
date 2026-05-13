@@ -10,6 +10,16 @@ The Identity domain manages identity and access management for the Control Plane
 
 <CRDReference domain="identity" />
 
+### Secret Rotation Support
+
+When a Realm is configured with a `secretRotation` policy, the Identity domain provisions a Keycloak client-policy that enables graceful secret rotation for opted-in clients. During rotation:
+
+1. The current secret is moved to a "rotated" slot in Keycloak
+2. A new secret is set as the primary credential
+3. Both secrets are accepted until the grace period expires
+
+Individual clients can opt out via the `identity.cp.ei.telekom.de/disable-secret-rotation: "true"` annotation.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which identity provider to use.
