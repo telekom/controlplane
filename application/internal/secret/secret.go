@@ -7,6 +7,7 @@ package secret
 import (
 	"sync"
 
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -31,15 +32,15 @@ const (
 	KeywordRotate = api.KeywordRotate
 
 	// SecretRotationConditionType is the condition type used to track secret rotation state on the Application CR.
-	SecretRotationConditionType = "SecretRotation"
+	SecretRotationConditionType = applicationv1.SecretRotationConditionType
 	// SecretRotationReasonInProgress indicates a rotation has been initiated but not yet fully propagated.
-	SecretRotationReasonInProgress = "InProgress"
+	SecretRotationReasonInProgress = applicationv1.SecretRotationReasonInProgress
 	// SecretRotationReasonSuccess indicates a rotation has been fully propagated to all sub-resources.
-	SecretRotationReasonSuccess = "Success"
+	SecretRotationReasonSuccess = applicationv1.SecretRotationReasonSuccess
 
 	// AnnotationGracefulRotation is set to "true" on the Application when a graceful
 	// secret rotation (with grace period) was initiated by the webhook.
-	AnnotationGracefulRotation = "application.cp.ei.telekom.de/graceful-secret-rotation"
+	AnnotationGracefulRotation = applicationv1.AnnotationGracefulRotation
 )
 
 var FindSecretId = api.FindSecretId

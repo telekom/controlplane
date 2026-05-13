@@ -292,7 +292,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				By("Changing the Team Members")
 				team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
 					Name:  "member2",
-					Email: "mail@example.com",
+					Email: "mail2@example.com",
 				})
 				Expect(k8sClient.Update(ctx, team)).ToNot(HaveOccurred())
 				Eventually(func(g Gomega) {
@@ -305,7 +305,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					g.Expect(team.Spec.Email).To(Equal("mail@example.com"))
 					g.Expect(team.Spec.Members).To(ConsistOf(
 						organizationv1.Member{Email: "mail@example.com", Name: "member"},
-						organizationv1.Member{Email: "mail@example.com", Name: "member2"},
+						organizationv1.Member{Email: "mail2@example.com", Name: "member2"},
 					))
 					g.Expect(team.Spec.Category).To(Equal(organizationv1.TeamCategoryCustomer))
 					g.Expect(team.Spec.Secret).To(HavePrefix("$<testgroup-alpha--team-alphasecret-"))

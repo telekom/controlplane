@@ -42,6 +42,45 @@ spec:
           spec:
             description: RealmSpec defines the desired state of Realm
             properties:
+              claims:
+                description: |-
+                  Claims defines claims that are added to all tokens issued for
+                  clients in this realm. Each claim can be a static value
+                  (HardcodedClaim) or derived from a Keycloak session note
+                  (SessionNote). The controller manages a dedicated Keycloak
+                  client scope with protocol mappers for each claim.
+                items:
+                  description: |-
+                    ClaimConfig defines a claim that is added to all tokens issued for
+                    clients in this realm.
+                  properties:
+                    name:
+                      description: Name is the claim name as it appears in the token
+                        (e.g. "team", "env").
+                      minLength: 1
+                      type: string
+                    type:
+                      default: HardcodedClaim
+                      description: |-
+                        Type selects the protocol mapper used for this claim.
+                        Defaults to HardcodedClaim when omitted.
+                      enum:
+                      - HardcodedClaim
+                      - SessionNote
+                      type: string
+                    value:
+                      description: |-
+                        Value is the static claim value written into every token.
+                        Only used for HardcodedClaim; ignored for SessionNote (which
+                        reads the value from the Keycloak session note keyed by Name).
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               identityProvider:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object

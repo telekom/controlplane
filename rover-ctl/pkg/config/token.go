@@ -87,8 +87,9 @@ func ParseToken(tokenStr string) (*Token, error) {
 	token.fillPrefixInfo()
 
 	var serverURL *url.URL
-	if token.ServerUrl == "" {
-		serverURL, err = url.Parse(viper.GetString(ConfigKeyServerURL))
+	overwriteServerURL := viper.GetString(ConfigKeyServerURL)
+	if overwriteServerURL != "" {
+		serverURL, err = url.Parse(overwriteServerURL)
 		if err != nil {
 			return nil, errors.Wrap(ErrTokenValidation, "cannot find server-URL")
 		}
@@ -101,8 +102,9 @@ func ParseToken(tokenStr string) (*Token, error) {
 	ensureCorrectBasePath(serverURL, viper.GetString("server.baseUrl"))
 	token.ServerUrl = serverURL.String()
 
-	if token.TokenUrl == "" {
-		token.TokenUrl = viper.GetString(ConfigKeyTokenURL)
+	overwriteTokenURL := viper.GetString(ConfigKeyTokenURL)
+	if overwriteTokenURL != "" {
+		token.TokenUrl = overwriteTokenURL
 	}
 
 	// Validate the token after parsing and setting all fields

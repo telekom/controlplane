@@ -27,6 +27,11 @@ const config: Config = {
     hooks: {
       onBrokenMarkdownLinks: 'warn',
     },
+    mdx1Compat: {
+      headingIds: true,
+      admonitions: true,
+      comments: true,
+    },
     mermaid: true,
   },
 
