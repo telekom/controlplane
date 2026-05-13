@@ -186,6 +186,33 @@ var _ = Describe("Zone Controller", func() {
 		})
 	})
 
+	Context("When reconciling an Enterprise zone", func() {
+		It("should not add RouteOverwrites to the gateway realm", func() {
+			zone := NewZone("test-zone-enterprise", testNamespace)
+			zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
+			zone.Spec.ManagedRoutes = nil
+			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				got := &adminv1.Zone{}
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(meta.IsStatusConditionTrue(got.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+				gatewayRealm := &gatewayapi.Realm{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "test--test-zone-enterprise",
+					Name:      "test",
+				}, gatewayRealm)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(gatewayRealm.Spec.RouteOverwrites).To(BeEmpty())
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
 	Context("ExternalIdPolicies round-trip", func() {
 		It("persists ExternalIdPolicies on the Zone spec", func() {
 			zone := NewZone("test-zone-extids", testNamespace)
@@ -364,6 +391,11 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 		Urls:             []string{"https://test-stargate.de/"},
 		IssuerUrls:       []string{"https://test-iris.de/auth/realms/test"},
 		DefaultConsumers: []string{},
+		RouteOverwrites: []gatewayapi.RouteOverwrite{
+			{Type: gatewayapi.RouteTypeIssuer, Enabled: true, PathPrefix: "/spacegate"},
+			{Type: gatewayapi.RouteTypeCerts, Enabled: true, PathPrefix: "/spacegate"},
+			{Type: gatewayapi.RouteTypeDiscovery, Enabled: true, PathPrefix: "/spacegate"},
+		},
 	}
 	g.Expect(gatewayRealm.Spec).To(Equal(gatewayRealmSpec))
 	g.Expect(zone.Status.GatewayRealm).To(Equal(types.ObjectRefFromObject(gatewayRealm)))
@@ -400,6 +432,11 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 		Urls:             []string{"https://test-stargate.de/"},
 		IssuerUrls:       []string{"https://test-iris.de/auth/realms/team-test"},
 		DefaultConsumers: []string{},
+		RouteOverwrites: []gatewayapi.RouteOverwrite{
+			{Type: gatewayapi.RouteTypeIssuer, Enabled: true, PathPrefix: "/spacegate"},
+			{Type: gatewayapi.RouteTypeCerts, Enabled: true, PathPrefix: "/spacegate"},
+			{Type: gatewayapi.RouteTypeDiscovery, Enabled: true, PathPrefix: "/spacegate"},
+		},
 	}
 	g.Expect(teamApiGatewayRealm.Spec).To(Equal(teamApiGatewayRealmSpec))
 	g.Expect(zone.Status.TeamApiGatewayRealm).To(Equal(types.ObjectRefFromObject(teamApiGatewayRealm)))

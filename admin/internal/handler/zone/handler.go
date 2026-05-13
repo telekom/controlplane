@@ -32,6 +32,10 @@ import (
 
 const (
 	zoneLabelName = "zone"
+
+	// spacegatePathPrefix is the downstream path prefix added to all identity
+	// routes (issuer, certs, discovery) when a zone's visibility is World.
+	spacegatePathPrefix = "/spacegate"
 )
 
 var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
@@ -357,11 +361,32 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
+		var routeOverwrites []gatewayapi.RouteOverwrite
+		// If the zone is WORLD visible, the gateway is considered a "SpaceGate"
+		// to reduce internet-facing exposure the actual IDP routes are not exposed directly
+		// but via a proxy route "/auth/realms/<realm>". However, this path is already used for
+		// the Gateway Realm itself, so we need to add another prefix to avoid conflicts.
+		// The SpaceGate route will then be available under a common-prefix
+		if handlingContext.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
+			for _, rt := range []gatewayapi.RouteType{
+				gatewayapi.RouteTypeIssuer,
+				gatewayapi.RouteTypeCerts,
+				gatewayapi.RouteTypeDiscovery,
+			} {
+				routeOverwrites = append(routeOverwrites, gatewayapi.RouteOverwrite{
+					Type:       rt,
+					Enabled:    true,
+					PathPrefix: spacegatePathPrefix,
+				})
+			}
+		}
+
 		gatewayRealm.Spec = gatewayapi.RealmSpec{
 			Gateway:          types.ObjectRefFromObject(gateway),
 			Urls:             []string{handlingContext.Zone.Spec.Gateway.Url},
 			IssuerUrls:       []string{urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName)},
 			DefaultConsumers: []string{},
+			RouteOverwrites:  routeOverwrites,
 		}
 		return nil
 	}
