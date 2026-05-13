@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 )
@@ -89,7 +90,7 @@ type violationsInfo struct {
 func (l *ExternalLinter) Lint(ctx context.Context, spec []byte) (*LintResult, error) {
 	scanURL := fmt.Sprintf("%s/%s", l.baseURL, scanEndpoint)
 	if l.ruleset != "" {
-		scanURL = fmt.Sprintf("%s?ruleset=%s", scanURL, l.ruleset)
+		scanURL = fmt.Sprintf("%s?ruleset=%s", scanURL, url.QueryEscape(l.ruleset))
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, scanURL, bytes.NewReader(spec))
