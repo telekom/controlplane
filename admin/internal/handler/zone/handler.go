@@ -181,6 +181,9 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 }
 
 func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway, defaultGatewayRealm *gatewayapi.Realm) error {
+	// Reset status to avoid stale/duplicate entries across reconciliations
+	zone.Status.ManagedRoutes = nil
+
 	// Partition routes by type
 	var teamAPIRoutes, proxyRoutes []adminv1.ManagedRouteConfig
 	for _, r := range zone.Spec.ManagedRoutes.Routes {
@@ -189,6 +192,8 @@ func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext
 			teamAPIRoutes = append(teamAPIRoutes, r)
 		case adminv1.ManagedRouteTypeProxy:
 			proxyRoutes = append(proxyRoutes, r)
+		default:
+			return fmt.Errorf("unsupported managed route type %q for route %q", r.Type, r.Name)
 		}
 	}
 
@@ -264,7 +269,7 @@ func createManagedRoute(ctx context.Context, handlingContext HandlingContext, ro
 		}
 		upstream := gatewayapi.Upstream{
 			Scheme: upstreamUrl.Scheme,
-			Host:   upstreamUrl.Host,
+			Host:   upstreamUrl.Hostname(),
 			Port:   gatewayapi.GetPortOrDefaultFromScheme(upstreamUrl),
 			Path:   upstreamUrl.Path,
 		}

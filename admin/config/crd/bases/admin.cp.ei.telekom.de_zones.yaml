@@ -205,7 +205,7 @@ spec:
                           pattern: ^/.*$
                           type: string
                         type:
-                          description: 'Type selects the route behavior: Api (authenticated,
+                          description: 'Type selects the route behavior: TeamAPI (authenticated,
                             no ACL) or Proxy (passthrough reverse proxy).'
                           enum:
                           - TeamAPI

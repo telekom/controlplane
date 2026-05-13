@@ -132,6 +132,60 @@ var _ = Describe("Zone Controller", func() {
 		})
 	})
 
+	Context("When reconciling a zone with a Proxy managed route", func() {
+		It("should create a passthrough route on the default gateway realm", func() {
+			zone := NewZone("test-zone-proxy", testNamespace)
+			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{
+				Routes: []adminv1.ManagedRouteConfig{
+					{
+						Name: "test-team-api1",
+						Path: "/test/team/api/v1",
+						Url:  "https://test-team-api-host.de/test-team-api-v1",
+						Type: adminv1.ManagedRouteTypeTeamAPI,
+					},
+					{
+						Name: "test-proxy",
+						Path: "/proxy/path",
+						Url:  "https://proxy-upstream.de/backend",
+						Type: adminv1.ManagedRouteTypeProxy,
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				got := &adminv1.Zone{}
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(meta.IsStatusConditionTrue(got.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+				// The proxy route should be created on the default gateway realm (named "test")
+				proxyRoute := &gatewayapi.Route{}
+				proxyRouteRef := client.ObjectKey{
+					Namespace: "test--test-zone-proxy",
+					Name:      "test--test-proxy",
+				}
+				err = k8sClient.Get(ctx, proxyRouteRef, proxyRoute)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(proxyRoute.Spec.PassThrough).To(BeTrue())
+				g.Expect(proxyRoute.Spec.Security).To(BeNil())
+				g.Expect(proxyRoute.Spec.Upstreams).To(HaveLen(1))
+				g.Expect(proxyRoute.Spec.Upstreams[0].Host).To(Equal("proxy-upstream.de"))
+				g.Expect(proxyRoute.Spec.Upstreams[0].Path).To(Equal("/backend"))
+				g.Expect(proxyRoute.Spec.Downstreams).To(HaveLen(1))
+				g.Expect(proxyRoute.Spec.Downstreams[0].IssuerUrl).To(BeEmpty())
+				g.Expect(proxyRoute.Spec.Downstreams[0].Path).To(Equal("/proxy/path"))
+
+				// Verify ManagedRoutes status contains refs for both routes
+				g.Expect(got.Status.ManagedRoutes).To(HaveLen(2))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
 	Context("ExternalIdPolicies round-trip", func() {
 		It("persists ExternalIdPolicies on the Zone spec", func() {
 			zone := NewZone("test-zone-extids", testNamespace)

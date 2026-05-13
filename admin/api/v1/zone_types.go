@@ -107,7 +107,7 @@ type ManagedRouteConfig struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"url"`
-	// Type selects the route behavior: Api (authenticated, no ACL) or Proxy (passthrough reverse proxy).
+	// Type selects the route behavior: TeamAPI (authenticated, no ACL) or Proxy (passthrough reverse proxy).
 	// +kubebuilder:validation:Required
 	Type ManagedRouteType `json:"type"`
 }
