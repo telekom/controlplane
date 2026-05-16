@@ -7,6 +7,7 @@ package feature
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -161,35 +162,81 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 
 	upstreamResponse, err := kongAdminApi.UpsertUpstreamWithResponse(ctx, upstreamName, upstreamBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to create upstream")
+		return errors.Wrapf(err, "failed to create upstream [PUT /upstreams/%s]", upstreamName)
 	}
 	if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(upstreamResponse.Body)), "failed to create upstream")
+		return errors.Wrap(fmt.Errorf("error body from kong admin api [%s %s]: %s", upstreamResponse.HTTPResponse.Request.Method, upstreamResponse.HTTPResponse.Request.URL.Path, string(upstreamResponse.Body)), "failed to create upstream")
 	}
 	route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 
-	targetsName := routeName
+	// Only create the target when it does not already exist in Kong.
+	// On re-reconciliation the upstream is upserted (PUT, idempotent) but the
+	// target is left untouched
+	targetId := route.GetTargetsId()
+	if targetId == "" {
+		targetId, err = findExistingTargetId(ctx, kongAdminApi, upstreamName, DefaultTargetsTarget)
+		if err != nil {
+			return err
+		}
+	}
+	if targetId == "" {
+		targetId, err = createTarget(ctx, kongAdminApi, upstreamName, routeName, route.GetName())
+		if err != nil {
+			return err
+		}
+	}
+	route.SetTargetsId(targetId)
+
+	return nil
+}
+
+// findExistingTargetId fetches a single target by its target value from the
+// given upstream and returns its ID. Returns empty string if not found (404).
+func findExistingTargetId(ctx context.Context, kongAdminApi client.KongAdminApi, upstreamName, targetValue string) (string, error) {
+	response, err := kongAdminApi.FetchTargetForUpstreamWithResponse(ctx, upstreamName, targetValue)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to fetch target for upstream %s", upstreamName)
+	}
+	// 404 means either the upstream or the target does not exist yet
+	if response.StatusCode() == 404 {
+		return "", nil
+	}
+	if err := client.CheckStatusCode(response, 200); err != nil {
+		return "", errors.Wrap(
+			fmt.Errorf("error body from kong admin api: %s", string(response.Body)),
+			"failed to fetch target for upstream")
+	}
+	if response.JSON200 != nil && response.JSON200.Id != nil {
+		return *response.JSON200.Id, nil
+	}
+	return "", nil
+}
+
+// createTarget creates a new target for the given upstream via POST.
+func createTarget(ctx context.Context, kongAdminApi client.KongAdminApi, upstreamName, targetsName, routeName string) (string, error) {
 	targetsTarget := DefaultTargetsTarget
 	targetsWeight := 100
 	targetsBody := kong.CreateTargetForUpstreamJSONRequestBody{
 		Tags: &[]string{
 			client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
 			client.BuildTag("targets", targetsName),
-			client.BuildTag("route", route.GetName()),
+			client.BuildTag("route", routeName),
 		},
 		Target: &targetsTarget,
 		Weight: &targetsWeight,
 	}
 
-	// this is a special case with the kong admin API - this endpoint /upstreams/:upstreamName/targets actually accepts multiple POST requests, so this is not a mistake
 	targetsResponse, err := kongAdminApi.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to create targets for upstream")
+		return "", errors.Wrapf(err, "failed to create target for upstream [POST /upstreams/%s/targets]", upstreamName)
 	}
-	if err := client.CheckStatusCode(targetsResponse, 200, 201); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
+	if err := client.CheckStatusCode(targetsResponse, 200); err != nil {
+		return "", errors.Wrap(
+			fmt.Errorf("error body from kong admin api [%s %s]: %s",
+				targetsResponse.HTTPResponse.Request.Method,
+				targetsResponse.HTTPResponse.Request.URL.Path,
+				string(targetsResponse.Body)),
+			"failed to create target for upstream")
 	}
-	route.SetTargetsId(*targetsResponse.JSON200.Id)
-
-	return nil
+	return *targetsResponse.JSON200.Id, nil
 }
