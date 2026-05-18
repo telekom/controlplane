@@ -18,40 +18,66 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-type RouteType string
-
-const (
-	RouteTypeIssuer    RouteType = "issuer"
-	RouteTypeCerts     RouteType = "certs"
-	RouteTypeDiscovery RouteType = "discovery"
-)
-
 type routeConfig struct {
 	UpstreamPathFormat   string
 	DownstreamPathFormat string
 }
 
-var routeMap = map[RouteType]routeConfig{
-	RouteTypeIssuer: {
+func (c routeConfig) UpstreamPath(realmName string) string {
+	return fmt.Sprintf(c.UpstreamPathFormat, realmName)
+}
+
+func (c routeConfig) DownstreamPath(realmName string) string {
+	return fmt.Sprintf(c.DownstreamPathFormat, realmName)
+}
+
+func (c routeConfig) DownstreamPathWithPrefix(realmName, prefix string) string {
+	if prefix == "" {
+		return c.DownstreamPath(realmName)
+	}
+	return path.Join(prefix, c.DownstreamPath(realmName))
+}
+
+var routeMap = map[gatewayv1.RouteType]routeConfig{
+	gatewayv1.RouteTypeIssuer: {
 		UpstreamPathFormat:   "/api/v1/issuer/%s",
 		DownstreamPathFormat: "/auth/realms/%s",
 	},
-	RouteTypeCerts: {
+	gatewayv1.RouteTypeCerts: {
 		UpstreamPathFormat:   "/api/v1/certs/%s",
 		DownstreamPathFormat: "/auth/realms/%s/protocol/openid-connect/certs",
 	},
-	RouteTypeDiscovery: {
+	gatewayv1.RouteTypeDiscovery: {
 		UpstreamPathFormat:   "/api/v1/discovery/%s",
 		DownstreamPathFormat: "/auth/realms/%s/.well-known/openid-configuration",
 	},
 }
 
-func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteType) (*gatewayv1.Route, error) {
+func findRouteOverwrite(realm *gatewayv1.Realm, routeType gatewayv1.RouteType) *gatewayv1.RouteOverwrite {
+	for i := range realm.Spec.RouteOverwrites {
+		if realm.Spec.RouteOverwrites[i].Type == routeType {
+			return &realm.Spec.RouteOverwrites[i]
+		}
+	}
+	return nil
+}
+
+func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType gatewayv1.RouteType) (*gatewayv1.Route, error) {
 	c := client.ClientFromContextOrDie(ctx)
 
 	cfg, exists := routeMap[routeType]
 	if !exists {
 		return nil, errors.Errorf("route type %s not found", routeType)
+	}
+
+	overwrite := findRouteOverwrite(realm, routeType)
+	if overwrite != nil && !overwrite.Enabled {
+		return nil, nil
+	}
+
+	var downstreamPrefix string
+	if overwrite != nil {
+		downstreamPrefix = overwrite.PathPrefix
 	}
 
 	route := &gatewayv1.Route{
@@ -90,7 +116,7 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteTyp
 				{
 					Host:      url.Hostname(),
 					Port:      gatewayv1.GetPortOrDefaultFromScheme(url),
-					Path:      path.Join(url.Path, fmt.Sprintf(cfg.DownstreamPathFormat, realm.Name)),
+					Path:      path.Join(url.Path, cfg.DownstreamPathWithPrefix(realm.Name, downstreamPrefix)),
 					IssuerUrl: "",
 				},
 			},

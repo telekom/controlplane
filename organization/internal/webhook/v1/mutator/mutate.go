@@ -107,7 +107,7 @@ func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*admi
 		return nil, errors.NewInternalError(fmt.Errorf("k8sClient is nil"))
 	}
 
-	err := k8sClient.List(ctx, zoneList, client.MatchingFields{index.FieldSpecTeamApis: "true"})
+	err := k8sClient.List(ctx, zoneList, client.MatchingFields{index.FieldSpecManagedRoutes: "true"})
 	if err != nil {
 		return nil, errors.NewInternalError(err)
 	}
@@ -117,7 +117,7 @@ func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*admi
 		if !ok {
 			continue
 		}
-		if zoneObj.Spec.TeamApis != nil {
+		if zoneObj.Spec.ManagedRoutes != nil {
 			teamApiZone = zoneObj.DeepCopy()
 			break
 		}
