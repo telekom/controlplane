@@ -78,6 +78,18 @@ type GatewayConfig struct {
 	CircuitBreaker bool `json:"circuitBreaker"`
 }
 
+// AiGatewayConfig configures an optional AI Gateway for this zone.
+// When present, the zone supports MCP (Model Context Protocol) exposures
+// that are routed through a dedicated AI Gateway instance with streaming support.
+type AiGatewayConfig struct {
+	// Admin contains the admin credentials for the AI Gateway.
+	Admin GatewayAdminConfig `json:"admin"`
+	// Url is the public URL of the AI Gateway.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=uri
+	Url string `json:"url"`
+}
+
 type ApiConfig struct {
 	// Name is the name of the created route. It must be unique within the zone.
 	// +kubebuilder:validation:Required
@@ -151,6 +163,12 @@ type ZoneSpec struct {
 	// +kubebuilder:validation:Optional
 	Permissions *PermissionsConfig `json:"permissions,omitempty"`
 
+	// AiGateway configures a dedicated AI Gateway for this zone.
+	// When present, the zone supports MCP exposures routed through a separate gateway
+	// with streaming support (buffering disabled).
+	// +kubebuilder:validation:Optional
+	AiGateway *AiGatewayConfig `json:"aiGateway,omitempty"`
+
 	// ExternalIdPolicies configures, per identifier scheme, the format and
 	// presence requirements for externalIds on Rovers and Applications bound to
 	// this zone. Empty means no enforcement for any scheme.
@@ -202,6 +220,13 @@ type ZoneStatus struct {
 	GatewayRealm    *types.ObjectRef `json:"gatewayRealm,omitempty"`
 	GatewayClient   *types.ObjectRef `json:"gatewayClient,omitempty"`
 	GatewayConsumer *types.ObjectRef `json:"gatewayConsumer,omitempty"`
+
+	// AiGateway references the AI Gateway CR created for this zone.
+	// +optional
+	AiGateway *types.ObjectRef `json:"aiGateway,omitempty"`
+	// AiGatewayRealm references the AI Gateway Realm CR created for this zone.
+	// +optional
+	AiGatewayRealm *types.ObjectRef `json:"aiGatewayRealm,omitempty"`
 
 	TeamApiIdentityRealm *types.ObjectRef  `json:"teamApiIdentityRealm,omitempty"`
 	TeamApiGatewayRealm  *types.ObjectRef  `json:"teamApiGatewayRealm,omitempty"`
@@ -272,6 +297,8 @@ type FeatureName string
 const (
 	// FeatureSecretRotation indicates that secret rotation is enabled for the zone.
 	FeatureSecretRotation FeatureName = "SecretRotation"
+	// FeatureAiGateway indicates that the AI Gateway is configured and available for this zone.
+	FeatureAiGateway FeatureName = "AiGateway"
 )
 
 type Feature struct {
