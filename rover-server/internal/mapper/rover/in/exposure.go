@@ -17,6 +17,20 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
+// oauth2TokenRequestToCRD maps API tokenRequest values to CRD tokenRequest values.
+var oauth2TokenRequestToCRD = map[string]roverv1.TokenRequestMethod{
+	"body":   roverv1.TokenRequestClientSecretPost,
+	"header": roverv1.TokenRequestClientSecretBasic,
+	"basic":  roverv1.TokenRequestClientSecretBasic,
+}
+
+func tokenRequestAPIToCRD(value string) roverv1.TokenRequestMethod {
+	if mapped, ok := oauth2TokenRequestToCRD[strings.ToLower(value)]; ok {
+		return mapped
+	}
+	return roverv1.TokenRequestMethod(value)
+}
+
 func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
 	expType, err := in.Discriminator()
 	if err != nil {
@@ -134,7 +148,7 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 			// external-idp
 			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
 				TokenEndpoint: oauth2.TokenEndpoint,
-				TokenRequest:  string(oauth2.TokenRequest),
+				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
 				GrantType:     strings.ToLower(string(oauth2.GrantType)),
 			}
 			if oauth2.ClientId != "" {

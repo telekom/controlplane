@@ -6,6 +6,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -39,6 +40,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -51,6 +53,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -73,6 +76,7 @@
         },
         Subscriptions: nil,
         Permissions:   nil,
+        ExternalIds:   nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -85,6 +89,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  {
@@ -100,6 +105,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -128,6 +134,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -161,6 +168,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -214,6 +222,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -247,6 +256,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -275,6 +285,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "supersecret",
         Exposures:      {
             {
@@ -308,6 +319,7 @@
             },
         },
         Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -320,6 +332,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  nil,
@@ -331,6 +344,7 @@
                 Entries:  nil,
             },
         },
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -343,6 +357,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  nil,
@@ -365,6 +380,7 @@
                 },
             },
         },
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -377,6 +393,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  nil,
@@ -399,6 +416,7 @@
                 },
             },
         },
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }

@@ -8,8 +8,8 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 var _ = Describe("Rover Mapper", func() {
@@ -59,6 +59,49 @@ var _ = Describe("Rover Mapper", func() {
 		})
 	})
 
+	Context("MapAuthentication", func() {
+		It("must map client_secret_basic from CRD to BASIC in API", func() {
+			input := rover.DeepCopy()
+			input.Spec.Authentication = &roverv1.RoverAuthentication{
+				M2M: &roverv1.RoverM2MAuthentication{
+					TokenRequest: roverv1.TokenRequestClientSecretBasic,
+				},
+			}
+			output := &api.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.BASIC))
+		})
+
+		It("must map client_secret_post from CRD to POST in API", func() {
+			input := rover.DeepCopy()
+			input.Spec.Authentication = &roverv1.RoverAuthentication{
+				M2M: &roverv1.RoverM2MAuthentication{
+					TokenRequest: roverv1.TokenRequestClientSecretPost,
+				},
+			}
+			output := &api.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.POST))
+		})
+
+		It("must not set authentication when it is nil", func() {
+			input := rover.DeepCopy()
+			input.Spec.Authentication = nil
+			output := &api.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Authentication).To(Equal(api.Authentication{}))
+		})
+	})
+
 	Context("MapRoverResponse", func() {
 		It("must map a Rover to a RoverResponse correctly", func() {
 			input := GetRoverWithReadyCondition(rover)
@@ -81,5 +124,20 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
+	})
+
+	Context("ExternalIds → scalars translation", func() {
+		It("projects psi and icto schemes onto scalar response fields", func() {
+			input := rover.DeepCopy()
+			input.Spec.ExternalIds = append(input.Spec.ExternalIds,
+				roverv1.ExternalId{Scheme: "psi", Id: "PSI-103596"},
+				roverv1.ExternalId{Scheme: "icto", Id: "icto-12345"},
+				roverv1.ExternalId{Scheme: "unknown", Id: "ignored"},
+			)
+			output := &api.Rover{}
+			Expect(MapRover(input, output)).To(Succeed())
+			Expect(output.Psiid).To(Equal("PSI-103596"))
+			Expect(output.Icto).To(Equal("icto-12345"))
+		})
 	})
 })

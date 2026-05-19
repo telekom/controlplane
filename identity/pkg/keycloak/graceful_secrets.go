@@ -44,6 +44,7 @@ type SecretRotationParams struct {
 
 const (
 	attrSecretCreationTime    = "client.secret.creation.time"
+	attrSecretExpirationTime  = "client.secret.expiration.time"
 	attrRotatedCreationTime   = "client.secret.rotated.creation.time"
 	attrRotatedExpirationTime = "client.secret.rotated.expiration.time"
 )
@@ -72,6 +73,9 @@ type ClientSecretRotationInfo struct {
 	// SecretCreationTime is when the current secret was created (epoch seconds),
 	// as tracked by Keycloak's secret-rotation executor. Nil if unavailable.
 	SecretCreationTime *int64
+	// SecretExpiresAt is when the current secret expires (epoch seconds),
+	// as tracked by Keycloak's secret-rotation executor. Nil if unavailable.
+	SecretExpiresAt *int64
 }
 
 // NewClientSecretRotationInfo builds a ClientSecretRotationInfo from the
@@ -86,6 +90,7 @@ func NewClientSecretRotationInfo(cred *api.CredentialRepresentation, client *api
 		info.RotatedCreatedAt = epochSecondsFromAttr(*client.Attributes, attrRotatedCreationTime)
 		info.RotatedExpiresAt = epochSecondsFromAttr(*client.Attributes, attrRotatedExpirationTime)
 		info.SecretCreationTime = epochSecondsFromAttr(*client.Attributes, attrSecretCreationTime)
+		info.SecretExpiresAt = epochSecondsFromAttr(*client.Attributes, attrSecretExpirationTime)
 	}
 	return info
 }
@@ -310,10 +315,11 @@ func (k *keycloakService) GetClientSecretRotationInfo(ctx context.Context, realm
 	}
 	keycloakId := *existing.Id
 
-	// Start with creation time from the existing client representation.
+	// Start with creation/expiration time from the existing client representation.
 	info := &ClientSecretRotationInfo{}
 	if existing.Attributes != nil {
 		info.SecretCreationTime = epochSecondsFromAttr(*existing.Attributes, attrSecretCreationTime)
+		info.SecretExpiresAt = epochSecondsFromAttr(*existing.Attributes, attrSecretExpirationTime)
 	}
 
 	// Check for a rotated (old) secret.
@@ -342,8 +348,9 @@ func (k *keycloakService) GetClientSecretRotationInfo(ctx context.Context, realm
 
 	logger.V(1).Info("rotated secret found", "clientId", client.Spec.ClientId)
 	rotated := NewClientSecretRotationInfo(resp.JSON2XX, existing)
-	// Preserve SecretCreationTime already extracted above.
+	// Preserve SecretCreationTime and SecretExpiresAt already extracted above.
 	rotated.SecretCreationTime = info.SecretCreationTime
+	rotated.SecretExpiresAt = info.SecretExpiresAt
 	return rotated, nil
 }
 

@@ -64,6 +64,30 @@ type KeycloakClient interface {
 		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientPoliciesProfilesResponse, error)
 	PutRealmClientPoliciesProfilesWithResponse(ctx context.Context, realm string, body api.PutRealmClientPoliciesProfilesJSONRequestBody,
 		reqEditors ...api.RequestEditorFn) (*api.PutRealmClientPoliciesProfilesResponse, error)
+
+	// Client scope operations (managed claims)
+	GetRealmClientScopesWithResponse(ctx context.Context, realm string,
+		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientScopesResponse, error)
+	PostRealmClientScopesWithResponse(ctx context.Context, realm string, body api.PostRealmClientScopesJSONRequestBody,
+		reqEditors ...api.RequestEditorFn) (*api.PostRealmClientScopesResponse, error)
+	DeleteRealmClientScopesIdWithResponse(ctx context.Context, realm string, id string,
+		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientScopesIdResponse, error)
+
+	// Protocol mapper operations on client scopes
+	PostRealmClientScopesIdProtocolMappersModelsWithResponse(ctx context.Context, realm string, id string, body api.PostRealmClientScopesIdProtocolMappersModelsJSONRequestBody,
+		reqEditors ...api.RequestEditorFn) (*api.PostRealmClientScopesIdProtocolMappersModelsResponse, error)
+	PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx context.Context, realm string, id1 string, id2 string, body api.PutRealmClientScopesId1ProtocolMappersModelsId2JSONRequestBody,
+		reqEditors ...api.RequestEditorFn) (*api.PutRealmClientScopesId1ProtocolMappersModelsId2Response, error)
+	DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx context.Context, realm string, id1 string, id2 string,
+		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response, error)
+
+	// Realm default client scope assignment
+	GetRealmDefaultDefaultClientScopesWithResponse(ctx context.Context, realm string,
+		reqEditors ...api.RequestEditorFn) (*api.GetRealmDefaultDefaultClientScopesResponse, error)
+	PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm string, clientScopeId string,
+		reqEditors ...api.RequestEditorFn) (*api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse, error)
+	DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm string, clientScopeId string,
+		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse, error)
 }
 
 // ClientUpdateOptions controls the behavior of CreateOrReplaceClient.
@@ -84,6 +108,7 @@ type KeycloakService interface {
 	CreateOrReplaceRealm(ctx context.Context, realm *identityv1.Realm) error
 	DeleteRealm(ctx context.Context, realmName string) error
 	ConfigureSecretRotationPolicy(ctx context.Context, realmName string, policy *identityv1.SecretRotationConfig) error
+	ConfigureClientScopes(ctx context.Context, realmName string, claims []identityv1.ClaimConfig) error
 
 	// Client operations
 	CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client, opts ClientUpdateOptions) error

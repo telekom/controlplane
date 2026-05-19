@@ -6,9 +6,7 @@ package v0
 
 import (
 	"context"
-	"encoding/json"
 	"maps"
-	"net/http"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
@@ -67,8 +65,42 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 		}
 	}
 
+	PatchAuthentication(spec)
+
 	obj.SetContent(spec)
 	return nil
+}
+
+// PatchAuthentication restructures spec.authentication.m2m.clientAuthMethod
+// into spec.authentication.clientAuthMethod for the rover-server API format.
+// The server performs fuzzy matching on the value, so no normalization is needed here.
+func PatchAuthentication(spec map[string]any) {
+	auth, exists := spec["authentication"]
+	if !exists {
+		return
+	}
+	authMap, ok := auth.(map[string]any)
+	if !ok {
+		return
+	}
+
+	m2m, exists := authMap["m2m"]
+	if !exists {
+		return
+	}
+	m2mMap, ok := m2m.(map[string]any)
+	if !ok {
+		return
+	}
+
+	clientAuthMethod, exists := m2mMap["clientAuthMethod"]
+	if !exists {
+		return
+	}
+
+	spec["authentication"] = map[string]any{
+		"clientAuthMethod": clientAuthMethod,
+	}
 }
 
 func PatchExposures(exposures []any) []map[string]any {
@@ -161,27 +193,4 @@ func PatchSecurity(security any) {
 		securityMap["type"] = "oauth2"
 		return
 	}
-}
-
-func (h *RoverHandler) ResetSecret(ctx context.Context, name string) (clientId string, clientSecret string, err error) {
-	token := h.Setup(ctx)
-	url := h.GetRequestUrl(token.Group, token.Team, name, "secret")
-
-	resp, err := h.SendRequest(ctx, nil, http.MethodPatch, url)
-	if err != nil {
-		return "", "", err
-	}
-	defer resp.Body.Close()
-
-	err = common.CheckResponseCode(resp, http.StatusOK, http.StatusAccepted)
-	if err != nil {
-		return "", "", err
-	}
-
-	var response map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return "", "", errors.Wrap(err, "failed to parse response")
-	}
-
-	return response["clientId"], response["secret"], nil
 }

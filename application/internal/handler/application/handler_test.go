@@ -356,6 +356,38 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 				Expect(app.Status.CurrentExpiresAt.Time).To(BeTemporally("~", currentExpires.Time, time.Second))
 			})
 
+			It("should complete rotation immediately when identity client has disable-secret-rotation annotation", func() {
+				mockClient := fake.NewMockJanitorClient(GinkgoT())
+				ctx = client.WithClient(ctx, mockClient)
+
+				// Identity client has rotation disabled — no expiry timestamps will ever arrive.
+				setupHappyPath(mockClient, zone, false, func(idpClient *identityv1.Client) {
+					idpClient.Annotations = map[string]string{
+						identityv1.DisableSecretRotationAnnotation: "true",
+					}
+				})
+
+				// Simulate InProgress from previous reconcile
+				app.SetCondition(metav1.Condition{
+					Type:    secret.SecretRotationConditionType,
+					Status:  metav1.ConditionFalse,
+					Reason:  secret.SecretRotationReasonInProgress,
+					Message: "Secret rotation initiated",
+				})
+
+				err := handler.CreateOrUpdate(ctx, app)
+				Expect(err).ToNot(HaveOccurred())
+
+				cond := meta.FindStatusCondition(app.Status.Conditions, secret.SecretRotationConditionType)
+				Expect(cond).ToNot(BeNil())
+				Expect(cond.Reason).To(Equal(secret.SecretRotationReasonSuccess))
+				Expect(cond.Status).To(Equal(metav1.ConditionTrue))
+
+				Expect(app.Status.RotatedClientSecret).To(Equal("$<ref:rotated-secret>"))
+				Expect(app.Status.RotatedExpiresAt).To(BeNil(),
+					"RotatedExpiresAt should be nil when graceful rotation is disabled")
+			})
+
 			It("should not re-initiate rotation after Success when spec.rotatedSecret matches status", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)

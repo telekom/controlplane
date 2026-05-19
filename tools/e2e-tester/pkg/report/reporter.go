@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/telekom/controlplane/tools/e2e-tester/pkg/config"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +36,7 @@ type TestCaseResult struct {
 	Error          error
 	ComparisonDiff string
 	Environment    string
-	MustPass       bool
+	RunPolicy      config.RunPolicy
 	SkipReason     string // Reason for skipping this test case
 }
 
@@ -126,18 +127,27 @@ func (r *ConsoleReporter) ReportTestCase(result *TestCaseResult) {
 			fmt.Fprintf(r.output, "  "+color.RedString("Error: %s\n"), result.Error)
 		}
 
-		// If the test case has MustPass flag and is in ERROR state, provide additional context
-		if result.MustPass && result.Status == StatusError {
-			fmt.Fprintln(r.output, "  "+color.RedString("Critical Error:"))
-			fmt.Fprintf(r.output, "    %s\n", color.RedString("This test case is marked as must_pass but had an execution error"))
-			fmt.Fprintf(r.output, "    %s\n", color.RedString("This will cause the entire test suite to abort"))
-		}
-
-		// If the test case has MustPass flag and FAILED (comparison), it doesn't abort but should be highlighted
-		if result.MustPass && result.Status == StatusFailed {
-			fmt.Fprintln(r.output, "  "+color.YellowString("Important Test:"))
-			fmt.Fprintf(r.output, "    %s\n", color.YellowString("This test case is marked as must_pass"))
-			fmt.Fprintf(r.output, "    %s\n", color.YellowString("The test will continue but the final result will be marked as failed"))
+		// Handle run_policy-specific messaging
+		switch result.RunPolicy {
+		case config.RunPolicyFailFast:
+			if result.Status == StatusError {
+				fmt.Fprintln(r.output, "  "+color.RedString("Critical Error:"))
+				fmt.Fprintf(r.output, "    %s\n", color.RedString("This test case has run_policy: FailFast")) //nolint:errcheck
+				fmt.Fprintf(r.output, "    %s\n", color.RedString("Suite execution will be aborted"))
+			} else if result.Status == StatusFailed {
+				fmt.Fprintln(r.output, "  "+color.YellowString("Critical Test Failed:"))
+				fmt.Fprintf(r.output, "    %s\n", color.YellowString("This test case has run_policy: FailFast")) //nolint:errcheck
+				fmt.Fprintf(r.output, "    %s\n", color.YellowString("Test continues but result is marked as failed"))
+			}
+		case config.RunPolicyAlways:
+			if result.Status == StatusSkipped {
+				// This shouldn't happen for always policy, but handle gracefully
+				fmt.Fprintln(r.output, "  "+color.YellowString("Note: This test has run_policy: Always")) //nolint:errcheck
+			}
+		case config.RunPolicyRunOnSuccess:
+			if result.Status == StatusSkipped && result.SkipReason != "" {
+				fmt.Fprintf(r.output, "  "+color.YellowString("Skipped: %s\n"), result.SkipReason)
+			}
 		}
 
 		// If command failed with non-zero exit code, show exit code
@@ -397,9 +407,12 @@ func (r *ConsoleReporter) ReportFinal(report *FinalReport) {
 						)
 					}
 
-					// Add must_pass flag if relevant
-					if c.MustPass {
-						fmt.Fprintln(r.output, "    "+color.RedString("⚠ Critical Test (must_pass)"))
+					// Add run_policy indicator if relevant
+					switch c.RunPolicy {
+					case config.RunPolicyFailFast:
+						fmt.Fprintln(r.output, "    "+color.RedString("⚠ Critical Test (run_policy: FailFast)")) //nolint:errcheck
+					case config.RunPolicyAlways:
+						fmt.Fprintln(r.output, "    "+color.CyanString("◆ Always-run Test (run_policy: Always)")) //nolint:errcheck
 					}
 
 					// Add a separator between test entries
