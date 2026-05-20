@@ -145,7 +145,6 @@ spec:
                       - Granted
                       - Rejected
                       - Suspended
-                      - Expired
                       type: string
                     timestamp:
                       description: Timestamp of when the decision was made
@@ -222,7 +221,6 @@ spec:
                 - Granted
                 - Rejected
                 - Suspended
-                - Expired
                 type: string
               strategy:
                 default: Auto
@@ -357,7 +355,6 @@ spec:
                 - Granted
                 - Rejected
                 - Suspended
-                - Expired
                 type: string
               notificationRefs:
                 description: NotificationRefs is a reference to the notifications

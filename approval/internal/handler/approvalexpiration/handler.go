@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	v1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/internal/condition"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -58,7 +60,7 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 	if now.After(ae.Spec.Expiration.Time) || now.Equal(ae.Spec.Expiration.Time) {
 		logger.Info("Approval expired, transitioning to EXPIRED state",
 			"expiration", ae.Spec.Expiration.Time)
-		return h.ensureApprovalExpired(ctx, approval)
+		return h.addExpiredCondition(ctx, approval)
 	}
 
 	// Evaluate which reminder (if any) should fire now
@@ -95,7 +97,16 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 
 // Delete handles cleanup when an ApprovalExpiration is deleted
 func (h *Handler) Delete(ctx context.Context, ae *v1.ApprovalExpiration) error {
-	// Notifications are owned by ApprovalExpiration, auto-deleted by GC
+	logger := log.FromContext(ctx)
+
+	approval, err := h.getParentApproval(ctx, ae)
+	if err != nil {
+		return errors.Wrap(err, "failed to get parent approval")
+	}
+
+	removed := meta.RemoveStatusCondition(&approval.Status.Conditions, "Expired")
+	logger.V(1).Info("Removed 'Expired' status condition", "removed", removed)
+
 	return nil
 }
 
@@ -113,21 +124,16 @@ func (h *Handler) getParentApproval(ctx context.Context, ae *v1.ApprovalExpirati
 }
 
 // ensureApprovalExpired transitions the parent Approval to EXPIRED state
-func (h *Handler) ensureApprovalExpired(ctx context.Context, approval *v1.Approval) error {
-	if approval.Spec.State == v1.ApprovalStateExpired {
-		return nil // Already expired, no-op
-	}
-
+func (h *Handler) addExpiredCondition(ctx context.Context, approval *v1.Approval) error {
 	// Add system Decision (matches auto-approval pattern)
 	approval.Spec.Decisions = append(approval.Spec.Decisions, v1.Decision{
 		Name:           v1.SystemDecisionName,
-		Comment:        "Automatically expired - expiration date reached. Available actions: Allow (re-approve), Deny (reject).",
+		Comment:        "Expiration date reached. Approval state remains, but expired condition added.",
 		Timestamp:      &metav1.Time{Time: time.Now()},
-		ResultingState: v1.ApprovalStateExpired,
+		ResultingState: approval.Spec.State,
 	})
 
-	// Set state
-	approval.Spec.State = v1.ApprovalStateExpired
+	approval.Status.Conditions = append(approval.Status.Conditions, condition.NewExpiredCondition())
 
 	// Update via API server (goes through webhook)
 	if err := h.client.Update(ctx, approval); err != nil {

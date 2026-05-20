@@ -76,8 +76,8 @@ var _ = Describe("Approval Conditions", func() {
 	Context("NewExpiredCondition", func() {
 		It("should return Approved=False for Expired state", func() {
 			cond := NewExpiredCondition()
-			Expect(cond.Type).To(Equal("Approved"))
-			Expect(cond.Status).To(Equal(metav1.ConditionFalse), "Expired approvals should not be considered approved")
+			Expect(cond.Type).To(Equal("Expired"))
+			Expect(cond.Status).To(Equal(metav1.ConditionTrue))
 			Expect(cond.Reason).To(Equal("Expired"))
 			Expect(cond.Message).To(ContainSubstring("expired"))
 		})
@@ -90,6 +90,7 @@ var _ = Describe("Approval Conditions", func() {
 			grantingStates := []metav1.Condition{
 				NewApprovedCondition(),  // Granted
 				NewSuspendedCondition(), // Suspended (debatable, but currently True)
+				NewExpiredCondition(),   // Expiry is informative only, approval itself is still approved
 			}
 
 			for _, cond := range grantingStates {
@@ -104,7 +105,6 @@ var _ = Describe("Approval Conditions", func() {
 				NewPendingCondition(),     // Not yet approved
 				NewSemigrantedCondition(), // Partially approved (not enough)
 				NewRejectedCondition(),    // Explicitly denied
-				NewExpiredCondition(),     // No longer approved
 			}
 
 			for _, cond := range denyingStates {

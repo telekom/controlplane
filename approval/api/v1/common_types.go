@@ -35,7 +35,6 @@ const (
 	ApprovalActionDeny    ApprovalAction = "Deny"
 	ApprovalActionSuspend ApprovalAction = "Suspend"
 	ApprovalActionResume  ApprovalAction = "Resume"
-	ApprovalActionExpire  ApprovalAction = "Expire"
 )
 
 func (a ApprovalAction) String() string {
@@ -50,7 +49,6 @@ const (
 	ApprovalStateGranted     ApprovalState = "Granted"
 	ApprovalStateRejected    ApprovalState = "Rejected"
 	ApprovalStateSuspended   ApprovalState = "Suspended"
-	ApprovalStateExpired     ApprovalState = "Expired"
 )
 
 func (s ApprovalState) String() string {
@@ -140,6 +138,6 @@ type Decision struct {
 	// ResultingState is the state the resource transitioned to as a result of this decision.
 	// Automatically set by the defaulting webhook to match Spec.State when not provided.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended;Expired
+	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended
 	ResultingState ApprovalState `json:"resultingState"`
 }

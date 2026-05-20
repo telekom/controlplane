@@ -48,8 +48,7 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 	}
 
 	fsm := ApprovalStrategyFSM[approval.Spec.Strategy]
-	// Filter out system-only actions (Expire) from available transitions
-	approval.Status.AvailableTransitions = filterSystemActions(fsm.AvailableTransitions(approval.Spec.State))
+	approval.Status.AvailableTransitions = fsm.AvailableTransitions(approval.Spec.State)
 
 	// Capture state change BEFORE updating LastState (needed for expiration logic)
 	stateChanged := approval.Spec.State != approval.Status.LastState
@@ -80,11 +79,6 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 		approval.SetCondition(approval_condition.NewSuspendedCondition())
 		approval.SetCondition(condition.NewProcessingCondition("Suspended", "Approval is suspended"))
 		approval.SetCondition(condition.NewReadyCondition("Suspended", "Approval is suspended"))
-
-	case approvalv1.ApprovalStateExpired:
-		approval.SetCondition(approval_condition.NewExpiredCondition())
-		approval.SetCondition(condition.NewProcessingCondition("Expired", "Approval has expired"))
-		approval.SetCondition(condition.NewReadyCondition("Expired", "Approval has expired but can be re-approved"))
 
 	}
 
@@ -157,17 +151,6 @@ func (h *ApprovalHandler) Delete(ctx context.Context, approval *approvalv1.Appro
 	return nil
 }
 
-// filterSystemActions removes system-only actions (Expire) from the available transitions
-func filterSystemActions(transitions approvalv1.AvailableTransitions) approvalv1.AvailableTransitions {
-	var filtered approvalv1.AvailableTransitions
-	for _, t := range transitions {
-		if t.Action != approvalv1.ApprovalActionExpire {
-			filtered = append(filtered, t)
-		}
-	}
-	return filtered
-}
-
 // handleExpiration manages the lifecycle of ApprovalExpiration resources
 func (h *ApprovalHandler) handleExpiration(ctx context.Context, approval *approvalv1.Approval, stateChanged bool) error {
 	// Only for non-Auto strategies
@@ -188,9 +171,6 @@ func (h *ApprovalHandler) handleExpiration(ctx context.Context, approval *approv
 
 	case approvalv1.ApprovalStateSuspended:
 		// Clock keeps ticking, leave ApprovalExpiration alone
-
-	case approvalv1.ApprovalStateExpired:
-		// Already expired, leave ApprovalExpiration alone
 
 	case approvalv1.ApprovalStateRejected:
 		if stateChanged {

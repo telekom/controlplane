@@ -6,7 +6,6 @@ package v1
 
 import (
 	"context"
-	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -83,10 +82,6 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 	// instead of Status.AvailableTransitions (which may be stale or nil before
 	// the controller has reconciled). Auto strategy uses its own FSM.
 	if stateChanged {
-		if validationErr := validateExpireTransition(ctx, newObj); validationErr != nil {
-			return warnings, validationErr
-		}
-
 		fsmDef, ok := approvalhandler.ApprovalStrategyFSM[newObj.Spec.Strategy]
 		if !ok {
 			err = apierrors.NewBadRequest("Unknown approval strategy")
@@ -124,30 +119,4 @@ func (a *ApprovalCustomValidator) ValidateDelete(_ context.Context, obj *approva
 	approvallog.Info("validate delete", "name", obj.Name)
 
 	return nil, nil
-}
-
-// controllerServiceAccountSuffix is the suffix of the service account used by the approval controller.
-// The full username is "system:serviceaccount:<namespace>:<prefix>controller-manager".
-const controllerServiceAccountSuffix = "controller-manager"
-
-// validateExpireTransition blocks manual transitions to EXPIRED state.
-// Only the controller service account is allowed to perform this transition.
-func validateExpireTransition(ctx context.Context, newObj *approvalv1.Approval) error {
-	if newObj.Spec.State != approvalv1.ApprovalStateExpired {
-		return nil
-	}
-
-	// Verify the caller is the controller service account
-	req, err := admission.RequestFromContext(ctx)
-	if err != nil {
-		return apierrors.NewBadRequest("Expire action is system-only and cannot be triggered manually")
-	}
-
-	username := req.UserInfo.Username
-	// Expected format: system:serviceaccount:<namespace>:<nameprefix>controller-manager
-	if strings.HasPrefix(username, "system:serviceaccount:") && strings.HasSuffix(username, controllerServiceAccountSuffix) {
-		return nil
-	}
-
-	return apierrors.NewBadRequest("Expire action is system-only and cannot be triggered manually")
 }
