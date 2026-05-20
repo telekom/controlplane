@@ -20,6 +20,11 @@ type ApiSpec struct {
 	Category     string   `json:"category"`
 	Oauth2Scopes []string `json:"oauth2Scopes,omitempty"`
 	XVendor      bool     `json:"xVendor"`
+
+	// Specification contains the file ID reference from the file manager for
+	// the optional OpenAPI specification document that describes this API.
+	// +optional
+	Specification string `json:"specification,omitempty"`
 }
 
 // ApiStatus defines the observed state of Api

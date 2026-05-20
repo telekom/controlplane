@@ -58,6 +58,10 @@ func (ApprovalRequest) Edges() []ent.Edge {
 			Ref("approval_requests").
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),
+		edge.From("event_subscription", EventSubscription.Type).
+			Ref("approval_requests").
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType)),
 	}
 }
 

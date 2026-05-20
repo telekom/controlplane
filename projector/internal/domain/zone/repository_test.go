@@ -115,6 +115,44 @@ var _ = Describe("Zone Repository", func() {
 			Expect(z.GatewayURL).To(BeNil())
 		})
 
+		It("should create a zone with issuer URL", func() {
+			data := &zone.ZoneData{
+				Meta:       shared.NewMetadata("admin", "zone-issuer", nil),
+				Name:       "zone-issuer",
+				GatewayURL: strPtr("https://gw.example.com"),
+				IssuerURL:  strPtr("https://keycloak.example.com/auth/realms/production"),
+				Visibility: "WORLD",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			z, err := client.Zone.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(z.IssuerURL).NotTo(BeNil())
+			Expect(*z.IssuerURL).To(Equal("https://keycloak.example.com/auth/realms/production"))
+		})
+
+		It("should clear IssuerURL when updated to nil", func() {
+			data := &zone.ZoneData{
+				Meta:       shared.NewMetadata("admin", "zone-issuer-clear", nil),
+				Name:       "zone-issuer-clear",
+				IssuerURL:  strPtr("https://keycloak.example.com/auth/realms/staging"),
+				Visibility: "ENTERPRISE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			z, err := client.Zone.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(z.IssuerURL).NotTo(BeNil())
+
+			// Update with nil issuer URL.
+			data.IssuerURL = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			z, err = client.Zone.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(z.IssuerURL).To(BeNil())
+		})
+
 		It("should populate the edge cache after upsert", func() {
 			data := &zone.ZoneData{
 				Meta:       shared.NewMetadata("admin", "cached-zone", nil),
