@@ -4,12 +4,15 @@
 
 package oaslint
 
-import "context"
+import (
+	"context"
+	"io"
+)
 
 // Linter defines the interface for OAS specification linting.
 // The external linter server manages rulesets; clients just send the spec.
 type Linter interface {
-	Lint(ctx context.Context, spec []byte) (*LintResult, error)
+	Lint(ctx context.Context, spec io.Reader) (*LintResult, error)
 }
 
 // LintResult contains the outcome of a linting operation.

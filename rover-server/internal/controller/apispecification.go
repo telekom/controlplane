@@ -230,7 +230,7 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	if a.Linter != nil {
 		ns := id.Environment + "--" + id.Namespace
 		existing, _ := a.Store.Get(ctx, ns, id.Name)
-		lintOutcome, lintErr = a.lintOrReuse(ctx, apiSpec, existing, apiCategory, specMarshaled)
+		lintOutcome, lintErr = a.lintOrReuse(ctx, apiSpec, existing, apiCategory, bytes.NewReader(specMarshaled))
 	}
 
 	err = a.Store.CreateOrReplace(ctx, apiSpec)
@@ -288,7 +288,7 @@ func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *ap
 // lintOrReuse decides whether to call the external linter or reuse a cached result.
 // If the spec hash is unchanged and a previous lint result exists, it reuses it.
 // Otherwise it delegates to the Linter.
-func (a *ApiSpecificationController) lintOrReuse(ctx context.Context, apiSpec *roverv1.ApiSpecification, existing *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes []byte) (LintOutcome, error) {
+func (a *ApiSpecificationController) lintOrReuse(ctx context.Context, apiSpec *roverv1.ApiSpecification, existing *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes io.Reader) (LintOutcome, error) {
 	if existing != nil && existing.Spec.Lint != nil && existing.Spec.Hash == apiSpec.Spec.Hash {
 		apiSpec.Spec.Lint = existing.Spec.Lint
 		return LintSkipped, nil

@@ -5,8 +5,10 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
@@ -96,7 +98,7 @@ var _ = Describe("Linting helpers", func() {
 			linter       ApiLinter
 			apiSpec      *roverv1.ApiSpecification
 			category     *apiv1.ApiCategory
-			specBytes    []byte
+			specBytes    io.Reader
 		)
 
 		newCategory := func(mode apiv1.LintingMode) *apiv1.ApiCategory {
@@ -129,7 +131,7 @@ var _ = Describe("Linting helpers", func() {
 
 		BeforeEach(func() {
 			lintCtx = context.Background()
-			specBytes = []byte("openapi: '3.0.0'")
+			specBytes = bytes.NewBuffer([]byte("openapi: '3.0.0'"))
 			apiSpec = &roverv1.ApiSpecification{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-spec",
@@ -244,7 +246,7 @@ type mockLinter struct {
 	err     error
 }
 
-func (m *mockLinter) Lint(_ context.Context, apiSpec *roverv1.ApiSpecification, _ *apiv1.ApiCategory, _ []byte) (LintOutcome, error) {
+func (m *mockLinter) Lint(_ context.Context, apiSpec *roverv1.ApiSpecification, _ *apiv1.ApiCategory, _ io.Reader) (LintOutcome, error) {
 	m.called = true
 	if apiSpec.Spec.Lint == nil {
 		apiSpec.Spec.Lint = &roverv1.LintResult{Passed: true, Message: "mock lint ran"}
@@ -257,13 +259,13 @@ var _ = Describe("lintOrReuse (hash dedup)", func() {
 		ctrl      *ApiSpecificationController
 		linterMck *mockLinter
 		apiSpec   *roverv1.ApiSpecification
-		specBytes []byte
+		specBytes io.Reader
 	)
 
 	BeforeEach(func() {
 		linterMck = &mockLinter{outcome: LintCompleted}
 		ctrl = &ApiSpecificationController{Linter: linterMck}
-		specBytes = []byte("openapi: '3.0.0'")
+		specBytes = bytes.NewBuffer([]byte("openapi: '3.0.0'"))
 		apiSpec = &roverv1.ApiSpecification{
 			Spec: roverv1.ApiSpecificationSpec{
 				Hash: "new-hash",

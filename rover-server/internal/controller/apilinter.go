@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -35,7 +36,7 @@ type ApiLinter interface {
 	// Lint performs the full linting lifecycle for an ApiSpecification.
 	// It looks up the linting config from the category list, checks whitelists,
 	// and runs the linter synchronously.
-	Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes []byte) (LintOutcome, error)
+	Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes io.Reader) (LintOutcome, error)
 }
 
 // apiLinterImpl is the production implementation of ApiLinter.
@@ -60,7 +61,7 @@ func NewApiLinter(lintCfg config.OasLintingConfig) ApiLinter {
 	}
 }
 
-func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes []byte) (LintOutcome, error) {
+func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes io.Reader) (LintOutcome, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	log.V(1).Info("Looking up linting config", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
 		"category", apiSpec.Spec.Category, "basepath", apiSpec.Spec.BasePath)
@@ -102,7 +103,7 @@ func (l *apiLinterImpl) prepareLinting(lintCfg *apiv1.LintingConfig, apiSpec *ro
 	return true
 }
 
-func (l *apiLinterImpl) runLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, ruleset string, specBytes []byte) error {
+func (l *apiLinterImpl) runLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, ruleset string, specBytes io.Reader) error {
 	log := logr.FromContextOrDiscard(ctx).WithName("linting")
 
 	var opts []oaslint.ExternalLinterOption

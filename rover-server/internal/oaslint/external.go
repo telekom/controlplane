@@ -5,10 +5,10 @@
 package oaslint
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -87,13 +87,13 @@ type violationsInfo struct {
 	Hints    int `json:"hints"`
 }
 
-func (l *ExternalLinter) Lint(ctx context.Context, spec []byte) (*LintResult, error) {
+func (l *ExternalLinter) Lint(ctx context.Context, spec io.Reader) (*LintResult, error) {
 	scanURL := fmt.Sprintf("%s/%s", l.baseURL, scanEndpoint)
 	if l.ruleset != "" {
 		scanURL = fmt.Sprintf("%s?ruleset=%s", scanURL, url.QueryEscape(l.ruleset))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, scanURL, bytes.NewReader(spec))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, scanURL, spec)
 	if err != nil {
 		return nil, fmt.Errorf("creating linter request: %w", err)
 	}

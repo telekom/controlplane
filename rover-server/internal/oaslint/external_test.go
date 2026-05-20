@@ -5,8 +5,10 @@
 package oaslint
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -20,18 +22,18 @@ var _ = Describe("ExternalLinter", func() {
 		ctx    context.Context
 		server *httptest.Server
 		linter *ExternalLinter
-		spec   []byte
+		spec   io.Reader
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		spec = []byte(`openapi: "3.0.0"
+		spec = bytes.NewBuffer([]byte(`openapi: "3.0.0"
 info:
   title: Test API
   version: "1.0.0"
 servers:
   - url: http://example.com/api/v1
-`)
+`))
 	})
 
 	AfterEach(func() {
@@ -164,7 +166,7 @@ servers:
 var _ = Describe("NoopLinter", func() {
 	It("should always return a passing result", func() {
 		linter := &NoopLinter{}
-		result, err := linter.Lint(context.Background(), []byte("anything"))
+		result, err := linter.Lint(context.Background(), bytes.NewBuffer([]byte("anything")))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Passed).To(BeTrue())
 		Expect(result.Reason).To(ContainSubstring("disabled"))
