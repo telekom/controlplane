@@ -7,6 +7,15 @@ module github.com/telekom/controlplane/controlplane-api
 go 1.26.3
 
 require (
+	github.com/telekom/controlplane/application/api v0.0.0
+	github.com/telekom/controlplane/approval/api v0.0.0
+	github.com/telekom/controlplane/common v0.0.0
+	github.com/telekom/controlplane/common-server v0.0.0
+	github.com/telekom/controlplane/organization/api v0.0.0
+	github.com/telekom/controlplane/secret-manager v0.0.0
+)
+
+require (
 	entgo.io/contrib v0.7.0
 	entgo.io/ent v0.14.6
 	github.com/99designs/gqlgen v0.17.90
@@ -19,11 +28,6 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.3
 	github.com/onsi/gomega v1.40.0
 	github.com/stretchr/testify v1.11.1
-	github.com/telekom/controlplane/application/api v0.0.0-00010101000000-000000000000
-	github.com/telekom/controlplane/approval/api v0.0.0-00010101000000-000000000000
-	github.com/telekom/controlplane/common v0.0.0
-	github.com/telekom/controlplane/common-server v0.0.0
-	github.com/telekom/controlplane/organization/api v0.0.0-00010101000000-000000000000
 	github.com/valyala/fasthttp v1.71.0
 	github.com/vektah/gqlparser/v2 v2.5.33
 	go.uber.org/zap v1.28.0
@@ -143,14 +147,11 @@ require (
 
 tool github.com/99designs/gqlgen
 
-replace github.com/telekom/controlplane/common => ../common
-
-replace github.com/telekom/controlplane/common-server => ../common-server
-
-replace github.com/telekom/controlplane/application/api => ../application/api
-
-replace github.com/telekom/controlplane/approval/api => ../approval/api
-
-replace github.com/telekom/controlplane/organization/api => ../organization/api
-
-replace github.com/telekom/controlplane/secret-manager => ../secret-manager
+replace (
+	github.com/telekom/controlplane/application/api => ../application/api
+	github.com/telekom/controlplane/approval/api => ../approval/api
+	github.com/telekom/controlplane/common => ../common
+	github.com/telekom/controlplane/common-server => ../common-server
+	github.com/telekom/controlplane/organization/api => ../organization/api
+	github.com/telekom/controlplane/secret-manager => ../secret-manager
+)
