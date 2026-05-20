@@ -83,7 +83,7 @@ func setDefaults() {
 	viper.SetDefault("fileManager.skipTLS", true)
 
 	// OAS Linting
-	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors. Please visit the linter UI for details on the RULESET_NAME_PLACEHOLDER ruleset.")
+	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors for RULESET_NAME_PLACEHOLDER ruleset.")
 	viper.SetDefault("oasLinting.timeout", 55) // seconds; 0 means block indefinitely until linter responds
 	viper.SetDefault("oasLinting.url", "")
 	viper.SetDefault("oasLinting.dashboardURL", "")
