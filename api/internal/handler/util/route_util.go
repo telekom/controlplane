@@ -520,7 +520,7 @@ func mapSecurity(apiSecurity *apiapi.Security) *gatewayapi.Security {
 		if apiSecurity.M2M.ExternalIDP != nil {
 			security.M2M.ExternalIDP = &gatewayapi.ExternalIdentityProvider{
 				TokenEndpoint: apiSecurity.M2M.ExternalIDP.TokenEndpoint,
-				TokenRequest:  apiSecurity.M2M.ExternalIDP.TokenRequest,
+				TokenRequest:  gatewayapi.TokenRequestMethod(apiSecurity.M2M.ExternalIDP.TokenRequest),
 				GrantType:     apiSecurity.M2M.ExternalIDP.GrantType,
 			}
 			if apiSecurity.M2M.ExternalIDP.Basic != nil {

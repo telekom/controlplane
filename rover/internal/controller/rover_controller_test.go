@@ -472,7 +472,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 								M2M: &roverv1.Machine2MachineAuthentication{
 									ExternalIDP: &roverv1.ExternalIdentityProvider{
 										TokenEndpoint: "https://idp.example.com/token",
-										TokenRequest:  "header",
+										TokenRequest:  roverv1.TokenRequestClientSecretBasic,
 										GrantType:     "client_credentials",
 										Basic:         nil,
 										Client: &roverv1.OAuth2ClientCredentials{
@@ -524,7 +524,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("clientID"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
 				g.Expect(apiExposure.Spec.Security.M2M.Scopes[0]).To(Equal("eIDP:scope"))
-				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal(apiapi.TokenRequestClientSecretBasic))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://idp.example.com/token"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			}, timeout, interval).Should(Succeed())
