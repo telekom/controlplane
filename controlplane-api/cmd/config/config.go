@@ -87,6 +87,9 @@ func DefaultConfig() *ServerConfig {
 			Enabled:     true,
 			Environment: "poc", // TODO: for now, this is fine. Needs to be refined later
 		},
+		FileManager: FileManagerConfig{
+			BaseURL: "file-manager.controlplane-system.svc",
+		},
 	}
 }
 

@@ -45,6 +45,17 @@ rules:
   resources:
   - apiexposures
   - apisubscriptions
+  - apis
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventexposures
+  - eventsubscriptions
+  - eventtypes
   verbs:
   - get
   - list
