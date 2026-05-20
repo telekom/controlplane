@@ -80,14 +80,36 @@ spec:
                 minLength: 1
                 type: string
               linting:
+                description: Linting configures OAS specification linting for APIs
+                  in this category.
                 properties:
-                  enabled:
-                    description: Enabled indicates whether linting is enabled for
-                      this API category.
-                    type: boolean
-                  ruleset:
-                    description: Ruleset specifies the ruleset to use for linting.
+                  mode:
+                    default: Block
+                    description: |-
+                      Mode controls how linting failures affect API creation.
+                      "Block" (default) prevents Api creation on failure; "Warn" allows it but surfaces issues.
+                    enum:
+                    - Block
+                    - Warn
+                    - None
                     type: string
+                  ruleset:
+                    description: |-
+                      Ruleset is the name of the linter ruleset to apply.
+                      If set, it is passed as a URL-encoded query parameter to the linter API.
+                    type: string
+                  whitelistedBasepaths:
+                    description: |-
+                      WhitelistedBasepaths is a list of API basepaths that are exempt from linting.
+                      APIs whose basePath matches an entry here will skip linting even when linting is configured.
+                      Each entry must start with a leading slash.
+                    items:
+                      pattern: ^/
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                required:
+                - ruleset
                 type: object
               mustHaveGroupPrefix:
                 default: true

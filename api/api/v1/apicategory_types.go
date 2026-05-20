@@ -13,6 +13,41 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// LintingMode controls how linting failures affect API creation.
+type LintingMode string
+
+const (
+	// LintingModeBlock prevents Api creation when linting fails.
+	LintingModeBlock LintingMode = "Block"
+	// LintingModeWarn allows Api creation but surfaces linting issues in status.
+	LintingModeWarn LintingMode = "Warn"
+	// LintingModeNone indicates that no linting is configured for this category.
+	LintingModeNone LintingMode = "None"
+)
+
+// LintingConfig configures OAS specification linting for APIs in this category.
+type LintingConfig struct {
+	// Ruleset is the name of the linter ruleset to apply.
+	// If set, it is passed as a URL-encoded query parameter to the linter API.
+	// +required
+	Ruleset string `json:"ruleset"`
+
+	// Mode controls how linting failures affect API creation.
+	// "Block" (default) prevents Api creation on failure; "Warn" allows it but surfaces issues.
+	// +kubebuilder:validation:Enum=Block;Warn;None
+	// +kubebuilder:default:=Block
+	// +optional
+	Mode LintingMode `json:"mode,omitempty"`
+
+	// WhitelistedBasepaths is a list of API basepaths that are exempt from linting.
+	// APIs whose basePath matches an entry here will skip linting even when linting is configured.
+	// Each entry must start with a leading slash.
+	// +optional
+	// +listType=set
+	// +kubebuilder:validation:items:Pattern=`^/`
+	WhitelistedBasepaths []string `json:"whitelistedBasepaths,omitempty"`
+}
+
 // ApiCategorySpec defines the desired state of ApiCategory
 type ApiCategorySpec struct {
 	// LabelValue is the name of the API category in the specification.
@@ -39,14 +74,9 @@ type ApiCategorySpec struct {
 	// +kubebuilder:default:=true
 	MustHaveGroupPrefix bool `json:"mustHaveGroupPrefix,omitempty"`
 
+	// Linting configures OAS specification linting for APIs in this category.
+	// +optional
 	Linting *LintingConfig `json:"linting,omitempty"`
-}
-
-type LintingConfig struct {
-	// Enabled indicates whether linting is enabled for this API category.
-	Enabled bool `json:"enabled,omitempty"`
-	// Ruleset specifies the ruleset to use for linting.
-	Ruleset string `json:"ruleset,omitempty"`
 }
 
 type AllowTeamsConfig struct {
