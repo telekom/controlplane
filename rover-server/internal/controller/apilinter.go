@@ -41,18 +41,18 @@ type ApiLinter interface {
 
 // apiLinterImpl is the production implementation of ApiLinter.
 type apiLinterImpl struct {
-	errorMessage string
-	url          string
-	dashboardURL string
-	httpClient   oaslint.HTTPDoer
+	errorMessageTemplate string
+	url                  string
+	dashboardURL         string
+	httpClient           oaslint.HTTPDoer
 }
 
 // NewApiLinter creates an ApiLinter from the given linting configuration.
 func NewApiLinter(lintCfg config.OasLintingConfig) ApiLinter {
 	return &apiLinterImpl{
-		errorMessage: lintCfg.ErrorMessage,
-		url:          lintCfg.URL,
-		dashboardURL: lintCfg.DashboardURL,
+		errorMessageTemplate: lintCfg.ErrorMessage,
+		url:                  lintCfg.URL,
+		dashboardURL:         lintCfg.DashboardURL,
 		httpClient: commonclient.NewHttpClientOrDie(
 			commonclient.WithClientName("oaslint"),
 			commonclient.WithClientTimeout(lintCfg.Timeout),
@@ -139,7 +139,7 @@ func (l *apiLinterImpl) buildLintResult(result *oaslint.LintResult) *roverv1.Lin
 		lintResult.DashboardURL = fmt.Sprintf("%s/scans/%s", strings.TrimRight(l.dashboardURL, "/"), result.LinterId)
 	}
 	if !result.Passed {
-		lintResult.Message = strings.ReplaceAll(l.errorMessage, "RULESET_NAME_PLACEHOLDER", result.Ruleset)
+		lintResult.Message = strings.ReplaceAll(l.errorMessageTemplate, "RULESET_NAME_PLACEHOLDER", result.Ruleset)
 	}
 	return lintResult
 }
