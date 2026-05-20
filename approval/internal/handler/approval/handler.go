@@ -33,7 +33,7 @@ type ApprovalHandler struct {
 }
 
 // NewHandler creates a new ApprovalHandler with the provided configuration
-func NewHandler(client client.Client, cfg *config.ExpirationConfig) *ApprovalHandler {
+func NewHandler(cfg *config.ExpirationConfig) *ApprovalHandler {
 	return &ApprovalHandler{
 		cfg: cfg,
 	}

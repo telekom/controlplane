@@ -147,11 +147,12 @@ func (h *Handler) sendReminder(ctx context.Context, ae *v1.ApprovalExpiration, a
 
 	// Determine reminder type based on threshold
 	var reminderType string
-	if threshold.Repeat != nil {
+	switch {
+	case threshold.Repeat != nil:
 		reminderType = "daily" // Repeating thresholds are daily
-	} else if daysRemaining == 0 {
+	case daysRemaining == 0:
 		reminderType = "expired"
-	} else {
+	default:
 		reminderType = "weekly" // One-shot thresholds are weekly
 	}
 

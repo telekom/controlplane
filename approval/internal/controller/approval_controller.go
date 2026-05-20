@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller //nolint:dupl // approval and approvalrequest controllers are intentionally similar
+package controller
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func (r *ApprovalReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 // SetupWithManager sets up the controller with the Manager.
 func (r *ApprovalReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("approval-controller")
-	handler := approval_handler.NewHandler(r.Client, r.ExpirationConfig)
+	handler := approval_handler.NewHandler(r.ExpirationConfig)
 	r.Controller = cc.NewController(handler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
