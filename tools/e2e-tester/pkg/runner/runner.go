@@ -260,6 +260,12 @@ func (r *Runner) Run(ctx context.Context) (*report.FinalReport, error) {
 		return nil, fmt.Errorf("failed to resolve environment tokens: %w", err)
 	}
 
+	if err := r.envManager.ResolveVariablesFromEnv(); err != nil {
+		zap.L().Error("Failed to resolve environment variables",
+			zap.Error(err))
+		return nil, fmt.Errorf("failed to resolve environment variables: %w", err)
+	}
+
 	// Build all suite runners
 	zap.L().Debug("Building suite runners")
 	suiteRunners, err := r.buildSuites()
@@ -323,16 +329,17 @@ func (r *Runner) Run(ctx context.Context) (*report.FinalReport, error) {
 
 		// Check if we should continue on failure
 		if !r.continueOnFail {
-			// Check if any must-pass test cases failed with error status
+			// Check if any critical-policy test cases had ERROR status
 			hasCriticalFailure := false
 			for _, tc := range result.Cases {
-				if tc.MustPass && tc.Status == report.StatusError {
+				if tc.RunPolicy.Normalize() == config.RunPolicyFailFast && tc.Status == report.StatusError {
 					hasCriticalFailure = true
 					criticalFailures++
 					zap.L().Warn("Critical test case failed",
 						zap.String("suite", result.Name),
 						zap.String("case", tc.Name),
-						zap.String("environment", tc.Environment))
+						zap.String("environment", tc.Environment),
+						zap.String("run_policy", string(tc.RunPolicy.Normalize())))
 					break
 				}
 			}

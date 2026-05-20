@@ -100,6 +100,10 @@ type RoverSpec struct {
 	// +kubebuilder:validation:Optional
 	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
 
+	// Authentication defines the authentication configuration for this application
+	// +kubebuilder:validation:Optional
+	Authentication *RoverAuthentication `json:"authentication,omitempty"`
+
 	// ClientSecret is the secret used for client authentication
 	// If not specified, a randomly generated secret will be used
 	// +kubebuilder:validation:Optional
@@ -115,6 +119,32 @@ type RoverSpec struct {
 	// Permissions defines role-based access control permissions for this application
 	// +kubebuilder:validation:Optional
 	Permissions []Permission `json:"permissions,omitempty"`
+
+	// ExternalIds carries business identifiers (e.g. PSI, ICTO) attached to this
+	// Rover. Each entry is tagged with a scheme. Format and presence are validated
+	// per-zone via the zone's ExternalIdPolicies.
+	// +kubebuilder:validation:Optional
+	// +listType=map
+	// +listMapKey=scheme
+	// +kubebuilder:validation:MaxItems=16
+	ExternalIds []ExternalId `json:"externalIds,omitempty"`
+}
+
+// ExternalId is a scheme-tagged business identifier.
+type ExternalId struct {
+	// Scheme names the identifier system (e.g. "psi", "icto").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:Pattern=`^[a-z][a-z0-9]*$`
+	Scheme string `json:"scheme"`
+
+	// Id is the raw identifier value. Per-scheme format rules are applied by the
+	// zone's ExternalIdPolicies at admission time.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	Id string `json:"id"`
 }
 
 // Visibility defines the access scope for an API
@@ -174,6 +204,23 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:Type=array
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Deny []string `json:"deny,omitempty"`
+}
+
+// RoverAuthentication defines the top-level authentication configuration for a Rover application
+type RoverAuthentication struct {
+	// M2M defines machine-to-machine authentication settings for the application
+	// +kubebuilder:validation:Optional
+	M2M *RoverM2MAuthentication `json:"m2m,omitempty"`
+}
+
+// RoverM2MAuthentication defines the M2M authentication settings
+type RoverM2MAuthentication struct {
+	// TokenRequest configures the token endpoint authentication method (RFC 7591)
+	// This feature is currently only documented but not parsed towards the application and identity domain as it is still in discussion whether
+	// this should will be enforced for IDPs.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=client_secret_basic
+	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 }
 
 // Exposure defines a service that is exposed by this Rover

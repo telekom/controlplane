@@ -161,9 +161,9 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 			}
 		}
 
-		// --- Current secret expiry: compute when Keycloak will auto-expire it ---
-		if rotationInfo.SecretCreationTime != nil && realm.Spec.SecretRotation != nil {
-			expiresAt := time.Unix(*rotationInfo.SecretCreationTime, 0).Add(realm.Spec.SecretRotation.ExpirationPeriod.Duration)
+		// --- Current secret expiry: read directly from Keycloak's attribute ---
+		if rotationInfo.SecretExpiresAt != nil {
+			expiresAt := time.Unix(*rotationInfo.SecretExpiresAt, 0)
 			client.Status.SecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
 		} else {
 			client.Status.SecretExpiresAt = nil

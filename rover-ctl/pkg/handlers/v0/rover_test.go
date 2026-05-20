@@ -381,34 +381,188 @@ var _ = Describe("Rover Handler", func() {
 		})
 	})
 
-	Describe("ResetSecret", func() {
-		It("should send a reset secret request and return new credentials", func() {
-			// Configure mock to return successful response
-			mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(req *http.Request) (*http.Response, error) {
-				// Verify request details
-				Expect(req.Method).To(Equal(http.MethodPatch))
-				Expect(req.URL.String()).To(Equal("https://api.example.com/rovers/test-group--test-team--test-rover/secret"))
+	Describe("PatchAuthentication", func() {
+		It("should pass through 'basic' as-is in authentication.clientAuthMethod", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "basic",
+							},
+						},
+					},
+				},
+			}
 
-				// Return a successful response with credentials
-				responseBody := `{"clientId":"new-client-id","secret":"new-secret-value"}`
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("basic"))
+		})
+
+		It("should pass through 'body' as-is in authentication.clientAuthMethod", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "body",
+							},
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("body"))
+		})
+
+		It("should pass through 'BODY' as-is in authentication.clientAuthMethod", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "BODY",
+							},
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("BODY"))
+		})
+
+		It("should not add authentication when it is missing", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			Expect(content).NotTo(HaveKey("authentication"))
+		})
+
+		It("should leave authentication untouched when clientAuthMethod has invalid value", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "invalid",
+							},
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("invalid"))
+		})
+
+		It("should leave authentication untouched when format is not a map", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": "not a map",
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			Expect(content).To(HaveKey("authentication"))
+		})
+
+		It("should leave authentication untouched when already in rover-server format", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"clientAuthMethod": "BASIC",
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("BASIC"))
+		})
+	})
+
+	Describe("ResetSecret", func() {
+		It("should send a reset secret request and return converged status", func() {
+			callCount := 0
+			// Configure mock to handle PATCH (reset) then GET (status poll)
+			mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(req *http.Request) (*http.Response, error) {
+				callCount++
+				if callCount == 1 {
+					// First call: PATCH to trigger rotation
+					Expect(req.Method).To(Equal(http.MethodPatch))
+					Expect(req.URL.String()).To(Equal("https://api.example.com/rovers/test-group--test-team--test-rover/secret"))
+
+					responseBody := `{"clientId":"new-client-id","message":"Secret rotation initiated"}`
+					return &http.Response{
+						StatusCode: http.StatusAccepted,
+						Body:       io.NopCloser(strings.NewReader(responseBody)),
+						Header:     make(http.Header),
+					}, nil
+				}
+				// Second call: GET status — return converged
+				Expect(req.Method).To(Equal(http.MethodGet))
+				Expect(req.URL.String()).To(Equal("https://api.example.com/rovers/test-group--test-team--test-rover/secret/status"))
+
+				responseBody := `{"clientId":"new-client-id","processingState":"done","overallStatus":"complete","clientSecret":"new-secret-value"}`
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(strings.NewReader(responseBody)),
 					Header:     make(http.Header),
 				}, nil
-			})
+			}).Times(2)
 
 			// Create the rover handler
 			handler := v0.NewRoverHandlerInstance()
 			handler.Setup(testCtx)
 
 			// Call ResetSecret
-			clientId, clientSecret, err := handler.ResetSecret(testCtx, "test-rover")
+			status, err := handler.ResetSecret(testCtx, "test-rover")
 
 			// Verify the results
 			Expect(err).NotTo(HaveOccurred())
-			Expect(clientId).To(Equal("new-client-id"))
-			Expect(clientSecret).To(Equal("new-secret-value"))
+			Expect(status.ClientId).To(Equal("new-client-id"))
+			Expect(status.ClientSecret).To(Equal("new-secret-value"))
+			Expect(status.OverallStatus).To(Equal("complete"))
 
 			// Verify mock expectations
 			mockClient.AssertExpectations(GinkgoT())
@@ -431,7 +585,7 @@ var _ = Describe("Rover Handler", func() {
 			handler.Setup(testCtx)
 
 			// Call ResetSecret
-			_, _, err := handler.ResetSecret(testCtx, "invalid-rover")
+			_, err := handler.ResetSecret(testCtx, "invalid-rover")
 
 			// Verify error
 			Expect(err).To(HaveOccurred())

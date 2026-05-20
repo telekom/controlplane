@@ -24,11 +24,11 @@ func MapResponse(ctx context.Context, obj types.Object) (api.ResourceStatusRespo
 	processing := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
-		processedAtTime = processing.LastTransitionTime.Time
+		processedAtTime = processing.LastTransitionTime.Time.UTC()
 	}
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       obj.GetCreationTimestamp().Time,
+		CreatedAt:       obj.GetCreationTimestamp().Time.UTC(),
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
@@ -58,14 +58,14 @@ func MapAPISpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 	processing := meta.FindStatusCondition(apiSpec.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
-		processedAtTime = processing.LastTransitionTime.Time
+		processedAtTime = processing.LastTransitionTime.Time.UTC()
 	}
 
 	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       apiSpec.GetCreationTimestamp().Time,
+		CreatedAt:       apiSpec.GetCreationTimestamp().Time.UTC(),
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
@@ -96,14 +96,14 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 	processing := meta.FindStatusCondition(rover.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
-		processedAtTime = processing.LastTransitionTime.Time
+		processedAtTime = processing.LastTransitionTime.Time.UTC()
 	}
 
 	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       rover.GetCreationTimestamp().Time,
+		CreatedAt:       rover.GetCreationTimestamp().Time.UTC(),
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
@@ -134,14 +134,14 @@ func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpeci
 	processing := meta.FindStatusCondition(eventSpec.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
-		processedAtTime = processing.LastTransitionTime.Time
+		processedAtTime = processing.LastTransitionTime.Time.UTC()
 	}
 
 	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       eventSpec.GetCreationTimestamp().Time,
+		CreatedAt:       eventSpec.GetCreationTimestamp().Time.UTC(),
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,

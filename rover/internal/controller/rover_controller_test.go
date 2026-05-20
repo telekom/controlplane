@@ -472,7 +472,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 								M2M: &roverv1.Machine2MachineAuthentication{
 									ExternalIDP: &roverv1.ExternalIdentityProvider{
 										TokenEndpoint: "https://idp.example.com/token",
-										TokenRequest:  "header",
+										TokenRequest:  roverv1.TokenRequestClientSecretBasic,
 										GrantType:     "client_credentials",
 										Basic:         nil,
 										Client: &roverv1.OAuth2ClientCredentials{
@@ -524,7 +524,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("clientID"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
 				g.Expect(apiExposure.Spec.Security.M2M.Scopes[0]).To(Equal("eIDP:scope"))
-				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal(apiapi.TokenRequestClientSecretBasic))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://idp.example.com/token"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			}, timeout, interval).Should(Succeed())
@@ -693,6 +693,55 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				// Verify helper methods
 				g.Expect(apiExposure.HasFailover()).To(BeFalse())
 				g.Expect(apiExposure.HasRateLimit()).To(BeFalse())
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("Rover with ExternalIds", func() {
+		It("propagates ExternalIds verbatim to the derived Application", func() {
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+				ExternalIds: []roverv1.ExternalId{
+					{Scheme: "psi", Id: "PSI-103596"},
+					{Scheme: "icto", Id: "icto-12345"},
+				},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.ExternalIds).To(ConsistOf(
+					applicationv1.ExternalId{Scheme: "psi", Id: "PSI-103596"},
+					applicationv1.ExternalId{Scheme: "icto", Id: "icto-12345"},
+				))
+			}, timeout, interval).Should(Succeed())
+
+			By("updating the Rover's ExternalIds")
+			fetched := &roverv1.Rover{}
+			Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
+			fetched.Spec.ExternalIds = []roverv1.ExternalId{
+				{Scheme: "psi", Id: "PSI-999999"},
+			}
+			Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.ExternalIds).To(ConsistOf(
+					applicationv1.ExternalId{Scheme: "psi", Id: "PSI-999999"},
+				))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

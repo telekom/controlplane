@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/gkampitakis/go-snaps/match"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
@@ -221,13 +220,39 @@ var _ = Describe("Rover Controller", func() {
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
+
+		It("should accept clientAuthMethod BASIC as produced by rover-ctl", func() {
+			body := api.RoverUpdateRequest{
+				Zone: "dataplane1",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.BASIC,
+				},
+			}
+			jsonBody, _ := json.Marshal(body)
+			req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+		})
+
+		It("should accept clientAuthMethod POST as produced by rover-ctl", func() {
+			body := api.RoverUpdateRequest{
+				Zone: "dataplane1",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.POST,
+				},
+			}
+			jsonBody, _ := json.Marshal(body)
+			req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+		})
 	})
 
 	Context("Reset rover secret", func() {
 		It("should reset the rover secret successfully", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/rovers/eni--hyperion--rover-local-sub/secret", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json", match.Any("secret"))
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
 		})
 
 		It("should fail to reset the secret for a non-existent rover", func() {
