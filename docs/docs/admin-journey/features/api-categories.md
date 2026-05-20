@@ -140,21 +140,54 @@ When set to `false`, teams in this category can use any base path structure. The
 
 ### API linting
 
-API Categories can enforce linting on submitted OpenAPI specifications. When linting is enabled, every specification registered under this category is validated against the specified ruleset.
+API Categories can enforce linting on submitted OpenAPI specifications. When linting is configured, every specification registered under this category is validated against the specified ruleset.
 
 ```yaml
 spec:
   labelValue: "public"
   active: true
   linting:
-    enabled: true
     ruleset: "strict"
+    mode: "Block"
+    whitelistedBasepaths:
+      - "/legacy/api/v1"
 ```
 
 | Field | Description |
 | ----- | ----------- |
-| `enabled` | Turns linting on or off for this category. |
-| `ruleset` | The name of the ruleset to validate against. |
+| `ruleset` | **(required)** The name of the ruleset to validate against. Passed to the external linter as a query parameter. |
+| `mode` | `Block` (default) rejects the specification on failure; `Warn` stores the result but allows the upload; `None` disables linting. |
+| `whitelistedBasepaths` | A list of base paths that skip linting entirely (case-insensitive match). Each entry must start with `/`. |
+
+:::info
+Linting is only active when the `linting` section is present **and** `mode` is not `None`. If the `linting` section is omitted entirely, no linting is performed.
+:::
+
+#### Error message template
+
+The rover-server configuration option `oasLinting.errorMessage` controls the message returned to clients when linting fails. It supports the following placeholders:
+
+| Placeholder | Replaced with | Description |
+|---|---|---|
+| `RULESET_NAME_PLACEHOLDER` | Ruleset name from the lint result | The name of the ruleset that was applied during linting |
+
+**Default:**
+
+```
+Linter scan result contains errors. Please visit the linter UI for details on the RULESET_NAME_PLACEHOLDER ruleset.
+```
+
+#### Rover-server linting configuration
+
+The following environment variables configure the linting integration on the rover-server side:
+
+| Environment Variable | Description | Default |
+|---|---|---|
+| `OASLINTING_URL` | Base URL of the external linter API. If empty, linting is disabled regardless of category config. | _(empty)_ |
+| `OASLINTING_DASHBOARDURL` | Base URL of the linter dashboard. When set, lint results include a link to `<url>/scans/<linterId>`. | _(empty)_ |
+| `OASLINTING_ERRORMESSAGE` | Error message template (see placeholders above). | See above |
+| `OASLINTING_TIMEOUT` | HTTP timeout for linter requests (Go duration, e.g. `30s`). `0` means no timeout. | `0` |
+| `OASLINTING_SKIPTLS` | Skip TLS verification for linter requests. | `false` |
 
 ### Activating and deactivating categories
 
@@ -186,8 +219,8 @@ spec:
     names:
       - "phoenix--firebirds"
   linting:
-    enabled: true
     ruleset: "strict"
+    mode: "Block"
 ```
 
 This category:
