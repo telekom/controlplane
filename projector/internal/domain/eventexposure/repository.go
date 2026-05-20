@@ -65,6 +65,18 @@ func (r *Repository) Upsert(ctx context.Context, data *EventExposureData) error 
 		return fmt.Errorf("find application %q (team %q): %w", data.AppName, data.TeamName, err)
 	}
 
+	// Resolve optional EventType catalogue FK. Only link to the active EventType
+	// when this exposure itself is active. The lookup is team-independent because
+	// only one EventType is active cluster-wide for a given type string (oldest-wins).
+	var eventTypeDefID *int
+	if data.Active {
+		if resolvedID, etErr := r.deps.FindActiveEventTypeID(ctx, data.EventType); etErr == nil {
+			eventTypeDefID = &resolvedID
+		} else if !errors.Is(etErr, infrastructure.ErrEntityNotFound) {
+			return fmt.Errorf("find active event_type %q: %w", data.EventType, etErr)
+		}
+	}
+
 	exposureID, upsertErr := r.client.EventExposure.Create().
 		SetEventType(data.EventType).
 		SetVisibility(eventexposure.Visibility(data.Visibility)).
@@ -75,6 +87,7 @@ func (r *Repository) Upsert(ctx context.Context, data *EventExposureData) error 
 		SetNamespace(data.Meta.Namespace).
 		SetOwnerID(appID).
 		SetApprovalConfig(data.ApprovalConfig).
+		SetNillableEventTypeDefID(eventTypeDefID).
 		OnConflictColumns(eventexposure.FieldEventType, eventexposure.OwnerColumn).
 		UpdateNewValues().
 		ID(ctx)

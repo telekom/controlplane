@@ -57,6 +57,10 @@ func (Team) Edges() []ent.Edge {
 		edge.To("members", Member.Type),
 		edge.To("applications", Application.Type).
 			Annotations(entgql.RelayConnection()),
+		edge.To("apis", Api.Type).
+			Annotations(entgql.RelayConnection()),
+		edge.To("event_types", EventType.Type).
+			Annotations(entgql.RelayConnection()),
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -30,6 +31,7 @@ type ApiExposureQuery struct {
 	inters                 []Interceptor
 	predicates             []predicate.ApiExposure
 	withOwner              *ApplicationQuery
+	withAPI                *APIQuery
 	withSubscriptions      *ApiSubscriptionQuery
 	withFKs                bool
 	modifiers              []func(*sql.Selector)
@@ -86,6 +88,28 @@ func (_q *ApiExposureQuery) QueryOwner() *ApplicationQuery {
 			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, selector),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, apiexposure.OwnerTable, apiexposure.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAPI chains the current query on the "api" edge.
+func (_q *ApiExposureQuery) QueryAPI() *APIQuery {
+	query := (&APIClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, selector),
+			sqlgraph.To(api.Table, api.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, apiexposure.APITable, apiexposure.APIColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -308,6 +332,7 @@ func (_q *ApiExposureQuery) Clone() *ApiExposureQuery {
 		inters:            append([]Interceptor{}, _q.inters...),
 		predicates:        append([]predicate.ApiExposure{}, _q.predicates...),
 		withOwner:         _q.withOwner.Clone(),
+		withAPI:           _q.withAPI.Clone(),
 		withSubscriptions: _q.withSubscriptions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -323,6 +348,17 @@ func (_q *ApiExposureQuery) WithOwner(opts ...func(*ApplicationQuery)) *ApiExpos
 		opt(query)
 	}
 	_q.withOwner = query
+	return _q
+}
+
+// WithAPI tells the query-builder to eager-load the nodes that are connected to
+// the "api" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApiExposureQuery) WithAPI(opts ...func(*APIQuery)) *ApiExposureQuery {
+	query := (&APIClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAPI = query
 	return _q
 }
 
@@ -422,12 +458,13 @@ func (_q *ApiExposureQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*ApiExposure{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withOwner != nil,
+			_q.withAPI != nil,
 			_q.withSubscriptions != nil,
 		}
 	)
-	if _q.withOwner != nil {
+	if _q.withOwner != nil || _q.withAPI != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -457,6 +494,12 @@ func (_q *ApiExposureQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if query := _q.withOwner; query != nil {
 		if err := _q.loadOwner(ctx, query, nodes, nil,
 			func(n *ApiExposure, e *Application) { n.Edges.Owner = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAPI; query != nil {
+		if err := _q.loadAPI(ctx, query, nodes, nil,
+			func(n *ApiExposure, e *Api) { n.Edges.API = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -507,6 +550,38 @@ func (_q *ApiExposureQuery) loadOwner(ctx context.Context, query *ApplicationQue
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "application_exposed_apis" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *ApiExposureQuery) loadAPI(ctx context.Context, query *APIQuery, nodes []*ApiExposure, init func(*ApiExposure), assign func(*ApiExposure, *Api)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*ApiExposure)
+	for i := range nodes {
+		if nodes[i].api_exposures == nil {
+			continue
+		}
+		fk := *nodes[i].api_exposures
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(api.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "api_exposures" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

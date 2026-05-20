@@ -50,6 +50,8 @@ const (
 	FieldAPIVersion = "api_version"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
+	// EdgeAPI holds the string denoting the api edge name in mutations.
+	EdgeAPI = "api"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
 	// Table holds the table name of the apiexposure in the database.
@@ -61,6 +63,13 @@ const (
 	OwnerInverseTable = "applications"
 	// OwnerColumn is the table column denoting the owner relation/edge.
 	OwnerColumn = "application_exposed_apis"
+	// APITable is the table that holds the api relation/edge.
+	APITable = "api_exposures"
+	// APIInverseTable is the table name for the Api entity.
+	// It exists in this package in order to avoid circular dependency with the "api" package.
+	APIInverseTable = "apis"
+	// APIColumn is the table column denoting the api relation/edge.
+	APIColumn = "api_exposures"
 	// SubscriptionsTable is the table that holds the subscriptions relation/edge.
 	SubscriptionsTable = "api_subscriptions"
 	// SubscriptionsInverseTable is the table name for the ApiSubscription entity.
@@ -91,6 +100,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "api_exposures"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"api_exposures",
 	"application_exposed_apis",
 }
 
@@ -254,6 +264,13 @@ func ByOwnerField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByAPIField orders the results by api field.
+func ByAPIField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAPIStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // BySubscriptionsCount orders the results by subscriptions count.
 func BySubscriptionsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -272,6 +289,13 @@ func newOwnerStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OwnerInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
+	)
+}
+func newAPIStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(APIInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, APITable, APIColumn),
 	)
 }
 func newSubscriptionsStep() *sqlgraph.Step {

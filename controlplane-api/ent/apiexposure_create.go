@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -187,6 +188,25 @@ func (_c *ApiExposureCreate) SetOwnerID(id int) *ApiExposureCreate {
 // SetOwner sets the "owner" edge to the Application entity.
 func (_c *ApiExposureCreate) SetOwner(v *Application) *ApiExposureCreate {
 	return _c.SetOwnerID(v.ID)
+}
+
+// SetAPIID sets the "api" edge to the Api entity by ID.
+func (_c *ApiExposureCreate) SetAPIID(id int) *ApiExposureCreate {
+	_c.mutation.SetAPIID(id)
+	return _c
+}
+
+// SetNillableAPIID sets the "api" edge to the Api entity by ID if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableAPIID(id *int) *ApiExposureCreate {
+	if id != nil {
+		_c = _c.SetAPIID(*id)
+	}
+	return _c
+}
+
+// SetAPI sets the "api" edge to the Api entity.
+func (_c *ApiExposureCreate) SetAPI(v *Api) *ApiExposureCreate {
+	return _c.SetAPIID(v.ID)
 }
 
 // AddSubscriptionIDs adds the "subscriptions" edge to the ApiSubscription entity by IDs.
@@ -421,6 +441,23 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.application_exposed_apis = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.APIIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   apiexposure.APITable,
+			Columns: []string{apiexposure.APIColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.api_exposures = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.SubscriptionsIDs(); len(nodes) > 0 {

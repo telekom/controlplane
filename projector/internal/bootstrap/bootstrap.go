@@ -37,6 +37,7 @@ import (
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
 
 	"github.com/telekom/controlplane/projector/internal/config"
+	"github.com/telekom/controlplane/projector/internal/domain/api"
 	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/application"
@@ -44,6 +45,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/approvalrequest"
 	"github.com/telekom/controlplane/projector/internal/domain/eventexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
+	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
@@ -62,6 +64,7 @@ var modules = []module.Module{
 	group.Module,
 	team.Module,
 	application.Module,
+	api.Module,
 	apiexposure.Module,
 	apisubscription.Module,
 	approval.Module,
@@ -78,7 +81,7 @@ func init() {
 
 	if cconfig.FeaturePubSub.IsEnabled() {
 		_ = eventv1.AddToScheme(scheme)
-		modules = append(modules, eventexposure.Module, eventsubscription.Module)
+		modules = append(modules, eventtype.Module, eventexposure.Module, eventsubscription.Module)
 	}
 }
 

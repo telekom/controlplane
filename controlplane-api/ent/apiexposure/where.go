@@ -626,6 +626,29 @@ func HasOwnerWith(preds ...predicate.Application) predicate.ApiExposure {
 	})
 }
 
+// HasAPI applies the HasEdge predicate on the "api" edge.
+func HasAPI() predicate.ApiExposure {
+	return predicate.ApiExposure(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, APITable, APIColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAPIWith applies the HasEdge predicate on the "api" edge with a given conditions (other predicates).
+func HasAPIWith(preds ...predicate.Api) predicate.ApiExposure {
+	return predicate.ApiExposure(func(s *sql.Selector) {
+		step := newAPIStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasSubscriptions applies the HasEdge predicate on the "subscriptions" edge.
 func HasSubscriptions() predicate.ApiExposure {
 	return predicate.ApiExposure(func(s *sql.Selector) {

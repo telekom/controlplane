@@ -130,9 +130,8 @@ func TeamFilterInterceptor() ent.Interceptor {
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				))
 
-			case *entgen.GroupQuery, *entgen.ZoneQuery:
-				// No team filtering for public entities
-
+			case *entgen.GroupQuery, *entgen.ZoneQuery, *entgen.APIQuery, *entgen.EventTypeQuery:
+				// No team filtering for public/catalogue entities
 			default:
 				return nil, fmt.Errorf("team filter: unsupported query type %T", query)
 			}

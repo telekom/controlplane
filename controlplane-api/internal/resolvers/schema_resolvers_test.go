@@ -28,7 +28,7 @@ var _ = Describe("OwnerTeam resolver", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, service.Services{}, nil)
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
 	})
 
 	AfterEach(func() {
@@ -146,7 +146,7 @@ var _ = Describe("OwnerTeam resolver", func() {
 
 var _ = Describe("ApprovalConfig.Strategy resolver", func() {
 	It("should convert string to approval.Strategy", func() {
-		r := resolvers.NewResolver(nil, service.Services{}, nil)
+		r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 		s, err := r.ApprovalConfig().Strategy(context.Background(), &model.ApprovalConfig{Strategy: "FOUR_EYES"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(s).To(Equal(approval.StrategyFourEyes))
@@ -282,7 +282,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 })
 
 var _ = Describe("AvailableTransition resolvers", func() {
-	r := resolvers.NewResolver(nil, service.Services{}, nil)
+	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert Action string to ApprovalAction", func() {
 		action, err := r.AvailableTransition().Action(context.Background(), &model.AvailableTransition{Action: "ALLOW"})
@@ -298,7 +298,7 @@ var _ = Describe("AvailableTransition resolvers", func() {
 })
 
 var _ = Describe("Decision.ResultingState resolver", func() {
-	r := resolvers.NewResolver(nil, service.Services{}, nil)
+	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should return the state when ResultingState is set", func() {
 		granted := "GRANTED"

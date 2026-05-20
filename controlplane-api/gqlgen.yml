@@ -23,12 +23,14 @@ model:
 autobind:
   - github.com/99designs/gqlgen/graphql/introspection
   - github.com/telekom/controlplane/controlplane-api/ent
+  - github.com/telekom/controlplane/controlplane-api/ent/api
   - github.com/telekom/controlplane/controlplane-api/ent/team
   - github.com/telekom/controlplane/controlplane-api/ent/application
   - github.com/telekom/controlplane/controlplane-api/ent/apiexposure
   - github.com/telekom/controlplane/controlplane-api/ent/apisubscription
   - github.com/telekom/controlplane/controlplane-api/ent/eventexposure
   - github.com/telekom/controlplane/controlplane-api/ent/eventsubscription
+  - github.com/telekom/controlplane/controlplane-api/ent/eventtype
 
 models:
   ID:

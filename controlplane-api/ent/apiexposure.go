@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -52,6 +53,7 @@ type ApiExposure struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApiExposureQuery when eager-loading is set.
 	Edges                    ApiExposureEdges `json:"edges"`
+	api_exposures            *int
 	application_exposed_apis *int
 	selectValues             sql.SelectValues
 }
@@ -60,13 +62,15 @@ type ApiExposure struct {
 type ApiExposureEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Application `json:"owner,omitempty"`
+	// API holds the value of the api edge.
+	API *Api `json:"api,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
 	Subscriptions []*ApiSubscription `json:"subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]map[string]int
+	totalCount [2]map[string]int
 
 	namedSubscriptions map[string][]*ApiSubscription
 }
@@ -82,10 +86,21 @@ func (e ApiExposureEdges) OwnerOrErr() (*Application, error) {
 	return nil, &NotLoadedError{edge: "owner"}
 }
 
+// APIOrErr returns the API value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApiExposureEdges) APIOrErr() (*Api, error) {
+	if e.API != nil {
+		return e.API, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: api.Label}
+	}
+	return nil, &NotLoadedError{edge: "api"}
+}
+
 // SubscriptionsOrErr returns the Subscriptions value or an error if the edge
 // was not loaded in eager-loading.
 func (e ApiExposureEdges) SubscriptionsOrErr() ([]*ApiSubscription, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Subscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "subscriptions"}
@@ -106,7 +121,9 @@ func (*ApiExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case apiexposure.FieldCreatedAt, apiexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
-		case apiexposure.ForeignKeys[0]: // application_exposed_apis
+		case apiexposure.ForeignKeys[0]: // api_exposures
+			values[i] = new(sql.NullInt64)
+		case apiexposure.ForeignKeys[1]: // application_exposed_apis
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -220,6 +237,13 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			}
 		case apiexposure.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field api_exposures", value)
+			} else if value.Valid {
+				_m.api_exposures = new(int)
+				*_m.api_exposures = int(value.Int64)
+			}
+		case apiexposure.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field application_exposed_apis", value)
 			} else if value.Valid {
 				_m.application_exposed_apis = new(int)
@@ -241,6 +265,11 @@ func (_m *ApiExposure) Value(name string) (ent.Value, error) {
 // QueryOwner queries the "owner" edge of the ApiExposure entity.
 func (_m *ApiExposure) QueryOwner() *ApplicationQuery {
 	return NewApiExposureClient(_m.config).QueryOwner(_m)
+}
+
+// QueryAPI queries the "api" edge of the ApiExposure entity.
+func (_m *ApiExposure) QueryAPI() *APIQuery {
+	return NewApiExposureClient(_m.config).QueryAPI(_m)
 }
 
 // QuerySubscriptions queries the "subscriptions" edge of the ApiExposure entity.

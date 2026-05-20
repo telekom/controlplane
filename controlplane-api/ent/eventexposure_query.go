@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 )
 
@@ -30,6 +31,7 @@ type EventExposureQuery struct {
 	inters                 []Interceptor
 	predicates             []predicate.EventExposure
 	withOwner              *ApplicationQuery
+	withEventTypeDef       *EventTypeQuery
 	withSubscriptions      *EventSubscriptionQuery
 	withFKs                bool
 	modifiers              []func(*sql.Selector)
@@ -86,6 +88,28 @@ func (_q *EventExposureQuery) QueryOwner() *ApplicationQuery {
 			sqlgraph.From(eventexposure.Table, eventexposure.FieldID, selector),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, eventexposure.OwnerTable, eventexposure.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEventTypeDef chains the current query on the "event_type_def" edge.
+func (_q *EventExposureQuery) QueryEventTypeDef() *EventTypeQuery {
+	query := (&EventTypeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(eventexposure.Table, eventexposure.FieldID, selector),
+			sqlgraph.To(eventtype.Table, eventtype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, eventexposure.EventTypeDefTable, eventexposure.EventTypeDefColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -308,6 +332,7 @@ func (_q *EventExposureQuery) Clone() *EventExposureQuery {
 		inters:            append([]Interceptor{}, _q.inters...),
 		predicates:        append([]predicate.EventExposure{}, _q.predicates...),
 		withOwner:         _q.withOwner.Clone(),
+		withEventTypeDef:  _q.withEventTypeDef.Clone(),
 		withSubscriptions: _q.withSubscriptions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -323,6 +348,17 @@ func (_q *EventExposureQuery) WithOwner(opts ...func(*ApplicationQuery)) *EventE
 		opt(query)
 	}
 	_q.withOwner = query
+	return _q
+}
+
+// WithEventTypeDef tells the query-builder to eager-load the nodes that are connected to
+// the "event_type_def" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *EventExposureQuery) WithEventTypeDef(opts ...func(*EventTypeQuery)) *EventExposureQuery {
+	query := (&EventTypeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEventTypeDef = query
 	return _q
 }
 
@@ -422,12 +458,13 @@ func (_q *EventExposureQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		nodes       = []*EventExposure{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withOwner != nil,
+			_q.withEventTypeDef != nil,
 			_q.withSubscriptions != nil,
 		}
 	)
-	if _q.withOwner != nil {
+	if _q.withOwner != nil || _q.withEventTypeDef != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -457,6 +494,12 @@ func (_q *EventExposureQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	if query := _q.withOwner; query != nil {
 		if err := _q.loadOwner(ctx, query, nodes, nil,
 			func(n *EventExposure, e *Application) { n.Edges.Owner = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEventTypeDef; query != nil {
+		if err := _q.loadEventTypeDef(ctx, query, nodes, nil,
+			func(n *EventExposure, e *EventType) { n.Edges.EventTypeDef = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -507,6 +550,38 @@ func (_q *EventExposureQuery) loadOwner(ctx context.Context, query *ApplicationQ
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "application_exposed_events" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *EventExposureQuery) loadEventTypeDef(ctx context.Context, query *EventTypeQuery, nodes []*EventExposure, init func(*EventExposure), assign func(*EventExposure, *EventType)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*EventExposure)
+	for i := range nodes {
+		if nodes[i].event_type_exposures == nil {
+			continue
+		}
+		fk := *nodes[i].event_type_exposures
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(eventtype.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "event_type_exposures" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

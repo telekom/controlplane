@@ -49,6 +49,15 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 	return r.client.Noders(ctx, ids)
 }
 
+// Apis is the resolver for the apis field.
+func (r *queryResolver) Apis(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) (*ent.ApiConnection, error) {
+	return r.client.Api.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithApiOrder(orderBy),
+			ent.WithApiFilter(where.Filter),
+		)
+}
+
 // APIExposures is the resolver for the apiExposures field.
 func (r *queryResolver) APIExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) (*ent.ApiExposureConnection, error) {
 	return r.client.ApiExposure.Query().
@@ -112,6 +121,15 @@ func (r *queryResolver) EventSubscriptions(ctx context.Context, after *entgql.Cu
 		)
 }
 
+// EventTypes is the resolver for the eventTypes field.
+func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) (*ent.EventTypeConnection, error) {
+	return r.client.EventType.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithEventTypeOrder(orderBy),
+			ent.WithEventTypeFilter(where.Filter),
+		)
+}
+
 // Teams is the resolver for the teams field.
 func (r *queryResolver) Teams(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) (*ent.TeamConnection, error) {
 	return r.client.Team.Query().
@@ -132,6 +150,9 @@ func (r *queryResolver) Zones(ctx context.Context) ([]*ent.Zone, error) {
 func (r *teamResolver) TeamToken(ctx context.Context, obj *ent.Team) (*string, error) {
 	return r.secrets.Resolve(ctx, obj.TeamToken, "teamToken")
 }
+
+// Api returns ApiResolver implementation.
+func (r *Resolver) Api() ApiResolver { return &apiResolver{r} }
 
 // ApiExposure returns ApiExposureResolver implementation.
 func (r *Resolver) ApiExposure() ApiExposureResolver { return &apiExposureResolver{r} }
@@ -156,6 +177,9 @@ func (r *Resolver) EventSubscription() EventSubscriptionResolver {
 	return &eventSubscriptionResolver{r}
 }
 
+// EventType returns EventTypeResolver implementation.
+func (r *Resolver) EventType() EventTypeResolver { return &eventTypeResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -165,6 +189,7 @@ func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 // Zone returns ZoneResolver implementation.
 func (r *Resolver) Zone() ZoneResolver { return &zoneResolver{r} }
 
+type apiResolver struct{ *Resolver }
 type apiExposureResolver struct{ *Resolver }
 type apiSubscriptionResolver struct{ *Resolver }
 type applicationResolver struct{ *Resolver }
@@ -172,6 +197,7 @@ type approvalResolver struct{ *Resolver }
 type approvalRequestResolver struct{ *Resolver }
 type eventExposureResolver struct{ *Resolver }
 type eventSubscriptionResolver struct{ *Resolver }
+type eventTypeResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type teamResolver struct{ *Resolver }
 type zoneResolver struct{ *Resolver }

@@ -9,6 +9,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Api is the predicate function for api builders.
+type Api func(*sql.Selector)
+
 // ApiExposure is the predicate function for apiexposure builders.
 type ApiExposure func(*sql.Selector)
 
@@ -29,6 +32,9 @@ type EventExposure func(*sql.Selector)
 
 // EventSubscription is the predicate function for eventsubscription builders.
 type EventSubscription func(*sql.Selector)
+
+// EventType is the predicate function for eventtype builders.
+type EventType func(*sql.Selector)
 
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)

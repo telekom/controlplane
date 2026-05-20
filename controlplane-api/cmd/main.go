@@ -91,7 +91,7 @@ func main() {
 	}
 
 	secretResolver := secrets.NewResolver(secretsapi.NewSecrets())
-	srv := newGraphQLServer(client, services, secretResolver, cfg.Security.Enabled)
+	srv := newGraphQLServer(client, services, secretResolver, cfg.Security.Enabled, cfg.FileManager.BaseURL)
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.EnableCors = true
@@ -180,8 +180,8 @@ func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }
 
-func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, securityEnabled bool) *handler.Server {
-	srv := handler.New(resolvers.NewSchema(entClient, services, secretResolver))
+func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, securityEnabled bool, fileManagerBaseURL string) *handler.Server {
+	srv := handler.New(resolvers.NewSchema(entClient, services, secretResolver, fileManagerBaseURL))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})

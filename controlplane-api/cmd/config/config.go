@@ -12,12 +12,13 @@ import (
 )
 
 type ServerConfig struct {
-	Database   DatabaseConfig   `yaml:"database"`
-	Server     HTTPServerConfig `yaml:"server"`
-	Security   SecurityConfig   `yaml:"security"`
-	GraphQL    GraphQLConfig    `yaml:"graphql"`
-	Log        LogConfig        `yaml:"log"`
-	Kubernetes KubernetesConfig `yaml:"kubernetes"`
+	Database    DatabaseConfig    `yaml:"database"`
+	Server      HTTPServerConfig  `yaml:"server"`
+	Security    SecurityConfig    `yaml:"security"`
+	GraphQL     GraphQLConfig     `yaml:"graphql"`
+	Log         LogConfig         `yaml:"log"`
+	Kubernetes  KubernetesConfig  `yaml:"kubernetes"`
+	FileManager FileManagerConfig `yaml:"fileManager"`
 }
 
 type KubernetesConfig struct {
@@ -54,6 +55,12 @@ type LogConfig struct {
 	Level string `yaml:"level"`
 }
 
+// FileManagerConfig holds the configuration for constructing specification
+// download URLs. The BaseURL is the root URL of the file-manager service.
+type FileManagerConfig struct {
+	BaseURL string `yaml:"baseUrl"`
+}
+
 func DefaultConfig() *ServerConfig {
 	return &ServerConfig{
 		Database: DatabaseConfig{
@@ -74,7 +81,7 @@ func DefaultConfig() *ServerConfig {
 			PlaygroundEnabled: true,
 		},
 		Log: LogConfig{
-			Level: "info",
+			Level: "debug",
 		},
 		Kubernetes: KubernetesConfig{
 			Enabled:     true,

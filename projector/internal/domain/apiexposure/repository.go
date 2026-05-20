@@ -69,6 +69,18 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 		return fmt.Errorf("find application %q (team %q): %w", data.AppName, data.TeamName, err)
 	}
 
+	// Resolve optional Api catalogue FK. Only link to the active Api when this
+	// exposure itself is active. The lookup is team-independent because only one
+	// Api is active cluster-wide for a given base path (oldest-wins).
+	var apiID *int
+	if data.Active {
+		if resolvedApiID, apiErr := r.deps.FindActiveApiID(ctx, data.BasePath); apiErr == nil {
+			apiID = &resolvedApiID
+		} else if !errors.Is(apiErr, infrastructure.ErrEntityNotFound) {
+			return fmt.Errorf("find active api %q: %w", data.BasePath, apiErr)
+		}
+	}
+
 	create := r.client.ApiExposure.Create().
 		SetBasePath(data.BasePath).
 		SetVisibility(apiexposure.Visibility(data.Visibility)).
@@ -84,6 +96,10 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 
 	if data.APIVersion != nil {
 		create.SetAPIVersion(*data.APIVersion)
+	}
+
+	if apiID != nil {
+		create.SetNillableAPIID(apiID)
 	}
 
 	exposureID, upsertErr := create.

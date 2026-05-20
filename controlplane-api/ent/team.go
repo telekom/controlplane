@@ -56,14 +56,20 @@ type TeamEdges struct {
 	Members []*Member `json:"members,omitempty"`
 	// Applications holds the value of the applications edge.
 	Applications []*Application `json:"applications,omitempty"`
+	// Apis holds the value of the apis edge.
+	Apis []*Api `json:"apis,omitempty"`
+	// EventTypes holds the value of the event_types edge.
+	EventTypes []*EventType `json:"event_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [5]map[string]int
 
 	namedMembers      map[string][]*Member
 	namedApplications map[string][]*Application
+	namedApis         map[string][]*Api
+	namedEventTypes   map[string][]*EventType
 }
 
 // GroupOrErr returns the Group value or an error if the edge
@@ -93,6 +99,24 @@ func (e TeamEdges) ApplicationsOrErr() ([]*Application, error) {
 		return e.Applications, nil
 	}
 	return nil, &NotLoadedError{edge: "applications"}
+}
+
+// ApisOrErr returns the Apis value or an error if the edge
+// was not loaded in eager-loading.
+func (e TeamEdges) ApisOrErr() ([]*Api, error) {
+	if e.loadedTypes[3] {
+		return e.Apis, nil
+	}
+	return nil, &NotLoadedError{edge: "apis"}
+}
+
+// EventTypesOrErr returns the EventTypes value or an error if the edge
+// was not loaded in eager-loading.
+func (e TeamEdges) EventTypesOrErr() ([]*EventType, error) {
+	if e.loadedTypes[4] {
+		return e.EventTypes, nil
+	}
+	return nil, &NotLoadedError{edge: "event_types"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -228,6 +252,16 @@ func (_m *Team) QueryApplications() *ApplicationQuery {
 	return NewTeamClient(_m.config).QueryApplications(_m)
 }
 
+// QueryApis queries the "apis" edge of the Team entity.
+func (_m *Team) QueryApis() *APIQuery {
+	return NewTeamClient(_m.config).QueryApis(_m)
+}
+
+// QueryEventTypes queries the "event_types" edge of the Team entity.
+func (_m *Team) QueryEventTypes() *EventTypeQuery {
+	return NewTeamClient(_m.config).QueryEventTypes(_m)
+}
+
 // Update returns a builder for updating this Team.
 // Note that you need to call Team.Unwrap() before calling this method if this Team
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -337,6 +371,54 @@ func (_m *Team) appendNamedApplications(name string, edges ...*Application) {
 		_m.Edges.namedApplications[name] = []*Application{}
 	} else {
 		_m.Edges.namedApplications[name] = append(_m.Edges.namedApplications[name], edges...)
+	}
+}
+
+// NamedApis returns the Apis named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Team) NamedApis(name string) ([]*Api, error) {
+	if _m.Edges.namedApis == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedApis[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Team) appendNamedApis(name string, edges ...*Api) {
+	if _m.Edges.namedApis == nil {
+		_m.Edges.namedApis = make(map[string][]*Api)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedApis[name] = []*Api{}
+	} else {
+		_m.Edges.namedApis[name] = append(_m.Edges.namedApis[name], edges...)
+	}
+}
+
+// NamedEventTypes returns the EventTypes named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Team) NamedEventTypes(name string) ([]*EventType, error) {
+	if _m.Edges.namedEventTypes == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedEventTypes[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Team) appendNamedEventTypes(name string, edges ...*EventType) {
+	if _m.Edges.namedEventTypes == nil {
+		_m.Edges.namedEventTypes = make(map[string][]*EventType)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedEventTypes[name] = []*EventType{}
+	} else {
+		_m.Edges.namedEventTypes[name] = append(_m.Edges.namedEventTypes[name], edges...)
 	}
 }
 

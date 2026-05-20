@@ -16,7 +16,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
@@ -33,11 +35,15 @@ type TeamQuery struct {
 	withGroup             *GroupQuery
 	withMembers           *MemberQuery
 	withApplications      *ApplicationQuery
+	withApis              *APIQuery
+	withEventTypes        *EventTypeQuery
 	withFKs               bool
 	modifiers             []func(*sql.Selector)
 	loadTotal             []func(context.Context, []*Team) error
 	withNamedMembers      map[string]*MemberQuery
 	withNamedApplications map[string]*ApplicationQuery
+	withNamedApis         map[string]*APIQuery
+	withNamedEventTypes   map[string]*EventTypeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -133,6 +139,50 @@ func (_q *TeamQuery) QueryApplications() *ApplicationQuery {
 			sqlgraph.From(team.Table, team.FieldID, selector),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, team.ApplicationsTable, team.ApplicationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryApis chains the current query on the "apis" edge.
+func (_q *TeamQuery) QueryApis() *APIQuery {
+	query := (&APIClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, selector),
+			sqlgraph.To(api.Table, api.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.ApisTable, team.ApisColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEventTypes chains the current query on the "event_types" edge.
+func (_q *TeamQuery) QueryEventTypes() *EventTypeQuery {
+	query := (&EventTypeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, selector),
+			sqlgraph.To(eventtype.Table, eventtype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.EventTypesTable, team.EventTypesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -335,6 +385,8 @@ func (_q *TeamQuery) Clone() *TeamQuery {
 		withGroup:        _q.withGroup.Clone(),
 		withMembers:      _q.withMembers.Clone(),
 		withApplications: _q.withApplications.Clone(),
+		withApis:         _q.withApis.Clone(),
+		withEventTypes:   _q.withEventTypes.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -371,6 +423,28 @@ func (_q *TeamQuery) WithApplications(opts ...func(*ApplicationQuery)) *TeamQuer
 		opt(query)
 	}
 	_q.withApplications = query
+	return _q
+}
+
+// WithApis tells the query-builder to eager-load the nodes that are connected to
+// the "apis" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TeamQuery) WithApis(opts ...func(*APIQuery)) *TeamQuery {
+	query := (&APIClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withApis = query
+	return _q
+}
+
+// WithEventTypes tells the query-builder to eager-load the nodes that are connected to
+// the "event_types" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TeamQuery) WithEventTypes(opts ...func(*EventTypeQuery)) *TeamQuery {
+	query := (&EventTypeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEventTypes = query
 	return _q
 }
 
@@ -459,10 +533,12 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 		nodes       = []*Team{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [5]bool{
 			_q.withGroup != nil,
 			_q.withMembers != nil,
 			_q.withApplications != nil,
+			_q.withApis != nil,
+			_q.withEventTypes != nil,
 		}
 	)
 	if _q.withGroup != nil {
@@ -512,6 +588,20 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 			return nil, err
 		}
 	}
+	if query := _q.withApis; query != nil {
+		if err := _q.loadApis(ctx, query, nodes,
+			func(n *Team) { n.Edges.Apis = []*Api{} },
+			func(n *Team, e *Api) { n.Edges.Apis = append(n.Edges.Apis, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEventTypes; query != nil {
+		if err := _q.loadEventTypes(ctx, query, nodes,
+			func(n *Team) { n.Edges.EventTypes = []*EventType{} },
+			func(n *Team, e *EventType) { n.Edges.EventTypes = append(n.Edges.EventTypes, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedMembers {
 		if err := _q.loadMembers(ctx, query, nodes,
 			func(n *Team) { n.appendNamedMembers(name) },
@@ -523,6 +613,20 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 		if err := _q.loadApplications(ctx, query, nodes,
 			func(n *Team) { n.appendNamedApplications(name) },
 			func(n *Team, e *Application) { n.appendNamedApplications(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedApis {
+		if err := _q.loadApis(ctx, query, nodes,
+			func(n *Team) { n.appendNamedApis(name) },
+			func(n *Team, e *Api) { n.appendNamedApis(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEventTypes {
+		if err := _q.loadEventTypes(ctx, query, nodes,
+			func(n *Team) { n.appendNamedEventTypes(name) },
+			func(n *Team, e *EventType) { n.appendNamedEventTypes(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -623,6 +727,68 @@ func (_q *TeamQuery) loadApplications(ctx context.Context, query *ApplicationQue
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "team_applications" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *TeamQuery) loadApis(ctx context.Context, query *APIQuery, nodes []*Team, init func(*Team), assign func(*Team, *Api)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Team)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Api(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(team.ApisColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.team_apis
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "team_apis" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "team_apis" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *TeamQuery) loadEventTypes(ctx context.Context, query *EventTypeQuery, nodes []*Team, init func(*Team), assign func(*Team, *EventType)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Team)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EventType(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(team.EventTypesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.team_event_types
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "team_event_types" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "team_event_types" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -738,6 +904,34 @@ func (_q *TeamQuery) WithNamedApplications(name string, opts ...func(*Applicatio
 		_q.withNamedApplications = make(map[string]*ApplicationQuery)
 	}
 	_q.withNamedApplications[name] = query
+	return _q
+}
+
+// WithNamedApis tells the query-builder to eager-load the nodes that are connected to the "apis"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *TeamQuery) WithNamedApis(name string, opts ...func(*APIQuery)) *TeamQuery {
+	query := (&APIClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedApis == nil {
+		_q.withNamedApis = make(map[string]*APIQuery)
+	}
+	_q.withNamedApis[name] = query
+	return _q
+}
+
+// WithNamedEventTypes tells the query-builder to eager-load the nodes that are connected to the "event_types"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *TeamQuery) WithNamedEventTypes(name string, opts ...func(*EventTypeQuery)) *TeamQuery {
+	query := (&EventTypeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEventTypes == nil {
+		_q.withNamedEventTypes = make(map[string]*EventTypeQuery)
+	}
+	_q.withNamedEventTypes[name] = query
 	return _q
 }
 

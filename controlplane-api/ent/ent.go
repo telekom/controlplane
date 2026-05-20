@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -22,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -86,6 +88,7 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			api.Table:               api.ValidColumn,
 			apiexposure.Table:       apiexposure.ValidColumn,
 			apisubscription.Table:   apisubscription.ValidColumn,
 			application.Table:       application.ValidColumn,
@@ -93,6 +96,7 @@ func checkColumn(t, c string) error {
 			approvalrequest.Table:   approvalrequest.ValidColumn,
 			eventexposure.Table:     eventexposure.ValidColumn,
 			eventsubscription.Table: eventsubscription.ValidColumn,
+			eventtype.Table:         eventtype.ValidColumn,
 			group.Table:             group.ValidColumn,
 			member.Table:            member.ValidColumn,
 			team.Table:              team.ValidColumn,

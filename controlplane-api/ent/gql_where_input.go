@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -17,12 +18,643 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
+
+// ApiWhereInput represents a where input for filtering Api queries.
+type ApiWhereInput struct {
+	Predicates []predicate.Api  `json:"-"`
+	Not        *ApiWhereInput   `json:"not,omitempty"`
+	Or         []*ApiWhereInput `json:"or,omitempty"`
+	And        []*ApiWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "last_modified_at" field predicates.
+	LastModifiedAt      *time.Time  `json:"lastModifiedAt,omitempty"`
+	LastModifiedAtNEQ   *time.Time  `json:"lastModifiedAtNEQ,omitempty"`
+	LastModifiedAtIn    []time.Time `json:"lastModifiedAtIn,omitempty"`
+	LastModifiedAtNotIn []time.Time `json:"lastModifiedAtNotIn,omitempty"`
+	LastModifiedAtGT    *time.Time  `json:"lastModifiedAtGT,omitempty"`
+	LastModifiedAtGTE   *time.Time  `json:"lastModifiedAtGTE,omitempty"`
+	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
+	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
+
+	// "status_phase" field predicates.
+	StatusPhase       *api.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *api.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []api.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []api.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool              `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool              `json:"statusPhaseNotNil,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
+
+	// "base_path" field predicates.
+	BasePath             *string  `json:"basePath,omitempty"`
+	BasePathNEQ          *string  `json:"basePathNEQ,omitempty"`
+	BasePathIn           []string `json:"basePathIn,omitempty"`
+	BasePathNotIn        []string `json:"basePathNotIn,omitempty"`
+	BasePathGT           *string  `json:"basePathGT,omitempty"`
+	BasePathGTE          *string  `json:"basePathGTE,omitempty"`
+	BasePathLT           *string  `json:"basePathLT,omitempty"`
+	BasePathLTE          *string  `json:"basePathLTE,omitempty"`
+	BasePathContains     *string  `json:"basePathContains,omitempty"`
+	BasePathHasPrefix    *string  `json:"basePathHasPrefix,omitempty"`
+	BasePathHasSuffix    *string  `json:"basePathHasSuffix,omitempty"`
+	BasePathEqualFold    *string  `json:"basePathEqualFold,omitempty"`
+	BasePathContainsFold *string  `json:"basePathContainsFold,omitempty"`
+
+	// "version" field predicates.
+	Version             *string  `json:"version,omitempty"`
+	VersionNEQ          *string  `json:"versionNEQ,omitempty"`
+	VersionIn           []string `json:"versionIn,omitempty"`
+	VersionNotIn        []string `json:"versionNotIn,omitempty"`
+	VersionGT           *string  `json:"versionGT,omitempty"`
+	VersionGTE          *string  `json:"versionGTE,omitempty"`
+	VersionLT           *string  `json:"versionLT,omitempty"`
+	VersionLTE          *string  `json:"versionLTE,omitempty"`
+	VersionContains     *string  `json:"versionContains,omitempty"`
+	VersionHasPrefix    *string  `json:"versionHasPrefix,omitempty"`
+	VersionHasSuffix    *string  `json:"versionHasSuffix,omitempty"`
+	VersionEqualFold    *string  `json:"versionEqualFold,omitempty"`
+	VersionContainsFold *string  `json:"versionContainsFold,omitempty"`
+
+	// "category" field predicates.
+	Category             *string  `json:"category,omitempty"`
+	CategoryNEQ          *string  `json:"categoryNEQ,omitempty"`
+	CategoryIn           []string `json:"categoryIn,omitempty"`
+	CategoryNotIn        []string `json:"categoryNotIn,omitempty"`
+	CategoryGT           *string  `json:"categoryGT,omitempty"`
+	CategoryGTE          *string  `json:"categoryGTE,omitempty"`
+	CategoryLT           *string  `json:"categoryLT,omitempty"`
+	CategoryLTE          *string  `json:"categoryLTE,omitempty"`
+	CategoryContains     *string  `json:"categoryContains,omitempty"`
+	CategoryHasPrefix    *string  `json:"categoryHasPrefix,omitempty"`
+	CategoryHasSuffix    *string  `json:"categoryHasSuffix,omitempty"`
+	CategoryIsNil        bool     `json:"categoryIsNil,omitempty"`
+	CategoryNotNil       bool     `json:"categoryNotNil,omitempty"`
+	CategoryEqualFold    *string  `json:"categoryEqualFold,omitempty"`
+	CategoryContainsFold *string  `json:"categoryContainsFold,omitempty"`
+
+	// "x_vendor" field predicates.
+	XVendor    *bool `json:"xVendor,omitempty"`
+	XVendorNEQ *bool `json:"xVendorNEQ,omitempty"`
+
+	// "specification" field predicates.
+	Specification             *string  `json:"specification,omitempty"`
+	SpecificationNEQ          *string  `json:"specificationNEQ,omitempty"`
+	SpecificationIn           []string `json:"specificationIn,omitempty"`
+	SpecificationNotIn        []string `json:"specificationNotIn,omitempty"`
+	SpecificationGT           *string  `json:"specificationGT,omitempty"`
+	SpecificationGTE          *string  `json:"specificationGTE,omitempty"`
+	SpecificationLT           *string  `json:"specificationLT,omitempty"`
+	SpecificationLTE          *string  `json:"specificationLTE,omitempty"`
+	SpecificationContains     *string  `json:"specificationContains,omitempty"`
+	SpecificationHasPrefix    *string  `json:"specificationHasPrefix,omitempty"`
+	SpecificationHasSuffix    *string  `json:"specificationHasSuffix,omitempty"`
+	SpecificationIsNil        bool     `json:"specificationIsNil,omitempty"`
+	SpecificationNotNil       bool     `json:"specificationNotNil,omitempty"`
+	SpecificationEqualFold    *string  `json:"specificationEqualFold,omitempty"`
+	SpecificationContainsFold *string  `json:"specificationContainsFold,omitempty"`
+
+	// "active" field predicates.
+	Active    *bool `json:"active,omitempty"`
+	ActiveNEQ *bool `json:"activeNEQ,omitempty"`
+
+	// "owner" edge predicates.
+	HasOwner     *bool             `json:"hasOwner,omitempty"`
+	HasOwnerWith []*TeamWhereInput `json:"hasOwnerWith,omitempty"`
+
+	// "exposures" edge predicates.
+	HasExposures     *bool                    `json:"hasExposures,omitempty"`
+	HasExposuresWith []*ApiExposureWhereInput `json:"hasExposuresWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *ApiWhereInput) AddPredicates(predicates ...predicate.Api) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the ApiWhereInput filter on the APIQuery builder.
+func (i *ApiWhereInput) Filter(q *APIQuery) (*APIQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyApiWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyApiWhereInput is returned in case the ApiWhereInput is empty.
+var ErrEmptyApiWhereInput = errors.New("ent: empty predicate ApiWhereInput")
+
+// P returns a predicate for filtering apis.
+// An error is returned if the input is empty or invalid.
+func (i *ApiWhereInput) P() (predicate.Api, error) {
+	var predicates []predicate.Api
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, api.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Api, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, api.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Api, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, api.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, api.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, api.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, api.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, api.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, api.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, api.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, api.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, api.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, api.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, api.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, api.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, api.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, api.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, api.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, api.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, api.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.LastModifiedAt != nil {
+		predicates = append(predicates, api.LastModifiedAtEQ(*i.LastModifiedAt))
+	}
+	if i.LastModifiedAtNEQ != nil {
+		predicates = append(predicates, api.LastModifiedAtNEQ(*i.LastModifiedAtNEQ))
+	}
+	if len(i.LastModifiedAtIn) > 0 {
+		predicates = append(predicates, api.LastModifiedAtIn(i.LastModifiedAtIn...))
+	}
+	if len(i.LastModifiedAtNotIn) > 0 {
+		predicates = append(predicates, api.LastModifiedAtNotIn(i.LastModifiedAtNotIn...))
+	}
+	if i.LastModifiedAtGT != nil {
+		predicates = append(predicates, api.LastModifiedAtGT(*i.LastModifiedAtGT))
+	}
+	if i.LastModifiedAtGTE != nil {
+		predicates = append(predicates, api.LastModifiedAtGTE(*i.LastModifiedAtGTE))
+	}
+	if i.LastModifiedAtLT != nil {
+		predicates = append(predicates, api.LastModifiedAtLT(*i.LastModifiedAtLT))
+	}
+	if i.LastModifiedAtLTE != nil {
+		predicates = append(predicates, api.LastModifiedAtLTE(*i.LastModifiedAtLTE))
+	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, api.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, api.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, api.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, api.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, api.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, api.StatusPhaseNotNil())
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, api.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, api.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, api.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, api.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, api.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, api.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, api.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, api.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, api.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, api.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, api.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, api.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, api.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, api.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, api.StatusMessageContainsFold(*i.StatusMessageContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, api.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, api.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, api.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, api.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, api.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, api.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, api.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, api.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, api.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, api.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, api.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, api.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, api.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
+	if i.BasePath != nil {
+		predicates = append(predicates, api.BasePathEQ(*i.BasePath))
+	}
+	if i.BasePathNEQ != nil {
+		predicates = append(predicates, api.BasePathNEQ(*i.BasePathNEQ))
+	}
+	if len(i.BasePathIn) > 0 {
+		predicates = append(predicates, api.BasePathIn(i.BasePathIn...))
+	}
+	if len(i.BasePathNotIn) > 0 {
+		predicates = append(predicates, api.BasePathNotIn(i.BasePathNotIn...))
+	}
+	if i.BasePathGT != nil {
+		predicates = append(predicates, api.BasePathGT(*i.BasePathGT))
+	}
+	if i.BasePathGTE != nil {
+		predicates = append(predicates, api.BasePathGTE(*i.BasePathGTE))
+	}
+	if i.BasePathLT != nil {
+		predicates = append(predicates, api.BasePathLT(*i.BasePathLT))
+	}
+	if i.BasePathLTE != nil {
+		predicates = append(predicates, api.BasePathLTE(*i.BasePathLTE))
+	}
+	if i.BasePathContains != nil {
+		predicates = append(predicates, api.BasePathContains(*i.BasePathContains))
+	}
+	if i.BasePathHasPrefix != nil {
+		predicates = append(predicates, api.BasePathHasPrefix(*i.BasePathHasPrefix))
+	}
+	if i.BasePathHasSuffix != nil {
+		predicates = append(predicates, api.BasePathHasSuffix(*i.BasePathHasSuffix))
+	}
+	if i.BasePathEqualFold != nil {
+		predicates = append(predicates, api.BasePathEqualFold(*i.BasePathEqualFold))
+	}
+	if i.BasePathContainsFold != nil {
+		predicates = append(predicates, api.BasePathContainsFold(*i.BasePathContainsFold))
+	}
+	if i.Version != nil {
+		predicates = append(predicates, api.VersionEQ(*i.Version))
+	}
+	if i.VersionNEQ != nil {
+		predicates = append(predicates, api.VersionNEQ(*i.VersionNEQ))
+	}
+	if len(i.VersionIn) > 0 {
+		predicates = append(predicates, api.VersionIn(i.VersionIn...))
+	}
+	if len(i.VersionNotIn) > 0 {
+		predicates = append(predicates, api.VersionNotIn(i.VersionNotIn...))
+	}
+	if i.VersionGT != nil {
+		predicates = append(predicates, api.VersionGT(*i.VersionGT))
+	}
+	if i.VersionGTE != nil {
+		predicates = append(predicates, api.VersionGTE(*i.VersionGTE))
+	}
+	if i.VersionLT != nil {
+		predicates = append(predicates, api.VersionLT(*i.VersionLT))
+	}
+	if i.VersionLTE != nil {
+		predicates = append(predicates, api.VersionLTE(*i.VersionLTE))
+	}
+	if i.VersionContains != nil {
+		predicates = append(predicates, api.VersionContains(*i.VersionContains))
+	}
+	if i.VersionHasPrefix != nil {
+		predicates = append(predicates, api.VersionHasPrefix(*i.VersionHasPrefix))
+	}
+	if i.VersionHasSuffix != nil {
+		predicates = append(predicates, api.VersionHasSuffix(*i.VersionHasSuffix))
+	}
+	if i.VersionEqualFold != nil {
+		predicates = append(predicates, api.VersionEqualFold(*i.VersionEqualFold))
+	}
+	if i.VersionContainsFold != nil {
+		predicates = append(predicates, api.VersionContainsFold(*i.VersionContainsFold))
+	}
+	if i.Category != nil {
+		predicates = append(predicates, api.CategoryEQ(*i.Category))
+	}
+	if i.CategoryNEQ != nil {
+		predicates = append(predicates, api.CategoryNEQ(*i.CategoryNEQ))
+	}
+	if len(i.CategoryIn) > 0 {
+		predicates = append(predicates, api.CategoryIn(i.CategoryIn...))
+	}
+	if len(i.CategoryNotIn) > 0 {
+		predicates = append(predicates, api.CategoryNotIn(i.CategoryNotIn...))
+	}
+	if i.CategoryGT != nil {
+		predicates = append(predicates, api.CategoryGT(*i.CategoryGT))
+	}
+	if i.CategoryGTE != nil {
+		predicates = append(predicates, api.CategoryGTE(*i.CategoryGTE))
+	}
+	if i.CategoryLT != nil {
+		predicates = append(predicates, api.CategoryLT(*i.CategoryLT))
+	}
+	if i.CategoryLTE != nil {
+		predicates = append(predicates, api.CategoryLTE(*i.CategoryLTE))
+	}
+	if i.CategoryContains != nil {
+		predicates = append(predicates, api.CategoryContains(*i.CategoryContains))
+	}
+	if i.CategoryHasPrefix != nil {
+		predicates = append(predicates, api.CategoryHasPrefix(*i.CategoryHasPrefix))
+	}
+	if i.CategoryHasSuffix != nil {
+		predicates = append(predicates, api.CategoryHasSuffix(*i.CategoryHasSuffix))
+	}
+	if i.CategoryIsNil {
+		predicates = append(predicates, api.CategoryIsNil())
+	}
+	if i.CategoryNotNil {
+		predicates = append(predicates, api.CategoryNotNil())
+	}
+	if i.CategoryEqualFold != nil {
+		predicates = append(predicates, api.CategoryEqualFold(*i.CategoryEqualFold))
+	}
+	if i.CategoryContainsFold != nil {
+		predicates = append(predicates, api.CategoryContainsFold(*i.CategoryContainsFold))
+	}
+	if i.XVendor != nil {
+		predicates = append(predicates, api.XVendorEQ(*i.XVendor))
+	}
+	if i.XVendorNEQ != nil {
+		predicates = append(predicates, api.XVendorNEQ(*i.XVendorNEQ))
+	}
+	if i.Specification != nil {
+		predicates = append(predicates, api.SpecificationEQ(*i.Specification))
+	}
+	if i.SpecificationNEQ != nil {
+		predicates = append(predicates, api.SpecificationNEQ(*i.SpecificationNEQ))
+	}
+	if len(i.SpecificationIn) > 0 {
+		predicates = append(predicates, api.SpecificationIn(i.SpecificationIn...))
+	}
+	if len(i.SpecificationNotIn) > 0 {
+		predicates = append(predicates, api.SpecificationNotIn(i.SpecificationNotIn...))
+	}
+	if i.SpecificationGT != nil {
+		predicates = append(predicates, api.SpecificationGT(*i.SpecificationGT))
+	}
+	if i.SpecificationGTE != nil {
+		predicates = append(predicates, api.SpecificationGTE(*i.SpecificationGTE))
+	}
+	if i.SpecificationLT != nil {
+		predicates = append(predicates, api.SpecificationLT(*i.SpecificationLT))
+	}
+	if i.SpecificationLTE != nil {
+		predicates = append(predicates, api.SpecificationLTE(*i.SpecificationLTE))
+	}
+	if i.SpecificationContains != nil {
+		predicates = append(predicates, api.SpecificationContains(*i.SpecificationContains))
+	}
+	if i.SpecificationHasPrefix != nil {
+		predicates = append(predicates, api.SpecificationHasPrefix(*i.SpecificationHasPrefix))
+	}
+	if i.SpecificationHasSuffix != nil {
+		predicates = append(predicates, api.SpecificationHasSuffix(*i.SpecificationHasSuffix))
+	}
+	if i.SpecificationIsNil {
+		predicates = append(predicates, api.SpecificationIsNil())
+	}
+	if i.SpecificationNotNil {
+		predicates = append(predicates, api.SpecificationNotNil())
+	}
+	if i.SpecificationEqualFold != nil {
+		predicates = append(predicates, api.SpecificationEqualFold(*i.SpecificationEqualFold))
+	}
+	if i.SpecificationContainsFold != nil {
+		predicates = append(predicates, api.SpecificationContainsFold(*i.SpecificationContainsFold))
+	}
+	if i.Active != nil {
+		predicates = append(predicates, api.ActiveEQ(*i.Active))
+	}
+	if i.ActiveNEQ != nil {
+		predicates = append(predicates, api.ActiveNEQ(*i.ActiveNEQ))
+	}
+
+	if i.HasOwner != nil {
+		p := api.HasOwner()
+		if !*i.HasOwner {
+			p = api.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.Team, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasOwnerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, api.HasOwnerWith(with...))
+	}
+	if i.HasExposures != nil {
+		p := api.HasExposures()
+		if !*i.HasExposures {
+			p = api.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasExposuresWith) > 0 {
+		with := make([]predicate.ApiExposure, 0, len(i.HasExposuresWith))
+		for _, w := range i.HasExposuresWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasExposuresWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, api.HasExposuresWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyApiWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return api.And(predicates...), nil
+	}
+}
 
 // ApiExposureWhereInput represents a where input for filtering ApiExposure queries.
 type ApiExposureWhereInput struct {
@@ -165,6 +797,10 @@ type ApiExposureWhereInput struct {
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
+
+	// "api" edge predicates.
+	HasAPI     *bool            `json:"hasAPI,omitempty"`
+	HasAPIWith []*ApiWhereInput `json:"hasAPIWith,omitempty"`
 
 	// "subscriptions" edge predicates.
 	HasSubscriptions     *bool                        `json:"hasSubscriptions,omitempty"`
@@ -587,6 +1223,24 @@ func (i *ApiExposureWhereInput) P() (predicate.ApiExposure, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, apiexposure.HasOwnerWith(with...))
+	}
+	if i.HasAPI != nil {
+		p := apiexposure.HasAPI()
+		if !*i.HasAPI {
+			p = apiexposure.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasAPIWith) > 0 {
+		with := make([]predicate.Api, 0, len(i.HasAPIWith))
+		for _, w := range i.HasAPIWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasAPIWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, apiexposure.HasAPIWith(with...))
 	}
 	if i.HasSubscriptions != nil {
 		p := apiexposure.HasSubscriptions()
@@ -3457,6 +4111,10 @@ type EventExposureWhereInput struct {
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
 
+	// "event_type_def" edge predicates.
+	HasEventTypeDef     *bool                  `json:"hasEventTypeDef,omitempty"`
+	HasEventTypeDefWith []*EventTypeWhereInput `json:"hasEventTypeDefWith,omitempty"`
+
 	// "subscriptions" edge predicates.
 	HasSubscriptions     *bool                          `json:"hasSubscriptions,omitempty"`
 	HasSubscriptionsWith []*EventSubscriptionWhereInput `json:"hasSubscriptionsWith,omitempty"`
@@ -3833,6 +4491,24 @@ func (i *EventExposureWhereInput) P() (predicate.EventExposure, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, eventexposure.HasOwnerWith(with...))
+	}
+	if i.HasEventTypeDef != nil {
+		p := eventexposure.HasEventTypeDef()
+		if !*i.HasEventTypeDef {
+			p = eventexposure.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEventTypeDefWith) > 0 {
+		with := make([]predicate.EventType, 0, len(i.HasEventTypeDefWith))
+		for _, w := range i.HasEventTypeDefWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEventTypeDefWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, eventexposure.HasEventTypeDefWith(with...))
 	}
 	if i.HasSubscriptions != nil {
 		p := eventexposure.HasSubscriptions()
@@ -4531,6 +5207,626 @@ func (i *EventSubscriptionWhereInput) P() (predicate.EventSubscription, error) {
 		return predicates[0], nil
 	default:
 		return eventsubscription.And(predicates...), nil
+	}
+}
+
+// EventTypeWhereInput represents a where input for filtering EventType queries.
+type EventTypeWhereInput struct {
+	Predicates []predicate.EventType  `json:"-"`
+	Not        *EventTypeWhereInput   `json:"not,omitempty"`
+	Or         []*EventTypeWhereInput `json:"or,omitempty"`
+	And        []*EventTypeWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "last_modified_at" field predicates.
+	LastModifiedAt      *time.Time  `json:"lastModifiedAt,omitempty"`
+	LastModifiedAtNEQ   *time.Time  `json:"lastModifiedAtNEQ,omitempty"`
+	LastModifiedAtIn    []time.Time `json:"lastModifiedAtIn,omitempty"`
+	LastModifiedAtNotIn []time.Time `json:"lastModifiedAtNotIn,omitempty"`
+	LastModifiedAtGT    *time.Time  `json:"lastModifiedAtGT,omitempty"`
+	LastModifiedAtGTE   *time.Time  `json:"lastModifiedAtGTE,omitempty"`
+	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
+	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
+
+	// "status_phase" field predicates.
+	StatusPhase       *eventtype.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *eventtype.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []eventtype.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []eventtype.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool                    `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool                    `json:"statusPhaseNotNil,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
+
+	// "event_type" field predicates.
+	EventType             *string  `json:"eventType,omitempty"`
+	EventTypeNEQ          *string  `json:"eventTypeNEQ,omitempty"`
+	EventTypeIn           []string `json:"eventTypeIn,omitempty"`
+	EventTypeNotIn        []string `json:"eventTypeNotIn,omitempty"`
+	EventTypeGT           *string  `json:"eventTypeGT,omitempty"`
+	EventTypeGTE          *string  `json:"eventTypeGTE,omitempty"`
+	EventTypeLT           *string  `json:"eventTypeLT,omitempty"`
+	EventTypeLTE          *string  `json:"eventTypeLTE,omitempty"`
+	EventTypeContains     *string  `json:"eventTypeContains,omitempty"`
+	EventTypeHasPrefix    *string  `json:"eventTypeHasPrefix,omitempty"`
+	EventTypeHasSuffix    *string  `json:"eventTypeHasSuffix,omitempty"`
+	EventTypeEqualFold    *string  `json:"eventTypeEqualFold,omitempty"`
+	EventTypeContainsFold *string  `json:"eventTypeContainsFold,omitempty"`
+
+	// "version" field predicates.
+	Version             *string  `json:"version,omitempty"`
+	VersionNEQ          *string  `json:"versionNEQ,omitempty"`
+	VersionIn           []string `json:"versionIn,omitempty"`
+	VersionNotIn        []string `json:"versionNotIn,omitempty"`
+	VersionGT           *string  `json:"versionGT,omitempty"`
+	VersionGTE          *string  `json:"versionGTE,omitempty"`
+	VersionLT           *string  `json:"versionLT,omitempty"`
+	VersionLTE          *string  `json:"versionLTE,omitempty"`
+	VersionContains     *string  `json:"versionContains,omitempty"`
+	VersionHasPrefix    *string  `json:"versionHasPrefix,omitempty"`
+	VersionHasSuffix    *string  `json:"versionHasSuffix,omitempty"`
+	VersionEqualFold    *string  `json:"versionEqualFold,omitempty"`
+	VersionContainsFold *string  `json:"versionContainsFold,omitempty"`
+
+	// "description" field predicates.
+	Description             *string  `json:"description,omitempty"`
+	DescriptionNEQ          *string  `json:"descriptionNEQ,omitempty"`
+	DescriptionIn           []string `json:"descriptionIn,omitempty"`
+	DescriptionNotIn        []string `json:"descriptionNotIn,omitempty"`
+	DescriptionGT           *string  `json:"descriptionGT,omitempty"`
+	DescriptionGTE          *string  `json:"descriptionGTE,omitempty"`
+	DescriptionLT           *string  `json:"descriptionLT,omitempty"`
+	DescriptionLTE          *string  `json:"descriptionLTE,omitempty"`
+	DescriptionContains     *string  `json:"descriptionContains,omitempty"`
+	DescriptionHasPrefix    *string  `json:"descriptionHasPrefix,omitempty"`
+	DescriptionHasSuffix    *string  `json:"descriptionHasSuffix,omitempty"`
+	DescriptionIsNil        bool     `json:"descriptionIsNil,omitempty"`
+	DescriptionNotNil       bool     `json:"descriptionNotNil,omitempty"`
+	DescriptionEqualFold    *string  `json:"descriptionEqualFold,omitempty"`
+	DescriptionContainsFold *string  `json:"descriptionContainsFold,omitempty"`
+
+	// "specification" field predicates.
+	Specification             *string  `json:"specification,omitempty"`
+	SpecificationNEQ          *string  `json:"specificationNEQ,omitempty"`
+	SpecificationIn           []string `json:"specificationIn,omitempty"`
+	SpecificationNotIn        []string `json:"specificationNotIn,omitempty"`
+	SpecificationGT           *string  `json:"specificationGT,omitempty"`
+	SpecificationGTE          *string  `json:"specificationGTE,omitempty"`
+	SpecificationLT           *string  `json:"specificationLT,omitempty"`
+	SpecificationLTE          *string  `json:"specificationLTE,omitempty"`
+	SpecificationContains     *string  `json:"specificationContains,omitempty"`
+	SpecificationHasPrefix    *string  `json:"specificationHasPrefix,omitempty"`
+	SpecificationHasSuffix    *string  `json:"specificationHasSuffix,omitempty"`
+	SpecificationIsNil        bool     `json:"specificationIsNil,omitempty"`
+	SpecificationNotNil       bool     `json:"specificationNotNil,omitempty"`
+	SpecificationEqualFold    *string  `json:"specificationEqualFold,omitempty"`
+	SpecificationContainsFold *string  `json:"specificationContainsFold,omitempty"`
+
+	// "active" field predicates.
+	Active    *bool `json:"active,omitempty"`
+	ActiveNEQ *bool `json:"activeNEQ,omitempty"`
+
+	// "owner" edge predicates.
+	HasOwner     *bool             `json:"hasOwner,omitempty"`
+	HasOwnerWith []*TeamWhereInput `json:"hasOwnerWith,omitempty"`
+
+	// "exposures" edge predicates.
+	HasExposures     *bool                      `json:"hasExposures,omitempty"`
+	HasExposuresWith []*EventExposureWhereInput `json:"hasExposuresWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *EventTypeWhereInput) AddPredicates(predicates ...predicate.EventType) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the EventTypeWhereInput filter on the EventTypeQuery builder.
+func (i *EventTypeWhereInput) Filter(q *EventTypeQuery) (*EventTypeQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyEventTypeWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyEventTypeWhereInput is returned in case the EventTypeWhereInput is empty.
+var ErrEmptyEventTypeWhereInput = errors.New("ent: empty predicate EventTypeWhereInput")
+
+// P returns a predicate for filtering eventtypes.
+// An error is returned if the input is empty or invalid.
+func (i *EventTypeWhereInput) P() (predicate.EventType, error) {
+	var predicates []predicate.EventType
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, eventtype.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.EventType, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, eventtype.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.EventType, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, eventtype.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, eventtype.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, eventtype.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, eventtype.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, eventtype.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, eventtype.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, eventtype.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, eventtype.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, eventtype.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, eventtype.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, eventtype.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, eventtype.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, eventtype.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, eventtype.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, eventtype.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, eventtype.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, eventtype.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.LastModifiedAt != nil {
+		predicates = append(predicates, eventtype.LastModifiedAtEQ(*i.LastModifiedAt))
+	}
+	if i.LastModifiedAtNEQ != nil {
+		predicates = append(predicates, eventtype.LastModifiedAtNEQ(*i.LastModifiedAtNEQ))
+	}
+	if len(i.LastModifiedAtIn) > 0 {
+		predicates = append(predicates, eventtype.LastModifiedAtIn(i.LastModifiedAtIn...))
+	}
+	if len(i.LastModifiedAtNotIn) > 0 {
+		predicates = append(predicates, eventtype.LastModifiedAtNotIn(i.LastModifiedAtNotIn...))
+	}
+	if i.LastModifiedAtGT != nil {
+		predicates = append(predicates, eventtype.LastModifiedAtGT(*i.LastModifiedAtGT))
+	}
+	if i.LastModifiedAtGTE != nil {
+		predicates = append(predicates, eventtype.LastModifiedAtGTE(*i.LastModifiedAtGTE))
+	}
+	if i.LastModifiedAtLT != nil {
+		predicates = append(predicates, eventtype.LastModifiedAtLT(*i.LastModifiedAtLT))
+	}
+	if i.LastModifiedAtLTE != nil {
+		predicates = append(predicates, eventtype.LastModifiedAtLTE(*i.LastModifiedAtLTE))
+	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, eventtype.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, eventtype.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, eventtype.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, eventtype.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, eventtype.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, eventtype.StatusPhaseNotNil())
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, eventtype.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, eventtype.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, eventtype.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, eventtype.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, eventtype.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, eventtype.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, eventtype.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, eventtype.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, eventtype.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, eventtype.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, eventtype.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, eventtype.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, eventtype.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, eventtype.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, eventtype.StatusMessageContainsFold(*i.StatusMessageContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, eventtype.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, eventtype.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, eventtype.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, eventtype.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, eventtype.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, eventtype.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, eventtype.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, eventtype.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, eventtype.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, eventtype.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, eventtype.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, eventtype.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, eventtype.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
+	if i.EventType != nil {
+		predicates = append(predicates, eventtype.EventTypeEQ(*i.EventType))
+	}
+	if i.EventTypeNEQ != nil {
+		predicates = append(predicates, eventtype.EventTypeNEQ(*i.EventTypeNEQ))
+	}
+	if len(i.EventTypeIn) > 0 {
+		predicates = append(predicates, eventtype.EventTypeIn(i.EventTypeIn...))
+	}
+	if len(i.EventTypeNotIn) > 0 {
+		predicates = append(predicates, eventtype.EventTypeNotIn(i.EventTypeNotIn...))
+	}
+	if i.EventTypeGT != nil {
+		predicates = append(predicates, eventtype.EventTypeGT(*i.EventTypeGT))
+	}
+	if i.EventTypeGTE != nil {
+		predicates = append(predicates, eventtype.EventTypeGTE(*i.EventTypeGTE))
+	}
+	if i.EventTypeLT != nil {
+		predicates = append(predicates, eventtype.EventTypeLT(*i.EventTypeLT))
+	}
+	if i.EventTypeLTE != nil {
+		predicates = append(predicates, eventtype.EventTypeLTE(*i.EventTypeLTE))
+	}
+	if i.EventTypeContains != nil {
+		predicates = append(predicates, eventtype.EventTypeContains(*i.EventTypeContains))
+	}
+	if i.EventTypeHasPrefix != nil {
+		predicates = append(predicates, eventtype.EventTypeHasPrefix(*i.EventTypeHasPrefix))
+	}
+	if i.EventTypeHasSuffix != nil {
+		predicates = append(predicates, eventtype.EventTypeHasSuffix(*i.EventTypeHasSuffix))
+	}
+	if i.EventTypeEqualFold != nil {
+		predicates = append(predicates, eventtype.EventTypeEqualFold(*i.EventTypeEqualFold))
+	}
+	if i.EventTypeContainsFold != nil {
+		predicates = append(predicates, eventtype.EventTypeContainsFold(*i.EventTypeContainsFold))
+	}
+	if i.Version != nil {
+		predicates = append(predicates, eventtype.VersionEQ(*i.Version))
+	}
+	if i.VersionNEQ != nil {
+		predicates = append(predicates, eventtype.VersionNEQ(*i.VersionNEQ))
+	}
+	if len(i.VersionIn) > 0 {
+		predicates = append(predicates, eventtype.VersionIn(i.VersionIn...))
+	}
+	if len(i.VersionNotIn) > 0 {
+		predicates = append(predicates, eventtype.VersionNotIn(i.VersionNotIn...))
+	}
+	if i.VersionGT != nil {
+		predicates = append(predicates, eventtype.VersionGT(*i.VersionGT))
+	}
+	if i.VersionGTE != nil {
+		predicates = append(predicates, eventtype.VersionGTE(*i.VersionGTE))
+	}
+	if i.VersionLT != nil {
+		predicates = append(predicates, eventtype.VersionLT(*i.VersionLT))
+	}
+	if i.VersionLTE != nil {
+		predicates = append(predicates, eventtype.VersionLTE(*i.VersionLTE))
+	}
+	if i.VersionContains != nil {
+		predicates = append(predicates, eventtype.VersionContains(*i.VersionContains))
+	}
+	if i.VersionHasPrefix != nil {
+		predicates = append(predicates, eventtype.VersionHasPrefix(*i.VersionHasPrefix))
+	}
+	if i.VersionHasSuffix != nil {
+		predicates = append(predicates, eventtype.VersionHasSuffix(*i.VersionHasSuffix))
+	}
+	if i.VersionEqualFold != nil {
+		predicates = append(predicates, eventtype.VersionEqualFold(*i.VersionEqualFold))
+	}
+	if i.VersionContainsFold != nil {
+		predicates = append(predicates, eventtype.VersionContainsFold(*i.VersionContainsFold))
+	}
+	if i.Description != nil {
+		predicates = append(predicates, eventtype.DescriptionEQ(*i.Description))
+	}
+	if i.DescriptionNEQ != nil {
+		predicates = append(predicates, eventtype.DescriptionNEQ(*i.DescriptionNEQ))
+	}
+	if len(i.DescriptionIn) > 0 {
+		predicates = append(predicates, eventtype.DescriptionIn(i.DescriptionIn...))
+	}
+	if len(i.DescriptionNotIn) > 0 {
+		predicates = append(predicates, eventtype.DescriptionNotIn(i.DescriptionNotIn...))
+	}
+	if i.DescriptionGT != nil {
+		predicates = append(predicates, eventtype.DescriptionGT(*i.DescriptionGT))
+	}
+	if i.DescriptionGTE != nil {
+		predicates = append(predicates, eventtype.DescriptionGTE(*i.DescriptionGTE))
+	}
+	if i.DescriptionLT != nil {
+		predicates = append(predicates, eventtype.DescriptionLT(*i.DescriptionLT))
+	}
+	if i.DescriptionLTE != nil {
+		predicates = append(predicates, eventtype.DescriptionLTE(*i.DescriptionLTE))
+	}
+	if i.DescriptionContains != nil {
+		predicates = append(predicates, eventtype.DescriptionContains(*i.DescriptionContains))
+	}
+	if i.DescriptionHasPrefix != nil {
+		predicates = append(predicates, eventtype.DescriptionHasPrefix(*i.DescriptionHasPrefix))
+	}
+	if i.DescriptionHasSuffix != nil {
+		predicates = append(predicates, eventtype.DescriptionHasSuffix(*i.DescriptionHasSuffix))
+	}
+	if i.DescriptionIsNil {
+		predicates = append(predicates, eventtype.DescriptionIsNil())
+	}
+	if i.DescriptionNotNil {
+		predicates = append(predicates, eventtype.DescriptionNotNil())
+	}
+	if i.DescriptionEqualFold != nil {
+		predicates = append(predicates, eventtype.DescriptionEqualFold(*i.DescriptionEqualFold))
+	}
+	if i.DescriptionContainsFold != nil {
+		predicates = append(predicates, eventtype.DescriptionContainsFold(*i.DescriptionContainsFold))
+	}
+	if i.Specification != nil {
+		predicates = append(predicates, eventtype.SpecificationEQ(*i.Specification))
+	}
+	if i.SpecificationNEQ != nil {
+		predicates = append(predicates, eventtype.SpecificationNEQ(*i.SpecificationNEQ))
+	}
+	if len(i.SpecificationIn) > 0 {
+		predicates = append(predicates, eventtype.SpecificationIn(i.SpecificationIn...))
+	}
+	if len(i.SpecificationNotIn) > 0 {
+		predicates = append(predicates, eventtype.SpecificationNotIn(i.SpecificationNotIn...))
+	}
+	if i.SpecificationGT != nil {
+		predicates = append(predicates, eventtype.SpecificationGT(*i.SpecificationGT))
+	}
+	if i.SpecificationGTE != nil {
+		predicates = append(predicates, eventtype.SpecificationGTE(*i.SpecificationGTE))
+	}
+	if i.SpecificationLT != nil {
+		predicates = append(predicates, eventtype.SpecificationLT(*i.SpecificationLT))
+	}
+	if i.SpecificationLTE != nil {
+		predicates = append(predicates, eventtype.SpecificationLTE(*i.SpecificationLTE))
+	}
+	if i.SpecificationContains != nil {
+		predicates = append(predicates, eventtype.SpecificationContains(*i.SpecificationContains))
+	}
+	if i.SpecificationHasPrefix != nil {
+		predicates = append(predicates, eventtype.SpecificationHasPrefix(*i.SpecificationHasPrefix))
+	}
+	if i.SpecificationHasSuffix != nil {
+		predicates = append(predicates, eventtype.SpecificationHasSuffix(*i.SpecificationHasSuffix))
+	}
+	if i.SpecificationIsNil {
+		predicates = append(predicates, eventtype.SpecificationIsNil())
+	}
+	if i.SpecificationNotNil {
+		predicates = append(predicates, eventtype.SpecificationNotNil())
+	}
+	if i.SpecificationEqualFold != nil {
+		predicates = append(predicates, eventtype.SpecificationEqualFold(*i.SpecificationEqualFold))
+	}
+	if i.SpecificationContainsFold != nil {
+		predicates = append(predicates, eventtype.SpecificationContainsFold(*i.SpecificationContainsFold))
+	}
+	if i.Active != nil {
+		predicates = append(predicates, eventtype.ActiveEQ(*i.Active))
+	}
+	if i.ActiveNEQ != nil {
+		predicates = append(predicates, eventtype.ActiveNEQ(*i.ActiveNEQ))
+	}
+
+	if i.HasOwner != nil {
+		p := eventtype.HasOwner()
+		if !*i.HasOwner {
+			p = eventtype.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.Team, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasOwnerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, eventtype.HasOwnerWith(with...))
+	}
+	if i.HasExposures != nil {
+		p := eventtype.HasExposures()
+		if !*i.HasExposures {
+			p = eventtype.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasExposuresWith) > 0 {
+		with := make([]predicate.EventExposure, 0, len(i.HasExposuresWith))
+		for _, w := range i.HasExposuresWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasExposuresWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, eventtype.HasExposuresWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyEventTypeWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return eventtype.And(predicates...), nil
 	}
 }
 
@@ -5432,6 +6728,14 @@ type TeamWhereInput struct {
 	// "applications" edge predicates.
 	HasApplications     *bool                    `json:"hasApplications,omitempty"`
 	HasApplicationsWith []*ApplicationWhereInput `json:"hasApplicationsWith,omitempty"`
+
+	// "apis" edge predicates.
+	HasApis     *bool            `json:"hasApis,omitempty"`
+	HasApisWith []*ApiWhereInput `json:"hasApisWith,omitempty"`
+
+	// "event_types" edge predicates.
+	HasEventTypes     *bool                  `json:"hasEventTypes,omitempty"`
+	HasEventTypesWith []*EventTypeWhereInput `json:"hasEventTypesWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -5913,6 +7217,42 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, team.HasApplicationsWith(with...))
+	}
+	if i.HasApis != nil {
+		p := team.HasApis()
+		if !*i.HasApis {
+			p = team.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasApisWith) > 0 {
+		with := make([]predicate.Api, 0, len(i.HasApisWith))
+		for _, w := range i.HasApisWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasApisWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, team.HasApisWith(with...))
+	}
+	if i.HasEventTypes != nil {
+		p := team.HasEventTypes()
+		if !*i.HasEventTypes {
+			p = team.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEventTypesWith) > 0 {
+		with := make([]predicate.EventType, 0, len(i.HasEventTypesWith))
+		for _, w := range i.HasEventTypesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEventTypesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, team.HasEventTypesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

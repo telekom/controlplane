@@ -44,6 +44,8 @@ const (
 	FieldApprovalConfig = "approval_config"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
+	// EdgeEventTypeDef holds the string denoting the event_type_def edge name in mutations.
+	EdgeEventTypeDef = "event_type_def"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
 	// Table holds the table name of the eventexposure in the database.
@@ -55,6 +57,13 @@ const (
 	OwnerInverseTable = "applications"
 	// OwnerColumn is the table column denoting the owner relation/edge.
 	OwnerColumn = "application_exposed_events"
+	// EventTypeDefTable is the table that holds the event_type_def relation/edge.
+	EventTypeDefTable = "event_exposures"
+	// EventTypeDefInverseTable is the table name for the EventType entity.
+	// It exists in this package in order to avoid circular dependency with the "eventtype" package.
+	EventTypeDefInverseTable = "event_types"
+	// EventTypeDefColumn is the table column denoting the event_type_def relation/edge.
+	EventTypeDefColumn = "event_type_exposures"
 	// SubscriptionsTable is the table that holds the subscriptions relation/edge.
 	SubscriptionsTable = "event_subscriptions"
 	// SubscriptionsInverseTable is the table name for the EventSubscription entity.
@@ -83,6 +92,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"application_exposed_events",
+	"event_type_exposures",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -236,6 +246,13 @@ func ByOwnerField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByEventTypeDefField orders the results by event_type_def field.
+func ByEventTypeDefField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEventTypeDefStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // BySubscriptionsCount orders the results by subscriptions count.
 func BySubscriptionsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -254,6 +271,13 @@ func newOwnerStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OwnerInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
+	)
+}
+func newEventTypeDefStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EventTypeDefInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, EventTypeDefTable, EventTypeDefColumn),
 	)
 }
 func newSubscriptionsStep() *sqlgraph.Step {

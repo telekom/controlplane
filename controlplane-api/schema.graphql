@@ -176,3 +176,34 @@ extend type ApprovalRequest {
   approval: Approval @goField(forceResolver: true)
 }
 
+# -- Catalogue extensions --
+
+extend type Api {
+  "URL to download the OpenAPI specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this API, or null if no exposure is active."
+  activeExposure: ApiExposureInfo @goField(forceResolver: true)
+  "The team that owns this API."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type EventType {
+  "URL to download the JSON schema from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this event type, or null if no exposure is active."
+  activeExposure: EventExposureInfo @goField(forceResolver: true)
+  "The team that owns this event type."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type Query {
+  "Returns all distinct API categories currently in use."
+  apiCategories: [ApiCategory!]! @goField(forceResolver: true)
+}
+
+"A category that APIs can be classified under."
+type ApiCategory {
+  "The category identifier/name."
+  name: String!
+}
+

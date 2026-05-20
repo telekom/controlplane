@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
@@ -187,6 +188,25 @@ func (_u *EventExposureUpdate) SetOwner(v *Application) *EventExposureUpdate {
 	return _u.SetOwnerID(v.ID)
 }
 
+// SetEventTypeDefID sets the "event_type_def" edge to the EventType entity by ID.
+func (_u *EventExposureUpdate) SetEventTypeDefID(id int) *EventExposureUpdate {
+	_u.mutation.SetEventTypeDefID(id)
+	return _u
+}
+
+// SetNillableEventTypeDefID sets the "event_type_def" edge to the EventType entity by ID if the given value is not nil.
+func (_u *EventExposureUpdate) SetNillableEventTypeDefID(id *int) *EventExposureUpdate {
+	if id != nil {
+		_u = _u.SetEventTypeDefID(*id)
+	}
+	return _u
+}
+
+// SetEventTypeDef sets the "event_type_def" edge to the EventType entity.
+func (_u *EventExposureUpdate) SetEventTypeDef(v *EventType) *EventExposureUpdate {
+	return _u.SetEventTypeDefID(v.ID)
+}
+
 // AddSubscriptionIDs adds the "subscriptions" edge to the EventSubscription entity by IDs.
 func (_u *EventExposureUpdate) AddSubscriptionIDs(ids ...int) *EventExposureUpdate {
 	_u.mutation.AddSubscriptionIDs(ids...)
@@ -210,6 +230,12 @@ func (_u *EventExposureUpdate) Mutation() *EventExposureMutation {
 // ClearOwner clears the "owner" edge to the Application entity.
 func (_u *EventExposureUpdate) ClearOwner() *EventExposureUpdate {
 	_u.mutation.ClearOwner()
+	return _u
+}
+
+// ClearEventTypeDef clears the "event_type_def" edge to the EventType entity.
+func (_u *EventExposureUpdate) ClearEventTypeDef() *EventExposureUpdate {
+	_u.mutation.ClearEventTypeDef()
 	return _u
 }
 
@@ -377,6 +403,35 @@ func (_u *EventExposureUpdate) sqlSave(ctx context.Context) (_node int, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EventTypeDefCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   eventexposure.EventTypeDefTable,
+			Columns: []string{eventexposure.EventTypeDefColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EventTypeDefIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   eventexposure.EventTypeDefTable,
+			Columns: []string{eventexposure.EventTypeDefColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -602,6 +657,25 @@ func (_u *EventExposureUpdateOne) SetOwner(v *Application) *EventExposureUpdateO
 	return _u.SetOwnerID(v.ID)
 }
 
+// SetEventTypeDefID sets the "event_type_def" edge to the EventType entity by ID.
+func (_u *EventExposureUpdateOne) SetEventTypeDefID(id int) *EventExposureUpdateOne {
+	_u.mutation.SetEventTypeDefID(id)
+	return _u
+}
+
+// SetNillableEventTypeDefID sets the "event_type_def" edge to the EventType entity by ID if the given value is not nil.
+func (_u *EventExposureUpdateOne) SetNillableEventTypeDefID(id *int) *EventExposureUpdateOne {
+	if id != nil {
+		_u = _u.SetEventTypeDefID(*id)
+	}
+	return _u
+}
+
+// SetEventTypeDef sets the "event_type_def" edge to the EventType entity.
+func (_u *EventExposureUpdateOne) SetEventTypeDef(v *EventType) *EventExposureUpdateOne {
+	return _u.SetEventTypeDefID(v.ID)
+}
+
 // AddSubscriptionIDs adds the "subscriptions" edge to the EventSubscription entity by IDs.
 func (_u *EventExposureUpdateOne) AddSubscriptionIDs(ids ...int) *EventExposureUpdateOne {
 	_u.mutation.AddSubscriptionIDs(ids...)
@@ -625,6 +699,12 @@ func (_u *EventExposureUpdateOne) Mutation() *EventExposureMutation {
 // ClearOwner clears the "owner" edge to the Application entity.
 func (_u *EventExposureUpdateOne) ClearOwner() *EventExposureUpdateOne {
 	_u.mutation.ClearOwner()
+	return _u
+}
+
+// ClearEventTypeDef clears the "event_type_def" edge to the EventType entity.
+func (_u *EventExposureUpdateOne) ClearEventTypeDef() *EventExposureUpdateOne {
+	_u.mutation.ClearEventTypeDef()
 	return _u
 }
 
@@ -822,6 +902,35 @@ func (_u *EventExposureUpdateOne) sqlSave(ctx context.Context) (_node *EventExpo
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EventTypeDefCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   eventexposure.EventTypeDefTable,
+			Columns: []string{eventexposure.EventTypeDefColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EventTypeDefIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   eventexposure.EventTypeDefTable,
+			Columns: []string{eventexposure.EventTypeDefColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

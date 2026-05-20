@@ -17,6 +17,12 @@ type SubscriptionInfo interface {
 	IsSubscriptionInfo()
 }
 
+// A category that APIs can be classified under.
+type APICategory struct {
+	// The category identifier/name.
+	Name string `json:"name"`
+}
+
 type APIExposureFeature string
 
 const (

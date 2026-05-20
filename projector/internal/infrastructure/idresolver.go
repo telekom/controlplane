@@ -14,11 +14,13 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	entapi "github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	entgroup "github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -470,5 +472,121 @@ func (r *IDResolver) FindEventExposureByEventType(ctx context.Context, eventType
 		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
 		r.cache.Set(et, lk, exposure.ID)
 		return exposure.ID, nil
+	})
+}
+
+// FindApiID looks up the DB primary key for an Api catalogue entry by base path
+// and team name. Api base paths are unique per team (composite unique index on
+// base_path + owner), so both are required.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindApiID(ctx context.Context, basePath, teamName string) (int, error) {
+	et, lk := cachekeys.Api(basePath, teamName)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("api %q (team %q)", basePath, teamName), func() (int, error) {
+		a, err := r.client.Api.Query().
+			Where(
+				entapi.BasePathEQ(basePath),
+				entapi.HasOwnerWith(team.NameEQ(teamName)),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("api %q (team %q): %w", basePath, teamName, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find api %q (team %q): %w", basePath, teamName, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, a.ID)
+		return a.ID, nil
+	})
+}
+
+// FindActiveApiID looks up the DB primary key for the cluster-wide active Api
+// for a given base path. Only one Api is active at a time per base path
+// (oldest-wins), so the lookup is team-independent.
+// Returns ErrEntityNotFound (wrapped) if no active Api exists for the base path.
+func (r *IDResolver) FindActiveApiID(ctx context.Context, basePath string) (int, error) {
+	et, lk := cachekeys.ActiveApi(basePath)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("active api %q", basePath), func() (int, error) {
+		a, err := r.client.Api.Query().
+			Where(
+				entapi.BasePathEQ(basePath),
+				entapi.ActiveEQ(true),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("active api %q: %w", basePath, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find active api %q: %w", basePath, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, a.ID)
+		return a.ID, nil
+	})
+}
+
+// FindEventTypeID looks up the DB primary key for an EventType catalogue entry
+// by event type identifier and team name. Event type identifiers are unique per
+// team (composite unique index on event_type + owner), so both are required.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindEventTypeID(ctx context.Context, evtType, teamName string) (int, error) {
+	et, lk := cachekeys.EventTypeDef(evtType, teamName)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("event_type %q (team %q)", evtType, teamName), func() (int, error) {
+		e, err := r.client.EventType.Query().
+			Where(
+				eventtype.EventTypeEQ(evtType),
+				eventtype.HasOwnerWith(team.NameEQ(teamName)),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("event_type %q (team %q): %w", evtType, teamName, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find event_type %q (team %q): %w", evtType, teamName, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, e.ID)
+		return e.ID, nil
+	})
+}
+
+// FindActiveEventTypeID looks up the DB primary key for the cluster-wide active
+// EventType for a given type identifier. Only one EventType is active at a time
+// per type string (oldest-wins), so the lookup is team-independent.
+// Returns ErrEntityNotFound (wrapped) if no active EventType exists.
+func (r *IDResolver) FindActiveEventTypeID(ctx context.Context, evtType string) (int, error) {
+	et, lk := cachekeys.ActiveEventType(evtType)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("active event_type %q", evtType), func() (int, error) {
+		e, err := r.client.EventType.Query().
+			Where(
+				eventtype.EventTypeEQ(evtType),
+				eventtype.ActiveEQ(true),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("active event_type %q: %w", evtType, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find active event_type %q: %w", evtType, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, e.ID)
+		return e.ID, nil
 	})
 }

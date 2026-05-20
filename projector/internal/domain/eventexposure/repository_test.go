@@ -29,8 +29,9 @@ import (
 
 // mockExposureDeps implements eventexposure.EventExposureDeps for testing.
 type mockExposureDeps struct {
-	appIDs map[string]int
-	appErr error
+	appIDs          map[string]int
+	appErr          error
+	activeEvtTypeID map[string]int // key: eventType
 }
 
 func (m *mockExposureDeps) FindApplicationID(_ context.Context, name, teamName string) (int, error) {
@@ -42,6 +43,15 @@ func (m *mockExposureDeps) FindApplicationID(_ context.Context, name, teamName s
 		return id, nil
 	}
 	return 0, fmt.Errorf("application %q (team %q): %w", name, teamName, infrastructure.ErrEntityNotFound)
+}
+
+func (m *mockExposureDeps) FindActiveEventTypeID(_ context.Context, eventType string) (int, error) {
+	if m.activeEvtTypeID != nil {
+		if id, ok := m.activeEvtTypeID[eventType]; ok {
+			return id, nil
+		}
+	}
+	return 0, fmt.Errorf("active event_type %q: %w", eventType, infrastructure.ErrEntityNotFound)
 }
 
 var _ = Describe("EventExposure Repository", func() {

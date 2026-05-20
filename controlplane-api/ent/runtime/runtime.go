@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -16,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/schema"
@@ -31,6 +33,52 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	apiMixin := schema.Api{}.Mixin()
+	api.Policy = privacy.NewPolicies(apiMixin[0], schema.Api{})
+	api.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := api.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	apiMixinFields1 := apiMixin[1].Fields()
+	_ = apiMixinFields1
+	apiMixinFields3 := apiMixin[3].Fields()
+	_ = apiMixinFields3
+	apiFields := schema.Api{}.Fields()
+	_ = apiFields
+	// apiDescCreatedAt is the schema descriptor for created_at field.
+	apiDescCreatedAt := apiMixinFields1[0].Descriptor()
+	// api.DefaultCreatedAt holds the default value on creation for the created_at field.
+	api.DefaultCreatedAt = apiDescCreatedAt.Default.(func() time.Time)
+	// apiDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	apiDescLastModifiedAt := apiMixinFields1[1].Descriptor()
+	// api.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	api.DefaultLastModifiedAt = apiDescLastModifiedAt.Default.(func() time.Time)
+	// api.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	api.UpdateDefaultLastModifiedAt = apiDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// apiDescNamespace is the schema descriptor for namespace field.
+	apiDescNamespace := apiMixinFields3[0].Descriptor()
+	// api.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	api.NamespaceValidator = apiDescNamespace.Validators[0].(func(string) error)
+	// apiDescBasePath is the schema descriptor for base_path field.
+	apiDescBasePath := apiFields[0].Descriptor()
+	// api.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
+	api.BasePathValidator = apiDescBasePath.Validators[0].(func(string) error)
+	// apiDescVersion is the schema descriptor for version field.
+	apiDescVersion := apiFields[1].Descriptor()
+	// api.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	api.VersionValidator = apiDescVersion.Validators[0].(func(string) error)
+	// apiDescXVendor is the schema descriptor for x_vendor field.
+	apiDescXVendor := apiFields[4].Descriptor()
+	// api.DefaultXVendor holds the default value on creation for the x_vendor field.
+	api.DefaultXVendor = apiDescXVendor.Default.(bool)
+	// apiDescActive is the schema descriptor for active field.
+	apiDescActive := apiFields[6].Descriptor()
+	// api.DefaultActive holds the default value on creation for the active field.
+	api.DefaultActive = apiDescActive.Default.(bool)
 	apiexposureMixin := schema.ApiExposure{}.Mixin()
 	apiexposure.Policy = privacy.NewPolicies(apiexposureMixin[0], schema.ApiExposure{})
 	apiexposure.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -345,6 +393,48 @@ func init() {
 	eventsubscriptionDescEventType := eventsubscriptionFields[0].Descriptor()
 	// eventsubscription.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
 	eventsubscription.EventTypeValidator = eventsubscriptionDescEventType.Validators[0].(func(string) error)
+	eventtypeMixin := schema.EventType{}.Mixin()
+	eventtype.Policy = privacy.NewPolicies(eventtypeMixin[0], schema.EventType{})
+	eventtype.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := eventtype.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	eventtypeMixinFields1 := eventtypeMixin[1].Fields()
+	_ = eventtypeMixinFields1
+	eventtypeMixinFields3 := eventtypeMixin[3].Fields()
+	_ = eventtypeMixinFields3
+	eventtypeFields := schema.EventType{}.Fields()
+	_ = eventtypeFields
+	// eventtypeDescCreatedAt is the schema descriptor for created_at field.
+	eventtypeDescCreatedAt := eventtypeMixinFields1[0].Descriptor()
+	// eventtype.DefaultCreatedAt holds the default value on creation for the created_at field.
+	eventtype.DefaultCreatedAt = eventtypeDescCreatedAt.Default.(func() time.Time)
+	// eventtypeDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	eventtypeDescLastModifiedAt := eventtypeMixinFields1[1].Descriptor()
+	// eventtype.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	eventtype.DefaultLastModifiedAt = eventtypeDescLastModifiedAt.Default.(func() time.Time)
+	// eventtype.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	eventtype.UpdateDefaultLastModifiedAt = eventtypeDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// eventtypeDescNamespace is the schema descriptor for namespace field.
+	eventtypeDescNamespace := eventtypeMixinFields3[0].Descriptor()
+	// eventtype.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	eventtype.NamespaceValidator = eventtypeDescNamespace.Validators[0].(func(string) error)
+	// eventtypeDescEventType is the schema descriptor for event_type field.
+	eventtypeDescEventType := eventtypeFields[0].Descriptor()
+	// eventtype.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	eventtype.EventTypeValidator = eventtypeDescEventType.Validators[0].(func(string) error)
+	// eventtypeDescVersion is the schema descriptor for version field.
+	eventtypeDescVersion := eventtypeFields[1].Descriptor()
+	// eventtype.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	eventtype.VersionValidator = eventtypeDescVersion.Validators[0].(func(string) error)
+	// eventtypeDescActive is the schema descriptor for active field.
+	eventtypeDescActive := eventtypeFields[4].Descriptor()
+	// eventtype.DefaultActive holds the default value on creation for the active field.
+	eventtype.DefaultActive = eventtypeDescActive.Default.(bool)
 	groupMixin := schema.Group{}.Mixin()
 	group.Policy = privacy.NewPolicies(groupMixin[0], schema.Group{})
 	group.Hooks[0] = func(next ent.Mutator) ent.Mutator {

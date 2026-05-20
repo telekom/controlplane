@@ -12,6 +12,18 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 )
 
+// The ApiFunc type is an adapter to allow the use of ordinary
+// function as Api mutator.
+type ApiFunc func(context.Context, *ent.APIMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ApiFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.APIMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.APIMutation", m)
+}
+
 // The ApiExposureFunc type is an adapter to allow the use of ordinary
 // function as ApiExposure mutator.
 type ApiExposureFunc func(context.Context, *ent.ApiExposureMutation) (ent.Value, error)
@@ -94,6 +106,18 @@ func (f EventSubscriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EventSubscriptionMutation", m)
+}
+
+// The EventTypeFunc type is an adapter to allow the use of ordinary
+// function as EventType mutator.
+type EventTypeFunc func(context.Context, *ent.EventTypeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EventTypeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EventTypeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EventTypeMutation", m)
 }
 
 // The GroupFunc type is an adapter to allow the use of ordinary

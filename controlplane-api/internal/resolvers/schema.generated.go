@@ -64,6 +64,29 @@ type EventSubscriptionInfoResolver interface {
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _ApiCategory_name(ctx context.Context, field graphql.CollectedField, obj *model1.APICategory) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiCategory_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ApiCategory_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApiCategory", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _ApiExposureInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1307,6 +1330,45 @@ func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.Selec
 
 // region    **************************** object.gotpl ****************************
 
+var apiCategoryImplementors = []string{"ApiCategory"}
+
+func (ec *executionContext) _ApiCategory(ctx context.Context, sel ast.SelectionSet, obj *model1.APICategory) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, apiCategoryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ApiCategory")
+		case "name":
+			out.Values[i] = ec._ApiCategory_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var apiExposureInfoImplementors = []string{"ApiExposureInfo"}
 
 func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.SelectionSet, obj *model.ApiExposureInfo) graphql.Marshaler {
@@ -2200,6 +2262,32 @@ func (ec *executionContext) _Upstream(ctx context.Context, sel ast.SelectionSet,
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNApiCategory2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategoryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.APICategory) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNApiCategory2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategory(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNApiCategory2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategory(ctx context.Context, sel ast.SelectionSet, v *model1.APICategory) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ApiCategory(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, v any) (model1.APIExposureFeature, error) {
 	var res model1.APIExposureFeature
 	err := res.UnmarshalGQL(v)
@@ -2411,6 +2499,13 @@ func (ec *executionContext) marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrol
 	return ret
 }
 
+func (ec *executionContext) marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ApiExposureInfo(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -2428,6 +2523,13 @@ func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋteleko
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._EventExposureInfo(ctx, sel, v)
 }
 
 // endregion ***************************** type.gotpl *****************************

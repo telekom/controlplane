@@ -14,7 +14,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
@@ -225,6 +227,36 @@ func (_u *TeamUpdate) AddApplications(v ...*Application) *TeamUpdate {
 	return _u.AddApplicationIDs(ids...)
 }
 
+// AddAPIIDs adds the "apis" edge to the Api entity by IDs.
+func (_u *TeamUpdate) AddAPIIDs(ids ...int) *TeamUpdate {
+	_u.mutation.AddAPIIDs(ids...)
+	return _u
+}
+
+// AddApis adds the "apis" edges to the Api entity.
+func (_u *TeamUpdate) AddApis(v ...*Api) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAPIIDs(ids...)
+}
+
+// AddEventTypeIDs adds the "event_types" edge to the EventType entity by IDs.
+func (_u *TeamUpdate) AddEventTypeIDs(ids ...int) *TeamUpdate {
+	_u.mutation.AddEventTypeIDs(ids...)
+	return _u
+}
+
+// AddEventTypes adds the "event_types" edges to the EventType entity.
+func (_u *TeamUpdate) AddEventTypes(v ...*EventType) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEventTypeIDs(ids...)
+}
+
 // Mutation returns the TeamMutation object of the builder.
 func (_u *TeamUpdate) Mutation() *TeamMutation {
 	return _u.mutation
@@ -276,6 +308,48 @@ func (_u *TeamUpdate) RemoveApplications(v ...*Application) *TeamUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveApplicationIDs(ids...)
+}
+
+// ClearApis clears all "apis" edges to the Api entity.
+func (_u *TeamUpdate) ClearApis() *TeamUpdate {
+	_u.mutation.ClearApis()
+	return _u
+}
+
+// RemoveAPIIDs removes the "apis" edge to Api entities by IDs.
+func (_u *TeamUpdate) RemoveAPIIDs(ids ...int) *TeamUpdate {
+	_u.mutation.RemoveAPIIDs(ids...)
+	return _u
+}
+
+// RemoveApis removes "apis" edges to Api entities.
+func (_u *TeamUpdate) RemoveApis(v ...*Api) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAPIIDs(ids...)
+}
+
+// ClearEventTypes clears all "event_types" edges to the EventType entity.
+func (_u *TeamUpdate) ClearEventTypes() *TeamUpdate {
+	_u.mutation.ClearEventTypes()
+	return _u
+}
+
+// RemoveEventTypeIDs removes the "event_types" edge to EventType entities by IDs.
+func (_u *TeamUpdate) RemoveEventTypeIDs(ids ...int) *TeamUpdate {
+	_u.mutation.RemoveEventTypeIDs(ids...)
+	return _u
+}
+
+// RemoveEventTypes removes "event_types" edges to EventType entities.
+func (_u *TeamUpdate) RemoveEventTypes(v ...*EventType) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEventTypeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -520,6 +594,96 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ApisCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.ApisTable,
+			Columns: []string{team.ApisColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedApisIDs(); len(nodes) > 0 && !_u.mutation.ApisCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.ApisTable,
+			Columns: []string{team.ApisColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ApisIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.ApisTable,
+			Columns: []string{team.ApisColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EventTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EventTypesTable,
+			Columns: []string{team.EventTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEventTypesIDs(); len(nodes) > 0 && !_u.mutation.EventTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EventTypesTable,
+			Columns: []string{team.EventTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EventTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EventTypesTable,
+			Columns: []string{team.EventTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{team.Label}
@@ -731,6 +895,36 @@ func (_u *TeamUpdateOne) AddApplications(v ...*Application) *TeamUpdateOne {
 	return _u.AddApplicationIDs(ids...)
 }
 
+// AddAPIIDs adds the "apis" edge to the Api entity by IDs.
+func (_u *TeamUpdateOne) AddAPIIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.AddAPIIDs(ids...)
+	return _u
+}
+
+// AddApis adds the "apis" edges to the Api entity.
+func (_u *TeamUpdateOne) AddApis(v ...*Api) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAPIIDs(ids...)
+}
+
+// AddEventTypeIDs adds the "event_types" edge to the EventType entity by IDs.
+func (_u *TeamUpdateOne) AddEventTypeIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.AddEventTypeIDs(ids...)
+	return _u
+}
+
+// AddEventTypes adds the "event_types" edges to the EventType entity.
+func (_u *TeamUpdateOne) AddEventTypes(v ...*EventType) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEventTypeIDs(ids...)
+}
+
 // Mutation returns the TeamMutation object of the builder.
 func (_u *TeamUpdateOne) Mutation() *TeamMutation {
 	return _u.mutation
@@ -782,6 +976,48 @@ func (_u *TeamUpdateOne) RemoveApplications(v ...*Application) *TeamUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveApplicationIDs(ids...)
+}
+
+// ClearApis clears all "apis" edges to the Api entity.
+func (_u *TeamUpdateOne) ClearApis() *TeamUpdateOne {
+	_u.mutation.ClearApis()
+	return _u
+}
+
+// RemoveAPIIDs removes the "apis" edge to Api entities by IDs.
+func (_u *TeamUpdateOne) RemoveAPIIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.RemoveAPIIDs(ids...)
+	return _u
+}
+
+// RemoveApis removes "apis" edges to Api entities.
+func (_u *TeamUpdateOne) RemoveApis(v ...*Api) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAPIIDs(ids...)
+}
+
+// ClearEventTypes clears all "event_types" edges to the EventType entity.
+func (_u *TeamUpdateOne) ClearEventTypes() *TeamUpdateOne {
+	_u.mutation.ClearEventTypes()
+	return _u
+}
+
+// RemoveEventTypeIDs removes the "event_types" edge to EventType entities by IDs.
+func (_u *TeamUpdateOne) RemoveEventTypeIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.RemoveEventTypeIDs(ids...)
+	return _u
+}
+
+// RemoveEventTypes removes "event_types" edges to EventType entities.
+func (_u *TeamUpdateOne) RemoveEventTypes(v ...*EventType) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEventTypeIDs(ids...)
 }
 
 // Where appends a list predicates to the TeamUpdate builder.
@@ -1049,6 +1285,96 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ApisCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.ApisTable,
+			Columns: []string{team.ApisColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedApisIDs(); len(nodes) > 0 && !_u.mutation.ApisCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.ApisTable,
+			Columns: []string{team.ApisColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ApisIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.ApisTable,
+			Columns: []string{team.ApisColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EventTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EventTypesTable,
+			Columns: []string{team.EventTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEventTypesIDs(); len(nodes) > 0 && !_u.mutation.EventTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EventTypesTable,
+			Columns: []string{team.EventTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EventTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EventTypesTable,
+			Columns: []string{team.EventTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

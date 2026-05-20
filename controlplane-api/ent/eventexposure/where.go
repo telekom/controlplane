@@ -546,6 +546,29 @@ func HasOwnerWith(preds ...predicate.Application) predicate.EventExposure {
 	})
 }
 
+// HasEventTypeDef applies the HasEdge predicate on the "event_type_def" edge.
+func HasEventTypeDef() predicate.EventExposure {
+	return predicate.EventExposure(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, EventTypeDefTable, EventTypeDefColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEventTypeDefWith applies the HasEdge predicate on the "event_type_def" edge with a given conditions (other predicates).
+func HasEventTypeDefWith(preds ...predicate.EventType) predicate.EventExposure {
+	return predicate.EventExposure(func(s *sql.Selector) {
+		step := newEventTypeDefStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasSubscriptions applies the HasEdge predicate on the "subscriptions" edge.
 func HasSubscriptions() predicate.EventExposure {
 	return predicate.EventExposure(func(s *sql.Selector) {

@@ -19,6 +19,14 @@ func (_m *ApiExposure) Owner(ctx context.Context) (*Application, error) {
 	return result, err
 }
 
+func (_m *ApiExposure) API(ctx context.Context) (*Api, error) {
+	result, err := _m.Edges.APIOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAPI().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (_m *ApiSubscription) Owner(ctx context.Context) (*Application, error) {
 	result, err := _m.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
@@ -159,6 +167,14 @@ func (_m *EventExposure) Owner(ctx context.Context) (*Application, error) {
 	return result, err
 }
 
+func (_m *EventExposure) EventTypeDef(ctx context.Context) (*EventType, error) {
+	result, err := _m.Edges.EventTypeDefOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEventTypeDef().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (_m *EventSubscription) Owner(ctx context.Context) (*Application, error) {
 	result, err := _m.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
@@ -246,6 +262,48 @@ func (_m *Team) Applications(
 		return conn, nil
 	}
 	return _m.QueryApplications().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Team) Apis(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *ApiOrder, where *ApiWhereInput,
+) (*ApiConnection, error) {
+	opts := []ApiPaginateOption{
+		WithApiOrder(orderBy),
+		WithApiFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	if nodes, err := _m.NamedApis(alias); err == nil || hasTotalCount {
+		pager, err := newApiPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &ApiConnection{Edges: []*ApiEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryApis().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Team) EventTypes(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *EventTypeOrder, where *EventTypeWhereInput,
+) (*EventTypeConnection, error) {
+	opts := []EventTypePaginateOption{
+		WithEventTypeOrder(orderBy),
+		WithEventTypeFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
+	if nodes, err := _m.NamedEventTypes(alias); err == nil || hasTotalCount {
+		pager, err := newEventTypePager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &EventTypeConnection{Edges: []*EventTypeEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryEventTypes().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Zone) Applications(ctx context.Context) (result []*Application, err error) {

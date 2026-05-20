@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -47,6 +48,7 @@ type EventExposure struct {
 	// The values are being populated by the EventExposureQuery when eager-loading is set.
 	Edges                      EventExposureEdges `json:"edges"`
 	application_exposed_events *int
+	event_type_exposures       *int
 	selectValues               sql.SelectValues
 }
 
@@ -54,13 +56,15 @@ type EventExposure struct {
 type EventExposureEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Application `json:"owner,omitempty"`
+	// EventTypeDef holds the value of the event_type_def edge.
+	EventTypeDef *EventType `json:"event_type_def,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
 	Subscriptions []*EventSubscription `json:"subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]map[string]int
+	totalCount [2]map[string]int
 
 	namedSubscriptions map[string][]*EventSubscription
 }
@@ -76,10 +80,21 @@ func (e EventExposureEdges) OwnerOrErr() (*Application, error) {
 	return nil, &NotLoadedError{edge: "owner"}
 }
 
+// EventTypeDefOrErr returns the EventTypeDef value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e EventExposureEdges) EventTypeDefOrErr() (*EventType, error) {
+	if e.EventTypeDef != nil {
+		return e.EventTypeDef, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: eventtype.Label}
+	}
+	return nil, &NotLoadedError{edge: "event_type_def"}
+}
+
 // SubscriptionsOrErr returns the Subscriptions value or an error if the edge
 // was not loaded in eager-loading.
 func (e EventExposureEdges) SubscriptionsOrErr() ([]*EventSubscription, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Subscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "subscriptions"}
@@ -101,6 +116,8 @@ func (*EventExposure) scanValues(columns []string) ([]any, error) {
 		case eventexposure.FieldCreatedAt, eventexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
 		case eventexposure.ForeignKeys[0]: // application_exposed_events
+			values[i] = new(sql.NullInt64)
+		case eventexposure.ForeignKeys[1]: // event_type_exposures
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -196,6 +213,13 @@ func (_m *EventExposure) assignValues(columns []string, values []any) error {
 				_m.application_exposed_events = new(int)
 				*_m.application_exposed_events = int(value.Int64)
 			}
+		case eventexposure.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field event_type_exposures", value)
+			} else if value.Valid {
+				_m.event_type_exposures = new(int)
+				*_m.event_type_exposures = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -212,6 +236,11 @@ func (_m *EventExposure) Value(name string) (ent.Value, error) {
 // QueryOwner queries the "owner" edge of the EventExposure entity.
 func (_m *EventExposure) QueryOwner() *ApplicationQuery {
 	return NewEventExposureClient(_m.config).QueryOwner(_m)
+}
+
+// QueryEventTypeDef queries the "event_type_def" edge of the EventExposure entity.
+func (_m *EventExposure) QueryEventTypeDef() *EventTypeQuery {
+	return NewEventExposureClient(_m.config).QueryEventTypeDef(_m)
 }
 
 // QuerySubscriptions queries the "subscriptions" edge of the EventExposure entity.

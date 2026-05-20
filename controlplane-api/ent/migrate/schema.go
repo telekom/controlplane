@@ -11,6 +11,44 @@ import (
 )
 
 var (
+	// ApisColumns holds the columns for the "apis" table.
+	ApisColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
+		{Name: "version", Type: field.TypeString, Size: 2147483647},
+		{Name: "category", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "oauth2_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "x_vendor", Type: field.TypeBool, Default: false},
+		{Name: "specification", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "active", Type: field.TypeBool, Default: false},
+		{Name: "team_apis", Type: field.TypeInt},
+	}
+	// ApisTable holds the schema information for the "apis" table.
+	ApisTable = &schema.Table{
+		Name:       "apis",
+		Columns:    ApisColumns,
+		PrimaryKey: []*schema.Column{ApisColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "apis_teams_apis",
+				Columns:    []*schema.Column{ApisColumns[13]},
+				RefColumns: []*schema.Column{TeamsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "api_base_path_team_apis",
+				Unique:  true,
+				Columns: []*schema.Column{ApisColumns[6], ApisColumns[13]},
+			},
+		},
+	}
 	// APIExposuresColumns holds the columns for the "api_exposures" table.
 	APIExposuresColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -27,6 +65,7 @@ var (
 		{Name: "upstreams", Type: field.TypeJSON},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "api_exposures", Type: field.TypeInt, Nullable: true},
 		{Name: "application_exposed_apis", Type: field.TypeInt},
 	}
 	// APIExposuresTable holds the schema information for the "api_exposures" table.
@@ -36,8 +75,14 @@ var (
 		PrimaryKey: []*schema.Column{APIExposuresColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "api_exposures_applications_exposed_apis",
+				Symbol:     "api_exposures_apis_exposures",
 				Columns:    []*schema.Column{APIExposuresColumns[14]},
+				RefColumns: []*schema.Column{ApisColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "api_exposures_applications_exposed_apis",
+				Columns:    []*schema.Column{APIExposuresColumns[15]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -46,7 +91,7 @@ var (
 			{
 				Name:    "apiexposure_base_path_application_exposed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[14]},
+				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[15]},
 			},
 		},
 	}
@@ -255,6 +300,7 @@ var (
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "application_exposed_events", Type: field.TypeInt},
+		{Name: "event_type_exposures", Type: field.TypeInt, Nullable: true},
 	}
 	// EventExposuresTable holds the schema information for the "event_exposures" table.
 	EventExposuresTable = &schema.Table{
@@ -267,6 +313,12 @@ var (
 				Columns:    []*schema.Column{EventExposuresColumns[11]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "event_exposures_event_types_exposures",
+				Columns:    []*schema.Column{EventExposuresColumns[12]},
+				RefColumns: []*schema.Column{EventTypesColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -322,6 +374,42 @@ var (
 				Name:    "eventsubscription_event_type_application_subscribed_events",
 				Unique:  true,
 				Columns: []*schema.Column{EventSubscriptionsColumns[8], EventSubscriptionsColumns[11]},
+			},
+		},
+	}
+	// EventTypesColumns holds the columns for the "event_types" table.
+	EventTypesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
+		{Name: "version", Type: field.TypeString, Size: 2147483647},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "specification", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "active", Type: field.TypeBool, Default: false},
+		{Name: "team_event_types", Type: field.TypeInt},
+	}
+	// EventTypesTable holds the schema information for the "event_types" table.
+	EventTypesTable = &schema.Table{
+		Name:       "event_types",
+		Columns:    EventTypesColumns,
+		PrimaryKey: []*schema.Column{EventTypesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "event_types_teams_event_types",
+				Columns:    []*schema.Column{EventTypesColumns[11]},
+				RefColumns: []*schema.Column{TeamsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "eventtype_event_type_team_event_types",
+				Unique:  true,
+				Columns: []*schema.Column{EventTypesColumns[6], EventTypesColumns[11]},
 			},
 		},
 	}
@@ -429,6 +517,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		ApisTable,
 		APIExposuresTable,
 		APISubscriptionsTable,
 		ApplicationsTable,
@@ -436,6 +525,7 @@ var (
 		ApprovalRequestsTable,
 		EventExposuresTable,
 		EventSubscriptionsTable,
+		EventTypesTable,
 		GroupsTable,
 		MembersTable,
 		TeamsTable,
@@ -444,7 +534,9 @@ var (
 )
 
 func init() {
-	APIExposuresTable.ForeignKeys[0].RefTable = ApplicationsTable
+	ApisTable.ForeignKeys[0].RefTable = TeamsTable
+	APIExposuresTable.ForeignKeys[0].RefTable = ApisTable
+	APIExposuresTable.ForeignKeys[1].RefTable = ApplicationsTable
 	APISubscriptionsTable.ForeignKeys[0].RefTable = APIExposuresTable
 	APISubscriptionsTable.ForeignKeys[1].RefTable = ApplicationsTable
 	ApplicationsTable.ForeignKeys[0].RefTable = TeamsTable
@@ -454,8 +546,10 @@ func init() {
 	ApprovalRequestsTable.ForeignKeys[0].RefTable = APISubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[1].RefTable = EventSubscriptionsTable
 	EventExposuresTable.ForeignKeys[0].RefTable = ApplicationsTable
+	EventExposuresTable.ForeignKeys[1].RefTable = EventTypesTable
 	EventSubscriptionsTable.ForeignKeys[0].RefTable = ApplicationsTable
 	EventSubscriptionsTable.ForeignKeys[1].RefTable = EventExposuresTable
+	EventTypesTable.ForeignKeys[0].RefTable = TeamsTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	TeamsTable.ForeignKeys[0].RefTable = GroupsTable
 	ZonesTable.ForeignKeys[0].RefTable = APISubscriptionsTable

@@ -58,6 +58,9 @@ func (EventExposure) Edges() []ent.Edge {
 			Ref("exposed_events").
 			Required().
 			Unique(),
+		edge.From("event_type_def", EventType.Type).
+			Ref("exposures").
+			Unique(),
 		edge.From("subscriptions", EventSubscription.Type).
 			Ref("target").
 			Annotations(entgql.Skip(entgql.SkipType)),

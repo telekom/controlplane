@@ -717,6 +717,52 @@ func HasApplicationsWith(preds ...predicate.Application) predicate.Team {
 	})
 }
 
+// HasApis applies the HasEdge predicate on the "apis" edge.
+func HasApis() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ApisTable, ApisColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasApisWith applies the HasEdge predicate on the "apis" edge with a given conditions (other predicates).
+func HasApisWith(preds ...predicate.Api) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := newApisStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEventTypes applies the HasEdge predicate on the "event_types" edge.
+func HasEventTypes() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EventTypesTable, EventTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEventTypesWith applies the HasEdge predicate on the "event_types" edge with a given conditions (other predicates).
+func HasEventTypesWith(preds ...predicate.EventType) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := newEventTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Team) predicate.Team {
 	return predicate.Team(sql.AndPredicates(predicates...))

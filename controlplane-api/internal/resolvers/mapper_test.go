@@ -27,7 +27,7 @@ var _ = Describe("Subscriptions resolver (cross-tenant)", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, service.Services{}, nil)
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
 		s = testutil.SeedStandard(client)
 	})
 
@@ -64,7 +64,7 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, service.Services{}, nil)
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
 		s = testutil.SeedStandard(client)
 	})
 
@@ -94,7 +94,7 @@ var _ = Describe("Approval.APISubscription resolver (cross-tenant)", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, service.Services{}, nil)
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
 		s = testutil.SeedStandard(client)
 	})
 
@@ -124,7 +124,7 @@ var _ = Describe("ApprovalRequest.APISubscription resolver (cross-tenant)", func
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, service.Services{}, nil)
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
 		s = testutil.SeedStandard(client)
 	})
 
@@ -146,7 +146,7 @@ var _ = Describe("ApprovalRequest.APISubscription resolver (cross-tenant)", func
 })
 
 var _ = Describe("ApiExposureInfo resolvers", func() {
-	r := resolvers.NewResolver(nil, service.Services{}, nil)
+	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert visibility string to enum", func() {
 		v, err := r.ApiExposureInfo().Visibility(context.TODO(), &model.ApiExposureInfo{Visibility: "WORLD"})
@@ -180,7 +180,7 @@ var _ = Describe("EventExposure.Subscriptions resolver (cross-tenant)", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, service.Services{}, nil)
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
 		s = testutil.SeedStandard(client)
 	})
 
@@ -210,7 +210,7 @@ var _ = Describe("EventSubscription.Target resolver (cross-tenant)", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, service.Services{}, nil)
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
 		s = testutil.SeedStandard(client)
 	})
 
@@ -232,7 +232,7 @@ var _ = Describe("EventSubscription.Target resolver (cross-tenant)", func() {
 })
 
 var _ = Describe("EventExposureInfo.Visibility resolver", func() {
-	r := resolvers.NewResolver(nil, service.Services{}, nil)
+	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert visibility string to enum", func() {
 		v, err := r.EventExposureInfo().Visibility(context.TODO(), &model.EventExposureInfo{Visibility: "WORLD"})
@@ -242,7 +242,7 @@ var _ = Describe("EventExposureInfo.Visibility resolver", func() {
 })
 
 var _ = Describe("ApiSubscriptionInfo.StatusPhase resolver", func() {
-	r := resolvers.NewResolver(nil, service.Services{}, nil)
+	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert status phase string to enum", func() {
 		sp := "SUBSCRIBED"

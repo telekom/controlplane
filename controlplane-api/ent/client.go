@@ -18,6 +18,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -25,6 +26,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -36,6 +38,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Api is the client for interacting with the Api builders.
+	Api *APIClient
 	// ApiExposure is the client for interacting with the ApiExposure builders.
 	ApiExposure *ApiExposureClient
 	// ApiSubscription is the client for interacting with the ApiSubscription builders.
@@ -50,6 +54,8 @@ type Client struct {
 	EventExposure *EventExposureClient
 	// EventSubscription is the client for interacting with the EventSubscription builders.
 	EventSubscription *EventSubscriptionClient
+	// EventType is the client for interacting with the EventType builders.
+	EventType *EventTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// Member is the client for interacting with the Member builders.
@@ -71,6 +77,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Api = NewAPIClient(c.config)
 	c.ApiExposure = NewApiExposureClient(c.config)
 	c.ApiSubscription = NewApiSubscriptionClient(c.config)
 	c.Application = NewApplicationClient(c.config)
@@ -78,6 +85,7 @@ func (c *Client) init() {
 	c.ApprovalRequest = NewApprovalRequestClient(c.config)
 	c.EventExposure = NewEventExposureClient(c.config)
 	c.EventSubscription = NewEventSubscriptionClient(c.config)
+	c.EventType = NewEventTypeClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.Member = NewMemberClient(c.config)
 	c.Team = NewTeamClient(c.config)
@@ -174,6 +182,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:               ctx,
 		config:            cfg,
+		Api:               NewAPIClient(cfg),
 		ApiExposure:       NewApiExposureClient(cfg),
 		ApiSubscription:   NewApiSubscriptionClient(cfg),
 		Application:       NewApplicationClient(cfg),
@@ -181,6 +190,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ApprovalRequest:   NewApprovalRequestClient(cfg),
 		EventExposure:     NewEventExposureClient(cfg),
 		EventSubscription: NewEventSubscriptionClient(cfg),
+		EventType:         NewEventTypeClient(cfg),
 		Group:             NewGroupClient(cfg),
 		Member:            NewMemberClient(cfg),
 		Team:              NewTeamClient(cfg),
@@ -204,6 +214,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:               ctx,
 		config:            cfg,
+		Api:               NewAPIClient(cfg),
 		ApiExposure:       NewApiExposureClient(cfg),
 		ApiSubscription:   NewApiSubscriptionClient(cfg),
 		Application:       NewApplicationClient(cfg),
@@ -211,6 +222,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ApprovalRequest:   NewApprovalRequestClient(cfg),
 		EventExposure:     NewEventExposureClient(cfg),
 		EventSubscription: NewEventSubscriptionClient(cfg),
+		EventType:         NewEventTypeClient(cfg),
 		Group:             NewGroupClient(cfg),
 		Member:            NewMemberClient(cfg),
 		Team:              NewTeamClient(cfg),
@@ -221,7 +233,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		ApiExposure.
+//		Api.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -244,8 +256,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.ApiExposure, c.ApiSubscription, c.Application, c.Approval, c.ApprovalRequest,
-		c.EventExposure, c.EventSubscription, c.Group, c.Member, c.Team, c.Zone,
+		c.Api, c.ApiExposure, c.ApiSubscription, c.Application, c.Approval,
+		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType, c.Group,
+		c.Member, c.Team, c.Zone,
 	} {
 		n.Use(hooks...)
 	}
@@ -255,8 +268,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.ApiExposure, c.ApiSubscription, c.Application, c.Approval, c.ApprovalRequest,
-		c.EventExposure, c.EventSubscription, c.Group, c.Member, c.Team, c.Zone,
+		c.Api, c.ApiExposure, c.ApiSubscription, c.Application, c.Approval,
+		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType, c.Group,
+		c.Member, c.Team, c.Zone,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -265,6 +279,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *APIMutation:
+		return c.Api.mutate(ctx, m)
 	case *ApiExposureMutation:
 		return c.ApiExposure.mutate(ctx, m)
 	case *ApiSubscriptionMutation:
@@ -279,6 +295,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.EventExposure.mutate(ctx, m)
 	case *EventSubscriptionMutation:
 		return c.EventSubscription.mutate(ctx, m)
+	case *EventTypeMutation:
+		return c.EventType.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *MemberMutation:
@@ -289,6 +307,172 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Zone.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// APIClient is a client for the Api schema.
+type APIClient struct {
+	config
+}
+
+// NewAPIClient returns a client for the Api from the given config.
+func NewAPIClient(c config) *APIClient {
+	return &APIClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `api.Hooks(f(g(h())))`.
+func (c *APIClient) Use(hooks ...Hook) {
+	c.hooks.Api = append(c.hooks.Api, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `api.Intercept(f(g(h())))`.
+func (c *APIClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Api = append(c.inters.Api, interceptors...)
+}
+
+// Create returns a builder for creating a Api entity.
+func (c *APIClient) Create() *APICreate {
+	mutation := newAPIMutation(c.config, OpCreate)
+	return &APICreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Api entities.
+func (c *APIClient) CreateBulk(builders ...*APICreate) *APICreateBulk {
+	return &APICreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *APIClient) MapCreateBulk(slice any, setFunc func(*APICreate, int)) *APICreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &APICreateBulk{err: fmt.Errorf("calling to APIClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*APICreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &APICreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Api.
+func (c *APIClient) Update() *APIUpdate {
+	mutation := newAPIMutation(c.config, OpUpdate)
+	return &APIUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *APIClient) UpdateOne(_m *Api) *APIUpdateOne {
+	mutation := newAPIMutation(c.config, OpUpdateOne, withApi(_m))
+	return &APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *APIClient) UpdateOneID(id int) *APIUpdateOne {
+	mutation := newAPIMutation(c.config, OpUpdateOne, withApiID(id))
+	return &APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Api.
+func (c *APIClient) Delete() *APIDelete {
+	mutation := newAPIMutation(c.config, OpDelete)
+	return &APIDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *APIClient) DeleteOne(_m *Api) *APIDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *APIClient) DeleteOneID(id int) *APIDeleteOne {
+	builder := c.Delete().Where(api.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &APIDeleteOne{builder}
+}
+
+// Query returns a query builder for Api.
+func (c *APIClient) Query() *APIQuery {
+	return &APIQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAPI},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Api entity by its id.
+func (c *APIClient) Get(ctx context.Context, id int) (*Api, error) {
+	return c.Query().Where(api.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *APIClient) GetX(ctx context.Context, id int) *Api {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a Api.
+func (c *APIClient) QueryOwner(_m *Api) *TeamQuery {
+	query := (&TeamClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(api.Table, api.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, api.OwnerTable, api.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExposures queries the exposures edge of a Api.
+func (c *APIClient) QueryExposures(_m *Api) *ApiExposureQuery {
+	query := (&ApiExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(api.Table, api.FieldID, id),
+			sqlgraph.To(apiexposure.Table, apiexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, api.ExposuresTable, api.ExposuresColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *APIClient) Hooks() []Hook {
+	hooks := c.hooks.Api
+	return append(hooks[:len(hooks):len(hooks)], api.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *APIClient) Interceptors() []Interceptor {
+	return c.inters.Api
+}
+
+func (c *APIClient) mutate(ctx context.Context, m *APIMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&APICreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&APIUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&APIDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Api mutation op: %q", m.Op())
 	}
 }
 
@@ -409,6 +593,22 @@ func (c *ApiExposureClient) QueryOwner(_m *ApiExposure) *ApplicationQuery {
 			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, apiexposure.OwnerTable, apiexposure.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAPI queries the api edge of a ApiExposure.
+func (c *ApiExposureClient) QueryAPI(_m *ApiExposure) *APIQuery {
+	query := (&APIClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
+			sqlgraph.To(api.Table, api.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, apiexposure.APITable, apiexposure.APIColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1358,6 +1558,22 @@ func (c *EventExposureClient) QueryOwner(_m *EventExposure) *ApplicationQuery {
 	return query
 }
 
+// QueryEventTypeDef queries the event_type_def edge of a EventExposure.
+func (c *EventExposureClient) QueryEventTypeDef(_m *EventExposure) *EventTypeQuery {
+	query := (&EventTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(eventexposure.Table, eventexposure.FieldID, id),
+			sqlgraph.To(eventtype.Table, eventtype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, eventexposure.EventTypeDefTable, eventexposure.EventTypeDefColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySubscriptions queries the subscriptions edge of a EventExposure.
 func (c *EventExposureClient) QuerySubscriptions(_m *EventExposure) *EventSubscriptionQuery {
 	query := (&EventSubscriptionClient{config: c.config}).Query()
@@ -1595,6 +1811,172 @@ func (c *EventSubscriptionClient) mutate(ctx context.Context, m *EventSubscripti
 		return (&EventSubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown EventSubscription mutation op: %q", m.Op())
+	}
+}
+
+// EventTypeClient is a client for the EventType schema.
+type EventTypeClient struct {
+	config
+}
+
+// NewEventTypeClient returns a client for the EventType from the given config.
+func NewEventTypeClient(c config) *EventTypeClient {
+	return &EventTypeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `eventtype.Hooks(f(g(h())))`.
+func (c *EventTypeClient) Use(hooks ...Hook) {
+	c.hooks.EventType = append(c.hooks.EventType, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `eventtype.Intercept(f(g(h())))`.
+func (c *EventTypeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.EventType = append(c.inters.EventType, interceptors...)
+}
+
+// Create returns a builder for creating a EventType entity.
+func (c *EventTypeClient) Create() *EventTypeCreate {
+	mutation := newEventTypeMutation(c.config, OpCreate)
+	return &EventTypeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of EventType entities.
+func (c *EventTypeClient) CreateBulk(builders ...*EventTypeCreate) *EventTypeCreateBulk {
+	return &EventTypeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EventTypeClient) MapCreateBulk(slice any, setFunc func(*EventTypeCreate, int)) *EventTypeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EventTypeCreateBulk{err: fmt.Errorf("calling to EventTypeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EventTypeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EventTypeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for EventType.
+func (c *EventTypeClient) Update() *EventTypeUpdate {
+	mutation := newEventTypeMutation(c.config, OpUpdate)
+	return &EventTypeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EventTypeClient) UpdateOne(_m *EventType) *EventTypeUpdateOne {
+	mutation := newEventTypeMutation(c.config, OpUpdateOne, withEventType(_m))
+	return &EventTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EventTypeClient) UpdateOneID(id int) *EventTypeUpdateOne {
+	mutation := newEventTypeMutation(c.config, OpUpdateOne, withEventTypeID(id))
+	return &EventTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for EventType.
+func (c *EventTypeClient) Delete() *EventTypeDelete {
+	mutation := newEventTypeMutation(c.config, OpDelete)
+	return &EventTypeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EventTypeClient) DeleteOne(_m *EventType) *EventTypeDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EventTypeClient) DeleteOneID(id int) *EventTypeDeleteOne {
+	builder := c.Delete().Where(eventtype.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EventTypeDeleteOne{builder}
+}
+
+// Query returns a query builder for EventType.
+func (c *EventTypeClient) Query() *EventTypeQuery {
+	return &EventTypeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEventType},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a EventType entity by its id.
+func (c *EventTypeClient) Get(ctx context.Context, id int) (*EventType, error) {
+	return c.Query().Where(eventtype.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EventTypeClient) GetX(ctx context.Context, id int) *EventType {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a EventType.
+func (c *EventTypeClient) QueryOwner(_m *EventType) *TeamQuery {
+	query := (&TeamClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(eventtype.Table, eventtype.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, eventtype.OwnerTable, eventtype.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExposures queries the exposures edge of a EventType.
+func (c *EventTypeClient) QueryExposures(_m *EventType) *EventExposureQuery {
+	query := (&EventExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(eventtype.Table, eventtype.FieldID, id),
+			sqlgraph.To(eventexposure.Table, eventexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, eventtype.ExposuresTable, eventtype.ExposuresColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EventTypeClient) Hooks() []Hook {
+	hooks := c.hooks.EventType
+	return append(hooks[:len(hooks):len(hooks)], eventtype.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *EventTypeClient) Interceptors() []Interceptor {
+	return c.inters.EventType
+}
+
+func (c *EventTypeClient) mutate(ctx context.Context, m *EventTypeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EventTypeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EventTypeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EventTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EventTypeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown EventType mutation op: %q", m.Op())
 	}
 }
 
@@ -2054,6 +2436,38 @@ func (c *TeamClient) QueryApplications(_m *Team) *ApplicationQuery {
 	return query
 }
 
+// QueryApis queries the apis edge of a Team.
+func (c *TeamClient) QueryApis(_m *Team) *APIQuery {
+	query := (&APIClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(api.Table, api.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.ApisTable, team.ApisColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEventTypes queries the event_types edge of a Team.
+func (c *TeamClient) QueryEventTypes(_m *Team) *EventTypeQuery {
+	query := (&EventTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(eventtype.Table, eventtype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.EventTypesTable, team.EventTypesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *TeamClient) Hooks() []Hook {
 	hooks := c.hooks.Team
@@ -2233,11 +2647,13 @@ func (c *ZoneClient) mutate(ctx context.Context, m *ZoneMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		EventExposure, EventSubscription, Group, Member, Team, Zone []ent.Hook
+		Api, ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
+		EventExposure, EventSubscription, EventType, Group, Member, Team,
+		Zone []ent.Hook
 	}
 	inters struct {
-		ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		EventExposure, EventSubscription, Group, Member, Team, Zone []ent.Interceptor
+		Api, ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
+		EventExposure, EventSubscription, EventType, Group, Member, Team,
+		Zone []ent.Interceptor
 	}
 )

@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -161,6 +162,25 @@ func (_c *EventExposureCreate) SetOwnerID(id int) *EventExposureCreate {
 // SetOwner sets the "owner" edge to the Application entity.
 func (_c *EventExposureCreate) SetOwner(v *Application) *EventExposureCreate {
 	return _c.SetOwnerID(v.ID)
+}
+
+// SetEventTypeDefID sets the "event_type_def" edge to the EventType entity by ID.
+func (_c *EventExposureCreate) SetEventTypeDefID(id int) *EventExposureCreate {
+	_c.mutation.SetEventTypeDefID(id)
+	return _c
+}
+
+// SetNillableEventTypeDefID sets the "event_type_def" edge to the EventType entity by ID if the given value is not nil.
+func (_c *EventExposureCreate) SetNillableEventTypeDefID(id *int) *EventExposureCreate {
+	if id != nil {
+		_c = _c.SetEventTypeDefID(*id)
+	}
+	return _c
+}
+
+// SetEventTypeDef sets the "event_type_def" edge to the EventType entity.
+func (_c *EventExposureCreate) SetEventTypeDef(v *EventType) *EventExposureCreate {
+	return _c.SetEventTypeDefID(v.ID)
 }
 
 // AddSubscriptionIDs adds the "subscriptions" edge to the EventSubscription entity by IDs.
@@ -369,6 +389,23 @@ func (_c *EventExposureCreate) createSpec() (*EventExposure, *sqlgraph.CreateSpe
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.application_exposed_events = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EventTypeDefIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   eventexposure.EventTypeDefTable,
+			Columns: []string{eventexposure.EventTypeDefColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.event_type_exposures = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.SubscriptionsIDs(); len(nodes) > 0 {

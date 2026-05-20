@@ -27,6 +27,7 @@ func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
 type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
+	Api() ApiResolver
 	ApiExposure() ApiExposureResolver
 	ApiExposureInfo() ApiExposureInfoResolver
 	ApiSubscription() ApiSubscriptionResolver
@@ -41,6 +42,7 @@ type ResolverRoot interface {
 	EventExposureInfo() EventExposureInfoResolver
 	EventSubscription() EventSubscriptionResolver
 	EventSubscriptionInfo() EventSubscriptionInfoResolver
+	EventType() EventTypeResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Team() TeamResolver
@@ -56,7 +58,41 @@ type ComplexityRoot struct {
 		Team   func(childComplexity int) int
 	}
 
+	Api struct {
+		Active           func(childComplexity int) int
+		ActiveExposure   func(childComplexity int) int
+		BasePath         func(childComplexity int) int
+		Category         func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Oauth2Scopes     func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		SpecificationURL func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Version          func(childComplexity int) int
+		XVendor          func(childComplexity int) int
+	}
+
+	ApiCategory struct {
+		Name func(childComplexity int) int
+	}
+
+	ApiConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ApiEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	ApiExposure struct {
+		API            func(childComplexity int) int
 		APIVersion     func(childComplexity int) int
 		Active         func(childComplexity int) int
 		ApprovalConfig func(childComplexity int) int
@@ -282,6 +318,7 @@ type ComplexityRoot struct {
 		CreatedAt      func(childComplexity int) int
 		Environment    func(childComplexity int) int
 		EventType      func(childComplexity int) int
+		EventTypeDef   func(childComplexity int) int
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
 		Namespace      func(childComplexity int) int
@@ -352,6 +389,33 @@ type ComplexityRoot struct {
 		StatusPhase          func(childComplexity int) int
 	}
 
+	EventType struct {
+		Active           func(childComplexity int) int
+		ActiveExposure   func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Description      func(childComplexity int) int
+		EventType        func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		SpecificationURL func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Version          func(childComplexity int) int
+	}
+
+	EventTypeConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	EventTypeEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
@@ -395,13 +459,16 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		APICategories      func(childComplexity int) int
 		APIExposures       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
 		APISubscriptions   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
+		Apis               func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) int
 		Applications       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
 		ApprovalRequests   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalRequestOrder, where *ent.ApprovalRequestWhereInput) int
 		Approvals          func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalOrder, where *ent.ApprovalWhereInput) int
 		EventExposures     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
 		EventSubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
+		EventTypes         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
 		Node               func(childComplexity int, id int) int
 		Nodes              func(childComplexity int, ids []int) int
 		Teams              func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) int
@@ -433,11 +500,13 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
+		Apis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) int
 		Applications   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
 		Category       func(childComplexity int) int
 		CreatedAt      func(childComplexity int) int
 		Email          func(childComplexity int) int
 		Environment    func(childComplexity int) int
+		EventTypes     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
 		Group          func(childComplexity int) int
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
@@ -517,6 +586,160 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AddTeamMemberPayload.Team(childComplexity), true
+
+	case "Api.active":
+		if e.ComplexityRoot.Api.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.Active(childComplexity), true
+
+	case "Api.activeExposure":
+		if e.ComplexityRoot.Api.ActiveExposure == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.ActiveExposure(childComplexity), true
+
+	case "Api.basePath":
+		if e.ComplexityRoot.Api.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.BasePath(childComplexity), true
+
+	case "Api.category":
+		if e.ComplexityRoot.Api.Category == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.Category(childComplexity), true
+
+	case "Api.createdAt":
+		if e.ComplexityRoot.Api.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.CreatedAt(childComplexity), true
+
+	case "Api.id":
+		if e.ComplexityRoot.Api.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.ID(childComplexity), true
+
+	case "Api.lastModifiedAt":
+		if e.ComplexityRoot.Api.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.LastModifiedAt(childComplexity), true
+
+	case "Api.namespace":
+		if e.ComplexityRoot.Api.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.Namespace(childComplexity), true
+
+	case "Api.oauth2Scopes":
+		if e.ComplexityRoot.Api.Oauth2Scopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.Oauth2Scopes(childComplexity), true
+
+	case "Api.owner":
+		if e.ComplexityRoot.Api.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.Owner(childComplexity), true
+
+	case "Api.specificationUrl":
+		if e.ComplexityRoot.Api.SpecificationURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.SpecificationURL(childComplexity), true
+
+	case "Api.statusMessage":
+		if e.ComplexityRoot.Api.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.StatusMessage(childComplexity), true
+
+	case "Api.statusPhase":
+		if e.ComplexityRoot.Api.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.StatusPhase(childComplexity), true
+
+	case "Api.version":
+		if e.ComplexityRoot.Api.Version == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.Version(childComplexity), true
+
+	case "Api.xVendor":
+		if e.ComplexityRoot.Api.XVendor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.XVendor(childComplexity), true
+
+	case "ApiCategory.name":
+		if e.ComplexityRoot.ApiCategory.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiCategory.Name(childComplexity), true
+
+	case "ApiConnection.edges":
+		if e.ComplexityRoot.ApiConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiConnection.Edges(childComplexity), true
+
+	case "ApiConnection.pageInfo":
+		if e.ComplexityRoot.ApiConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiConnection.PageInfo(childComplexity), true
+
+	case "ApiConnection.totalCount":
+		if e.ComplexityRoot.ApiConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiConnection.TotalCount(childComplexity), true
+
+	case "ApiEdge.cursor":
+		if e.ComplexityRoot.ApiEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiEdge.Cursor(childComplexity), true
+
+	case "ApiEdge.node":
+		if e.ComplexityRoot.ApiEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiEdge.Node(childComplexity), true
+
+	case "ApiExposure.api":
+		if e.ComplexityRoot.ApiExposure.API == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.API(childComplexity), true
 
 	case "ApiExposure.apiVersion":
 		if e.ComplexityRoot.ApiExposure.APIVersion == nil {
@@ -1609,6 +1832,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventExposure.EventType(childComplexity), true
 
+	case "EventExposure.eventTypeDef":
+		if e.ComplexityRoot.EventExposure.EventTypeDef == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.EventTypeDef(childComplexity), true
+
 	case "EventExposure.id":
 		if e.ComplexityRoot.EventExposure.ID == nil {
 			break
@@ -1938,6 +2168,132 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventSubscriptionInfo.StatusPhase(childComplexity), true
 
+	case "EventType.active":
+		if e.ComplexityRoot.EventType.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.Active(childComplexity), true
+
+	case "EventType.activeExposure":
+		if e.ComplexityRoot.EventType.ActiveExposure == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.ActiveExposure(childComplexity), true
+
+	case "EventType.createdAt":
+		if e.ComplexityRoot.EventType.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.CreatedAt(childComplexity), true
+
+	case "EventType.description":
+		if e.ComplexityRoot.EventType.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.Description(childComplexity), true
+
+	case "EventType.eventType":
+		if e.ComplexityRoot.EventType.EventType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.EventType(childComplexity), true
+
+	case "EventType.id":
+		if e.ComplexityRoot.EventType.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.ID(childComplexity), true
+
+	case "EventType.lastModifiedAt":
+		if e.ComplexityRoot.EventType.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.LastModifiedAt(childComplexity), true
+
+	case "EventType.namespace":
+		if e.ComplexityRoot.EventType.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.Namespace(childComplexity), true
+
+	case "EventType.owner":
+		if e.ComplexityRoot.EventType.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.Owner(childComplexity), true
+
+	case "EventType.specificationUrl":
+		if e.ComplexityRoot.EventType.SpecificationURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.SpecificationURL(childComplexity), true
+
+	case "EventType.statusMessage":
+		if e.ComplexityRoot.EventType.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.StatusMessage(childComplexity), true
+
+	case "EventType.statusPhase":
+		if e.ComplexityRoot.EventType.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.StatusPhase(childComplexity), true
+
+	case "EventType.version":
+		if e.ComplexityRoot.EventType.Version == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.Version(childComplexity), true
+
+	case "EventTypeConnection.edges":
+		if e.ComplexityRoot.EventTypeConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventTypeConnection.Edges(childComplexity), true
+
+	case "EventTypeConnection.pageInfo":
+		if e.ComplexityRoot.EventTypeConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventTypeConnection.PageInfo(childComplexity), true
+
+	case "EventTypeConnection.totalCount":
+		if e.ComplexityRoot.EventTypeConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventTypeConnection.TotalCount(childComplexity), true
+
+	case "EventTypeEdge.cursor":
+		if e.ComplexityRoot.EventTypeEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventTypeEdge.Cursor(childComplexity), true
+
+	case "EventTypeEdge.node":
+		if e.ComplexityRoot.EventTypeEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventTypeEdge.Node(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -2167,6 +2523,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.PageInfo.StartCursor(childComplexity), true
 
+	case "Query.apiCategories":
+		if e.ComplexityRoot.Query.APICategories == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.APICategories(childComplexity), true
+
 	case "Query.apiExposures":
 		if e.ComplexityRoot.Query.APIExposures == nil {
 			break
@@ -2190,6 +2553,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.APISubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiSubscriptionOrder), args["where"].(*ent.ApiSubscriptionWhereInput)), true
+
+	case "Query.apis":
+		if e.ComplexityRoot.Query.Apis == nil {
+			break
+		}
+
+		args, err := ec.field_Query_apis_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Apis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiOrder), args["where"].(*ent.ApiWhereInput)), true
 
 	case "Query.applications":
 		if e.ComplexityRoot.Query.Applications == nil {
@@ -2250,6 +2625,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventSubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
+
+	case "Query.eventTypes":
+		if e.ComplexityRoot.Query.EventTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_eventTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
 
 	case "Query.node":
 		if e.ComplexityRoot.Query.Node == nil {
@@ -2378,6 +2765,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.RotateTeamTokenPayload.Team(childComplexity), true
 
+	case "Team.apis":
+		if e.ComplexityRoot.Team.Apis == nil {
+			break
+		}
+
+		args, err := ec.field_Team_apis_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Team.Apis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiOrder), args["where"].(*ent.ApiWhereInput)), true
+
 	case "Team.applications":
 		if e.ComplexityRoot.Team.Applications == nil {
 			break
@@ -2417,6 +2816,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.Environment(childComplexity), true
+
+	case "Team.eventTypes":
+		if e.ComplexityRoot.Team.EventTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Team_eventTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Team.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
 
 	case "Team.group":
 		if e.ComplexityRoot.Team.Group == nil {
@@ -2645,8 +3056,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputApiExposureOrder,
 		ec.unmarshalInputApiExposureWhereInput,
+		ec.unmarshalInputApiOrder,
 		ec.unmarshalInputApiSubscriptionOrder,
 		ec.unmarshalInputApiSubscriptionWhereInput,
+		ec.unmarshalInputApiWhereInput,
 		ec.unmarshalInputApplicationOrder,
 		ec.unmarshalInputApplicationWhereInput,
 		ec.unmarshalInputApprovalOrder,
@@ -2659,6 +3072,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEventExposureWhereInput,
 		ec.unmarshalInputEventSubscriptionOrder,
 		ec.unmarshalInputEventSubscriptionWhereInput,
+		ec.unmarshalInputEventTypeOrder,
+		ec.unmarshalInputEventTypeWhereInput,
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
@@ -2743,6 +3158,50 @@ func newExecutionContext(
 var sources = []*ast.Source{
 	{Name: "../../ent.graphql", Input: `directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 directive @goModel(model: String, models: [String!], forceGenerate: Boolean) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
+type Api implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: ApiStatusPhase
+  statusMessage: String
+  namespace: String!
+  basePath: String!
+  version: String!
+  category: String
+  oauth2Scopes: [String!]
+  xVendor: Boolean!
+  active: Boolean!
+}
+"""
+A connection to a list of items.
+"""
+type ApiConnection {
+  """
+  A list of edges.
+  """
+  edges: [ApiEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type ApiEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: Api
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
 type ApiExposure implements Node {
   id: ID!
   createdAt: Time!
@@ -2759,6 +3218,7 @@ type ApiExposure implements Node {
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
+  api: Api
 }
 """
 A connection to a list of items.
@@ -2983,10 +3443,44 @@ input ApiExposureWhereInput {
   hasOwner: Boolean
   hasOwnerWith: [ApplicationWhereInput!]
   """
+  api edge predicates
+  """
+  hasAPI: Boolean
+  hasAPIWith: [ApiWhereInput!]
+  """
   subscriptions edge predicates
   """
   hasSubscriptions: Boolean
   hasSubscriptionsWith: [ApiSubscriptionWhereInput!]
+}
+"""
+Ordering options for Api connections
+"""
+input ApiOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order Apis.
+  """
+  field: ApiOrderField!
+}
+"""
+Properties by which Api connections can be ordered.
+"""
+enum ApiOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+ApiStatusPhase is enum for the field status_phase
+"""
+enum ApiStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/api.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
 }
 type ApiSubscription implements Node {
   id: ID!
@@ -3239,6 +3733,179 @@ input ApiSubscriptionWhereInput {
   """
   hasApprovalRequests: Boolean
   hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
+}
+"""
+ApiWhereInput is used for filtering Api objects.
+Input was generated by ent.
+"""
+input ApiWhereInput {
+  not: ApiWhereInput
+  and: [ApiWhereInput!]
+  or: [ApiWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: ApiStatusPhase
+  statusPhaseNEQ: ApiStatusPhase
+  statusPhaseIn: [ApiStatusPhase!]
+  statusPhaseNotIn: [ApiStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  base_path field predicates
+  """
+  basePath: String
+  basePathNEQ: String
+  basePathIn: [String!]
+  basePathNotIn: [String!]
+  basePathGT: String
+  basePathGTE: String
+  basePathLT: String
+  basePathLTE: String
+  basePathContains: String
+  basePathHasPrefix: String
+  basePathHasSuffix: String
+  basePathEqualFold: String
+  basePathContainsFold: String
+  """
+  version field predicates
+  """
+  version: String
+  versionNEQ: String
+  versionIn: [String!]
+  versionNotIn: [String!]
+  versionGT: String
+  versionGTE: String
+  versionLT: String
+  versionLTE: String
+  versionContains: String
+  versionHasPrefix: String
+  versionHasSuffix: String
+  versionEqualFold: String
+  versionContainsFold: String
+  """
+  category field predicates
+  """
+  category: String
+  categoryNEQ: String
+  categoryIn: [String!]
+  categoryNotIn: [String!]
+  categoryGT: String
+  categoryGTE: String
+  categoryLT: String
+  categoryLTE: String
+  categoryContains: String
+  categoryHasPrefix: String
+  categoryHasSuffix: String
+  categoryIsNil: Boolean
+  categoryNotNil: Boolean
+  categoryEqualFold: String
+  categoryContainsFold: String
+  """
+  x_vendor field predicates
+  """
+  xVendor: Boolean
+  xVendorNEQ: Boolean
+  """
+  specification field predicates
+  """
+  specification: String
+  specificationNEQ: String
+  specificationIn: [String!]
+  specificationNotIn: [String!]
+  specificationGT: String
+  specificationGTE: String
+  specificationLT: String
+  specificationLTE: String
+  specificationContains: String
+  specificationHasPrefix: String
+  specificationHasSuffix: String
+  specificationIsNil: Boolean
+  specificationNotNil: Boolean
+  specificationEqualFold: String
+  specificationContainsFold: String
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [TeamWhereInput!]
+  """
+  exposures edge predicates
+  """
+  hasExposures: Boolean
+  hasExposuresWith: [ApiExposureWhereInput!]
 }
 type Application implements Node {
   id: ID!
@@ -4228,6 +4895,7 @@ type EventExposure implements Node {
   active: Boolean
   approvalConfig: ApprovalConfig!
   owner: Application!
+  eventTypeDef: EventType
 }
 """
 A connection to a list of items.
@@ -4433,6 +5101,11 @@ input EventExposureWhereInput {
   """
   hasOwner: Boolean
   hasOwnerWith: [ApplicationWhereInput!]
+  """
+  event_type_def edge predicates
+  """
+  hasEventTypeDef: Boolean
+  hasEventTypeDefWith: [EventTypeWhereInput!]
   """
   subscriptions edge predicates
   """
@@ -4701,6 +5374,245 @@ input EventSubscriptionWhereInput {
   hasApprovalRequests: Boolean
   hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
 }
+type EventType implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: EventTypeStatusPhase
+  statusMessage: String
+  namespace: String!
+  eventType: String!
+  version: String!
+  description: String
+  active: Boolean!
+}
+"""
+A connection to a list of items.
+"""
+type EventTypeConnection {
+  """
+  A list of edges.
+  """
+  edges: [EventTypeEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type EventTypeEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: EventType
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for EventType connections
+"""
+input EventTypeOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order EventTypes.
+  """
+  field: EventTypeOrderField!
+}
+"""
+Properties by which EventType connections can be ordered.
+"""
+enum EventTypeOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+EventTypeStatusPhase is enum for the field status_phase
+"""
+enum EventTypeStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/eventtype.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+EventTypeWhereInput is used for filtering EventType objects.
+Input was generated by ent.
+"""
+input EventTypeWhereInput {
+  not: EventTypeWhereInput
+  and: [EventTypeWhereInput!]
+  or: [EventTypeWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: EventTypeStatusPhase
+  statusPhaseNEQ: EventTypeStatusPhase
+  statusPhaseIn: [EventTypeStatusPhase!]
+  statusPhaseNotIn: [EventTypeStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  event_type field predicates
+  """
+  eventType: String
+  eventTypeNEQ: String
+  eventTypeIn: [String!]
+  eventTypeNotIn: [String!]
+  eventTypeGT: String
+  eventTypeGTE: String
+  eventTypeLT: String
+  eventTypeLTE: String
+  eventTypeContains: String
+  eventTypeHasPrefix: String
+  eventTypeHasSuffix: String
+  eventTypeEqualFold: String
+  eventTypeContainsFold: String
+  """
+  version field predicates
+  """
+  version: String
+  versionNEQ: String
+  versionIn: [String!]
+  versionNotIn: [String!]
+  versionGT: String
+  versionGTE: String
+  versionLT: String
+  versionLTE: String
+  versionContains: String
+  versionHasPrefix: String
+  versionHasSuffix: String
+  versionEqualFold: String
+  versionContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
+  """
+  specification field predicates
+  """
+  specification: String
+  specificationNEQ: String
+  specificationIn: [String!]
+  specificationNotIn: [String!]
+  specificationGT: String
+  specificationGTE: String
+  specificationLT: String
+  specificationLTE: String
+  specificationContains: String
+  specificationHasPrefix: String
+  specificationHasSuffix: String
+  specificationIsNil: Boolean
+  specificationNotNil: Boolean
+  specificationEqualFold: String
+  specificationContainsFold: String
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [TeamWhereInput!]
+  """
+  exposures edge predicates
+  """
+  hasExposures: Boolean
+  hasExposuresWith: [EventExposureWhereInput!]
+}
 type Group implements Node {
   id: ID!
   environment: String
@@ -4963,6 +5875,37 @@ type Query {
     """
     ids: [ID!]!
   ): [Node]!
+  apis(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for Apis returned from the connection.
+    """
+    orderBy: ApiOrder
+
+    """
+    Filtering options for Apis returned from the connection.
+    """
+    where: ApiWhereInput
+  ): ApiConnection!
   apiExposures(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -5180,6 +6123,37 @@ type Query {
     """
     where: EventSubscriptionWhereInput
   ): EventSubscriptionConnection!
+  eventTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventTypes returned from the connection.
+    """
+    orderBy: EventTypeOrder
+
+    """
+    Filtering options for EventTypes returned from the connection.
+    """
+    where: EventTypeWhereInput
+  ): EventTypeConnection!
   teams(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -5258,6 +6232,68 @@ type Team implements Node {
     """
     where: ApplicationWhereInput
   ): ApplicationConnection!
+  apis(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for Apis returned from the connection.
+    """
+    orderBy: ApiOrder
+
+    """
+    Filtering options for Apis returned from the connection.
+    """
+    where: ApiWhereInput
+  ): ApiConnection!
+  eventTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for EventTypes returned from the connection.
+    """
+    orderBy: EventTypeOrder
+
+    """
+    Filtering options for EventTypes returned from the connection.
+    """
+    where: EventTypeWhereInput
+  ): EventTypeConnection!
 }
 """
 TeamCategory is enum for the field category
@@ -5500,6 +6536,16 @@ input TeamWhereInput {
   """
   hasApplications: Boolean
   hasApplicationsWith: [ApplicationWhereInput!]
+  """
+  apis edge predicates
+  """
+  hasApis: Boolean
+  hasApisWith: [ApiWhereInput!]
+  """
+  event_types edge predicates
+  """
+  hasEventTypes: Boolean
+  hasEventTypesWith: [EventTypeWhereInput!]
 }
 """
 The builtin Time type
@@ -5936,6 +6982,37 @@ extend type ApprovalRequest {
   approval: Approval @goField(forceResolver: true)
 }
 
+# -- Catalogue extensions --
+
+extend type Api {
+  "URL to download the OpenAPI specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this API, or null if no exposure is active."
+  activeExposure: ApiExposureInfo @goField(forceResolver: true)
+  "The team that owns this API."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type EventType {
+  "URL to download the JSON schema from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this event type, or null if no exposure is active."
+  activeExposure: EventExposureInfo @goField(forceResolver: true)
+  "The team that owns this event type."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type Query {
+  "Returns all distinct API categories currently in use."
+  apiCategories: [ApiCategory!]! @goField(forceResolver: true)
+}
+
+"A category that APIs can be classified under."
+type ApiCategory {
+  "The category identifier/name."
+  name: String!
+}
+
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -5952,6 +7029,72 @@ func (ec *executionContext) childFields_AddTeamMemberPayload(ctx context.Context
 		return ec.fieldContext_AddTeamMemberPayload_errors(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type AddTeamMemberPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_Api(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_Api_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_Api_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_Api_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_Api_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_Api_statusMessage(ctx, field)
+	case "namespace":
+		return ec.fieldContext_Api_namespace(ctx, field)
+	case "basePath":
+		return ec.fieldContext_Api_basePath(ctx, field)
+	case "version":
+		return ec.fieldContext_Api_version(ctx, field)
+	case "category":
+		return ec.fieldContext_Api_category(ctx, field)
+	case "oauth2Scopes":
+		return ec.fieldContext_Api_oauth2Scopes(ctx, field)
+	case "xVendor":
+		return ec.fieldContext_Api_xVendor(ctx, field)
+	case "active":
+		return ec.fieldContext_Api_active(ctx, field)
+	case "specificationUrl":
+		return ec.fieldContext_Api_specificationUrl(ctx, field)
+	case "activeExposure":
+		return ec.fieldContext_Api_activeExposure(ctx, field)
+	case "owner":
+		return ec.fieldContext_Api_owner(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Api", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiCategory(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_ApiCategory_name(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiCategory", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_ApiConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_ApiConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_ApiConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_ApiEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_ApiEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiEdge", field.Name)
 }
 
 func (ec *executionContext) childFields_ApiExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -5986,6 +7129,8 @@ func (ec *executionContext) childFields_ApiExposure(ctx context.Context, field g
 		return ec.fieldContext_ApiExposure_apiVersion(ctx, field)
 	case "owner":
 		return ec.fieldContext_ApiExposure_owner(ctx, field)
+	case "api":
+		return ec.fieldContext_ApiExposure_api(ctx, field)
 	case "subscriptions":
 		return ec.fieldContext_ApiExposure_subscriptions(ctx, field)
 	}
@@ -6420,6 +7565,8 @@ func (ec *executionContext) childFields_EventExposure(ctx context.Context, field
 		return ec.fieldContext_EventExposure_approvalConfig(ctx, field)
 	case "owner":
 		return ec.fieldContext_EventExposure_owner(ctx, field)
+	case "eventTypeDef":
+		return ec.fieldContext_EventExposure_eventTypeDef(ctx, field)
 	case "subscriptions":
 		return ec.fieldContext_EventExposure_subscriptions(ctx, field)
 	}
@@ -6544,6 +7691,60 @@ func (ec *executionContext) childFields_EventSubscriptionInfo(ctx context.Contex
 		return ec.fieldContext_EventSubscriptionInfo_ownerTeam(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventSubscriptionInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_EventType(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_EventType_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_EventType_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_EventType_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_EventType_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_EventType_statusMessage(ctx, field)
+	case "namespace":
+		return ec.fieldContext_EventType_namespace(ctx, field)
+	case "eventType":
+		return ec.fieldContext_EventType_eventType(ctx, field)
+	case "version":
+		return ec.fieldContext_EventType_version(ctx, field)
+	case "description":
+		return ec.fieldContext_EventType_description(ctx, field)
+	case "active":
+		return ec.fieldContext_EventType_active(ctx, field)
+	case "specificationUrl":
+		return ec.fieldContext_EventType_specificationUrl(ctx, field)
+	case "activeExposure":
+		return ec.fieldContext_EventType_activeExposure(ctx, field)
+	case "owner":
+		return ec.fieldContext_EventType_owner(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventType", field.Name)
+}
+
+func (ec *executionContext) childFields_EventTypeConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_EventTypeConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_EventTypeConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_EventTypeConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventTypeConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_EventTypeEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_EventTypeEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_EventTypeEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventTypeEdge", field.Name)
 }
 
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -6686,6 +7887,10 @@ func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.
 		return ec.fieldContext_Team_members(ctx, field)
 	case "applications":
 		return ec.fieldContext_Team_applications(ctx, field)
+	case "apis":
+		return ec.fieldContext_Team_apis(ctx, field)
+	case "eventTypes":
+		return ec.fieldContext_Team_eventTypes(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
 }

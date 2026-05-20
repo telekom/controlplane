@@ -11,8 +11,11 @@ package resolvers
 import (
 	"context"
 	"fmt"
+	"sort"
 
+	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
@@ -22,6 +25,75 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
+
+// SpecificationURL is the resolver for the specificationUrl field.
+func (r *apiResolver) SpecificationURL(ctx context.Context, obj *ent.Api) (*string, error) {
+	return r.buildSpecificationURL(obj.Specification)
+}
+
+// ActiveExposure is the resolver for the activeExposure field.
+// Returns the active exposure for this API, or nil if none is active.
+func (r *apiResolver) ActiveExposure(ctx context.Context, obj *ent.Api) (*model.ApiExposureInfo, error) {
+	// SystemContext: The exposure may belong to another tenant; privacy rules would
+	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	exp, err := obj.QueryExposures().
+		Where(apiexposure.Active(true)).
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		Only(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading active exposure for api %d: %w", obj.ID, err)
+	}
+
+	app := exp.Edges.Owner
+	team := app.Edges.OwnerTeam
+	group, groupErr := team.Edges.GroupOrErr()
+	if groupErr != nil {
+		if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+			return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+		}
+		group = nil
+	}
+	return mapApiExposureInfo(exp, app, team, group), nil
+}
+
+// Owner is the resolver for the owner field.
+func (r *apiResolver) Owner(ctx context.Context, obj *ent.Api) (*model.TeamInfo, error) {
+	// SystemContext: The owning team may belong to a different tenant than the
+	// querying viewer. We return a reduced TeamInfo type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	log := logr.FromContextOrDiscard(ctx)
+
+	team, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		team, err = obj.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		log.Info("Failed to resolve owner team for api",
+			"apiID", obj.ID, "namespace", obj.Namespace, "basePath", obj.BasePath, "error", err)
+		return nil, fmt.Errorf("resolving owner team for api %d: %w", obj.ID, err)
+	}
+
+	group, err := team.Edges.GroupOrErr()
+	if ent.IsNotLoaded(err) {
+		group, err = team.QueryGroup().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
+	}
+	if ent.IsNotFound(err) {
+		group = nil
+	}
+
+	return mapTeamInfo(team, group), nil
+}
 
 // Subscriptions is the resolver for the subscriptions field.
 // Returns reduced ApiSubscriptionInfo types for cross-tenant safety.
@@ -331,6 +403,98 @@ func (r *eventSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *mo
 	}
 	s := eventsubscription.StatusPhase(*obj.StatusPhase)
 	return &s, nil
+}
+
+// SpecificationURL is the resolver for the specificationUrl field.
+func (r *eventTypeResolver) SpecificationURL(ctx context.Context, obj *ent.EventType) (*string, error) {
+	return r.buildSpecificationURL(obj.Specification)
+}
+
+// ActiveExposure is the resolver for the activeExposure field.
+// Returns the active exposure for this event type, or nil if none is active.
+func (r *eventTypeResolver) ActiveExposure(ctx context.Context, obj *ent.EventType) (*model.EventExposureInfo, error) {
+	// SystemContext: The exposure may belong to another tenant; privacy rules would
+	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	exp, err := obj.QueryExposures().
+		Where(eventexposure.Active(true)).
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		Only(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading active exposure for event type %d: %w", obj.ID, err)
+	}
+
+	app := exp.Edges.Owner
+	team := app.Edges.OwnerTeam
+	group, groupErr := team.Edges.GroupOrErr()
+	if groupErr != nil {
+		if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+			return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+		}
+		group = nil
+	}
+	return mapEventExposureInfo(exp, app, team, group), nil
+}
+
+// Owner is the resolver for the owner field.
+func (r *eventTypeResolver) Owner(ctx context.Context, obj *ent.EventType) (*model.TeamInfo, error) {
+	// SystemContext: The owning team may belong to a different tenant than the
+	// querying viewer. We return a reduced TeamInfo type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	log := logr.FromContextOrDiscard(ctx)
+
+	team, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		team, err = obj.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		log.Info("Failed to resolve owner team for event type",
+			"eventTypeID", obj.ID, "namespace", obj.Namespace, "eventType", obj.EventType, "error", err)
+		return nil, fmt.Errorf("resolving owner team for event type %d: %w", obj.ID, err)
+	}
+
+	group, err := team.Edges.GroupOrErr()
+	if ent.IsNotLoaded(err) {
+		group, err = team.QueryGroup().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
+	}
+	if ent.IsNotFound(err) {
+		group = nil
+	}
+
+	return mapTeamInfo(team, group), nil
+}
+
+// APICategories is the resolver for the apiCategories field.
+func (r *queryResolver) APICategories(ctx context.Context) ([]*gqlmodel.APICategory, error) {
+	// SystemContext: Categories are visible to all authenticated users regardless of tenant.
+	sysCtx := viewer.SystemContext(ctx)
+	names, err := r.client.Api.Query().
+		Where(
+			api.CategoryNotNil(),
+			api.CategoryNEQ(""),
+		).
+		Unique(true).
+		Select(api.FieldCategory).
+		Strings(sysCtx)
+	if err != nil {
+		return nil, fmt.Errorf("querying distinct api categories: %w", err)
+	}
+	sort.Strings(names)
+	categories := make([]*gqlmodel.APICategory, len(names))
+	for i, name := range names {
+		categories[i] = &gqlmodel.APICategory{Name: name}
+	}
+	return categories, nil
 }
 
 // TokenURL is the resolver for the tokenUrl field.

@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/hashicorp/go-multierror"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -24,6 +25,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -35,6 +37,11 @@ import (
 type Noder interface {
 	IsNode()
 }
+
+var apiImplementors = []string{"Api", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Api) IsNode() {}
 
 var apiexposureImplementors = []string{"ApiExposure", "Node"}
 
@@ -70,6 +77,11 @@ var eventsubscriptionImplementors = []string{"EventSubscription", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*EventSubscription) IsNode() {}
+
+var eventtypeImplementors = []string{"EventType", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*EventType) IsNode() {}
 
 var groupImplementors = []string{"Group", "Node"}
 
@@ -149,6 +161,15 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
+	case api.Table:
+		query := c.Api.Query().
+			Where(api.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, apiImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case apiexposure.Table:
 		query := c.ApiExposure.Query().
 			Where(apiexposure.ID(id))
@@ -208,6 +229,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(eventsubscription.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, eventsubscriptionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case eventtype.Table:
+		query := c.EventType.Query().
+			Where(eventtype.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, eventtypeImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -321,6 +351,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case api.Table:
+		query := c.Api.Query().
+			Where(api.IDIn(ids...))
+		query, err := query.CollectFields(ctx, apiImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case apiexposure.Table:
 		query := c.ApiExposure.Query().
 			Where(apiexposure.IDIn(ids...))
@@ -421,6 +467,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.EventSubscription.Query().
 			Where(eventsubscription.IDIn(ids...))
 		query, err := query.CollectFields(ctx, eventsubscriptionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case eventtype.Table:
+		query := c.EventType.Query().
+			Where(eventtype.IDIn(ids...))
+		query, err := query.CollectFields(ctx, eventtypeImplementors...)
 		if err != nil {
 			return nil, err
 		}

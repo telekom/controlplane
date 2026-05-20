@@ -14,7 +14,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -191,6 +193,36 @@ func (_c *TeamCreate) AddApplications(v ...*Application) *TeamCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddApplicationIDs(ids...)
+}
+
+// AddAPIIDs adds the "apis" edge to the Api entity by IDs.
+func (_c *TeamCreate) AddAPIIDs(ids ...int) *TeamCreate {
+	_c.mutation.AddAPIIDs(ids...)
+	return _c
+}
+
+// AddApis adds the "apis" edges to the Api entity.
+func (_c *TeamCreate) AddApis(v ...*Api) *TeamCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAPIIDs(ids...)
+}
+
+// AddEventTypeIDs adds the "event_types" edge to the EventType entity by IDs.
+func (_c *TeamCreate) AddEventTypeIDs(ids ...int) *TeamCreate {
+	_c.mutation.AddEventTypeIDs(ids...)
+	return _c
+}
+
+// AddEventTypes adds the "event_types" edges to the EventType entity.
+func (_c *TeamCreate) AddEventTypes(v ...*EventType) *TeamCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEventTypeIDs(ids...)
 }
 
 // Mutation returns the TeamMutation object of the builder.
@@ -405,6 +437,38 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ApisIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.ApisTable,
+			Columns: []string{team.ApisColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EventTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EventTypesTable,
+			Columns: []string{team.EventTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

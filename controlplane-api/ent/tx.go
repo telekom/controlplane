@@ -15,6 +15,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Api is the client for interacting with the Api builders.
+	Api *APIClient
 	// ApiExposure is the client for interacting with the ApiExposure builders.
 	ApiExposure *ApiExposureClient
 	// ApiSubscription is the client for interacting with the ApiSubscription builders.
@@ -29,6 +31,8 @@ type Tx struct {
 	EventExposure *EventExposureClient
 	// EventSubscription is the client for interacting with the EventSubscription builders.
 	EventSubscription *EventSubscriptionClient
+	// EventType is the client for interacting with the EventType builders.
+	EventType *EventTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// Member is the client for interacting with the Member builders.
@@ -168,6 +172,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Api = NewAPIClient(tx.config)
 	tx.ApiExposure = NewApiExposureClient(tx.config)
 	tx.ApiSubscription = NewApiSubscriptionClient(tx.config)
 	tx.Application = NewApplicationClient(tx.config)
@@ -175,6 +180,7 @@ func (tx *Tx) init() {
 	tx.ApprovalRequest = NewApprovalRequestClient(tx.config)
 	tx.EventExposure = NewEventExposureClient(tx.config)
 	tx.EventSubscription = NewEventSubscriptionClient(tx.config)
+	tx.EventType = NewEventTypeClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
@@ -188,7 +194,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: ApiExposure.QueryXXX(), the query will be executed
+// applies a query, for example: Api.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.
