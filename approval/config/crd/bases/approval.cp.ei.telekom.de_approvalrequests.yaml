@@ -127,7 +127,6 @@ spec:
                       - Granted
                       - Rejected
                       - Suspended
-                      - Expired
                       type: string
                     timestamp:
                       description: Timestamp of when the decision was made

@@ -192,7 +192,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			approvalReq.Spec.State = v1.ApprovalStateGranted
 			if len(approvalReq.Spec.Decisions) == 0 {
 				approvalReq.Spec.Decisions = append(approvalReq.Spec.Decisions, v1.Decision{
-					Name:           "System",
+					Name:           v1.SystemDecisionName,
 					Comment:        v1.AutoApprovedComment,
 					ResultingState: v1.ApprovalStateGranted,
 				})
@@ -241,7 +241,8 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	// Approval was found
 	if approvalExists {
 		log.V(2).Info("Approval exists")
-		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected || b.Approval.Spec.State == v1.ApprovalStateSuspended
+		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected ||
+			b.Approval.Spec.State == v1.ApprovalStateSuspended
 
 		if isDenied {
 			log.V(1).Info("Approval is rejected or suspended and must not be provisioned")

@@ -73,7 +73,7 @@ func (a *ApprovalCustomValidator) ValidateCreate(_ context.Context, obj *approva
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
+func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
 	approvallog.Info("validate update", "name", newObj.Name)
 
 	stateChanged := oldObj.Spec.State != newObj.Spec.State

@@ -54,3 +54,12 @@ func NewSemigrantedCondition() metav1.Condition {
 		Message: "Request has been partially approved, awaiting second approval",
 	}
 }
+
+func NewExpiredCondition() metav1.Condition {
+	return metav1.Condition{
+		Type:    "Expired",
+		Status:  metav1.ConditionTrue,
+		Reason:  "Expired",
+		Message: "Approval has expired and requires re-approval",
+	}
+}
