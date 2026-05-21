@@ -1,7 +1,7 @@
 ---
 name: review-pr
 description: Review a pull request covering technical (build, lint, coverage, error handling, security, API compat) and business (acceptance criteria, requirements, business logic, edge cases) dimensions. Use when asked to review a PR or evaluate code changes.
-allowed-tools: Bash(gh *) Bash(git *) Read
+allowed-tools: Bash(gh *) Bash(git *) Bash(make *) Read
 # SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
 # SPDX-License-Identifier: CC0-1.0
 ---
