@@ -6,6 +6,7 @@ package graphql
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -61,13 +62,15 @@ func httpHandlerWithUserContext(h http.Handler) fiber.Handler {
 		ctx := c.UserContext()
 
 		// Propagate forwarded user identity headers into context for the Viewer middleware.
-		if name, email := c.Get("X-Forwarded-User-Name"), c.Get("X-Forwarded-User-Email"); name != "" || email != "" {
+		// Values may be percent-encoded (encodeURIComponent) by the UI to support
+		// non-ASCII characters in HTTP header values; decode them transparently.
+		if name, email := decodeHeader(c.Get("X-Forwarded-User-Name")), decodeHeader(c.Get("X-Forwarded-User-Email")); name != "" || email != "" {
 			fu := viewer.ForwardedUser{Name: name, Email: email}
 			fu.IsAdmin = strings.EqualFold(c.Get("X-Forwarded-User-Is-Admin"), "true")
-			if roles := c.Get("X-Forwarded-User-Roles"); roles != "" {
+			if roles := decodeHeader(c.Get("X-Forwarded-User-Roles")); roles != "" {
 				fu.Roles = strings.Split(roles, ",")
 			}
-			if groups := c.Get("X-Forwarded-User-Groups"); groups != "" {
+			if groups := decodeHeader(c.Get("X-Forwarded-User-Groups")); groups != "" {
 				fu.Groups = strings.Split(groups, ",")
 			}
 			ctx = viewer.NewForwardedUserContext(ctx, fu)
@@ -96,4 +99,13 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 
 func (r *responseRecorder) WriteHeader(statusCode int) {
 	r.ctx.Status(statusCode)
+}
+
+// decodeHeader decodes a potentially percent-encoded header value.
+// If decoding fails (e.g. the value was never encoded), it returns the original value.
+func decodeHeader(value string) string {
+	if decoded, err := url.QueryUnescape(value); err == nil {
+		return decoded
+	}
+	return value
 }
