@@ -284,6 +284,8 @@ func (r *EventExposureReconciler) MapEventSubscriptionToEventExposure(ctx contex
 
 // MapApplicationToEventExposure enqueues EventExposures that are affected by changes to Applications.
 // This ensures EventExposures react when the provider Application changes (e.g., becoming ready).
+//
+//nolint:dupl // intentional similarity with MapApplicationToEventSubscription - different list type and spec field
 func (r *EventExposureReconciler) MapApplicationToEventExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	application, ok := obj.(*applicationv1.Application)
 	if !ok {

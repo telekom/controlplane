@@ -145,6 +145,8 @@ func (r *EventSubscriptionReconciler) MapEventConfigToEventSubscription(ctx cont
 
 // MapApplicationToEventSubscription enqueues EventSubscriptions that are affected by changes to Applications.
 // This is necessary to update the status of EventSubscriptions when the corresponding Application is updated, e.g. becoming ready
+//
+//nolint:dupl // intentional similarity with MapApplicationToEventExposure - different list type and spec field
 func (r *EventSubscriptionReconciler) MapApplicationToEventSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	application, ok := obj.(*applicationv1.Application)
 	if !ok {
