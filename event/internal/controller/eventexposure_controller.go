@@ -18,8 +18,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventexposure"
@@ -86,6 +88,10 @@ func (r *EventExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Watches(&eventv1.EventSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventSubscriptionToEventExposure),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(&applicationv1.Application{},
+			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToEventExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
@@ -272,6 +278,34 @@ func (r *EventExposureReconciler) MapEventSubscriptionToEventExposure(ctx contex
 				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 			})
 		}
+	}
+	return reqs
+}
+
+// MapApplicationToEventExposure enqueues EventExposures that are affected by changes to Applications.
+// This ensures EventExposures react when the provider Application changes (e.g., becoming ready).
+func (r *EventExposureReconciler) MapApplicationToEventExposure(ctx context.Context, obj client.Object) []reconcile.Request {
+	application, ok := obj.(*applicationv1.Application)
+	if !ok {
+		return nil
+	}
+
+	list := &eventv1.EventExposureList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
+	}); err != nil {
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		if !ctypes.ObjectRefFromObject(application).Equals(&list.Items[i].Spec.Provider) {
+			continue
+		}
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 	return reqs
 }
