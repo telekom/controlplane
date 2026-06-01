@@ -111,7 +111,7 @@ func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecificat
 }
 
 func (l *apiLinterImpl) prepareLinting(lintCfg *apiv1.LintingConfig, apiSpec *roverv1.ApiSpecification) bool {
-	if isBasepathWhitelisted(lintCfg, apiSpec.Spec.BasePath) {
+	if lintCfg.IsBasepathWhitelisted(apiSpec.Spec.BasePath) {
 		apiSpec.Spec.Lint = &roverv1.LintResult{Passed: true, Message: fmt.Sprintf("The basepath %q is whitelisted", apiSpec.Spec.BasePath)}
 		return false
 	}
@@ -158,14 +158,4 @@ func (l *apiLinterImpl) buildLintResult(result *oaslint.LintResult) *roverv1.Lin
 		lintResult.Message = strings.ReplaceAll(l.errorMessageTemplate, "{{.RulesetName}}", result.Ruleset)
 	}
 	return lintResult
-}
-
-// isBasepathWhitelisted checks whether the given basepath is in the category's whitelist.
-func isBasepathWhitelisted(cfg *apiv1.LintingConfig, basepath string) bool {
-	for _, wp := range cfg.WhitelistedBasepaths {
-		if strings.EqualFold(wp, basepath) {
-			return true
-		}
-	}
-	return false
 }

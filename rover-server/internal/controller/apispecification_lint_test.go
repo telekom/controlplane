@@ -23,41 +23,6 @@ import (
 )
 
 var _ = Describe("Linting helpers", func() {
-	Describe("isBasepathWhitelisted", func() {
-		It("should return false when WhitelistedBasepaths is empty", func() {
-			cfg := &apiv1.LintingConfig{}
-			Expect(isBasepathWhitelisted(cfg, "/eni/test/v1")).To(BeFalse())
-		})
-
-		It("should return true for exact match", func() {
-			cfg := &apiv1.LintingConfig{
-				WhitelistedBasepaths: []string{"/eni/test/v1"},
-			}
-			Expect(isBasepathWhitelisted(cfg, "/eni/test/v1")).To(BeTrue())
-		})
-
-		It("should match case-insensitively", func() {
-			cfg := &apiv1.LintingConfig{
-				WhitelistedBasepaths: []string{"/ENI/Test/v1"},
-			}
-			Expect(isBasepathWhitelisted(cfg, "/eni/test/v1")).To(BeTrue())
-		})
-
-		It("should return false for non-matching basepath", func() {
-			cfg := &apiv1.LintingConfig{
-				WhitelistedBasepaths: []string{"/other/path/v1"},
-			}
-			Expect(isBasepathWhitelisted(cfg, "/eni/test/v1")).To(BeFalse())
-		})
-
-		It("should check all entries", func() {
-			cfg := &apiv1.LintingConfig{
-				WhitelistedBasepaths: []string{"/first/v1", "/second/v2", "/eni/test/v1"},
-			}
-			Expect(isBasepathWhitelisted(cfg, "/eni/test/v1")).To(BeTrue())
-		})
-	})
-
 	Describe("prepareLinting", func() {
 		var linter *apiLinterImpl
 

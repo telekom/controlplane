@@ -48,6 +48,13 @@ type LintingConfig struct {
 	WhitelistedBasepaths []string `json:"whitelistedBasepaths,omitempty"`
 }
 
+// IsBasepathWhitelisted checks whether the given basepath is in this config's whitelist.
+func (c *LintingConfig) IsBasepathWhitelisted(basepath string) bool {
+	return slices.ContainsFunc(c.WhitelistedBasepaths, func(wp string) bool {
+		return strings.EqualFold(wp, basepath)
+	})
+}
+
 // ApiCategorySpec defines the desired state of ApiCategory
 type ApiCategorySpec struct {
 	// LabelValue is the name of the API category in the specification.
