@@ -184,7 +184,7 @@ The following environment variables configure the linting integration on the rov
 | Environment Variable | Description | Default |
 |---|---|---|
 | `OASLINTING_URL` | Base URL of the external linter API. If empty, linting is disabled regardless of category config. | _(empty)_ |
-| `OASLINTING_DASHBOARDURL` | Base URL of the linter dashboard. When set, lint results include a link to `<url>/scans/<linterId>`. | _(empty)_ |
+| `OASLINTING_DASHBOARDURL` | URL template for linking to scan results. Supports `{{.LinterId}}` and `{{.RulesetName}}` placeholders. | _(empty)_ |
 | `OASLINTING_ERRORMESSAGE` | Error message template (see placeholders above). | See above |
 | `OASLINTING_TIMEOUT` | HTTP timeout for linter requests (Go duration, e.g. `30s`). `0` means no timeout. | `55s` |
 | `OASLINTING_SKIPTLS` | Skip TLS verification for linter requests. | `false` |

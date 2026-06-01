@@ -30,6 +30,11 @@ const (
 	LintBlocked
 )
 
+const (
+	placeholderLinterId    = "{{.LinterId}}"
+	placeholderRulesetName = "{{.RulesetName}}"
+)
+
 // ApiLinter abstracts the full OAS linting lifecycle: config lookup,
 // whitelists, and execution and should populate apiSpec.Spec.Lint with the result if linting was performed.
 type ApiLinter interface {
@@ -140,11 +145,14 @@ func (l *apiLinterImpl) buildLintResult(result *oaslint.LintResult) *roverv1.Lin
 		Passed:  result.Passed,
 		Message: result.Reason,
 	}
-	if l.dashboardURL != "" && result.LinterId != "" {
-		lintResult.DashboardURL = fmt.Sprintf("%s/scans/%s", strings.TrimRight(l.dashboardURL, "/"), result.LinterId)
+	if l.dashboardURL != "" {
+		url := l.dashboardURL
+		url = strings.ReplaceAll(url, placeholderLinterId, result.LinterId)
+		url = strings.ReplaceAll(url, placeholderRulesetName, result.Ruleset)
+		lintResult.DashboardURL = url
 	}
 	if !result.Passed {
-		lintResult.Message = strings.ReplaceAll(l.errorMessageTemplate, "{{.RulesetName}}", result.Ruleset)
+		lintResult.Message = strings.ReplaceAll(l.errorMessageTemplate, placeholderRulesetName, result.Ruleset)
 	}
 	return lintResult
 }

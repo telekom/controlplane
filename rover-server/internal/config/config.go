@@ -28,7 +28,8 @@ type OasLintingConfig struct {
 	Timeout time.Duration `json:"timeout"`
 	// URL is the base URL of the OAS linter service.
 	URL string `json:"url"`
-	// DashboardURL is the base URL of the linter UI, used to construct links to scan results.
+	// DashboardURL is a URL template for linking to scan results in the linter UI.
+	// Supports {{.LinterId}} and {{.RulesetName}} as placeholders.
 	DashboardURL string `json:"dashboardURL"`
 	// SkipTLS disables TLS certificate verification for the linter HTTP client.
 	SkipTLS bool `json:"skipTLS"`
@@ -92,7 +93,7 @@ func setDefaults() {
 	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors for {{.RulesetName}} ruleset.")
 	viper.SetDefault("oasLinting.timeout", 55*time.Second) // must be below the 60s gateway timeout to allow graceful error handling instead of a raw 504
 	viper.SetDefault("oasLinting.url", "")
-	viper.SetDefault("oasLinting.dashboardURL", "")
+	viper.SetDefault("oasLinting.dashboardURL", "") // e.g. https://linter.example.com/scans/{{.LinterId}}
 	viper.SetDefault("oasLinting.skipTLS", false)
 
 	// Database
