@@ -66,17 +66,6 @@ func NewApiLinter(lintCfg config.OasLintingConfig) ApiLinter {
 	}
 }
 
-// noopApiLinter wraps oaslint.NoopLinter for the ApiLinter interface.
-// Used when no linter URL is configured globally.
-type noopApiLinter struct {
-	oaslint.NoopLinter
-}
-
-func (n *noopApiLinter) Lint(ctx context.Context, _ *roverv1.ApiSpecification, _ *apiv1.ApiCategory, _ io.Reader) (LintOutcome, error) {
-	logr.FromContextOrDiscard(ctx).V(1).Info("Linter URL not configured, skipping")
-	return LintSkipped, nil
-}
-
 func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes io.Reader) (LintOutcome, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	log.V(1).Info("Looking up linting config", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
