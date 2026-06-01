@@ -7,7 +7,7 @@ module github/telekom/controplane/cpapi/api
 go 1.26.3
 
 require (
-	github.com/oapi-codegen/runtime v1.4.0
+	github.com/oapi-codegen/runtime v1.4.1
 	github.com/pkg/errors v0.9.1
 	golang.org/x/oauth2 v0.36.0
 )
