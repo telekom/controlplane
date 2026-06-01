@@ -139,7 +139,7 @@ func (l *apiLinterImpl) buildLintResult(result *oaslint.LintResult) *roverv1.Lin
 		lintResult.DashboardURL = fmt.Sprintf("%s/scans/%s", strings.TrimRight(l.dashboardURL, "/"), result.LinterId)
 	}
 	if !result.Passed {
-		lintResult.Message = strings.ReplaceAll(l.errorMessageTemplate, "RULESET_NAME_PLACEHOLDER", result.Ruleset)
+		lintResult.Message = strings.ReplaceAll(l.errorMessageTemplate, "{{.RulesetName}}", result.Ruleset)
 	}
 	return lintResult
 }

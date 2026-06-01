@@ -165,16 +165,16 @@ Linting is only active when the `linting` section is present **and** `mode` is n
 
 #### Error message template
 
-The rover-server configuration option `oasLinting.errorMessage` controls the message returned to clients when linting fails. It supports the following placeholders:
+The rover-server configuration option `oasLinting.errorMessage` controls the message returned to clients when linting fails. It supports the following template variables:
 
-| Placeholder | Replaced with | Description |
+| Template Variable | Replaced with | Description |
 |---|---|---|
-| `RULESET_NAME_PLACEHOLDER` | Ruleset name from the lint result | The name of the ruleset that was applied during linting |
+| `{{.RulesetName}}` | Ruleset name from the lint result | The name of the ruleset that was applied during linting |
 
 **Default:**
 
 ```
-Linter scan result contains errors. Please visit the linter UI for details on the RULESET_NAME_PLACEHOLDER ruleset.
+Linter scan result contains errors for {{.RulesetName}} ruleset.
 ```
 
 #### Rover-server linting configuration

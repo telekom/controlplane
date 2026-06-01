@@ -21,11 +21,17 @@ type ServerConfig struct {
 }
 
 type OasLintingConfig struct {
-	ErrorMessage string        `json:"errorMessage"`
-	Timeout      time.Duration `json:"timeout"`
-	URL          string        `json:"url"`
-	DashboardURL string        `json:"dashboardURL"`
-	SkipTLS      bool          `json:"skipTLS"`
+	// ErrorMessage is a template for the message returned to clients when linting fails.
+	// Supports {{.RulesetName}} as a placeholder for the applied ruleset name.
+	ErrorMessage string `json:"errorMessage"`
+	// Timeout is the maximum duration to wait for the linter service to respond.
+	Timeout time.Duration `json:"timeout"`
+	// URL is the base URL of the OAS linter service.
+	URL string `json:"url"`
+	// DashboardURL is the base URL of the linter UI, used to construct links to scan results.
+	DashboardURL string `json:"dashboardURL"`
+	// SkipTLS disables TLS certificate verification for the linter HTTP client.
+	SkipTLS bool `json:"skipTLS"`
 }
 
 type SecurityConfig struct {
@@ -83,8 +89,8 @@ func setDefaults() {
 	viper.SetDefault("fileManager.skipTLS", true)
 
 	// OAS Linting
-	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors for RULESET_NAME_PLACEHOLDER ruleset.")
-	viper.SetDefault("oasLinting.timeout", 55) // seconds; 0 means block indefinitely until linter responds
+	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors for {{.RulesetName}} ruleset.")
+	viper.SetDefault("oasLinting.timeout", 55*time.Second) // must be below the 60s gateway timeout to allow graceful error handling instead of a raw 504
 	viper.SetDefault("oasLinting.url", "")
 	viper.SetDefault("oasLinting.dashboardURL", "")
 	viper.SetDefault("oasLinting.skipTLS", false)
