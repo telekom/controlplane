@@ -48,7 +48,12 @@ type apiLinterImpl struct {
 }
 
 // NewApiLinter creates an ApiLinter from the given linting configuration.
+// If no linter URL is configured, a noop linter is returned that always skips.
+// DashboardURL is optional — if empty, lint results will not include a link to the scan.
 func NewApiLinter(lintCfg config.OasLintingConfig) ApiLinter {
+	if lintCfg.URL == "" {
+		return &noopApiLinter{}
+	}
 	return &apiLinterImpl{
 		errorMessageTemplate: lintCfg.ErrorMessage,
 		url:                  lintCfg.URL,
@@ -59,6 +64,17 @@ func NewApiLinter(lintCfg config.OasLintingConfig) ApiLinter {
 			commonclient.WithSkipTlsVerify(lintCfg.SkipTLS),
 		),
 	}
+}
+
+// noopApiLinter wraps oaslint.NoopLinter for the ApiLinter interface.
+// Used when no linter URL is configured globally.
+type noopApiLinter struct {
+	oaslint.NoopLinter
+}
+
+func (n *noopApiLinter) Lint(ctx context.Context, _ *roverv1.ApiSpecification, _ *apiv1.ApiCategory, _ io.Reader) (LintOutcome, error) {
+	logr.FromContextOrDiscard(ctx).V(1).Info("Linter URL not configured, skipping")
+	return LintSkipped, nil
 }
 
 func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes io.Reader) (LintOutcome, error) {
@@ -72,8 +88,8 @@ func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecificat
 	}
 
 	lintCfg := category.Spec.Linting
-	if lintCfg == nil || l.url == "" || lintCfg.Mode == apiv1.LintingModeNone {
-		log.V(1).Info("No linting config or no URL, skipping linting", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
+	if lintCfg == nil || lintCfg.Mode == apiv1.LintingModeNone {
+		log.V(1).Info("No linting config, skipping linting", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
 		return LintSkipped, nil
 	}
 

@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/rover-server/internal/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -167,7 +168,7 @@ var _ = Describe("Linting helpers", func() {
 		})
 
 		It("should skip when linter URL is empty", func() {
-			linter = &apiLinterImpl{url: ""}
+			linter = NewApiLinter(config.OasLintingConfig{URL: ""})
 			category = newCategory(apiv1.LintingModeWarn)
 			outcome, err := linter.Lint(lintCtx, apiSpec, category, specBytes)
 			Expect(err).ToNot(HaveOccurred())
