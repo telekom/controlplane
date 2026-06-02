@@ -18,6 +18,7 @@ rules:
 - apiGroups:
   - api.cp.ei.telekom.de
   resources:
+  - apicategories
   - apiexposures
   - apis
   - apisubscriptions

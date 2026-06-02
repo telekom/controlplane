@@ -29,17 +29,23 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	appv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/migrate"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
 
 	"github.com/telekom/controlplane/projector/internal/config"
+	"github.com/telekom/controlplane/projector/internal/domain/api"
 	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/application"
 	"github.com/telekom/controlplane/projector/internal/domain/approval"
 	"github.com/telekom/controlplane/projector/internal/domain/approvalrequest"
+	"github.com/telekom/controlplane/projector/internal/domain/eventexposure"
+	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
+	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
@@ -52,6 +58,19 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+// modules is the ordered list of resource modules to register.
+var modules = []module.Module{
+	zone.Module,
+	group.Module,
+	team.Module,
+	application.Module,
+	api.Module,
+	apiexposure.Module,
+	apisubscription.Module,
+	approval.Module,
+	approvalrequest.Module,
+}
+
 func init() {
 	// Register all CR schemes used by the projector modules.
 	_ = adminv1.AddToScheme(scheme)
@@ -59,18 +78,11 @@ func init() {
 	_ = appv1.AddToScheme(scheme)
 	_ = approvalv1.AddToScheme(scheme)
 	_ = orgv1.AddToScheme(scheme)
-}
 
-// modules is the ordered list of resource modules to register.
-var modules = []module.Module{
-	zone.Module,
-	group.Module,
-	team.Module,
-	application.Module,
-	apiexposure.Module,
-	apisubscription.Module,
-	approval.Module,
-	approvalrequest.Module,
+	if cconfig.FeaturePubSub.IsEnabled() {
+		_ = eventv1.AddToScheme(scheme)
+		modules = append(modules, eventtype.Module, eventexposure.Module, eventsubscription.Module)
+	}
 }
 
 // Run is the projector entry point. It sets up the database, caches,

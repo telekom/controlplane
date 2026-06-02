@@ -63,3 +63,53 @@ func Approval(namespace, name string) (entityType, lookupKey string) {
 func ApprovalRequest(namespace, name string) (entityType, lookupKey string) {
 	return "approvalrequest", namespace + ":" + name
 }
+
+// EventExposure returns the cache key components for an EventExposure entity
+// identified by event type, application name, and team name.
+// Event types are unique per application, and applications per team,
+// so all three are required.
+func EventExposure(eventType, appName, teamName string) (entityType, lookupKey string) {
+	return "eventexposure", eventType + ":" + appName + ":" + teamName
+}
+
+// EventExposureByEventType returns the cache key components for an
+// EventExposure entity looked up by event type alone. Uses an "et:" prefix
+// to avoid collisions with the full composite key used by [EventExposure].
+func EventExposureByEventType(eventType string) (entityType, lookupKey string) {
+	return "eventexposure", "et:" + eventType
+}
+
+// EventSubscriptionMeta returns the cache key components for an
+// EventSubscription entity looked up by its Kubernetes metadata
+// (namespace + name).
+func EventSubscriptionMeta(namespace, name string) (entityType, lookupKey string) {
+	return "eventsubscription", "meta:" + namespace + ":" + name
+}
+
+// Api returns the cache key components for an Api catalogue entity.
+// Api base paths are unique per team (composite unique index on
+// base_path + owner), so both are required.
+func Api(basePath, teamName string) (entityType, lookupKey string) {
+	return "api", basePath + ":" + teamName
+}
+
+// ActiveApi returns the cache key components for the cluster-wide active Api
+// for a given base path. Only one Api is active at a time per base path
+// (oldest-wins), so the team is not part of the key.
+func ActiveApi(basePath string) (entityType, lookupKey string) {
+	return "api_active", basePath
+}
+
+// EventTypeDef returns the cache key components for an EventType catalogue
+// entity. Event type identifiers are unique per team (composite unique index
+// on event_type + owner), so both are required.
+func EventTypeDef(eventType, teamName string) (entityType, lookupKey string) {
+	return "eventtype", eventType + ":" + teamName
+}
+
+// ActiveEventType returns the cache key components for the cluster-wide active
+// EventType for a given type identifier. Only one EventType is active at a time
+// per type string (oldest-wins), so the team is not part of the key.
+func ActiveEventType(eventType string) (entityType, lookupKey string) {
+	return "eventtype_active", eventType
+}

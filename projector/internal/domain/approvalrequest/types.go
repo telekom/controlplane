@@ -4,13 +4,20 @@
 
 // Package approvalrequest implements the ApprovalRequest resource module for
 // the projector. ApprovalRequest is a Level 4 entity with a required
-// FK dependency on ApiSubscription (M2O). It uses namespace+name as the unique
-// conflict key and resolves the subscription FK via cache-based meta-key lookup.
+// FK dependency on ApiSubscription or EventSubscription (determined by
+// TargetKind). It uses namespace+name as the unique conflict key and resolves
+// the subscription FK via cache-based meta-key lookup.
 package approvalrequest
 
 import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
+)
+
+// TargetKind constants for FK resolution.
+const (
+	TargetKindAPISubscription   = "ApiSubscription"
+	TargetKindEventSubscription = "EventSubscription"
 )
 
 // ApprovalRequestKey is the composite identity key for ApprovalRequest
@@ -38,7 +45,11 @@ type ApprovalRequestData struct {
 	Decider              model.DeciderInfo
 	Decisions            []model.Decision
 	AvailableTransitions []model.AvailableTransition
-	// ApiSubscription reference via spec.target (k8s namespace + name).
+	// TargetKind indicates whether the approval request targets an
+	// ApiSubscription or EventSubscription. Used by the repository to
+	// resolve the correct FK.
+	TargetKind string // "ApiSubscription" or "EventSubscription"
+	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string
 }
