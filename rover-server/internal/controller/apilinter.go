@@ -31,8 +31,9 @@ const (
 )
 
 const (
-	placeholderLinterId    = "{{.LinterId}}"
-	placeholderRulesetName = "{{.RulesetName}}"
+	placeholderLinterId     = "{{.LinterId}}"
+	placeholderRulesetName  = "{{.RulesetName}}"
+	placeholderDashboardURL = "{{.DashboardURL}}"
 )
 
 // ApiLinter abstracts the full OAS linting lifecycle: config lookup,
@@ -157,7 +158,9 @@ func (l *apiLinterImpl) buildLintResult(result *oaslint.LintResult) *roverv1.Lin
 		lintResult.DashboardURL = url
 	}
 	if !result.Passed {
-		lintResult.Message = strings.ReplaceAll(l.errorMessageTemplate, placeholderRulesetName, result.Ruleset)
+		msg := strings.ReplaceAll(l.errorMessageTemplate, placeholderRulesetName, result.Ruleset)
+		msg = strings.ReplaceAll(msg, placeholderDashboardURL, lintResult.DashboardURL)
+		lintResult.Message = msg
 	}
 	return lintResult
 }

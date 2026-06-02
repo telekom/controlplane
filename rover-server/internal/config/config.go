@@ -22,7 +22,7 @@ type ServerConfig struct {
 
 type OasLintingConfig struct {
 	// ErrorMessage is a template for the message returned to clients when linting fails.
-	// Supports {{.RulesetName}} as a placeholder for the applied ruleset name.
+	// Supports {{.RulesetName}} and {{.DashboardURL}} as placeholders.
 	ErrorMessage string `json:"errorMessage"`
 	// Timeout is the maximum duration to wait for the linter service to respond.
 	Timeout time.Duration `json:"timeout"`
@@ -90,7 +90,7 @@ func setDefaults() {
 	viper.SetDefault("fileManager.skipTLS", true)
 
 	// OAS Linting
-	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors for {{.RulesetName}} ruleset.")
+	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors for {{.RulesetName}} ruleset. {{.DashboardURL}}")
 	viper.SetDefault("oasLinting.timeout", 55*time.Second) // must be below the 60s gateway timeout to allow graceful error handling instead of a raw 504
 	viper.SetDefault("oasLinting.url", "")
 	viper.SetDefault("oasLinting.dashboardURL", "") // e.g. https://linter.example.com/scans/{{.LinterId}}

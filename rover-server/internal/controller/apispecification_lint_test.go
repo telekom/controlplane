@@ -16,6 +16,7 @@ import (
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/rover-server/internal/config"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -201,6 +202,105 @@ var _ = Describe("Linting helpers", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(outcome).To(Equal(LintCompleted))
 			})
+		})
+	})
+
+	Describe("buildLintResult", func() {
+		It("should substitute {{.LinterId}} in dashboardURL", func() {
+			l := &apiLinterImpl{
+				dashboardURL:         "https://linter.example.com/scans/{{.LinterId}}",
+				errorMessageTemplate: "failed",
+			}
+			result := l.buildLintResult(&oaslint.LintResult{
+				Passed:   true,
+				Reason:   "ok",
+				Ruleset:  "default",
+				LinterId: "scan-abc-123",
+			})
+			Expect(result.DashboardURL).To(Equal("https://linter.example.com/scans/scan-abc-123"))
+		})
+
+		It("should substitute {{.RulesetName}} in dashboardURL", func() {
+			l := &apiLinterImpl{
+				dashboardURL:         "https://editor.example.com/tooling/oas-editor?ruleset={{.RulesetName}}",
+				errorMessageTemplate: "failed",
+			}
+			result := l.buildLintResult(&oaslint.LintResult{
+				Passed:   false,
+				Reason:   "errors found",
+				Ruleset:  "gapi",
+				LinterId: "scan-1",
+			})
+			Expect(result.DashboardURL).To(Equal("https://editor.example.com/tooling/oas-editor?ruleset=gapi"))
+		})
+
+		It("should substitute both placeholders in dashboardURL", func() {
+			l := &apiLinterImpl{
+				dashboardURL:         "https://linter.example.com/scans/{{.LinterId}}?ruleset={{.RulesetName}}",
+				errorMessageTemplate: "failed",
+			}
+			result := l.buildLintResult(&oaslint.LintResult{
+				Passed:   false,
+				Reason:   "errors",
+				Ruleset:  "strict",
+				LinterId: "id-42",
+			})
+			Expect(result.DashboardURL).To(Equal("https://linter.example.com/scans/id-42?ruleset=strict"))
+		})
+
+		It("should leave dashboardURL empty when not configured", func() {
+			l := &apiLinterImpl{
+				dashboardURL:         "",
+				errorMessageTemplate: "failed",
+			}
+			result := l.buildLintResult(&oaslint.LintResult{
+				Passed:   true,
+				Reason:   "ok",
+				Ruleset:  "default",
+				LinterId: "scan-1",
+			})
+			Expect(result.DashboardURL).To(BeEmpty())
+		})
+
+		It("should substitute {{.RulesetName}} in errorMessage when linting fails", func() {
+			l := &apiLinterImpl{
+				dashboardURL:         "",
+				errorMessageTemplate: "Linting failed for {{.RulesetName}} ruleset.",
+			}
+			result := l.buildLintResult(&oaslint.LintResult{
+				Passed:  false,
+				Reason:  "errors found",
+				Ruleset: "gapi",
+			})
+			Expect(result.Message).To(Equal("Linting failed for gapi ruleset."))
+		})
+
+		It("should substitute {{.DashboardURL}} in errorMessage when linting fails", func() {
+			l := &apiLinterImpl{
+				dashboardURL:         "https://linter.example.com/scans/{{.LinterId}}",
+				errorMessageTemplate: "Linting failed for {{.RulesetName}} ruleset. {{.DashboardURL}}",
+			}
+			result := l.buildLintResult(&oaslint.LintResult{
+				Passed:   false,
+				Reason:   "errors found",
+				Ruleset:  "gapi",
+				LinterId: "scan-99",
+			})
+			Expect(result.Message).To(Equal("Linting failed for gapi ruleset. https://linter.example.com/scans/scan-99"))
+		})
+
+		It("should not override message when linting passes", func() {
+			l := &apiLinterImpl{
+				dashboardURL:         "https://linter.example.com/scans/{{.LinterId}}",
+				errorMessageTemplate: "This should not appear",
+			}
+			result := l.buildLintResult(&oaslint.LintResult{
+				Passed:   true,
+				Reason:   "all good",
+				Ruleset:  "default",
+				LinterId: "scan-1",
+			})
+			Expect(result.Message).To(Equal("all good"))
 		})
 	})
 })

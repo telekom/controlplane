@@ -170,11 +170,12 @@ The rover-server configuration option `oasLinting.errorMessage` controls the mes
 | Template Variable | Replaced with | Description |
 |---|---|---|
 | `{{.RulesetName}}` | Ruleset name from the lint result | The name of the ruleset that was applied during linting |
+| `{{.DashboardURL}}` | Resolved dashboard URL | The fully resolved dashboard URL (with all placeholders substituted) |
 
 **Default:**
 
 ```
-Linter scan result contains errors for {{.RulesetName}} ruleset.
+Linter scan result contains errors for {{.RulesetName}} ruleset. {{.DashboardURL}}
 ```
 
 #### Rover-server linting configuration
