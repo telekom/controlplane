@@ -32,6 +32,9 @@ type SeedData struct {
 
 	MemberAlpha *ent.Member
 	MemberBeta  *ent.Member
+
+	EventExposureAlpha *ent.EventExposure
+	EventSubscription  *ent.EventSubscription
 }
 
 // SeedStandard creates a standard set of test data covering all entity types.
@@ -98,6 +101,22 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
 		SetDeciderTeamName("team-alpha").
 		SetAPISubscription(s.Subscription).
+		Save(ctx))
+
+	// Event Exposures
+	s.EventExposureAlpha = must(client.EventExposure.Create().
+		SetNamespace("default").
+		SetEventType("order.created").
+		SetOwner(s.AppAlpha).
+		Save(ctx))
+
+	// Event Subscriptions: app-beta subscribes to event-exposure-alpha (cross-team)
+	s.EventSubscription = must(client.EventSubscription.Create().
+		SetNamespace("default").
+		SetName("eventsub-order-created").
+		SetEventType("order.created").
+		SetOwner(s.AppBeta).
+		SetTarget(s.EventExposureAlpha).
 		Save(ctx))
 
 	return s

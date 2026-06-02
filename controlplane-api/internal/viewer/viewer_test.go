@@ -8,10 +8,11 @@ import (
 	"context"
 
 	"entgo.io/ent/privacy"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("NewContext / FromContext", func() {
@@ -55,5 +56,37 @@ var _ = Describe("SystemContext", func() {
 		decision, ok := privacy.DecisionFromContext(ctx)
 		Expect(ok).To(BeTrue())
 		Expect(decision).ToNot(HaveOccurred())
+	})
+})
+
+var _ = Describe("ForwardedUser context", func() {
+	It("should round-trip forwarded user through context", func() {
+		fu := viewer.ForwardedUser{Name: "Jane Doe", Email: "jane@example.com"}
+		ctx := viewer.NewForwardedUserContext(context.Background(), fu)
+		got, ok := viewer.ForwardedUserFromContext(ctx)
+		Expect(ok).To(BeTrue())
+		Expect(got.Name).To(Equal("Jane Doe"))
+		Expect(got.Email).To(Equal("jane@example.com"))
+	})
+
+	It("should round-trip all extended fields", func() {
+		fu := viewer.ForwardedUser{
+			Name:    "Jane Doe",
+			Email:   "jane@example.com",
+			IsAdmin: true,
+			Roles:   []string{"editor", "viewer"},
+			Groups:  []string{"group-1", "group-2"},
+		}
+		ctx := viewer.NewForwardedUserContext(context.Background(), fu)
+		got, ok := viewer.ForwardedUserFromContext(ctx)
+		Expect(ok).To(BeTrue())
+		Expect(got.IsAdmin).To(BeTrue())
+		Expect(got.Roles).To(ConsistOf("editor", "viewer"))
+		Expect(got.Groups).To(ConsistOf("group-1", "group-2"))
+	})
+
+	It("should return false when no forwarded user is in context", func() {
+		_, ok := viewer.ForwardedUserFromContext(context.Background())
+		Expect(ok).To(BeFalse())
 	})
 })
