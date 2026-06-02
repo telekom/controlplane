@@ -123,7 +123,12 @@ func (l *apiLinterImpl) runLint(ctx context.Context, apiSpec *roverv1.ApiSpecifi
 	opts = append(opts, oaslint.WithHTTPClient(l.httpClient))
 	linter := oaslint.NewExternalLinter(l.url, opts...)
 
-	result, err := linter.Lint(ctx, specBytes)
+	// Use a detached context so the linter call is not cancelled by the
+	// Fiber request timeout. The HTTP client's own timeout (config.Timeout)
+	// governs how long we wait. This ensures the request context stays alive
+	// for the subsequent store write.
+	lintCtx := context.WithoutCancel(ctx)
+	result, err := linter.Lint(lintCtx, specBytes)
 	if err != nil {
 		apiSpec.Spec.Lint = &roverv1.LintResult{
 			Passed:  false,
