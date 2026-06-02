@@ -67,6 +67,9 @@ func (ApiExposure) Edges() []ent.Edge {
 			Ref("exposed_apis").
 			Required().
 			Unique(),
+		edge.From("api", Api.Type).
+			Ref("exposures").
+			Unique(),
 		edge.From("subscriptions", ApiSubscription.Type).
 			Ref("target").
 			Annotations(entgql.Skip(entgql.SkipType)),

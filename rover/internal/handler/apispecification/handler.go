@@ -48,11 +48,12 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 		}
 
 		api.Spec = apiapi.ApiSpec{
-			Version:      apiSpec.Spec.Version,
-			BasePath:     apiSpec.Spec.BasePath,
-			Category:     apiSpec.Spec.Category,
-			Oauth2Scopes: apiSpec.Spec.Oauth2Scopes,
-			XVendor:      apiSpec.Spec.XVendor,
+			Version:       apiSpec.Spec.Version,
+			BasePath:      apiSpec.Spec.BasePath,
+			Category:      apiSpec.Spec.Category,
+			Oauth2Scopes:  apiSpec.Spec.Oauth2Scopes,
+			XVendor:       apiSpec.Spec.XVendor,
+			Specification: apiSpec.Spec.Specification,
 		}
 
 		return nil

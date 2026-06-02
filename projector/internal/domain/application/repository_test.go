@@ -103,14 +103,14 @@ var _ = Describe("Application Repository", func() {
 	Describe("Upsert", func() {
 		It("should create an application with valid deps", func() {
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "my-app", nil),
-				StatusPhase:   "READY",
-				StatusMessage: "ok",
-				Name:          "my-app",
-				ClientID:      strPtr("client-123"),
-				IssuerURL:     nil,
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "my-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "ok",
+				Name:                "my-app",
+				ClientID:            strPtr("client-123"),
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -119,7 +119,6 @@ var _ = Describe("Application Repository", func() {
 			Expect(app.Name).To(Equal("my-app"))
 			Expect(app.ClientID).ToNot(BeNil())
 			Expect(*app.ClientID).To(Equal("client-123"))
-			Expect(app.IssuerURL).To(BeNil())
 
 			// Verify FK edges.
 			ownerTeam, err := app.QueryOwnerTeam().Only(ctx)
@@ -133,12 +132,13 @@ var _ = Describe("Application Repository", func() {
 
 		It("should return ErrDependencyMissing when team is missing", func() {
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--unknown--team-a", "fail-app", nil),
-				StatusPhase:   "UNKNOWN",
-				StatusMessage: "",
-				Name:          "fail-app",
-				TeamName:      "unknown--team-a",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--unknown--team-a", "fail-app", nil),
+				StatusPhase:         "UNKNOWN",
+				StatusMessage:       "",
+				Name:                "fail-app",
+				TeamName:            "unknown--team-a",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			err := repo.Upsert(ctx, data)
 			Expect(err).To(HaveOccurred())
@@ -148,12 +148,13 @@ var _ = Describe("Application Repository", func() {
 
 		It("should return ErrDependencyMissing when zone is missing", func() {
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "fail-app", nil),
-				StatusPhase:   "UNKNOWN",
-				StatusMessage: "",
-				Name:          "fail-app",
-				TeamName:      "platform--narvi",
-				ZoneName:      "missing-zone",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "fail-app", nil),
+				StatusPhase:         "UNKNOWN",
+				StatusMessage:       "",
+				Name:                "fail-app",
+				TeamName:            "platform--narvi",
+				ZoneName:            "missing-zone",
+				SecretRotationPhase: "DONE",
 			}
 			err := repo.Upsert(ctx, data)
 			Expect(err).To(HaveOccurred())
@@ -171,12 +172,13 @@ var _ = Describe("Application Repository", func() {
 			failRepo := application.NewRepository(client, cache, failDeps)
 
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "fail-app", nil),
-				StatusPhase:   "UNKNOWN",
-				StatusMessage: "",
-				Name:          "fail-app",
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "fail-app", nil),
+				StatusPhase:         "UNKNOWN",
+				StatusMessage:       "",
+				Name:                "fail-app",
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			err := failRepo.Upsert(ctx, data)
 			Expect(err).To(HaveOccurred())
@@ -194,12 +196,13 @@ var _ = Describe("Application Repository", func() {
 			failRepo := application.NewRepository(client, cache, failDeps)
 
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "fail-app", nil),
-				StatusPhase:   "UNKNOWN",
-				StatusMessage: "",
-				Name:          "fail-app",
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "fail-app", nil),
+				StatusPhase:         "UNKNOWN",
+				StatusMessage:       "",
+				Name:                "fail-app",
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			err := failRepo.Upsert(ctx, data)
 			Expect(err).To(HaveOccurred())
@@ -209,14 +212,14 @@ var _ = Describe("Application Repository", func() {
 
 		It("should update existing application on conflict", func() {
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "upd-app", nil),
-				StatusPhase:   "PENDING",
-				StatusMessage: "v1",
-				Name:          "upd-app",
-				ClientID:      nil,
-				IssuerURL:     nil,
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "upd-app", nil),
+				StatusPhase:         "PENDING",
+				StatusMessage:       "v1",
+				Name:                "upd-app",
+				ClientID:            nil,
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -236,41 +239,15 @@ var _ = Describe("Application Repository", func() {
 			Expect(*app.ClientID).To(Equal("client-456"))
 		})
 
-		It("should clear IssuerURL when updated to nil", func() {
-			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "issuer-app", nil),
-				StatusPhase:   "READY",
-				StatusMessage: "ok",
-				Name:          "issuer-app",
-				IssuerURL:     strPtr("https://issuer.example.com"),
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
-			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
-
-			// Verify IssuerURL was set.
-			app, err := client.Application.Query().Where(entapp.NameEQ("issuer-app")).Only(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(app.IssuerURL).ToNot(BeNil())
-			Expect(*app.IssuerURL).To(Equal("https://issuer.example.com"))
-
-			// Update with IssuerURL cleared.
-			data.IssuerURL = nil
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
-
-			app, err = client.Application.Query().Where(entapp.NameEQ("issuer-app")).Only(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(app.IssuerURL).To(BeNil())
-		})
-
 		It("should populate the edge cache after upsert", func() {
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "cached-app", nil),
-				StatusPhase:   "READY",
-				StatusMessage: "",
-				Name:          "cached-app",
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "cached-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "",
+				Name:                "cached-app",
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 			cache.Wait()
@@ -285,12 +262,13 @@ var _ = Describe("Application Repository", func() {
 		It("should delete application and cascade to children", func() {
 			// Create an application first.
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "del-app", nil),
-				StatusPhase:   "READY",
-				StatusMessage: "",
-				Name:          "del-app",
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "del-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "",
+				Name:                "del-app",
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -325,12 +303,13 @@ var _ = Describe("Application Repository", func() {
 
 		It("should evict from edge cache after delete", func() {
 			data := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "evict-app", nil),
-				StatusPhase:   "READY",
-				StatusMessage: "",
-				Name:          "evict-app",
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "evict-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "",
+				Name:                "evict-app",
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 			cache.Wait()
@@ -348,20 +327,22 @@ var _ = Describe("Application Repository", func() {
 
 		It("should only delete the targeted application", func() {
 			data1 := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "app-1", nil),
-				StatusPhase:   "READY",
-				StatusMessage: "",
-				Name:          "app-1",
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "app-1", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "",
+				Name:                "app-1",
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			data2 := &application.ApplicationData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "app-2", nil),
-				StatusPhase:   "READY",
-				StatusMessage: "",
-				Name:          "app-2",
-				TeamName:      "platform--narvi",
-				ZoneName:      "caas",
+				Meta:                shared.NewMetadata("prod--platform--narvi", "app-2", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "",
+				Name:                "app-2",
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
 			}
 			Expect(repo.Upsert(ctx, data1)).To(Succeed())
 			Expect(repo.Upsert(ctx, data2)).To(Succeed())
