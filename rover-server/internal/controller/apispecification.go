@@ -9,11 +9,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
+	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -23,6 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/in"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/out"
@@ -36,12 +40,16 @@ var _ server.ApiSpecificationController = &ApiSpecificationController{}
 type ApiSpecificationController struct {
 	stores *s.Stores
 	Store  store.ObjectStore[*roverv1.ApiSpecification]
+
+	// Linter handles OAS linting operations. If nil, linting is disabled.
+	Linter ApiLinter
 }
 
-func NewApiSpecificationController(stores *s.Stores) *ApiSpecificationController {
+func NewApiSpecificationController(stores *s.Stores, lintCfg config.OasLintingConfig) *ApiSpecificationController {
 	return &ApiSpecificationController{
 		stores: stores,
 		Store:  stores.APISpecificationStore,
+		Linter: NewApiLinter(lintCfg),
 	}
 }
 
@@ -50,7 +58,7 @@ func (a *ApiSpecificationController) Create(ctx context.Context, req api.ApiSpec
 	// Important Hint: This is a declarative API. The client should not create an ApiSpecification, but only use
 	// the PUT method. This is similar to how kubernetes works.
 	// The main use case for the rover API will be to enable the usage of roverctl
-	log.Infof("ApiSpecification: Create not implemented. ApiSpecification is: %+v", req)
+	logr.FromContextOrDiscard(ctx).Info("ApiSpecification: Create not implemented", "request", req)
 	return api.ApiSpecificationResponse{},
 		fiber.NewError(fiber.StatusNotImplemented, "Create not implemented")
 }
@@ -189,6 +197,20 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
+	// Fetch the ApiCategory list once for both validation and linting config lookup.
+	categoryList := a.fetchApiCategories(ctx)
+
+	// Validate the API category against the known ApiCategories.
+	if catErr := a.validateApiCategoryFromList(categoryList, apiSpec.Spec.Category); catErr != nil {
+		return res, catErr
+	}
+
+	// Look up the specific ApiCategory for linting.
+	var apiCategory *apiv1.ApiCategory
+	if categoryList != nil {
+		apiCategory, _ = categoryList.FindByLabelValue(apiSpec.Spec.Category)
+	}
+
 	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, id)
 	if err != nil {
 		return res, err
@@ -200,9 +222,27 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	}
 	EnsureLabelsOrDie(ctx, apiSpec)
 
+	// Lint the spec if the linter is configured. Hash dedup is handled by
+	// lintOrReuse: if the spec hasn't changed and already has a lint result,
+	// the previous result is reused without calling the external linter.
+	var lintOutcome LintOutcome
+	var lintErr error
+	if a.Linter != nil {
+		ns := id.Environment + "--" + id.Namespace
+		existing, _ := a.Store.Get(ctx, ns, id.Name)
+		lintOutcome, lintErr = a.lintOrReuse(ctx, apiSpec, existing, apiCategory, bytes.NewReader(specMarshaled))
+	}
+
 	err = a.Store.CreateOrReplace(ctx, apiSpec)
 	if err != nil {
 		return res, err
+	}
+
+	if lintOutcome == LintBlocked {
+		return res, problems.BadRequest(lintErr.Error())
+	}
+	if lintErr != nil {
+		return res, problems.InternalServerError("Linting failed", lintErr.Error())
 	}
 
 	return a.Get(ctx, resourceId)
@@ -225,6 +265,57 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	}
 
 	return status.MapAPISpecificationResponse(ctx, apiSpec, a.stores)
+}
+
+// fetchApiCategories fetches all ApiCategories from the store. Returns nil if the store is not configured.
+func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *apiv1.ApiCategoryList {
+	if a.stores.APICategoryStore == nil {
+		return nil
+	}
+	listOpts := store.NewListOpts()
+	categoryList, err := a.stores.APICategoryStore.List(ctx, listOpts)
+	if err != nil {
+		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories", "error", err)
+		return nil
+	}
+	result := &apiv1.ApiCategoryList{Items: make([]apiv1.ApiCategory, 0, len(categoryList.Items))}
+	for _, item := range categoryList.Items {
+		result.Items = append(result.Items, *item)
+	}
+	return result
+}
+
+// lintOrReuse decides whether to call the external linter or reuse a cached result.
+// If the spec hash is unchanged and a previous lint result exists, it reuses it.
+// Otherwise it delegates to the Linter.
+func (a *ApiSpecificationController) lintOrReuse(ctx context.Context, apiSpec *roverv1.ApiSpecification, existing *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes io.Reader) (LintOutcome, error) {
+	if existing != nil && existing.Spec.Lint != nil && existing.Spec.Hash == apiSpec.Spec.Hash {
+		apiSpec.Spec.Lint = existing.Spec.Lint
+		return LintSkipped, nil
+	}
+	return a.Linter.Lint(ctx, apiSpec, category, specBytes)
+}
+
+// validateApiCategoryFromList validates that the given category is a known and active ApiCategory
+// using a pre-fetched list. If the list is nil, validation is skipped.
+func (a *ApiSpecificationController) validateApiCategoryFromList(categoryList *apiv1.ApiCategoryList, category string) error {
+	if categoryList == nil {
+		return nil
+	}
+
+	found, ok := categoryList.FindByLabelValue(category)
+	if !ok {
+		allowedLabels := strings.Join(categoryList.AllowedLabelValues(), ", ")
+		return problems.BadRequest(
+			fmt.Sprintf("ApiCategory %q not found. Allowed values are: [%s]", category, allowedLabels))
+	}
+
+	if !found.Spec.Active {
+		return problems.BadRequest(
+			fmt.Sprintf("ApiCategory %q is not active", category))
+	}
+
+	return nil
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {

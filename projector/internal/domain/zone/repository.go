@@ -55,6 +55,9 @@ func (r *Repository) Upsert(ctx context.Context, data *ZoneData) error {
 	if data.GatewayURL != nil {
 		create = create.SetGatewayURL(*data.GatewayURL)
 	}
+	if data.IssuerURL != nil {
+		create = create.SetIssuerURL(*data.IssuerURL)
+	}
 
 	id, err := create.
 		OnConflictColumns(zone.FieldName).
@@ -65,6 +68,11 @@ func (r *Repository) Upsert(ctx context.Context, data *ZoneData) error {
 				u.SetGatewayURL(*data.GatewayURL)
 			} else {
 				u.ClearGatewayURL()
+			}
+			if data.IssuerURL != nil {
+				u.SetIssuerURL(*data.IssuerURL)
+			} else {
+				u.ClearIssuerURL()
 			}
 		}).
 		ID(ctx)

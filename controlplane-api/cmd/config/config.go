@@ -12,17 +12,19 @@ import (
 )
 
 type ServerConfig struct {
-	Database   DatabaseConfig   `yaml:"database"`
-	Server     HTTPServerConfig `yaml:"server"`
-	Security   SecurityConfig   `yaml:"security"`
-	GraphQL    GraphQLConfig    `yaml:"graphql"`
-	Log        LogConfig        `yaml:"log"`
-	Kubernetes KubernetesConfig `yaml:"kubernetes"`
+	Database    DatabaseConfig    `yaml:"database"`
+	Server      HTTPServerConfig  `yaml:"server"`
+	Security    SecurityConfig    `yaml:"security"`
+	GraphQL     GraphQLConfig     `yaml:"graphql"`
+	Log         LogConfig         `yaml:"log"`
+	Kubernetes  KubernetesConfig  `yaml:"kubernetes"`
+	FileManager FileManagerConfig `yaml:"fileManager"`
 }
 
 type KubernetesConfig struct {
-	Enabled    bool   `yaml:"enabled"`
-	Kubeconfig string `yaml:"kubeconfig"` // optional, defaults to in-cluster config
+	Enabled     bool   `yaml:"enabled"`
+	Kubeconfig  string `yaml:"kubeconfig"`  // optional, defaults to in-cluster config
+	Environment string `yaml:"environment"` // environment scope for the scoped client
 }
 
 type DatabaseConfig struct {
@@ -53,10 +55,16 @@ type LogConfig struct {
 	Level string `yaml:"level"`
 }
 
+// FileManagerConfig holds the configuration for constructing specification
+// download URLs. The BaseURL is the root URL of the file-manager service.
+type FileManagerConfig struct {
+	BaseURL string `yaml:"baseUrl"`
+}
+
 func DefaultConfig() *ServerConfig {
 	return &ServerConfig{
 		Database: DatabaseConfig{
-			URL: "postgres://localhost:5432/controlplane?sslmode=disable",
+			URL: "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable",
 		},
 		Server: HTTPServerConfig{
 			Address: ":8443",
@@ -73,7 +81,14 @@ func DefaultConfig() *ServerConfig {
 			PlaygroundEnabled: true,
 		},
 		Log: LogConfig{
-			Level: "info",
+			Level: "debug",
+		},
+		Kubernetes: KubernetesConfig{
+			Enabled:     true,
+			Environment: "poc", // TODO: for now, this is fine. Needs to be refined later
+		},
+		FileManager: FileManagerConfig{
+			BaseURL: "file-manager.controlplane-system.svc",
 		},
 	}
 }
