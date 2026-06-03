@@ -262,7 +262,8 @@ jobs:
         with:
           go-package: ./...
           work-dir: ${{ inputs.module }}
-
+          go-version-file: "${{ inputs.module }}/go.mod"
+          
   codeql:
     name: "CodeQL Analysis for ${{ inputs.name }}"
     if: ${{ inputs.run_code_analysis }}
