@@ -381,6 +381,146 @@ var _ = Describe("Rover Handler", func() {
 		})
 	})
 
+	Describe("PatchAuthentication", func() {
+		It("should pass through 'basic' as-is in authentication.clientAuthMethod", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "basic",
+							},
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("basic"))
+		})
+
+		It("should pass through 'body' as-is in authentication.clientAuthMethod", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "body",
+							},
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("body"))
+		})
+
+		It("should pass through 'BODY' as-is in authentication.clientAuthMethod", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "BODY",
+							},
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("BODY"))
+		})
+
+		It("should not add authentication when it is missing", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			Expect(content).NotTo(HaveKey("authentication"))
+		})
+
+		It("should leave authentication untouched when clientAuthMethod has invalid value", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "invalid",
+							},
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("invalid"))
+		})
+
+		It("should leave authentication untouched when format is not a map", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": "not a map",
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			Expect(content).To(HaveKey("authentication"))
+		})
+
+		It("should leave authentication untouched when already in rover-server format", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"clientAuthMethod": "BASIC",
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("BASIC"))
+		})
+	})
+
 	Describe("ResetSecret", func() {
 		It("should send a reset secret request and return converged status", func() {
 			callCount := 0

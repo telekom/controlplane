@@ -78,6 +78,7 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 		Psiid: in.Psiid,
 		Icto:  in.Icto,
 	})
+	mapAuthentication(in, out)
 	return nil
 }
 
@@ -148,4 +149,26 @@ func mapPermissions(in *api.Rover, out *roverv1.Rover) error {
 	}
 
 	return nil
+}
+
+// clientAuthMethodToCRD maps rover-server API enum values to rover CRD tokenRequest values.
+var clientAuthMethodToCRD = map[api.AuthenticationClientAuthMethod]roverv1.TokenRequestMethod{
+	api.BASIC: roverv1.TokenRequestClientSecretBasic,
+	api.POST:  roverv1.TokenRequestClientSecretPost,
+}
+
+func mapAuthentication(in *api.Rover, out *roverv1.Rover) {
+	method := FuzzyMatchClientAuthMethod(string(in.Authentication.ClientAuthMethod))
+	if method == "" {
+		return
+	}
+	tokenRequest, ok := clientAuthMethodToCRD[method]
+	if !ok {
+		return
+	}
+	out.Spec.Authentication = &roverv1.RoverAuthentication{
+		M2M: &roverv1.RoverM2MAuthentication{
+			TokenRequest: tokenRequest,
+		},
+	}
 }

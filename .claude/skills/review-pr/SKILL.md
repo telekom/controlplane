@@ -1,14 +1,10 @@
-<!--
-SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
-
-SPDX-License-Identifier: CC0-1.0
--->
-
 ---
 name: review-pr
 description: Review a pull request covering technical (build, lint, coverage, error handling, security, API compat) and business (acceptance criteria, requirements, business logic, edge cases) dimensions. Use when asked to review a PR or evaluate code changes.
 argument-hint: "[PR-number or empty for current branch]"
 allowed-tools: Bash(gh *) Bash(git *) Read
+# SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
+# SPDX-License-Identifier: CC0-1.0
 ---
 
 Review the pull request specified by `$ARGUMENTS`.

@@ -31,6 +31,7 @@ import (
 type mockExposureDeps struct {
 	appIDs map[string]int // key: "appName:teamName"
 	appErr error          // if non-nil, FindApplicationID always returns this error
+	apiIDs map[string]int // key: basePath (active api lookup)
 }
 
 func (m *mockExposureDeps) FindApplicationID(_ context.Context, name, teamName string) (int, error) {
@@ -42,6 +43,15 @@ func (m *mockExposureDeps) FindApplicationID(_ context.Context, name, teamName s
 		return id, nil
 	}
 	return 0, fmt.Errorf("application %q (team %q): %w", name, teamName, infrastructure.ErrEntityNotFound)
+}
+
+func (m *mockExposureDeps) FindActiveApiID(_ context.Context, basePath string) (int, error) {
+	if m.apiIDs != nil {
+		if id, ok := m.apiIDs[basePath]; ok {
+			return id, nil
+		}
+	}
+	return 0, fmt.Errorf("active api %q: %w", basePath, infrastructure.ErrEntityNotFound)
 }
 
 var _ = Describe("ApiExposure Repository", func() {

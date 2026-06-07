@@ -122,7 +122,63 @@ var _ = Describe("Zone Translator", func() {
 					Meta:       shared.NewMetadata("admin", "zone-d", nil),
 					Name:       "zone-d",
 					GatewayURL: nil,
+					IssuerURL:  nil,
 					Visibility: "ENTERPRISE",
+				},
+			),
+			Entry("issuer URL is populated from Status.Links.Issuer",
+				&adminv1.Zone{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "zone-e",
+						Namespace: "admin",
+						Labels: map[string]string{
+							"cp.ei.telekom.de/environment": "production",
+						},
+					},
+					Spec: adminv1.ZoneSpec{
+						Visibility: adminv1.ZoneVisibilityWorld,
+						Gateway: adminv1.GatewayConfig{
+							Url: "https://gateway.example.com",
+						},
+					},
+					Status: adminv1.ZoneStatus{
+						Links: adminv1.Links{
+							Issuer: "https://keycloak.example.com/auth/realms/production",
+						},
+					},
+				},
+				&zone.ZoneData{
+					Meta:       shared.NewMetadata("admin", "zone-e", map[string]string{"cp.ei.telekom.de/environment": "production"}),
+					Name:       "zone-e",
+					GatewayURL: strPtr("https://gateway.example.com"),
+					IssuerURL:  strPtr("https://keycloak.example.com/auth/realms/production"),
+					Visibility: "WORLD",
+				},
+			),
+			Entry("empty issuer URL is treated as nil",
+				&adminv1.Zone{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "zone-f",
+						Namespace: "admin",
+					},
+					Spec: adminv1.ZoneSpec{
+						Visibility: adminv1.ZoneVisibilityWorld,
+						Gateway: adminv1.GatewayConfig{
+							Url: "https://gw.test",
+						},
+					},
+					Status: adminv1.ZoneStatus{
+						Links: adminv1.Links{
+							Issuer: "",
+						},
+					},
+				},
+				&zone.ZoneData{
+					Meta:       shared.NewMetadata("admin", "zone-f", nil),
+					Name:       "zone-f",
+					GatewayURL: strPtr("https://gw.test"),
+					IssuerURL:  nil,
+					Visibility: "WORLD",
 				},
 			),
 		)

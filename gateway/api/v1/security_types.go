@@ -4,6 +4,15 @@
 
 package v1
 
+// TokenRequestMethod defines the token endpoint authentication method (RFC 7591).
+// +kubebuilder:validation:Enum=client_secret_basic;client_secret_post
+type TokenRequestMethod string
+
+const (
+	TokenRequestClientSecretBasic TokenRequestMethod = "client_secret_basic"
+	TokenRequestClientSecretPost  TokenRequestMethod = "client_secret_post"
+)
+
 type Security struct {
 	// DisableAccessControl disable the ACL mechanism for this route
 	// +kubebuilder:validation:Optional
@@ -112,10 +121,9 @@ type ExternalIdentityProvider struct {
 	// +kubebuilder:validation:Format=uri
 	TokenEndpoint string `json:"tokenEndpoint"`
 
-	// TokenRequest is the type of token request, "body" or "header"
+	// TokenRequest configures the token endpoint authentication method (RFC 7591)
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=body;header
-	TokenRequest string `json:"tokenRequest,omitempty"`
+	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 	// GrantType is the grant type for the external IDP authentication
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
