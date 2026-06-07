@@ -73,16 +73,6 @@ var _ = Describe("Approval Conditions", func() {
 		})
 	})
 
-	Context("NewExpiredCondition", func() {
-		It("should return Approved=False for Expired state", func() {
-			cond := NewExpiredCondition()
-			Expect(cond.Type).To(Equal("Expired"))
-			Expect(cond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(cond.Reason).To(Equal("Expired"))
-			Expect(cond.Message).To(ContainSubstring("expired"))
-		})
-	})
-
 	// Semantic validation: states that grant access vs states that don't
 	Describe("Semantic Validation", func() {
 		It("should have Approved=True only for states that grant access", func() {
@@ -90,7 +80,6 @@ var _ = Describe("Approval Conditions", func() {
 			grantingStates := []metav1.Condition{
 				NewApprovedCondition(),  // Granted
 				NewSuspendedCondition(), // Suspended (debatable, but currently True)
-				NewExpiredCondition(),   // Expiry is informative only, approval itself is still approved
 			}
 
 			for _, cond := range grantingStates {

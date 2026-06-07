@@ -16,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	v1 "github.com/telekom/controlplane/approval/api/v1"
-	"github.com/telekom/controlplane/approval/internal/condition"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -54,18 +53,17 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 
 	now := time.Now()
 
-	// Check if expired — transition to EXPIRED and return immediately.
-	// No notification is sent here because the Approval handler's handleNotifications
-	// already sends state-change notifications when it processes the GRANTED→EXPIRED transition.
+	// Check if expired — log if yes (expirations are currently informational only)
 	if now.After(ae.Spec.Expiration.Time) || now.Equal(ae.Spec.Expiration.Time) {
-		logger.Info("Approval expired, transitioning to EXPIRED state",
+		logger.Info("Approval has expired",
 			"expiration", ae.Spec.Expiration.Time)
-		return h.addExpiredCondition(ctx, approval)
 	}
 
 	// Evaluate which reminder (if any) should fire now
 	pending := reminder.Evaluate(ae.Spec.Expiration.Time, ae.Spec.Thresholds, ae.Status.SentReminders, now)
 	if len(pending) > 0 {
+
+		// Evaluate returns at most one pending reminder (tightest threshold).
 		p := pending[0]
 		logger.V(1).Info("Sending reminder", "threshold", p.Key)
 
@@ -121,26 +119,6 @@ func (h *Handler) getParentApproval(ctx context.Context, ae *v1.ApprovalExpirati
 		return nil, err
 	}
 	return approval, nil
-}
-
-// ensureApprovalExpired transitions the parent Approval to EXPIRED state
-func (h *Handler) addExpiredCondition(ctx context.Context, approval *v1.Approval) error {
-	// Add system Decision (matches auto-approval pattern)
-	approval.Spec.Decisions = append(approval.Spec.Decisions, v1.Decision{
-		Name:           v1.SystemDecisionName,
-		Comment:        "Expiration date reached. Approval state remains, but expired condition added.",
-		Timestamp:      &metav1.Time{Time: time.Now()},
-		ResultingState: approval.Spec.State,
-	})
-
-	approval.Status.Conditions = append(approval.Status.Conditions, condition.NewExpiredCondition())
-
-	// Update via API server (goes through webhook)
-	if err := h.client.Update(ctx, approval); err != nil {
-		return errors.Wrap(err, "failed to expire approval")
-	}
-
-	return nil
 }
 
 // sendReminder sends a reminder notification for the approaching or reached expiration

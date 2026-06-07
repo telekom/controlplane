@@ -29,13 +29,13 @@ import (
 var _ handler.Handler[*approvalv1.Approval] = &ApprovalHandler{}
 
 type ApprovalHandler struct {
-	cfg *config.ExpirationConfig
+	expirationCfg *config.ExpirationConfig
 }
 
 // NewHandler creates a new ApprovalHandler with the provided configuration
 func NewHandler(cfg *config.ExpirationConfig) *ApprovalHandler {
 	return &ApprovalHandler{
-		cfg: cfg,
+		expirationCfg: cfg,
 	}
 }
 
@@ -85,6 +85,11 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 	// Handle ApprovalExpiration lifecycle (do this after conditions are set)
 	if err := h.handleExpiration(ctx, approval, stateChanged); err != nil {
 		return errors.Wrap(err, "failed to handle expiration")
+	}
+
+	// note the expiration of this approval in the status
+	approval.Status.ExpiresAt = &metav1.Time{
+		Time: time.Now().Add(h.expirationCfg.ExpirationDuration),
 	}
 
 	return nil
@@ -165,7 +170,7 @@ func (h *ApprovalHandler) handleExpiration(ctx context.Context, approval *approv
 		if stateChanged {
 			// Create or update ApprovalExpiration with fresh dates
 			// (covers initial GRANTED and REALLOW from EXPIRED)
-			return createOrUpdateApprovalExpiration(ctx, c, approval, h.cfg)
+			return createOrUpdateApprovalExpiration(ctx, c, approval, h.expirationCfg)
 		}
 		// State unchanged, leave ApprovalExpiration alone
 

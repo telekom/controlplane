@@ -133,6 +133,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			g.Expect(approval.Spec.State).To(BeEquivalentTo("Pending"))
 			g.Expect(approval.Spec.Strategy).To(BeEquivalentTo("Auto"))
 			g.Expect(approval.Spec.Requester.TeamName).To(BeEquivalentTo("test--requester"))
+			g.Expect(approval.Status.ExpiresAt).NotTo(BeNil())
 		}, timeout, interval).Should(Succeed())
 	})
 

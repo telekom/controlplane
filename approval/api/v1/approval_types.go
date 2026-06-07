@@ -56,6 +56,9 @@ type ApprovalStatus struct {
 
 	AvailableTransitions AvailableTransitions `json:"availableTransitions,omitempty"`
 
+	// +kubebuilder:printcolumn:name="ExpiresAt",type="date",JSONPath=".status.expiresAt"
+	ExpiresAt *metav1.Time `json:"expiresAt,omitempty"`
+
 	// LastState defines the last state of the approval
 	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended
 	// +kubebuilder:default=Pending

@@ -349,6 +349,10 @@ func (in *ApprovalStatus) DeepCopyInto(out *ApprovalStatus) {
 		*out = make(AvailableTransitions, len(*in))
 		copy(*out, *in)
 	}
+	if in.ExpiresAt != nil {
+		in, out := &in.ExpiresAt, &out.ExpiresAt
+		*out = (*in).DeepCopy()
+	}
 	if in.NotificationRefs != nil {
 		in, out := &in.NotificationRefs, &out.NotificationRefs
 		*out = make([]types.ObjectRef, len(*in))
