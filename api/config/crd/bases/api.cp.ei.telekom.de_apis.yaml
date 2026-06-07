@@ -55,6 +55,11 @@ spec:
                 items:
                   type: string
                 type: array
+              specification:
+                description: |-
+                  Specification contains the file ID reference from the file manager for
+                  the optional OpenAPI specification document that describes this API.
+                type: string
               version:
                 type: string
               xVendor:

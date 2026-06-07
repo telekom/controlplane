@@ -1,0 +1,26 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package oaslint
+
+import (
+	"context"
+	"io"
+)
+
+// Linter defines the interface for OAS specification linting.
+// The external linter server manages rulesets; clients just send the spec.
+type Linter interface {
+	Lint(ctx context.Context, spec io.Reader) (*LintResult, error)
+}
+
+// LintResult contains the outcome of a linting operation.
+type LintResult struct {
+	Passed   bool
+	Reason   string
+	Ruleset  string
+	LinterId string
+	Errors   int
+	Warnings int
+}

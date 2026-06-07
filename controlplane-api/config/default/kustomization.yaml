@@ -42,10 +42,14 @@ configMapGenerator:
 
 patches:
   # This is only needed when using the cert-manager to issue certificates.
+  # [SECRET_MANAGER] The following patch will add the secret manager to the deployment.
   - path: deployment_patch.yaml
     target:
       kind: Deployment
       name: controlplane-api
+  - path: namespace_patch.yaml
+    target:
+      kind: Namespace
 
 # This is only needed when using the cert-manager to issue certificates.
 replacements:

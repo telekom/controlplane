@@ -8,6 +8,10 @@ The ControlPlane API and Projector together form the **UI Layer** of the Control
 
 ## Architecture
 
+![ControlPlane API Container Diagram](/img/controlplane-api.drawio.svg)
+
+The diagram above shows the system from a container perspective. The flow below details how data moves through the pipeline:
+
 ```mermaid
 graph TD
     subgraph Kubernetes Cluster

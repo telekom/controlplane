@@ -9,8 +9,6 @@ import (
 	"fmt"
 
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
-	"github.com/vektah/gqlparser/v2/gqlerror"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // authorizeCreateTeam checks that the viewer is allowed to create a team in the given group.
@@ -78,44 +76,4 @@ func authorizeApprovalAction(ctx context.Context, deciderTeam string) error {
 		return nil
 	}
 	return fmt.Errorf("forbidden: insufficient permissions — only the decider team %q can decide on this approval", deciderTeam)
-}
-
-// mapK8sError converts a Kubernetes API error to a GraphQL error with an appropriate error code.
-func mapK8sError(err error) *gqlerror.Error {
-	if err == nil {
-		return nil
-	}
-
-	switch {
-	case apierrors.IsNotFound(err):
-		return &gqlerror.Error{
-			Message:    "resource not found",
-			Extensions: map[string]interface{}{"code": "NOT_FOUND"},
-		}
-	case apierrors.IsAlreadyExists(err):
-		return &gqlerror.Error{
-			Message:    "resource already exists",
-			Extensions: map[string]interface{}{"code": "ALREADY_EXISTS"},
-		}
-	case apierrors.IsConflict(err):
-		return &gqlerror.Error{
-			Message:    "conflict: resource was modified concurrently",
-			Extensions: map[string]interface{}{"code": "CONFLICT"},
-		}
-	case apierrors.IsForbidden(err):
-		return &gqlerror.Error{
-			Message:    "forbidden by Kubernetes RBAC",
-			Extensions: map[string]interface{}{"code": "FORBIDDEN"},
-		}
-	case apierrors.IsInvalid(err):
-		return &gqlerror.Error{
-			Message:    fmt.Sprintf("validation failed: %s", err),
-			Extensions: map[string]interface{}{"code": "VALIDATION_ERROR"},
-		}
-	default:
-		return &gqlerror.Error{
-			Message:    fmt.Sprintf("internal error: %s", err),
-			Extensions: map[string]interface{}{"code": "INTERNAL"},
-		}
-	}
 }
