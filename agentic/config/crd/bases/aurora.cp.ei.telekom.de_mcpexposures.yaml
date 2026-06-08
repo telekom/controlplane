@@ -1,0 +1,692 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
+  name: mcpexposures.agentic.cp.ei.telekom.de
+spec:
+  group: agentic.cp.ei.telekom.de
+  names:
+    kind: McpExposure
+    listKind: McpExposureList
+    plural: mcpexposures
+    singular: mcpexposure
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: The MCP server base path
+      jsonPath: .spec.mcpBasePath
+      name: BasePath
+      type: string
+    - description: Whether this exposure is active
+      jsonPath: .status.active
+      name: Active
+      type: boolean
+    - description: The exposure variant
+      jsonPath: .spec.variant
+      name: Variant
+      type: string
+    - description: Creation timestamp
+      jsonPath: .metadata.creationTimestamp
+      name: CreatedAt
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          McpExposure is the Schema for the mcpexposures API.
+          It represents a declaration that an application exposes an MCP server,
+          making it available for subscription by other applications via the AI Gateway.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: McpExposureSpec defines the desired state of McpExposure.
+            properties:
+              approval:
+                description: Approval configures how subscriptions to this MCP server
+                  are approved.
+                properties:
+                  strategy:
+                    default: Auto
+                    description: Strategy defines the approval mode.
+                    enum:
+                    - Auto
+                    - Simple
+                    - FourEyes
+                    type: string
+                  trustedTeams:
+                    description: TrustedTeams identifies teams that are trusted for
+                      approving subscriptions.
+                    items:
+                      type: string
+                    maxItems: 10
+                    minItems: 0
+                    type: array
+                required:
+                - strategy
+                type: object
+              mcpBasePath:
+                description: McpBasePath references the McpServer via its basePath.
+                minLength: 1
+                pattern: ^/[a-z0-9-/]+$
+                type: string
+              provider:
+                description: Provider identifies the providing application.
+                properties:
+                  apiVersion:
+                    description: |-
+                      APIVersion defines the versioned schema of this representation of an object.
+                      Servers should convert recognized schemas to the latest internal value, and
+                      may reject unrecognized values.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                    type: string
+                  kind:
+                    description: |-
+                      Kind is a string value representing the REST resource this object represents.
+                      Servers may infer this from the endpoint the client submits requests to.
+                      Cannot be updated.
+                      In CamelCase.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              security:
+                description: Security configures optional security settings for the
+                  route.
+                properties:
+                  defaultConsumers:
+                    description: DefaultConsumers defines a list of default consumers
+                      that are allowed to access this route without being explicitly
+                      added as a consumer
+                    items:
+                      type: string
+                    type: array
+                  disableAccessControl:
+                    default: false
+                    description: DisableAccessControl disable the ACL mechanism for
+                      this route
+                    type: boolean
+                  m2m:
+                    description: M2M defines machine-to-machine authentication configuration
+                    properties:
+                      basic:
+                        description: Basic defines basic authentication configuration
+                        properties:
+                          password:
+                            description: Password for basic authentication
+                            minLength: 1
+                            type: string
+                          username:
+                            description: Username for basic authentication
+                            minLength: 1
+                            type: string
+                        required:
+                        - password
+                        - username
+                        type: object
+                      externalIDP:
+                        description: ExternalIDP defines external identity provider
+                          configuration
+                        properties:
+                          basic:
+                            description: Basic defines basic auth credentials for
+                              the OAuth2 token request
+                            properties:
+                              password:
+                                description: Password for basic authentication
+                                minLength: 1
+                                type: string
+                              username:
+                                description: Username for basic authentication
+                                minLength: 1
+                                type: string
+                            required:
+                            - password
+                            - username
+                            type: object
+                          client:
+                            description: Client defines client credentials for the
+                              OAuth2 token request
+                            properties:
+                              clientId:
+                                description: ClientId identifies the client for OAuth2
+                                  client credentials flow
+                                minLength: 1
+                                type: string
+                              clientKey:
+                                description: clientKey is the private key associated
+                                  with the client ID
+                                type: string
+                              clientSecret:
+                                description: ClientSecret is the secret associated
+                                  with the client ID
+                                type: string
+                            required:
+                            - clientId
+                            type: object
+                            x-kubernetes-validations:
+                            - message: ClientSecret and ClientKey cannot be used together
+                              rule: 'self == null || (has(self.clientKey) ? (!has(self.clientSecret))
+                                : true)'
+                            - message: At least one of clientSecret or clientKey must
+                                be provided
+                              rule: self == null || has(self.clientSecret) || has(self.clientKey)
+                          grantType:
+                            description: GrantType is the grant type for the external
+                              IDP authentication
+                            enum:
+                            - client_credentials
+                            - authorization_code
+                            - password
+                            type: string
+                          tokenEndpoint:
+                            description: TokenEndpoint is the URL for the OAuth2 token
+                              endpoint
+                            format: uri
+                            type: string
+                          tokenRequest:
+                            description: TokenRequest is the type of token request,
+                              "body" or "header"
+                            enum:
+                            - body
+                            - header
+                            type: string
+                        required:
+                        - tokenEndpoint
+                        type: object
+                        x-kubernetes-validations:
+                        - message: Only one of basic or client credentials can be
+                            provided (XOR relationship)
+                          rule: self == null || !has(self.basic) || !has(self.client)
+                      scopes:
+                        description: Scopes defines additional OAuth2 scopes that
+                          are added to the LMS token
+                        items:
+                          type: string
+                        maxItems: 10
+                        type: array
+                    type: object
+                    x-kubernetes-validations:
+                    - message: ExternalIDP and basic authentication cannot be used
+                        together
+                      rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
+                        : true)'
+                    - message: Scopes and basic authentication cannot be used together
+                      rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
+                        : true)'
+                    - message: At least one of externalIDP, basic, or scopes must
+                        be provided
+                      rule: self == null || has(self.externalIDP) || has(self.basic)
+                        || has(self.scopes)
+                type: object
+              traffic:
+                description: Traffic configures traffic management for the route.
+                properties:
+                  circuitBreaker:
+                    properties:
+                      enabled:
+                        description: CircuitBreaker flags if the Kong circuit breaker
+                          feature should be used
+                        type: boolean
+                    type: object
+                  dynamicUpstream:
+                    description: |-
+                      DynamicUpstream configures runtime upstream URL resolution.
+                      When set, the gateway resolves the actual upstream target from a
+                      request query parameter instead of using the static upstream.
+                    properties:
+                      queryParameter:
+                        description: |-
+                          QueryParameter is the name of the query parameter containing the target URL.
+                          The parameter will be removed from the forwarded request.
+                        minLength: 1
+                        pattern: ^[a-zA-Z0-9_-]+$
+                        type: string
+                    required:
+                    - queryParameter
+                    type: object
+                  failover:
+                    properties:
+                      security:
+                        properties:
+                          defaultConsumers:
+                            description: DefaultConsumers defines a list of default
+                              consumers that are allowed to access this route without
+                              being explicitly added as a consumer
+                            items:
+                              type: string
+                            type: array
+                          disableAccessControl:
+                            default: false
+                            description: DisableAccessControl disable the ACL mechanism
+                              for this route
+                            type: boolean
+                          m2m:
+                            description: M2M defines machine-to-machine authentication
+                              configuration
+                            properties:
+                              basic:
+                                description: Basic defines basic authentication configuration
+                                properties:
+                                  password:
+                                    description: Password for basic authentication
+                                    minLength: 1
+                                    type: string
+                                  username:
+                                    description: Username for basic authentication
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - password
+                                - username
+                                type: object
+                              externalIDP:
+                                description: ExternalIDP defines external identity
+                                  provider configuration
+                                properties:
+                                  basic:
+                                    description: Basic defines basic auth credentials
+                                      for the OAuth2 token request
+                                    properties:
+                                      password:
+                                        description: Password for basic authentication
+                                        minLength: 1
+                                        type: string
+                                      username:
+                                        description: Username for basic authentication
+                                        minLength: 1
+                                        type: string
+                                    required:
+                                    - password
+                                    - username
+                                    type: object
+                                  client:
+                                    description: Client defines client credentials
+                                      for the OAuth2 token request
+                                    properties:
+                                      clientId:
+                                        description: ClientId identifies the client
+                                          for OAuth2 client credentials flow
+                                        minLength: 1
+                                        type: string
+                                      clientKey:
+                                        description: clientKey is the private key
+                                          associated with the client ID
+                                        type: string
+                                      clientSecret:
+                                        description: ClientSecret is the secret associated
+                                          with the client ID
+                                        type: string
+                                    required:
+                                    - clientId
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: ClientSecret and ClientKey cannot be
+                                        used together
+                                      rule: 'self == null || (has(self.clientKey)
+                                        ? (!has(self.clientSecret)) : true)'
+                                    - message: At least one of clientSecret or clientKey
+                                        must be provided
+                                      rule: self == null || has(self.clientSecret)
+                                        || has(self.clientKey)
+                                  grantType:
+                                    description: GrantType is the grant type for the
+                                      external IDP authentication
+                                    enum:
+                                    - client_credentials
+                                    - authorization_code
+                                    - password
+                                    type: string
+                                  tokenEndpoint:
+                                    description: TokenEndpoint is the URL for the
+                                      OAuth2 token endpoint
+                                    format: uri
+                                    type: string
+                                  tokenRequest:
+                                    description: TokenRequest is the type of token
+                                      request, "body" or "header"
+                                    enum:
+                                    - body
+                                    - header
+                                    type: string
+                                required:
+                                - tokenEndpoint
+                                type: object
+                                x-kubernetes-validations:
+                                - message: Only one of basic or client credentials
+                                    can be provided (XOR relationship)
+                                  rule: self == null || !has(self.basic) || !has(self.client)
+                              scopes:
+                                description: Scopes defines additional OAuth2 scopes
+                                  that are added to the LMS token
+                                items:
+                                  type: string
+                                maxItems: 10
+                                type: array
+                            type: object
+                            x-kubernetes-validations:
+                            - message: ExternalIDP and basic authentication cannot
+                                be used together
+                              rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
+                                : true)'
+                            - message: Scopes and basic authentication cannot be used
+                                together
+                              rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
+                                : true)'
+                            - message: At least one of externalIDP, basic, or scopes
+                                must be provided
+                              rule: self == null || has(self.externalIDP) || has(self.basic)
+                                || has(self.scopes)
+                        type: object
+                      targetZoneName:
+                        type: string
+                      upstreams:
+                        items:
+                          properties:
+                            clientId:
+                              type: string
+                            clientSecret:
+                              type: string
+                            host:
+                              type: string
+                            issuerUrl:
+                              type: string
+                            path:
+                              type: string
+                            port:
+                              type: integer
+                            scheme:
+                              type: string
+                            weight:
+                              type: integer
+                          required:
+                          - host
+                          - path
+                          - port
+                          - scheme
+                          type: object
+                        type: array
+                    required:
+                    - targetZoneName
+                    - upstreams
+                    type: object
+                  rateLimit:
+                    description: RateLimit defines rate limits for different time
+                      windows
+                    properties:
+                      limits:
+                        description: Limits defines the actual rate limit values for
+                          different time windows
+                        properties:
+                          hour:
+                            description: Hour defines the maximum number of requests
+                              allowed per hour
+                            minimum: 0
+                            type: integer
+                          minute:
+                            description: Minute defines the maximum number of requests
+                              allowed per minute
+                            minimum: 0
+                            type: integer
+                          second:
+                            description: Second defines the maximum number of requests
+                              allowed per second
+                            minimum: 0
+                            type: integer
+                        type: object
+                      options:
+                        description: Options defines additional configuration options
+                          for rate limiting
+                        properties:
+                          faultTolerant:
+                            default: true
+                            description: FaultTolerant defines if the rate limit plugin
+                              should be fault tolerant, if gateway is not able to
+                              access the config store
+                            type: boolean
+                          hideClientHeaders:
+                            default: false
+                            description: HideClientHeaders hides additional client
+                              headers which give information about the rate-limit,
+                              reset and remaining requests for consumers if set to
+                              true.
+                            type: boolean
+                        type: object
+                    required:
+                    - limits
+                    type: object
+                type: object
+              upstreams:
+                description: Upstreams define the backend MCP server targets.
+                items:
+                  properties:
+                    clientId:
+                      type: string
+                    clientSecret:
+                      type: string
+                    host:
+                      type: string
+                    issuerUrl:
+                      type: string
+                    path:
+                      type: string
+                    port:
+                      type: integer
+                    scheme:
+                      type: string
+                    weight:
+                      type: integer
+                  required:
+                  - host
+                  - path
+                  - port
+                  - scheme
+                  type: object
+                minItems: 1
+                type: array
+              variant:
+                default: MCP
+                description: Variant defines the exposure variant (MCP or TELECONTEXTMCP).
+                enum:
+                - MCP
+                - TELECONTEXTMCP
+                type: string
+              visibility:
+                default: Enterprise
+                description: Visibility defines who can see and subscribe to this
+                  MCP server.
+                enum:
+                - World
+                - Zone
+                - Enterprise
+                type: string
+              zone:
+                description: Zone references the Zone CR where this MCP server is
+                  exposed.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+            required:
+            - approval
+            - mcpBasePath
+            - provider
+            - upstreams
+            - variant
+            - visibility
+            - zone
+            type: object
+          status:
+            description: McpExposureStatus defines the observed state of McpExposure.
+            properties:
+              active:
+                description: Active indicates whether this McpExposure is the active
+                  one for its basePath.
+                type: boolean
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              proxyRoutes:
+                description: ProxyRoutes references proxy gateway Route CRs for cross-zone
+                  MCP delivery.
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              route:
+                description: Route references the primary gateway Route CR created
+                  for this exposure.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              telecontextConsumeRoute:
+                description: |-
+                  TelecontextConsumeRoute references the auto-created ConsumeRoute for Telecontext.
+                  Only set when variant is TELECONTEXTMCP.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+            required:
+            - active
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
