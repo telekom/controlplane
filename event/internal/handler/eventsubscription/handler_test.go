@@ -404,6 +404,12 @@ var _ = Describe("EventSubscriptionHandler", func() {
 				_ = mutate()
 				subscriber := obj.(*pubsubv1.Subscriber)
 				subscriber.Status.SubscriptionId = subscriptionId
+				meta.SetStatusCondition(&subscriber.Status.Conditions, metav1.Condition{
+					Type:               condition.ConditionTypeReady,
+					Status:             metav1.ConditionTrue,
+					Reason:             "Ready",
+					ObservedGeneration: subscriber.Generation,
+				})
 			}).
 			Return(result, err).Once()
 	}
