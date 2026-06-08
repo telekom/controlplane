@@ -77,13 +77,18 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	}
 
 	// If secret rotation is configured, ensure the Keycloak realm has the
-	// corresponding client-policy profile + policy.
+	// corresponding client-policy profile + policy. Otherwise, remove any
+	// previously created profile + policy so they don't linger.
 	if realm.SupportsGracefulSecretRotation() {
 		logger.Info("configuring secret rotation policy for realm", "realm", realm.Name, "policy", realm.Spec.SecretRotation)
 		if err := realmClient.ConfigureSecretRotationPolicy(
 			ctx, realm.Name, realm.Spec.SecretRotation,
 		); err != nil {
 			return fmt.Errorf("failed to configure secret rotation policy: %w", err)
+		}
+	} else {
+		if err := realmClient.DeleteSecretRotationPolicy(ctx, realm.Name); err != nil {
+			return fmt.Errorf("failed to delete secret rotation policy: %w", err)
 		}
 	}
 

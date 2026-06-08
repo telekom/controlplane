@@ -315,6 +315,53 @@ func (_c *MockKeycloakService_DeleteRealm_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
+// DeleteSecretRotationPolicy provides a mock function with given fields: ctx, realmName
+func (_m *MockKeycloakService) DeleteSecretRotationPolicy(ctx context.Context, realmName string) error {
+	ret := _m.Called(ctx, realmName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteSecretRotationPolicy")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, realmName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockKeycloakService_DeleteSecretRotationPolicy_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteSecretRotationPolicy'
+type MockKeycloakService_DeleteSecretRotationPolicy_Call struct {
+	*mock.Call
+}
+
+// DeleteSecretRotationPolicy is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realmName string
+func (_e *MockKeycloakService_Expecter) DeleteSecretRotationPolicy(ctx interface{}, realmName interface{}) *MockKeycloakService_DeleteSecretRotationPolicy_Call {
+	return &MockKeycloakService_DeleteSecretRotationPolicy_Call{Call: _e.mock.On("DeleteSecretRotationPolicy", ctx, realmName)}
+}
+
+func (_c *MockKeycloakService_DeleteSecretRotationPolicy_Call) Run(run func(ctx context.Context, realmName string)) *MockKeycloakService_DeleteSecretRotationPolicy_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockKeycloakService_DeleteSecretRotationPolicy_Call) Return(_a0 error) *MockKeycloakService_DeleteSecretRotationPolicy_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockKeycloakService_DeleteSecretRotationPolicy_Call) RunAndReturn(run func(context.Context, string) error) *MockKeycloakService_DeleteSecretRotationPolicy_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetClientSecretRotationInfo provides a mock function with given fields: ctx, realmName, client
 func (_m *MockKeycloakService) GetClientSecretRotationInfo(ctx context.Context, realmName string, client *v1.Client) (*keycloak.ClientSecretRotationInfo, error) {
 	ret := _m.Called(ctx, realmName, client)
