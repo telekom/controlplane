@@ -190,8 +190,14 @@ spec:
                 - url
                 type: object
               managedRoutes:
+                description: |-
+                  ManagedRoutesConfig defines the configuration for managed routes in a zone.
+                  Managed routes are automatically created and managed by the system based on this configuration.
                 properties:
                   routes:
+                    description: |-
+                      Routes is the list of routes to be created for this zone.
+                      It may be used to create additional routes that are required for operating the zone
                     items:
                       properties:
                         name:
@@ -205,7 +211,7 @@ spec:
                           pattern: ^/.*$
                           type: string
                         type:
-                          description: 'Type selects the route behavior: Api (authenticated,
+                          description: 'Type selects the route behavior: TeamAPI (authenticated,
                             no ACL) or Proxy (passthrough reverse proxy).'
                           enum:
                           - TeamAPI
@@ -221,10 +227,7 @@ spec:
                       - type
                       - url
                       type: object
-                    minItems: 1
                     type: array
-                required:
-                - routes
                 type: object
               permissions:
                 description: Permissions configuration for permission service integration

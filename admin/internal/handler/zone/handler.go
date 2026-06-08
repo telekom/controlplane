@@ -32,6 +32,10 @@ import (
 
 const (
 	zoneLabelName = "zone"
+
+	// spacegatePathPrefix is the downstream path prefix added to all identity
+	// routes (issuer, certs, discovery) when a zone's visibility is World.
+	spacegatePathPrefix = "/spacegate"
 )
 
 var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
@@ -162,6 +166,12 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		obj.Status.Links.TeamIssuer = ""
 	}
 
+	// Cleanup managed routes that were not created or updated during this reconciliation.
+	// Using OwnedByLabel because routes live in a different namespace than the Zone CR.
+	if _, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrapf(err, "failed to cleanup stale managed routes for zone %s", obj.Name)
+	}
+
 	// Populate Permissions URL if configured and feature enabled
 	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Permissions != nil {
 		// Use url.JoinPath to properly handle slashes when combining gateway URL with ApiBasePath
@@ -181,6 +191,9 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 }
 
 func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway, defaultGatewayRealm *gatewayapi.Realm) error {
+	// Reset status to avoid stale/duplicate entries across reconciliations
+	zone.Status.ManagedRoutes = nil
+
 	// Partition routes by type
 	var teamAPIRoutes, proxyRoutes []adminv1.ManagedRouteConfig
 	for _, r := range zone.Spec.ManagedRoutes.Routes {
@@ -189,6 +202,8 @@ func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext
 			teamAPIRoutes = append(teamAPIRoutes, r)
 		case adminv1.ManagedRouteTypeProxy:
 			proxyRoutes = append(proxyRoutes, r)
+		default:
+			return fmt.Errorf("unsupported managed route type %q for route %q", r.Type, r.Name)
 		}
 	}
 
@@ -256,6 +271,7 @@ func createManagedRoute(ctx context.Context, handlingContext HandlingContext, ro
 		route.Labels = map[string]string{
 			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.OwnerUidLabelKey:             string(handlingContext.Zone.GetUID()),
 		}
 
 		upstreamUrl, err := url.Parse(routeConfig.Url)
@@ -264,7 +280,7 @@ func createManagedRoute(ctx context.Context, handlingContext HandlingContext, ro
 		}
 		upstream := gatewayapi.Upstream{
 			Scheme: upstreamUrl.Scheme,
-			Host:   upstreamUrl.Host,
+			Host:   upstreamUrl.Hostname(),
 			Port:   gatewayapi.GetPortOrDefaultFromScheme(upstreamUrl),
 			Path:   upstreamUrl.Path,
 		}
@@ -352,11 +368,32 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
+		var routeOverwrites []gatewayapi.RouteOverwrite
+		// If the zone is WORLD visible, the gateway is considered a "SpaceGate"
+		// to reduce internet-facing exposure the actual IDP routes are not exposed directly
+		// but via a proxy route "/auth/realms/<realm>". However, this path is already used for
+		// the Gateway Realm itself, so we need to add another prefix to avoid conflicts.
+		// The SpaceGate route will then be available under a common-prefix
+		if handlingContext.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
+			for _, rt := range []gatewayapi.RouteType{
+				gatewayapi.RouteTypeIssuer,
+				gatewayapi.RouteTypeCerts,
+				gatewayapi.RouteTypeDiscovery,
+			} {
+				routeOverwrites = append(routeOverwrites, gatewayapi.RouteOverwrite{
+					Type:       rt,
+					Enabled:    true,
+					PathPrefix: spacegatePathPrefix,
+				})
+			}
+		}
+
 		gatewayRealm.Spec = gatewayapi.RealmSpec{
 			Gateway:          types.ObjectRefFromObject(gateway),
 			Urls:             []string{handlingContext.Zone.Spec.Gateway.Url},
 			IssuerUrls:       []string{urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName)},
 			DefaultConsumers: []string{},
+			RouteOverwrites:  routeOverwrites,
 		}
 		return nil
 	}

@@ -46,7 +46,7 @@ func ForGatewayRealm(identityProviderBaseUrl, realmName string) string {
 func ForRouteDownstream(gatewayBaseUrl string, config adminv1.ManagedRouteConfig) (*url.URL, error) {
 	raw, err := url.JoinPath(gatewayBaseUrl, config.Path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot combine gatewayBaseUrl %s with team api route path %s", gatewayBaseUrl, config.Path)
+		return nil, errors.Wrapf(err, "Cannot combine gatewayBaseUrl %s with managed route path %s", gatewayBaseUrl, config.Path)
 	}
 	return url.Parse(raw)
 }

@@ -93,6 +93,45 @@ Zones can be configured with different visibility levels:
 - **World** — The zone is accessible from outside the platform (public-facing APIs).
 - **Enterprise** — The zone is accessible only within the organization's network.
 
+### Managed Routes
+
+Zones can optionally define **managed routes** — platform-managed gateway routes that are configured directly on the Zone resource rather than being created dynamically through Rover or API resources.
+
+Each managed route has a **type** that determines its behavior:
+
+| Type | Behavior |
+|------|----------|
+| **TeamAPI** | Authenticated route on the zone's team-api gateway realm. Requires token validation but does not enforce per-consumer ACLs. Used for team-facing platform APIs. |
+| **Proxy** | Fully passthrough route on the zone's default gateway realm. Acts as a pure reverse proxy without any authentication or authorization. |
+
+Example:
+
+```yaml
+spec:
+  managedRoutes:
+    routes:
+      - name: team-api
+        path: /team/api/v1
+        url: https://my-team-api.internal.example.com/api/v1
+        type: TeamAPI
+      - name: health-proxy
+        path: /health
+        url: https://health-service.internal.example.com/
+        type: Proxy
+```
+
+### Token Claims
+
+The Control Plane automatically injects the following claims into all tokens issued for clients in a zone's default identity realm:
+
+| Claim | Type | Description |
+|-------|------|-------------|
+| `originZone` | Hardcoded | The name of the zone that issued the token. |
+| `originStargate` | Hardcoded | The public gateway URL of the zone. |
+| `clientId` | Session note | The OAuth2 client ID of the authenticated caller, populated automatically by Keycloak. |
+
+These claims allow downstream services to identify the origin of a request without additional lookups.
+
 ## Remote Organizations
 
 :::caution Planned Feature

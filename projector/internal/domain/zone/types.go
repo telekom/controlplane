@@ -18,5 +18,6 @@ type ZoneData struct {
 	Meta       shared.Metadata
 	Name       string
 	GatewayURL *string // optional/nillable — nil when Spec.Gateway.Url is empty
+	IssuerURL  *string // optional/nillable — nil when Status.Links.Issuer is empty
 	Visibility string  // "WORLD" or "ENTERPRISE" (upper-cased from CR enum)
 }

@@ -8,11 +8,12 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"fmt"
+	"math"
 	"strconv"
 	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -20,29 +21,49 @@ import (
 // region    ************************** generated!.gotpl **************************
 
 type MutationResolver interface {
-	CreateTeam(ctx context.Context, input model.CreateTeamInput) (*model.TeamMutationResult, error)
-	UpdateTeam(ctx context.Context, input model.UpdateTeamInput) (*model.TeamMutationResult, error)
-	RotateTeamToken(ctx context.Context, input model.RotateTeamTokenInput) (*model.TeamMutationResult, error)
-	RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.RotateApplicationSecretResult, error)
-	DecideApprovalRequest(ctx context.Context, input model.DecideApprovalRequestInput) (*model.ApprovalMutationResult, error)
-	DecideApproval(ctx context.Context, input model.DecideApprovalInput) (*model.ApprovalMutationResult, error)
-}
-
-type DecideApprovalInputResolver interface {
-	Action(ctx context.Context, obj *model.DecideApprovalInput, data model.ApprovalAction) error
-}
-type DecideApprovalRequestInputResolver interface {
-	Action(ctx context.Context, obj *model.DecideApprovalRequestInput, data model.ApprovalAction) error
+	CreateTeam(ctx context.Context, input model.CreateTeamInput) (*model.CreateTeamPayload, error)
+	UpdateTeam(ctx context.Context, input model.UpdateTeamInput) (*model.UpdateTeamPayload, error)
+	AddTeamMember(ctx context.Context, teamID int, member model.MemberInput) (*model.AddTeamMemberPayload, error)
+	RemoveTeamMember(ctx context.Context, teamID int, memberEmail string) (*model.RemoveTeamMemberPayload, error)
+	RotateTeamToken(ctx context.Context, teamID int) (*model.RotateTeamTokenPayload, error)
+	RotateApplicationSecret(ctx context.Context, applicationID int) (*model.RotateApplicationSecretPayload, error)
+	DecideApprovalRequest(ctx context.Context, approvalRequestID int, input model.DecisionInput) (*model.DecideApprovalRequestPayload, error)
+	DecideApproval(ctx context.Context, approvalID int, input model.DecisionInput) (*model.DecideApprovalPayload, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_addTeamMember_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId",
+		func(ctx context.Context, v any) (int, error) {
+			return ec.unmarshalNID2int(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["teamId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "member",
+		func(ctx context.Context, v any) (model.MemberInput, error) {
+			return ec.unmarshalNMemberInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["member"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createTeam_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateTeamInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐCreateTeamInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
+		func(ctx context.Context, v any) (model.CreateTeamInput, error) {
+			return ec.unmarshalNCreateTeamInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐCreateTeamInput(ctx, v)
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -53,51 +74,104 @@ func (ec *executionContext) field_Mutation_createTeam_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_decideApprovalRequest_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDecideApprovalRequestInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalRequestInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "approvalRequestId",
+		func(ctx context.Context, v any) (int, error) {
+			return ec.unmarshalNID2int(ctx, v)
+		})
 	if err != nil {
 		return nil, err
 	}
-	args["input"] = arg0
+	args["approvalRequestId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input",
+		func(ctx context.Context, v any) (model.DecisionInput, error) {
+			return ec.unmarshalNDecisionInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecisionInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_decideApproval_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDecideApprovalInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "approvalId",
+		func(ctx context.Context, v any) (int, error) {
+			return ec.unmarshalNID2int(ctx, v)
+		})
 	if err != nil {
 		return nil, err
 	}
-	args["input"] = arg0
+	args["approvalId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input",
+		func(ctx context.Context, v any) (model.DecisionInput, error) {
+			return ec.unmarshalNDecisionInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecisionInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_removeTeamMember_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId",
+		func(ctx context.Context, v any) (int, error) {
+			return ec.unmarshalNID2int(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["teamId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "memberEmail",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["memberEmail"] = arg1
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_rotateApplicationSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRotateApplicationSecretInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "applicationId",
+		func(ctx context.Context, v any) (int, error) {
+			return ec.unmarshalNID2int(ctx, v)
+		})
 	if err != nil {
 		return nil, err
 	}
-	args["input"] = arg0
+	args["applicationId"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_rotateTeamToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRotateTeamTokenInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateTeamTokenInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId",
+		func(ctx context.Context, v any) (int, error) {
+			return ec.unmarshalNID2int(ctx, v)
+		})
 	if err != nil {
 		return nil, err
 	}
-	args["input"] = arg0
+	args["teamId"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_updateTeam_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateTeamInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐUpdateTeamInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
+		func(ctx context.Context, v any) (model.UpdateTeamInput, error) {
+			return ec.unmarshalNUpdateTeamInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐUpdateTeamInput(ctx, v)
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -113,146 +187,326 @@ func (ec *executionContext) field_Mutation_updateTeam_args(ctx context.Context, 
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _ApprovalMutationResult_success(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalMutationResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _AddTeamMemberPayload_team(ctx context.Context, field graphql.CollectedField, obj *model.AddTeamMemberPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ApprovalMutationResult_success,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AddTeamMemberPayload_team(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.Success, nil
+			return obj.Team, nil
 		},
 		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApprovalMutationResult_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApprovalMutationResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Team) graphql.Marshaler {
+			return ec.marshalOTeam2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeam(ctx, selections, v)
 		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApprovalMutationResult_message(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalMutationResult) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApprovalMutationResult_message,
-		func(ctx context.Context) (any, error) {
-			return obj.Message, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApprovalMutationResult_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApprovalMutationResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApprovalMutationResult_newState(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalMutationResult) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApprovalMutationResult_newState,
-		func(ctx context.Context) (any, error) {
-			return obj.NewState, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
 		true,
 		false,
 	)
 }
-
-func (ec *executionContext) fieldContext_ApprovalMutationResult_newState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AddTeamMemberPayload_team(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ApprovalMutationResult",
+		Object:     "AddTeamMemberPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return ec.childFields_Team(ctx, field)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _ApprovalMutationResult_namespace(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalMutationResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _AddTeamMemberPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.AddTeamMemberPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ApprovalMutationResult_namespace,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AddTeamMemberPayload_errors(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.Namespace, nil
+			return obj.Errors, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+			return ec.marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx, selections, v)
+		},
 		true,
-		false,
+		true,
 	)
 }
-
-func (ec *executionContext) fieldContext_ApprovalMutationResult_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AddTeamMemberPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ApprovalMutationResult",
+		Object:     "AddTeamMemberPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return ec.childFields_MutationError(ctx, field)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _ApprovalMutationResult_resourceName(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalMutationResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _CreateTeamPayload_team(ctx context.Context, field graphql.CollectedField, obj *model.CreateTeamPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ApprovalMutationResult_resourceName,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CreateTeamPayload_team(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.ResourceName, nil
+			return obj.Team, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Team) graphql.Marshaler {
+			return ec.marshalOTeam2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeam(ctx, selections, v)
+		},
 		true,
 		false,
 	)
 }
-
-func (ec *executionContext) fieldContext_ApprovalMutationResult_resourceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_CreateTeamPayload_team(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ApprovalMutationResult",
+		Object:     "CreateTeamPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return ec.childFields_Team(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateTeamPayload_accepted(ctx context.Context, field graphql.CollectedField, obj *model.CreateTeamPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CreateTeamPayload_accepted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Accepted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CreateTeamPayload_accepted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CreateTeamPayload", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _CreateTeamPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.CreateTeamPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CreateTeamPayload_errors(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+			return ec.marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CreateTeamPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateTeamPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MutationError(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DecideApprovalPayload_approval(ctx context.Context, field graphql.CollectedField, obj *model.DecideApprovalPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DecideApprovalPayload_approval(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Approval, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Approval) graphql.Marshaler {
+			return ec.marshalOApproval2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApproval(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_DecideApprovalPayload_approval(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DecideApprovalPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Approval(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DecideApprovalPayload_accepted(ctx context.Context, field graphql.CollectedField, obj *model.DecideApprovalPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DecideApprovalPayload_accepted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Accepted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DecideApprovalPayload_accepted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DecideApprovalPayload", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _DecideApprovalPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.DecideApprovalPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DecideApprovalPayload_errors(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+			return ec.marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DecideApprovalPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DecideApprovalPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MutationError(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DecideApprovalRequestPayload_approvalRequest(ctx context.Context, field graphql.CollectedField, obj *model.DecideApprovalRequestPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DecideApprovalRequestPayload_approvalRequest(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovalRequest, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.ApprovalRequest) graphql.Marshaler {
+			return ec.marshalOApprovalRequest2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApprovalRequest(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_DecideApprovalRequestPayload_approvalRequest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DecideApprovalRequestPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApprovalRequest(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DecideApprovalRequestPayload_accepted(ctx context.Context, field graphql.CollectedField, obj *model.DecideApprovalRequestPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DecideApprovalRequestPayload_accepted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Accepted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DecideApprovalRequestPayload_accepted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DecideApprovalRequestPayload", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _DecideApprovalRequestPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.DecideApprovalRequestPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DecideApprovalRequestPayload_errors(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+			return ec.marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DecideApprovalRequestPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DecideApprovalRequestPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MutationError(ctx, field)
 		},
 	}
 	return fc, nil
@@ -263,18 +517,21 @@ func (ec *executionContext) _Mutation_createTeam(ctx context.Context, field grap
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_createTeam,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_createTeam(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
 			return ec.Resolvers.Mutation().CreateTeam(ctx, fc.Args["input"].(model.CreateTeamInput))
 		},
 		nil,
-		ec.marshalNTeamMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamMutationResult,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.CreateTeamPayload) graphql.Marshaler {
+			return ec.marshalNCreateTeamPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐCreateTeamPayload(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
 func (ec *executionContext) fieldContext_Mutation_createTeam(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
@@ -282,17 +539,7 @@ func (ec *executionContext) fieldContext_Mutation_createTeam(ctx context.Context
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "success":
-				return ec.fieldContext_TeamMutationResult_success(ctx, field)
-			case "message":
-				return ec.fieldContext_TeamMutationResult_message(ctx, field)
-			case "namespace":
-				return ec.fieldContext_TeamMutationResult_namespace(ctx, field)
-			case "resourceName":
-				return ec.fieldContext_TeamMutationResult_resourceName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TeamMutationResult", field.Name)
+			return ec.childFields_CreateTeamPayload(ctx, field)
 		},
 	}
 	defer func() {
@@ -314,18 +561,21 @@ func (ec *executionContext) _Mutation_updateTeam(ctx context.Context, field grap
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_updateTeam,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_updateTeam(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
 			return ec.Resolvers.Mutation().UpdateTeam(ctx, fc.Args["input"].(model.UpdateTeamInput))
 		},
 		nil,
-		ec.marshalNTeamMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamMutationResult,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.UpdateTeamPayload) graphql.Marshaler {
+			return ec.marshalNUpdateTeamPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐUpdateTeamPayload(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
 func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
@@ -333,17 +583,7 @@ func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "success":
-				return ec.fieldContext_TeamMutationResult_success(ctx, field)
-			case "message":
-				return ec.fieldContext_TeamMutationResult_message(ctx, field)
-			case "namespace":
-				return ec.fieldContext_TeamMutationResult_namespace(ctx, field)
-			case "resourceName":
-				return ec.fieldContext_TeamMutationResult_resourceName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TeamMutationResult", field.Name)
+			return ec.childFields_UpdateTeamPayload(ctx, field)
 		},
 	}
 	defer func() {
@@ -360,23 +600,114 @@ func (ec *executionContext) fieldContext_Mutation_updateTeam(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_addTeamMember(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_addTeamMember(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().AddTeamMember(ctx, fc.Args["teamId"].(int), fc.Args["member"].(model.MemberInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AddTeamMemberPayload) graphql.Marshaler {
+			return ec.marshalNAddTeamMemberPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAddTeamMemberPayload(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_addTeamMember(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AddTeamMemberPayload(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addTeamMember_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_removeTeamMember(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_removeTeamMember(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RemoveTeamMember(ctx, fc.Args["teamId"].(int), fc.Args["memberEmail"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.RemoveTeamMemberPayload) graphql.Marshaler {
+			return ec.marshalNRemoveTeamMemberPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRemoveTeamMemberPayload(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_removeTeamMember(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_RemoveTeamMemberPayload(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_removeTeamMember_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_rotateTeamToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_rotateTeamToken,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_rotateTeamToken(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RotateTeamToken(ctx, fc.Args["input"].(model.RotateTeamTokenInput))
+			return ec.Resolvers.Mutation().RotateTeamToken(ctx, fc.Args["teamId"].(int))
 		},
 		nil,
-		ec.marshalNTeamMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamMutationResult,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.RotateTeamTokenPayload) graphql.Marshaler {
+			return ec.marshalNRotateTeamTokenPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateTeamTokenPayload(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
 func (ec *executionContext) fieldContext_Mutation_rotateTeamToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
@@ -384,17 +715,7 @@ func (ec *executionContext) fieldContext_Mutation_rotateTeamToken(ctx context.Co
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "success":
-				return ec.fieldContext_TeamMutationResult_success(ctx, field)
-			case "message":
-				return ec.fieldContext_TeamMutationResult_message(ctx, field)
-			case "namespace":
-				return ec.fieldContext_TeamMutationResult_namespace(ctx, field)
-			case "resourceName":
-				return ec.fieldContext_TeamMutationResult_resourceName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TeamMutationResult", field.Name)
+			return ec.childFields_RotateTeamTokenPayload(ctx, field)
 		},
 	}
 	defer func() {
@@ -416,18 +737,21 @@ func (ec *executionContext) _Mutation_rotateApplicationSecret(ctx context.Contex
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_rotateApplicationSecret,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_rotateApplicationSecret(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RotateApplicationSecret(ctx, fc.Args["input"].(model.RotateApplicationSecretInput))
+			return ec.Resolvers.Mutation().RotateApplicationSecret(ctx, fc.Args["applicationId"].(int))
 		},
 		nil,
-		ec.marshalNRotateApplicationSecretResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretResult,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.RotateApplicationSecretPayload) graphql.Marshaler {
+			return ec.marshalNRotateApplicationSecretPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretPayload(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
 func (ec *executionContext) fieldContext_Mutation_rotateApplicationSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
@@ -435,17 +759,7 @@ func (ec *executionContext) fieldContext_Mutation_rotateApplicationSecret(ctx co
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "success":
-				return ec.fieldContext_RotateApplicationSecretResult_success(ctx, field)
-			case "message":
-				return ec.fieldContext_RotateApplicationSecretResult_message(ctx, field)
-			case "namespace":
-				return ec.fieldContext_RotateApplicationSecretResult_namespace(ctx, field)
-			case "resourceName":
-				return ec.fieldContext_RotateApplicationSecretResult_resourceName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type RotateApplicationSecretResult", field.Name)
+			return ec.childFields_RotateApplicationSecretPayload(ctx, field)
 		},
 	}
 	defer func() {
@@ -467,18 +781,21 @@ func (ec *executionContext) _Mutation_decideApprovalRequest(ctx context.Context,
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_decideApprovalRequest,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_decideApprovalRequest(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DecideApprovalRequest(ctx, fc.Args["input"].(model.DecideApprovalRequestInput))
+			return ec.Resolvers.Mutation().DecideApprovalRequest(ctx, fc.Args["approvalRequestId"].(int), fc.Args["input"].(model.DecisionInput))
 		},
 		nil,
-		ec.marshalNApprovalMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalMutationResult,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.DecideApprovalRequestPayload) graphql.Marshaler {
+			return ec.marshalNDecideApprovalRequestPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalRequestPayload(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
 func (ec *executionContext) fieldContext_Mutation_decideApprovalRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
@@ -486,19 +803,7 @@ func (ec *executionContext) fieldContext_Mutation_decideApprovalRequest(ctx cont
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "success":
-				return ec.fieldContext_ApprovalMutationResult_success(ctx, field)
-			case "message":
-				return ec.fieldContext_ApprovalMutationResult_message(ctx, field)
-			case "newState":
-				return ec.fieldContext_ApprovalMutationResult_newState(ctx, field)
-			case "namespace":
-				return ec.fieldContext_ApprovalMutationResult_namespace(ctx, field)
-			case "resourceName":
-				return ec.fieldContext_ApprovalMutationResult_resourceName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ApprovalMutationResult", field.Name)
+			return ec.childFields_DecideApprovalRequestPayload(ctx, field)
 		},
 	}
 	defer func() {
@@ -520,18 +825,21 @@ func (ec *executionContext) _Mutation_decideApproval(ctx context.Context, field 
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_decideApproval,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_decideApproval(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DecideApproval(ctx, fc.Args["input"].(model.DecideApprovalInput))
+			return ec.Resolvers.Mutation().DecideApproval(ctx, fc.Args["approvalId"].(int), fc.Args["input"].(model.DecisionInput))
 		},
 		nil,
-		ec.marshalNApprovalMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalMutationResult,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.DecideApprovalPayload) graphql.Marshaler {
+			return ec.marshalNDecideApprovalPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalPayload(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
 func (ec *executionContext) fieldContext_Mutation_decideApproval(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
@@ -539,19 +847,7 @@ func (ec *executionContext) fieldContext_Mutation_decideApproval(ctx context.Con
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "success":
-				return ec.fieldContext_ApprovalMutationResult_success(ctx, field)
-			case "message":
-				return ec.fieldContext_ApprovalMutationResult_message(ctx, field)
-			case "newState":
-				return ec.fieldContext_ApprovalMutationResult_newState(ctx, field)
-			case "namespace":
-				return ec.fieldContext_ApprovalMutationResult_namespace(ctx, field)
-			case "resourceName":
-				return ec.fieldContext_ApprovalMutationResult_resourceName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ApprovalMutationResult", field.Name)
+			return ec.childFields_DecideApprovalPayload(ctx, field)
 		},
 	}
 	defer func() {
@@ -568,233 +864,395 @@ func (ec *executionContext) fieldContext_Mutation_decideApproval(ctx context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _RotateApplicationSecretResult_success(ctx context.Context, field graphql.CollectedField, obj *model.RotateApplicationSecretResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _MutationError_code(ctx context.Context, field graphql.CollectedField, obj *model.MutationError) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_RotateApplicationSecretResult_success,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MutationError_code(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.Success, nil
+			return obj.Code, nil
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		func(ctx context.Context, selections ast.SelectionSet, v model.ErrorCode) graphql.Marshaler {
+			return ec.marshalNErrorCode2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐErrorCode(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
-func (ec *executionContext) fieldContext_RotateApplicationSecretResult_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RotateApplicationSecretResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
+func (ec *executionContext) fieldContext_MutationError_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MutationError", field, false, false, errors.New("field of type ErrorCode does not have child fields"))
 }
 
-func (ec *executionContext) _RotateApplicationSecretResult_message(ctx context.Context, field graphql.CollectedField, obj *model.RotateApplicationSecretResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _MutationError_message(ctx context.Context, field graphql.CollectedField, obj *model.MutationError) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_RotateApplicationSecretResult_message,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MutationError_message(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
 			return obj.Message, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
-func (ec *executionContext) fieldContext_RotateApplicationSecretResult_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RotateApplicationSecretResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
+func (ec *executionContext) fieldContext_MutationError_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MutationError", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _RotateApplicationSecretResult_namespace(ctx context.Context, field graphql.CollectedField, obj *model.RotateApplicationSecretResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _MutationError_field(ctx context.Context, field graphql.CollectedField, obj *model.MutationError) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_RotateApplicationSecretResult_namespace,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MutationError_field(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.Namespace, nil
+			return obj.Field, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
 		true,
 		false,
 	)
 }
-
-func (ec *executionContext) fieldContext_RotateApplicationSecretResult_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RotateApplicationSecretResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
+func (ec *executionContext) fieldContext_MutationError_field(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MutationError", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _RotateApplicationSecretResult_resourceName(ctx context.Context, field graphql.CollectedField, obj *model.RotateApplicationSecretResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _RemoveTeamMemberPayload_team(ctx context.Context, field graphql.CollectedField, obj *model.RemoveTeamMemberPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_RotateApplicationSecretResult_resourceName,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RemoveTeamMemberPayload_team(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.ResourceName, nil
+			return obj.Team, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Team) graphql.Marshaler {
+			return ec.marshalOTeam2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeam(ctx, selections, v)
+		},
 		true,
 		false,
 	)
 }
-
-func (ec *executionContext) fieldContext_RotateApplicationSecretResult_resourceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RemoveTeamMemberPayload_team(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "RotateApplicationSecretResult",
+		Object:     "RemoveTeamMemberPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return ec.childFields_Team(ctx, field)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _TeamMutationResult_success(ctx context.Context, field graphql.CollectedField, obj *model.TeamMutationResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _RemoveTeamMemberPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.RemoveTeamMemberPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_TeamMutationResult_success,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RemoveTeamMemberPayload_errors(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.Success, nil
+			return obj.Errors, nil
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+			return ec.marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx, selections, v)
+		},
 		true,
 		true,
 	)
 }
-
-func (ec *executionContext) fieldContext_TeamMutationResult_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RemoveTeamMemberPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "TeamMutationResult",
+		Object:     "RemoveTeamMemberPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return ec.childFields_MutationError(ctx, field)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _TeamMutationResult_message(ctx context.Context, field graphql.CollectedField, obj *model.TeamMutationResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _RotateApplicationSecretPayload_application(ctx context.Context, field graphql.CollectedField, obj *model.RotateApplicationSecretPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_TeamMutationResult_message,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RotateApplicationSecretPayload_application(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.Message, nil
+			return obj.Application, nil
 		},
 		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_TeamMutationResult_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TeamMutationResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Application) graphql.Marshaler {
+			return ec.marshalOApplication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApplication(ctx, selections, v)
 		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TeamMutationResult_namespace(ctx context.Context, field graphql.CollectedField, obj *model.TeamMutationResult) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TeamMutationResult_namespace,
-		func(ctx context.Context) (any, error) {
-			return obj.Namespace, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
 		true,
 		false,
 	)
 }
-
-func (ec *executionContext) fieldContext_TeamMutationResult_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RotateApplicationSecretPayload_application(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "TeamMutationResult",
+		Object:     "RotateApplicationSecretPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return ec.childFields_Application(ctx, field)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _TeamMutationResult_resourceName(ctx context.Context, field graphql.CollectedField, obj *model.TeamMutationResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _RotateApplicationSecretPayload_accepted(ctx context.Context, field graphql.CollectedField, obj *model.RotateApplicationSecretPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_TeamMutationResult_resourceName,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RotateApplicationSecretPayload_accepted(ctx, field)
+		},
 		func(ctx context.Context) (any, error) {
-			return obj.ResourceName, nil
+			return obj.Accepted, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
 		true,
-		false,
+		true,
 	)
 }
+func (ec *executionContext) fieldContext_RotateApplicationSecretPayload_accepted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RotateApplicationSecretPayload", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
 
-func (ec *executionContext) fieldContext_TeamMutationResult_resourceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) _RotateApplicationSecretPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.RotateApplicationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RotateApplicationSecretPayload_errors(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+			return ec.marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RotateApplicationSecretPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "TeamMutationResult",
+		Object:     "RotateApplicationSecretPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return ec.childFields_MutationError(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RotateTeamTokenPayload_team(ctx context.Context, field graphql.CollectedField, obj *model.RotateTeamTokenPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RotateTeamTokenPayload_team(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Team, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Team) graphql.Marshaler {
+			return ec.marshalOTeam2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeam(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RotateTeamTokenPayload_team(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RotateTeamTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Team(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RotateTeamTokenPayload_accepted(ctx context.Context, field graphql.CollectedField, obj *model.RotateTeamTokenPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RotateTeamTokenPayload_accepted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Accepted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RotateTeamTokenPayload_accepted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RotateTeamTokenPayload", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _RotateTeamTokenPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.RotateTeamTokenPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RotateTeamTokenPayload_errors(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+			return ec.marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RotateTeamTokenPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RotateTeamTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MutationError(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateTeamPayload_team(ctx context.Context, field graphql.CollectedField, obj *model.UpdateTeamPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpdateTeamPayload_team(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Team, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Team) graphql.Marshaler {
+			return ec.marshalOTeam2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeam(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_UpdateTeamPayload_team(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateTeamPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Team(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateTeamPayload_accepted(ctx context.Context, field graphql.CollectedField, obj *model.UpdateTeamPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpdateTeamPayload_accepted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Accepted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpdateTeamPayload_accepted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpdateTeamPayload", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _UpdateTeamPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.UpdateTeamPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpdateTeamPayload_errors(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+			return ec.marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpdateTeamPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateTeamPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MutationError(ctx, field)
 		},
 	}
 	return fc, nil
@@ -862,126 +1320,6 @@ func (ec *executionContext) unmarshalInputCreateTeamInput(ctx context.Context, o
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputDecideApprovalInput(ctx context.Context, obj any) (model.DecideApprovalInput, error) {
-	var it model.DecideApprovalInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"environment", "team", "name", "action", "decision"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "environment":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Environment = data
-		case "team":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("team"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Team = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
-		case "action":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
-			data, err := ec.unmarshalNApprovalAction2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalAction(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			if err = ec.Resolvers.DecideApprovalInput().Action(ctx, &it, data); err != nil {
-				return it, err
-			}
-		case "decision":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("decision"))
-			data, err := ec.unmarshalNDecisionInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecisionInput(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Decision = data
-		}
-	}
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputDecideApprovalRequestInput(ctx context.Context, obj any) (model.DecideApprovalRequestInput, error) {
-	var it model.DecideApprovalRequestInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"environment", "team", "name", "action", "decision"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "environment":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Environment = data
-		case "team":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("team"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Team = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
-		case "action":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
-			data, err := ec.unmarshalNApprovalAction2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalAction(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			if err = ec.Resolvers.DecideApprovalRequestInput().Action(ctx, &it, data); err != nil {
-				return it, err
-			}
-		case "decision":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("decision"))
-			data, err := ec.unmarshalNDecisionInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecisionInput(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Decision = data
-		}
-	}
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputDecisionInput(ctx context.Context, obj any) (model.DecisionInput, error) {
 	var it model.DecisionInput
 	if obj == nil {
@@ -993,27 +1331,20 @@ func (ec *executionContext) unmarshalInputDecisionInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email", "comment"}
+	fieldsInOrder := [...]string{"action", "comment"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "action":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+			data, err := ec.unmarshalNApprovalAction2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalAction(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Name = data
-		case "email":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Email = data
+			it.Action = data
 		case "comment":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -1063,94 +1394,6 @@ func (ec *executionContext) unmarshalInputMemberInput(ctx context.Context, obj a
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputRotateApplicationSecretInput(ctx context.Context, obj any) (model.RotateApplicationSecretInput, error) {
-	var it model.RotateApplicationSecretInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"environment", "team", "name"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "environment":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Environment = data
-		case "team":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("team"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Team = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
-		}
-	}
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputRotateTeamTokenInput(ctx context.Context, obj any) (model.RotateTeamTokenInput, error) {
-	var it model.RotateTeamTokenInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"environment", "group", "name"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "environment":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Environment = data
-		case "group":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("group"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Group = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
-		}
-	}
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, obj any) (model.UpdateTeamInput, error) {
 	var it model.UpdateTeamInput
 	if obj == nil {
@@ -1162,34 +1405,20 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"environment", "group", "name", "email", "members"}
+	fieldsInOrder := [...]string{"teamId", "email"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "environment":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "teamId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+			data, err := ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Environment = data
-		case "group":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("group"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Group = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
+			it.TeamID = data
 		case "email":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -1197,13 +1426,6 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 				return it, err
 			}
 			it.Email = data
-		case "members":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("members"))
-			data, err := ec.unmarshalOMemberInput2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Members = data
 		}
 	}
 	return it, nil
@@ -1217,33 +1439,24 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 
 // region    **************************** object.gotpl ****************************
 
-var approvalMutationResultImplementors = []string{"ApprovalMutationResult"}
+var addTeamMemberPayloadImplementors = []string{"AddTeamMemberPayload"}
 
-func (ec *executionContext) _ApprovalMutationResult(ctx context.Context, sel ast.SelectionSet, obj *model.ApprovalMutationResult) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, approvalMutationResultImplementors)
+func (ec *executionContext) _AddTeamMemberPayload(ctx context.Context, sel ast.SelectionSet, obj *model.AddTeamMemberPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, addTeamMemberPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ApprovalMutationResult")
-		case "success":
-			out.Values[i] = ec._ApprovalMutationResult_success(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("AddTeamMemberPayload")
+		case "team":
+			out.Values[i] = ec._AddTeamMemberPayload_team(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._AddTeamMemberPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "message":
-			out.Values[i] = ec._ApprovalMutationResult_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "newState":
-			out.Values[i] = ec._ApprovalMutationResult_newState(ctx, field, obj)
-		case "namespace":
-			out.Values[i] = ec._ApprovalMutationResult_namespace(ctx, field, obj)
-		case "resourceName":
-			out.Values[i] = ec._ApprovalMutationResult_resourceName(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1253,7 +1466,145 @@ func (ec *executionContext) _ApprovalMutationResult(ctx context.Context, sel ast
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var createTeamPayloadImplementors = []string{"CreateTeamPayload"}
+
+func (ec *executionContext) _CreateTeamPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateTeamPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createTeamPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateTeamPayload")
+		case "team":
+			out.Values[i] = ec._CreateTeamPayload_team(ctx, field, obj)
+		case "accepted":
+			out.Values[i] = ec._CreateTeamPayload_accepted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._CreateTeamPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var decideApprovalPayloadImplementors = []string{"DecideApprovalPayload"}
+
+func (ec *executionContext) _DecideApprovalPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DecideApprovalPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, decideApprovalPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DecideApprovalPayload")
+		case "approval":
+			out.Values[i] = ec._DecideApprovalPayload_approval(ctx, field, obj)
+		case "accepted":
+			out.Values[i] = ec._DecideApprovalPayload_accepted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._DecideApprovalPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var decideApprovalRequestPayloadImplementors = []string{"DecideApprovalRequestPayload"}
+
+func (ec *executionContext) _DecideApprovalRequestPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DecideApprovalRequestPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, decideApprovalRequestPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DecideApprovalRequestPayload")
+		case "approvalRequest":
+			out.Values[i] = ec._DecideApprovalRequestPayload_approvalRequest(ctx, field, obj)
+		case "accepted":
+			out.Values[i] = ec._DecideApprovalRequestPayload_accepted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._DecideApprovalRequestPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
 
 	for label, dfs := range deferred {
 		ec.ProcessDeferredGroup(graphql.DeferredGroup{
@@ -1300,6 +1651,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "addTeamMember":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addTeamMember(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "removeTeamMember":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_removeTeamMember(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "rotateTeamToken":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_rotateTeamToken(ctx, field)
@@ -1337,7 +1702,7 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
 
 	for label, dfs := range deferred {
 		ec.ProcessDeferredGroup(graphql.DeferredGroup{
@@ -1351,31 +1716,29 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
-var rotateApplicationSecretResultImplementors = []string{"RotateApplicationSecretResult"}
+var mutationErrorImplementors = []string{"MutationError"}
 
-func (ec *executionContext) _RotateApplicationSecretResult(ctx context.Context, sel ast.SelectionSet, obj *model.RotateApplicationSecretResult) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, rotateApplicationSecretResultImplementors)
+func (ec *executionContext) _MutationError(ctx context.Context, sel ast.SelectionSet, obj *model.MutationError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationErrorImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("RotateApplicationSecretResult")
-		case "success":
-			out.Values[i] = ec._RotateApplicationSecretResult_success(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("MutationError")
+		case "code":
+			out.Values[i] = ec._MutationError_code(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
 		case "message":
-			out.Values[i] = ec._RotateApplicationSecretResult_message(ctx, field, obj)
+			out.Values[i] = ec._MutationError_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "namespace":
-			out.Values[i] = ec._RotateApplicationSecretResult_namespace(ctx, field, obj)
-		case "resourceName":
-			out.Values[i] = ec._RotateApplicationSecretResult_resourceName(ctx, field, obj)
+		case "field":
+			out.Values[i] = ec._MutationError_field(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1385,7 +1748,7 @@ func (ec *executionContext) _RotateApplicationSecretResult(ctx context.Context, 
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
 
 	for label, dfs := range deferred {
 		ec.ProcessDeferredGroup(graphql.DeferredGroup{
@@ -1399,31 +1762,24 @@ func (ec *executionContext) _RotateApplicationSecretResult(ctx context.Context, 
 	return out
 }
 
-var teamMutationResultImplementors = []string{"TeamMutationResult"}
+var removeTeamMemberPayloadImplementors = []string{"RemoveTeamMemberPayload"}
 
-func (ec *executionContext) _TeamMutationResult(ctx context.Context, sel ast.SelectionSet, obj *model.TeamMutationResult) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, teamMutationResultImplementors)
+func (ec *executionContext) _RemoveTeamMemberPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RemoveTeamMemberPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, removeTeamMemberPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("TeamMutationResult")
-		case "success":
-			out.Values[i] = ec._TeamMutationResult_success(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("RemoveTeamMemberPayload")
+		case "team":
+			out.Values[i] = ec._RemoveTeamMemberPayload_team(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._RemoveTeamMemberPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "message":
-			out.Values[i] = ec._TeamMutationResult_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "namespace":
-			out.Values[i] = ec._TeamMutationResult_namespace(ctx, field, obj)
-		case "resourceName":
-			out.Values[i] = ec._TeamMutationResult_resourceName(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1433,7 +1789,145 @@ func (ec *executionContext) _TeamMutationResult(ctx context.Context, sel ast.Sel
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rotateApplicationSecretPayloadImplementors = []string{"RotateApplicationSecretPayload"}
+
+func (ec *executionContext) _RotateApplicationSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RotateApplicationSecretPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rotateApplicationSecretPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RotateApplicationSecretPayload")
+		case "application":
+			out.Values[i] = ec._RotateApplicationSecretPayload_application(ctx, field, obj)
+		case "accepted":
+			out.Values[i] = ec._RotateApplicationSecretPayload_accepted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._RotateApplicationSecretPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rotateTeamTokenPayloadImplementors = []string{"RotateTeamTokenPayload"}
+
+func (ec *executionContext) _RotateTeamTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RotateTeamTokenPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rotateTeamTokenPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RotateTeamTokenPayload")
+		case "team":
+			out.Values[i] = ec._RotateTeamTokenPayload_team(ctx, field, obj)
+		case "accepted":
+			out.Values[i] = ec._RotateTeamTokenPayload_accepted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._RotateTeamTokenPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateTeamPayloadImplementors = []string{"UpdateTeamPayload"}
+
+func (ec *executionContext) _UpdateTeamPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateTeamPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateTeamPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateTeamPayload")
+		case "team":
+			out.Values[i] = ec._UpdateTeamPayload_team(ctx, field, obj)
+		case "accepted":
+			out.Values[i] = ec._UpdateTeamPayload_accepted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._UpdateTeamPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
 
 	for label, dfs := range deferred {
 		ec.ProcessDeferredGroup(graphql.DeferredGroup{
@@ -1451,18 +1945,18 @@ func (ec *executionContext) _TeamMutationResult(ctx context.Context, sel ast.Sel
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNApprovalMutationResult2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalMutationResult(ctx context.Context, sel ast.SelectionSet, v model.ApprovalMutationResult) graphql.Marshaler {
-	return ec._ApprovalMutationResult(ctx, sel, &v)
+func (ec *executionContext) marshalNAddTeamMemberPayload2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAddTeamMemberPayload(ctx context.Context, sel ast.SelectionSet, v model.AddTeamMemberPayload) graphql.Marshaler {
+	return ec._AddTeamMemberPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNApprovalMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalMutationResult(ctx context.Context, sel ast.SelectionSet, v *model.ApprovalMutationResult) graphql.Marshaler {
+func (ec *executionContext) marshalNAddTeamMemberPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAddTeamMemberPayload(ctx context.Context, sel ast.SelectionSet, v *model.AddTeamMemberPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._ApprovalMutationResult(ctx, sel, v)
+	return ec._AddTeamMemberPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateTeamInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐCreateTeamInput(ctx context.Context, v any) (model.CreateTeamInput, error) {
@@ -1470,19 +1964,61 @@ func (ec *executionContext) unmarshalNCreateTeamInput2githubᚗcomᚋtelekomᚋc
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNDecideApprovalInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalInput(ctx context.Context, v any) (model.DecideApprovalInput, error) {
-	res, err := ec.unmarshalInputDecideApprovalInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) marshalNCreateTeamPayload2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐCreateTeamPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateTeamPayload) graphql.Marshaler {
+	return ec._CreateTeamPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) unmarshalNDecideApprovalRequestInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalRequestInput(ctx context.Context, v any) (model.DecideApprovalRequestInput, error) {
-	res, err := ec.unmarshalInputDecideApprovalRequestInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) marshalNCreateTeamPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐCreateTeamPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateTeamPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateTeamPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDecideApprovalPayload2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalPayload(ctx context.Context, sel ast.SelectionSet, v model.DecideApprovalPayload) graphql.Marshaler {
+	return ec._DecideApprovalPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDecideApprovalPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalPayload(ctx context.Context, sel ast.SelectionSet, v *model.DecideApprovalPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DecideApprovalPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDecideApprovalRequestPayload2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalRequestPayload(ctx context.Context, sel ast.SelectionSet, v model.DecideApprovalRequestPayload) graphql.Marshaler {
+	return ec._DecideApprovalRequestPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDecideApprovalRequestPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecideApprovalRequestPayload(ctx context.Context, sel ast.SelectionSet, v *model.DecideApprovalRequestPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DecideApprovalRequestPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDecisionInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecisionInput(ctx context.Context, v any) (model.DecisionInput, error) {
 	res, err := ec.unmarshalInputDecisionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNErrorCode2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐErrorCode(ctx context.Context, v any) (model.ErrorCode, error) {
+	var res model.ErrorCode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNErrorCode2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐErrorCode(ctx context.Context, sel ast.SelectionSet, v model.ErrorCode) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNMemberInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInput(ctx context.Context, v any) (model.MemberInput, error) {
@@ -1505,42 +2041,66 @@ func (ec *executionContext) unmarshalNMemberInput2ᚕgithubᚗcomᚋtelekomᚋco
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalNRotateApplicationSecretInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretInput(ctx context.Context, v any) (model.RotateApplicationSecretInput, error) {
-	res, err := ec.unmarshalInputRotateApplicationSecretInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) marshalNMutationError2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationError(ctx context.Context, sel ast.SelectionSet, v model.MutationError) graphql.Marshaler {
+	return ec._MutationError(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNRotateApplicationSecretResult2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretResult(ctx context.Context, sel ast.SelectionSet, v model.RotateApplicationSecretResult) graphql.Marshaler {
-	return ec._RotateApplicationSecretResult(ctx, sel, &v)
+func (ec *executionContext) marshalNMutationError2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MutationError) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNMutationError2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMutationError(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
-func (ec *executionContext) marshalNRotateApplicationSecretResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretResult(ctx context.Context, sel ast.SelectionSet, v *model.RotateApplicationSecretResult) graphql.Marshaler {
+func (ec *executionContext) marshalNRemoveTeamMemberPayload2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRemoveTeamMemberPayload(ctx context.Context, sel ast.SelectionSet, v model.RemoveTeamMemberPayload) graphql.Marshaler {
+	return ec._RemoveTeamMemberPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRemoveTeamMemberPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRemoveTeamMemberPayload(ctx context.Context, sel ast.SelectionSet, v *model.RemoveTeamMemberPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._RotateApplicationSecretResult(ctx, sel, v)
+	return ec._RemoveTeamMemberPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNRotateTeamTokenInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateTeamTokenInput(ctx context.Context, v any) (model.RotateTeamTokenInput, error) {
-	res, err := ec.unmarshalInputRotateTeamTokenInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) marshalNRotateApplicationSecretPayload2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretPayload(ctx context.Context, sel ast.SelectionSet, v model.RotateApplicationSecretPayload) graphql.Marshaler {
+	return ec._RotateApplicationSecretPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTeamMutationResult2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamMutationResult(ctx context.Context, sel ast.SelectionSet, v model.TeamMutationResult) graphql.Marshaler {
-	return ec._TeamMutationResult(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNTeamMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamMutationResult(ctx context.Context, sel ast.SelectionSet, v *model.TeamMutationResult) graphql.Marshaler {
+func (ec *executionContext) marshalNRotateApplicationSecretPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretPayload(ctx context.Context, sel ast.SelectionSet, v *model.RotateApplicationSecretPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._TeamMutationResult(ctx, sel, v)
+	return ec._RotateApplicationSecretPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRotateTeamTokenPayload2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateTeamTokenPayload(ctx context.Context, sel ast.SelectionSet, v model.RotateTeamTokenPayload) graphql.Marshaler {
+	return ec._RotateTeamTokenPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRotateTeamTokenPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateTeamTokenPayload(ctx context.Context, sel ast.SelectionSet, v *model.RotateTeamTokenPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RotateTeamTokenPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateTeamInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐUpdateTeamInput(ctx context.Context, v any) (model.UpdateTeamInput, error) {
@@ -1548,22 +2108,18 @@ func (ec *executionContext) unmarshalNUpdateTeamInput2githubᚗcomᚋtelekomᚋc
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalOMemberInput2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInputᚄ(ctx context.Context, v any) ([]model.MemberInput, error) {
+func (ec *executionContext) marshalNUpdateTeamPayload2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐUpdateTeamPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateTeamPayload) graphql.Marshaler {
+	return ec._UpdateTeamPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUpdateTeamPayload2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐUpdateTeamPayload(ctx context.Context, sel ast.SelectionSet, v *model.UpdateTeamPayload) graphql.Marshaler {
 	if v == nil {
-		return nil, nil
-	}
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]model.MemberInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNMemberInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
+		return graphql.Null
 	}
-	return res, nil
+	return ec._UpdateTeamPayload(ctx, sel, v)
 }
 
 // endregion ***************************** type.gotpl *****************************

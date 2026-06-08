@@ -107,13 +107,17 @@ type ManagedRouteConfig struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"url"`
-	// Type selects the route behavior: Api (authenticated, no ACL) or Proxy (passthrough reverse proxy).
+	// Type selects the route behavior: TeamAPI (authenticated, no ACL) or Proxy (passthrough reverse proxy).
 	// +kubebuilder:validation:Required
 	Type ManagedRouteType `json:"type"`
 }
 
+// ManagedRoutesConfig defines the configuration for managed routes in a zone.
+// Managed routes are automatically created and managed by the system based on this configuration.
 type ManagedRoutesConfig struct {
-	// +kubebuilder:validation:MinItems=1
+	// Routes is the list of routes to be created for this zone.
+	// It may be used to create additional routes that are required for operating the zone
+	// +optional
 	Routes []ManagedRouteConfig `json:"routes"`
 }
 
