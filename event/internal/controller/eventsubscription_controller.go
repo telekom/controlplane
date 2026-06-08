@@ -61,7 +61,7 @@ func (r *EventSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&eventsubscription.EventSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&eventv1.EventSubscription{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(&eventv1.EventSubscription{}).
 		Owns(&approvalv1.ApprovalRequest{}).
 		Owns(&approvalv1.Approval{}).
 		Owns(&pubsubv1.Subscriber{}).
