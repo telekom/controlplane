@@ -25,12 +25,12 @@ func NewSessionNoteMapper(claimName, sessionNoteKey string) api.ProtocolMapperRe
 		Protocol:       toPtr("openid-connect"),
 		ProtocolMapper: toPtr("oidc-usersessionmodel-note-mapper"),
 		Config: &map[string]interface{}{
-			"user.session.note":    sessionNoteKey,
-			"claim.name":           claimName,
-			"jsonType.label":       "String",
-			"id.token.claim":       "true",
-			"access.token.claim":   "true",
-			"userinfo.token.claim": "false",
+			"user.session.note":         sessionNoteKey,
+			claimNameConfigKey:          claimName,
+			jsonTypeLabelConfigKey:      jsonTypeLabelString,
+			idTokenClaimConfigKey:       stringTrue,
+			accessTokenClaimConfigKey:   stringTrue,
+			userInfoTokenClaimConfigKey: stringFalse,
 		},
 	}
 }

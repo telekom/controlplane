@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/api"
 	"github.com/telekom/controlplane/identity/pkg/keycloak/util"
@@ -31,28 +32,28 @@ type KeycloakClient interface {
 	// Client CRUD operations
 	GetRealmClientsWithResponse(ctx context.Context, realm string, params *api.GetRealmClientsParams,
 		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientsResponse, error)
-	GetRealmClientsIdWithResponse(ctx context.Context, realm string, id string,
+	GetRealmClientsIdWithResponse(ctx context.Context, realm, id string,
 		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientsIdResponse, error)
 	PostRealmClientsWithResponse(ctx context.Context, realm string, body api.PostRealmClientsJSONRequestBody,
 		reqEditors ...api.RequestEditorFn) (*api.PostRealmClientsResponse, error)
-	PutRealmClientsIdWithResponse(ctx context.Context, realm string, id string, body api.PutRealmClientsIdJSONRequestBody,
+	PutRealmClientsIdWithResponse(ctx context.Context, realm, id string, body api.PutRealmClientsIdJSONRequestBody,
 		reqEditors ...api.RequestEditorFn) (*api.PutRealmClientsIdResponse, error)
-	DeleteRealmClientsIdWithResponse(ctx context.Context, realm string, id string,
+	DeleteRealmClientsIdWithResponse(ctx context.Context, realm, id string,
 		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientsIdResponse, error)
 
 	// Secret rotation operations
 	// PostRealmClientsIdClientSecretWithResponse regenerates the client secret.
 	// When the secret-rotation executor is active, this moves the current
 	// secret into the "rotated" slot with the configured grace period.
-	PostRealmClientsIdClientSecretWithResponse(ctx context.Context, realm string, id string,
+	PostRealmClientsIdClientSecretWithResponse(ctx context.Context, realm, id string,
 		reqEditors ...api.RequestEditorFn) (*api.PostRealmClientsIdClientSecretResponse, error)
 
-	DeleteRealmClientsIdClientSecretRotatedWithResponse(ctx context.Context, realm string, id string,
+	DeleteRealmClientsIdClientSecretRotatedWithResponse(ctx context.Context, realm, id string,
 		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientsIdClientSecretRotatedResponse, error)
 
 	// GetRealmClientsIdClientSecretRotatedWithResponse retrieves the rotated
 	// (old) client secret during a graceful rotation grace period.
-	GetRealmClientsIdClientSecretRotatedWithResponse(ctx context.Context, realm string, id string,
+	GetRealmClientsIdClientSecretRotatedWithResponse(ctx context.Context, realm, id string,
 		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientsIdClientSecretRotatedResponse, error)
 
 	// Client policies operations (secret rotation policy configuration)
@@ -70,23 +71,23 @@ type KeycloakClient interface {
 		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientScopesResponse, error)
 	PostRealmClientScopesWithResponse(ctx context.Context, realm string, body api.PostRealmClientScopesJSONRequestBody,
 		reqEditors ...api.RequestEditorFn) (*api.PostRealmClientScopesResponse, error)
-	DeleteRealmClientScopesIdWithResponse(ctx context.Context, realm string, id string,
+	DeleteRealmClientScopesIdWithResponse(ctx context.Context, realm, id string,
 		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientScopesIdResponse, error)
 
 	// Protocol mapper operations on client scopes
-	PostRealmClientScopesIdProtocolMappersModelsWithResponse(ctx context.Context, realm string, id string, body api.PostRealmClientScopesIdProtocolMappersModelsJSONRequestBody,
+	PostRealmClientScopesIdProtocolMappersModelsWithResponse(ctx context.Context, realm, id string, body api.PostRealmClientScopesIdProtocolMappersModelsJSONRequestBody,
 		reqEditors ...api.RequestEditorFn) (*api.PostRealmClientScopesIdProtocolMappersModelsResponse, error)
-	PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx context.Context, realm string, id1 string, id2 string, body api.PutRealmClientScopesId1ProtocolMappersModelsId2JSONRequestBody,
+	PutRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx context.Context, realm, id1, id2 string, body api.PutRealmClientScopesId1ProtocolMappersModelsId2JSONRequestBody,
 		reqEditors ...api.RequestEditorFn) (*api.PutRealmClientScopesId1ProtocolMappersModelsId2Response, error)
-	DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx context.Context, realm string, id1 string, id2 string,
+	DeleteRealmClientScopesId1ProtocolMappersModelsId2WithResponse(ctx context.Context, realm, id1, id2 string,
 		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientScopesId1ProtocolMappersModelsId2Response, error)
 
 	// Realm default client scope assignment
 	GetRealmDefaultDefaultClientScopesWithResponse(ctx context.Context, realm string,
 		reqEditors ...api.RequestEditorFn) (*api.GetRealmDefaultDefaultClientScopesResponse, error)
-	PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm string, clientScopeId string,
+	PutRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm, clientScopeId string,
 		reqEditors ...api.RequestEditorFn) (*api.PutRealmDefaultDefaultClientScopesClientScopeIdResponse, error)
-	DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm string, clientScopeId string,
+	DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm, clientScopeId string,
 		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse, error)
 }
 
@@ -139,7 +140,7 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 
 	log := logr.FromContextOrDiscard(ctx)
 
-	if len(clientUid) > 0 {
+	if clientUid != "" {
 		clientRes, err := k.Client.GetRealmClientsIdWithResponse(ctx, realmName, clientUid)
 		if err != nil {
 			return nil, fmt.Errorf("unexpected error when fetching client by UID: %w", err)
@@ -234,7 +235,7 @@ func resourceIDFromResponse(resp *http.Response) (string, error) {
 	segments := strings.Split(strings.TrimRight(locURL.Path, "/"), "/")
 	id := segments[len(segments)-1]
 	if id == "" {
-		return "", fmt.Errorf("Location header %q did not contain a resource ID", location)
+		return "", fmt.Errorf("location header %q did not contain a resource ID", location)
 	}
 	return id, nil
 }
@@ -325,9 +326,9 @@ func (k *keycloakService) CreateOrReplaceRealm(ctx context.Context, realm *ident
 		}
 		merged := util.MergeRealmRepresentation(existing, &desired)
 		body := *merged
-		res, err := k.Client.PutRealmWithResponse(ctx, realm.Name, body)
-		if err != nil {
-			return fmt.Errorf("error updating realm: %w", err)
+		res, putErr := k.Client.PutRealmWithResponse(ctx, realm.Name, body)
+		if putErr != nil {
+			return fmt.Errorf("error updating realm: %w", putErr)
 		}
 		if responseErr := CheckHTTPStatus(res.StatusCode(), 204); responseErr != nil {
 			return fmt.Errorf("updating realm: %w", responseErr)

@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
-	"github.com/telekom/controlplane/common-server/pkg/client/metrics"
 	"golang.org/x/oauth2"
 
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
+	"github.com/telekom/controlplane/common-server/pkg/client/metrics"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/api"
 )
@@ -29,6 +29,7 @@ type ServiceFactory interface {
 // ServiceFactory interface. Useful for tests.
 type ServiceFactoryFunc func(identityv1.RealmStatus) (KeycloakService, error)
 
+//nolint:gocritic // Function adapter preserves the shared ServiceFactory signature.
 func (f ServiceFactoryFunc) ServiceFor(s identityv1.RealmStatus) (KeycloakService, error) {
 	return f(s)
 }
@@ -46,8 +47,9 @@ func NewServiceFactory() ServiceFactory {
 	return &serviceFactory{cache: make(map[string]KeycloakService)}
 }
 
+//nolint:gocritic // ServiceFactory keeps a value-based API for callers.
 func (f *serviceFactory) ServiceFor(status identityv1.RealmStatus) (KeycloakService, error) {
-	key := cacheKey(status)
+	key := cacheKey(&status)
 
 	// Fast path: read lock only.
 	f.mu.RLock()
@@ -65,7 +67,7 @@ func (f *serviceFactory) ServiceFor(status identityv1.RealmStatus) (KeycloakServ
 		return svc, nil
 	}
 
-	svc, err := NewKeycloakServiceFor(status)
+	svc, err := NewKeycloakServiceFor(&status)
 	if err != nil {
 		return nil, err
 	}
@@ -75,17 +77,27 @@ func (f *serviceFactory) ServiceFor(status identityv1.RealmStatus) (KeycloakServ
 }
 
 // cacheKey produces a SHA-256 hex digest of the connection parameters.
-func cacheKey(s identityv1.RealmStatus) string {
+func cacheKey(s *identityv1.RealmStatus) string {
+	if s == nil {
+		return ""
+	}
+
 	h := sha256.New()
-	_, _ = fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%s",
+	if _, err := fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%s",
 		s.AdminUrl, s.AdminTokenUrl, s.AdminClientId,
-		s.AdminUserName, s.AdminPassword)
+		s.AdminUserName, s.AdminPassword); err != nil {
+		panic(fmt.Sprintf("write cache key hash: %v", err))
+	}
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 // NewKeycloakServiceFor builds the full HTTP client stack and wraps
 // it in a KeycloakService.
-func NewKeycloakServiceFor(status identityv1.RealmStatus) (KeycloakService, error) {
+func NewKeycloakServiceFor(status *identityv1.RealmStatus) (KeycloakService, error) {
+	if status == nil {
+		return nil, fmt.Errorf("realm status is nil")
+	}
+
 	tokenUrl, err := url.Parse(status.AdminTokenUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token URL: %w", err)

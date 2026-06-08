@@ -5,14 +5,13 @@
 package realm
 
 import (
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
 
 var _ = Describe("ValidateRealmStatus", func() {
-
 	It("should return an error when status is nil", func() {
 		err := ValidateRealmStatus(nil)
 		Expect(err).To(HaveOccurred())

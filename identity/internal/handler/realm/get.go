@@ -9,13 +9,13 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	common "github.com/telekom/controlplane/common/pkg/types"
-	secrets "github.com/telekom/controlplane/secret-manager/api"
-
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
 func GetRealmByName(ctx context.Context, realmRef *common.ObjectRef, resolveSecret bool) (bool, *identityv1.Realm, error) {
@@ -27,7 +27,7 @@ func GetRealmByName(ctx context.Context, realmRef *common.ObjectRef, resolveSecr
 		return false, nil, errors.Wrapf(err, "failed to get realm %s", realmRef.String())
 	}
 
-	if err := condition.EnsureReady(realm); err != nil {
+	if readyErr := condition.EnsureReady(realm); readyErr != nil {
 		return false, nil, ctrlerrors.BlockedErrorf("realm %q is not ready", realmRef.String())
 	}
 

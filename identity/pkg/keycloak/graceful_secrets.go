@@ -13,10 +13,11 @@ import (
 	"strconv"
 
 	"github.com/go-logr/logr"
+	"k8s.io/utils/ptr"
+
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/api"
 	"github.com/telekom/controlplane/identity/pkg/keycloak/util"
-	"k8s.io/utils/ptr"
 )
 
 // Constants for the managed secret-rotation profile and policy names.
@@ -127,9 +128,9 @@ func (k *keycloakService) ConfigureSecretRotationPolicy(ctx context.Context, rea
 	// ── 1. Ensure the client-policy profile exists ──────────────────────
 
 	params := SecretRotationParams{
-		ExpirationPeriodSeconds:        int(policy.ExpirationPeriod.Duration.Seconds()),
-		RotatedExpirationPeriodSeconds: int(policy.GracePeriod.Duration.Seconds()),
-		RemainingRotationPeriodSeconds: int(policy.RemainingRotationPeriod.Duration.Seconds()),
+		ExpirationPeriodSeconds:        int(policy.ExpirationPeriod.Seconds()),
+		RotatedExpirationPeriodSeconds: int(policy.GracePeriod.Seconds()),
+		RemainingRotationPeriodSeconds: int(policy.RemainingRotationPeriod.Seconds()),
 	}
 
 	if err := k.ensureSecretRotationProfile(ctx, realmName, params); err != nil {
@@ -480,7 +481,10 @@ func marshalPolicyAttributes(key, value string) string {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	}
-	b, _ := json.Marshal([]kvPair{{Key: key, Value: value}})
+	b, err := json.Marshal([]kvPair{{Key: key, Value: value}})
+	if err != nil {
+		return "[]"
+	}
 	return string(b)
 }
 

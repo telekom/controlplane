@@ -10,10 +10,11 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
+	"k8s.io/utils/ptr"
+
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/api"
 	"github.com/telekom/controlplane/identity/pkg/keycloak/protocolmappers"
-	"k8s.io/utils/ptr"
 )
 
 // ManagedClientScopeName is the name of the Keycloak client scope managed by
@@ -167,8 +168,15 @@ func clientScopeMatchesDesired(existing, desired *api.ClientScopeRepresentation)
 		if !ptrStringEqual(em.ProtocolMapper, dm.ProtocolMapper) {
 			return false
 		}
-		if !protocolMapperConfigEqual(em.Config, dm.Config) {
-			return false
+		switch {
+		case em.Config == nil || dm.Config == nil:
+			if em.Config != dm.Config {
+				return false
+			}
+		default:
+			if !protocolMapperConfigEqual(*em.Config, *dm.Config) {
+				return false
+			}
 		}
 	}
 	return true
@@ -186,18 +194,12 @@ func ptrStringEqual(a, b *string) bool {
 }
 
 // protocolMapperConfigEqual compares two protocol mapper config maps.
-func protocolMapperConfigEqual(a, b *map[string]interface{}) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
+func protocolMapperConfigEqual(a, b map[string]interface{}) bool {
+	if len(a) != len(b) {
 		return false
 	}
-	if len(*a) != len(*b) {
-		return false
-	}
-	for k, va := range *a {
-		vb, ok := (*b)[k]
+	for k, va := range a {
+		vb, ok := b[k]
 		if !ok {
 			return false
 		}
@@ -211,6 +213,8 @@ func protocolMapperConfigEqual(a, b *map[string]interface{}) bool {
 // reconcileProtocolMappers diffs existing vs desired protocol mappers and
 // applies granular create/update/delete operations. This avoids removing the
 // client scope (which would cause a window where tokens lack the claims).
+//
+//nolint:gocyclo // The reconciliation flow keeps create, update, and delete decisions in one place.
 func (k *keycloakService) reconcileProtocolMappers(
 	ctx context.Context,
 	realmName, scopeID string,
@@ -276,8 +280,11 @@ func (k *keycloakService) reconcileProtocolMappers(
 		}
 
 		// Existing mapper — update only if type or config changed.
-		if ptrStringEqual(em.mapper.ProtocolMapper, dm.ProtocolMapper) &&
-			protocolMapperConfigEqual(em.mapper.Config, dm.Config) {
+		configsEqual := em.mapper.Config == nil && dm.Config == nil
+		if em.mapper.Config != nil && dm.Config != nil {
+			configsEqual = protocolMapperConfigEqual(*em.mapper.Config, *dm.Config)
+		}
+		if ptrStringEqual(em.mapper.ProtocolMapper, dm.ProtocolMapper) && configsEqual {
 			continue
 		}
 
