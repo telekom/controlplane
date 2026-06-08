@@ -6,7 +6,6 @@ package approval
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -199,7 +198,7 @@ func createOrUpdateApprovalExpiration(ctx context.Context, c commonclient.Janito
 
 	ae := &approvalv1.ApprovalExpiration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s--expiration", approval.Name),
+			Name:      approval.Name,
 			Namespace: approval.Namespace,
 		},
 	}
@@ -208,6 +207,7 @@ func createOrUpdateApprovalExpiration(ctx context.Context, c commonclient.Janito
 		if err := controllerutil.SetControllerReference(approval, ae, c.Scheme()); err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
+		ae.Labels = approval.GetLabels()
 		ae.Spec = approvalv1.ApprovalExpirationSpec{
 			Approval: types.ObjectRef{
 				Name:      approval.Name,
@@ -231,19 +231,10 @@ func createOrUpdateApprovalExpiration(ctx context.Context, c commonclient.Janito
 // deleteApprovalExpiration deletes the ApprovalExpiration if it exists
 func deleteApprovalExpiration(ctx context.Context, c commonclient.JanitorClient, approval *approvalv1.Approval) error {
 	ae := &approvalv1.ApprovalExpiration{}
-	key := client.ObjectKey{
-		Name:      fmt.Sprintf("%s--expiration", approval.Name),
-		Namespace: approval.Namespace,
-	}
+	ae.Name = approval.Name
+	ae.Namespace = approval.Namespace
 
-	err := c.Get(ctx, key, ae)
-	if err != nil {
-		// Doesn't exist, nothing to delete
-		return client.IgnoreNotFound(err)
-	}
-
-	// Exists, delete it
-	if err := c.Delete(ctx, ae); err != nil {
+	if err := client.IgnoreNotFound(c.Delete(ctx, ae)); err != nil {
 		return errors.Wrap(err, "failed to delete ApprovalExpiration")
 	}
 

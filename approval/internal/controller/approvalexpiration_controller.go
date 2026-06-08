@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/events"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,9 +22,8 @@ import (
 // ApprovalExpirationReconciler reconciles an ApprovalExpiration object
 type ApprovalExpirationReconciler struct {
 	client.Client
-	Scheme        *runtime.Scheme
-	Recorder      record.EventRecorder // Deprecated: kept for common controller compatibility
-	EventRecorder events.EventRecorder // New events API
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 
 	cc.Controller[*approvalv1.ApprovalExpiration]
 }
@@ -46,12 +44,9 @@ func (r *ApprovalExpirationReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ApprovalExpirationReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// Use new events API (k8s.io/client-go/tools/events)
-	r.EventRecorder = mgr.GetEventRecorder("approvalexpiration-controller")
-	// TODO: Migrate common controller to use events.EventRecorder, then remove this adapter
-	r.Recorder = &eventsRecorderAdapter{events: r.EventRecorder}
+	r.Recorder = mgr.GetEventRecorderFor("approvalexpiration-controller")
 
-	handler := approvalexpiration.NewHandler(r.Client)
+	handler := approvalexpiration.NewHandler()
 	r.Controller = cc.NewController(handler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -61,23 +56,4 @@ func (r *ApprovalExpirationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
-}
-
-// eventsRecorderAdapter adapts events.EventRecorder (new API) to record.EventRecorder (old API)
-// for compatibility with common controller until it's migrated to the new API.
-type eventsRecorderAdapter struct {
-	events events.EventRecorder
-}
-
-func (a *eventsRecorderAdapter) Event(object runtime.Object, eventtype, reason, message string) {
-	a.events.Eventf(object, nil, eventtype, reason, "Event", message)
-}
-
-func (a *eventsRecorderAdapter) Eventf(object runtime.Object, eventtype, reason, messageFmt string, args ...interface{}) {
-	a.events.Eventf(object, nil, eventtype, reason, "Event", messageFmt, args...)
-}
-
-func (a *eventsRecorderAdapter) AnnotatedEventf(object runtime.Object, annotations map[string]string, eventtype, reason, messageFmt string, args ...interface{}) {
-	// events.EventRecorder doesn't support annotations in the same way, just forward to Eventf
-	a.events.Eventf(object, nil, eventtype, reason, "Event", messageFmt, args...)
 }

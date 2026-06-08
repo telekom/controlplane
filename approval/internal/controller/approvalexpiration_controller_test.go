@@ -117,7 +117,7 @@ var _ = Describe("ApprovalExpiration Controller", Ordered, func() {
 		}
 
 		expirationName := types.NamespacedName{
-			Name:      resourceName + "--expiration",
+			Name:      resourceName,
 			Namespace: testNamespace,
 		}
 		ae := &approvalv1.ApprovalExpiration{}
@@ -129,7 +129,7 @@ var _ = Describe("ApprovalExpiration Controller", Ordered, func() {
 
 	It("should create ApprovalExpiration when Approval is GRANTED", func() {
 		expirationName := types.NamespacedName{
-			Name:      resourceName + "--expiration",
+			Name:      resourceName,
 			Namespace: testNamespace,
 		}
 
@@ -172,7 +172,7 @@ var _ = Describe("ApprovalExpiration Controller", Ordered, func() {
 		Expect(k8sClient.Update(ctx, approval)).To(Succeed())
 
 		expirationName := types.NamespacedName{
-			Name:      resourceName + "--expiration",
+			Name:      resourceName,
 			Namespace: testNamespace,
 		}
 
@@ -199,7 +199,7 @@ var _ = Describe("ApprovalExpiration Controller", Ordered, func() {
 		Expect(k8sClient.Update(ctx, approval)).To(Succeed())
 
 		expirationName := types.NamespacedName{
-			Name:      resourceName + "--expiration",
+			Name:      resourceName,
 			Namespace: testNamespace,
 		}
 
@@ -214,7 +214,7 @@ var _ = Describe("ApprovalExpiration Controller", Ordered, func() {
 
 	It("should keep ApprovalExpiration when Approval transitions to SUSPENDED", func() {
 		expirationName := types.NamespacedName{
-			Name:      resourceName + "--expiration",
+			Name:      resourceName,
 			Namespace: testNamespace,
 		}
 

@@ -17,21 +17,18 @@ import (
 
 	v1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
+	commonclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 // Handler handles ApprovalExpiration resources
-type Handler struct {
-	client client.Client
-}
+type Handler struct{}
 
 // NewHandler creates a new ApprovalExpiration handler
-func NewHandler(c client.Client) *Handler {
-	return &Handler{
-		client: c,
-	}
+func NewHandler() *Handler {
+	return &Handler{}
 }
 
 // CreateOrUpdate processes an ApprovalExpiration resource
@@ -42,6 +39,10 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 	approval, err := h.getParentApproval(ctx, ae)
 	if err != nil {
 		return errors.Wrap(err, "failed to get parent approval")
+	}
+	if approval == nil {
+		// Parent Approval was deleted; this resource will be GC'd via owner reference
+		return nil
 	}
 
 	// Guard: parent must be in active state (GRANTED or SUSPENDED)
@@ -101,6 +102,9 @@ func (h *Handler) Delete(ctx context.Context, ae *v1.ApprovalExpiration) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get parent approval")
 	}
+	if approval == nil {
+		return nil
+	}
 
 	removed := meta.RemoveStatusCondition(&approval.Status.Conditions, "Expired")
 	logger.V(1).Info("Removed 'Expired' status condition", "removed", removed)
@@ -108,15 +112,17 @@ func (h *Handler) Delete(ctx context.Context, ae *v1.ApprovalExpiration) error {
 	return nil
 }
 
-// getParentApproval fetches the parent Approval resource
+// getParentApproval fetches the parent Approval resource.
+// Returns nil, nil if the parent no longer exists.
 func (h *Handler) getParentApproval(ctx context.Context, ae *v1.ApprovalExpiration) (*v1.Approval, error) {
+	c := commonclient.ClientFromContextOrDie(ctx)
 	approval := &v1.Approval{}
 	key := client.ObjectKey{
 		Name:      ae.Spec.Approval.Name,
 		Namespace: ae.Spec.Approval.Namespace,
 	}
-	if err := h.client.Get(ctx, key, approval); err != nil {
-		return nil, err
+	if err := c.Get(ctx, key, approval); err != nil {
+		return nil, client.IgnoreNotFound(err)
 	}
 	return approval, nil
 }
@@ -141,15 +147,17 @@ func (h *Handler) sendReminder(ctx context.Context, ae *v1.ApprovalExpiration, a
 	}
 
 	// Build base notification data with template properties
-	notificationData := util.NotificationData{
-		Owner:          ae,
-		StateNew:       string(approval.Spec.State),
-		StateOld:       string(approval.Spec.State), // State hasn't changed yet for reminders
-		Target:         &approval.Spec.Target,
-		Requester:      &approval.Spec.Requester,
-		Decider:        &approval.Spec.Decider,
-		Scenario:       util.NotificationScenarioUpdated,
-		Action:         approval.Spec.Action,
+	notificationData := util.ReminderNotificationData{
+		NotificationData: util.NotificationData{
+			Owner:     ae,
+			StateNew:  string(approval.Spec.State),
+			StateOld:  string(approval.Spec.State), // State hasn't changed yet for reminders
+			Target:    &approval.Spec.Target,
+			Requester: &approval.Spec.Requester,
+			Decider:   &approval.Spec.Decider,
+			Scenario:  util.NotificationScenarioUpdated,
+			Action:    approval.Spec.Action,
+		},
 		ExpirationDate: ae.Spec.Expiration.Format("2006-01-02"),
 		DaysRemaining:  fmt.Sprintf("%d", daysRemaining),
 		ReminderType:   reminderType,

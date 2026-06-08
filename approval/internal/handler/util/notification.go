@@ -81,7 +81,11 @@ type NotificationData struct {
 	Scenario               NotificationScenario
 	Actor                  Actor
 	Action                 string
-	// Expiration-specific fields
+}
+
+// ReminderNotificationData extends NotificationData with expiration-specific fields
+type ReminderNotificationData struct {
+	NotificationData
 	ExpirationDate string
 	DaysRemaining  string
 	ReminderType   string
@@ -240,7 +244,7 @@ func initializeProperties() map[string]any {
 }
 
 // SendReminderNotification sends an expiration reminder notification
-func SendReminderNotification(ctx context.Context, data *NotificationData) (*types.ObjectRef, error) {
+func SendReminderNotification(ctx context.Context, data *ReminderNotificationData) (*types.ObjectRef, error) {
 	properties := initializeProperties()
 
 	properties[TemplatePlaceholderEnvironment] = contextutil.EnvFromContextOrDie(ctx)
