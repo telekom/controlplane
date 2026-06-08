@@ -170,49 +170,8 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	obj.Status.GatewayConsumer = types.ObjectRefFromObject(gatewayConsumer)
 
 	// Internal routes configuration
-	// reset status fields related to team API routes to avoid stale data if routes are removed from spec
-	obj.Status.TeamApiIdentityRealm = nil
-	obj.Status.TeamApiGatewayRealm = nil
-	obj.Status.ManagedRoutes = nil
-	obj.Status.Links.TeamIssuer = ""
-
-	if obj.Spec.ManagedRoutes != nil {
-		hasTeamRoutes := slices.ContainsFunc(obj.Spec.ManagedRoutes.Routes, func(route adminv1.ManagedRouteConfig) bool {
-			return route.Type == adminv1.ManagedRouteTypeTeamAPI
-		})
-
-		var teamApisGatewayRealm *gatewayapi.Realm
-		if hasTeamRoutes {
-			opts := CreateIdentityRealmOptions{
-				Claims:         defaultClaims,
-				SecretRotation: nil, // TeamAPIs do not support rotation
-			}
-			teamApiIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForTeamApiIdentityRealm(handlingContext.Environment), opts)
-			if err != nil {
-				return err
-			}
-			obj.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
-
-			teamApisGatewayRealm, err = createGatewayRealm(ctx, handlingContext, gateway, naming.ForTeamApiGatewayRealm(handlingContext.Environment))
-			if err != nil {
-				return err
-			}
-			obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
-			if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
-				obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
-			}
-		}
-
-		if err := reconcileManagedRoutes(ctx, handlingContext, obj, teamApisGatewayRealm, gatewayRealm); err != nil {
-			return err
-		}
-
-	}
-
-	// Cleanup managed routes that were not created or updated during this reconciliation.
-	// Using OwnedByLabel because routes live in a different namespace than the Zone CR.
-	if _, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
-		return errors.Wrapf(err, "failed to cleanup stale managed routes for zone %s", obj.Name)
+	if err := reconcileInternalRoutes(ctx, handlingContext, obj, defaultClaims, identityProvider, gateway, gatewayRealm); err != nil {
+		return err
 	}
 
 	// Populate Permissions URL if configured and feature enabled
@@ -233,7 +192,68 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	return nil
 }
 
-func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone, teamApisGatewayRealm *gatewayapi.Realm, proxyGatewayRealm *gatewayapi.Realm) error {
+func reconcileInternalRoutes(ctx context.Context, handlingContext HandlingContext, obj *adminv1.Zone, defaultClaims []identityapi.ClaimConfig, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway, gatewayRealm *gatewayapi.Realm) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	// Reset status fields related to team API routes to avoid stale data if routes are removed from spec
+	obj.Status.TeamApiIdentityRealm = nil
+	obj.Status.TeamApiGatewayRealm = nil
+	obj.Status.ManagedRoutes = nil
+	obj.Status.Links.TeamIssuer = ""
+
+	if obj.Spec.ManagedRoutes != nil {
+		teamApisGatewayRealm, err := reconcileTeamApiRealms(ctx, handlingContext, obj, defaultClaims, identityProvider, gateway)
+		if err != nil {
+			return err
+		}
+
+		if err := reconcileManagedRoutes(ctx, handlingContext, obj, teamApisGatewayRealm, gatewayRealm); err != nil {
+			return err
+		}
+	}
+
+	// Cleanup managed routes that were not created or updated during this reconciliation.
+	// Using OwnedByLabel because routes live in a different namespace than the Zone CR.
+	if _, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrapf(err, "failed to cleanup stale managed routes for zone %s", obj.Name)
+	}
+
+	return nil
+}
+
+// reconcileTeamApiRealms creates the identity and gateway realms required by TeamAPI routes.
+// Returns nil if no team routes are configured.
+func reconcileTeamApiRealms(ctx context.Context, handlingContext HandlingContext, obj *adminv1.Zone, defaultClaims []identityapi.ClaimConfig, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway) (*gatewayapi.Realm, error) {
+	hasTeamRoutes := slices.ContainsFunc(obj.Spec.ManagedRoutes.Routes, func(route adminv1.ManagedRouteConfig) bool {
+		return route.Type == adminv1.ManagedRouteTypeTeamAPI
+	})
+	if !hasTeamRoutes {
+		return nil, nil
+	}
+
+	opts := CreateIdentityRealmOptions{
+		Claims:         defaultClaims,
+		SecretRotation: nil, // TeamAPIs do not support rotation
+	}
+	teamApiIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForTeamApiIdentityRealm(handlingContext.Environment), opts)
+	if err != nil {
+		return nil, err
+	}
+	obj.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
+
+	teamApisGatewayRealm, err := createGatewayRealm(ctx, handlingContext, gateway, naming.ForTeamApiGatewayRealm(handlingContext.Environment))
+	if err != nil {
+		return nil, err
+	}
+	obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
+	if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
+		obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
+	}
+
+	return teamApisGatewayRealm, nil
+}
+
+func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone, teamApisGatewayRealm, proxyGatewayRealm *gatewayapi.Realm) error {
 	// Partition routes by type
 	var teamAPIRoutes, proxyRoutes []adminv1.ManagedRouteConfig
 	for _, r := range zone.Spec.ManagedRoutes.Routes {
