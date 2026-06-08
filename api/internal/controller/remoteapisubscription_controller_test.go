@@ -14,6 +14,7 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -215,7 +216,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				By("Checking the conditions on RemoteApiSubscription")
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), "ApprovalPending")
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), approvalbuilder.ReasonApprovalPending)
 
 			}, timeout, interval).Should(Succeed())
 
@@ -260,7 +261,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				readyCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Reason).To(Equal("ApprovalPending"))
+				g.Expect(readyCondition.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
 
 			}, timeout, interval).Should(Succeed())
 		})

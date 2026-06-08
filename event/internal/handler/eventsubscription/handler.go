@@ -199,19 +199,19 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	switch res {
 	case builder.ApprovalResultRequestDenied:
 		logger.Info("ApprovalRequest was denied — not touching child resources")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalRequestDenied", "ApprovalRequest has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalRequestDenied, "ApprovalRequest has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
 		return nil
 
 	case builder.ApprovalResultPending:
 		logger.Info("Approval is pending — waiting for approval")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Waiting for approval decision"))
+		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalPending, "Waiting for approval decision"))
 		obj.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
 		return nil
 
 	case builder.ApprovalResultDenied:
 		logger.Info("Approval was denied — cleaning up Subscriber")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalDenied", "Approval has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalDenied, "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
 		deleted, cleanupErr := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedBy(obj))
@@ -224,6 +224,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 
 	case builder.ApprovalResultGranted:
 		logger.Info("Approval is granted — continuing with provisioning")
+		builder.ClearApprovalPendingReady(obj)
 
 	default:
 		return errors.Errorf("unknown approval-builder result %q", res)
@@ -270,12 +271,21 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 func (h *EventSubscriptionHandler) resolveSSEUrl(ctx context.Context, obj *eventv1.EventSubscription, exposure *eventv1.EventExposure, subscriber *pubsubv1.Subscriber) error {
 	baseUrl, ok := exposure.Status.SseURLs[obj.Spec.Zone.Name]
 	if !ok {
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonBlocked, "No SSE URL found in EventExposure status for subscription zone"))
 		return ctrlerrors.BlockedErrorf("no SSE URL found in EventExposure status for zone %q", obj.Spec.Zone.Name)
+	}
+
+	if !condition.IsReady(subscriber) {
+		// subscriber is not ready yet, return and wait for the next reconciliation when subscriber is ready and has subscription ID available in status
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for Subscriber to be ready"))
+		return ctrlerrors.BlockedErrorf("Waiting for Subscriber %q to be ready", subscriber.Name)
 	}
 
 	if subscriber.Status.SubscriptionId == "" {
 		contextutil.RecorderFromContextOrDie(ctx).Event(obj, "Warning", "WaitingForSubscriptionId",
 			fmt.Sprintf("Waiting for subscription ID to be available in Subscriber status for zone %q", obj.Spec.Zone.Name))
+
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonBlocked, "Waiting for subscription ID to be available in Subscriber status"))
 		return ctrlerrors.BlockedErrorf("Waiting for SSE URL for zone %q to be available", obj.Spec.Zone.Name)
 	}
 
