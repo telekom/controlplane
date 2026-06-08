@@ -1,16 +1,27 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package model
 
-// TeamMutationResult is the response type for team mutations.
-type TeamMutationResult struct {
-	Success      bool    `json:"success"`
-	Message      string  `json:"message"`
-	Namespace    *string `json:"namespace,omitempty"`
-	ResourceName *string `json:"resourceName,omitempty"`
+import (
+	"github.com/telekom/controlplane/controlplane-api/ent"
+)
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Shared types
+// ──────────────────────────────────────────────────────────────────────────────
+
+// MutationError represents a domain error returned in mutation payloads.
+type MutationError struct {
+	Code    ErrorCode `json:"code"`
+	Message string    `json:"message"`
+	Field   *string   `json:"field,omitempty"`
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Input types
+// ──────────────────────────────────────────────────────────────────────────────
 
 // CreateTeamInput is the input for creating a new team.
 type CreateTeamInput struct {
@@ -21,13 +32,10 @@ type CreateTeamInput struct {
 	Members     []MemberInput `json:"members"`
 }
 
-// UpdateTeamInput is the input for updating an existing team.
+// UpdateTeamInput is the input for updating team metadata.
 type UpdateTeamInput struct {
-	Environment string        `json:"environment"`
-	Group       string        `json:"group"`
-	Name        string        `json:"name"`
-	Email       *string       `json:"email,omitempty"`
-	Members     []MemberInput `json:"members,omitempty"`
+	TeamID int     `json:"teamId"`
+	Email  *string `json:"email,omitempty"`
 }
 
 // MemberInput represents a team member in mutation inputs.
@@ -36,58 +44,74 @@ type MemberInput struct {
 	Email string `json:"email"`
 }
 
-// RotateApplicationSecretInput is the input for rotating an application's client secret.
-type RotateApplicationSecretInput struct {
-	Environment string `json:"environment"`
-	Team        string `json:"team"`
-	Name        string `json:"name"`
-}
-
-// RotateApplicationSecretResult is the response type for application mutations.
-type RotateApplicationSecretResult struct {
-	Success      bool    `json:"success"`
-	Message      string  `json:"message"`
-	Namespace    *string `json:"namespace,omitempty"`
-	ResourceName *string `json:"resourceName,omitempty"`
-}
-
-// RotateTeamTokenInput is the input for rotating a team's token.
-type RotateTeamTokenInput struct {
-	Environment string `json:"environment"`
-	Group       string `json:"group"`
-	Name        string `json:"name"`
-}
-
-// DecisionInput represents the decision details for approval mutations.
+// DecisionInput represents the decision for approval mutations.
 type DecisionInput struct {
-	Name    string  `json:"name"`
-	Email   string  `json:"email"`
-	Comment *string `json:"comment,omitempty"`
+	Action  ApprovalAction `json:"action"`
+	Comment *string        `json:"comment,omitempty"`
 }
 
-// DecideApprovalRequestInput is the input for deciding on an ApprovalRequest.
-type DecideApprovalRequestInput struct {
-	Environment string        `json:"environment"`
-	Team        string        `json:"team"`
-	Name        string        `json:"name"`
-	Action      string        `json:"action"`
-	Decision    DecisionInput `json:"decision"`
+// ──────────────────────────────────────────────────────────────────────────────
+// Payload types — Team
+// ──────────────────────────────────────────────────────────────────────────────
+
+// CreateTeamPayload is the response for createTeam.
+type CreateTeamPayload struct {
+	Team     *ent.Team       `json:"team,omitempty"`
+	Accepted bool            `json:"accepted"`
+	Errors   []MutationError `json:"errors"`
 }
 
-// DecideApprovalInput is the input for deciding on an existing Approval.
-type DecideApprovalInput struct {
-	Environment string        `json:"environment"`
-	Team        string        `json:"team"`
-	Name        string        `json:"name"`
-	Action      string        `json:"action"`
-	Decision    DecisionInput `json:"decision"`
+// UpdateTeamPayload is the response for updateTeam.
+type UpdateTeamPayload struct {
+	Team     *ent.Team       `json:"team,omitempty"`
+	Accepted bool            `json:"accepted"`
+	Errors   []MutationError `json:"errors"`
 }
 
-// ApprovalMutationResult is the response type for approval mutations.
-type ApprovalMutationResult struct {
-	Success      bool    `json:"success"`
-	Message      string  `json:"message"`
-	NewState     *string `json:"newState,omitempty"`
-	Namespace    *string `json:"namespace,omitempty"`
-	ResourceName *string `json:"resourceName,omitempty"`
+// AddTeamMemberPayload is the response for addTeamMember.
+type AddTeamMemberPayload struct {
+	Team   *ent.Team       `json:"team,omitempty"`
+	Errors []MutationError `json:"errors"`
+}
+
+// RemoveTeamMemberPayload is the response for removeTeamMember.
+type RemoveTeamMemberPayload struct {
+	Team   *ent.Team       `json:"team,omitempty"`
+	Errors []MutationError `json:"errors"`
+}
+
+// RotateTeamTokenPayload is the response for rotateTeamToken.
+type RotateTeamTokenPayload struct {
+	Team     *ent.Team       `json:"team,omitempty"`
+	Accepted bool            `json:"accepted"`
+	Errors   []MutationError `json:"errors"`
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Payload types — Application
+// ──────────────────────────────────────────────────────────────────────────────
+
+// RotateApplicationSecretPayload is the response for rotateApplicationSecret.
+type RotateApplicationSecretPayload struct {
+	Application *ent.Application `json:"application,omitempty"`
+	Accepted    bool             `json:"accepted"`
+	Errors      []MutationError  `json:"errors"`
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Payload types — Approval
+// ──────────────────────────────────────────────────────────────────────────────
+
+// DecideApprovalRequestPayload is the response for decideApprovalRequest.
+type DecideApprovalRequestPayload struct {
+	ApprovalRequest *ent.ApprovalRequest `json:"approvalRequest,omitempty"`
+	Accepted        bool                 `json:"accepted"`
+	Errors          []MutationError      `json:"errors"`
+}
+
+// DecideApprovalPayload is the response for decideApproval.
+type DecideApprovalPayload struct {
+	Approval *ent.Approval   `json:"approval,omitempty"`
+	Accepted bool            `json:"accepted"`
+	Errors   []MutationError `json:"errors"`
 }

@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,7 +54,7 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			Expect(reason).To(ContainSubstring("action"))
 		})
 
-		It("should skip when target kind is not ApiSubscription", func() {
+		It("should skip when target kind is unsupported", func() {
 			obj := &approvalv1.ApprovalRequest{
 				Spec: approvalv1.ApprovalRequestSpec{
 					Action: "subscribe",
@@ -65,10 +66,64 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			}
 			skip, reason := t.ShouldSkip(obj)
 			Expect(skip).To(BeTrue())
-			Expect(reason).To(ContainSubstring("ApiSubscription"))
+			Expect(reason).To(ContainSubstring("ApiSubscription or EventSubscription"))
 		})
 
-		It("should not skip a valid ApprovalRequest CR", func() {
+		It("should not skip a valid ApprovalRequest CR targeting ApiSubscription", func() {
+			obj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+
+		It("should not skip a valid ApprovalRequest CR targeting EventSubscription", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, true)
+			defer cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
+			obj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-event-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+		It("should skip EventSubscription target when pubsub feature is disabled", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
+			obj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-event-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("pubsub feature is disabled"))
+		})
+
+		It("should not skip ApiSubscription target when pubsub feature is disabled", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
 			obj := &approvalv1.ApprovalRequest{
 				Spec: approvalv1.ApprovalRequestSpec{
 					Action: "subscribe",
@@ -86,7 +141,7 @@ var _ = Describe("ApprovalRequest Translator", func() {
 	})
 
 	Describe("Translate", func() {
-		It("should populate all fields from the CR", func() {
+		It("should populate all fields from the CR targeting ApiSubscription", func() {
 			reason := "need access"
 			obj := &approvalv1.ApprovalRequest{
 				ObjectMeta: metav1.ObjectMeta{
@@ -148,6 +203,7 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			Expect(data.State).To(Equal("GRANTED"))
 			Expect(data.Action).To(Equal("subscribe"))
 			Expect(data.Strategy).To(Equal("FOUR_EYES"))
+			Expect(data.TargetKind).To(Equal("ApiSubscription"))
 			Expect(data.Requester.TeamName).To(Equal("narvi"))
 			Expect(data.Requester.TeamEmail).To(Equal("narvi@example.com"))
 			Expect(*data.Requester.Reason).To(Equal("need access"))
@@ -163,6 +219,38 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			Expect(data.AvailableTransitions[0].ToState).To(Equal("Rejected"))
 			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
 			Expect(data.SubscriptionName).To(Equal("my-sub"))
+		})
+
+		It("should set TargetKind to EventSubscription when target kind is EventSubscription", func() {
+			obj := &approvalv1.ApprovalRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "eventsubscription--my-event-sub--abc123",
+					Namespace: "prod--platform--narvi",
+					Labels: map[string]string{
+						"cp.ei.telekom.de/environment": "prod",
+					},
+				},
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{
+							Namespace: "prod--platform--narvi",
+							Name:      "my-event-sub",
+						},
+					},
+					Requester: approvalv1.Requester{TeamName: "narvi"},
+					Decider:   approvalv1.Decider{TeamName: "provider"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.TargetKind).To(Equal("EventSubscription"))
+			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+			Expect(data.SubscriptionName).To(Equal("my-event-sub"))
 		})
 
 		It("should fall back to own namespace when target namespace is empty", func() {

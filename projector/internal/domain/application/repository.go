@@ -53,9 +53,9 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps App
 // Resolves Team FK and Zone FK (both required) via deps, then upserts on
 // the composite unique constraint (name, owner_team).
 //
-// ClientID, ClientSecret and IssuerURL are nillable — set only when non-nil.
+// ClientID and ClientSecret are nillable — set only when non-nil.
 // On conflict update: always sets StatusPhase, StatusMessage; conditionally
-// sets/clears ClientID, ClientSecret and IssuerURL.
+// sets/clears ClientID and ClientSecret.
 func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 	start := time.Now()
 	defer func() {
@@ -85,7 +85,8 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 		SetEnvironment(data.Meta.Environment).
 		SetNamespace(data.Meta.Namespace).
 		SetOwnerTeamID(teamID).
-		SetZoneID(zoneID)
+		SetZoneID(zoneID).
+		SetSecretRotationPhase(application.SecretRotationPhase(data.SecretRotationPhase))
 
 	if data.ClientID != nil {
 		create.SetClientID(*data.ClientID)
@@ -93,8 +94,17 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 	if data.ClientSecret != nil {
 		create.SetClientSecret(*data.ClientSecret)
 	}
-	if data.IssuerURL != nil {
-		create.SetIssuerURL(*data.IssuerURL)
+	if data.RotatedClientSecret != nil {
+		create.SetRotatedClientSecret(*data.RotatedClientSecret)
+	}
+	if data.RotatedExpiresAt != nil {
+		create.SetRotatedExpiresAt(*data.RotatedExpiresAt)
+	}
+	if data.CurrentExpiresAt != nil {
+		create.SetCurrentExpiresAt(*data.CurrentExpiresAt)
+	}
+	if data.SecretRotationMessage != nil {
+		create.SetSecretRotationMessage(*data.SecretRotationMessage)
 	}
 
 	appID, upsertErr := create.
@@ -104,16 +114,32 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 			u.SetStatusMessage(data.StatusMessage)
 			u.SetEnvironment(data.Meta.Environment)
 			u.SetNamespace(data.Meta.Namespace)
+			u.SetSecretRotationPhase(application.SecretRotationPhase(data.SecretRotationPhase))
 			if data.ClientID != nil {
 				u.SetClientID(*data.ClientID)
 			}
 			if data.ClientSecret != nil {
 				u.SetClientSecret(*data.ClientSecret)
 			}
-			if data.IssuerURL != nil {
-				u.SetIssuerURL(*data.IssuerURL)
+			if data.RotatedClientSecret != nil {
+				u.SetRotatedClientSecret(*data.RotatedClientSecret)
 			} else {
-				u.ClearIssuerURL()
+				u.ClearRotatedClientSecret()
+			}
+			if data.RotatedExpiresAt != nil {
+				u.SetRotatedExpiresAt(*data.RotatedExpiresAt)
+			} else {
+				u.ClearRotatedExpiresAt()
+			}
+			if data.CurrentExpiresAt != nil {
+				u.SetCurrentExpiresAt(*data.CurrentExpiresAt)
+			} else {
+				u.ClearCurrentExpiresAt()
+			}
+			if data.SecretRotationMessage != nil {
+				u.SetSecretRotationMessage(*data.SecretRotationMessage)
+			} else {
+				u.ClearSecretRotationMessage()
 			}
 		}).
 		ID(ctx)

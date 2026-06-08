@@ -84,6 +84,10 @@ func (r *Repository) Upsert(ctx context.Context, data *TeamData) error {
 			SetEnvironment(data.Meta.Environment).
 			SetNamespace(data.Meta.Namespace)
 
+		if data.TeamToken != "" {
+			create = create.SetTeamToken(data.TeamToken)
+		}
+
 		if groupID > 0 {
 			create = create.SetGroupID(groupID)
 		}
@@ -97,6 +101,11 @@ func (r *Repository) Upsert(ctx context.Context, data *TeamData) error {
 				u.SetStatusMessage(data.StatusMessage)
 				u.SetEnvironment(data.Meta.Environment)
 				u.SetNamespace(data.Meta.Namespace)
+				if data.TeamToken != "" {
+					u.SetTeamToken(data.TeamToken)
+				} else {
+					u.ClearTeamToken()
+				}
 			}).
 			ID(ctx)
 		if upsertErr != nil {

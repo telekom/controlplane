@@ -34,10 +34,6 @@ func NewApiCategory(name string) *apiv1.ApiCategory {
 				Names:      []string{"test-team"},
 			},
 			MustHaveGroupPrefix: true,
-			Linting: &apiv1.LintingConfig{
-				Enabled: false,
-				Ruleset: "owasp",
-			},
 		},
 	}
 }

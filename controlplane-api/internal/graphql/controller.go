@@ -6,14 +6,18 @@ package graphql
 
 import (
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
+
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"github.com/valyala/fasthttp/fasthttpadaptor"
+	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
 // Controller is a Fiber controller that wraps a gqlgen handler.
@@ -55,7 +59,24 @@ func httpHandlerWithUserContext(h http.Handler) fiber.Handler {
 		if err := fasthttpadaptor.ConvertRequest(c.Context(), &req, true); err != nil {
 			return err
 		}
-		req = *req.WithContext(c.UserContext())
+		ctx := c.UserContext()
+
+		// Propagate forwarded user identity headers into context for the Viewer middleware.
+		// Values may be percent-encoded (encodeURIComponent) by the UI to support
+		// non-ASCII characters in HTTP header values; decode them transparently.
+		if name, email := decodeHeader(c.Get("X-Forwarded-User-Name")), decodeHeader(c.Get("X-Forwarded-User-Email")); name != "" || email != "" {
+			fu := viewer.ForwardedUser{Name: name, Email: email}
+			fu.IsAdmin = strings.EqualFold(c.Get("X-Forwarded-User-Is-Admin"), "true")
+			if roles := decodeHeader(c.Get("X-Forwarded-User-Roles")); roles != "" {
+				fu.Roles = strings.Split(roles, ",")
+			}
+			if groups := decodeHeader(c.Get("X-Forwarded-User-Groups")); groups != "" {
+				fu.Groups = strings.Split(groups, ",")
+			}
+			ctx = viewer.NewForwardedUserContext(ctx, fu)
+		}
+
+		req = *req.WithContext(ctx)
 		rec := &responseRecorder{ctx: c}
 		h.ServeHTTP(rec, &req)
 		return nil
@@ -78,4 +99,13 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 
 func (r *responseRecorder) WriteHeader(statusCode int) {
 	r.ctx.Status(statusCode)
+}
+
+// decodeHeader decodes a potentially percent-encoded header value.
+// If decoding fails (e.g. the value was never encoded), it returns the original value.
+func decodeHeader(value string) string {
+	if decoded, err := url.QueryUnescape(value); err == nil {
+		return decoded
+	}
+	return value
 }

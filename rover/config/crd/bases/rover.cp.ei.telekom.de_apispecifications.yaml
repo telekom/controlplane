@@ -57,6 +57,24 @@ spec:
                 description: Hash is the SHA-256 hash of the specification content
                   for integrity verification
                 type: string
+              lint:
+                description: Lint contains the result of the OAS linting performed
+                  by rover-server.
+                properties:
+                  dashboardUrl:
+                    description: DashboardURL is a direct link to the linter dashboard
+                      for this scan.
+                    type: string
+                  message:
+                    description: Message is a human-readable description of the lint
+                      outcome.
+                    type: string
+                  passed:
+                    description: Passed indicates whether the spec passed linting.
+                    type: boolean
+                required:
+                - passed
+                type: object
               scopes:
                 description: Oauth2Scopes contains the OAuth2 scopes extracted from
                   security definitions/schemes

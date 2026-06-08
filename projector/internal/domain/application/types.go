@@ -7,7 +7,11 @@
 // on both Team and Zone.
 package application
 
-import "github.com/telekom/controlplane/projector/internal/domain/shared"
+import (
+	"time"
+
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
+)
 
 // ApplicationKey is the composite identity key for Application entities.
 // Application names are only unique per team (composite unique index on
@@ -25,7 +29,13 @@ type ApplicationData struct {
 	Name          string
 	ClientID      *string // optional/nillable — nil when Status.ClientId is empty
 	ClientSecret  *string // optional/nillable — nil when Spec.Secret is empty
-	IssuerURL     *string // optional/nillable — always nil (CR does not carry it)
 	TeamName      string  // resolved to owner_team FK
 	ZoneName      string  // resolved to zone FK
+
+	// Secret rotation fields
+	RotatedClientSecret   *string    // secret-manager reference to previous secret
+	RotatedExpiresAt      *time.Time // when the rotated (old) secret stops being valid
+	CurrentExpiresAt      *time.Time // when the current secret will auto-expire
+	SecretRotationPhase   string     // FSM state: DONE, ROTATING, GRACE_PERIOD_ACTIVE, GRACE_PERIOD_EXPIRING, FAILED
+	SecretRotationMessage *string    // human-readable message (nil when DONE)
 }

@@ -25,12 +25,12 @@ const entityType = "approvalrequest"
 // Repository performs typed persistence operations for ApprovalRequest
 // entities. It implements runtime.Repository[ApprovalRequestKey, *ApprovalRequestData].
 //
-// ApprovalRequest has a required FK dependency on ApiSubscription (M2O). The
-// FK column (api_subscription_approval_requests) is an edge column, not a
-// schema field, so ent's UpdateNewValues() on conflict will NOT update it.
-// After the initial INSERT sets the FK correctly, subsequent upserts (ON
-// CONFLICT UPDATE) explicitly update the FK via UpdateOneID to handle
-// potential subscription re-targeting. A single cache entry keyed by
+// ApprovalRequest has a required FK dependency on either ApiSubscription or
+// EventSubscription (determined by TargetKind). The FK column is an edge
+// column, not a schema field, so ent's UpdateNewValues() on conflict will NOT
+// update it. After the initial INSERT sets the FK correctly, subsequent
+// upserts (ON CONFLICT UPDATE) explicitly update the FK via UpdateOneID to
+// handle potential subscription re-targeting. A single cache entry keyed by
 // namespace:name is maintained.
 type Repository struct {
 	client *ent.Client
@@ -51,12 +51,41 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps App
 	}
 }
 
+// resolveSubscriptionID resolves the parent subscription FK based on the
+// target kind (ApiSubscription or EventSubscription).
+func (r *Repository) resolveSubscriptionID(ctx context.Context, data *ApprovalRequestData) (int, error) {
+	switch data.TargetKind {
+	case TargetKindEventSubscription:
+		id, err := r.deps.FindEventSubscriptionByMeta(ctx, data.SubscriptionNamespace, data.SubscriptionName)
+		if err != nil {
+			if errors.Is(err, infrastructure.ErrEntityNotFound) {
+				return 0, runtime.WrapDependencyMissing("event_subscription",
+					data.SubscriptionNamespace+"/"+data.SubscriptionName)
+			}
+			return 0, fmt.Errorf("find event_subscription %s/%s: %w",
+				data.SubscriptionNamespace, data.SubscriptionName, err)
+		}
+		return id, nil
+	default: // TargetKindAPISubscription
+		id, err := r.deps.FindAPISubscriptionByMeta(ctx, data.SubscriptionNamespace, data.SubscriptionName)
+		if err != nil {
+			if errors.Is(err, infrastructure.ErrEntityNotFound) {
+				return 0, runtime.WrapDependencyMissing("api_subscription",
+					data.SubscriptionNamespace+"/"+data.SubscriptionName)
+			}
+			return 0, fmt.Errorf("find api_subscription %s/%s: %w",
+				data.SubscriptionNamespace, data.SubscriptionName, err)
+		}
+		return id, nil
+	}
+}
+
 // Upsert creates or updates an ApprovalRequest entity in the database.
 //
 // Steps:
-//  1. Resolve parent ApiSubscription FK (required) via cache-based meta-key
-//     lookup. Returns ErrDependencyMissing if the subscription has not been
-//     synced yet.
+//  1. Resolve parent subscription FK (required) via cache-based meta-key
+//     lookup, branching on TargetKind. Returns ErrDependencyMissing if the
+//     subscription has not been synced yet.
 //  2. Create with ON CONFLICT (namespace, name) + UpdateNewValues().
 //  3. Explicitly update the subscription FK via UpdateOneID, because ent's
 //     edge-based FK columns are not included in the ON CONFLICT UPDATE SET
@@ -68,14 +97,9 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationUpsert).Observe(time.Since(start).Seconds())
 	}()
 
-	subID, err := r.deps.FindAPISubscriptionByMeta(ctx, data.SubscriptionNamespace, data.SubscriptionName)
+	subID, err := r.resolveSubscriptionID(ctx, data)
 	if err != nil {
-		if errors.Is(err, infrastructure.ErrEntityNotFound) {
-			return runtime.WrapDependencyMissing("api_subscription",
-				data.SubscriptionNamespace+"/"+data.SubscriptionName)
-		}
-		return fmt.Errorf("find api_subscription %s/%s: %w",
-			data.SubscriptionNamespace, data.SubscriptionName, err)
+		return err
 	}
 
 	create := r.client.ApprovalRequest.Create().
@@ -91,28 +115,47 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		SetDecider(data.Decider).
 		SetDeciderTeamName(data.Decider.TeamName).
 		SetDecisions(data.Decisions).
-		SetAvailableTransitions(data.AvailableTransitions).
-		SetAPISubscriptionID(subID)
+		SetAvailableTransitions(data.AvailableTransitions)
+
+	// Set the correct subscription FK based on target kind.
+	if data.TargetKind == TargetKindEventSubscription {
+		create = create.SetEventSubscriptionID(subID)
+	} else {
+		create = create.SetAPISubscriptionID(subID)
+	}
 
 	arID, upsertErr := create.
 		OnConflictColumns(entapprovalrequest.FieldNamespace, entapprovalrequest.FieldName).
 		UpdateNewValues().
 		ID(ctx)
 	if upsertErr != nil {
+		if infrastructure.IsFKViolation(upsertErr) {
+			r.evictSubscriptionCache(data)
+			return runtime.WrapDependencyMissing("api_subscription",
+				data.SubscriptionNamespace+"/"+data.SubscriptionName)
+		}
 		return fmt.Errorf("upsert approval_request %s/%s (sub %s/%s): %w",
 			data.Meta.Namespace, data.Meta.Name,
 			data.SubscriptionNamespace, data.SubscriptionName, upsertErr)
 	}
 
 	// Explicitly update the subscription FK. The edge-based FK column
-	// (api_subscription_approval_requests) is not included in
-	// UpdateNewValues() ON CONFLICT SET clauses because ent treats it as an
-	// edge, not a field. On the initial INSERT the FK is set correctly via
-	// the edge spec, but on subsequent upserts the old value would be
-	// preserved without this.
-	if err := r.client.ApprovalRequest.UpdateOneID(arID).
-		SetAPISubscriptionID(subID).
-		Exec(ctx); err != nil {
+	// is not included in UpdateNewValues() ON CONFLICT SET clauses because
+	// ent treats it as an edge, not a field. On the initial INSERT the FK
+	// is set correctly via the edge spec, but on subsequent upserts the old
+	// value would be preserved without this.
+	update := r.client.ApprovalRequest.UpdateOneID(arID)
+	if data.TargetKind == TargetKindEventSubscription {
+		update = update.SetEventSubscriptionID(subID).ClearAPISubscription()
+	} else {
+		update = update.SetAPISubscriptionID(subID).ClearEventSubscription()
+	}
+	if err := update.Exec(ctx); err != nil {
+		if infrastructure.IsFKViolation(err) {
+			r.evictSubscriptionCache(data)
+			return runtime.WrapDependencyMissing("api_subscription",
+				data.SubscriptionNamespace+"/"+data.SubscriptionName)
+		}
 		return fmt.Errorf("update subscription FK for approval_request %d (%s/%s): %w",
 			arID, data.Meta.Namespace, data.Meta.Name, err)
 	}
@@ -120,6 +163,16 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 	et, lk := cachekeys.ApprovalRequest(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, arID)
 	return nil
+}
+
+// evictSubscriptionCache removes the stale cached subscription ID so the
+// next reconcile attempt performs a fresh DB lookup.
+func (r *Repository) evictSubscriptionCache(data *ApprovalRequestData) {
+	if data.TargetKind == TargetKindEventSubscription {
+		r.deps.EvictEventSubscription(data.SubscriptionNamespace, data.SubscriptionName)
+	} else {
+		r.deps.EvictAPISubscription(data.SubscriptionNamespace, data.SubscriptionName)
+	}
 }
 
 // Delete removes an ApprovalRequest entity from the database by its
