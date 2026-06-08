@@ -18,6 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+var ErrRouteDisabled = fmt.Errorf("route is disabled")
+
 type routeConfig struct {
 	UpstreamPathFormat   string
 	DownstreamPathFormat string
@@ -72,7 +74,7 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType gatewayv
 
 	overwrite := findRouteOverwrite(realm, routeType)
 	if overwrite != nil && !overwrite.Enabled {
-		return nil, nil
+		return nil, ErrRouteDisabled
 	}
 
 	var downstreamPrefix string
