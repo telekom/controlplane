@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -69,7 +70,7 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 			log.V(1).Info("Resolving client secret from secret manager", "secretRef", clientSecret)
 			clientSecret, err = secrets.Get(ctx, clientSecret)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to resolve upstream client secret for route %s: %w", route.Name, err)
 			}
 		}
 

@@ -7,6 +7,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
@@ -115,7 +115,7 @@ func (c *kongClient) LoadPlugin(
 			return nil, err
 		}
 		if err := CheckStatusCode(response, 200, 404); err != nil {
-			return nil, fmt.Errorf("failed to get plugin: (%d): %s", response.StatusCode(), string(response.Body))
+			return nil, fmt.Errorf("failed to get plugin (%d): %s: %w", response.StatusCode(), string(response.Body), err)
 		}
 		if response.StatusCode() == 404 {
 			log.V(1).Info("plugin not found", "id", pluginId)
@@ -125,7 +125,7 @@ func (c *kongClient) LoadPlugin(
 		if copyConfig {
 			err = json.Unmarshal(response.Body, &plugin)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to unmarshal plugin response")
+				return nil, fmt.Errorf("failed to unmarshal plugin response: %w", err)
 			}
 		}
 
@@ -148,7 +148,7 @@ loadByTags:
 		if copyConfig {
 			err = deepCopy(kongPlugin, plugin)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to copy plugin config")
+				return nil, fmt.Errorf("failed to copy plugin config: %w", err)
 			}
 		}
 	}
@@ -241,7 +241,7 @@ func (c *kongClient) CreateOrReplacePlugin(
 		log.V(1).Info("upserting plugin for consumer", "consumer", *plugin.GetConsumer(), "id", pluginId)
 		response, err = client.UpsertPluginForConsumer(ctx, *plugin.GetConsumer(), pluginId, body)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create plugin")
+			return nil, fmt.Errorf("failed to create plugin: %w", err)
 		}
 
 	} else if isRouteSpecific {
@@ -251,7 +251,7 @@ func (c *kongClient) CreateOrReplacePlugin(
 		log.V(1).Info("upserting plugin for route", "route", *plugin.GetRoute(), "id", pluginId)
 		response, err = client.UpsertPluginForRoute(ctx, *plugin.GetRoute(), pluginId, body)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to upsert plugin for route")
+			return nil, fmt.Errorf("failed to upsert plugin for route: %w", err)
 		}
 
 	} else {
@@ -259,23 +259,23 @@ func (c *kongClient) CreateOrReplacePlugin(
 		log.V(1).Info("upserting global plugin", "id", pluginId)
 		response, err = client.UpsertPlugin(ctx, pluginId, body)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create plugin")
+			return nil, fmt.Errorf("failed to create plugin: %w", err)
 		}
 	}
 
 	apiResponse := WrapApiResponse(response)
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read response body")
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 	response.Body.Close() //nolint:errcheck
 
 	if err := CheckStatusCode(apiResponse, 200); err != nil {
-		return nil, fmt.Errorf("failed to create plugin: (%d): %s", apiResponse.StatusCode(), string(responseBody))
+		return nil, fmt.Errorf("failed to create plugin (%d): %s: %w", apiResponse.StatusCode(), string(responseBody), err)
 	}
 	err = json.Unmarshal(responseBody, &kongPlugin)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal plugin response")
+		return nil, fmt.Errorf("failed to unmarshal plugin response: %w", err)
 	}
 
 	plugin.SetId(pluginId)
@@ -319,7 +319,7 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) (err
 		return err
 	}
 	if err := CheckStatusCode(response, 200, 204); err != nil {
-		return fmt.Errorf("failed to delete plugin: (%d): %s", response.StatusCode(), string(response.Body))
+		return fmt.Errorf("failed to delete plugin (%d): %s: %w", response.StatusCode(), string(response.Body), err)
 	}
 	return nil
 }
@@ -344,7 +344,7 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 
 	kongPlugins, err := c.getPluginsMatchingTags(ctx, tags)
 	if err != nil {
-		return errors.Wrap(err, "failed to list plugins")
+		return fmt.Errorf("failed to list plugins: %w", err)
 	}
 
 	pluginIds := make([]string, 0, len(plugins))
@@ -363,7 +363,7 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 			log.V(1).Info("deleting plugin", "name", *kongPlugin.Name, "id", *kongPlugin.Id)
 			_, err := c.client.DeletePluginWithResponse(ctx, *kongPlugin.Id)
 			if err != nil {
-				return errors.Wrap(err, "failed to delete plugin")
+				return fmt.Errorf("failed to delete plugin: %w", err)
 			}
 		}
 	}
@@ -382,7 +382,7 @@ func (c *kongClient) getPluginsMatchingTags(
 		return nil, err
 	}
 	if err := CheckStatusCode(response, 200); err != nil {
-		return nil, fmt.Errorf("failed to list plugins: (%d): %s", response.StatusCode(), string(response.Body))
+		return nil, fmt.Errorf("failed to list plugins (%d): %s: %w", response.StatusCode(), string(response.Body), err)
 	}
 
 	// ListPluginWithResponse does not return an array of plugins
@@ -444,10 +444,10 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 	}
 	serviceResponse, err := c.client.UpsertServiceWithResponse(ctx, route.GetName(), serviceBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to create service")
+		return fmt.Errorf("failed to create service: %w", err)
 	}
 	if err := CheckStatusCode(serviceResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("failed to create service: %s", string(serviceResponse.Body)), "failed to create service")
+		return fmt.Errorf("failed to create service (%d): %s: %w", serviceResponse.StatusCode(), string(serviceResponse.Body), err)
 	}
 
 	service := serviceResponse.JSON200
@@ -479,10 +479,10 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 	}
 	routeResponse, err := c.client.UpsertRouteWithResponse(ctx, route.GetName(), routeBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to create route")
+		return fmt.Errorf("failed to create route: %w", err)
 	}
 	if err := CheckStatusCode(routeResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("failed to create route: %s", string(routeResponse.Body)), "failed to create route")
+		return fmt.Errorf("failed to create route (%d): %s: %w", routeResponse.StatusCode(), string(routeResponse.Body), err)
 	}
 
 	route.SetRouteId(*routeResponse.JSON200.Id)
@@ -497,7 +497,7 @@ func (c *kongClient) DeleteRoute(ctx context.Context, route CustomRoute) error {
 		return err
 	}
 	if err := CheckStatusCode(routeResponse, 200, 204, 404); err != nil {
-		return fmt.Errorf("failed to delete route: %s", string(routeResponse.Body))
+		return fmt.Errorf("failed to delete route (%d): %s: %w", routeResponse.StatusCode(), string(routeResponse.Body), err)
 	}
 
 	serviceResponse, err := c.client.DeleteServiceWithResponse(ctx, routeName)
@@ -505,7 +505,7 @@ func (c *kongClient) DeleteRoute(ctx context.Context, route CustomRoute) error {
 		return err
 	}
 	if err := CheckStatusCode(serviceResponse, 200, 204, 404); err != nil {
-		return fmt.Errorf("failed to delete service: %s", string(serviceResponse.Body))
+		return fmt.Errorf("failed to delete service (%d): %s: %w", serviceResponse.StatusCode(), string(serviceResponse.Body), err)
 	}
 
 	err = c.DeleteUpstream(ctx, route)
@@ -532,7 +532,7 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 		return nil, err
 	}
 	if err := CheckStatusCode(response, 200); err != nil {
-		return nil, fmt.Errorf("failed to create consumer: (%d): %s", response.StatusCode(), string(response.Body))
+		return nil, fmt.Errorf("failed to create consumer (%d): %s: %w", response.StatusCode(), string(response.Body), err)
 	}
 
 	isInGroup, err := c.isConsumerInGroup(ctx, consumerName)
@@ -542,14 +542,14 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 	if !isInGroup {
 		err = c.addConsumerToGroup(ctx, consumerName)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to add consumer to group")
+			return nil, fmt.Errorf("failed to add consumer to group: %w", err)
 		}
 	}
 
 	// The Api-Spec defines a wrong type for the response body, so we need to unmarshal it manually
 	err = json.Unmarshal(response.Body, &kongConsumer)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal consumer response")
+		return nil, fmt.Errorf("failed to unmarshal consumer response: %w", err)
 	}
 
 	consumer.SetId(*kongConsumer.Id)
@@ -562,7 +562,7 @@ func (c *kongClient) DeleteConsumer(ctx context.Context, consumer CustomConsumer
 		return err
 	}
 	if err := CheckStatusCode(response, 200, 204, 404); err != nil {
-		return fmt.Errorf("failed to delete consumer (%d): %s", response.StatusCode(), string(response.Body))
+		return fmt.Errorf("failed to delete consumer (%d): %s: %w", response.StatusCode(), string(response.Body), err)
 	}
 	return nil
 }
@@ -576,7 +576,7 @@ func (c *kongClient) addConsumerToGroup(ctx context.Context, consumerName string
 		return err
 	}
 	if err := CheckStatusCode(response, 200, 201); err != nil {
-		return fmt.Errorf("failed to add consumer to group (%d): %s", response.StatusCode(), string(response.Body))
+		return fmt.Errorf("failed to add consumer to group (%d): %s: %w", response.StatusCode(), string(response.Body), err)
 	}
 
 	return nil
@@ -585,11 +585,11 @@ func (c *kongClient) addConsumerToGroup(ctx context.Context, consumerName string
 func (c *kongClient) isConsumerInGroup(ctx context.Context, consumerName string) (bool, error) {
 	response, err := c.client.ViewGroupConsumerWithResponse(ctx, consumerName)
 	if err != nil {
-		return false, errors.Wrap(err, "error occurred when getting consumer group")
+		return false, fmt.Errorf("error occurred when getting consumer group: %w", err)
 	}
 
 	if err := CheckStatusCode(response, 200); err != nil {
-		return false, errors.Wrap(err, "error occurred when getting consumer group")
+		return false, fmt.Errorf("error occurred when getting consumer group: %w", err)
 	}
 
 	if len(*response.JSON200.Data) == 0 {
@@ -605,7 +605,7 @@ func (c *kongClient) DeleteUpstream(ctx context.Context, route CustomRoute) erro
 		return err
 	}
 	if err := CheckStatusCode(upstreamResponse, 200, 204, 404); err != nil {
-		return fmt.Errorf("failed to delete upstream: %s", string(upstreamResponse.Body))
+		return fmt.Errorf("failed to delete upstream (%d): %s: %w", upstreamResponse.StatusCode(), string(upstreamResponse.Body), err)
 	}
 
 	if route.GetTargetsId() != "" {
@@ -615,7 +615,7 @@ func (c *kongClient) DeleteUpstream(ctx context.Context, route CustomRoute) erro
 			return err
 		}
 		if err := CheckStatusCode(targetsResponse, 200, 204, 404); err != nil {
-			return fmt.Errorf("failed to delete upstream targets: %s", string(targetsResponse.Body))
+			return fmt.Errorf("failed to delete upstream targets (%d): %s: %w", targetsResponse.StatusCode(), string(targetsResponse.Body), err)
 		}
 	}
 	return nil

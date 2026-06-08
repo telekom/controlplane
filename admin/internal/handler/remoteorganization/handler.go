@@ -43,7 +43,7 @@ func (h *RemoteOrganizationHandler) CreateOrUpdate(ctx context.Context, obj *adm
 
 	_, err = c.CreateOrUpdate(ctx, namespace, mutator)
 	if err != nil {
-		return errors.Wrapf(err, "❌ failed to create or update namespace %s, environment %s", namespace.Name, envName)
+		return errors.Wrapf(err, "failed to create or update namespace %s, environment %s", namespace.Name, envName)
 	}
 
 	obj.Status.Namespace = namespace.Name
@@ -66,7 +66,7 @@ func (h *RemoteOrganizationHandler) Delete(ctx context.Context, obj *adminv1.Rem
 		if apierrors.IsNotFound(err) {
 			return nil
 		}
-		return errors.Wrapf(err, "❌ failed to delete namespace %s", namespace.Name)
+		return errors.Wrapf(err, "failed to delete namespace %s", namespace.Name)
 	}
 	return nil
 }

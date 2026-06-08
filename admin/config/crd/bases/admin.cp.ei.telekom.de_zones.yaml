@@ -189,6 +189,46 @@ spec:
                 - admin
                 - url
                 type: object
+              managedRoutes:
+                description: |-
+                  ManagedRoutesConfig defines the configuration for managed routes in a zone.
+                  Managed routes are automatically created and managed by the system based on this configuration.
+                properties:
+                  routes:
+                    description: |-
+                      Routes is the list of routes to be created for this zone.
+                      It may be used to create additional routes that are required for operating the zone
+                    items:
+                      properties:
+                        name:
+                          description: Name is the name of the created route. It must
+                            be unique within the zone.
+                          pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
+                          type: string
+                        path:
+                          description: Path is the path of the route exposed on the
+                            gateway.
+                          pattern: ^/.*$
+                          type: string
+                        type:
+                          description: 'Type selects the route behavior: TeamAPI (authenticated,
+                            no ACL) or Proxy (passthrough reverse proxy).'
+                          enum:
+                          - TeamAPI
+                          - Proxy
+                          type: string
+                        url:
+                          description: Url is the upstream URL of the route.
+                          format: uri
+                          type: string
+                      required:
+                      - name
+                      - path
+                      - type
+                      - url
+                      type: object
+                    type: array
+                type: object
               permissions:
                 description: Permissions configuration for permission service integration
                 properties:
@@ -222,34 +262,6 @@ spec:
                 - host
                 - password
                 - port
-                type: object
-              teamApis:
-                properties:
-                  apis:
-                    items:
-                      properties:
-                        name:
-                          description: Name is the name of the created route. It must
-                            be unique within the zone.
-                          pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
-                          type: string
-                        path:
-                          description: Path is the path of the route exposed on the
-                            gateway.
-                          pattern: ^/.*$
-                          type: string
-                        url:
-                          description: Url is the upstream URL of the route.
-                          format: uri
-                          type: string
-                      required:
-                      - name
-                      - path
-                      - url
-                      type: object
-                    type: array
-                required:
-                - apis
                 type: object
               visibility:
                 description: Visibility controls what subscriptions are allowed from
@@ -458,6 +470,25 @@ spec:
                 - name
                 - namespace
                 type: object
+              internalIdentityRealm:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               links:
                 properties:
                   gatewayIssuer:
@@ -491,6 +522,27 @@ spec:
                 - gatewayIssuer
                 - gatewayUrl
                 type: object
+              managedRoutes:
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
               namespace:
                 type: string
               teamApiGatewayRealm:
@@ -531,27 +583,6 @@ spec:
                 - name
                 - namespace
                 type: object
-              teamApiRoutes:
-                items:
-                  description: |-
-                    ObjectRef is a reference to a Kubernetes object
-                    It is similar to types.NamespacedName but has the required json tags for serialization
-                  properties:
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                    uid:
-                      description: |-
-                        UID is a type that holds unique ID values, including UUIDs.  Because we
-                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                        intent and helps make sure that UIDs and names do not get conflated.
-                      type: string
-                  required:
-                  - name
-                  - namespace
-                  type: object
-                type: array
             type: object
         type: object
         x-kubernetes-validations:
