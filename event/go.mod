@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/event
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/telekom/controlplane/admin/api v0.0.0

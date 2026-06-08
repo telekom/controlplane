@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/file-manager
 
-go 1.26.3
+go 1.26.4
 
 require github.com/telekom/controlplane/common-server v0.0.0
 
