@@ -8,9 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
 )
@@ -114,15 +114,17 @@ func (s *secretManagerAPI) Get(ctx context.Context, secretID string) (value stri
 	secretID, _ = FromRef(secretID)
 	res, err := s.client.GetSecretWithResponse(ctx, secretID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("secret-manager request failed for %q: %w", secretID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
-	case 200:
+	case http.StatusOK:
 		return res.JSON200.Value, nil
-	case 404:
+	case http.StatusNotFound:
 		return "", ErrNotFound
+	case http.StatusUnauthorized:
+		return "", client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return "", client.HandleError(res.StatusCode(), string(res.Body))
+		return "", handleError(res.StatusCode(), string(res.Body))
 	}
 }
 func (s *secretManagerAPI) Set(ctx context.Context, secretID string, secretValue string) (newID string, err error) {
@@ -131,17 +133,19 @@ func (s *secretManagerAPI) Set(ctx context.Context, secretID string, secretValue
 	secretID, _ = FromRef(secretID)
 	res, err := s.client.PutSecretWithResponse(ctx, secretID, gen.PutSecretJSONRequestBody{Value: secretValue})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("secret-manager request failed for %q: %w", secretID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
-	case 200:
+	case http.StatusOK:
 		return ToRef(res.JSON200.Id), nil
-	case 204:
+	case http.StatusNoContent:
 		return secretID, nil
-	case 404:
+	case http.StatusNotFound:
 		return "", ErrNotFound
+	case http.StatusUnauthorized:
+		return "", client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return "", client.HandleError(res.StatusCode(), string(res.Body))
+		return "", handleError(res.StatusCode(), string(res.Body))
 	}
 }
 
@@ -164,17 +168,19 @@ func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string, 
 
 	res, err := s.client.UpsertEnvironmentWithResponse(ctx, envID, reqBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("secret-manager request failed for environment %q: %w", envID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
-	case 200:
+	case http.StatusOK:
 		return toMap(res.JSON200.Items), nil
-	case 204:
+	case http.StatusNoContent:
 		return nil, nil
-	case 404:
+	case http.StatusNotFound:
 		return nil, ErrNotFound
+	case http.StatusUnauthorized:
+		return nil, client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return nil, client.HandleError(res.StatusCode(), string(res.Body))
+		return nil, handleError(res.StatusCode(), string(res.Body))
 	}
 }
 
@@ -193,17 +199,19 @@ func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string,
 
 	res, err := s.client.UpsertTeamWithResponse(ctx, envID, teamID, reqBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("secret-manager request failed for team %q/%q: %w", envID, teamID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
-	case 200:
+	case http.StatusOK:
 		return toMap(res.JSON200.Items), nil
-	case 204:
+	case http.StatusNoContent:
 		return nil, nil
-	case 404:
+	case http.StatusNotFound:
 		return nil, ErrNotFound
+	case http.StatusUnauthorized:
+		return nil, client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return nil, client.HandleError(res.StatusCode(), string(res.Body))
+		return nil, handleError(res.StatusCode(), string(res.Body))
 	}
 }
 
@@ -222,69 +230,83 @@ func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID,
 
 	res, err := s.client.UpsertAppWithResponse(ctx, envID, teamID, appID, reqBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("secret-manager request failed for app %q/%q/%q: %w", envID, teamID, appID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
-	case 200:
+	case http.StatusOK:
 		return toMap(res.JSON200.Items), nil
-	case 204:
+	case http.StatusNoContent:
 		return nil, nil
-	case 404:
+	case http.StatusNotFound:
 		return nil, ErrNotFound
+	case http.StatusUnauthorized:
+		return nil, client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return nil, client.HandleError(res.StatusCode(), string(res.Body))
+		return nil, handleError(res.StatusCode(), string(res.Body))
 	}
 }
 
 func (s *secretManagerAPI) DeleteEnvironment(ctx context.Context, envID string) (err error) {
 	res, err := s.client.DeleteEnvironmentWithResponse(ctx, envID)
 	if err != nil {
-		return err
+		return fmt.Errorf("secret-manager request failed for environment %q: %w", envID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
-	case 200:
+	case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
 		return nil
-	case 204:
-		return nil
-	case 404:
-		return nil
+	case http.StatusUnauthorized:
+		return client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return client.HandleError(res.StatusCode(), string(res.Body))
+		return handleError(res.StatusCode(), string(res.Body))
 	}
 }
 
 func (s *secretManagerAPI) DeleteTeam(ctx context.Context, envID, teamID string) (err error) {
 	res, err := s.client.DeleteTeamWithResponse(ctx, envID, teamID)
 	if err != nil {
-		return err
+		return fmt.Errorf("secret-manager request failed for team %q/%q: %w", envID, teamID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
-	case 200:
+	case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
 		return nil
-	case 204:
-		return nil
-	case 404:
-		return nil
+	case http.StatusUnauthorized:
+		return client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return client.HandleError(res.StatusCode(), string(res.Body))
+		return handleError(res.StatusCode(), string(res.Body))
 	}
 }
 
 func (s *secretManagerAPI) DeleteApplication(ctx context.Context, envID, teamID, appID string) (err error) {
 	res, err := s.client.DeleteAppWithResponse(ctx, envID, teamID, appID)
 	if err != nil {
-		return err
+		return fmt.Errorf("secret-manager request failed for app %q/%q/%q: %w", envID, teamID, appID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
-	case 200:
+	case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
 		return nil
-	case 204:
-		return nil
-	case 404:
-		return nil
+	case http.StatusUnauthorized:
+		return client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return client.HandleError(res.StatusCode(), string(res.Body))
+		return handleError(res.StatusCode(), string(res.Body))
 	}
+}
+
+// handleError classifies HTTP status codes from the secret-manager API following
+// HTTP semantics: 4xx errors (client errors) are blocked because retrying with the
+// same parameters will not succeed; 5xx errors are retryable (transient server failures).
+// 408 (Request Timeout) and 429 (Too Many Requests) are special 4xx codes that are
+// retryable and are handled by client.HandleError.
+func handleError(httpStatus int, msg string) error {
+	// 408 and 429 are retryable 4xx codes — delegate to client.HandleError which handles them.
+	if httpStatus == http.StatusRequestTimeout || httpStatus == http.StatusTooManyRequests {
+		return client.HandleError(httpStatus, msg)
+	}
+	// All other 4xx are client errors — blocked, retrying won't help.
+	if httpStatus >= 400 && httpStatus < 500 {
+		return client.BlockedErrorf("client error (%d): %s", httpStatus, msg)
+	}
+	// 5xx and anything else — delegate to client.HandleError.
+	return client.HandleError(httpStatus, msg)
 }
 
 // FindSecretId will find the secret ID for the given name in the list of secrets.
@@ -340,7 +362,7 @@ func toNamedSecrets(secretValues map[string]any) ([]gen.NamedSecret, error) {
 		case map[string]any:
 			jsonValue, err := json.Marshal(v)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal secret value for %s", name)
+				return nil, fmt.Errorf("failed to marshal secret value for %s: %w", name, err)
 			}
 			secrets = append(secrets, gen.NamedSecret{
 				Name:  name,

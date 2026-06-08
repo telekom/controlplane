@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/telekom/controlplane/common/pkg/controller/index"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -78,4 +79,9 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
+	err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.Route{})
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create field-indexer")
+		os.Exit(1)
+	}
 }
