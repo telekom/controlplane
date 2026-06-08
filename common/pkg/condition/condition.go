@@ -13,6 +13,23 @@ const (
 	ConditionTypeReady      = "Ready"
 )
 
+// Processing condition reasons.
+const (
+	ReasonProcessing = "Processing"
+	ReasonBlocked    = "Blocked"
+	ReasonDone       = "Done"
+)
+
+// Ready condition reasons shared across all sub-resource handlers.
+const (
+	// ReasonProvisioned indicates all sub-resources have been successfully provisioned.
+	ReasonProvisioned = "Provisioned"
+	// ReasonSubResourceNotReady indicates at least one child/sub-resource is not yet ready.
+	ReasonSubResourceNotReady = "SubResourceNotReady"
+	// ReasonDeletionFailed indicates a failure during resource cleanup.
+	ReasonDeletionFailed = "DeletionFailed"
+)
+
 var (
 	ProcessingCondition = metav1.Condition{
 		Type:   ConditionTypeProcessing,
@@ -29,7 +46,7 @@ func NewBlockedCondition(message string) metav1.Condition {
 	condition := ProcessingCondition
 	condition.Status = metav1.ConditionFalse
 	condition.Message = message
-	condition.Reason = "Blocked"
+	condition.Reason = ReasonBlocked
 	return condition
 }
 
@@ -44,7 +61,7 @@ func NewDoneProcessingCondition(message string) metav1.Condition {
 	condition := ProcessingCondition
 	condition.Status = metav1.ConditionFalse
 	condition.Message = message
-	condition.Reason = "Done"
+	condition.Reason = ReasonDone
 	return condition
 }
 

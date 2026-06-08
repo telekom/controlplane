@@ -161,7 +161,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
 
-	apiExp.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
+	apiExp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
 	log.Info("✅ ApiExposure is processed")

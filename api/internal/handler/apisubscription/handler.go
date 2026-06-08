@@ -339,7 +339,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// ---- Set Conditions ----
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
+	apiSub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 
 	log.Info("✅ Successfully processed ApiSubscription")
 	return nil

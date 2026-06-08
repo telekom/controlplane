@@ -253,13 +253,13 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	logger.V(1).Info("Subscriber created/updated", "subscriber", subscriber.Name)
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
 			"One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
 		return nil
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("EventSubscriptionProvisioned",
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"EventSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
 		"EventSubscription has been provisioned"))

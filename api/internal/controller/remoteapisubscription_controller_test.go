@@ -208,7 +208,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				apiExp := &apiapi.ApiExposure{}
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExp)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 				g.Expect(apiExp.Status.Active).To(BeTrue())
 				g.Expect(apiExp.GetLabels()[apiv1.BasePathLabelKey]).To(Equal(labelutil.NormalizeLabelValue(apiBasePath)))
 

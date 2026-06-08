@@ -16,53 +16,104 @@ import (
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 )
 
-// Condition reason values. These must stay in sync with the factory functions
-// in the condition package (e.g. condition.NewBlockedCondition, condition.NewDoneProcessingCondition).
-const (
-	reasonBlocked = "Blocked"
-	reasonDone    = "Done"
-)
-
-// isProcessingStale returns true if the Processing condition's ObservedGeneration
-// is behind the object's metadata.generation, indicating that the spec changed
-// but the controller hasn't reconciled yet. Returns false when either generation
-// is zero (backward compatibility or unknown generation).
-func isProcessingStale(conditions []metav1.Condition, objectGeneration int64) bool {
-	processing := meta.FindStatusCondition(conditions, condition.ConditionTypeProcessing)
-	if processing == nil {
-		return false
-	}
-	return objectGeneration > 0 && processing.ObservedGeneration > 0 && processing.ObservedGeneration < objectGeneration
+// processingReasons lists Ready condition reasons that indicate the resource
+// is actively being processed (transient, will resolve on its own).
+// All other Ready=False reasons are treated as blocked/failed.
+var processingReasons = map[string]bool{
+	condition.ReasonProcessing:          true, // "Processing"
+	condition.ReasonSubResourceNotReady: true, // "SubResourceNotReady"
+	"Provisioning":                      true,
 }
 
-// fillStateInfo maps Kubernetes Processing/Ready conditions into State, ProcessingState,
-// and any associated warnings or errors on the given status.
-// objectGeneration is the resource's metadata.generation; when a condition's
-// ObservedGeneration is non-zero but less than objectGeneration, the condition
-// is stale (spec changed but controller hasn't reconciled yet) and the status
-// is set to pending. Pass 0 to skip staleness detection.
+// isStale returns true if a condition's ObservedGeneration is behind the
+// object's metadata.generation, indicating that the spec changed but the
+// controller hasn't reconciled yet. Returns false when either generation
+// is zero (backward compatibility or unknown generation) or when the
+// condition is nil.
+func isStale(cond *metav1.Condition, objectGeneration int64) bool {
+	if cond == nil {
+		return false
+	}
+	return objectGeneration > 0 && cond.ObservedGeneration > 0 && cond.ObservedGeneration < objectGeneration
+}
+
+// isProcessingStale is a convenience wrapper that checks staleness on the
+// Processing condition. Retained for use outside fillStateInfo.
+func isProcessingStale(conditions []metav1.Condition, objectGeneration int64) bool {
+	processing := meta.FindStatusCondition(conditions, condition.ConditionTypeProcessing)
+	return isStale(processing, objectGeneration)
+}
+
+// fillStateInfo derives State and ProcessingState from Kubernetes conditions.
+//
+// The Ready condition is the primary driver:
+//   - Ready=True → Complete (resource is functional)
+//   - Ready=False with a processing-equivalent reason → Processing (actively progressing)
+//   - Ready=False with any other reason → Blocked (cannot progress)
+//
+// The Processing condition is used as a supplementary signal:
+//   - Fallback when Ready is not informative (Unknown or contradictory)
+//   - Processing.Status=True confirms active work regardless of Ready reason
+//
+// objectGeneration is the resource's metadata.generation. Pass 0 to skip
+// staleness detection.
 func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status *api.Status) {
 	processing := meta.FindStatusCondition(conditions, condition.ConditionTypeProcessing)
-	if processing == nil {
+	ready := meta.FindStatusCondition(conditions, condition.ConditionTypeReady)
+
+	// --- No conditions at all ---
+	if processing == nil && ready == nil {
 		status.State = api.None
 		status.ProcessingState = api.ProcessingStateNone
 		status.Warnings = []api.StateInfo{
-			{Message: "Processing condition not found"},
+			{Message: "No conditions found"},
 		}
 		return
 	}
 
-	// Staleness detection: if the controller has started reporting ObservedGeneration
-	// (> 0) but hasn't caught up to the current spec generation, the condition
-	// values are based on an older spec and cannot be trusted.
-	if isProcessingStale(conditions, objectGeneration) {
+	// --- Staleness detection  ---
+	if isStale(ready, objectGeneration) {
 		status.State = api.None
 		status.ProcessingState = api.ProcessingStatePending
 		return
 	}
 
-	ready := meta.FindStatusCondition(conditions, condition.ConditionTypeReady)
-	if ready == nil {
+	// --- Ready condition is the primary driver ---
+	if ready != nil && ready.Status == metav1.ConditionTrue {
+		// Ready=True: resource is functional.
+		// Guard against stale Ready when Processing explicitly says Blocked.
+		if processing != nil && processing.Reason == "Blocked" {
+			// Contradictory: Ready=True but Processing=Blocked → trust Processing (Ready is stale).
+			status.State = api.Blocked
+			status.ProcessingState = api.ProcessingStateDone
+			status.Warnings = []api.StateInfo{
+				{Message: processing.Message},
+			}
+			return
+		}
+		status.State = api.Complete
+		status.ProcessingState = api.ProcessingStateDone
+		return
+	}
+
+	if ready != nil && ready.Status == metav1.ConditionFalse {
+		// Ready=False: check if processing-equivalent reason or blocked.
+		if processingReasons[ready.Reason] {
+			status.State = api.None
+			status.ProcessingState = api.ProcessingStateProcessing
+			return
+		}
+		// Not a processing reason → resource is blocked.
+		status.State = api.Blocked
+		status.ProcessingState = api.ProcessingStateDone
+		status.Warnings = []api.StateInfo{
+			{Message: ready.Message},
+		}
+		return
+	}
+
+	// --- Ready is Unknown or nil: fall back to Processing condition ---
+	if processing == nil {
 		status.State = api.None
 		status.ProcessingState = api.ProcessingStateNone
 		status.Warnings = []api.StateInfo{
@@ -72,12 +123,12 @@ func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status
 	}
 
 	if processing.Status == metav1.ConditionTrue {
-		status.State = api.Blocked
+		status.State = api.None
 		status.ProcessingState = api.ProcessingStateProcessing
 		return
 	}
 
-	if processing.Reason == reasonBlocked {
+	if processing.Reason == "Blocked" {
 		status.State = api.Blocked
 		status.ProcessingState = api.ProcessingStateDone
 		status.Warnings = []api.StateInfo{
@@ -86,20 +137,13 @@ func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status
 		return
 	}
 
-	if processing.Reason == reasonDone {
+	if processing.Reason == "Done" {
+		status.State = api.None
 		status.ProcessingState = api.ProcessingStateDone
-		if ready.Status == metav1.ConditionTrue {
-			status.State = api.Complete
-		} else {
-			status.State = api.Blocked
-			status.Warnings = []api.StateInfo{
-				{Message: ready.Message},
-			}
-		}
 		return
 	}
 
-	// Fallthrough: processing failed (reason is neither Blocked nor Done).
+	// Fallthrough: unknown state.
 	status.State = api.Invalid
 	status.ProcessingState = api.ProcessingStateFailed
 	status.Errors = []api.StateInfo{

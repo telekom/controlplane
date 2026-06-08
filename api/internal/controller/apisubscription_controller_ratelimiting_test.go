@@ -265,7 +265,7 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 			g.Expect(err).ToNot(HaveOccurred())
-			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 			g.Expect(apiExposure.Status.Active).To(BeTrue())
 		}, timeout, interval).Should(Succeed())
 	})
