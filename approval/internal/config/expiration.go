@@ -23,47 +23,53 @@ type ExpirationConfig struct {
 	DefaultThresholds []reminder.Threshold
 }
 
-// LoadExpirationConfig loads the expiration configuration from environment variables
+// rawExpirationConfig is the intermediate struct used to unmarshal environment variables.
+// Each field maps to an env var with the APPROVAL_ prefix (e.g. APPROVAL_EXPIRATION_PERIOD_MONTHS).
+type rawExpirationConfig struct {
+	ExpirationPeriodMonths int `mapstructure:"expiration_period_months"`
+	WeeklyReminderMonths   int `mapstructure:"expiration_weekly_reminder_months"`
+	DailyReminderWeeks     int `mapstructure:"expiration_daily_reminder_weeks"`
+}
+
+// LoadExpirationConfig loads the expiration configuration from environment variables.
+// Uses a local Viper instance to avoid interfering with the global Viper configuration
+// used by common/pkg/config.
 func LoadExpirationConfig() (*ExpirationConfig, error) {
-	setExpirationConfigDefaults()
+	v := viper.New()
+	v.SetEnvPrefix("APPROVAL")
+	v.AutomaticEnv()
 
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("APPROVAL")
+	v.SetDefault("expiration_period_months", 12)
+	v.SetDefault("expiration_weekly_reminder_months", 1)
+	v.SetDefault("expiration_daily_reminder_weeks", 1)
 
-	expirationMonths := viper.GetInt("EXPIRATION_PERIOD_MONTHS")
-	weeklyReminderMonths := viper.GetInt("EXPIRATION_WEEKLY_REMINDER_MONTHS")
-	dailyReminderWeeks := viper.GetInt("EXPIRATION_DAILY_REMINDER_WEEKS")
+	var raw rawExpirationConfig
+	if err := v.Unmarshal(&raw); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal expiration config")
+	}
 
-	if expirationMonths <= 0 {
+	if raw.ExpirationPeriodMonths <= 0 {
 		return nil, errors.New("APPROVAL_EXPIRATION_PERIOD_MONTHS must be greater than 0")
 	}
-	if weeklyReminderMonths < 0 {
+	if raw.WeeklyReminderMonths < 0 {
 		return nil, errors.New("APPROVAL_EXPIRATION_WEEKLY_REMINDER_MONTHS must be >= 0")
 	}
-	if dailyReminderWeeks < 0 {
+	if raw.DailyReminderWeeks < 0 {
 		return nil, errors.New("APPROVAL_EXPIRATION_DAILY_REMINDER_WEEKS must be >= 0")
 	}
 
-	// Convert to durations
-	expirationDuration := time.Duration(expirationMonths) * 30 * 24 * time.Hour
+	expirationDuration := time.Duration(raw.ExpirationPeriodMonths) * 30 * 24 * time.Hour
 
-	// Build default thresholds
 	var thresholds []reminder.Threshold
-
-	// Weekly reminder threshold (if configured)
-	if weeklyReminderMonths > 0 {
-		weeklyBefore := time.Duration(weeklyReminderMonths) * 30 * 24 * time.Hour
+	if raw.WeeklyReminderMonths > 0 {
 		thresholds = append(thresholds, reminder.Threshold{
-			Before: metav1.Duration{Duration: weeklyBefore},
+			Before: metav1.Duration{Duration: time.Duration(raw.WeeklyReminderMonths) * 30 * 24 * time.Hour},
 		})
 	}
-
-	// Daily reminder threshold (if configured)
-	if dailyReminderWeeks > 0 {
-		dailyBefore := time.Duration(dailyReminderWeeks) * 7 * 24 * time.Hour
+	if raw.DailyReminderWeeks > 0 {
 		dailyRepeat := metav1.Duration{Duration: 24 * time.Hour}
 		thresholds = append(thresholds, reminder.Threshold{
-			Before: metav1.Duration{Duration: dailyBefore},
+			Before: metav1.Duration{Duration: time.Duration(raw.DailyReminderWeeks) * 7 * 24 * time.Hour},
 			Repeat: &dailyRepeat,
 		})
 	}
@@ -72,10 +78,4 @@ func LoadExpirationConfig() (*ExpirationConfig, error) {
 		ExpirationDuration: expirationDuration,
 		DefaultThresholds:  thresholds,
 	}, nil
-}
-
-func setExpirationConfigDefaults() {
-	viper.SetDefault("EXPIRATION_PERIOD_MONTHS", 12)
-	viper.SetDefault("EXPIRATION_WEEKLY_REMINDER_MONTHS", 1)
-	viper.SetDefault("EXPIRATION_DAILY_REMINDER_WEEKS", 1)
 }
