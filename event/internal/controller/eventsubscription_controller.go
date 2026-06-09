@@ -155,7 +155,7 @@ func (r *EventSubscriptionReconciler) MapApplicationToEventSubscription(ctx cont
 	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
-	}); err != nil {
+	}, client.InNamespace(application.Namespace)); err != nil {
 		return nil
 	}
 
