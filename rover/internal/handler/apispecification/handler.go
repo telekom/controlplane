@@ -22,9 +22,9 @@ import (
 var _ handler.Handler[*roverv1.ApiSpecification] = (*ApiSpecificationHandler)(nil)
 
 // ApiSpecificationHandler reconciles ApiSpecification resources.
-// Linting is performed and enforced by rover-server at upload time; blocked
-// specs are rejected before reaching the cluster. This handler only creates
-// the downstream Api resource.
+// Linting is enforced by rover-server at upload time; specs that fail linting
+// in block mode are rejected and never stored in the cluster.
+// This handler creates the downstream Api resource unconditionally.
 type ApiSpecificationHandler struct{}
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {

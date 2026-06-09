@@ -223,6 +223,11 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, problems.BadRequest(lintErr.Error())
 	}
 
+	// If the linter is unreachable and the category enforces blocking, reject.
+	if lintErr != nil && apiCategory != nil && apiCategory.Spec.Linting != nil && apiCategory.Spec.Linting.Mode == apiv1.LintingModeBlock {
+		return res, problems.InternalServerError("Linting failed", lintErr.Error())
+	}
+
 	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, id)
 	if err != nil {
 		return res, err
@@ -237,10 +242,6 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	err = a.Store.CreateOrReplace(ctx, apiSpec)
 	if err != nil {
 		return res, err
-	}
-
-	if lintErr != nil {
-		return res, problems.InternalServerError("Linting failed", lintErr.Error())
 	}
 
 	return a.Get(ctx, resourceId)

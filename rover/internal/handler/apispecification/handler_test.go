@@ -99,7 +99,7 @@ var _ = Describe("ApiSpecification Handler", func() {
 			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
 		})
 
-		It("should create Api resource even when lint result is present (warn mode handled by server)", func() {
+		It("should create Api resource regardless of failing lint result", func() {
 			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "warn-cat")
