@@ -211,6 +211,18 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		apiCategory, _ = categoryList.FindByLabelValue(apiSpec.Spec.Category)
 	}
 
+	// Lint the spec before uploading or storing. If linting blocks,
+	// reject immediately without persisting.
+	var lintOutcome LintOutcome
+	var lintErr error
+	if a.Linter != nil {
+		lintOutcome, lintErr = a.Linter.Lint(ctx, apiSpec, apiCategory, bytes.NewReader(specMarshaled))
+	}
+
+	if lintOutcome == LintBlocked {
+		return res, problems.BadRequest(lintErr.Error())
+	}
+
 	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, id)
 	if err != nil {
 		return res, err
@@ -222,25 +234,11 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	}
 	EnsureLabelsOrDie(ctx, apiSpec)
 
-	// Lint the spec if the linter is configured. Hash dedup is handled by
-	// lintOrReuse: if the spec hasn't changed and already has a lint result,
-	// the previous result is reused without calling the external linter.
-	var lintOutcome LintOutcome
-	var lintErr error
-	if a.Linter != nil {
-		ns := id.Environment + "--" + id.Namespace
-		existing, _ := a.Store.Get(ctx, ns, id.Name)
-		lintOutcome, lintErr = a.lintOrReuse(ctx, apiSpec, existing, apiCategory, bytes.NewReader(specMarshaled))
-	}
-
 	err = a.Store.CreateOrReplace(ctx, apiSpec)
 	if err != nil {
 		return res, err
 	}
 
-	if lintOutcome == LintBlocked {
-		return res, problems.BadRequest(lintErr.Error())
-	}
 	if lintErr != nil {
 		return res, problems.InternalServerError("Linting failed", lintErr.Error())
 	}
@@ -283,17 +281,6 @@ func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *ap
 		result.Items = append(result.Items, *item)
 	}
 	return result
-}
-
-// lintOrReuse decides whether to call the external linter or reuse a cached result.
-// If the spec hash is unchanged and a previous lint result exists, it reuses it.
-// Otherwise it delegates to the Linter.
-func (a *ApiSpecificationController) lintOrReuse(ctx context.Context, apiSpec *roverv1.ApiSpecification, existing *roverv1.ApiSpecification, category *apiv1.ApiCategory, specBytes io.Reader) (LintOutcome, error) {
-	if existing != nil && existing.Spec.Lint != nil && existing.Spec.Hash == apiSpec.Spec.Hash {
-		apiSpec.Spec.Lint = existing.Spec.Lint
-		return LintSkipped, nil
-	}
-	return a.Linter.Lint(ctx, apiSpec, category, specBytes)
 }
 
 // validateApiCategoryFromList validates that the given category is a known and active ApiCategory
