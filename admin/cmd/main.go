@@ -151,7 +151,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		webhookv1.RegisterIndexesOrDie(context.Background(), mgr)
 		if err = webhookv1.SetupEnvironmentWebhookWithManager(mgr); err != nil {

@@ -7,9 +7,10 @@ package v1
 import (
 	"context"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 )
 
 const IndexFieldRealmName = ".spec.realmName"
