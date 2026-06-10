@@ -42,8 +42,17 @@ spec:
           spec:
             description: EnvironmentSpec defines the desired state of Environment
             properties:
-              foo:
+              realmName:
+                description: |-
+                  RealmName overrides the default realm name (which is the environment name).
+                  When set, identity and gateway realms will be created with this name instead
+                  of deriving it from the environment's metadata.name.
+                  This field is immutable after first reconciliation.
+                maxLength: 63
+                pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
                 type: string
+            required:
+            - realmName
             type: object
           status:
             description: EnvironmentStatus defines the observed state of Environment

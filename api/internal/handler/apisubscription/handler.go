@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -214,6 +213,13 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	// - Provider failover zone: use the failover route from ApiExposure.Status.FailoverRoute
 	// - Cross-zone: find matching proxy route in ApiExposure.Status.ProxyRoutes
 
+	// Resolve realm name from the exposure zone status
+	exposureZone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Zone.K8s())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get exposure zone %s", apiExposure.Spec.Zone.Name)
+	}
+	realmName := util.RealmNameForZone(exposureZone)
+
 	sameZoneAsExposure := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
 	inProviderFailoverZone := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(apiSub.Spec.Zone)
 
@@ -292,13 +298,9 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			var failoverRouteRef types.ObjectRef
 			if sameZoneAsExposure {
 				// Reference the real route in exposure zone
-				zone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Zone.K8s())
-				if err != nil {
-					return errors.Wrapf(err, "failed to get exposure zone %s for failover", apiExposure.Spec.Zone.Name)
-				}
 				failoverRouteRef = types.ObjectRef{
-					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
-					Namespace: zone.Status.Namespace,
+					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, realmName),
+					Namespace: exposureZone.Status.Namespace,
 				}
 				log.V(1).Info("Referencing real route in failover zone (same as exposure)", "zone", subFailoverZone.Name)
 			} else if inProviderFailoverZone {
@@ -308,7 +310,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 					return errors.Wrapf(err, "failed to get provider failover zone %s", apiExposure.Spec.Traffic.Failover.Zones[0].Name)
 				}
 				failoverRouteRef = types.ObjectRef{
-					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
+					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, realmName),
 					Namespace: failoverZone.Status.Namespace,
 				}
 				log.V(1).Info("Referencing provider failover route", "zone", subFailoverZone.Name)
@@ -319,7 +321,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 					return errors.Wrapf(err, "failed to get subscriber failover zone %s", subFailoverZone.Name)
 				}
 				failoverRouteRef = types.ObjectRef{
-					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
+					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, realmName),
 					Namespace: zone.Status.Namespace,
 				}
 				log.V(1).Info("Referencing proxy route created by ApiExposure for subscriber failover", "zone", subFailoverZone.Name)

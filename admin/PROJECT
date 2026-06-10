@@ -2,8 +2,8 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-cliVersion: 4.9.0
 domain: cp.ei.telekom.de
+cliVersion: 4.9.0
 layout:
 - go.kubebuilder.io/v4
 projectName: admin
@@ -18,6 +18,9 @@ resources:
   kind: Environment
   path: cp.ei.telekom.de/admin/api/v1
   version: v1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true

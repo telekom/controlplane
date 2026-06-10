@@ -16,7 +16,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -94,6 +93,14 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return errors.Wrapf(err, "failed to find cross-zone subscription zones for apiExposure: %s", apiExp.Name)
 	}
 
+	// Resolve realm name from the zone status
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	exposureZone, err := util.GetZone(ctx, scopedClient, apiExp.Spec.Zone.K8s())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get zone %s for apiExposure: %s", apiExp.Spec.Zone.Name, apiExp.Name)
+	}
+	realmName := util.RealmNameForZone(exposureZone)
+
 	// Reset proxy routes status
 	apiExp.Status.ProxyRoutes = nil
 
@@ -112,7 +119,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		}
 
 		proxyRoute, err := util.CreateProxyRoute(ctx, subscriberZoneRef, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
-			contextutil.EnvFromContextOrDie(ctx),
+			realmName,
 			options...,
 		)
 		if err != nil {
@@ -126,7 +133,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	if apiExp.HasFailover() {
 		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
 		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
-			contextutil.EnvFromContextOrDie(ctx),
+			realmName,
 			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
 			util.WithFailoverSecurity(apiExp.Spec.Security),
 		)
@@ -154,7 +161,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return errors.Wrapf(err, "failed to check cross-zone subscribers for apiExposure: %s", apiExp.Name)
 	}
 
-	realRoute, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx),
+	realRoute, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, realmName,
 		util.WithProxyTarget(hasCrossZoneSubs),
 	)
 	if err != nil {

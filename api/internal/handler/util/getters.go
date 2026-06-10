@@ -121,6 +121,15 @@ func GetRealmForZone(ctx context.Context, zoneRef types.ObjectRef, realmName str
 	return realm, zone, nil
 }
 
+// RealmNameForZone returns the gateway realm name from the Zone status.
+// This decouples the realm name from the environment name.
+func RealmNameForZone(zone *adminapi.Zone) string {
+	if zone.Status.GatewayRealm != nil {
+		return zone.Status.GatewayRealm.Name
+	}
+	return ""
+}
+
 // FindAPI checks if there is an active Api corresponding to the given apiBasePath.
 func FindActiveAPI(ctx context.Context, apiBasePath string) (bool, *apiv1.Api, error) {
 	log := log.FromContext(ctx)

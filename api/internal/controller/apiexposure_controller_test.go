@@ -46,6 +46,14 @@ func CreateZone(name string) *adminapi.Zone {
 	Expect(err).ToNot(HaveOccurred())
 
 	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.GatewayRealm = &types.ObjectRef{
+		Name:      testEnvironment,
+		Namespace: testEnvironment + "--" + name,
+	}
+	zone.Status.IdentityRealm = &types.ObjectRef{
+		Name:      testEnvironment,
+		Namespace: testEnvironment + "--" + name,
+	}
 	zone.Status.Links = adminapi.Links{
 		Url:       fmt.Sprintf("http://test.%s.de", name),
 		Issuer:    fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", name),
