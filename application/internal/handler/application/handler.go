@@ -280,12 +280,11 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
-	realmName := contextutil.EnvFromContextOrDie(ctx)
 
-	// get namespace from zoneStatus
+	// Resolve realm name from zone status (decoupled from environment name)
+	realmName := zone.Status.IdentityRealm.Name
 	namespace := zone.Status.Namespace
 
-	// get Realm with realmref from namespace
 	realmRef := &types.ObjectRef{
 		Name:      realmName,
 		Namespace: namespace,
@@ -358,7 +357,9 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
-	realmName := contextutil.EnvFromContextOrDie(ctx)
+
+	// Resolve realm name from zone status (decoupled from environment name)
+	realmName := zone.Status.GatewayRealm.Name
 
 	realmRef := types.ObjectRef{
 		Name:      realmName,

@@ -51,6 +51,16 @@ var _ = Describe("Application Controller", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, zoneA)).To(Succeed())
+			zoneA.Status.Namespace = testNamespace
+			zoneA.Status.IdentityRealm = &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace}
+			zoneA.Status.GatewayRealm = &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace}
+			zoneA.Status.Links = adminv1.Links{
+				Url:       "http://gateway.zone-a.test",
+				Issuer:    "http://issuer.zone-a.test/auth/realms/test-env",
+				LmsIssuer: "http://lms.zone-a.test/auth/realms/test-env",
+			}
+			zoneA.SetCondition(condition.NewReadyCondition("Ready", "testing"))
+			Expect(k8sClient.Status().Update(ctx, zoneA)).To(Succeed())
 
 			By("creating the Zone B")
 			zoneB = &adminv1.Zone{
@@ -66,6 +76,16 @@ var _ = Describe("Application Controller", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, zoneB)).To(Succeed())
+			zoneB.Status.Namespace = testNamespace
+			zoneB.Status.IdentityRealm = &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace}
+			zoneB.Status.GatewayRealm = &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace}
+			zoneB.Status.Links = adminv1.Links{
+				Url:       "http://gateway.zone-b.test",
+				Issuer:    "http://issuer.zone-b.test/auth/realms/test-env",
+				LmsIssuer: "http://lms.zone-b.test/auth/realms/test-env",
+			}
+			zoneB.SetCondition(condition.NewReadyCondition("Ready", "testing"))
+			Expect(k8sClient.Status().Update(ctx, zoneB)).To(Succeed())
 		})
 
 		AfterEach(func() {

@@ -13,7 +13,15 @@ import (
 
 // EnvironmentSpec defines the desired state of Environment
 type EnvironmentSpec struct {
-	Foo string `json:"foo,omitempty"`
+
+	// RealmName overrides the default realm name (which is the environment name).
+	// When set, identity and gateway realms will be created with this name instead
+	// of deriving it from the environment's metadata.name.
+	// This field is immutable after first reconciliation.
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-[a-z0-9]+)*$`
+	// +kubebuilder:validation:MaxLength=63
+	// +required
+	RealmName string `json:"realmName"`
 }
 
 // EnvironmentStatus defines the observed state of Environment
