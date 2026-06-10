@@ -24,6 +24,7 @@ import (
 	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	"github.com/telekom/controlplane/permission/internal/handler/permissionset"
+	"k8s.io/utils/ptr"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -150,6 +151,7 @@ var _ = Describe("PermissionSet Controller", func() {
 					IdentityProvider: adminv1.IdentityProviderConfig{
 						Url: "https://idp.example.com",
 						Admin: adminv1.IdentityProviderAdminConfig{
+							Url:      ptr.To("https://idp-admin.example.com"),
 							UserName: "admin",
 							Password: "password",
 							ClientId: "client-id",
@@ -159,11 +161,11 @@ var _ = Describe("PermissionSet Controller", func() {
 						Url:            "https://gateway.example.com",
 						CircuitBreaker: false,
 						Admin: adminv1.GatewayAdminConfig{
-							ClientSecret: "secret",
+							Url: ptr.To("https://gateway-admin.example.com"),
 						},
 					},
 					Redis: adminv1.RedisConfig{
-						Host:      "redis.example.com",
+						Host:      "redis://redis.example.com:6379",
 						Port:      6379,
 						Password:  "redis-password",
 						EnableTLS: true,
