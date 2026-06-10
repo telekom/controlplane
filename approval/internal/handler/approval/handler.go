@@ -168,11 +168,6 @@ func (h *ApprovalHandler) Delete(ctx context.Context, approval *approvalv1.Appro
 
 // handleExpiration manages the lifecycle of ApprovalExpiration resources
 func (h *ApprovalHandler) handleExpiration(ctx context.Context, approval *approvalv1.Approval, stateChanged bool) error {
-	// Only for non-Auto strategies
-	if approval.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
-		return nil
-	}
-
 	c := commonclient.ClientFromContextOrDie(ctx)
 
 	switch approval.Spec.State {

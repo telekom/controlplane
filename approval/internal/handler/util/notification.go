@@ -50,7 +50,7 @@ const (
 	TemplatePlaceholderScopes         = "scopes"
 	TemplatePlaceholderExpirationDate = "expiration_date"
 	TemplatePlaceholderDaysRemaining  = "days_remaining"
-	TemplatePlaceholderReminderType   = "reminder_type"
+	TemplatePlaceholderIsExpired      = "is_expired"
 )
 
 const (
@@ -88,7 +88,7 @@ type ReminderNotificationData struct {
 	NotificationData
 	ExpirationDate string
 	DaysRemaining  string
-	ReminderType   string
+	IsExpired      bool
 }
 
 func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
@@ -237,7 +237,7 @@ func initializeProperties() map[string]any {
 	properties[TemplatePlaceholderStateOld] = defaultValue
 	properties[TemplatePlaceholderStateNew] = defaultValue
 	properties[TemplatePlaceholderScopes] = defaultValue
-	// Note: Expiration fields (ExpirationDate, DaysRemaining, ReminderType) are only
+	// Note: Expiration fields (ExpirationDate, DaysRemaining, IsExpired) are only
 	// initialized in SendReminderNotification, not for regular notifications
 
 	return properties
@@ -252,7 +252,7 @@ func SendReminderNotification(ctx context.Context, data *ReminderNotificationDat
 	properties[TemplatePlaceholderStateOld] = data.StateOld
 	properties[TemplatePlaceholderExpirationDate] = data.ExpirationDate
 	properties[TemplatePlaceholderDaysRemaining] = data.DaysRemaining
-	properties[TemplatePlaceholderReminderType] = data.ReminderType
+	properties[TemplatePlaceholderIsExpired] = data.IsExpired
 
 	requesterMap, err := extractRequester(data.Requester)
 	if err != nil {

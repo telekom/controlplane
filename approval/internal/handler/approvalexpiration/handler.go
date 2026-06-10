@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -35,11 +34,11 @@ func NewHandler() *Handler {
 func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration) error {
 	logger := log.FromContext(ctx)
 
-	// Load parent Approval
 	approval, err := h.getParentApproval(ctx, ae)
-	if err != nil {
+	if client.IgnoreNotFound(err) != nil {
 		return errors.Wrap(err, "failed to get parent approval")
 	}
+
 	if approval == nil {
 		// Parent Approval was deleted; this resource will be GC'd via owner reference
 		return nil
@@ -69,7 +68,7 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 		logger.V(1).Info("Sending reminder", "threshold", p.Key)
 
 		// Send notification
-		notificationRef, err := h.sendReminder(ctx, ae, approval, now, p.Threshold)
+		notificationRef, err := h.sendReminder(ctx, ae, approval, now)
 		if err != nil {
 			return errors.Wrap(err, "failed to send reminder")
 		}
@@ -96,19 +95,6 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 
 // Delete handles cleanup when an ApprovalExpiration is deleted
 func (h *Handler) Delete(ctx context.Context, ae *v1.ApprovalExpiration) error {
-	logger := log.FromContext(ctx)
-
-	approval, err := h.getParentApproval(ctx, ae)
-	if err != nil {
-		return errors.Wrap(err, "failed to get parent approval")
-	}
-	if approval == nil {
-		return nil
-	}
-
-	removed := meta.RemoveStatusCondition(&approval.Status.Conditions, "Expired")
-	logger.V(1).Info("Removed 'Expired' status condition", "removed", removed)
-
 	return nil
 }
 
@@ -122,28 +108,17 @@ func (h *Handler) getParentApproval(ctx context.Context, ae *v1.ApprovalExpirati
 		Namespace: ae.Spec.Approval.Namespace,
 	}
 	if err := c.Get(ctx, key, approval); err != nil {
-		return nil, client.IgnoreNotFound(err)
+		return nil, err
 	}
 	return approval, nil
 }
 
 // sendReminder sends a reminder notification for the approaching or reached expiration
-func (h *Handler) sendReminder(ctx context.Context, ae *v1.ApprovalExpiration, approval *v1.Approval, now time.Time, threshold reminder.Threshold) (*types.ObjectRef, error) {
+func (h *Handler) sendReminder(ctx context.Context, ae *v1.ApprovalExpiration, approval *v1.Approval, now time.Time) (*types.ObjectRef, error) {
 	// Calculate days remaining
 	daysRemaining := int64(ae.Spec.Expiration.Time.Sub(now).Hours() / 24)
 	if daysRemaining < 0 {
 		daysRemaining = 0
-	}
-
-	// Determine reminder type based on threshold
-	var reminderType string
-	switch {
-	case threshold.Repeat != nil:
-		reminderType = "daily" // Repeating thresholds are daily
-	case daysRemaining == 0:
-		reminderType = "expired"
-	default:
-		reminderType = "weekly" // One-shot thresholds are weekly
 	}
 
 	// Build base notification data with template properties
@@ -158,9 +133,9 @@ func (h *Handler) sendReminder(ctx context.Context, ae *v1.ApprovalExpiration, a
 			Scenario:  util.NotificationScenarioUpdated,
 			Action:    approval.Spec.Action,
 		},
-		ExpirationDate: ae.Spec.Expiration.Format("2006-01-02"),
+		ExpirationDate: ae.Spec.Expiration.Format(time.RFC3339),
 		DaysRemaining:  fmt.Sprintf("%d", daysRemaining),
-		ReminderType:   reminderType,
+		IsExpired:      daysRemaining == 0,
 	}
 
 	// Send to decider (in decider's namespace)
