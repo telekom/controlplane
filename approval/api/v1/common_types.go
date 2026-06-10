@@ -32,6 +32,7 @@ const (
 	ApprovalActionDeny    ApprovalAction = "Deny"
 	ApprovalActionSuspend ApprovalAction = "Suspend"
 	ApprovalActionResume  ApprovalAction = "Resume"
+	ApprovalActionExpire  ApprovalAction = "Expire"
 )
 
 func (a ApprovalAction) String() string {
