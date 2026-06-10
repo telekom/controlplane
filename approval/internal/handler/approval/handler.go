@@ -6,21 +6,37 @@ package approval
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
+	"github.com/telekom/controlplane/approval/internal/config"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
+	commonclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 var _ handler.Handler[*approvalv1.Approval] = &ApprovalHandler{}
 
-type ApprovalHandler struct{}
+type ApprovalHandler struct {
+	expirationCfg *config.ExpirationConfig
+}
+
+// NewHandler creates a new ApprovalHandler with the provided configuration
+func NewHandler(cfg *config.ExpirationConfig) *ApprovalHandler {
+	return &ApprovalHandler{
+		expirationCfg: cfg,
+	}
+}
 
 func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approvalv1.Approval) error {
 	// handle the notifications first
@@ -32,6 +48,10 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 
 	fsm := ApprovalStrategyFSM[approval.Spec.Strategy]
 	approval.Status.AvailableTransitions = fsm.AvailableTransitions(approval.Spec.State)
+
+	// Capture state change BEFORE updating LastState (needed for expiration logic)
+	previousState := approval.Status.LastState
+	stateChanged := approval.Spec.State != previousState
 	approval.Status.LastState = approval.Spec.State
 
 	switch approval.Spec.State {
@@ -60,6 +80,26 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 		approval.SetCondition(condition.NewProcessingCondition("Suspended", "Approval is suspended"))
 		approval.SetCondition(condition.NewReadyCondition("Suspended", "Approval is suspended"))
 
+	}
+
+	// Handle ApprovalExpiration lifecycle (do this after conditions are set)
+	if err := h.handleExpiration(ctx, approval, stateChanged); err != nil {
+		return errors.Wrap(err, "failed to handle expiration")
+	}
+
+	// Update ExpiresAt in status to reflect the actual expiration time.
+	// Only restart the clock when transitioning into Granted from a non-Suspended state
+	// (Suspended keeps the original clock ticking; Rejected/re-Allow restarts it).
+	switch approval.Spec.State {
+	case approvalv1.ApprovalStateGranted:
+		if stateChanged && previousState != approvalv1.ApprovalStateSuspended {
+			approval.Status.ExpiresAt = &metav1.Time{
+				Time: time.Now().Add(h.expirationCfg.ExpirationDuration),
+			}
+		}
+	case approvalv1.ApprovalStateRejected, approvalv1.ApprovalStatePending, approvalv1.ApprovalStateSemigranted:
+		approval.Status.ExpiresAt = nil
+		// Suspended: leave ExpiresAt untouched — clock keeps ticking from the original grant
 	}
 
 	return nil
@@ -123,5 +163,87 @@ func (h *ApprovalHandler) Delete(ctx context.Context, approval *approvalv1.Appro
 	logger := log.FromContext(ctx)
 
 	logger.Info("Approval deleted")
+	return nil
+}
+
+// handleExpiration manages the lifecycle of ApprovalExpiration resources
+func (h *ApprovalHandler) handleExpiration(ctx context.Context, approval *approvalv1.Approval, stateChanged bool) error {
+	c := commonclient.ClientFromContextOrDie(ctx)
+
+	switch approval.Spec.State {
+	case approvalv1.ApprovalStateGranted:
+		if stateChanged {
+			// Create or update ApprovalExpiration with fresh dates
+			// (covers initial GRANTED and REALLOW from EXPIRED)
+			return createOrUpdateApprovalExpiration(ctx, c, approval, h.expirationCfg)
+		}
+		// State unchanged, leave ApprovalExpiration alone
+
+	case approvalv1.ApprovalStateSuspended:
+		// Clock keeps ticking, leave ApprovalExpiration alone
+
+	case approvalv1.ApprovalStateRejected:
+		if stateChanged {
+			// Delete ApprovalExpiration
+			return deleteApprovalExpiration(ctx, c, approval)
+		}
+
+	case approvalv1.ApprovalStatePending, approvalv1.ApprovalStateSemigranted:
+		// No ApprovalExpiration should exist in these states
+		// (safety: delete if exists, but shouldn't happen)
+		return deleteApprovalExpiration(ctx, c, approval)
+	}
+
+	return nil
+}
+
+// createOrUpdateApprovalExpiration creates or updates an ApprovalExpiration with fresh dates
+func createOrUpdateApprovalExpiration(ctx context.Context, c commonclient.JanitorClient, approval *approvalv1.Approval, cfg *config.ExpirationConfig) error {
+	now := time.Now()
+	expirationDate := now.Add(cfg.ExpirationDuration)
+
+	ae := &approvalv1.ApprovalExpiration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      approval.Name,
+			Namespace: approval.Namespace,
+		},
+	}
+
+	mutate := func() error {
+		if err := controllerutil.SetControllerReference(approval, ae, c.Scheme()); err != nil {
+			return errors.Wrap(err, "failed to set controller reference")
+		}
+		ae.Labels = approval.GetLabels()
+		ae.Spec = approvalv1.ApprovalExpirationSpec{
+			Approval: types.ObjectRef{
+				Name:      approval.Name,
+				Namespace: approval.Namespace,
+			},
+			Expiration: metav1.Time{Time: expirationDate},
+			Thresholds: cfg.DefaultThresholds,
+		}
+		return nil
+	}
+
+	_, err := c.CreateOrUpdate(ctx, ae, mutate)
+	if err != nil {
+		return errors.Wrap(err, "failed to create or update ApprovalExpiration")
+	}
+
+	log.FromContext(ctx).Info("Created or updated ApprovalExpiration", "name", ae.Name, "expiration", expirationDate)
+	return nil
+}
+
+// deleteApprovalExpiration deletes the ApprovalExpiration if it exists
+func deleteApprovalExpiration(ctx context.Context, c commonclient.JanitorClient, approval *approvalv1.Approval) error {
+	ae := &approvalv1.ApprovalExpiration{}
+	ae.Name = approval.Name
+	ae.Namespace = approval.Namespace
+
+	if err := client.IgnoreNotFound(c.Delete(ctx, ae)); err != nil {
+		return errors.Wrap(err, "failed to delete ApprovalExpiration")
+	}
+
+	log.FromContext(ctx).Info("Deleted ApprovalExpiration", "name", ae.Name)
 	return nil
 }

@@ -145,7 +145,6 @@ spec:
                       - Granted
                       - Rejected
                       - Suspended
-                      - Expired
                       type: string
                     timestamp:
                       description: Timestamp of when the decision was made
@@ -347,6 +346,9 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              expiresAt:
+                format: date-time
+                type: string
               lastState:
                 default: Pending
                 description: LastState defines the last state of the approval

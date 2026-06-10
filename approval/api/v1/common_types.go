@@ -22,6 +22,9 @@ const (
 	ApprovalStrategyFourEyes ApprovalStrategy = "FourEyes"
 )
 
+// SystemDecisionName is the decision name used for system-generated decisions (auto-approval, expiration).
+const SystemDecisionName = "System"
+
 // AutoApprovedComment is the comment added to auto-approved ApprovalRequests.
 const AutoApprovedComment = "Auto-approved: The approval strategy does not require manual review."
 
@@ -46,7 +49,6 @@ const (
 	ApprovalStateGranted     ApprovalState = "Granted"
 	ApprovalStateRejected    ApprovalState = "Rejected"
 	ApprovalStateSuspended   ApprovalState = "Suspended"
-	ApprovalStateExpired     ApprovalState = "Expired"
 )
 
 func (s ApprovalState) String() string {
@@ -136,6 +138,6 @@ type Decision struct {
 	// ResultingState is the state the resource transitioned to as a result of this decision.
 	// Automatically set by the defaulting webhook to match Spec.State when not provided.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended;Expired
+	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended
 	ResultingState ApprovalState `json:"resultingState"`
 }
