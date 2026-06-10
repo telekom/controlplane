@@ -24,8 +24,7 @@ import (
 )
 
 func NewZone(name, namespace string) *adminv1.Zone {
-	idpAdminUrl := "https://test-iris.de/auth/admin/realms"
-	gatewayAdminUrl := "https://test-stargate.de/admin-api"
+	gatewayAdminSecret := "test-gateway-admin-secret"
 
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
@@ -39,7 +38,7 @@ func NewZone(name, namespace string) *adminv1.Zone {
 		Spec: adminv1.ZoneSpec{
 			IdentityProvider: adminv1.IdentityProviderConfig{
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url:      &idpAdminUrl,
+					Url:      "https://test-iris.de/auth/admin/realms",
 					ClientId: "test-idp-admin-id",
 					UserName: "test-idp-admin-username",
 					Password: "test-idp-admin-password",
@@ -48,8 +47,8 @@ func NewZone(name, namespace string) *adminv1.Zone {
 			},
 			Gateway: adminv1.GatewayConfig{
 				Admin: adminv1.GatewayAdminConfig{
-					ClientSecret: "test-gateway-admin-secret",
-					Url:          &gatewayAdminUrl,
+					ClientSecret: &gatewayAdminSecret,
+					Url:          "https://test-stargate.de/admin-api",
 				},
 				Url: "https://test-stargate.de/",
 			},
@@ -317,13 +316,29 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 	err = k8sClient.Get(ctx, internalIdentityRealmRef, internalIdentityRealm)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	internalIdentityRealmSpec := &identityapi.RealmSpec{
+	internalIdentityRealmSpec := identityapi.RealmSpec{
 		IdentityProvider: &types.ObjectRef{
 			Name:      "test-zone",
 			Namespace: "test--test-zone",
 		},
+		Claims: []identityapi.ClaimConfig{
+			{
+				Name:  "originZone",
+				Value: zoneToVerify.Name,
+				Type:  identityapi.ClaimTypeHardcodedClaim,
+			},
+			{
+				Name:  "originStargate",
+				Value: zoneToVerify.Spec.Gateway.Url,
+				Type:  identityapi.ClaimTypeHardcodedClaim,
+			},
+			{
+				Name: "clientId",
+				Type: identityapi.ClaimTypeSessionNote,
+			},
+		},
 	}
-	g.Expect(internalIdentityRealm.Spec).To(Equal(*internalIdentityRealmSpec))
+	g.Expect(internalIdentityRealm.Spec).To(Equal(internalIdentityRealmSpec))
 	g.Expect(zone.Status.InternalIdentityRealm).To(Equal(types.ObjectRefFromObject(internalIdentityRealm)))
 
 	// Identity provider client (gateway client)
