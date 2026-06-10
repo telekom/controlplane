@@ -431,6 +431,7 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 				problem, ok := err.(problems.Problem)
 				if ok {
 					Expect(problem.Code()).ToNot(Equal(http.StatusInternalServerError))
+					Expect(problem.Error()).ToNot(ContainSubstring("Linting failed"))
 				}
 			}
 		})
