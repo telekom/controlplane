@@ -50,7 +50,8 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 	approval.Status.AvailableTransitions = fsm.AvailableTransitions(approval.Spec.State)
 
 	// Capture state change BEFORE updating LastState (needed for expiration logic)
-	stateChanged := approval.Spec.State != approval.Status.LastState
+	previousState := approval.Status.LastState
+	stateChanged := approval.Spec.State != previousState
 	approval.Status.LastState = approval.Spec.State
 
 	switch approval.Spec.State {
@@ -86,9 +87,19 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 		return errors.Wrap(err, "failed to handle expiration")
 	}
 
-	// note the expiration of this approval in the status
-	approval.Status.ExpiresAt = &metav1.Time{
-		Time: time.Now().Add(h.expirationCfg.ExpirationDuration),
+	// Update ExpiresAt in status to reflect the actual expiration time.
+	// Only restart the clock when transitioning into Granted from a non-Suspended state
+	// (Suspended keeps the original clock ticking; Rejected/re-Allow restarts it).
+	switch approval.Spec.State {
+	case approvalv1.ApprovalStateGranted:
+		if stateChanged && previousState != approvalv1.ApprovalStateSuspended {
+			approval.Status.ExpiresAt = &metav1.Time{
+				Time: time.Now().Add(h.expirationCfg.ExpirationDuration),
+			}
+		}
+	case approvalv1.ApprovalStateRejected, approvalv1.ApprovalStatePending, approvalv1.ApprovalStateSemigranted:
+		approval.Status.ExpiresAt = nil
+		// Suspended: leave ExpiresAt untouched — clock keeps ticking from the original grant
 	}
 
 	return nil

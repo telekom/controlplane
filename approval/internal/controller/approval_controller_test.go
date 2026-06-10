@@ -133,7 +133,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			g.Expect(approval.Spec.State).To(BeEquivalentTo("Pending"))
 			g.Expect(approval.Spec.Strategy).To(BeEquivalentTo("Auto"))
 			g.Expect(approval.Spec.Requester.TeamName).To(BeEquivalentTo("test--requester"))
-			g.Expect(approval.Status.ExpiresAt).NotTo(BeNil())
+			g.Expect(approval.Status.ExpiresAt).To(BeNil())
 		}, timeout, interval).Should(Succeed())
 	})
 
@@ -149,6 +149,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 		err := k8sClient.Get(ctx, typeNamespacedName, grantedApproval)
 		Expect(err).NotTo(HaveOccurred())
 
+		Expect(grantedApproval.Status.ExpiresAt).NotTo(BeNil())
 		Expect(grantedApproval.Status.NotificationRefs).NotTo(BeNil())
 		Expect(grantedApproval.Status.NotificationRefs).To(HaveLen(2))
 
