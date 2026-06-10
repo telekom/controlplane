@@ -42,8 +42,6 @@ spec:
           spec:
             description: EnvironmentSpec defines the desired state of Environment
             properties:
-              foo:
-                type: string
               realmName:
                 description: |-
                   RealmName overrides the default realm name (which is the environment name).
