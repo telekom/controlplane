@@ -71,7 +71,7 @@ func (v *EnvironmentCustomValidator) ValidateDelete(_ context.Context, _ *adminv
 
 // validateRealmNameUniqueness ensures no other Environment across the cluster uses the same effective realm name.
 func (v *EnvironmentCustomValidator) validateRealmNameUniqueness(ctx context.Context, environment *adminv1.Environment) error {
-	realmName := environment.GetRealmName()
+	realmName := environment.Spec.RealmName
 
 	var envList adminv1.EnvironmentList
 	if err := v.Client.List(ctx, &envList,
