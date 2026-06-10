@@ -61,6 +61,7 @@ func LoadExpirationConfig() (*ExpirationConfig, error) {
 	thresholds := []reminder.Threshold{
 		{
 			Before: metav1.Duration{Duration: time.Duration(raw.WeeklyReminderMonths) * 30 * 24 * time.Hour},
+			Repeat: &metav1.Duration{Duration: 24 * time.Hour * 7},
 		},
 		{
 			Before: metav1.Duration{Duration: time.Duration(raw.DailyReminderWeeks) * 7 * 24 * time.Hour},

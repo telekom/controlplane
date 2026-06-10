@@ -74,8 +74,10 @@ spec:
                 format: date-time
                 type: string
               thresholds:
-                description: Thresholds defines when reminder notifications should
-                  be sent before expiration.
+                description: |-
+                  Thresholds defines when reminders should be sent relative to the expiration deadline.
+                  For example: [{Before: "720h"}, {Before: "168h", Repeat: "24h"}] sends one reminder
+                  30 days before expiration, then daily reminders starting 7 days before.
                 items:
                   description: Threshold defines when a reminder should fire relative
                     to a deadline.

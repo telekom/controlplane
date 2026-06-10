@@ -5,8 +5,8 @@
 package v1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -20,7 +20,9 @@ type ApprovalExpirationSpec struct {
 	// Expiration is the timestamp at which the approval expires.
 	Expiration metav1.Time `json:"expiration"`
 
-	// Thresholds defines when reminder notifications should be sent before expiration.
+	// Thresholds defines when reminders should be sent relative to the expiration deadline.
+	// For example: [{Before: "720h"}, {Before: "168h", Repeat: "24h"}] sends one reminder
+	// 30 days before expiration, then daily reminders starting 7 days before.
 	// +optional
 	Thresholds []reminder.Threshold `json:"thresholds,omitempty"`
 }
