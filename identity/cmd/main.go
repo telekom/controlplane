@@ -24,6 +24,8 @@ import (
 	"github.com/telekom/controlplane/identity/internal/controller"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	// +kubebuilder:scaffold:imports
 )
