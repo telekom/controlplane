@@ -157,6 +157,13 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 
 	log.Info("Defaulting for EventConfig", "name", eventCfg.GetName())
 
+	// Initialize Mesh with full-mesh defaults if not provided.
+	if eventCfg.Spec.Mesh == nil {
+		eventCfg.Spec.Mesh = &eventv1.MeshConfig{
+			FullMesh: true,
+		}
+	}
+
 	adminClient := &eventCfg.Spec.Admin.Client
 	if adminClient.ClientId == "" {
 		adminClient.ClientId = util.AdminClientName
@@ -171,7 +178,9 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 	// This prevents accidental secret regeneration when users omit the field.
 	if oldCfg, isUpdate := getOldEventConfig(ctx); isUpdate {
 		adminClient.ClientSecret = resolveSecretForUpdate(adminClient.ClientSecret, oldCfg.Spec.Admin.Client.ClientSecret)
-		meshClient.ClientSecret = resolveSecretForUpdate(meshClient.ClientSecret, oldCfg.Spec.Mesh.Client.ClientSecret)
+		if oldCfg.Spec.Mesh != nil {
+			meshClient.ClientSecret = resolveSecretForUpdate(meshClient.ClientSecret, oldCfg.Spec.Mesh.Client.ClientSecret)
+		}
 	}
 
 	if config.FeatureSecretManager.IsEnabled() {
@@ -240,14 +249,19 @@ func (v *EventConfigCustomValidator) ValidateCreateOrUpdate(ctx context.Context,
 
 	valErr := cerrors.NewValidationError(eventv1.GroupVersion.WithKind("EventConfig").GroupKind(), eventCfg)
 
+	// Realm fields are optional: when empty, the handler resolves them
+	// from the Zone's identity realms (InternalIdentityRealm for admin, IdentityRealm for mesh).
+	// However, if a realm is partially specified (only name or only namespace), that is invalid.
 	adminClient := eventCfg.Spec.Admin.Client
-	if adminClient.Realm.IsEmpty() {
-		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("admin").Child("realm"), adminClient.Realm, "realm must be specified for admin client")
+	if !adminClient.Realm.IsEmpty() && (adminClient.Realm.Name == "" || adminClient.Realm.Namespace == "") {
+		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("client").Child("realm"), adminClient.Realm, "realm must have both name and namespace if specified")
 	}
 
-	meshClient := eventCfg.Spec.Mesh.Client
-	if meshClient.Realm.IsEmpty() {
-		valErr.AddInvalidError(field.NewPath("spec").Child("mesh").Child("mesh").Child("realm"), meshClient.Realm, "realm must be specified for mesh client")
+	if eventCfg.Spec.Mesh != nil {
+		meshClient := eventCfg.Spec.Mesh.Client
+		if !meshClient.Realm.IsEmpty() && (meshClient.Realm.Name == "" || meshClient.Realm.Namespace == "") {
+			valErr.AddInvalidError(field.NewPath("spec").Child("mesh").Child("client").Child("realm"), meshClient.Realm, "realm must have both name and namespace if specified")
+		}
 	}
 
 	return valErr.BuildWarnings(), valErr.BuildError()

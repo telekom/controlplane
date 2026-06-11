@@ -189,25 +189,21 @@ spec:
     namespace: dev
   admin:
     url: https://config-backend.example.com
-    client:
-      clientId: event-admin
-      clientSecret: <your-event-admin-secret>
   serverSendEventUrl: http://event-backend.dev.svc.cluster.local/sse
   publishEventUrl: http://event-backend.dev.svc.cluster.local/publish
   voyagerApiUrl: http://voyager.dev.svc.cluster.local
-  mesh:
-    fullMesh: true
-    client:
-      clientId: event-mesh
-      clientSecret: <your-event-mesh-secret>
 ```
+
+That's it. Identity clients, secrets, realms, and mesh topology are configured automatically:
+
+- **Admin client** — auto-created using the zone's internal identity realm.
+- **Mesh client** — auto-created using the zone's default identity realm.
+- **Mesh topology** — defaults to full mesh (events distributed to all zones).
+- **Client secrets** — auto-generated and managed by the controller.
 
 ### Mesh configuration options
 
-- **`fullMesh: true`** — events can be distributed across all zones.
-- **`fullMesh: false` + `zoneNames`** — events are only distributed to selected zones.
-
-Example for partial mesh:
+By default, a full mesh topology is used. To restrict event distribution to specific zones, add an explicit `mesh` block:
 
 ```yaml
 mesh:
@@ -215,9 +211,27 @@ mesh:
   zoneNames:
     - dataplane2
     - dataplane3
+```
+
+### Overriding identity client defaults
+
+In most cases you do not need to specify identity clients. If your setup requires custom client IDs or specific realm references, you can provide them explicitly:
+
+```yaml
+admin:
+  url: https://config-backend.example.com
   client:
-    clientId: event-mesh
-    clientSecret: <your-event-mesh-secret>
+    clientId: my-custom-admin-client
+    realm:
+      name: my-realm
+      namespace: dev
+mesh:
+  fullMesh: true
+  client:
+    clientId: my-custom-mesh-client
+    realm:
+      name: my-realm
+      namespace: dev
 ```
 
 ### Verifying readiness
@@ -225,10 +239,6 @@ mesh:
 After creation, the resource status is populated with generated references and URLs (for example `publishUrl`, `callbackUrl`, and `eventStore`).
 
 If these fields appear and conditions are healthy, your zone is ready for event exposures and subscriptions.
-
-:::caution
-Do not commit secrets (for example `clientSecret`) to version control. Use your platform's secret management approach.
-:::
 
 ## Next Steps
 
