@@ -23,9 +23,9 @@ const (
 )
 
 type LoggerOpts struct {
-	Output  io.Writer
-	Format  LogFormat
-	NoDebug bool
+	Output io.Writer
+	Format LogFormat
+	Debug  bool
 }
 
 type LoggerOption func(*LoggerOpts)
@@ -38,7 +38,7 @@ func WithOutput(w io.Writer) LoggerOption {
 
 func WithDebug(debug bool) LoggerOption {
 	return func(o *LoggerOpts) {
-		o.NoDebug = !debug
+		o.Debug = debug
 	}
 }
 
@@ -62,9 +62,9 @@ func requestLatencySeconds(output logger.Buffer, _ *fiber.Ctx, data *logger.Data
 
 func NewLogger(opts ...LoggerOption) fiber.Handler {
 	o := &LoggerOpts{
-		Output:  os.Stderr,
-		Format:  LogFormatJSON,
-		NoDebug: true,
+		Output: os.Stderr,
+		Format: LogFormatJSON,
+		Debug:  false,
 	}
 	for _, opt := range opts {
 		opt(o)
@@ -81,7 +81,7 @@ func NewLogger(opts ...LoggerOption) fiber.Handler {
 		TimeZone:     "UTC",
 		TimeInterval: 500 * time.Millisecond,
 		Next: func(c *fiber.Ctx) bool {
-			return o.NoDebug && (c.Path() == "/healthz" || c.Path() == "/readyz" || c.Path() == "/metrics")
+			return !o.Debug && (c.Path() == "/healthz" || c.Path() == "/readyz" || c.Path() == "/metrics")
 		},
 	})
 }
