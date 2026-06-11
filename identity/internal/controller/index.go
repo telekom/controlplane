@@ -8,13 +8,16 @@ import (
 	"context"
 	"os"
 
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
 
-var IndexFieldSpecIdentityProvider = "spec.identityProvider"
-var IndexFieldSpecRealm = "spec.realm"
+var (
+	IndexFieldSpecIdentityProvider = "spec.identityProvider"
+	IndexFieldSpecRealm            = "spec.realm"
+)
 
 func RegisterIndexesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	// Index the Realm by the IdentityProvider it references.
