@@ -27,7 +27,6 @@ var _ handler.Handler[*apiapi.ApiExposure] = (*ApiExposureHandler)(nil)
 
 type ApiExposureHandler struct{}
 
-//nolint:gocyclo,nestif // Reconciliation validates API state and provisions several dependent routes.
 func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.ApiExposure) error {
 	logger := log.FromContext(ctx)
 
@@ -61,37 +60,14 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	// Core Validations are done, can continue
 
-	// Scopes
-	// check if scopes exist and scopes are subset from api
-	if apiExp.HasM2M() {
-		// If scopes are set and its not externalIDP (here its allowed to have unknown/external scopes)
-		if apiExp.Spec.Security.M2M.Scopes != nil && !apiExp.HasExternalIdp() {
-			if len(api.Spec.Oauth2Scopes) == 0 {
-				apiExp.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
-				apiExp.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
-				return nil
-			} else {
-				scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiExp.Spec.Security.M2M.Scopes)
-				if !scopesExist {
-					message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
-						strings.Join(api.Spec.Oauth2Scopes, ", "),
-						strings.Join(invalidScopes, ", "),
-					)
-					apiExp.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
-					apiExp.SetCondition(condition.NewBlockedCondition(message))
-					return nil
-				}
-			}
-
-			logger.V(1).Info("✅ Scopes are valid and exist")
-		}
-	}
-
+	// Scopes: check if scopes exist and are a valid subset of the Api's scopes.
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
+	if !validateExposureScopes(ctx, api, apiExp) {
+		return nil
+	}
 
 	// --- Proxy Route Management ---
-	// Query cross-zone subscription zones (exposure-driven pattern)
 	crossZoneRefs, err := util.FindCrossZoneApiSubscriptionZones(ctx, apiExp)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find cross-zone subscription zones for apiExposure: %s", apiExp.Name)
@@ -231,4 +207,29 @@ func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure
 	}
 
 	return nil
+}
+
+// validateExposureScopes checks that the M2M scopes in apiExp are a valid subset of the Api's scopes.
+// It sets blocking conditions on apiExp and returns false if processing should stop.
+func validateExposureScopes(ctx context.Context, api *apiapi.Api, apiExp *apiapi.ApiExposure) bool {
+	if !apiExp.HasM2M() || apiExp.Spec.Security.M2M.Scopes == nil || apiExp.HasExternalIdp() {
+		return true
+	}
+	if len(api.Spec.Oauth2Scopes) == 0 {
+		apiExp.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+		apiExp.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
+		return false
+	}
+	scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiExp.Spec.Security.M2M.Scopes)
+	if !scopesExist {
+		message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
+			strings.Join(api.Spec.Oauth2Scopes, ", "),
+			strings.Join(invalidScopes, ", "),
+		)
+		apiExp.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
+		apiExp.SetCondition(condition.NewBlockedCondition(message))
+		return false
+	}
+	log.FromContext(ctx).V(1).Info("✅ Scopes are valid and exist")
+	return true
 }

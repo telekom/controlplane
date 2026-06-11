@@ -27,8 +27,6 @@ import (
 
 // handleProviderScenario handles the case where the RemoteApiSubscription is handled by this CP.
 // That means that the current CP needs to create an Application and an ApiSubscription.
-//
-//nolint:nestif // Provider flow updates child resources and mirrors readiness back to the remote CP.
 func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Context, obj *apiapi.RemoteApiSubscription) (err error) {
 	logger := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
@@ -153,27 +151,8 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 		obj.SetCondition(condition.NewProcessingCondition("Processing", "Processing RemoteApiSubscription"))
 		obj.SetCondition(condition.NewNotReadyCondition("Processing", "Processing RemoteApiSubscription"))
 	} else {
-		// No update occurred
-
-		if err = fillApprovalRequestInfo(ctx, obj, apiSubscription); err != nil {
-			return errors.Wrapf(err, "failed to fill approvalrequest info")
-		}
-
-		if err = fillApprovalInfo(ctx, obj, apiSubscription); err != nil {
-			return errors.Wrapf(err, "failed to fill approval info")
-		}
-
-		// check if ready
-		if meta.IsStatusConditionTrue(apiSubscription.GetConditions(), condition.ConditionTypeReady) {
-			obj.SetCondition(condition.NewReadyCondition("Ready", "RemoteApiSubscription is ready"))
-			obj.SetCondition(condition.NewDoneProcessingCondition("RemoteApiSubscription is done processing"))
-
-			if err = fillRouteInfo(ctx, obj, apiSubscription); err != nil {
-				return errors.Wrapf(err, "failed to fill route info")
-			}
-
-		} else {
-			obj.Status.Conditions = apiSubscription.Status.Conditions // TODO: good idea?
+		if err = mirrorChildSubscriptionStatus(ctx, obj, apiSubscription); err != nil {
+			return errors.Wrapf(err, "failed to mirror child subscription status")
 		}
 	}
 
@@ -188,4 +167,21 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 	}
 
 	return nil
+}
+
+// mirrorChildSubscriptionStatus fills obj's status from the child ApiSubscription's current state.
+func mirrorChildSubscriptionStatus(ctx context.Context, obj *apiapi.RemoteApiSubscription, apiSubscription *apiapi.ApiSubscription) error {
+	if err := fillApprovalRequestInfo(ctx, obj, apiSubscription); err != nil {
+		return errors.Wrapf(err, "failed to fill approvalrequest info")
+	}
+	if err := fillApprovalInfo(ctx, obj, apiSubscription); err != nil {
+		return errors.Wrapf(err, "failed to fill approval info")
+	}
+	if !meta.IsStatusConditionTrue(apiSubscription.GetConditions(), condition.ConditionTypeReady) {
+		obj.Status.Conditions = apiSubscription.Status.Conditions // TODO: good idea?
+		return nil
+	}
+	obj.SetCondition(condition.NewReadyCondition("Ready", "RemoteApiSubscription is ready"))
+	obj.SetCondition(condition.NewDoneProcessingCondition("RemoteApiSubscription is done processing"))
+	return fillRouteInfo(ctx, obj, apiSubscription)
 }
