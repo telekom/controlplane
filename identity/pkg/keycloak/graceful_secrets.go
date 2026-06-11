@@ -147,6 +147,125 @@ func (k *keycloakService) ConfigureSecretRotationPolicy(ctx context.Context, rea
 	return nil
 }
 
+// DeleteSecretRotationPolicy removes the managed secret-rotation profile and
+// policy from the Keycloak realm. It is idempotent — if the entries do not
+// exist, this is a no-op.
+func (k *keycloakService) DeleteSecretRotationPolicy(ctx context.Context, realmName string) error {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	if err := k.removeSecretRotationProfile(ctx, realmName); err != nil {
+		return err
+	}
+	if err := k.removeSecretRotationPolicyEntry(ctx, realmName); err != nil {
+		return err
+	}
+
+	logger.V(1).Info("secret rotation policy removed", "realm", realmName)
+	return nil
+}
+
+// removeSecretRotationProfile removes the "controlplane-secret-rotation"
+// profile from the realm's client-policy profiles. No-op if not present.
+func (k *keycloakService) removeSecretRotationProfile(ctx context.Context, realmName string) error {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	getResp, err := k.Client.GetRealmClientPoliciesProfilesWithResponse(
+		ctx, realmName, &api.GetRealmClientPoliciesProfilesParams{})
+	if err != nil {
+		return fmt.Errorf("failed to get client profiles for realm %s: %w", realmName, err)
+	}
+	if responseErr := CheckStatusCode(getResp, http.StatusOK); responseErr != nil {
+		return fmt.Errorf("unexpected status getting client profiles for realm %s: %d: %w",
+			realmName, getResp.StatusCode(), responseErr)
+	}
+
+	profiles := getResp.JSON2XX
+	if profiles == nil || profiles.Profiles == nil {
+		return nil
+	}
+
+	filtered := make([]api.ClientProfileRepresentation, 0, len(*profiles.Profiles))
+	found := false
+	for _, p := range *profiles.Profiles {
+		if p.Name != nil && *p.Name == secretRotationProfileName {
+			found = true
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+
+	if !found {
+		logger.V(1).Info("secret rotation profile not found, nothing to remove", "realm", realmName)
+		return nil
+	}
+
+	profiles.Profiles = &filtered
+	profiles.GlobalProfiles = nil
+
+	logger.V(1).Info("removing secret rotation profile", "realm", realmName)
+
+	putResp, err := k.Client.PutRealmClientPoliciesProfilesWithResponse(ctx, realmName, *profiles)
+	if err != nil {
+		return fmt.Errorf("failed to put client profiles for realm %s: %w", realmName, err)
+	}
+	if responseErr := CheckStatusCode(putResp, http.StatusNoContent); responseErr != nil {
+		return fmt.Errorf("unexpected status putting client profiles for realm %s: %d: %w",
+			realmName, putResp.StatusCode(), responseErr)
+	}
+	return nil
+}
+
+// removeSecretRotationPolicyEntry removes the "controlplane-secret-rotation-policy"
+// from the realm's client policies. No-op if not present.
+func (k *keycloakService) removeSecretRotationPolicyEntry(ctx context.Context, realmName string) error {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	getResp, err := k.Client.GetRealmClientPoliciesPoliciesWithResponse(
+		ctx, realmName, &api.GetRealmClientPoliciesPoliciesParams{})
+	if err != nil {
+		return fmt.Errorf("failed to get client policies for realm %s: %w", realmName, err)
+	}
+	if responseErr := CheckStatusCode(getResp, http.StatusOK); responseErr != nil {
+		return fmt.Errorf("unexpected status getting client policies for realm %s: %d: %w",
+			realmName, getResp.StatusCode(), responseErr)
+	}
+
+	policies := getResp.JSON2XX
+	if policies == nil || policies.Policies == nil {
+		return nil
+	}
+
+	filtered := make([]api.ClientPolicyRepresentation, 0, len(*policies.Policies))
+	found := false
+	for _, p := range *policies.Policies {
+		if p.Name != nil && *p.Name == secretRotationPolicyName {
+			found = true
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+
+	if !found {
+		logger.V(1).Info("secret rotation policy entry not found, nothing to remove", "realm", realmName)
+		return nil
+	}
+
+	policies.Policies = &filtered
+	policies.GlobalPolicies = nil
+
+	logger.V(1).Info("removing secret rotation policy entry", "realm", realmName)
+
+	putResp, err := k.Client.PutRealmClientPoliciesPoliciesWithResponse(ctx, realmName, *policies)
+	if err != nil {
+		return fmt.Errorf("failed to put client policies for realm %s: %w", realmName, err)
+	}
+	if responseErr := CheckStatusCode(putResp, http.StatusNoContent); responseErr != nil {
+		return fmt.Errorf("unexpected status putting client policies for realm %s: %d: %w",
+			realmName, putResp.StatusCode(), responseErr)
+	}
+	return nil
+}
+
 // ensureSecretRotationProfile creates or updates the "controlplane-secret-rotation"
 // profile that carries the client-secret-rotation executor.
 func (k *keycloakService) ensureSecretRotationProfile(ctx context.Context, realmName string, params SecretRotationParams) error {
