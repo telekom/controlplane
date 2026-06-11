@@ -235,7 +235,6 @@ func ConfigureKeycloakClientMock(mockedClient *keycloakclient.MockKeycloakClient
 		Return(&api.PutRealmClientPoliciesPoliciesResponse{
 			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
 		}, nil).Maybe()
-
 }
 
 func mockGetRealmResponse(realm string, body []byte) *api.GetRealmResponse {

@@ -769,9 +769,7 @@ var _ = Describe("KeycloakService", func() {
 	// ── DeleteSecretRotationPolicy ────────────────────────────────────
 
 	Describe("DeleteSecretRotationPolicy", func() {
-
 		Context("when profile and policy entries exist", func() {
-
 			It("should remove the profile and policy", func() {
 				existingProfile := api.ClientProfileRepresentation{
 					Name: ptr.To("controlplane-secret-rotation"),
@@ -822,7 +820,6 @@ var _ = Describe("KeycloakService", func() {
 		})
 
 		Context("when profile and policy entries do not exist (no-op)", func() {
-
 			It("should be a no-op when profiles list is nil", func() {
 				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
 					Return(&api.GetRealmClientPoliciesProfilesResponse{
