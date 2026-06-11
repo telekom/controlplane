@@ -5,8 +5,10 @@
 package controller
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
@@ -18,9 +20,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, func() {
@@ -39,22 +41,22 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	// ApiSubscription in different zone as ApiExposure and ApiExposure failover zones
 	// ApiSubscription failover zone is the same as the ApiExposure zone
 
-	var apiBasePath = "/apisub/failovertest/v1"
+	apiBasePath := "/apisub/failovertest/v1"
 
 	// Provider side
 	var api *apiapi.Api
 	var apiExposure *apiapi.ApiExposure
 
 	// Provider/Exposure zone
-	var providerZoneName = "provider-zone"
+	providerZoneName := "provider-zone"
 	var providerZone *adminapi.Zone
 
 	// Failover zone for Provider
-	var failoverZoneName = "apisub-failover-zone"
+	failoverZoneName := "apisub-failover-zone"
 	var failoverZone *adminapi.Zone
 
 	// Consumer side
-	var appName = "failover-test-app"
+	appName := "failover-test-app"
 	var application *applicationapi.Application
 
 	BeforeAll(func() {
@@ -159,7 +161,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(route.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
 				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].IssuerUrl).To(Equal(""))
 				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].Url()).To(Equal("http://my-provider-api:8080/api/v1"))
-
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -180,7 +181,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	})
 
 	Context("Different Zone than ApiExposure Failover Zone", func() {
-		var differentZoneName = "different-zone"
+		differentZoneName := "different-zone"
 		var differentZone *adminapi.Zone
 		var differentZoneSubscription *apiapi.ApiSubscription
 
@@ -266,8 +267,8 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	})
 
 	Context("ApiSubscription with Multiple Failover Zones", func() {
-		var multiFailoverZoneName1 = "multi-failover-zone1"
-		var multiFailoverZoneName2 = "multi-failover-zone2"
+		multiFailoverZoneName1 := "multi-failover-zone1"
+		multiFailoverZoneName2 := "multi-failover-zone2"
 		var multiFailoverZone1, multiFailoverZone2 *adminapi.Zone
 		var multiFailoverSubscription *apiapi.ApiSubscription
 
@@ -403,12 +404,12 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	})
 
 	Context("ApiSubscription with Failover Zone same as ApiExposure Zone", func() {
-		var differentZoneName = "another-different-zone"
+		differentZoneName := "another-different-zone"
 		var differentZone *adminapi.Zone
 		var subscription *apiapi.ApiSubscription
 
-		var appName = "same-sub-failover-zone-exp-zone"
-		var application *applicationapi.Application
+		sameZoneAppName := "same-sub-failover-zone-exp-zone"
+		var sameZoneApplication *applicationapi.Application
 
 		BeforeAll(func() {
 			By("Creating a different zone")
@@ -416,13 +417,13 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			CreateGatewayClient(differentZone)
 
 			By("Creating the Application")
-			application = CreateApplication(appName)
+			sameZoneApplication = CreateApplication(sameZoneAppName)
 
 			By("Creating the Realm for different zone")
 			CreateRealm(testEnvironment, differentZone.Name)
 
 			By("Creating ApiSubscription in different zone with provider zone as failover")
-			subscription = NewApiSubscription(apiBasePath, differentZoneName, appName)
+			subscription = NewApiSubscription(apiBasePath, differentZoneName, sameZoneAppName)
 			// Configure failover zone to be the same as ApiExposure zone
 			subscription.Spec.Traffic = apiapi.SubscriberTraffic{
 				Failover: &apiapi.Failover{
@@ -469,7 +470,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				proxyConsumeRoute := &gatewayapi.ConsumeRoute{}
 				err = k8sClient.Get(ctx, subscription.Status.ConsumeRoute.K8s(), proxyConsumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(proxyConsumeRoute.Spec.ConsumerName).To(Equal(application.Status.ClientId))
+				g.Expect(proxyConsumeRoute.Spec.ConsumerName).To(Equal(sameZoneApplication.Status.ClientId))
 				g.Expect(proxyConsumeRoute.Spec.Route).To(Equal(*subscription.Status.Route)) // should be the proxy route
 
 				// Check failover consume route
@@ -487,7 +488,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	})
 
 	Context("Approval Denial and Revocation", func() {
-		var denialZoneName = "approval-denial-zone"
+		denialZoneName := "approval-denial-zone"
 		var denialZone *adminapi.Zone
 		var denialSubscription *apiapi.ApiSubscription
 
@@ -584,7 +585,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	})
 
 	Context("Subscriber Failover to Provider Failover Zone", func() {
-		var subFailoverToProviderZoneName = "sub-failover-provider-collision-zone"
+		subFailoverToProviderZoneName := "sub-failover-provider-collision-zone"
 		var subFailoverToProviderZone *adminapi.Zone
 		var subFailoverToProviderSubscription *apiapi.ApiSubscription
 
@@ -723,7 +724,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	})
 
 	Context("Same-Zone Subscription with Cross-Zone Failover", func() {
-		var sameZoneFailoverZoneName = "same-zone-sub-failover-zone"
+		sameZoneFailoverZoneName := "same-zone-sub-failover-zone"
 		var sameZoneFailoverZone *adminapi.Zone
 		var sameZoneWithFailoverSubscription *apiapi.ApiSubscription
 
@@ -864,9 +865,9 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	})
 
 	Context("Multiple Subscriptions Sharing Zone with Different Failover Configs", func() {
-		var sharedZoneName = "multi-sub-shared-zone"
+		sharedZoneName := "multi-sub-shared-zone"
 		var sharedZone *adminapi.Zone
-		var sharedFailoverZoneName = "multi-sub-failover-zone"
+		sharedFailoverZoneName := "multi-sub-failover-zone"
 		var sharedFailoverZone *adminapi.Zone
 		var subscription1 *apiapi.ApiSubscription // No failover
 		var subscription2 *apiapi.ApiSubscription // With failover
@@ -1042,13 +1043,13 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 // Test #5: All Subscriptions in Same Zone as Exposure (Isolated)
 var _ = Describe("ApiSubscription Controller - All Subscriptions Same Zone", Ordered, func() {
 	// ISOLATED TEST: Uses unique apiBasePath to avoid pollution from other tests
-	var apiBasePath = "/apisub/samezone/v1"
+	apiBasePath := "/apisub/samezone/v1"
 
 	var api *apiapi.Api
 	var apiExposure *apiapi.ApiExposure
-	var providerZoneName = "samezone-provider"
+	providerZoneName := "samezone-provider"
 	var providerZone *adminapi.Zone
-	var appName = "samezone-app"
+	appName := "samezone-app"
 
 	var sameZoneSub1 *apiapi.ApiSubscription
 	var sameZoneSub2 *apiapi.ApiSubscription
@@ -1077,8 +1078,8 @@ var _ = Describe("ApiSubscription Controller - All Subscriptions Same Zone", Ord
 
 		By("Waiting for ApiExposure to be ready")
 		Eventually(func(g Gomega) {
-			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
-			g.Expect(err).ToNot(HaveOccurred())
+			getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
+			g.Expect(getErr).ToNot(HaveOccurred())
 			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
 		}, timeout, interval).Should(Succeed())
 
@@ -1241,17 +1242,17 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 	// Scenario: ApiExposure has provider failover zone B
 	//           Subscription in zone A with subscriber failover to zone B
 	//           Expectation: No duplicate proxy route created, subscriber reuses provider failover route
-	var apiBasePath = "/apisub/provfailover/v1"
+	apiBasePath := "/apisub/provfailover/v1"
 
 	var api *apiapi.Api
 	var apiExposure *apiapi.ApiExposure
-	var providerZoneName = "provfailover-main"
+	providerZoneName := "provfailover-main"
 	var providerZone *adminapi.Zone
-	var providerFailoverZoneName = "provfailover-secondary"
+	providerFailoverZoneName := "provfailover-secondary"
 	var providerFailoverZone *adminapi.Zone
-	var subscriberZoneName = "provfailover-subscriber"
+	subscriberZoneName := "provfailover-subscriber"
 	var subscriberZone *adminapi.Zone
-	var appName = "provfailover-app"
+	appName := "provfailover-app"
 
 	var subscription *apiapi.ApiSubscription
 
@@ -1294,8 +1295,8 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 
 		By("Waiting for ApiExposure to be ready")
 		Eventually(func(g Gomega) {
-			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
-			g.Expect(err).ToNot(HaveOccurred())
+			getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
+			g.Expect(getErr).ToNot(HaveOccurred())
 			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
 		}, timeout, interval).Should(Succeed())
 

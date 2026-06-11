@@ -10,17 +10,17 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // setAlreadyExposedConditions sets NotReady and Blocked conditions on the new ApiExposure
@@ -28,48 +28,48 @@ import (
 // It will include information about the team and application that owns the existing ApiExposure.
 // e.g. 'API is already exposed by Team "team-a" and their Application "app-1"' or
 // 'API is already exposed by your Application "app-1"'
-func setAlreadyExposedConditions(existing, new *apiv1.ApiExposure) {
+func setAlreadyExposedConditions(existing, candidate *apiv1.ApiExposure) {
 	sb := strings.Builder{}
 	sb.WriteString("API is already exposed ")
 
 	applicationName := existing.GetLabels()[config.BuildLabelKey("application")]
 
-	if existing.Namespace != new.Namespace {
+	if existing.Namespace != candidate.Namespace {
 		teamName := existing.Namespace // TODO: should probably be a label
 		str := fmt.Sprintf("by Team %q and their Application %q", teamName, applicationName)
 		sb.WriteString(str)
 	} else {
-		sb.WriteString(fmt.Sprintf("by your Application %q", applicationName))
+		fmt.Fprintf(&sb, "by your Application %q", applicationName)
 	}
 
 	msg := sb.String()
 
-	new.SetCondition(condition.NewNotReadyCondition("ApiExposureNotActive", msg))
-	new.SetCondition(condition.NewBlockedCondition(msg))
+	candidate.SetCondition(condition.NewNotReadyCondition("ApiExposureNotActive", msg))
+	candidate.SetCondition(condition.NewBlockedCondition(msg))
 }
 
 // ApiExposureMustNotAlreadyExist ensures that there is no other active ApiExposure with the same base path.
 // If there is, it sets appropriate conditions on the new ApiExposure.
-func ApiExposureMustNotAlreadyExist(ctx context.Context, new *apiv1.ApiExposure) error {
-	found, existingApiExp, err := util.FindActiveAPIExposure(ctx, new.Spec.ApiBasePath)
+func ApiExposureMustNotAlreadyExist(ctx context.Context, candidate *apiv1.ApiExposure) error {
+	found, existingApiExp, err := util.FindActiveAPIExposure(ctx, candidate.Spec.ApiBasePath)
 	if existingApiExp == nil && err != nil {
 		return err
 	}
 	if !found {
 		// no other active apiExposure found with same basepath
-		new.Status.Active = true
+		candidate.Status.Active = true
 		return nil
 	}
 
-	if types.Equals(existingApiExp, new) {
+	if types.Equals(existingApiExp, candidate) {
 		// the oldest apiExposure is the same as the one we are trying to handle
-		new.Status.Active = true
+		candidate.Status.Active = true
 	} else {
 		// there is already a different apiExposure active with the same BasePathLabelKey
 		// the new one will be blocked until the other is deleted
-		new.Status.Active = false
+		candidate.Status.Active = false
 
-		setAlreadyExposedConditions(existingApiExp, new)
+		setAlreadyExposedConditions(existingApiExp, candidate)
 		return nil
 	}
 

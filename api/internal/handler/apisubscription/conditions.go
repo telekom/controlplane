@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"strings"
 
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 )
+
+const stateAllowed = "Allowed"
 
 // NewApiCondition creates a condition indicating whether the corresponding API exists and is active.
 func NewApiCondition(apiSub *apiv1.ApiSubscription, found bool) metav1.Condition {
@@ -57,7 +60,7 @@ func NewVisibilityAllowedCondition(apiSub *apiv1.ApiSubscription, visibility str
 	}
 	if allowed {
 		cond.Status = metav1.ConditionTrue
-		cond.Reason = "Allowed"
+		cond.Reason = stateAllowed
 		cond.Message = fmt.Sprintf("ApiSubscription visibility %q is allowed by the ApiExposure", visibility)
 	}
 	return cond
@@ -77,11 +80,11 @@ func NewScopesAllowedCondition(apiSub *apiv1.ApiSubscription, scopes []string, a
 	}
 	if allowed && len(scopes) > 0 {
 		cond.Status = metav1.ConditionTrue
-		cond.Reason = "Allowed"
+		cond.Reason = stateAllowed
 		cond.Message = "ApiSubscription scopes are allowed by the ApiExposure: " + strings.Join(scopes, ", ")
 	} else if allowed {
 		cond.Status = metav1.ConditionTrue
-		cond.Reason = "Allowed"
+		cond.Reason = stateAllowed
 		cond.Message = "ApiSubscription has no scopes defined, so they are allowed by default"
 	}
 	return cond
