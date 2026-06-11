@@ -9,7 +9,6 @@ import (
 	"flag"
 	"os"
 
-
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -23,8 +22,8 @@ import (
 	"github.com/telekom/controlplane/api/internal/controller"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
 
-    // Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-    // to ensure that exec-entrypoint and run can make use of them.
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	// +kubebuilder:scaffold:imports
 )

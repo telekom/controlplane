@@ -344,7 +344,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 		BeforeAll(func() {
 			By("Initializing the ApiSubscription")
-			apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
+			meshingApiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
 
 			By("Creating the Zone")
 			otherZone = CreateZone(otherZoneName)
@@ -355,7 +355,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 		It("should create a proxy-route if on a different zone as the API-Exposure", func() {
 			By("Creating the resource")
-			err := k8sClient.Create(ctx, apiSubscription)
+			err := k8sClient.Create(ctx, meshingApiSubscription)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Checking if the resource has the expected state")
@@ -390,7 +390,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				proxyRouteRef := apiExposure.Status.ProxyRoutes[0]
 
 				By("Checking the ApiSubscription")
-				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(meshingApiSubscription), meshingApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(meshingApiSubscription.GetConditions(), condition.ConditionTypeProcessing), "Done")
 				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(meshingApiSubscription.GetConditions(), condition.ConditionTypeReady), "Provisioned")

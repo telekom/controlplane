@@ -59,7 +59,7 @@ func fillApprovalRequestInfo(ctx context.Context, obj *apiapi.RemoteApiSubscript
 	err = c.Get(ctx, apiSubscription.Status.ApprovalRequest.K8s(), approvalRequest)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
-			return errors.Wrapf(err, "failed to get approval %s", apiSubscription.Status.Approval.Name)
+			return errors.Wrapf(err, "failed to get approval request %s", apiSubscription.Status.ApprovalRequest.Name)
 		}
 		return nil
 	}
