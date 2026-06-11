@@ -9,17 +9,18 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -28,9 +29,9 @@ const (
 	GatewayConsumerName = "gateway"
 )
 
-var (
-	LabelFailoverSecondary = config.BuildLabelKey("failover.secondary")
-)
+const labelTrue = "true"
+
+var LabelFailoverSecondary = config.BuildLabelKey("failover.secondary")
 
 type CreateRouteOptions struct {
 	FailoverUpstreams   []apiapi.Upstream
@@ -147,9 +148,9 @@ func MakeRouteName(apiBasePath, realmName string) string {
 	return routeName
 }
 
-func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstreamZoneRef types.ObjectRef, apiBasePath, realmName string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
+func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef types.ObjectRef, apiBasePath, realmName string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	options := &CreateRouteOptions{}
 	for _, opt := range opts {
@@ -191,14 +192,14 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 			config.BuildLabelKey("type"):  "proxy",
 		}
 
-		downstream, err := downstreamRealm.AsDownstream(apiBasePath)
-		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+		downstream, downstreamErr := downstreamRealm.AsDownstream(apiBasePath)
+		if downstreamErr != nil {
+			return errors.Wrap(downstreamErr, "failed to create downstream")
 		}
 
-		upstream, err := AsUpstreamForProxyRoute(ctx, upstreamRealm, apiBasePath)
-		if err != nil {
-			return errors.Wrap(err, "failed to create upstream")
+		upstream, upstreamErr := AsUpstreamForProxyRoute(ctx, upstreamRealm, apiBasePath)
+		if upstreamErr != nil {
+			return errors.Wrap(upstreamErr, "failed to create upstream")
 		}
 
 		proxyRoute.Spec = gatewayapi.RouteSpec{
@@ -211,7 +212,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 			},
 		}
 
-		log.Info("Creating proxy route", "route", proxyRoute.Name, "namespace", proxyRoute.Namespace, "failover", options.HasFailover())
+		logger.Info("Creating proxy route", "route", proxyRoute.Name, "namespace", proxyRoute.Namespace, "failover", options.HasFailover())
 
 		if options.HasServiceRateLimit() {
 			proxyRoute.Spec.Traffic = gatewayapi.Traffic{
@@ -220,7 +221,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 		}
 
 		if options.IsFailoverSecondary() {
-			proxyRoute.Labels[LabelFailoverSecondary] = "true"
+			proxyRoute.Labels[LabelFailoverSecondary] = labelTrue
 
 			// A failover secondary route is the target of cross-zone proxy requests,
 			// so the gateway mesh-client must be allowed to access it.
@@ -231,9 +232,9 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 			failoverUpstreams := make([]gatewayapi.Upstream, 0, len(options.FailoverUpstreams))
 			for _, rawUpstream := range options.FailoverUpstreams {
-				failoverUpstream, err := AsUpstreamForRealRoute(ctx, rawUpstream.Url, rawUpstream.Weight)
-				if err != nil {
-					return errors.Wrapf(err, "failed to create failover upstream %s", rawUpstream.Url)
+				failoverUpstream, upstreamErr := AsUpstreamForRealRoute(ctx, rawUpstream.Url, rawUpstream.Weight)
+				if upstreamErr != nil {
+					return errors.Wrapf(upstreamErr, "failed to create failover upstream %s", rawUpstream.Url)
 				}
 				failoverUpstreams = append(failoverUpstreams, failoverUpstream)
 			}
@@ -254,11 +255,14 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 		if options.HasFailover() {
 			proxyRoute.Labels[config.BuildLabelKey("failover.zone")] = labelutil.NormalizeValue(options.FailoverZone.Name)
-			failoverUpstreamRealm, _, err := GetRealmForZone(ctx, options.FailoverZone, realmName)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get failover zone %s", options.FailoverZone.String())
+			failoverUpstreamRealm, _, getRealmErr := GetRealmForZone(ctx, options.FailoverZone, realmName)
+			if getRealmErr != nil {
+				return errors.Wrapf(getRealmErr, "failed to get failover zone %s", options.FailoverZone.String())
 			}
-			failoverUpstream, err := AsUpstreamForProxyRoute(ctx, failoverUpstreamRealm, apiBasePath)
+			failoverUpstream, upstreamErr := AsUpstreamForProxyRoute(ctx, failoverUpstreamRealm, apiBasePath)
+			if upstreamErr != nil {
+				return errors.Wrapf(upstreamErr, "failed to create failover upstream for zone %s", options.FailoverZone.String())
+			}
 
 			proxyRoute.Spec.Traffic = gatewayapi.Traffic{
 				Failover: &gatewayapi.Failover{
@@ -288,7 +292,7 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	if routeRef == nil {
 		return nil
 	}
-	log := log.FromContext(ctx).WithValues("route.name", routeRef.Name, "route.namespace", routeRef.Namespace)
+	logger := log.FromContext(ctx).WithValues("route.name", routeRef.Name, "route.namespace", routeRef.Namespace)
 
 	options := &CreateRouteOptions{}
 	for _, opt := range opts {
@@ -305,12 +309,12 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	}
 
 	if route.GetLabels()[config.BuildLabelKey("type")] == "real" { // DO NOT DELETE REAL ROUTES
-		log.V(1).Info("🫷 Not deleting route as it is a real route")
+		logger.V(1).Info("🫷 Not deleting route as it is a real route")
 		return nil
 	}
 
-	if route.GetLabels()[LabelFailoverSecondary] == "true" { // DO NOT DELETE FAILOVER ROUTES
-		log.V(1).Info("🫷 Not deleting route as it is a failover secondary")
+	if route.GetLabels()[LabelFailoverSecondary] == labelTrue { // DO NOT DELETE FAILOVER ROUTES
+		logger.V(1).Info("🫷 Not deleting route as it is a failover secondary")
 		return nil
 	}
 
@@ -327,17 +331,17 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	}
 
 	if len(apiSubscriptions.Items) > 1 {
-		log.Info("🫷 Not deleting route as more than 1 subscriptions exists")
+		logger.Info("🫷 Not deleting route as more than 1 subscriptions exists")
 		return nil
 	}
 
-	log.Info("🧹 Deleting route as no more subscriptions exist")
+	logger.Info("🧹 Deleting route as no more subscriptions exist")
 
 	err = scopedClient.Delete(ctx, route)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete route")
 	}
-	log.Info("✅ Successfully deleted obsolete route")
+	logger.Info("✅ Successfully deleted obsolete route")
 
 	return nil
 }
@@ -403,16 +407,16 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 			config.BuildLabelKey("type"):  "real",
 		}
 
-		downstream, err := downstreamRealm.AsDownstream(apiExposure.Spec.ApiBasePath)
-		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+		downstream, downstreamErr := downstreamRealm.AsDownstream(apiExposure.Spec.ApiBasePath)
+		if downstreamErr != nil {
+			return errors.Wrap(downstreamErr, "failed to create downstream")
 		}
 
 		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
 		for _, upstream := range apiExposure.Spec.Upstreams {
-			gatewayUpstream, err := AsUpstreamForRealRoute(ctx, upstream.Url, upstream.Weight)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create upstream for URL %s", upstream.Url)
+			gatewayUpstream, upstreamErr := AsUpstreamForRealRoute(ctx, upstream.Url, upstream.Weight)
+			if upstreamErr != nil {
+				return errors.Wrapf(upstreamErr, "failed to create upstream for URL %s", upstream.Url)
 			}
 			gatewayUpstreams = append(gatewayUpstreams, gatewayUpstream)
 		}
@@ -457,7 +461,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 	return route, nil
 }
 
-func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
+func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef, routeRef types.ObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	options := &CreateConsumeRouteOptions{}
@@ -506,6 +510,7 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 	return routeConsumer, nil
 }
 
+//nolint:nestif // Security mapping mirrors the nested API security shape.
 func mapSecurity(apiSecurity *apiapi.Security) *gatewayapi.Security {
 	if apiSecurity == nil {
 		return nil

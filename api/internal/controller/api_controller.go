@@ -7,10 +7,6 @@ package controller
 import (
 	"context"
 
-	apiapi "github.com/telekom/controlplane/api/api/v1"
-	"github.com/telekom/controlplane/api/internal/handler/api"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,6 +17,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/api"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // ApiReconciler reconciles a Api object
@@ -59,31 +60,33 @@ func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+//nolint:dupl // controller map helpers intentionally mirror each other
 func (r *ApiReconciler) MapApiToApi(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	api, ok := obj.(*apiapi.Api)
+	apiObj, ok := obj.(*apiapi.Api)
 	if !ok {
-		log.Info("object is not an API")
+		logger.Info("object is not an API")
 		return nil
 	}
 
 	list := &apiapi.ApiList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: api.Labels[cconfig.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:     api.Labels[apiapi.BasePathLabelKey],
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: apiObj.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     apiObj.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
-		log.Error(err, "failed to list API-Subscriptions")
+		logger.Error(err, "failed to list API-Subscriptions")
 		return nil
 	}
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		if api.UID == item.UID {
+	for i := range list.Items {
+		item := &list.Items[i]
+		if apiObj.UID == item.UID {
 			continue
 		}
-		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
 	}
 
 	return reqs

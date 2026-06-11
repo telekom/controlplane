@@ -10,9 +10,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/apisubscription/remote"
 	"github.com/telekom/controlplane/api/internal/handler/util"
+	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
@@ -20,24 +24,21 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	approvalapi "github.com/telekom/controlplane/approval/api/v1"
-	"github.com/telekom/controlplane/approval/api/v1/builder"
 )
 
 var _ handler.Handler[*apiapi.ApiSubscription] = (*ApiSubscriptionHandler)(nil)
 
 type ApiSubscriptionHandler struct{}
 
+//nolint:gocyclo,nestif // Reconciliation coordinates validation, approvals, and route provisioning.
 func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *apiapi.ApiSubscription) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	// Remote ApiSubscription handling
 	if remote.IsRemoteApiSubscription(apiSub) {
-		log.Info("ApiSubscription is remote")
+		logger.Info("ApiSubscription is remote")
 		return remote.HandleRemoteApiSubscription(ctx, apiSub)
 	}
 
@@ -123,7 +124,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			} else {
 				scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiSub.Spec.Security.M2M.Scopes)
 				if !scopesExist {
-					var message = fmt.Sprintf("Some defined scopes are not available. Available scopes: \"%s\". Unsupported scopes: \"%s\"",
+					message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
 						strings.Join(api.Spec.Oauth2Scopes, ", "),
 						strings.Join(invalidScopes, ", "),
 					)
@@ -135,7 +136,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			}
 		}
 
-		log.V(1).Info("✅ Scopes are valid and exist")
+		logger.V(1).Info("✅ Scopes are valid and exist")
 		apiSub.SetCondition(NewScopesAllowedCondition(apiSub, apiSub.Spec.Security.M2M.Scopes, true))
 		properties["scopes"] = apiSub.Spec.Security.M2M.Scopes
 	}
@@ -176,12 +177,12 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	switch res {
 	case builder.ApprovalResultRequestDenied:
-		log.Info("🛑 ApprovalRequest was denied. In this case we will not touch child resources")
+		logger.Info("🛑 ApprovalRequest was denied. In this case we will not touch child resources")
 		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalRequestDenied", "ApprovalRequest has been denied"))
 		apiSub.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
 		return nil
 	case builder.ApprovalResultPending:
-		log.Info("🫷 Approval is pending and we will wait for it")
+		logger.Info("🫷 Approval is pending and we will wait for it")
 		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval has not been approved"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Approval has not been approved"))
 		return nil
@@ -189,21 +190,21 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalDenied", "Approval has been denied"))
 		apiSub.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
-		deleted, err := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
-		if err != nil {
-			return errors.Wrapf(err, "Unable to cleanup consume routes for ApiSubscription:  %q in namespace: %q",
+		deleted, cleanupErr := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
+		if cleanupErr != nil {
+			return errors.Wrapf(cleanupErr, "Unable to cleanup consume routes for ApiSubscription:  %q in namespace: %q",
 				apiSub.Name, apiSub.Namespace)
 		}
-		log.Info("🧹 Approval was denied. Cleaning up Consumer of ApiSubscription", "deleted", deleted)
+		logger.Info("🧹 Approval was denied. Cleaning up Consumer of ApiSubscription", "deleted", deleted)
 
 		err = util.CleanupProxyRoute(ctx, apiSub.Status.Route)
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete route")
 		}
-		log.Info("🧹 Approval was denied. Cleaning up ProxyRoute of ApiSubscription")
+		logger.Info("🧹 Approval was denied. Cleaning up ProxyRoute of ApiSubscription")
 		return nil
 	case builder.ApprovalResultGranted:
-		log.Info("👌 Approval is granted and will continue with processing")
+		logger.Info("👌 Approval is granted and will continue with processing")
 	default:
 		return errors.Errorf("unknown approval-builder result %q", res)
 	}
@@ -219,35 +220,32 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	var routeRef *types.ObjectRef
 
-	if sameZoneAsExposure {
-		// Same zone: reference the real route from ApiExposure status
+	switch {
+	case sameZoneAsExposure:
 		if apiExposure.Status.Route == nil {
 			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the route"))
 			return nil
 		}
 		routeRef = apiExposure.Status.Route
-		log.V(1).Info("Referencing real route from ApiExposure", "route", routeRef.String())
-	} else if inProviderFailoverZone {
-		// Provider failover zone: reference the failover route from ApiExposure status
+		logger.V(1).Info("Referencing real route from ApiExposure", "route", routeRef.String())
+	case inProviderFailoverZone:
 		if apiExposure.Status.FailoverRoute == nil {
 			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the failover route"))
 			return nil
 		}
 		routeRef = apiExposure.Status.FailoverRoute
-		log.V(1).Info("Referencing provider failover route from ApiExposure", "route", routeRef.String())
-	} else {
-		// Cross-zone: find the proxy route for this subscriber zone in ApiExposure status
-		// Get the subscription zone to find the correct proxy route by namespace
-		zone, err := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())
-		if err != nil {
-			return errors.Wrapf(err, "failed to get subscription zone %s", apiSub.Spec.Zone.Name)
+		logger.V(1).Info("Referencing provider failover route from ApiExposure", "route", routeRef.String())
+	default:
+		subscriptionZone, getZoneErr := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())
+		if getZoneErr != nil {
+			return errors.Wrapf(getZoneErr, "failed to get subscription zone %s", apiSub.Spec.Zone.Name)
 		}
 
-		// Find the proxy route that matches our zone's namespace
 		var found bool
-		for _, proxyRoute := range apiExposure.Status.ProxyRoutes {
-			if proxyRoute.Namespace == zone.Status.Namespace {
-				routeRef = &proxyRoute
+		for i := range apiExposure.Status.ProxyRoutes {
+			proxyRoute := &apiExposure.Status.ProxyRoutes[i]
+			if proxyRoute.Namespace == subscriptionZone.Status.Namespace {
+				routeRef = proxyRoute
 				found = true
 				break
 			}
@@ -257,7 +255,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the proxy route for this zone"))
 			return nil
 		}
-		log.V(1).Info("Referencing proxy route from ApiExposure", "zone", apiSub.Spec.Zone.Name, "route", routeRef.String())
+		logger.V(1).Info("Referencing proxy route from ApiExposure", "zone", apiSub.Spec.Zone.Name, "route", routeRef.String())
 	}
 
 	apiSub.Status.Route = routeRef
@@ -290,50 +288,48 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			inProviderFailoverZone := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(subFailoverZone)
 
 			var failoverRouteRef types.ObjectRef
-			if sameZoneAsExposure {
-				// Reference the real route in exposure zone
-				zone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Zone.K8s())
-				if err != nil {
-					return errors.Wrapf(err, "failed to get exposure zone %s for failover", apiExposure.Spec.Zone.Name)
+			switch {
+			case sameZoneAsExposure:
+				exposureZone, getZoneErr := util.GetZone(ctx, scopedClient, apiExposure.Spec.Zone.K8s())
+				if getZoneErr != nil {
+					return errors.Wrapf(getZoneErr, "failed to get exposure zone %s for failover", apiExposure.Spec.Zone.Name)
 				}
 				failoverRouteRef = types.ObjectRef{
 					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
-					Namespace: zone.Status.Namespace,
+					Namespace: exposureZone.Status.Namespace,
 				}
-				log.V(1).Info("Referencing real route in failover zone (same as exposure)", "zone", subFailoverZone.Name)
-			} else if inProviderFailoverZone {
-				// Reference the provider failover route
-				failoverZone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Traffic.Failover.Zones[0].K8s())
-				if err != nil {
-					return errors.Wrapf(err, "failed to get provider failover zone %s", apiExposure.Spec.Traffic.Failover.Zones[0].Name)
-				}
-				failoverRouteRef = types.ObjectRef{
-					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
-					Namespace: failoverZone.Status.Namespace,
-				}
-				log.V(1).Info("Referencing provider failover route", "zone", subFailoverZone.Name)
-			} else {
-				// Reference the proxy route created by ApiExposure in subscriber failover zone
-				zone, err := util.GetZone(ctx, scopedClient, subFailoverZone.K8s())
-				if err != nil {
-					return errors.Wrapf(err, "failed to get subscriber failover zone %s", subFailoverZone.Name)
+				logger.V(1).Info("Referencing real route in failover zone (same as exposure)", "zone", subFailoverZone.Name)
+			case inProviderFailoverZone:
+				providerFailoverZone, getZoneErr := util.GetZone(ctx, scopedClient, apiExposure.Spec.Traffic.Failover.Zones[0].K8s())
+				if getZoneErr != nil {
+					return errors.Wrapf(getZoneErr, "failed to get provider failover zone %s", apiExposure.Spec.Traffic.Failover.Zones[0].Name)
 				}
 				failoverRouteRef = types.ObjectRef{
 					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
-					Namespace: zone.Status.Namespace,
+					Namespace: providerFailoverZone.Status.Namespace,
 				}
-				log.V(1).Info("Referencing proxy route created by ApiExposure for subscriber failover", "zone", subFailoverZone.Name)
+				logger.V(1).Info("Referencing provider failover route", "zone", subFailoverZone.Name)
+			default:
+				subscriberFailoverZone, getZoneErr := util.GetZone(ctx, scopedClient, subFailoverZone.K8s())
+				if getZoneErr != nil {
+					return errors.Wrapf(getZoneErr, "failed to get subscriber failover zone %s", subFailoverZone.Name)
+				}
+				failoverRouteRef = types.ObjectRef{
+					Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
+					Namespace: subscriberFailoverZone.Status.Namespace,
+				}
+				logger.V(1).Info("Referencing proxy route created by ApiExposure for subscriber failover", "zone", subFailoverZone.Name)
 			}
 
 			apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, failoverRouteRef)
 
 			// Create ConsumeRoute for the failover route
-			log.V(1).Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone.Name)
-			consumeRoute, err = util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, failoverRouteRef, apiSubApplication.Status.ClientId)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create failover ConsumeRoute for zone %s", subFailoverZone.Name)
+			logger.V(1).Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone.Name)
+			failoverConsumeRoute, createErr := util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, failoverRouteRef, apiSubApplication.Status.ClientId)
+			if createErr != nil {
+				return errors.Wrapf(createErr, "failed to create failover ConsumeRoute for zone %s", subFailoverZone.Name)
 			}
-			apiSub.Status.FailoverConsumeRoutes = append(apiSub.Status.FailoverConsumeRoutes, *types.ObjectRefFromObject(consumeRoute))
+			apiSub.Status.FailoverConsumeRoutes = append(apiSub.Status.FailoverConsumeRoutes, *types.ObjectRefFromObject(failoverConsumeRoute))
 		}
 	}
 
@@ -341,7 +337,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 
-	log.Info("✅ Successfully processed ApiSubscription")
+	logger.Info("✅ Successfully processed ApiSubscription")
 	return nil
 }
 

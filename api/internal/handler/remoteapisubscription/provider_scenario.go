@@ -9,37 +9,39 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/api/internal/handler/util"
-	"github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/util"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 )
 
 // handleProviderScenario handles the case where the RemoteApiSubscription is handled by this CP.
 // That means that the current CP needs to create an Application and an ApiSubscription.
+//
+//nolint:nestif // Provider flow updates child resources and mirrors readiness back to the remote CP.
 func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Context, obj *apiapi.RemoteApiSubscription) (err error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
 
 	// Handle it locally
-	log.V(1).Info("I need to handle this locally")
+	logger.V(1).Info("I need to handle this locally")
 
 	cleanup := func() error {
-		n, err := c.CleanupAll(ctx, client.OwnedBy(obj))
-		if err != nil {
-			return errors.Wrapf(err, "failed to cleanup all resources")
+		n, cleanupErr := c.CleanupAll(ctx, client.OwnedBy(obj))
+		if cleanupErr != nil {
+			return errors.Wrapf(cleanupErr, "failed to cleanup all resources")
 		}
-		log.V(1).Info("🧹 Cleaned up resources", "count", n)
+		logger.V(1).Info("🧹 Cleaned up resources", "count", n)
 
 		return nil
 	}
@@ -67,9 +69,9 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 	}
 
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(obj, application, c.Scheme())
-		if err != nil {
-			return errors.Wrapf(err, "failed to set owner reference")
+		setAppRefErr := controllerutil.SetControllerReference(obj, application, c.Scheme())
+		if setAppRefErr != nil {
+			return errors.Wrapf(setAppRefErr, "failed to set owner reference")
 		}
 
 		application.Labels = map[string]string{
@@ -114,9 +116,9 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 	}
 
 	mutator = func() error {
-		err := controllerutil.SetControllerReference(obj, apiSubscription, c.Scheme())
-		if err != nil {
-			return errors.Wrapf(err, "failed to set owner reference")
+		setSubRefErr := controllerutil.SetControllerReference(obj, apiSubscription, c.Scheme())
+		if setSubRefErr != nil {
+			return errors.Wrapf(setSubRefErr, "failed to set owner reference")
 		}
 		apiSubscription.Labels = map[string]string{
 			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
@@ -182,7 +184,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 		return errors.Wrapf(err, "failed to send status to remote CP")
 	}
 	if updated {
-		log.Info("🔄 RemoteApiSubscription status updated")
+		logger.Info("🔄 RemoteApiSubscription status updated")
 	}
 
 	return nil
