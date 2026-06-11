@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -24,7 +25,6 @@ import (
 	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	"github.com/telekom/controlplane/permission/internal/handler/permissionset"
-	"k8s.io/utils/ptr"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
