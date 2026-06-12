@@ -163,7 +163,7 @@ func makeReadyEventConfig(zoneName string, fullMesh bool, meshZones []string) ev
 	return ec
 }
 
-func makeReadyApplication(name, team, teamEmail, clientId string) *applicationv1.Application {
+func makeReadyApplication(name, team, clientId string) *applicationv1.Application {
 	app := &applicationv1.Application{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -171,8 +171,7 @@ func makeReadyApplication(name, team, teamEmail, clientId string) *applicationv1
 			UID:       k8stypes.UID(name + "-uid"),
 		},
 		Spec: applicationv1.ApplicationSpec{
-			Team:      team,
-			TeamEmail: teamEmail,
+			Team: team,
 		},
 		Status: applicationv1.ApplicationStatus{
 			ClientId: clientId,
@@ -425,8 +424,8 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
 		mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2) // exposure zone + subscription zone (same zone)
 
-		requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
-		providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
+		requestorApp := makeReadyApplication("requestor-app", "requester-team", "req-client-id")
+		providerApp := makeReadyApplication("provider-app", "provider-team", "prov-client-id")
 		mockGetApplication(requestorAppKey, requestorApp)
 		mockGetApplication(providerAppKey, providerApp)
 		mockScheme()
@@ -674,8 +673,8 @@ var _ = Describe("EventSubscriptionHandler", func() {
 				}).
 				Return(nil).Once()
 
-			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
-			providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
+			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req-client-id")
+			providerApp := makeReadyApplication("provider-app", "provider-team", "prov-client-id")
 			mockGetApplication(requestorAppKey, requestorApp)
 			mockGetApplication(providerAppKey, providerApp)
 			mockScheme()
@@ -722,8 +721,8 @@ var _ = Describe("EventSubscriptionHandler", func() {
 				}).
 				Return(nil).Once()
 
-			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
-			providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
+			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req-client-id")
+			providerApp := makeReadyApplication("provider-app", "provider-team", "prov-client-id")
 			mockGetApplication(requestorAppKey, requestorApp)
 			mockGetApplication(providerAppKey, providerApp)
 			mockScheme()
@@ -787,7 +786,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			exposure := makeReadyEventExposure(testEventType)
 			expoConfig := makeReadyEventConfig("expo-zone", true, nil)
 
-			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
+			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req-client-id")
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})

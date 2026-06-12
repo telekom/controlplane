@@ -163,16 +163,14 @@ var _ = Describe("ApprovalRequest Translator", func() {
 						},
 					},
 					Requester: approvalv1.Requester{
-						TeamName:  "narvi",
-						TeamEmail: "narvi@example.com",
-						Reason:    reason,
+						TeamName: "narvi",
+						Reason:   reason,
 						ApplicationRef: &ctypes.TypedObjectRef{
 							ObjectRef: ctypes.ObjectRef{Name: "consumer-app"},
 						},
 					},
 					Decider: approvalv1.Decider{
-						TeamName:  "provider-team",
-						TeamEmail: "provider@example.com",
+						TeamName: "provider-team",
 					},
 					Decisions: []approvalv1.Decision{
 						{Name: "Alice", Email: "alice@example.com", Comment: "approved"},
@@ -205,11 +203,9 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			Expect(data.Strategy).To(Equal("FOUR_EYES"))
 			Expect(data.TargetKind).To(Equal("ApiSubscription"))
 			Expect(data.Requester.TeamName).To(Equal("narvi"))
-			Expect(data.Requester.TeamEmail).To(Equal("narvi@example.com"))
 			Expect(*data.Requester.Reason).To(Equal("need access"))
 			Expect(*data.Requester.ApplicationName).To(Equal("consumer-app"))
 			Expect(data.Decider.TeamName).To(Equal("provider-team"))
-			Expect(*data.Decider.TeamEmail).To(Equal("provider@example.com"))
 			Expect(data.Decisions).To(HaveLen(1))
 			Expect(data.Decisions[0].Name).To(Equal("Alice"))
 			Expect(*data.Decisions[0].Email).To(Equal("alice@example.com"))

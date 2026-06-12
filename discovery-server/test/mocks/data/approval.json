@@ -24,8 +24,7 @@
       "namespace": "poc--eni--hyperion"
     },
     "requester": {
-      "teamName": "hyperion",
-      "teamEmail": "hyperion@telekom.de"
+      "teamName": "hyperion"
     }
   },
   "status": {

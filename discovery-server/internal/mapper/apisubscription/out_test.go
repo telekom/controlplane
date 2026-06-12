@@ -67,7 +67,6 @@ func TestMapResponse_ResolvedReferences(t *testing.T) {
 	app := &applicationv1.Application{}
 	app.Name = "my-app"
 	app.Namespace = "poc--eni--hyperion"
-	app.Spec.TeamEmail = "hyperion@telekom.de"
 
 	approval := &approvalv1.Approval{}
 	approval.Spec.State = approvalv1.ApprovalStateGranted
@@ -159,7 +158,6 @@ func TestMapResponse_NoApprovalReference(t *testing.T) {
 	app := &applicationv1.Application{}
 	app.Name = "my-app"
 	app.Namespace = "poc--eni--hyperion"
-	app.Spec.TeamEmail = "hyperion@telekom.de"
 
 	zoneStore := csmocks.NewMockObjectStore[*adminv1.Zone](t)
 	zoneStore.EXPECT().Get(mock.Anything, "poc", "dataplane1").Return(zone, nil)

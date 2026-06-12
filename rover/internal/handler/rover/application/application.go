@@ -94,7 +94,6 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 
 		application.Spec = applicationv1.ApplicationSpec{
 			Team:          team.Name,
-			TeamEmail:     team.Spec.Email,
 			Zone:          zoneRef,
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,

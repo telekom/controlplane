@@ -26,14 +26,12 @@ type ApprovalConfig {
 
 type RequesterInfo {
   teamName: String!
-  teamEmail: String!
   reason: String
   applicationName: String
 }
 
 type DeciderInfo {
   teamName: String!
-  teamEmail: String
 }
 
 type Decision {

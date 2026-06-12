@@ -35,8 +35,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 	approval := &approvalv1.Approval{}
 
 	decider := approvalv1.Decider{
-		TeamName:  "test--decider",
-		TeamEmail: "test@decider.com",
+		TeamName: "test--decider",
 		ApplicationRef: &ctypes.TypedObjectRef{
 			TypeMeta: metav1.TypeMeta{},
 			ObjectRef: ctypes.ObjectRef{
@@ -48,9 +47,8 @@ var _ = Describe("Approval Controller", Ordered, func() {
 	}
 
 	requester := approvalv1.Requester{
-		TeamName:  "test--requester",
-		TeamEmail: "max.mustermann@telekom.de",
-		Reason:    "I need access to this API!!",
+		TeamName: "test--requester",
+		Reason:   "I need access to this API!!",
 		ApplicationRef: &ctypes.TypedObjectRef{
 			TypeMeta: metav1.TypeMeta{},
 			ObjectRef: ctypes.ObjectRef{

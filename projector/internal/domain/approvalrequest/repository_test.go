@@ -162,8 +162,7 @@ var _ = Describe("ApprovalRequest Repository", func() {
 			Action:        "subscribe",
 			Strategy:      "FOUR_EYES",
 			Requester: model.RequesterInfo{
-				TeamName:  "narvi",
-				TeamEmail: "narvi@example.com",
+				TeamName: "narvi",
 			},
 			Decider: model.DeciderInfo{
 				TeamName: "provider-team",

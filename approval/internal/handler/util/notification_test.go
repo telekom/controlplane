@@ -38,7 +38,6 @@ var _ = Describe("Notification Utilities", func() {
 
 				requester := &approvalv1.Requester{
 					TeamName:   "platform--backend",
-					TeamEmail:  "team@example.com",
 					Reason:     "Need access",
 					Properties: runtime.RawExtension{Raw: propertiesJSON},
 					ApplicationRef: &ctypes.TypedObjectRef{
@@ -69,8 +68,7 @@ var _ = Describe("Notification Utilities", func() {
 		Context("when requester name contains group and team", func() {
 			It("should extract group and team from name", func() {
 				requester := &approvalv1.Requester{
-					TeamName:  "onsite-group--enemy-team",
-					TeamEmail: "team@example.com",
+					TeamName: "onsite-group--enemy-team",
 					ApplicationRef: &ctypes.TypedObjectRef{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "application.cp.ei.telekom.de/v1",
@@ -94,8 +92,7 @@ var _ = Describe("Notification Utilities", func() {
 		Context("when requester name does not contain separator", func() {
 			It("should use name for both group and team", func() {
 				requester := &approvalv1.Requester{
-					TeamName:  "single-name",
-					TeamEmail: "team@example.com",
+					TeamName: "single-name",
 					ApplicationRef: &ctypes.TypedObjectRef{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "application.cp.ei.telekom.de/v1",

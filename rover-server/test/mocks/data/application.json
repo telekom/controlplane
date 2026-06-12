@@ -18,7 +18,6 @@
     "needsConsumer": true,
     "secret": "abcdefghijklmnop",
     "team": "hyperion",
-    "teamEmail": "hyperion@telekom.de",
     "zone": {
       "name": "dataplane1",
       "namespace": "poc"

@@ -159,8 +159,7 @@ func mapStrategy(strategy string) string {
 // String fields are converted to *string where the model uses pointers.
 func mapRequester(r approvalv1.Requester) model.RequesterInfo {
 	info := model.RequesterInfo{
-		TeamName:  r.TeamName,
-		TeamEmail: r.TeamEmail,
+		TeamName: r.TeamName,
 	}
 	if r.Reason != "" {
 		info.Reason = &r.Reason
@@ -173,13 +172,9 @@ func mapRequester(r approvalv1.Requester) model.RequesterInfo {
 
 // mapDecider converts the CR Decider to the model DeciderInfo DTO.
 func mapDecider(d approvalv1.Decider) model.DeciderInfo {
-	info := model.DeciderInfo{
+	return model.DeciderInfo{
 		TeamName: d.TeamName,
 	}
-	if d.TeamEmail != "" {
-		info.TeamEmail = &d.TeamEmail
-	}
-	return info
 }
 
 // mapDecisions converts a slice of CR Decision to model Decision DTOs.

@@ -18,12 +18,6 @@ type ApplicationSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=64
 	Team string `json:"team"`
-	// TeamEmail is the email address of the team responsible for the application
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=64
-	// +kubebuilder:validation:Format=email
-	TeamEmail string `json:"teamEmail"`
 	// Secret is the secret used to authenticate the application
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1

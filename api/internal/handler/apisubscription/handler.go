@@ -103,7 +103,6 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	requester := &approvalapi.Requester{
 		TeamName:       apiSubApplication.Spec.Team,
-		TeamEmail:      apiSubApplication.Spec.TeamEmail,
 		ApplicationRef: types.TypedObjectRefFromObject(apiSubApplication, scopedClient.Scheme()),
 		Reason:         fmt.Sprintf("Team %s requested access to your API %s from zone %s", apiSubApplication.Spec.Team, api.Name, apiSub.Spec.Zone.Name),
 	}
@@ -152,7 +151,6 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 	decider := &approvalapi.Decider{
 		TeamName:       apiExpApplication.Spec.Team,
-		TeamEmail:      apiExpApplication.Spec.TeamEmail,
 		ApplicationRef: types.TypedObjectRefFromObject(apiExpApplication, scopedClient.Scheme()),
 	}
 

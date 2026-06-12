@@ -28,8 +28,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 	})
 
 	requester := approvalv1.Requester{
-		TeamName:  "test--requester",
-		TeamEmail: "test@requester.com",
+		TeamName: "test--requester",
 		Properties: runtime.RawExtension{
 			Raw: []byte(`{"scopes": ["test"]}`),
 		},
@@ -43,8 +42,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 	}
 
 	decider := approvalv1.Decider{
-		TeamName:  "test--decider",
-		TeamEmail: "test@decider.com",
+		TeamName: "test--decider",
 		ApplicationRef: &ctypes.TypedObjectRef{
 			TypeMeta: metav1.TypeMeta{},
 			ObjectRef: ctypes.ObjectRef{
@@ -107,10 +105,8 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 				g.Expect(a.Spec.Requester.Properties.Raw).NotTo(BeNil())
 				g.Expect(a.Spec.Requester.TeamName).To(Equal("test--requester"))
-				g.Expect(a.Spec.Requester.TeamEmail).To(Equal("test@requester.com"))
 
 				g.Expect(a.Spec.Decider.TeamName).To(Equal("test--decider"))
-				g.Expect(a.Spec.Decider.TeamEmail).To(Equal("test@decider.com"))
 
 				By("Checking the AUTO-approved decision was carried to the Approval")
 				g.Expect(a.Spec.Decisions).To(HaveLen(1))

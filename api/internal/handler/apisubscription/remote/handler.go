@@ -83,8 +83,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 			Requester: apiapi.RemoteRequester{
 				Application: owner.Spec.Requestor.Application.Name,
 				Team: apiapi.RemoteTeam{
-					Name:  application.Spec.Team,
-					Email: application.Spec.TeamEmail,
+					Name: application.Spec.Team,
 				},
 			},
 		}

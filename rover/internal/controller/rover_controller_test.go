@@ -134,7 +134,6 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(application.Spec.NeedsConsumer).To(Equal(true))
 				g.Expect(application.Spec.Secret).To(Not(BeEmpty()))
 				g.Expect(application.Spec.Team).To(Equal(team.Name))
-				g.Expect(application.Spec.TeamEmail).To(Equal(team.Spec.Email))
 				g.Expect(application.Spec.Secret).To(Equal("topsecret"))
 
 				apiExposure := &apiapi.ApiExposure{}

@@ -574,29 +574,6 @@ func (ec *executionContext) fieldContext_DeciderInfo_teamName(_ context.Context,
 	return graphql.NewScalarFieldContext("DeciderInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _DeciderInfo_teamEmail(ctx context.Context, field graphql.CollectedField, obj *model.DeciderInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_DeciderInfo_teamEmail(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.TeamEmail, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_DeciderInfo_teamEmail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("DeciderInfo", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
 func (ec *executionContext) _Decision_name(ctx context.Context, field graphql.CollectedField, obj *model.Decision) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1081,29 +1058,6 @@ func (ec *executionContext) _RequesterInfo_teamName(ctx context.Context, field g
 	)
 }
 func (ec *executionContext) fieldContext_RequesterInfo_teamName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("RequesterInfo", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _RequesterInfo_teamEmail(ctx context.Context, field graphql.CollectedField, obj *model.RequesterInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_RequesterInfo_teamEmail(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.TeamEmail, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_RequesterInfo_teamEmail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("RequesterInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -1790,8 +1744,6 @@ func (ec *executionContext) _DeciderInfo(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "teamEmail":
-			out.Values[i] = ec._DeciderInfo_teamEmail(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2128,11 +2080,6 @@ func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.Selectio
 			out.Values[i] = graphql.MarshalString("RequesterInfo")
 		case "teamName":
 			out.Values[i] = ec._RequesterInfo_teamName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "teamEmail":
-			out.Values[i] = ec._RequesterInfo_teamEmail(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

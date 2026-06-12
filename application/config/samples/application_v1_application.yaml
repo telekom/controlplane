@@ -12,7 +12,6 @@ metadata:
   name: application-sample
 spec:
   team: hyperion
-  teamEmail: DTIT_ENI_Hub_Team_Hyperion@telekom.de
   secret: c6283fd0-77f2-452c-8437-4882cffde8e1
   needsClient: true
   zone:

@@ -33,9 +33,8 @@ var _ = Describe("ApplicationK8sService", func() {
 			},
 		},
 		Spec: applicationv1.ApplicationSpec{
-			Team:      "team-alpha",
-			TeamEmail: "alpha@example.com",
-			Secret:    "$<some-secret-ref>",
+			Team:   "team-alpha",
+			Secret: "$<some-secret-ref>",
 		},
 	}
 

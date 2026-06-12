@@ -79,7 +79,6 @@ These placeholders are available in secret rotation templates:
 | ----------- | ----------- |
 | `{{.application}}` | Application name |
 | `{{.team}}` | Team name |
-| `{{.teamEmail}}` | Team notification email |
 | `{{.environment}}` | Environment name |
 | `{{.currentExpiresAt}}` | Expiration date of the current (new) secret |
 | `{{.rotatedExpiresAt}}` | Date when the old secret stops being valid (grace period end) |

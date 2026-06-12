@@ -61,9 +61,8 @@ var _ = Describe("Notification Helpers", func() {
 				UID:       "test-uid",
 			},
 			Spec: applicationv1.ApplicationSpec{
-				Team:      "test-team",
-				TeamEmail: "team@example.com",
-				Secret:    "$<ref:secret>",
+				Team:   "test-team",
+				Secret: "$<ref:secret>",
 				Zone: commontypes.ObjectRef{
 					Name:      "test-zone",
 					Namespace: "test-ns",

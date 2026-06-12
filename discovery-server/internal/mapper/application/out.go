@@ -5,8 +5,6 @@
 package application
 
 import (
-	openapi_types "github.com/oapi-codegen/runtime/types"
-
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
@@ -23,7 +21,6 @@ func MapResponse(in *applicationv1.Application) api.ApplicationResponse {
 		Team: api.Team{
 			Hub:      nsInfo.Group,
 			Name:     in.Spec.Team,
-			Email:    openapi_types.Email(in.Spec.TeamEmail),
 			Category: "", // Deferred — not in CRD
 		},
 		Zone:   in.Spec.Zone.Name,
