@@ -3,5 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resources:
-- allow-webhook-traffic.yaml
-- allow-metrics-traffic.yaml
+- certificate-webhook.yaml
+- certificate-metrics.yaml
+
+configurations:
+- kustomizeconfig.yaml
