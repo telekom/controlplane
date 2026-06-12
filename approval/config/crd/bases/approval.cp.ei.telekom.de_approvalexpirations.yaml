@@ -25,7 +25,7 @@ spec:
     - description: When the approval expires
       jsonPath: .spec.expiration
       name: Expiration
-      type: date
+      type: string
     name: v1
     schema:
       openAPIV3Schema:

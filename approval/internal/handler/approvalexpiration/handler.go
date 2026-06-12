@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -49,6 +50,9 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 	// Only process when approval is active (Granted or Suspended)
 	if approval.Spec.State != v1.ApprovalStateGranted && approval.Spec.State != v1.ApprovalStateSuspended {
 		logger.V(1).Info("Skipping expiration handler: approval is not in an active state", "state", approval.Spec.State)
+		ae.SetCondition(condition.NewDoneProcessingCondition("ApprovalExpiration processed"))
+		ae.SetCondition(
+			condition.NewReadyCondition("Ready", "ApprovalExpiration processed successfully - parent approval is not active (Granted or Suspended)"))
 		return nil
 	}
 
@@ -58,6 +62,12 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 		logger.Info("Approval has expired, transitioning to Expired state", "expiration", ae.Spec.Expiration.Time)
 		_, err := c.CreateOrUpdate(ctx, approval, func() error {
 			approval.Spec.State = v1.ApprovalStateExpired
+			approval.Spec.Decisions = append(approval.Spec.Decisions, v1.Decision{
+				Name:           v1.SystemDecisionName,
+				Comment:        fmt.Sprintf("Approval expired after reaching expiration deadline %s", ae.Spec.Expiration.Format(time.RFC3339)),
+				Timestamp:      &metav1.Time{Time: now},
+				ResultingState: v1.ApprovalStateExpired,
+			})
 			return nil
 		})
 		if err != nil {
@@ -86,6 +96,10 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 		delay = time.Second
 	}
 	contextutil.SetRequeueAfter(ctx, delay)
+
+	ae.SetCondition(condition.NewDoneProcessingCondition("ApprovalExpiration processed"))
+	ae.SetCondition(
+		condition.NewReadyCondition("Ready", "ApprovalExpiration processed successfully"))
 
 	return nil
 }

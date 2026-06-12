@@ -45,7 +45,7 @@ type ApprovalExpirationStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Approval",type="string",JSONPath=".spec.approval.name",description="The parent Approval"
-// +kubebuilder:printcolumn:name="Expiration",type="date",JSONPath=".spec.expiration",description="When the approval expires"
+// +kubebuilder:printcolumn:name="Expiration",type="string",JSONPath=".spec.expiration",description="When the approval expires"
 
 // ApprovalExpiration is the Schema for the approvalexpirations API.
 type ApprovalExpiration struct {
