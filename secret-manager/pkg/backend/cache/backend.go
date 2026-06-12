@@ -6,6 +6,7 @@ package cache
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
@@ -18,10 +19,11 @@ import (
 var _ backend.Backend[backend.SecretId, backend.Secret[backend.SecretId]] = (*CachedBackend[backend.SecretId, backend.Secret[backend.SecretId]])(nil)
 
 type CachedBackend[T backend.SecretId, S backend.Secret[T]] struct {
-	Backend backend.Backend[T, S]
-	Cache   *ristretto.Cache[string, S]
-	ttl     time.Duration
-	group   singleflight.Group
+	Backend  backend.Backend[T, S]
+	Cache    *ristretto.Cache[string, S]
+	ttl      time.Duration
+	group    singleflight.Group
+	children sync.Map // parentCacheKey -> *sync.Map (childCacheKey -> struct{})
 }
 
 type CacheOptions struct {
@@ -101,12 +103,45 @@ func (c *CachedBackend[T, S]) invalidateParent(id T) {
 	}
 }
 
+// registerChild records a sub-secret's cache key under its parent so that
+// the sub-secret can be invalidated when the parent is updated.
+func (c *CachedBackend[T, S]) registerChild(id T) {
+	if id.SubPath() == backend.NoSubPath {
+		return
+	}
+	parentKey := id.ParentId().CacheKey()
+	childKey := id.CacheKey()
+	actual, _ := c.children.LoadOrStore(parentKey, &sync.Map{})
+	actual.(*sync.Map).Store(childKey, struct{}{})
+}
+
+// invalidateChildren removes all cached sub-secret entries derived from a parent
+// secret when the parent is written or deleted. This prevents stale reads of
+// sub-secrets after the parent document is updated directly.
+func (c *CachedBackend[T, S]) invalidateChildren(id T) {
+	if id.SubPath() != backend.NoSubPath {
+		return
+	}
+	parentKey := id.CacheKey()
+	childMap, ok := c.children.LoadAndDelete(parentKey)
+	if !ok {
+		return
+	}
+	childMap.(*sync.Map).Range(func(key, _ any) bool {
+		childKey := key.(string)
+		c.group.Forget(childKey)
+		c.Cache.Del(childKey)
+		return true
+	})
+}
+
 // Delete implements backend.Backend.
 func (c *CachedBackend[T, S]) Delete(ctx context.Context, id T) error {
 	cacheKey := id.CacheKey()
 	c.group.Forget(cacheKey)
 	c.Cache.Del(cacheKey)
 	c.invalidateParent(id)
+	c.invalidateChildren(id)
 	return c.Backend.Delete(ctx, id)
 }
 
@@ -152,6 +187,7 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	if !added {
 		log.Info("Failed to add item to cache", "id", cacheKey)
 	}
+	c.registerChild(id)
 	// Always return a copy since singleflight shares the result across callers
 	return item.Copy().(S), nil
 }
@@ -199,7 +235,9 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 		log.Info("Failed to add item to cache", "id", cacheKey)
 	}
 	c.group.Forget(cacheKey)
+	c.registerChild(id)
 	c.invalidateParent(id)
+	c.invalidateChildren(id)
 
 	return item, nil
 }
