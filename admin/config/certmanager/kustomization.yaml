@@ -4,7 +4,6 @@
 
 resources:
 - certificate-webhook.yaml
-- certificate-metrics.yaml
 
 configurations:
 - kustomizeconfig.yaml
