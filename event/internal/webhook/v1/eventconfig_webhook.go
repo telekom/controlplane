@@ -14,9 +14,11 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
@@ -31,10 +33,15 @@ var log = logf.Log.WithName("eventconfig-resource")
 func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsapi.SecretManager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &eventv1.EventConfig{}).
 		WithValidator(&EventConfigCustomValidator{}).
-		WithDefaulter(&EventConfigCustomDefaulter{secretManager}).
+		WithDefaulter(&EventConfigCustomDefaulter{
+			reader:        mgr.GetClient(),
+			secretManager: secretManager,
+		}).
 		Complete()
 }
 
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
 // +kubebuilder:webhook:path=/mutate-event-cp-ei-telekom-de-v1-eventconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=create;update,versions=v1,name=meventconfig-v1.kb.io,admissionReviewVersions=v1
 
 // EventConfigCustomDefaulter struct is responsible for setting default values on the custom resource of the
@@ -43,6 +50,7 @@ func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsa
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as it is used only for temporary operations and does not need to be deeply copied.
 type EventConfigCustomDefaulter struct {
+	reader        client.Reader
 	secretManager secretsapi.SecretManager
 }
 
@@ -172,6 +180,22 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 	meshClient := &eventCfg.Spec.Mesh.Client
 	if meshClient.ClientId == "" {
 		meshClient.ClientId = util.MeshClientName
+	}
+
+	// Resolve realm references from the Zone if not explicitly specified.
+	if adminClient.Realm.IsEmpty() || meshClient.Realm.IsEmpty() {
+		zone := &adminv1.Zone{}
+		if err = d.reader.Get(ctx, eventCfg.Spec.Zone.K8s(), zone); err != nil {
+			return errors.Wrapf(err, "failed to get Zone %q for realm defaulting", eventCfg.Spec.Zone.String())
+		}
+		if adminClient.Realm.IsEmpty() && zone.Status.InternalIdentityRealm != nil {
+			adminClient.Realm = *zone.Status.InternalIdentityRealm
+			log.Info("Defaulted admin client realm from zone", "realm", adminClient.Realm.String())
+		}
+		if meshClient.Realm.IsEmpty() && zone.Status.IdentityRealm != nil {
+			meshClient.Realm = *zone.Status.IdentityRealm
+			log.Info("Defaulted mesh client realm from zone", "realm", meshClient.Realm.String())
+		}
 	}
 
 	// On UPDATE, preserve existing secrets when the new value is empty.
