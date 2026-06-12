@@ -14,9 +14,11 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
@@ -31,10 +33,15 @@ var log = logf.Log.WithName("eventconfig-resource")
 func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsapi.SecretManager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &eventv1.EventConfig{}).
 		WithValidator(&EventConfigCustomValidator{}).
-		WithDefaulter(&EventConfigCustomDefaulter{secretManager}).
+		WithDefaulter(&EventConfigCustomDefaulter{
+			reader:        mgr.GetClient(),
+			secretManager: secretManager,
+		}).
 		Complete()
 }
 
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
 // +kubebuilder:webhook:path=/mutate-event-cp-ei-telekom-de-v1-eventconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=create;update,versions=v1,name=meventconfig-v1.kb.io,admissionReviewVersions=v1
 
 // EventConfigCustomDefaulter struct is responsible for setting default values on the custom resource of the
@@ -43,6 +50,7 @@ func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsa
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as it is used only for temporary operations and does not need to be deeply copied.
 type EventConfigCustomDefaulter struct {
+	reader        client.Reader
 	secretManager secretsapi.SecretManager
 }
 
@@ -157,6 +165,13 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 
 	log.Info("Defaulting for EventConfig", "name", eventCfg.GetName())
 
+	// Initialize Mesh with full-mesh defaults if not provided.
+	if eventCfg.Spec.Mesh == nil {
+		eventCfg.Spec.Mesh = &eventv1.MeshConfig{
+			FullMesh: true,
+		}
+	}
+
 	adminClient := &eventCfg.Spec.Admin.Client
 	if adminClient.ClientId == "" {
 		adminClient.ClientId = util.AdminClientName
@@ -167,11 +182,29 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 		meshClient.ClientId = util.MeshClientName
 	}
 
+	// Resolve realm references from the Zone if not explicitly specified.
+	if adminClient.Realm.IsEmpty() || meshClient.Realm.IsEmpty() {
+		zone := &adminv1.Zone{}
+		if err = d.reader.Get(ctx, eventCfg.Spec.Zone.K8s(), zone); err != nil {
+			return errors.Wrapf(err, "failed to get Zone %q for realm defaulting", eventCfg.Spec.Zone.String())
+		}
+		if adminClient.Realm.IsEmpty() && zone.Status.InternalIdentityRealm != nil {
+			adminClient.Realm = *zone.Status.InternalIdentityRealm
+			log.Info("Defaulted admin client realm from zone", "realm", adminClient.Realm.String())
+		}
+		if meshClient.Realm.IsEmpty() && zone.Status.IdentityRealm != nil {
+			meshClient.Realm = *zone.Status.IdentityRealm
+			log.Info("Defaulted mesh client realm from zone", "realm", meshClient.Realm.String())
+		}
+	}
+
 	// On UPDATE, preserve existing secrets when the new value is empty.
 	// This prevents accidental secret regeneration when users omit the field.
 	if oldCfg, isUpdate := getOldEventConfig(ctx); isUpdate {
 		adminClient.ClientSecret = resolveSecretForUpdate(adminClient.ClientSecret, oldCfg.Spec.Admin.Client.ClientSecret)
-		meshClient.ClientSecret = resolveSecretForUpdate(meshClient.ClientSecret, oldCfg.Spec.Mesh.Client.ClientSecret)
+		if oldCfg.Spec.Mesh != nil {
+			meshClient.ClientSecret = resolveSecretForUpdate(meshClient.ClientSecret, oldCfg.Spec.Mesh.Client.ClientSecret)
+		}
 	}
 
 	if config.FeatureSecretManager.IsEnabled() {
@@ -240,14 +273,19 @@ func (v *EventConfigCustomValidator) ValidateCreateOrUpdate(ctx context.Context,
 
 	valErr := cerrors.NewValidationError(eventv1.GroupVersion.WithKind("EventConfig").GroupKind(), eventCfg)
 
+	// Realm fields are optional: when empty, the handler resolves them
+	// from the Zone's identity realms (InternalIdentityRealm for admin, IdentityRealm for mesh).
+	// However, if a realm is partially specified (only name or only namespace), that is invalid.
 	adminClient := eventCfg.Spec.Admin.Client
-	if adminClient.Realm.IsEmpty() {
-		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("admin").Child("realm"), adminClient.Realm, "realm must be specified for admin client")
+	if !adminClient.Realm.IsEmpty() && (adminClient.Realm.Name == "" || adminClient.Realm.Namespace == "") {
+		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("client").Child("realm"), adminClient.Realm, "realm must have both name and namespace if specified")
 	}
 
-	meshClient := eventCfg.Spec.Mesh.Client
-	if meshClient.Realm.IsEmpty() {
-		valErr.AddInvalidError(field.NewPath("spec").Child("mesh").Child("mesh").Child("realm"), meshClient.Realm, "realm must be specified for mesh client")
+	if eventCfg.Spec.Mesh != nil {
+		meshClient := eventCfg.Spec.Mesh.Client
+		if !meshClient.Realm.IsEmpty() && (meshClient.Realm.Name == "" || meshClient.Realm.Namespace == "") {
+			valErr.AddInvalidError(field.NewPath("spec").Child("mesh").Child("client").Child("realm"), meshClient.Realm, "realm must have both name and namespace if specified")
+		}
 	}
 
 	return valErr.BuildWarnings(), valErr.BuildError()

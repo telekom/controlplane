@@ -48,7 +48,7 @@ var _ = Describe("EventConfig", func() {
 						Name:      "zone-a",
 						Namespace: "default",
 					},
-					Mesh: v1.MeshConfig{
+					Mesh: &v1.MeshConfig{
 						FullMesh:  false,
 						ZoneNames: []string{"zone-b", "zone-c"},
 					},
@@ -76,6 +76,11 @@ var _ = Describe("EventConfig", func() {
 		It("returns false with empty ZoneNames, FullMesh false, and a different zone", func() {
 			config.Spec.Mesh.ZoneNames = nil
 			Expect(config.SupportsZone("zone-x")).To(BeFalse())
+		})
+
+		It("returns true when Mesh is nil (defaults to full mesh)", func() {
+			config.Spec.Mesh = nil
+			Expect(config.SupportsZone("zone-x")).To(BeTrue())
 		})
 	})
 })

@@ -48,6 +48,20 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
+					Gateway: adminv1.GatewayConfig{
+						Admin: adminv1.GatewayAdminConfig{
+							Url: "http://gateway-admin.test.local:8001",
+						},
+					},
+					IdentityProvider: adminv1.IdentityProviderConfig{
+						Url: "http://idp.test.local:8080",
+						Admin: adminv1.IdentityProviderAdminConfig{
+							Url: "http://idp-admin.test.local:8080",
+						},
+					},
+					Redis: adminv1.RedisConfig{
+						Host: "redis://redis.test.local:6379",
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, zoneA)).To(Succeed())
@@ -63,6 +77,20 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
+					Gateway: adminv1.GatewayConfig{
+						Admin: adminv1.GatewayAdminConfig{
+							Url: "http://gateway-admin.test.local:8001",
+						},
+					},
+					IdentityProvider: adminv1.IdentityProviderConfig{
+						Url: "http://idp.test.local:8080",
+						Admin: adminv1.IdentityProviderAdminConfig{
+							Url: "http://idp-admin.test.local:8080",
+						},
+					},
+					Redis: adminv1.RedisConfig{
+						Host: "redis://redis.test.local:6379",
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, zoneB)).To(Succeed())

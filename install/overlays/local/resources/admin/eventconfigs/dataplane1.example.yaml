@@ -17,25 +17,9 @@ spec:
     name: dataplane1
     namespace: controlplane
 
-  mesh:
-    fullMesh: true
-
-    client:
-      # Realm reference — must match an existing Realm CR (1:1 relationship).
-      realm:
-        name: controlplane
-        namespace: controlplane--dataplane1
-
   # Admin backend (quasar configuration API).
   admin:
     url: https://my-quasar-admin.example.com/
-
-    client:
-      clientId: horizon-quasar
-      # Realm reference — must match an existing Realm CR (1:1 relationship).
-      realm:
-        name: controlplane
-        namespace: controlplane--dataplane1
 
   # Used as the upstream for the SSE gateway Route created by EventExposure.
   serverSendEventUrl: "https://my-tasse.example.com/v1/poc/events"
@@ -44,3 +28,20 @@ spec:
   publishEventUrl: "https://my-producer.example.com/v1/poc/events"
  
   voyagerApiUrl: https://my-voyager-api.example.com/
+
+  ## --- Optional fields (shown below with explicit values for reference) ---
+  ## All fields below are auto-resolved if omitted:
+  ##
+  ## mesh:
+  ##   fullMesh: true                         # defaults to true
+  ##   client:
+  ##     realm:                               # defaults to zone's default identity realm
+  ##       name: controlplane
+  ##       namespace: controlplane--dataplane1
+  ##
+  ## admin.client:
+  ##   clientId: admin--controlplane-client    # auto-generated
+  ##   clientSecret: ...                       # auto-generated
+  ##   realm:                                  # defaults to zone's internal identity realm
+  ##     name: rover
+  ##     namespace: controlplane--dataplane1

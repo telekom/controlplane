@@ -39,6 +39,20 @@ func CreateZone(name string) *adminapi.Zone {
 		},
 		Spec: adminapi.ZoneSpec{
 			Visibility: adminapi.ZoneVisibilityWorld,
+			Gateway: adminapi.GatewayConfig{
+				Admin: adminapi.GatewayAdminConfig{
+					Url: "http://gateway-admin.test.local:8001",
+				},
+			},
+			IdentityProvider: adminapi.IdentityProviderConfig{
+				Url: "http://idp.test.local:8080",
+				Admin: adminapi.IdentityProviderAdminConfig{
+					Url: "http://idp-admin.test.local:8080",
+				},
+			},
+			Redis: adminapi.RedisConfig{
+				Host: "redis://redis.test.local:6379",
+			},
 		},
 	}
 

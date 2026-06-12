@@ -32,4 +32,4 @@
   value:
     name: webhook-certs
     secret:
-      secretName: event-webhook-server-cert
+      secretName: admin-webhook-server-cert

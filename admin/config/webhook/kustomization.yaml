@@ -3,7 +3,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resources:
-- certificate-webhook.yaml
-
-configurations:
-- kustomizeconfig.yaml
+- manifests.yaml
+- service.yaml

@@ -19,6 +19,9 @@ const (
 )
 
 type RedisConfig struct {
+	// Host is the Redis host (including scheme, e.g. redis://redis-master:6379)
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=uri
 	Host      string `json:"host"`
 	Port      int    `json:"port"`
 	Password  string `json:"password"`
@@ -26,10 +29,17 @@ type RedisConfig struct {
 }
 
 type IdentityProviderAdminConfig struct {
-	Url      *string `json:"url,omitempty"`
-	ClientId string  `json:"clientId"`
-	UserName string  `json:"userName"`
-	Password string  `json:"password"`
+	// Url is the base URL of the identity provider admin API.
+	// If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Format=uri
+	Url *string `json:"url,omitempty"`
+	// ClientId is the client ID to authenticate with the identity provider admin API.
+	ClientId string `json:"clientId"`
+	// UserName is the username to authenticate with the identity provider admin API.
+	UserName string `json:"userName"`
+	// Password is the password to authenticate with the identity provider admin API.
+	Password string `json:"password"`
 }
 
 type SecretRotationConfig struct {
@@ -59,21 +69,40 @@ type SecretRotationConfig struct {
 
 type IdentityProviderConfig struct {
 	Admin IdentityProviderAdminConfig `json:"admin"`
-	Url   string                      `json:"url"`
+	// Url is the base URL of the identity provider.
+	// It is used to construct the issuer URLs for the gateway realms and to obtain tokens for the gateway admin API if TokenUrl is not set.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=uri
+	Url string `json:"url"`
 
 	// SecretRotation contains the config for rotating secrets related to the default identity provider realm of this zone.
 	// If not set, secret rotation will be disabled.
 	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
 }
 
+// GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
+// Most of it can be optional if the Gateway was setup to support it, then only the URL is required.
 type GatewayAdminConfig struct {
-	ClientSecret string  `json:"clientSecret"`
-	Url          *string `json:"url,omitempty"`
+	// URL of the gateway admin API.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=uri
+	Url string `json:"url"`
+
+	// ClientId of the admin client.
+	// If empty, a managed client with the default name will be used.
+	// +kubebuilder:validation:Optional
+	ClientId *string `json:"clientId,omitempty"`
+	// ClientSecret of the admin client
+	// If empty, a managed client secret will be generated.
+	// +kubebuilder:validation:Optional
+	ClientSecret *string `json:"clientSecret,omitempty"`
 }
 
 type GatewayConfig struct {
 	Admin GatewayAdminConfig `json:"admin"`
-	Url   string             `json:"url"`
+
+	Url string `json:"url"`
+
 	// CircuitBreaker flag that controls if circuit breaker should be enabled on this zone. the config of the CB itself comes from hardcoded values, not configurable
 	CircuitBreaker bool `json:"circuitBreaker"`
 }
@@ -223,10 +252,11 @@ type ZoneStatus struct {
 	IdentityRealm         *types.ObjectRef `json:"identityRealm,omitempty"`
 	InternalIdentityRealm *types.ObjectRef `json:"internalIdentityRealm,omitempty"`
 
-	Gateway         *types.ObjectRef `json:"gateway,omitempty"`
-	GatewayRealm    *types.ObjectRef `json:"gatewayRealm,omitempty"`
-	GatewayClient   *types.ObjectRef `json:"gatewayClient,omitempty"`
-	GatewayConsumer *types.ObjectRef `json:"gatewayConsumer,omitempty"`
+	Gateway            *types.ObjectRef `json:"gateway,omitempty"`
+	GatewayRealm       *types.ObjectRef `json:"gatewayRealm,omitempty"`
+	GatewayClient      *types.ObjectRef `json:"gatewayClient,omitempty"`
+	GatewayAdminClient *types.ObjectRef `json:"gatewayAdminClient,omitempty"`
+	GatewayConsumer    *types.ObjectRef `json:"gatewayConsumer,omitempty"`
 
 	TeamApiIdentityRealm *types.ObjectRef  `json:"teamApiIdentityRealm,omitempty"`
 	TeamApiGatewayRealm  *types.ObjectRef  `json:"teamApiGatewayRealm,omitempty"`
@@ -297,6 +327,9 @@ type FeatureName string
 const (
 	// FeatureSecretRotation indicates that secret rotation is enabled for the zone.
 	FeatureSecretRotation FeatureName = "SecretRotation"
+
+	// FeaturePermissions indicates that permission service integration is enabled for the zone.
+	FeaturePermissions FeatureName = "Permissions"
 )
 
 type Feature struct {

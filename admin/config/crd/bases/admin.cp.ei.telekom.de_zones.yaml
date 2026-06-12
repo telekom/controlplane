@@ -90,13 +90,26 @@ spec:
               gateway:
                 properties:
                   admin:
+                    description: |-
+                      GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
+                      Most of it can be optional if the Gateway was setup to support it, then only the URL is required.
                     properties:
+                      clientId:
+                        description: |-
+                          ClientId of the admin client.
+                          If empty, a managed client with the default name will be used.
+                        type: string
                       clientSecret:
+                        description: |-
+                          ClientSecret of the admin client
+                          If empty, a managed client secret will be generated.
                         type: string
                       url:
+                        description: URL of the gateway admin API.
+                        format: uri
                         type: string
                     required:
-                    - clientSecret
+                    - url
                     type: object
                   circuitBreaker:
                     description: CircuitBreaker flag that controls if circuit breaker
@@ -115,12 +128,22 @@ spec:
                   admin:
                     properties:
                       clientId:
+                        description: ClientId is the client ID to authenticate with
+                          the identity provider admin API.
                         type: string
                       password:
+                        description: Password is the password to authenticate with
+                          the identity provider admin API.
                         type: string
                       url:
+                        description: |-
+                          Url is the base URL of the identity provider admin API.
+                          If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
+                        format: uri
                         type: string
                       userName:
+                        description: UserName is the username to authenticate with
+                          the identity provider admin API.
                         type: string
                     required:
                     - clientId
@@ -184,6 +207,10 @@ spec:
                     - notificationThresholds
                     type: object
                   url:
+                    description: |-
+                      Url is the base URL of the identity provider.
+                      It is used to construct the issuer URLs for the gateway realms and to obtain tokens for the gateway admin API if TokenUrl is not set.
+                    format: uri
                     type: string
                 required:
                 - admin
@@ -252,6 +279,8 @@ spec:
                   enableTLS:
                     type: boolean
                   host:
+                    description: Host is the Redis host (including scheme, e.g. redis://redis-master:6379)
+                    format: uri
                     type: string
                   password:
                     type: string
@@ -357,6 +386,25 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               gateway:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              gatewayAdminClient:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
                   It is similar to types.NamespacedName but has the required json tags for serialization
