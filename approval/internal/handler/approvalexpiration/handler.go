@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -18,6 +17,7 @@ import (
 	v1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
 	commonclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"

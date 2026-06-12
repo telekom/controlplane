@@ -5,10 +5,11 @@
 package controller
 
 import (
+	"time"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"time"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -98,8 +99,8 @@ var _ = Describe("ApprovalExpiration Controller", Ordered, func() {
 		Expect(k8sClient.Delete(ctx, approval)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			err := k8sClient.Get(ctx, namespacedName, &approvalv1.Approval{})
-			g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			getErr := k8sClient.Get(ctx, namespacedName, &approvalv1.Approval{})
+			g.Expect(apierrors.IsNotFound(getErr)).To(BeTrue())
 		}, timeout, interval).Should(Succeed())
 
 		expiration := &approvalv1.ApprovalExpiration{}
