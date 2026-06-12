@@ -17,7 +17,7 @@ const (
 	MeshClientName = "eventstore"
 	// AdminClientName is the name of the client used for administrative operations.
 	// This client must be configured in the configuration backend.
-	AdminClientName = "rover"
+	AdminClientName = "horizon-quasar"
 
 	// CallbackURLQueryParam is the name of the query parameter used to pass the original callback URL in proxy scenarios.
 	CallbackURLQueryParam = "callback"
