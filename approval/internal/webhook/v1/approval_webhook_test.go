@@ -35,7 +35,7 @@ var _ = Describe("Approval Webhook", func() {
 
 	Context("When creating Approval under Validating Webhook", func() {
 		It("Should reject Auto strategy approval not in Granted state on create", func() {
-			validator := ApprovalCustomValidator{}
+			validator := ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}
 			a := &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{
 					Strategy: approvalv1.ApprovalStrategyAuto,
@@ -49,7 +49,7 @@ var _ = Describe("Approval Webhook", func() {
 		})
 
 		It("Should not reject Auto strategy approval already in Granted state on create", func() {
-			validator := ApprovalCustomValidator{}
+			validator := ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}
 			a := &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{
 					Strategy: approvalv1.ApprovalStrategyAuto,
@@ -65,6 +65,9 @@ var _ = Describe("Approval Webhook", func() {
 
 	Context("decision requirement on state change", func() {
 		var validator ApprovalCustomValidator
+		BeforeEach(func() {
+			validator = ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}
+		})
 
 		// helper to build an Approval with the given strategy, spec state, and last state
 		makeApproval := func(strategy approvalv1.ApprovalStrategy, specState, lastState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.Approval {
@@ -154,6 +157,9 @@ var _ = Describe("Approval Webhook", func() {
 
 	Context("FourEyes distinct deciders for Approval", func() {
 		var validator ApprovalCustomValidator
+		BeforeEach(func() {
+			validator = ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}
+		})
 
 		makeApproval := func(oldState, newState approvalv1.ApprovalState, decisions []approvalv1.Decision) (*approvalv1.Approval, *approvalv1.Approval) {
 			old := &approvalv1.Approval{
@@ -226,6 +232,9 @@ var _ = Describe("Approval Webhook", func() {
 
 	Context("stateChanged uses oldObj.Spec.State not Status.LastState", func() {
 		var validator ApprovalCustomValidator
+		BeforeEach(func() {
+			validator = ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}
+		})
 
 		It("should detect state change even when Status.LastState is stale", func() {
 			// Simulate: controller set LastState=Pending, then user changes state to Granted,
@@ -333,6 +342,9 @@ var _ = Describe("Approval Webhook", func() {
 
 	Context("on-the-fly FSM validation for Approval (Bug 1+2 fix)", func() {
 		var validator ApprovalCustomValidator
+		BeforeEach(func() {
+			validator = ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}
+		})
 
 		makeApproval := func(strategy approvalv1.ApprovalStrategy, specState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.Approval {
 			return &approvalv1.Approval{
@@ -449,6 +461,9 @@ var _ = Describe("Approval Webhook", func() {
 
 	Context("broadened distinct-decider check for Approval (Bug 3 fix)", func() {
 		var validator ApprovalCustomValidator
+		BeforeEach(func() {
+			validator = ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}
+		})
 
 		It("should enforce distinct deciders on Semigranted -> Granted (original case)", func() {
 			twoSameDeciders := []approvalv1.Decision{

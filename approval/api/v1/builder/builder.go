@@ -242,10 +242,17 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	if approvalExists {
 		log.V(2).Info("Approval exists")
 		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected || b.Approval.Spec.State == v1.ApprovalStateSuspended
+		// transition from Suspended to Expired -> treat as denied
+		isDeniedAndExpired := b.Approval.Spec.State == v1.ApprovalStateExpired && b.Approval.Status.LastState == v1.ApprovalStateSuspended
 
 		if isDenied {
 			log.V(1).Info("Approval is rejected or suspended and must not be provisioned")
 			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has been rejected or suspended"))
+			return ApprovalResultDenied, nil
+		}
+		if isDeniedAndExpired {
+			log.V(1).Info("Approval expired from suspended state and must not be provisioned")
+			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has expired"))
 			return ApprovalResultDenied, nil
 		}
 	}
@@ -271,10 +278,18 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		return ApprovalResultPending, nil
 	}
 
+	// transition from Granted to Expired -> treat as Granted
+	isGrantedAndExpired := b.Approval.Spec.State == v1.ApprovalStateExpired && b.Approval.Status.LastState == v1.ApprovalStateGranted
+
 	// Priority 4: Approval is granted
 	if b.Approval.Spec.State == v1.ApprovalStateGranted {
 		log.V(2).Info("Approval is granted")
 		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateGranted, "Approval has been granted"))
+		return ApprovalResultGranted, nil
+	}
+	if isGrantedAndExpired {
+		log.V(2).Info("Approval expired from granted state, treating as granted")
+		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateGranted, "Approval has expired but was previously granted"))
 		return ApprovalResultGranted, nil
 	}
 	// Fallback, but should not be reached
