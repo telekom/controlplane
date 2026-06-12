@@ -59,7 +59,7 @@ var _ = Describe("Zone Handler Steps", func() {
 		})
 
 		It("should derive admin URL from base when not explicitly set", func() {
-			zone.Spec.IdentityProvider.Admin.Url = ""
+			zone.Spec.IdentityProvider.Admin.Url = nil
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
 
@@ -123,11 +123,7 @@ var _ = Describe("Zone Handler Steps", func() {
 	})
 
 	Describe("createGatewayAdminClient", func() {
-		It("should create rover client when not externally managed", func() {
-			// Remove all external admin config to make it managed
-			zone.Spec.Gateway.Admin.ClientId = nil
-			zone.Spec.Gateway.Admin.ClientSecret = nil
-			zone.Spec.Gateway.Admin.TokenUrl = nil
+		It("should create admin client with provided secret", func() {
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
@@ -137,28 +133,24 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(hc.GatewayAdminClient).NotTo(BeNil())
 			Expect(hc.GatewayAdminClient.Spec.ClientId).To(Equal("rover"))
-			Expect(hc.GatewayAdminClient.Spec.ClientSecret).NotTo(BeEmpty())
+			Expect(hc.GatewayAdminClient.Spec.ClientSecret).To(Equal("test-gateway-admin-secret"))
 			Expect(hc.GatewayAdminClient.Spec.Realm.Name).To(Equal("rover"))
 			Expect(zone.Status.GatewayAdminClient).NotTo(BeNil())
 		})
 
-		It("should skip when externally managed", func() {
-			// Default newTestZone has ClientSecret set -> externally managed
+		It("should return blocked error when client secret is nil", func() {
+			zone.Spec.Gateway.Admin.ClientSecret = nil
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 
 			err := createGatewayAdminClient(testCtx, hc)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(hc.GatewayAdminClient).To(BeNil())
-			Expect(zone.Status.GatewayAdminClient).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("gateway admin client secret must be provided"))
 		})
 
 		It("should preserve secret on re-reconcile (idempotency)", func() {
-			zone.Spec.Gateway.Admin.ClientId = nil
-			zone.Spec.Gateway.Admin.ClientSecret = nil
-			zone.Spec.Gateway.Admin.TokenUrl = nil
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
@@ -215,9 +207,12 @@ var _ = Describe("Zone Handler Steps", func() {
 	})
 
 	Describe("createGateway", func() {
-		It("should create with externally managed admin config", func() {
+		It("should create gateway with correct admin config", func() {
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
+			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 
 			err := createGateway(testCtx, hc)
 			Expect(err).NotTo(HaveOccurred())
@@ -228,10 +223,7 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(hc.Gateway.Spec.Redis.Port).To(Equal(123))
 		})
 
-		It("should use managed rover client credentials when not externally managed", func() {
-			zone.Spec.Gateway.Admin.ClientId = nil
-			zone.Spec.Gateway.Admin.ClientSecret = nil
-			zone.Spec.Gateway.Admin.TokenUrl = nil
+		It("should use rover client credentials from admin client", func() {
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
@@ -249,6 +241,9 @@ var _ = Describe("Zone Handler Steps", func() {
 			zone.Spec.Gateway.Admin.Url = ""
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
+			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 
 			err := createGateway(testCtx, hc)
 			Expect(err).NotTo(HaveOccurred())
@@ -260,6 +255,9 @@ var _ = Describe("Zone Handler Steps", func() {
 		It("should add SpaceGate overwrites for World visibility", func() {
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
+			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 
 			err := createDefaultGatewayRealm(testCtx, hc)
@@ -273,6 +271,9 @@ var _ = Describe("Zone Handler Steps", func() {
 			zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
+			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 
 			err := createDefaultGatewayRealm(testCtx, hc)
@@ -285,6 +286,9 @@ var _ = Describe("Zone Handler Steps", func() {
 		It("should reference the correct realm", func() {
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
+			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createDefaultGatewayRealm(testCtx, hc)).To(Succeed())
 
@@ -309,6 +313,8 @@ var _ = Describe("Zone Handler Steps", func() {
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createDefaultGatewayRealm(testCtx, hc)).To(Succeed())
 
@@ -333,6 +339,9 @@ var _ = Describe("Zone Handler Steps", func() {
 			zone.Spec.ManagedRoutes = nil
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
+			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createDefaultGatewayRealm(testCtx, hc)).To(Succeed())
 
@@ -352,6 +361,8 @@ var _ = Describe("Zone Handler Steps", func() {
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createDefaultGatewayRealm(testCtx, hc)).To(Succeed())
 
@@ -391,6 +402,8 @@ var _ = Describe("Zone Handler Steps", func() {
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createDefaultGatewayRealm(testCtx, hc)).To(Succeed())
 
@@ -410,6 +423,8 @@ var _ = Describe("Zone Handler Steps", func() {
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
+			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createDefaultGatewayRealm(testCtx, hc)).To(Succeed())
 

@@ -30,9 +30,10 @@ type RedisConfig struct {
 
 type IdentityProviderAdminConfig struct {
 	// Url is the base URL of the identity provider admin API.
-	// +kubebuilder:validation:Required
+	// If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Format=uri
-	Url string `json:"url"`
+	Url *string `json:"url,omitempty"`
 	// ClientId is the client ID to authenticate with the identity provider admin API.
 	ClientId string `json:"clientId"`
 	// UserName is the username to authenticate with the identity provider admin API.
@@ -88,43 +89,19 @@ type GatewayAdminConfig struct {
 	Url string `json:"url"`
 
 	// ClientId of the admin client.
-	// If empty, a managed client with the default name "rover" will be used.
+	// If empty, a managed client with the default name will be used.
 	// +kubebuilder:validation:Optional
 	ClientId *string `json:"clientId,omitempty"`
 	// ClientSecret of the admin client
 	// If empty, a managed client secret will be generated.
 	// +kubebuilder:validation:Optional
 	ClientSecret *string `json:"clientSecret,omitempty"`
-	// TokenUrl is the URL to obtain tokens for the gateway admin API. If not set, it is assumed that the local IDP is used.
-	// +kubebuilder:validation:Optional
-	TokenUrl *string `json:"tokenUrl,omitempty"`
-}
-
-func (gac GatewayAdminConfig) IsExternallyManaged() bool {
-	return gac.ClientId != nil || gac.ClientSecret != nil || gac.TokenUrl != nil
-}
-
-type URLConfig struct {
-	// Host is the host (including scheme)
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Format=uri
-	Host string `json:"host"`
-	// BasePath is an optional path segment to append to the URL. This can be used if the gateway is not hosted at the root of the domain, e.g. https://gateway.example.com/basePath
-	BasePath *string `json:"basePath,omitempty"`
-	// Visible is a flag to control whether this URL should be included in the status links of the zone.
-	// This can be used to hide internal-only URLs. There can only be one URL with Visible=true, which will be used for the main URL in the status links.
-	Visible bool `json:"visible"`
 }
 
 type GatewayConfig struct {
 	Admin GatewayAdminConfig `json:"admin"`
 
 	Url string `json:"url"`
-
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=8
-	// +listType=atomic
-	Urls []URLConfig `json:"urls"`
 
 	// CircuitBreaker flag that controls if circuit breaker should be enabled on this zone. the config of the CB itself comes from hardcoded values, not configurable
 	CircuitBreaker bool `json:"circuitBreaker"`

@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -41,8 +41,8 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 		identityProvider.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 
 		adminUrl := urls.ForIdentityProviderAdminUrl(hc.Zone.Spec.IdentityProvider.Url)
-		if hc.Zone.Spec.IdentityProvider.Admin.Url != "" {
-			adminUrl = hc.Zone.Spec.IdentityProvider.Admin.Url
+		if hc.Zone.Spec.IdentityProvider.Admin.Url != nil {
+			adminUrl = *hc.Zone.Spec.IdentityProvider.Admin.Url
 		}
 
 		identityProvider.Spec = identityapi.IdentityProviderSpec{
@@ -101,10 +101,6 @@ func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error
 // for gateway admin API authentication. This step is a no-op when the gateway admin
 // is externally managed (i.e., the user provides clientId/clientSecret/tokenUrl).
 func createGatewayAdminClient(ctx context.Context, hc *HandlingContext) error {
-	if hc.Zone.Spec.Gateway.Admin.IsExternallyManaged() {
-		return nil
-	}
-
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	adminClient := &identityapi.Client{
@@ -114,6 +110,11 @@ func createGatewayAdminClient(ctx context.Context, hc *HandlingContext) error {
 		},
 	}
 
+	clientSecret := hc.Zone.Spec.Gateway.Admin.ClientSecret
+	if clientSecret == nil {
+		return ctrlerrors.BlockedErrorf("gateway admin client secret must be provided for zone %q", hc.Zone.Name)
+	}
+
 	mutator := func() error {
 		if adminClient.Labels == nil {
 			adminClient.Labels = make(map[string]string)
@@ -121,19 +122,10 @@ func createGatewayAdminClient(ctx context.Context, hc *HandlingContext) error {
 		adminClient.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		adminClient.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 
-		// Preserve existing secret to avoid rotation on every reconcile
-		var clientSecret string
-		existingClient, err := getIdentityClient(ctx, types.ObjectRefFromObject(adminClient))
-		if err != nil {
-			clientSecret = uuid.NewString()
-		} else {
-			clientSecret = existingClient.Spec.ClientSecret
-		}
-
 		adminClient.Spec = identityapi.ClientSpec{
 			Realm:        types.ObjectRefFromObject(hc.InternalIdentityRealm),
 			ClientId:     naming.ForGatewayAdminClientId(),
-			ClientSecret: clientSecret,
+			ClientSecret: *clientSecret,
 		}
 		return nil
 	}
@@ -149,6 +141,7 @@ func createGatewayAdminClient(ctx context.Context, hc *HandlingContext) error {
 }
 
 // createGatewayClient creates the gateway's OAuth2 client in the default identity realm.
+// TODO: This will be removed when the transition to new the mesh-auth logic is complete.
 func createGatewayClient(ctx context.Context, hc *HandlingContext) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -166,13 +159,15 @@ func createGatewayClient(ctx context.Context, hc *HandlingContext) error {
 		identityClient.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		identityClient.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 
-		// Preserve existing secret to avoid rotation on every reconcile
-		var clientSecret string
-		existingClient, err := getIdentityClient(ctx, types.ObjectRefFromObject(identityClient))
-		if err != nil {
-			clientSecret = uuid.NewString()
-		} else {
-			clientSecret = existingClient.Spec.ClientSecret
+		// Assumption is that this will be replaced by the new mesh-auth logic before release,
+		// so we can leave the plain-text secret here for now.
+		clientSecret := identityClient.Spec.ClientSecret
+		if clientSecret == "" {
+			var err error
+			clientSecret, err = secretsapi.GenerateSecret()
+			if err != nil {
+				return fmt.Errorf("failed to generate client secret for Gateway Client in zone %s: %w", hc.Zone.Name, err)
+			}
 		}
 
 		identityClient.Spec = identityapi.ClientSpec{

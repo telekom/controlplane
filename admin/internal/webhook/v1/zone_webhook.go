@@ -128,11 +128,15 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 		options = append(options, secretsapi.WithSecretValue(redisPasswordPath, secretValue))
 	}
 
-	// Gateway client secret (only when provided / non-nil)
-	needsGatewaySecret := zone.Spec.Gateway.Admin.ClientSecret != nil &&
-		!secretsapi.IsRef(*zone.Spec.Gateway.Admin.ClientSecret)
+	// Gateway client secret
+	gatewayAdminClientSecret := zone.Spec.Gateway.Admin.ClientSecret
+	needsGatewaySecret := gatewayAdminClientSecret == nil || !secretsapi.IsRef(*gatewayAdminClientSecret)
 	if needsGatewaySecret {
-		secretValue, err := secretValueOrGenerate(*zone.Spec.Gateway.Admin.ClientSecret)
+		if gatewayAdminClientSecret == nil {
+			// Initialize pointer to avoid nil dereference in secretValueOrGenerate
+			gatewayAdminClientSecret = new(string)
+		}
+		secretValue, err := secretValueOrGenerate(*gatewayAdminClientSecret)
 		if err != nil {
 			return errors.Wrap(err, "failed to determine gateway client secret value")
 		}

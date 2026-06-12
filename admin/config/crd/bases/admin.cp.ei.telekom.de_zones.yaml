@@ -97,17 +97,12 @@ spec:
                       clientId:
                         description: |-
                           ClientId of the admin client.
-                          If empty, a managed client with the default name "rover" will be used.
+                          If empty, a managed client with the default name will be used.
                         type: string
                       clientSecret:
                         description: |-
                           ClientSecret of the admin client
                           If empty, a managed client secret will be generated.
-                        type: string
-                      tokenUrl:
-                        description: TokenUrl is the URL to obtain tokens for the
-                          gateway admin API. If not set, it is assumed that the local
-                          IDP is used.
                         type: string
                       url:
                         description: URL of the gateway admin API.
@@ -123,30 +118,6 @@ spec:
                     type: boolean
                   url:
                     type: string
-                  urls:
-                    items:
-                      properties:
-                        basePath:
-                          description: BasePath is an optional path segment to append
-                            to the URL. This can be used if the gateway is not hosted
-                            at the root of the domain, e.g. https://gateway.example.com/basePath
-                          type: string
-                        host:
-                          description: Host is the host (including scheme)
-                          format: uri
-                          type: string
-                        visible:
-                          description: |-
-                            Visible is a flag to control whether this URL should be included in the status links of the zone.
-                            This can be used to hide internal-only URLs. There can only be one URL with Visible=true, which will be used for the main URL in the status links.
-                          type: boolean
-                      required:
-                      - host
-                      - visible
-                      type: object
-                    maxItems: 8
-                    type: array
-                    x-kubernetes-list-type: atomic
                 required:
                 - admin
                 - circuitBreaker
@@ -165,8 +136,9 @@ spec:
                           the identity provider admin API.
                         type: string
                       url:
-                        description: Url is the base URL of the identity provider
-                          admin API.
+                        description: |-
+                          Url is the base URL of the identity provider admin API.
+                          If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
                         format: uri
                         type: string
                       userName:
@@ -176,7 +148,6 @@ spec:
                     required:
                     - clientId
                     - password
-                    - url
                     - userName
                     type: object
                   secretRotation:

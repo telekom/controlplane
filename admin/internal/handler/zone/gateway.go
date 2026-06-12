@@ -43,27 +43,9 @@ func createGateway(ctx context.Context, hc *HandlingContext) error {
 			adminUrl = hc.Zone.Spec.Gateway.Admin.Url
 		}
 
-		var clientId, clientSecret, issuerUrl string
-
-		if hc.Zone.Spec.Gateway.Admin.IsExternallyManaged() {
-			// Externally managed: use user-provided values with sensible defaults
-			clientId = naming.ForGatewayAdminClientId()
-			if hc.Zone.Spec.Gateway.Admin.ClientId != nil {
-				clientId = *hc.Zone.Spec.Gateway.Admin.ClientId
-			}
-			if hc.Zone.Spec.Gateway.Admin.ClientSecret != nil {
-				clientSecret = *hc.Zone.Spec.Gateway.Admin.ClientSecret
-			}
-			issuerUrl = urls.ForGatewayAdminIssuerUrl(hc.Zone.Spec.IdentityProvider.Url)
-			if hc.Zone.Spec.Gateway.Admin.TokenUrl != nil {
-				issuerUrl = *hc.Zone.Spec.Gateway.Admin.TokenUrl
-			}
-		} else {
-			// Managed: use the created rover admin client
-			clientId = hc.GatewayAdminClient.Spec.ClientId
-			clientSecret = hc.GatewayAdminClient.Spec.ClientSecret
-			issuerUrl = urls.ForGatewayAdminIssuerUrl(hc.Zone.Spec.IdentityProvider.Url)
-		}
+		clientId := hc.GatewayAdminClient.Spec.ClientId
+		clientSecret := hc.GatewayAdminClient.Spec.ClientSecret
+		issuerUrl := urls.ForGatewayAdminIssuerUrl(hc.Zone.Spec.IdentityProvider.Url)
 
 		gateway.Spec = gatewayapi.GatewaySpec{
 			Admin: gatewayapi.AdminConfig{

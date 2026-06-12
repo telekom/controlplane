@@ -25,6 +25,7 @@ import (
 
 func NewZone(name, namespace string) *adminv1.Zone {
 	gatewayAdminSecret := "test-gateway-admin-secret"
+	identityAdminUrl := "https://test-iris.de/auth/admin/realms"
 
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
@@ -38,7 +39,7 @@ func NewZone(name, namespace string) *adminv1.Zone {
 		Spec: adminv1.ZoneSpec{
 			IdentityProvider: adminv1.IdentityProviderConfig{
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url:      "https://test-iris.de/auth/admin/realms",
+					Url:      &identityAdminUrl,
 					ClientId: "test-idp-admin-id",
 					UserName: "test-idp-admin-username",
 					Password: "test-idp-admin-password",
