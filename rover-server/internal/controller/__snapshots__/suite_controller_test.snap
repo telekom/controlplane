@@ -25,13 +25,8 @@
       "message": "Approval is either rejected or suspended"
      }
     ],
-    "processingState": "done",
-    "state": "blocked",
-    "warnings": [
-     {
-      "message": "Atleast one sub-resource is being processed"
-     }
-    ]
+    "processingState": "processing",
+    "state": "none"
    },
    "subscriptions": [
     {
@@ -71,13 +66,8 @@
       "message": "Approval is either rejected or suspended"
      }
     ],
-    "processingState": "done",
-    "state": "blocked",
-    "warnings": [
-     {
-      "message": "Atleast one sub-resource is being processed"
-     }
-    ]
+    "processingState": "processing",
+    "state": "none"
    },
    "subscriptions": [
     {
@@ -117,13 +107,8 @@
       "message": "Approval is either rejected or suspended"
      }
     ],
-    "processingState": "done",
-    "state": "blocked",
-    "warnings": [
-     {
-      "message": "Atleast one sub-resource is being processed"
-     }
-    ]
+    "processingState": "processing",
+    "state": "none"
    },
    "subscriptions": [
     {
@@ -163,13 +148,8 @@
       "message": "Approval is either rejected or suspended"
      }
     ],
-    "processingState": "done",
-    "state": "blocked",
-    "warnings": [
-     {
-      "message": "Atleast one sub-resource is being processed"
-     }
-    ]
+    "processingState": "processing",
+    "state": "none"
    },
    "subscriptions": [
     {
@@ -203,13 +183,8 @@
     "message": "Approval is either rejected or suspended"
    }
   ],
-  "processingState": "done",
-  "state": "blocked",
-  "warnings": [
-   {
-    "message": "Atleast one sub-resource is being processed"
-   }
-  ]
+  "processingState": "processing",
+  "state": "none"
  },
  "subscriptions": [
   {
@@ -465,8 +440,8 @@
  ],
  "overallStatus": "blocked",
  "processedAt": "2025-10-08T07:16:40Z",
- "processingState": "done",
- "state": "blocked"
+ "processingState": "processing",
+ "state": "none"
 }
 ---
 
@@ -530,13 +505,8 @@
     "message": "Approval is either rejected or suspended"
    }
   ],
-  "processingState": "done",
-  "state": "blocked",
-  "warnings": [
-   {
-    "message": "Atleast one sub-resource is being processed"
-   }
-  ]
+  "processingState": "processing",
+  "state": "none"
  },
  "subscriptions": [
   {
@@ -964,7 +934,7 @@
   "state": "none",
   "warnings": [
    {
-    "message": "Processing condition not found"
+    "message": "No conditions found"
    }
   ]
  }
@@ -1405,7 +1375,7 @@
   "state": "none",
   "warnings": [
    {
-    "message": "Processing condition not found"
+    "message": "No conditions found"
    }
   ]
  }
@@ -1795,7 +1765,7 @@
   "state": "none",
   "warnings": [
    {
-    "message": "Processing condition not found"
+    "message": "No conditions found"
    }
   ]
  }
@@ -1910,13 +1880,8 @@
     "message": "Approval is either rejected or suspended"
    }
   ],
-  "processingState": "done",
-  "state": "blocked",
-  "warnings": [
-   {
-    "message": "Atleast one sub-resource is being processed"
-   }
-  ]
+  "processingState": "processing",
+  "state": "none"
  },
  "subscriptions": [
   {
@@ -1948,13 +1913,8 @@
     "message": "Approval is either rejected or suspended"
    }
   ],
-  "processingState": "done",
-  "state": "blocked",
-  "warnings": [
-   {
-    "message": "Atleast one sub-resource is being processed"
-   }
-  ]
+  "processingState": "processing",
+  "state": "none"
  },
  "subscriptions": [
   {

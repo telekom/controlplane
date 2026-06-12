@@ -204,6 +204,6 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 
 	owner.Status.ConsumeRoute = types.ObjectRefFromObject(routeConsumer)
 	owner.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	owner.SetCondition(condition.NewReadyCondition("Provisioned", "ApiSubscription is ready"))
+	owner.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ApiSubscription is ready"))
 	return nil
 }

@@ -7,12 +7,6 @@ package controller
 import (
 	"context"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
-	"github.com/telekom/controlplane/api/internal/handler/apiexposure"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -23,6 +17,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/apiexposure"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
 
 // ApiExposureReconciler reconciles a ApiExposure object
@@ -81,7 +83,8 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
-			RateLimiter:             cc.NewRateLimiter()}).
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Complete(r)
 }
 
@@ -105,9 +108,6 @@ func (r *ApiExposureReconciler) MapApiToApiExposure(ctx context.Context, obj cli
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
 	for _, item := range list.Items {
-		if api.UID == item.UID {
-			continue
-		}
 		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
 	}
 
@@ -143,12 +143,63 @@ func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context,
 	return reqs
 }
 
+// MapRouteToApiExposure enqueues ApiExposures when a Route they manage is externally modified.
+// Routes are created in zone namespaces, so we use the basepath label to find the owning exposures.
 func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
+	log := log.FromContext(ctx)
+	route, ok := obj.(*gatewayv1.Route)
+	if !ok {
+		return nil
+	}
+
+	basePathLabel := route.Labels[apiv1.BasePathLabelKey]
+	if basePathLabel == "" {
+		return nil
+	}
+
+	list := &apiv1.ApiExposureList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
+		apiv1.BasePathLabelKey:      basePathLabel,
+	})
+	if err != nil {
+		log.Error(err, "failed to list API-Exposures for Route")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+	}
+	return reqs
 }
 
+// MapZoneToApiExposure enqueues ApiExposures that reference a changed Zone.
+// This ensures exposures react to zone readiness or namespace changes.
 func (r *ApiExposureReconciler) MapZoneToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
+	logger := log.FromContext(ctx)
+	zone, ok := obj.(*adminv1.Zone)
+	if !ok {
+		return nil
+	}
+
+	list := &apiv1.ApiExposureList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+	})
+	if err != nil {
+		logger.Error(err, "failed to list API-Exposures for Zone")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		if list.Items[i].Spec.Zone.Name == zone.Name {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+		}
+	}
+	return reqs
 }
 
 // MapApiSubscriptionToApiExposure triggers re-reconciliation of ApiExposures when ApiSubscriptions change.
