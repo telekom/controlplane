@@ -157,7 +157,6 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 
 	requester := &approvalapi.Requester{
 		TeamName:       requestorApp.Spec.Team,
-		TeamEmail:      requestorApp.Spec.TeamEmail,
 		ApplicationRef: types.TypedObjectRefFromObject(requestorApp, c.Scheme()),
 		Reason: fmt.Sprintf("Team %s requested subscription to event %s from zone %s",
 			requestorApp.Spec.Team, obj.Spec.EventType, obj.Spec.Zone.Name),
@@ -174,7 +173,6 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 
 	decider := &approvalapi.Decider{
 		TeamName:       providerApp.Spec.Team,
-		TeamEmail:      providerApp.Spec.TeamEmail,
 		ApplicationRef: types.TypedObjectRefFromObject(providerApp, c.Scheme()),
 	}
 

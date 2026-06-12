@@ -74,9 +74,6 @@ type Requester struct {
 	// TeamName is the name of the team requesting access
 	TeamName string `json:"teamName"`
 
-	// TeamEmail is the email address of the team requesting access
-	TeamEmail string `json:"teamEmail"`
-
 	// Reason is the reason for requesting access
 	Reason string `json:"reason"`
 
@@ -111,9 +108,6 @@ type Decider struct {
 
 	// TeamName is the name of the team that decides on the approval request
 	TeamName string `json:"teamName,omitempty"`
-
-	// TeamEmail is the email address of the team that decides on the approval request
-	TeamEmail string `json:"teamEmail,omitempty"`
 
 	// ApplicationRef is a reference to the application that decides on the approval request
 	ApplicationRef *ctypes.TypedObjectRef `json:"applicationRef,omitempty"`

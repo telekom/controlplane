@@ -44,7 +44,6 @@ func TestMapResponse_ResolvedReferences(t *testing.T) {
 	app := &applicationv1.Application{}
 	app.Name = "my-app"
 	app.Namespace = "poc--eni--hyperion"
-	app.Spec.TeamEmail = "hyperion@telekom.de"
 
 	approval := &approvalv1.Approval{}
 	approval.Spec.State = approvalv1.ApprovalStateGranted

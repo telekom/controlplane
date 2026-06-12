@@ -88,7 +88,6 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: applicationv1.ApplicationSpec{
 					Team:          "test-my-team",
-					TeamEmail:     "test-DTIT_ENI_Hub_Team_Hyperion@telekom.de",
 					Secret:        "c6283fd0-77f2-452c-8437-4882cffde8e1",
 					NeedsClient:   true,
 					NeedsConsumer: true,
@@ -139,7 +138,6 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: applicationv1.ApplicationSpec{
 					Team:          "test-my-team",
-					TeamEmail:     "test-DTIT_ENI_Hub_Team_Hyperion@telekom.de",
 					Secret:        "c6283fd0-77f2-452c-8437-4882cffde8e1",
 					NeedsClient:   true,
 					NeedsConsumer: true,

@@ -37,9 +37,8 @@ func CreateApplication(name string) *applicationapi.Application {
 			},
 		},
 		Spec: applicationapi.ApplicationSpec{
-			Team:      "Hyperion",
-			TeamEmail: "hyperion@test.de",
-			Secret:    "topsecret",
+			Team:   "Hyperion",
+			Secret: "topsecret",
 		},
 	}
 
@@ -130,8 +129,7 @@ func ProgressApprovalRequest(ref *types.ObjectRef, state approvalapi.ApprovalSta
 
 	approvalReq.Spec.State = state
 	approvalReq.Spec.Decider = approvalapi.Decider{
-		TeamName:  "test-decider",
-		TeamEmail: "decider@test.com",
+		TeamName: "test-decider",
 	}
 
 	err = k8sClient.Update(ctx, approvalReq)

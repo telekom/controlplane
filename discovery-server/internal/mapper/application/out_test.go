@@ -35,9 +35,8 @@ func TestMapResponse(t *testing.T) {
 					Namespace: "poc--eni--hyperion",
 				},
 				Spec: applicationv1.ApplicationSpec{
-					Team:      "hyperion",
-					TeamEmail: "hyperion@telekom.de",
-					Zone:      commonTypes.ObjectRef{Name: "dataplane1"},
+					Team:     "hyperion",
+					Zone:     commonTypes.ObjectRef{Name: "dataplane1"},
 					Security: &applicationv1.Security{
 						IpRestrictions: &applicationv1.IpRestrictions{
 							Allow: []string{"10.0.0.0/8", "172.16.0.0/12"},
@@ -65,10 +64,9 @@ func TestMapResponse(t *testing.T) {
 					Namespace: "poc--eni--hyperion",
 				},
 				Spec: applicationv1.ApplicationSpec{
-					Team:      "hyperion",
-					TeamEmail: "hyperion@telekom.de",
-					Zone:      commonTypes.ObjectRef{Name: "dataplane1"},
-					Security:  nil,
+					Team:     "hyperion",
+					Zone:     commonTypes.ObjectRef{Name: "dataplane1"},
+					Security: nil,
 				},
 			},
 			expectID:   "eni--hyperion--my-app",

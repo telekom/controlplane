@@ -12,7 +12,6 @@
   },
   "spec": {
     "team": "hyperion",
-    "teamEmail": "hyperion@telekom.de",
     "secret": "test-secret",
     "needsClient": true,
     "needsConsumer": true,

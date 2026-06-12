@@ -137,13 +137,6 @@ spec:
                 maxLength: 64
                 minLength: 1
                 type: string
-              teamEmail:
-                description: TeamEmail is the email address of the team responsible
-                  for the application
-                format: email
-                maxLength: 64
-                minLength: 1
-                type: string
               zone:
                 description: Zone is the primary zone for the application
                 properties:
@@ -166,7 +159,6 @@ spec:
             - needsConsumer
             - secret
             - team
-            - teamEmail
             - zone
             type: object
           status:

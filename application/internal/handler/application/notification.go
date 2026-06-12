@@ -46,7 +46,6 @@ func sendRotationCompletedNotification(ctx context.Context, app *application.App
 	properties := map[string]any{
 		"application": app.Name,
 		"team":        app.Spec.Team,
-		"teamEmail":   app.Spec.TeamEmail,
 		"environment": env,
 	}
 
@@ -144,7 +143,6 @@ func sendSingleExpiringNotification(ctx context.Context, app *application.Applic
 	properties := map[string]any{
 		"application":      app.Name,
 		"team":             app.Spec.Team,
-		"teamEmail":        app.Spec.TeamEmail,
 		"environment":      env,
 		"currentExpiresAt": app.Status.CurrentExpiresAt.Format(time.RFC3339),
 		"thresholdBefore":  thresholdKey,

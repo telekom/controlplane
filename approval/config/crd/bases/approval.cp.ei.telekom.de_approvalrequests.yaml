@@ -93,10 +93,6 @@ spec:
                     - name
                     - namespace
                     type: object
-                  teamEmail:
-                    description: TeamEmail is the email address of the team that decides
-                      on the approval request
-                    type: string
                   teamName:
                     description: TeamName is the name of the team that decides on
                       the approval request
@@ -183,16 +179,11 @@ spec:
                   reason:
                     description: Reason is the reason for requesting access
                     type: string
-                  teamEmail:
-                    description: TeamEmail is the email address of the team requesting
-                      access
-                    type: string
                   teamName:
                     description: TeamName is the name of the team requesting access
                     type: string
                 required:
                 - reason
-                - teamEmail
                 - teamName
                 type: object
               state:

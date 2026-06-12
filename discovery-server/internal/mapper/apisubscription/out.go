@@ -8,8 +8,6 @@ import (
 	"context"
 	"strings"
 
-	openapi_types "github.com/oapi-codegen/runtime/types"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -133,9 +131,8 @@ func mapTeamAndApplication(ctx context.Context, in *apiv1.ApiSubscription, out *
 
 	nsInfo := mapper.ParseNamespace(app.GetNamespace())
 	out.Team = api.TeamRef{
-		Hub:   nsInfo.Group,
-		Name:  nsInfo.Team,
-		Email: openapi_types.Email(app.Spec.TeamEmail),
+		Hub:  nsInfo.Group,
+		Name: nsInfo.Team,
 	}
 	out.Application = api.ApplicationRef{
 		Name: app.GetName(),

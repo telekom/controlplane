@@ -83,7 +83,6 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 
 		application.Spec = applicationv1.ApplicationSpec{
 			Team:          obj.Spec.Requester.Team.Name,
-			TeamEmail:     obj.Spec.Requester.Team.Email,
 			Zone:          CalculateRemoteOrgZone(remoteOrg),
 			Secret:        secret,
 			NeedsClient:   false,

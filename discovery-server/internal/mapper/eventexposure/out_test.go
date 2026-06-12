@@ -38,7 +38,6 @@ func TestMapResponse_ResolvedApplication(t *testing.T) {
 	app := &applicationv1.Application{}
 	app.Name = "my-app"
 	app.Namespace = "poc--eni--hyperion"
-	app.Spec.TeamEmail = "hyperion@telekom.de"
 
 	appStore := csmocks.NewMockObjectStore[*applicationv1.Application](t)
 	appStore.EXPECT().Get(mock.Anything, "poc--eni--hyperion", "my-app").Return(app, nil)

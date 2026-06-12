@@ -22,15 +22,13 @@ type ApprovalConfig struct {
 // RequesterInfo represents who requested an approval.
 type RequesterInfo struct {
 	TeamName        string  `json:"teamName"`
-	TeamEmail       string  `json:"teamEmail"`
 	Reason          *string `json:"reason,omitempty"`
 	ApplicationName *string `json:"applicationName,omitempty"`
 }
 
 // DeciderInfo represents who decides on an approval.
 type DeciderInfo struct {
-	TeamName  string  `json:"teamName"`
-	TeamEmail *string `json:"teamEmail,omitempty"`
+	TeamName string `json:"teamName"`
 }
 
 // Decision represents a decision made on an approval.

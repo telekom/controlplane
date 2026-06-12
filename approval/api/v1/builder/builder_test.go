@@ -60,9 +60,8 @@ var _ = Describe("Approval Builder", Ordered, func() {
 	var approval *approvalv1.Approval
 
 	requester := &approvalv1.Requester{
-		TeamName:  "Max",
-		TeamEmail: "max.mustermann@telekom.de",
-		Reason:    "I need access to this API!!",
+		TeamName: "Max",
+		Reason:   "I need access to this API!!",
 	}
 
 	properties := map[string]any{
@@ -113,7 +112,6 @@ var _ = Describe("Approval Builder", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(ar.Spec.Requester.TeamName).To(Equal("Max"))
-				g.Expect(ar.Spec.Requester.TeamEmail).To(Equal("max.mustermann@telekom.de"))
 				g.Expect(ar.Spec.Strategy).To(BeEquivalentTo("Auto"))
 				g.Expect(ar.Spec.State).To(BeEquivalentTo("Granted"))
 
@@ -190,9 +188,8 @@ var _ = Describe("Approval Builder", Ordered, func() {
 
 			By("running the builder again with updated requester reason")
 			updatedRequester := &approvalv1.Requester{
-				TeamName:  "Max",
-				TeamEmail: "max.mustermann@telekom.de",
-				Reason:    "Updated reason for access",
+				TeamName: "Max",
+				Reason:   "Updated reason for access",
 			}
 			err = updatedRequester.SetProperties(properties)
 			Expect(err).NotTo(HaveOccurred())
@@ -272,9 +269,8 @@ var _ = Describe("Approval Builder", Ordered, func() {
 
 			// Set up a requester that matches a trusted team
 			requester := &approvalv1.Requester{
-				TeamName:  "TrustedTeam",
-				TeamEmail: "trusted.team@telekom.de",
-				Reason:    "I need access to this API!!",
+				TeamName: "TrustedTeam",
+				Reason:   "I need access to this API!!",
 			}
 			err = requester.SetProperties(properties)
 			Expect(err).NotTo(HaveOccurred())

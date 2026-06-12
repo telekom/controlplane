@@ -300,8 +300,7 @@ type ComplexityRoot struct {
 	}
 
 	DeciderInfo struct {
-		TeamEmail func(childComplexity int) int
-		TeamName  func(childComplexity int) int
+		TeamName func(childComplexity int) int
 	}
 
 	Decision struct {
@@ -483,7 +482,6 @@ type ComplexityRoot struct {
 	RequesterInfo struct {
 		ApplicationName func(childComplexity int) int
 		Reason          func(childComplexity int) int
-		TeamEmail       func(childComplexity int) int
 		TeamName        func(childComplexity int) int
 	}
 
@@ -1748,13 +1746,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.DecideApprovalRequestPayload.Errors(childComplexity), true
 
-	case "DeciderInfo.teamEmail":
-		if e.ComplexityRoot.DeciderInfo.TeamEmail == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DeciderInfo.TeamEmail(childComplexity), true
-
 	case "DeciderInfo.teamName":
 		if e.ComplexityRoot.DeciderInfo.TeamName == nil {
 			break
@@ -2708,13 +2699,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RequesterInfo.Reason(childComplexity), true
-
-	case "RequesterInfo.teamEmail":
-		if e.ComplexityRoot.RequesterInfo.TeamEmail == nil {
-			break
-		}
-
-		return e.ComplexityRoot.RequesterInfo.TeamEmail(childComplexity), true
 
 	case "RequesterInfo.teamName":
 		if e.ComplexityRoot.RequesterInfo.TeamName == nil {
@@ -6832,14 +6816,12 @@ type ApprovalConfig {
 
 type RequesterInfo {
   teamName: String!
-  teamEmail: String!
   reason: String
   applicationName: String
 }
 
 type DeciderInfo {
   teamName: String!
-  teamEmail: String
 }
 
 type Decision {
@@ -7517,8 +7499,6 @@ func (ec *executionContext) childFields_DeciderInfo(ctx context.Context, field g
 	switch field.Name {
 	case "teamName":
 		return ec.fieldContext_DeciderInfo_teamName(ctx, field)
-	case "teamEmail":
-		return ec.fieldContext_DeciderInfo_teamEmail(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type DeciderInfo", field.Name)
 }
@@ -7823,8 +7803,6 @@ func (ec *executionContext) childFields_RequesterInfo(ctx context.Context, field
 	switch field.Name {
 	case "teamName":
 		return ec.fieldContext_RequesterInfo_teamName(ctx, field)
-	case "teamEmail":
-		return ec.fieldContext_RequesterInfo_teamEmail(ctx, field)
 	case "reason":
 		return ec.fieldContext_RequesterInfo_reason(ctx, field)
 	case "applicationName":
