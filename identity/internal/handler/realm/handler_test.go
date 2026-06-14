@@ -272,6 +272,9 @@ var _ = Describe("HandlerRealm", func() {
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
 			mockSvc.EXPECT().
+				DeleteSecretRotationPolicy(mock.Anything, "test-realm").
+				Return(nil)
+			mockSvc.EXPECT().
 				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
 				Return(nil)
 
@@ -305,7 +308,7 @@ var _ = Describe("HandlerRealm", func() {
 			Expect(realm.Status.AdminTokenUrl).To(Equal(idp.Status.AdminTokenUrl))
 		})
 
-		It("should not call ConfigureSecretRotationPolicy when SecretRotation is nil", func() {
+		It("should call DeleteSecretRotationPolicy when SecretRotation is nil", func() {
 			realm := newValidRealm()
 			idp := newValidIdP()
 
@@ -323,6 +326,9 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				DeleteSecretRotationPolicy(mock.Anything, "test-realm").
 				Return(nil)
 			mockSvc.EXPECT().
 				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
@@ -428,6 +434,41 @@ var _ = Describe("HandlerRealm", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to configure secret rotation policy"))
 			Expect(err.Error()).To(ContainSubstring("keycloak 403"))
+		})
+
+		It("should return an error when DeleteSecretRotationPolicy fails", func() {
+			realm := newValidRealm()
+			idp := newValidIdP()
+
+			mockK8s.EXPECT().
+				Get(mock.Anything, types.NamespacedName{Namespace: "default", Name: "test-idp"}, mock.AnythingOfType("*v1.IdentityProvider"), mock.Anything).
+				Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+					*obj.(*identityv1.IdentityProvider) = *idp
+				}).
+				Return(nil)
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-password", nil
+			})
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceRealm(mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				DeleteSecretRotationPolicy(mock.Anything, "test-realm").
+				Return(fmt.Errorf("keycloak 500: internal server error"))
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerRealm(factory)
+			err := handler.CreateOrUpdate(ctx, realm)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to delete secret rotation policy"))
+			Expect(err.Error()).To(ContainSubstring("keycloak 500"))
 		})
 	})
 

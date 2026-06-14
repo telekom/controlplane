@@ -9,6 +9,7 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  - events.k8s.io
   resources:
   - events
   verbs:
@@ -17,6 +18,7 @@ rules:
 - apiGroups:
   - approval.cp.ei.telekom.de
   resources:
+  - approvalexpirations
   - approvalrequests
   - approvals
   verbs:
@@ -30,6 +32,7 @@ rules:
 - apiGroups:
   - approval.cp.ei.telekom.de
   resources:
+  - approvalexpirations/finalizers
   - approvalrequests/finalizers
   - approvals/finalizers
   verbs:
@@ -37,6 +40,7 @@ rules:
 - apiGroups:
   - approval.cp.ei.telekom.de
   resources:
+  - approvalexpirations/status
   - approvalrequests/status
   - approvals/status
   verbs:

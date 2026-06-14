@@ -59,11 +59,12 @@ func NewZone(name, namespace string) *adminv1.Zone {
 				Password:  "test-redis-password",
 				EnableTLS: true,
 			},
-			TeamApis: &adminv1.TeamApiConfig{
-				Apis: []adminv1.ApiConfig{{
+			ManagedRoutes: &adminv1.ManagedRoutesConfig{
+				Routes: []adminv1.ManagedRouteConfig{{
 					Name: "test-team-api1",
 					Path: "/test/team/api/v1",
 					Url:  "https://test-team-api-host.de/test-team-api-v1",
+					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}},
 			},
 			Visibility: adminv1.ZoneVisibilityWorld,
@@ -127,6 +128,87 @@ var _ = Describe("Zone Controller", func() {
 
 				expectedNamespaceName := "test--test-zone"
 				VerifyNamespace(ctx, g, expectedNamespaceName)
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("When reconciling a zone with a Proxy managed route", func() {
+		It("should create a passthrough route on the default gateway realm", func() {
+			zone := NewZone("test-zone-proxy", testNamespace)
+			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{
+				Routes: []adminv1.ManagedRouteConfig{
+					{
+						Name: "test-team-api1",
+						Path: "/test/team/api/v1",
+						Url:  "https://test-team-api-host.de/test-team-api-v1",
+						Type: adminv1.ManagedRouteTypeTeamAPI,
+					},
+					{
+						Name: "test-proxy",
+						Path: "/proxy/path",
+						Url:  "https://proxy-upstream.de/backend",
+						Type: adminv1.ManagedRouteTypeProxy,
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				got := &adminv1.Zone{}
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(meta.IsStatusConditionTrue(got.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+				// The proxy route should be created on the default gateway realm (named "test")
+				proxyRoute := &gatewayapi.Route{}
+				proxyRouteRef := client.ObjectKey{
+					Namespace: "test--test-zone-proxy",
+					Name:      "test--test-proxy",
+				}
+				err = k8sClient.Get(ctx, proxyRouteRef, proxyRoute)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(proxyRoute.Spec.PassThrough).To(BeTrue())
+				g.Expect(proxyRoute.Spec.Security).To(BeNil())
+				g.Expect(proxyRoute.Spec.Upstreams).To(HaveLen(1))
+				g.Expect(proxyRoute.Spec.Upstreams[0].Host).To(Equal("proxy-upstream.de"))
+				g.Expect(proxyRoute.Spec.Upstreams[0].Path).To(Equal("/backend"))
+				g.Expect(proxyRoute.Spec.Downstreams).To(HaveLen(1))
+				g.Expect(proxyRoute.Spec.Downstreams[0].IssuerUrl).To(BeEmpty())
+				g.Expect(proxyRoute.Spec.Downstreams[0].Path).To(Equal("/proxy/path"))
+
+				// Verify ManagedRoutes status contains refs for both routes
+				g.Expect(got.Status.ManagedRoutes).To(HaveLen(2))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("When reconciling an Enterprise zone", func() {
+		It("should not add RouteOverwrites to the gateway realm", func() {
+			zone := NewZone("test-zone-enterprise", testNamespace)
+			zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
+			zone.Spec.ManagedRoutes = nil
+			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				got := &adminv1.Zone{}
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(meta.IsStatusConditionTrue(got.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+				gatewayRealm := &gatewayapi.Realm{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "test--test-zone-enterprise",
+					Name:      "test",
+				}, gatewayRealm)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(gatewayRealm.Spec.RouteOverwrites).To(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -205,9 +287,44 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 			Name:      "test-zone",
 			Namespace: "test--test-zone",
 		},
+		Claims: []identityapi.ClaimConfig{
+			{
+				Name:  "originZone",
+				Value: zoneToVerify.Name,
+				Type:  identityapi.ClaimTypeHardcodedClaim,
+			},
+			{
+				Name:  "originStargate",
+				Value: zoneToVerify.Spec.Gateway.Url,
+				Type:  identityapi.ClaimTypeHardcodedClaim,
+			},
+			{
+				Name: "clientId",
+				Type: identityapi.ClaimTypeSessionNote,
+			},
+		},
 	}
 	g.Expect(identityProviderRealm.Spec).To(Equal(*identityProviderSpecRealm))
 	g.Expect(zone.Status.IdentityRealm).To(Equal(types.ObjectRefFromObject(identityProviderRealm)))
+
+	// Internal identity realm (rover) for admin-config clients
+	By("Checking if the internal identity realm (rover) is created and spec is valid")
+	internalIdentityRealm := &identityapi.Realm{}
+	internalIdentityRealmRef := client.ObjectKey{
+		Namespace: "test--test-zone",
+		Name:      "rover",
+	}
+	err = k8sClient.Get(ctx, internalIdentityRealmRef, internalIdentityRealm)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	internalIdentityRealmSpec := &identityapi.RealmSpec{
+		IdentityProvider: &types.ObjectRef{
+			Name:      "test-zone",
+			Namespace: "test--test-zone",
+		},
+	}
+	g.Expect(internalIdentityRealm.Spec).To(Equal(*internalIdentityRealmSpec))
+	g.Expect(zone.Status.InternalIdentityRealm).To(Equal(types.ObjectRefFromObject(internalIdentityRealm)))
 
 	// Identity provider client (gateway client)
 	By("Checking if the identity provider client (gateway) is created and spec is valid")
@@ -274,6 +391,11 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 		Urls:             []string{"https://test-stargate.de/"},
 		IssuerUrls:       []string{"https://test-iris.de/auth/realms/test"},
 		DefaultConsumers: []string{},
+		RouteOverwrites: []gatewayapi.RouteOverwrite{
+			{Type: gatewayapi.RouteTypeIssuer, Enabled: true, PathPrefix: "/spacegate"},
+			{Type: gatewayapi.RouteTypeCerts, Enabled: true, PathPrefix: "/spacegate"},
+			{Type: gatewayapi.RouteTypeDiscovery, Enabled: true, PathPrefix: "/spacegate"},
+		},
 	}
 	g.Expect(gatewayRealm.Spec).To(Equal(gatewayRealmSpec))
 	g.Expect(zone.Status.GatewayRealm).To(Equal(types.ObjectRefFromObject(gatewayRealm)))
@@ -310,6 +432,11 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 		Urls:             []string{"https://test-stargate.de/"},
 		IssuerUrls:       []string{"https://test-iris.de/auth/realms/team-test"},
 		DefaultConsumers: []string{},
+		RouteOverwrites: []gatewayapi.RouteOverwrite{
+			{Type: gatewayapi.RouteTypeIssuer, Enabled: true, PathPrefix: "/spacegate"},
+			{Type: gatewayapi.RouteTypeCerts, Enabled: true, PathPrefix: "/spacegate"},
+			{Type: gatewayapi.RouteTypeDiscovery, Enabled: true, PathPrefix: "/spacegate"},
+		},
 	}
 	g.Expect(teamApiGatewayRealm.Spec).To(Equal(teamApiGatewayRealmSpec))
 	g.Expect(zone.Status.TeamApiGatewayRealm).To(Equal(types.ObjectRefFromObject(teamApiGatewayRealm)))

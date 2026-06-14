@@ -196,6 +196,42 @@ func ConfigureKeycloakClientMock(mockedClient *keycloakclient.MockKeycloakClient
 			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
 		}, nil).Maybe()
 
+	// Client-policy profile and policy operations used by
+	// ConfigureSecretRotationPolicy / DeleteSecretRotationPolicy.
+	mockedClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("*api.GetRealmClientPoliciesProfilesParams")).
+		Return(&api.GetRealmClientPoliciesProfilesResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusOK}),
+			JSON2XX:      &api.ClientProfilesRepresentation{},
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().PutRealmClientPoliciesProfilesWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("api.ClientProfilesRepresentation")).
+		Return(&api.PutRealmClientPoliciesProfilesResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("*api.GetRealmClientPoliciesPoliciesParams")).
+		Return(&api.GetRealmClientPoliciesPoliciesResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusOK}),
+			JSON2XX:      &api.ClientPoliciesRepresentation{},
+		}, nil).Maybe()
+
+	mockedClient.EXPECT().PutRealmClientPoliciesPoliciesWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("api.ClientPoliciesRepresentation")).
+		Return(&api.PutRealmClientPoliciesPoliciesResponse{
+			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
+		}, nil).Maybe()
+
 }
 
 func mockGetRealmResponse(realm string, body []byte) *api.GetRealmResponse {

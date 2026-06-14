@@ -108,6 +108,7 @@ type KeycloakService interface {
 	CreateOrReplaceRealm(ctx context.Context, realm *identityv1.Realm) error
 	DeleteRealm(ctx context.Context, realmName string) error
 	ConfigureSecretRotationPolicy(ctx context.Context, realmName string, policy *identityv1.SecretRotationConfig) error
+	DeleteSecretRotationPolicy(ctx context.Context, realmName string) error
 	ConfigureClientScopes(ctx context.Context, realmName string, claims []identityv1.ClaimConfig) error
 
 	// Client operations

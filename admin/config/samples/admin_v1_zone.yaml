@@ -28,9 +28,10 @@ spec:
     host: bla
     port: 0
     password: password
-  teamApis:
-    apis:
+  managedRoutes:
+    routes:
       - name: my-first-team-api
         path: /my/first/team/api
         url: https://somewhere.com/other/api/path
+        type: TeamAPI
 

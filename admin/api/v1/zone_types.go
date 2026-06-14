@@ -78,6 +78,22 @@ type GatewayConfig struct {
 	CircuitBreaker bool `json:"circuitBreaker"`
 }
 
+// ManagedRouteType defines the type of a managed route.
+// +kubebuilder:validation:Enum=TeamAPI;Proxy
+type ManagedRouteType string
+
+const (
+	// ManagedRouteTypeTeamAPI creates a route with authentication (PassThrough=false)
+	// and disabled access control on the zone's team-api gateway realm.
+	// Used for team APIs that require token validation but no per-consumer ACLs.
+	ManagedRouteTypeTeamAPI ManagedRouteType = "TeamAPI"
+
+	// ManagedRouteTypeProxy creates a fully passthrough route (PassThrough=true)
+	// on the zone's default gateway realm that acts as a pure reverse proxy
+	// without any authentication or authorization.
+	ManagedRouteTypeProxy ManagedRouteType = "Proxy"
+)
+
 // AiGatewayConfig configures an optional AI Gateway for this zone.
 // When present, the zone supports MCP (Model Context Protocol) exposures
 // that are routed through a dedicated AI Gateway instance with streaming support.
@@ -90,7 +106,7 @@ type AiGatewayConfig struct {
 	Url string `json:"url"`
 }
 
-type ApiConfig struct {
+type ManagedRouteConfig struct {
 	// Name is the name of the created route. It must be unique within the zone.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
@@ -103,10 +119,18 @@ type ApiConfig struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"url"`
+	// Type selects the route behavior: TeamAPI (authenticated, no ACL) or Proxy (passthrough reverse proxy).
+	// +kubebuilder:validation:Required
+	Type ManagedRouteType `json:"type"`
 }
 
-type TeamApiConfig struct {
-	Apis []ApiConfig `json:"apis"`
+// ManagedRoutesConfig defines the configuration for managed routes in a zone.
+// Managed routes are automatically created and managed by the system based on this configuration.
+type ManagedRoutesConfig struct {
+	// Routes is the list of routes to be created for this zone.
+	// It may be used to create additional routes that are required for operating the zone
+	// +optional
+	Routes []ManagedRouteConfig `json:"routes"`
 }
 
 type PermissionsConfig struct {
@@ -154,7 +178,7 @@ type ZoneSpec struct {
 	IdentityProvider IdentityProviderConfig `json:"identityProvider"`
 	Gateway          GatewayConfig          `json:"gateway"`
 	Redis            RedisConfig            `json:"redis"`
-	TeamApis         *TeamApiConfig         `json:"teamApis,omitempty"`
+	ManagedRoutes    *ManagedRoutesConfig   `json:"managedRoutes,omitempty"`
 	// +kubebuilder:validation:Enum=World;Enterprise
 	// Visibility controls what subscriptions are allowed from and to this zone. It's also relevant for features like failover
 	Visibility ZoneVisibility `json:"visibility"`
@@ -212,9 +236,10 @@ type ZoneStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	Namespace        string           `json:"namespace,omitempty"`
-	IdentityProvider *types.ObjectRef `json:"identityProvider,omitempty"`
-	IdentityRealm    *types.ObjectRef `json:"identityRealm,omitempty"`
+	Namespace             string           `json:"namespace,omitempty"`
+	IdentityProvider      *types.ObjectRef `json:"identityProvider,omitempty"`
+	IdentityRealm         *types.ObjectRef `json:"identityRealm,omitempty"`
+	InternalIdentityRealm *types.ObjectRef `json:"internalIdentityRealm,omitempty"`
 
 	Gateway         *types.ObjectRef `json:"gateway,omitempty"`
 	GatewayRealm    *types.ObjectRef `json:"gatewayRealm,omitempty"`
@@ -230,7 +255,7 @@ type ZoneStatus struct {
 
 	TeamApiIdentityRealm *types.ObjectRef  `json:"teamApiIdentityRealm,omitempty"`
 	TeamApiGatewayRealm  *types.ObjectRef  `json:"teamApiGatewayRealm,omitempty"`
-	TeamApiRoutes        []types.ObjectRef `json:"teamApiRoutes,omitempty"`
+	ManagedRoutes        []types.ObjectRef `json:"managedRoutes,omitempty"`
 	Links                Links             `json:"links,omitempty"`
 
 	// Features is a list of features that are enabled or disabled for this zone.

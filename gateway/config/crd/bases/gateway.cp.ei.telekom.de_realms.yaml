@@ -78,6 +78,42 @@ spec:
                 minItems: 1
                 type: array
                 x-kubernetes-list-type: set
+              routeOverwrites:
+                description: RouteOverwrites is a list of route overwrites for this
+                  realm. If empty, the default routes will be used
+                items:
+                  description: |-
+                    RouteOverwrite defines the configuration for overwriting a route for a realm.
+                    It allows to enable/disable a route and to specify a custom path prefix for the route.
+                    Per default all routes are enabled and use the default path prefix. If a route is disabled, it will not be created for the realm.
+                  properties:
+                    enabled:
+                      default: true
+                      description: Enabled indicates whether the route is enabled
+                        or not. If false, the route will be disabled and not created
+                      type: boolean
+                    pathPrefix:
+                      default: ""
+                      description: PathPrefix is the path prefix to use for the route.
+                        If empty, no prefix will be used
+                      pattern: ^(\/[a-zA-Z0-9\-\/]*)?$
+                      type: string
+                    type:
+                      description: Type is the type of route to overwrite. It is used
+                        to determine which route to overwrite
+                      enum:
+                      - issuer
+                      - certs
+                      - discovery
+                      type: string
+                  required:
+                  - enabled
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               urls:
                 description: Urls is the list of Gateway URLs that this realm should
                   accept traffic from
