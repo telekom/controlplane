@@ -178,7 +178,6 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "RemoteOrganization")
 		os.Exit(1)
 	}
-	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err := webhookv1.SetupZoneWebhookWithManager(mgr, secretsapi.API()); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Zone")

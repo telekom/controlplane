@@ -7,22 +7,23 @@ package controller
 import (
 	"fmt"
 
-	"github.com/telekom/controlplane/api/internal/handler/util"
-	applicationapi "github.com/telekom/controlplane/application/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/util"
+	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,7 +48,7 @@ func CreateZone(name string) *adminapi.Zone {
 			IdentityProvider: adminapi.IdentityProviderConfig{
 				Url: "http://idp.test.local:8080",
 				Admin: adminapi.IdentityProviderAdminConfig{
-					Url: "http://idp-admin.test.local:8080",
+					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
 			},
 			Redis: adminapi.RedisConfig{

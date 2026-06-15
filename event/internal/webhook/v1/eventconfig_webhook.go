@@ -183,19 +183,8 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 	}
 
 	// Resolve realm references from the Zone if not explicitly specified.
-	if adminClient.Realm.IsEmpty() || meshClient.Realm.IsEmpty() {
-		zone := &adminv1.Zone{}
-		if err = d.reader.Get(ctx, eventCfg.Spec.Zone.K8s(), zone); err != nil {
-			return errors.Wrapf(err, "failed to get Zone %q for realm defaulting", eventCfg.Spec.Zone.String())
-		}
-		if adminClient.Realm.IsEmpty() && zone.Status.InternalIdentityRealm != nil {
-			adminClient.Realm = *zone.Status.InternalIdentityRealm
-			log.Info("Defaulted admin client realm from zone", "realm", adminClient.Realm.String())
-		}
-		if meshClient.Realm.IsEmpty() && zone.Status.IdentityRealm != nil {
-			meshClient.Realm = *zone.Status.IdentityRealm
-			log.Info("Defaulted mesh client realm from zone", "realm", meshClient.Realm.String())
-		}
+	if err := d.defaultRealmsFromZone(ctx, eventCfg, adminClient, meshClient); err != nil {
+		return err
 	}
 
 	// On UPDATE, preserve existing secrets when the new value is empty.
@@ -221,20 +210,46 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 	}
 
 	log.Info("Secret-Manager is disabled, skipping onboarding of secrets for EventConfig")
+	return d.generateLocalSecrets(adminClient, meshClient)
+}
 
+// defaultRealmsFromZone resolves realm references from the Zone if not explicitly specified.
+func (d *EventConfigCustomDefaulter) defaultRealmsFromZone(ctx context.Context, eventCfg *eventv1.EventConfig, adminClient, meshClient *eventv1.ClientConfig) error {
+	if !adminClient.Realm.IsEmpty() && !meshClient.Realm.IsEmpty() {
+		return nil
+	}
+
+	zone := &adminv1.Zone{}
+	if err := d.reader.Get(ctx, eventCfg.Spec.Zone.K8s(), zone); err != nil {
+		return errors.Wrapf(err, "failed to get Zone %q for realm defaulting", eventCfg.Spec.Zone.String())
+	}
+	if adminClient.Realm.IsEmpty() && zone.Status.InternalIdentityRealm != nil {
+		adminClient.Realm = *zone.Status.InternalIdentityRealm
+		log.Info("Defaulted admin client realm from zone", "realm", adminClient.Realm.String())
+	}
+	if meshClient.Realm.IsEmpty() && zone.Status.IdentityRealm != nil {
+		meshClient.Realm = *zone.Status.IdentityRealm
+		log.Info("Defaulted mesh client realm from zone", "realm", meshClient.Realm.String())
+	}
+	return nil
+}
+
+// generateLocalSecrets generates secrets locally when the Secret-Manager is disabled.
+func (d *EventConfigCustomDefaulter) generateLocalSecrets(adminClient, meshClient *eventv1.ClientConfig) error {
 	if adminClient.ClientSecret == "" || adminClient.ClientSecret == secretsapi.KeywordRotate {
-		adminClient.ClientSecret, err = secretsapi.GenerateSecret()
+		secret, err := secretsapi.GenerateSecret()
 		if err != nil {
 			return errors.Wrap(err, "failed to generate admin client secret")
 		}
+		adminClient.ClientSecret = secret
 	}
 	if meshClient.ClientSecret == "" || meshClient.ClientSecret == secretsapi.KeywordRotate {
-		meshClient.ClientSecret, err = secretsapi.GenerateSecret()
+		secret, err := secretsapi.GenerateSecret()
 		if err != nil {
 			return errors.Wrap(err, "failed to generate mesh client secret")
 		}
+		meshClient.ClientSecret = secret
 	}
-
 	return nil
 }
 

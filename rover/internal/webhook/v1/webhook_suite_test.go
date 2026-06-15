@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	// +kubebuilder:scaffold:imports
@@ -204,7 +205,7 @@ func NewZone(name string, environment string) *adminv1.Zone {
 			IdentityProvider: adminv1.IdentityProviderConfig{
 				Url: "http://idp.test.local:8080",
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url: "http://idp-admin.test.local:8080",
+					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
 			},
 			Redis: adminv1.RedisConfig{

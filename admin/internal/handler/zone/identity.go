@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 
-	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -20,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 // createIdentityProvider creates the IdentityProvider resource for the zone.
@@ -242,15 +242,4 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 		return nil, ctrlerrors.RetryableErrorf("failed to create or update Identity Realm %s in zone %s: %s", identityRealm.Name, hc.Zone.Name, err)
 	}
 	return identityRealm, nil
-}
-
-// getIdentityClient retrieves an existing identity client by reference.
-func getIdentityClient(ctx context.Context, ref *types.ObjectRef) (*identityapi.Client, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-	identityClient := &identityapi.Client{}
-	err := c.Get(ctx, ref.K8s(), identityClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get identity client %s: %w", ref.Name, err)
-	}
-	return identityClient, nil
 }

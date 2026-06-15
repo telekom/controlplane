@@ -166,7 +166,7 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 	if needsRedisPassword {
 		ref, found := secretsapi.FindSecretId(availableSecrets, redisPasswordPath)
 		if !found {
-			return fmt.Errorf("Redis password reference not found in onboarding response")
+			return fmt.Errorf("redis password reference not found in onboarding response")
 		}
 		zone.Spec.Redis.Password = ref
 		zonelog.Info("Onboarded Redis password for Zone", "secretId", redisPasswordPath)

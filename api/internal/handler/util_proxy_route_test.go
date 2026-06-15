@@ -8,9 +8,8 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
@@ -21,6 +20,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func CreateZone(name string) *adminapi.Zone {
@@ -42,7 +44,7 @@ func CreateZone(name string) *adminapi.Zone {
 			IdentityProvider: adminapi.IdentityProviderConfig{
 				Url: "http://idp.test.local:8080",
 				Admin: adminapi.IdentityProviderAdminConfig{
-					Url: "http://idp-admin.test.local:8080",
+					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
 			},
 			Redis: adminapi.RedisConfig{
