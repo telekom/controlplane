@@ -388,7 +388,7 @@ var _ = Describe("Rover Status Mapper", func() {
 			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
 		})
 
-		It("if processing has unknown reason and ready is false with unknown reason returns failed", func() {
+		It("if processing has unknown reason and ready is false with unknown reason returns blocked", func() {
 			conditions := []metav1.Condition{
 				{
 					Type:    condition.ConditionTypeProcessing,

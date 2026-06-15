@@ -82,7 +82,7 @@ func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status
 	if ready != nil && ready.Status == metav1.ConditionTrue {
 		// Ready=True: resource is functional.
 		// Guard against stale Ready when Processing explicitly says Blocked.
-		if processing != nil && processing.Reason == "Blocked" {
+		if processing != nil && processing.Reason == condition.ReasonBlocked {
 			// Contradictory: Ready=True but Processing=Blocked → trust Processing (Ready is stale).
 			status.State = api.Blocked
 			status.ProcessingState = api.ProcessingStateDone
@@ -128,7 +128,7 @@ func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status
 		return
 	}
 
-	if processing.Reason == "Blocked" {
+	if processing.Reason == condition.ReasonBlocked {
 		status.State = api.Blocked
 		status.ProcessingState = api.ProcessingStateDone
 		status.Warnings = []api.StateInfo{
@@ -137,7 +137,7 @@ func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status
 		return
 	}
 
-	if processing.Reason == "Done" {
+	if processing.Reason == condition.ReasonDone {
 		status.State = api.None
 		status.ProcessingState = api.ProcessingStateDone
 		return
