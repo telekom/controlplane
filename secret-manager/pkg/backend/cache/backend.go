@@ -115,6 +115,20 @@ func (c *CachedBackend[T, S]) registerChild(id T) {
 	actual.(*sync.Map).Store(childKey, struct{}{})
 }
 
+// unregisterChild removes a sub-secret's cache key from its parent's tracking
+// set. This prevents unbounded growth of the children map when sub-secrets are
+// deleted without the parent being updated.
+func (c *CachedBackend[T, S]) unregisterChild(id T) {
+	if id.SubPath() == backend.NoSubPath {
+		return
+	}
+	parentKey := id.ParentId().CacheKey()
+	childKey := id.CacheKey()
+	if childMap, ok := c.children.Load(parentKey); ok {
+		childMap.(*sync.Map).Delete(childKey)
+	}
+}
+
 // invalidateChildren removes all cached sub-secret entries derived from a parent
 // secret when the parent is written or deleted. This prevents stale reads of
 // sub-secrets after the parent document is updated directly.
@@ -142,6 +156,7 @@ func (c *CachedBackend[T, S]) Delete(ctx context.Context, id T) error {
 	c.Cache.Del(cacheKey)
 	c.invalidateParent(id)
 	c.invalidateChildren(id)
+	c.unregisterChild(id)
 	return c.Backend.Delete(ctx, id)
 }
 
@@ -235,9 +250,9 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 		log.Info("Failed to add item to cache", "id", cacheKey)
 	}
 	c.group.Forget(cacheKey)
-	c.registerChild(id)
-	c.invalidateParent(id)
 	c.invalidateChildren(id)
+	c.invalidateParent(id)
+	c.registerChild(id)
 
 	return item, nil
 }
