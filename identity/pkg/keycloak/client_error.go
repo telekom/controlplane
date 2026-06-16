@@ -112,6 +112,4 @@ func IsNotFound(err error) bool {
 
 // errorAs is a thin wrapper around errors.As to allow testing with the
 // unexported apiError type. Production code uses the standard library.
-var errorAs = func(err error, target interface{}) bool {
-	return stderrors.As(err, target)
-}
+var errorAs = stderrors.As

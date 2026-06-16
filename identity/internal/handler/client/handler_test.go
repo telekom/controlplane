@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +27,9 @@ import (
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/identity/test/mocks/keycloakservice"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // notFoundError implements the apierrors.APIStatus interface for testing.
@@ -96,7 +97,6 @@ func mockRealmGet(mockK8s *fake.MockJanitorClient, realm *identityv1.Realm) {
 }
 
 var _ = Describe("HandlerClient", func() {
-
 	var (
 		mockK8s *fake.MockJanitorClient
 		ctx     context.Context
@@ -108,7 +108,6 @@ var _ = Describe("HandlerClient", func() {
 	})
 
 	Context("CreateOrUpdate", func() {
-
 		It("should return an error when the client is nil", func() {
 			handler := NewHandlerClient(keycloak.NewServiceFactory())
 			err := handler.CreateOrUpdate(context.Background(), nil)
@@ -1089,11 +1088,9 @@ var _ = Describe("HandlerClient", func() {
 			Expect(cl.Status.RotatedSecretExpiresAt).To(BeNil())
 			Expect(cl.Status.SecretExpiresAt).To(BeNil())
 		})
-
 	})
 
 	Context("Delete", func() {
-
 		BeforeEach(func() {
 			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
 				return "resolved-secret", nil
@@ -1194,7 +1191,6 @@ var _ = Describe("HandlerClient", func() {
 	})
 
 	Context("mapToClientStatus", func() {
-
 		It("should set IssuerUrl from realm status", func() {
 			realmStatus := &identityv1.RealmStatus{
 				IssuerUrl: "https://issuer.example.com",

@@ -8,6 +8,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
@@ -16,10 +20,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ handler.Handler[*apiapi.RemoteApiSubscription] = (*RemoteApiSubscriptionHandler)(nil)
@@ -39,6 +39,7 @@ func (h *RemoteApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *
 	return h.handleProviderScenario(ctx, obj)
 }
 
+//nolint:nestif // Delete handles local cleanup and optional remote sync teardown.
 func (h *RemoteApiSubscriptionHandler) Delete(ctx context.Context, obj *apiapi.RemoteApiSubscription) error {
 	c := client.ClientFromContextOrDie(ctx)
 
@@ -63,9 +64,9 @@ func (h *RemoteApiSubscriptionHandler) Delete(ctx context.Context, obj *apiapi.R
 			}
 		}
 
-		err := h.SyncerFactory.NewClient(remoteOrg).Delete(ctx, obj)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete RemoteApiSubscription on remote CP")
+		syncErr := h.SyncerFactory.NewClient(remoteOrg).Delete(ctx, obj)
+		if syncErr != nil {
+			return errors.Wrapf(syncErr, "failed to delete RemoteApiSubscription on remote CP")
 		}
 	}
 
@@ -77,18 +78,18 @@ func (h *RemoteApiSubscriptionHandler) Delete(ctx context.Context, obj *apiapi.R
 // IshandledRemotely checks if this RemoteApiSubscription is not handled by this CP
 // but rather by another CP. It does so by checking if a RemoteOrganization exists
 func IshandledRemotely(ctx context.Context, obj *apiapi.RemoteApiSubscription) (bool, *adminapi.RemoteOrganization, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
 	remoteOrg := &adminapi.RemoteOrganization{}
 	remoteOrgRef := types.ObjectRef{Name: obj.Spec.TargetOrganization, Namespace: contextutil.EnvFromContextOrDie(ctx)}
 	err := c.Get(ctx, remoteOrgRef.K8s(), remoteOrg)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("RemoteOrganization not found, assuming RemoteApiSubscription is handled locally")
+			logger.Info("RemoteOrganization not found, assuming RemoteApiSubscription is handled locally")
 			return false, nil, nil
 		}
 		return false, nil, errors.Wrapf(err, "failed to get remote organization %s", remoteOrgRef.Name)
 	}
-	log.Info("RemoteOrganization found, assuming RemoteApiSubscription is handled remotely")
+	logger.Info("RemoteOrganization found, assuming RemoteApiSubscription is handled remotely")
 	return true, remoteOrg, nil
 }

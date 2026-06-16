@@ -8,16 +8,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/common/pkg/handler"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/handler"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/internal/handler/identityprovider"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
-
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -77,13 +76,18 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	}
 
 	// If secret rotation is configured, ensure the Keycloak realm has the
-	// corresponding client-policy profile + policy.
+	// corresponding client-policy profile + policy. Otherwise, remove any
+	// previously created profile + policy so they don't linger.
 	if realm.SupportsGracefulSecretRotation() {
 		logger.Info("configuring secret rotation policy for realm", "realm", realm.Name, "policy", realm.Spec.SecretRotation)
 		if err := realmClient.ConfigureSecretRotationPolicy(
 			ctx, realm.Name, realm.Spec.SecretRotation,
 		); err != nil {
 			return fmt.Errorf("failed to configure secret rotation policy: %w", err)
+		}
+	} else {
+		if err := realmClient.DeleteSecretRotationPolicy(ctx, realm.Name); err != nil {
+			return fmt.Errorf("failed to delete secret rotation policy: %w", err)
 		}
 	}
 
@@ -100,7 +104,6 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 }
 
 func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) error {
-
 	logger := log.FromContext(ctx)
 	logger.Info("RealmHandler Delete", "realm", realm.Name, "namespace", realm.Namespace)
 

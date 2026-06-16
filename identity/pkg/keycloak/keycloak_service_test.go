@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -20,6 +18,9 @@ import (
 	"github.com/telekom/controlplane/identity/pkg/api"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/identity/test/mocks/keycloakclient"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // helper to build a minimal http.Response with a given status code.
@@ -28,6 +29,8 @@ func httpResp(code int) *http.Response {
 }
 
 // helper to build a minimal http.Response with a Location header.
+//
+//nolint:unparam // Shared test helper keeps the status code argument for readability at call sites.
 func httpRespWithLocation(code int, location string) *http.Response {
 	return &http.Response{
 		StatusCode: code,
@@ -42,12 +45,14 @@ func newIdentityClient(clientId, secret string) *identityv1.Client {
 	}
 }
 
+//nolint:unparam // The helper mirrors the test data shape used throughout this suite.
 func newIdentityClientWithUID(clientId, secret, uid string) *identityv1.Client {
 	c := newIdentityClient(clientId, secret)
 	c.Status.ClientUid = uid
 	return c
 }
 
+//nolint:unparam // The name parameter keeps the helper flexible and self-documenting in tests.
 func newRealm(name string) *identityv1.Realm {
 	return &identityv1.Realm{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
@@ -56,12 +61,11 @@ func newRealm(name string) *identityv1.Realm {
 
 func newMockClient() *keycloakclient.MockKeycloakClient {
 	m := &keycloakclient.MockKeycloakClient{}
-	m.Mock.Test(GinkgoT())
+	m.Test(GinkgoT())
 	return m
 }
 
 var _ = Describe("KeycloakService", func() {
-
 	var (
 		mockClient *keycloakclient.MockKeycloakClient
 		svc        keycloak.KeycloakService
@@ -77,9 +81,7 @@ var _ = Describe("KeycloakService", func() {
 	// ── CreateOrReplaceClient ──────────────────────────────────────────
 
 	Describe("CreateOrReplaceClient", func() {
-
 		Context("when client does not exist (create path)", func() {
-
 			BeforeEach(func() {
 				// getClient returns empty list (no UID on client, search by clientId)
 				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
@@ -135,7 +137,6 @@ var _ = Describe("KeycloakService", func() {
 		})
 
 		Context("when client exists (update path)", func() {
-
 			It("should update existing client and set UID in status", func() {
 				client := newIdentityClient("my-app", "new-secret")
 				existing := api.ClientRepresentation{
@@ -335,7 +336,6 @@ var _ = Describe("KeycloakService", func() {
 		})
 
 		Context("when client lookup by UID succeeds", func() {
-
 			It("should find client by UID and update", func() {
 				client := newIdentityClientWithUID("my-app", "new-secret", "uuid-123")
 				mockClient.EXPECT().GetRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-123").
@@ -371,7 +371,6 @@ var _ = Describe("KeycloakService", func() {
 		})
 
 		Context("when getClient fails", func() {
-
 			DescribeTable("should propagate error",
 				func(networkErr error, expectedSubstring string) {
 					client := newIdentityClient("my-app", "secret")
@@ -439,7 +438,6 @@ var _ = Describe("KeycloakService", func() {
 	// ── CreateOrReplaceRealm ───────────────────────────────────────────
 
 	Describe("CreateOrReplaceRealm", func() {
-
 		It("should create a new realm when it does not exist", func() {
 			realm := newRealm("my-realm")
 			mockClient.EXPECT().GetRealmWithResponse(mock.Anything, "my-realm").
@@ -510,7 +508,6 @@ var _ = Describe("KeycloakService", func() {
 	// ── DeleteClient ───────────────────────────────────────────────────
 
 	Describe("DeleteClient", func() {
-
 		It("should skip deletion when client does not exist", func() {
 			client := newIdentityClient("my-app", "secret")
 			mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
@@ -566,7 +563,6 @@ var _ = Describe("KeycloakService", func() {
 	// ── DeleteRealm ────────────────────────────────────────────────────
 
 	Describe("DeleteRealm", func() {
-
 		DescribeTable("should handle various status codes",
 			func(statusCode int, expectErr bool) {
 				mockClient.EXPECT().DeleteRealmWithResponse(mock.Anything, "realm1").
@@ -597,7 +593,6 @@ var _ = Describe("KeycloakService", func() {
 	// ── ConfigureSecretRotationPolicy ──────────────────────────────────
 
 	Describe("ConfigureSecretRotationPolicy", func() {
-
 		policy := &identityv1.SecretRotationConfig{
 			ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
 			GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
@@ -605,7 +600,6 @@ var _ = Describe("KeycloakService", func() {
 		}
 
 		Context("when profiles and policies do not exist yet", func() {
-
 			It("should create both profile and policy", func() {
 				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
 					Return(&api.GetRealmClientPoliciesProfilesResponse{
@@ -628,7 +622,6 @@ var _ = Describe("KeycloakService", func() {
 		})
 
 		Context("when profiles and policies already exist", func() {
-
 			It("should update existing profile and policy in place", func() {
 				existingProfile := api.ClientProfileRepresentation{
 					Name: ptr.To("controlplane-secret-rotation"),
@@ -662,7 +655,6 @@ var _ = Describe("KeycloakService", func() {
 		})
 
 		Context("when GET profiles returns nil JSON2XX", func() {
-
 			It("should handle nil response body gracefully", func() {
 				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
 					Return(&api.GetRealmClientPoliciesProfilesResponse{
@@ -774,10 +766,225 @@ var _ = Describe("KeycloakService", func() {
 		)
 	})
 
+	// ── DeleteSecretRotationPolicy ────────────────────────────────────
+
+	Describe("DeleteSecretRotationPolicy", func() {
+		Context("when profile and policy entries exist", func() {
+			It("should remove the profile and policy", func() {
+				existingProfile := api.ClientProfileRepresentation{
+					Name: ptr.To("controlplane-secret-rotation"),
+				}
+				otherProfile := api.ClientProfileRepresentation{
+					Name: ptr.To("other-profile"),
+				}
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &api.ClientProfilesRepresentation{
+							Profiles: &[]api.ClientProfileRepresentation{otherProfile, existingProfile},
+						},
+					}, nil)
+				mockClient.EXPECT().PutRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.MatchedBy(func(body api.ClientProfilesRepresentation) bool {
+					if body.Profiles == nil {
+						return false
+					}
+					// Should contain only the other profile
+					return len(*body.Profiles) == 1 && *(*body.Profiles)[0].Name == "other-profile"
+				})).
+					Return(&api.PutRealmClientPoliciesProfilesResponse{HTTPResponse: httpResp(204)}, nil)
+
+				existingPolicy := api.ClientPolicyRepresentation{
+					Name: ptr.To("controlplane-secret-rotation-policy"),
+				}
+				otherPolicy := api.ClientPolicyRepresentation{
+					Name: ptr.To("other-policy"),
+				}
+				mockClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesPoliciesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &api.ClientPoliciesRepresentation{
+							Policies: &[]api.ClientPolicyRepresentation{existingPolicy, otherPolicy},
+						},
+					}, nil)
+				mockClient.EXPECT().PutRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.MatchedBy(func(body api.ClientPoliciesRepresentation) bool {
+					if body.Policies == nil {
+						return false
+					}
+					return len(*body.Policies) == 1 && *(*body.Policies)[0].Name == "other-policy"
+				})).
+					Return(&api.PutRealmClientPoliciesPoliciesResponse{HTTPResponse: httpResp(204)}, nil)
+
+				err := svc.DeleteSecretRotationPolicy(ctx, "realm1")
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("when profile and policy entries do not exist (no-op)", func() {
+			It("should be a no-op when profiles list is nil", func() {
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientProfilesRepresentation{Profiles: nil},
+					}, nil)
+				mockClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesPoliciesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientPoliciesRepresentation{Policies: nil},
+					}, nil)
+
+				err := svc.DeleteSecretRotationPolicy(ctx, "realm1")
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should be a no-op when JSON2XX is nil", func() {
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      nil,
+					}, nil)
+				mockClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesPoliciesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      nil,
+					}, nil)
+
+				err := svc.DeleteSecretRotationPolicy(ctx, "realm1")
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should be a no-op when managed entries are not in the list", func() {
+				otherProfile := api.ClientProfileRepresentation{
+					Name: ptr.To("unrelated-profile"),
+				}
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &api.ClientProfilesRepresentation{
+							Profiles: &[]api.ClientProfileRepresentation{otherProfile},
+						},
+					}, nil)
+
+				otherPolicy := api.ClientPolicyRepresentation{
+					Name: ptr.To("unrelated-policy"),
+				}
+				mockClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesPoliciesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &api.ClientPoliciesRepresentation{
+							Policies: &[]api.ClientPolicyRepresentation{otherPolicy},
+						},
+					}, nil)
+
+				err := svc.DeleteSecretRotationPolicy(ctx, "realm1")
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		DescribeTable("should return error on failure",
+			func(setup func(), expectedSubstring string) {
+				setup()
+				err := svc.DeleteSecretRotationPolicy(ctx, "realm1")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(expectedSubstring))
+			},
+			Entry("GET profiles network error", func() {
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(nil, fmt.Errorf("timeout"))
+			}, "failed to get client profiles"),
+			Entry("GET profiles returns non-200", func() {
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{HTTPResponse: httpResp(500)}, nil)
+			}, "unexpected status getting client profiles"),
+			Entry("PUT profiles returns non-204", func() {
+				existingProfile := api.ClientProfileRepresentation{
+					Name: ptr.To("controlplane-secret-rotation"),
+				}
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &api.ClientProfilesRepresentation{
+							Profiles: &[]api.ClientProfileRepresentation{existingProfile},
+						},
+					}, nil)
+				mockClient.EXPECT().PutRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.PutRealmClientPoliciesProfilesResponse{HTTPResponse: httpResp(400)}, nil)
+			}, "unexpected status putting client profiles"),
+			Entry("PUT profiles network error", func() {
+				existingProfile := api.ClientProfileRepresentation{
+					Name: ptr.To("controlplane-secret-rotation"),
+				}
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &api.ClientProfilesRepresentation{
+							Profiles: &[]api.ClientProfileRepresentation{existingProfile},
+						},
+					}, nil)
+				mockClient.EXPECT().PutRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(nil, fmt.Errorf("connection refused"))
+			}, "failed to put client profiles"),
+			Entry("GET policies network error", func() {
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientProfilesRepresentation{Profiles: nil},
+					}, nil)
+				mockClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(nil, fmt.Errorf("timeout"))
+			}, "failed to get client policies"),
+			Entry("GET policies returns non-200", func() {
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientProfilesRepresentation{Profiles: nil},
+					}, nil)
+				mockClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesPoliciesResponse{HTTPResponse: httpResp(500)}, nil)
+			}, "unexpected status getting client policies"),
+			Entry("PUT policies returns non-204", func() {
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientProfilesRepresentation{Profiles: nil},
+					}, nil)
+				existingPolicy := api.ClientPolicyRepresentation{
+					Name: ptr.To("controlplane-secret-rotation-policy"),
+				}
+				mockClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesPoliciesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &api.ClientPoliciesRepresentation{
+							Policies: &[]api.ClientPolicyRepresentation{existingPolicy},
+						},
+					}, nil)
+				mockClient.EXPECT().PutRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.PutRealmClientPoliciesPoliciesResponse{HTTPResponse: httpResp(400)}, nil)
+			}, "unexpected status putting client policies"),
+			Entry("PUT policies network error", func() {
+				mockClient.EXPECT().GetRealmClientPoliciesProfilesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesProfilesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientProfilesRepresentation{Profiles: nil},
+					}, nil)
+				existingPolicy := api.ClientPolicyRepresentation{
+					Name: ptr.To("controlplane-secret-rotation-policy"),
+				}
+				mockClient.EXPECT().GetRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientPoliciesPoliciesResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &api.ClientPoliciesRepresentation{
+							Policies: &[]api.ClientPolicyRepresentation{existingPolicy},
+						},
+					}, nil)
+				mockClient.EXPECT().PutRealmClientPoliciesPoliciesWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(nil, fmt.Errorf("connection refused"))
+			}, "failed to put client policies"),
+		)
+	})
+
 	// ── GetClientSecretRotationInfo ────────────────────────────────────
 
 	Describe("GetClientSecretRotationInfo", func() {
-
 		It("should return info with no rotated secret when 404", func() {
 			client := newIdentityClient("my-app", "secret")
 			mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).

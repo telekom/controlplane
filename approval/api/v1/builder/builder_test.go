@@ -411,6 +411,78 @@ var _ = Describe("Approval Builder", Ordered, func() {
 
 		})
 
+		It("should treat an Expired Approval (from Granted) as Granted", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			By("creating an approval that was granted and then expired")
+			approvalRequestRef := &ctypes.ObjectRef{
+				Name:      "apisub--5c65994fcc",
+				Namespace: testNamespace,
+			}
+
+			approval = CreateApproval(approvalName, approvalRequestRef)
+			ProgressApproval(approval, approvalv1.ApprovalStateGranted)
+			// Simulate expiration: set State=Expired, keep LastState=Granted
+			approval.Spec.State = approvalv1.ApprovalStateExpired
+			err := k8sClient.Update(ctx, approval)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("creating a new approval request without any changes")
+			err = requester.SetProperties(properties)
+			Expect(err).NotTo(HaveOccurred())
+
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+
+			builder := NewApprovalBuilder(jclient, owner)
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
+			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+			builder.WithTrustedRequesters([]string{"IOnlyTrustThisRandomTeam"})
+
+			res, err := builder.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal(ApprovalResultGranted))
+		})
+
+		It("should treat an Expired Approval (from Suspended) as Denied", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			By("creating an approval that was suspended and then expired")
+			approvalRequestRef := &ctypes.ObjectRef{
+				Name:      "apisub--5c65994fcc",
+				Namespace: testNamespace,
+			}
+
+			approval = CreateApproval(approvalName, approvalRequestRef)
+			ProgressApproval(approval, approvalv1.ApprovalStateSuspended)
+			// Simulate expiration: set State=Expired, keep LastState=Suspended
+			approval.Spec.State = approvalv1.ApprovalStateExpired
+			err := k8sClient.Update(ctx, approval)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("creating a new approval request without any changes")
+			err = requester.SetProperties(properties)
+			Expect(err).NotTo(HaveOccurred())
+
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+
+			builder := NewApprovalBuilder(jclient, owner)
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
+			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+			builder.WithTrustedRequesters([]string{"IOnlyTrustThisRandomTeam"})
+
+			res, err := builder.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal(ApprovalResultDenied))
+		})
+
 		It("should ignore approvals for a different state", func() {
 			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
 			By("creating an approval-request")

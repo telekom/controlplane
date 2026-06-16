@@ -222,6 +222,7 @@ spec:
                 - Granted
                 - Rejected
                 - Suspended
+                - Expired
                 type: string
               strategy:
                 default: Auto
@@ -347,6 +348,10 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              expiresAt:
+                description: ExpiresAt is the timestamp at which this approval expires.
+                format: date-time
+                type: string
               lastState:
                 default: Pending
                 description: LastState defines the last state of the approval
@@ -356,6 +361,7 @@ spec:
                 - Granted
                 - Rejected
                 - Suspended
+                - Expired
                 type: string
               notificationRefs:
                 description: NotificationRefs is a reference to the notifications

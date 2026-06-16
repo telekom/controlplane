@@ -7,8 +7,6 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -19,6 +17,8 @@ import (
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // RemoteApiSubscriptionReconciler reconciles a RemoteApiSubscription object
