@@ -1,6 +1,6 @@
 ## Context
 
-The current Go control plane validates API category compatibility during `ApiSpecification` admission, but `ApiExposure` and `ApiSubscription` handlers still miss runtime category compatibility checks. This leaves a gap where category policy can be bypassed after API registration and leads to inconsistent governance outcomes.
+The current Go control plane validates API categories during `ApiSpecification` admission, but `ApiExposure` and `ApiSubscription` handlers still need to enforce the live `ApiCategory.allowTeams.categories` policy at runtime. This leaves a gap where category policy can be bypassed after API registration and leads to inconsistent governance outcomes.
 
 Both handlers already resolve the active `Api` and the related `Application`, which provides all data needed for policy evaluation:
 - API category from `Api.Spec.Category`
@@ -9,9 +9,9 @@ Both handlers already resolve the active `Api` and the related `Application`, wh
 ## Goals / Non-Goals
 
 **Goals:**
-- Enforce team-category vs API-category compatibility in `ApiExposure` handling.
-- Enforce team-category vs API-category compatibility in `ApiSubscription` handling.
-- Use `ApiCategory` resources as the policy source of truth for allowed team categories.
+- Enforce `ApiCategory.allowTeams.categories` policy in `ApiExposure` handling.
+- Enforce `ApiCategory.allowTeams.categories` policy in `ApiSubscription` handling.
+- Use `ApiCategory` resources as the policy source of truth for allowed team categories, including the unrestricted case when `allowTeams` is omitted.
 - Surface clear blocked conditions/messages when policy denies the action.
 - Keep behavior aligned across API registration and runtime API-domain resources.
 
@@ -19,7 +19,6 @@ Both handlers already resolve the active `Api` and the related `Application`, wh
 - Changing `ApiCategory` CRD schema or policy semantics.
 - Introducing new category mapping models.
 - Refactoring unrelated exposure/subscription validation logic.
-- Implementing team-name based checks for this feature.
 
 ## Decisions
 
@@ -62,5 +61,4 @@ If `ApiCategory` is missing/inactive/not allowed for the team category, handlers
 
 ## Open Questions
 
-- Should `ApiSubscription` evaluate only team category (this change) or also team-name allowlists from `ApiCategory` in a follow-up?
 - Should we add a feature flag for gradual rollout, or enforce immediately as default behavior?

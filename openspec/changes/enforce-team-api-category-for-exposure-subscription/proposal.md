@@ -1,12 +1,12 @@
 ## Why
 
-`ApiExposure` and `ApiSubscription` currently do not enforce team-category vs API-category compatibility in the Go control plane, while the legacy Stargate implementation performed category validation before provisioning. This gap creates governance drift and unpredictable access behavior across API domain resources.
+`ApiExposure` and `ApiSubscription` currently do not enforce the live `ApiCategory.allowTeams.categories` policy in the Go control plane. This creates governance drift between declared category policy and runtime behavior.
 
 ## What Changes
 
-- Add category-compatibility validation to `ApiExposure` reconciliation, blocking provisioning when the provider team category is not allowed for the API category.
-- Add category-compatibility validation to `ApiSubscription` reconciliation, blocking provisioning when the subscriber team category is not allowed for the API category.
-- Reuse the existing `ApiCategory` policy model (`allowTeams.categories`) as the source of truth for allowed team categories.
+- Add category-policy validation to `ApiExposure` reconciliation, blocking provisioning when the provider team category is not allowed by the referenced `ApiCategory`.
+- Add category-policy validation to `ApiSubscription` reconciliation, blocking provisioning when the subscriber team category is not allowed by the referenced `ApiCategory`.
+- Reuse the existing `ApiCategory.allowTeams.categories` policy as the source of truth for allowed team categories.
 - Add explicit status conditions/messages to make category mismatches observable and actionable.
 - Add tests covering allowed and denied combinations for both resources.
 
