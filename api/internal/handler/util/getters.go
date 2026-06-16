@@ -9,35 +9,35 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/telekom/controlplane/common/pkg/config"
-
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var (
-	ApplicationLabelKey = config.BuildLabelKey("application")
-)
+const stringTrue = "true"
+
+var ApplicationLabelKey = config.BuildLabelKey("application")
 
 // GetZone retrieves a Zone object based on the provided ObjectRef for a zone.
-func GetZone(ctx context.Context, client cclient.ScopedClient, ref client.ObjectKey) (*adminapi.Zone, error) {
+func GetZone(ctx context.Context, scopedClient cclient.ScopedClient, ref client.ObjectKey) (*adminapi.Zone, error) {
 	zone := &adminapi.Zone{}
-	err := client.Get(ctx, ref, zone)
+	err := scopedClient.Get(ctx, ref, zone)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to find zone %q", ref.String()))
@@ -66,10 +66,10 @@ func GetApplicationFromLabel(ctx context.Context, apiExposure *apiv1.ApiExposure
 }
 
 func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationapi.Application, error) {
-	client := cclient.ClientFromContextOrDie(ctx)
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	application := &applicationapi.Application{}
-	err := client.Get(ctx, ref.K8s(), application)
+	err := scopedClient.Get(ctx, ref.K8s(), application)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to find application %q", ref.String()))
@@ -84,10 +84,10 @@ func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationapi.A
 }
 
 func GetRealm(ctx context.Context, ref client.ObjectKey) (*gatewayapi.Realm, error) {
-	client := cclient.ClientFromContextOrDie(ctx)
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	realm := &gatewayapi.Realm{}
-	err := client.Get(ctx, ref, realm)
+	err := scopedClient.Get(ctx, ref, realm)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to find realm %q", ref.String()))
@@ -123,7 +123,7 @@ func GetRealmForZone(ctx context.Context, zoneRef types.ObjectRef, realmName str
 
 // FindAPI checks if there is an active Api corresponding to the given apiBasePath.
 func FindActiveAPI(ctx context.Context, apiBasePath string) (bool, *apiv1.Api, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	apiBasePathLabelValue := labelutil.NormalizeLabelValue(apiBasePath)
@@ -151,7 +151,7 @@ func FindActiveAPI(ctx context.Context, apiBasePath string) (bool, *apiv1.Api, e
 			return apiList.Items[i].CreationTimestamp.Before(&apiList.Items[j].CreationTimestamp)
 		})
 		relevantApi = &apiList.Items[0]
-		log.Info("⚠️  Multiple active Apis found for the same BasePath. Using the oldest one.", "basePath", apiBasePathLabelValue, "apiName", relevantApi.Name)
+		logger.Info("⚠️  Multiple active Apis found for the same BasePath. Using the oldest one.", "basePath", apiBasePathLabelValue, "apiName", relevantApi.Name)
 	}
 
 	if err := condition.EnsureReady(relevantApi); err != nil {
@@ -163,7 +163,7 @@ func FindActiveAPI(ctx context.Context, apiBasePath string) (bool, *apiv1.Api, e
 
 // FindAPIExposure checks if there is an active ApiExposure corresponding to the given apiBasePath.
 func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv1.ApiExposure, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	apiBasePathLabelValue := labelutil.NormalizeLabelValue(apiBasePath)
@@ -171,13 +171,13 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 	apiExposureList := &apiv1.ApiExposureList{}
 	err := scopedClient.List(ctx, apiExposureList,
 		client.MatchingLabels{apiv1.BasePathLabelKey: apiBasePathLabelValue},
-		client.MatchingFields{"status.active": "true"})
+		client.MatchingFields{"status.active": stringTrue})
 	if err != nil {
 		return false, nil, errors.Wrapf(err,
 			"failed to list corresponding ApiExposures for ApiBasePath: %q", apiBasePathLabelValue)
 	}
 
-	log.V(1).Info("found active ApiExposures", "size", len(apiExposureList.Items), "basePath", apiBasePathLabelValue)
+	logger.V(1).Info("found active ApiExposures", "size", len(apiExposureList.Items), "basePath", apiBasePathLabelValue)
 
 	var relevantApiExposure *apiv1.ApiExposure
 
@@ -193,7 +193,7 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 			return apiExposureList.Items[i].CreationTimestamp.Before(&apiExposureList.Items[j].CreationTimestamp)
 		})
 		relevantApiExposure = &apiExposureList.Items[0]
-		log.Info("⚠️  Multiple active ApiExposures found for the same BasePath. Using the oldest one.", "basePath", apiBasePathLabelValue, "apiExposureName", relevantApiExposure.Name)
+		logger.Info("⚠️  Multiple active ApiExposures found for the same BasePath. Using the oldest one.", "basePath", apiBasePathLabelValue, "apiExposureName", relevantApiExposure.Name)
 	}
 
 	if err := condition.EnsureReady(relevantApiExposure); err != nil {

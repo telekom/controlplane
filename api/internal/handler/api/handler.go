@@ -10,14 +10,15 @@ import (
 	"slices"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	api "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*api.Api] = (*ApiHandler)(nil)
@@ -25,7 +26,7 @@ var _ handler.Handler[*api.Api] = (*ApiHandler)(nil)
 type ApiHandler struct{}
 
 func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	scopedClient, ok := cclient.ClientFromContext(ctx)
 	if !ok {
@@ -58,28 +59,28 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 	}
 
 	slices.SortStableFunc(apiList.Items, sortByCreationTime)
-	api := apiList.Items[0]
+	activeAPI := apiList.Items[0]
 
-	if types.Equals(&api, obj) {
+	if types.Equals(&activeAPI, obj) {
 		// the oldest api is the same as the one we are trying to create
 		obj.Status.Active = true
 		obj.SetCondition(condition.NewReadyCondition("ApiActive", "Api is active"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Api is processed"))
-		log.Info("✅ Api is processed")
+		logger.Info("✅ Api is processed")
 
 	} else {
 		// there is already a different api active with the same BasePathLabelKey
 		// the new api will be blocked until the other is deleted
 		obj.Status.Active = false
 
-		if obj.Spec.BasePath == api.Spec.BasePath {
+		if obj.Spec.BasePath == activeAPI.Spec.BasePath {
 			// The exact same API (case matches)
 			obj.SetCondition(condition.NewNotReadyCondition("ApiNotActive", "Api is not active"))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Api is blocked, another Api with the same BasePath is active. " +
 					"It will be automatically processed, if the other Api will be deleted.",
 			))
-			log.Info("❌ Api is blocked, another Api with the same BasePath is already active.")
+			logger.Info("❌ Api is blocked, another Api with the same BasePath is already active.")
 
 		} else {
 			// The same API is exposed but it has a different case (e.g. /MyApi vs /myapi)
@@ -88,7 +89,7 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 				"Api is blocked, another Api with the same BasePath but different case is active. " +
 					"Please resolve the conflict by changing the BasePath of one of the Apis.",
 			))
-			log.Info("❌ Api is blocked, another Api with the same BasePath but different case is already active.")
+			logger.Info("❌ Api is blocked, another Api with the same BasePath but different case is already active.")
 		}
 
 	}

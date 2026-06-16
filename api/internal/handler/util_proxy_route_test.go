@@ -8,8 +8,6 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
@@ -21,6 +19,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func CreateZone(name string) *adminapi.Zone {
@@ -114,9 +115,7 @@ func CreateGatewayClient(zone *adminapi.Zone) *identityapi.Client {
 }
 
 var _ = Describe("Util Tests", func() {
-
 	Context("Creation of Proxy-Routes", Ordered, func() {
-
 		ctx = context.Background()
 		var consumerZone *adminapi.Zone
 		var providerZone *adminapi.Zone
@@ -137,7 +136,6 @@ var _ = Describe("Util Tests", func() {
 			providerZone = CreateZone("provider")
 			CreateRealm(testEnvironment, "provider")
 			CreateGatewayClient(providerZone)
-
 		})
 
 		It("should create a normal Proxy-Route", func() {
@@ -189,6 +187,5 @@ var _ = Describe("Util Tests", func() {
 			Expect(upstream.ClientId).To(Equal("gateway"))
 			Expect(upstream.ClientSecret).To(Equal("topsecret"))
 		})
-
 	})
 })

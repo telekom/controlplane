@@ -9,11 +9,12 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBasePath string) (ups gatewayapi.Upstream, err error) {
@@ -25,7 +26,8 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 			Namespace: realm.Namespace,
 		},
 	}
-	if err := c.Get(ctx, client.ObjectKeyFromObject(identityClient), identityClient); err != nil {
+	err = c.Get(ctx, client.ObjectKeyFromObject(identityClient), identityClient)
+	if err != nil {
 		return ups, errors.Wrapf(err, "failed to get gateway client for %s/%s", realm.Name, realm.Namespace)
 	}
 
@@ -37,21 +39,22 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 	ups.ClientSecret = identityClient.Spec.ClientSecret
 	ups.IssuerUrl = identityClient.Status.IssuerUrl
 
-	return
+	return ups, err
 }
 
 func AsUpstreamForRealRoute(
-	ctx context.Context, rawUrl string, weight int) (ups gatewayapi.Upstream, err error) {
-	url, err := url.Parse(rawUrl)
+	ctx context.Context, rawUrl string, weight int,
+) (ups gatewayapi.Upstream, err error) {
+	parsedURL, err := url.Parse(rawUrl)
 	if err != nil {
 		return ups, errors.Wrapf(err, "failed to parse URL %s", rawUrl)
 	}
 
 	return gatewayapi.Upstream{
-		Scheme: url.Scheme,
-		Host:   url.Hostname(),
-		Port:   gatewayapi.GetPortOrDefaultFromScheme(url),
-		Path:   url.Path,
+		Scheme: parsedURL.Scheme,
+		Host:   parsedURL.Hostname(),
+		Port:   gatewayapi.GetPortOrDefaultFromScheme(parsedURL),
+		Path:   parsedURL.Path,
 		Weight: weight,
 	}, nil
 }

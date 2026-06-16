@@ -5,15 +5,15 @@
 package controller
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewApiCategory(name string) *apiv1.ApiCategory {
@@ -39,9 +39,7 @@ func NewApiCategory(name string) *apiv1.ApiCategory {
 }
 
 var _ = Describe("ApiCategory Controller", func() {
-
 	Context("Creating", func() {
-
 		apiCategory := NewApiCategory("test-category")
 
 		It("should successfully provision the API category resource", func() {
@@ -57,7 +55,6 @@ var _ = Describe("ApiCategory Controller", func() {
 				g.Expect(fetchedCategory.Spec.Active).To(BeTrue())
 
 				g.Expect(fetchedCategory.Status.Conditions).To(HaveLen(2))
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})
