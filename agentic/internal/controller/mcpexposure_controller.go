@@ -19,6 +19,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
+	agenticconfig "github.com/telekom/controlplane/agentic/internal/config"
 	"github.com/telekom/controlplane/agentic/internal/handler/mcpexposure"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -31,6 +32,7 @@ type McpExposureReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+	Config   *agenticconfig.AgenticConfig
 
 	cc.Controller[*agenticv1.McpExposure]
 }
@@ -56,7 +58,7 @@ func (r *McpExposureReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *McpExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("mcpexposure-controller")
-	r.Controller = cc.NewController(&mcpexposure.McpExposureHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&mcpexposure.McpExposureHandler{Config: r.Config}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&agenticv1.McpExposure{}).

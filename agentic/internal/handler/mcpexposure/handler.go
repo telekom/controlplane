@@ -15,6 +15,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
+	agenticconfig "github.com/telekom/controlplane/agentic/internal/config"
 	"github.com/telekom/controlplane/agentic/internal/handler/util"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -24,13 +25,11 @@ import (
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
-// TelecontextConfig holds the Telecontext consumer name loaded from ConfigMap.
-// Must be set before the handler is used.
-var TelecontextConsumerName string
-
 var _ handler.Handler[*agenticv1.McpExposure] = &McpExposureHandler{}
 
-type McpExposureHandler struct{}
+type McpExposureHandler struct {
+	Config *agenticconfig.AgenticConfig
+}
 
 func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.McpExposure) error {
 	logger := log.FromContext(ctx)
@@ -118,12 +117,12 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	// 7. Handle TELECONTEXTMCP variant - auto-create ConsumeRoute
 	obj.Status.TelecontextConsumeRoute = nil
 	if obj.Spec.Variant.IsTelecontextVariant() {
-		if TelecontextConsumerName == "" {
+		if h.Config.TelecontextConsumerName == "" {
 			return errors.New("TELECONTEXTMCP variant requires telecontext consumer name to be configured")
 		}
 
 		telecontextConfig := util.TelecontextConfig{
-			ConsumerName: TelecontextConsumerName,
+			ConsumerName: h.Config.TelecontextConsumerName,
 		}
 		consumeRoute, crErr := util.CreateTelecontextConsumeRoute(ctx, route, zone, telecontextConfig)
 		if crErr != nil {

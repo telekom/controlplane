@@ -21,8 +21,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	agenticconfig "github.com/telekom/controlplane/agentic/internal/config"
 	"github.com/telekom/controlplane/agentic/internal/controller"
-	"github.com/telekom/controlplane/agentic/internal/handler/mcpexposure"
 	"github.com/telekom/controlplane/common/pkg/config"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -48,7 +48,6 @@ func main() {
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
-	var telecontextConsumerName string
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -64,8 +63,6 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.StringVar(&telecontextConsumerName, "telecontext-consumer-name", "",
-		"The consumer name of the Telecontext application for TELECONTEXTMCP variant")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -74,13 +71,14 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	// Configure Telecontext consumer name from flag or env
-	if telecontextConsumerName == "" {
-		telecontextConsumerName = os.Getenv("TELECONTEXT_CONSUMER_NAME")
+	// Load agentic-specific configuration (env prefix: AGENTIC_)
+	agenticCfg, err := agenticconfig.LoadConfig()
+	if err != nil {
+		setupLog.Error(err, "unable to load agentic config")
+		os.Exit(1)
 	}
-	mcpexposure.TelecontextConsumerName = telecontextConsumerName
-	if telecontextConsumerName != "" {
-		setupLog.Info("Telecontext integration configured", "consumerName", telecontextConsumerName)
+	if agenticCfg.TelecontextConsumerName != "" {
+		setupLog.Info("Telecontext integration configured", "consumerName", agenticCfg.TelecontextConsumerName)
 	}
 
 	disableHTTP2 := func(c *tls.Config) {
@@ -162,6 +160,7 @@ func main() {
 	if err := (&controller.McpExposureReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		Config: agenticCfg,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "McpExposure")
 		os.Exit(1)

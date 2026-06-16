@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/agentic
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/telekom/controlplane/admin/api v0.0.0
@@ -20,6 +20,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.3
 	github.com/onsi/gomega v1.40.0
 	github.com/pkg/errors v0.9.1
+	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	k8s.io/apimachinery v0.36.0
 	k8s.io/client-go v0.36.0
@@ -73,7 +74,6 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/spf13/viper v1.21.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect

@@ -17,6 +17,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
+	agenticconfig "github.com/telekom/controlplane/agentic/internal/config"
 	"github.com/telekom/controlplane/agentic/internal/handler/mcpexposure"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
@@ -159,10 +160,8 @@ var _ = Describe("McpExposureHandler", func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
-		h = &mcpexposure.McpExposureHandler{}
+		h = &mcpexposure.McpExposureHandler{Config: &agenticconfig.AgenticConfig{}}
 		obj = newMcpExposure("test-exposure", "/mcp/weather/v1")
-		// Reset TelecontextConsumerName for each test
-		mcpexposure.TelecontextConsumerName = ""
 	})
 
 	// --- mock helpers ---
@@ -427,7 +426,7 @@ var _ = Describe("McpExposureHandler", func() {
 
 		It("should fail when TELECONTEXTMCP variant is set but consumer name is empty", func() {
 			obj.Spec.Variant = agenticv1.McpVariantTelecontextMCP
-			mcpexposure.TelecontextConsumerName = ""
+			h.Config.TelecontextConsumerName = ""
 
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
@@ -448,7 +447,7 @@ var _ = Describe("McpExposureHandler", func() {
 
 		It("should create Telecontext ConsumeRoute when variant is TELECONTEXTMCP", func() {
 			obj.Spec.Variant = agenticv1.McpVariantTelecontextMCP
-			mcpexposure.TelecontextConsumerName = "telecontext-app"
+			h.Config.TelecontextConsumerName = "telecontext-app"
 
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
