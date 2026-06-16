@@ -83,17 +83,21 @@ func main() {
 	}
 
 	zoneName := application.Spec.Zone.Name
+	zoneNamespace := application.Spec.Zone.Namespace
 
 	// Resolve realm name from zone status (decoupled from environment name)
 	zone := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      zoneName,
-			Namespace: environment,
+			Namespace: zoneNamespace,
 		},
 	}
 	err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 	if err != nil {
-		panic(errors.Wrapf(err, "failed to get Zone %s in namespace %s", zoneName, environment))
+		panic(errors.Wrapf(err, "failed to get Zone %s in namespace %s", zoneName, zoneNamespace))
+	}
+	if zone.Status.GatewayRealm == nil {
+		panic(fmt.Sprintf("Zone %s in namespace %s has no GatewayRealm status set", zoneName, environment))
 	}
 	realmName := zone.Status.GatewayRealm.Name
 
