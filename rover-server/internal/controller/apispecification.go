@@ -215,8 +215,17 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		apiCategory = cat
 	}
 
+	// Early return: spec content unchanged.
+	_, same, hashErr := a.isHashEqual(ctx, id, specMarshaled)
+	if hashErr != nil {
+		return res, hashErr
+	}
+	if same {
+		return a.Get(ctx, resourceId)
+	}
+
 	// Lint before uploading or storing; reject immediately on failure.
-	if err := a.lintSpec(ctx, apiSpec, apiCategory, id, specMarshaled); err != nil {
+	if err := a.lintSpec(ctx, apiSpec, apiCategory, specMarshaled); err != nil {
 		return res, err
 	}
 
@@ -299,22 +308,10 @@ func (a *ApiSpecificationController) validateApiCategoryFromList(categoryList *a
 }
 
 // lintSpec performs OAS linting for the given spec before it is persisted.
-// It skips linting when the spec hash is unchanged (dedup) or when no linter is configured.
 // Returns an error (as a Problem) if linting blocks or the linter is unreachable in block mode.
-func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *roverv1.ApiSpecification, apiCategory *apiv1.ApiCategory, id mapper.ResourceIdInfo, specMarshaled []byte) error {
+func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *roverv1.ApiSpecification, apiCategory *apiv1.ApiCategory, specMarshaled []byte) error {
 	if a.Linter == nil {
 		return nil
-	}
-
-	// Skip linting if the spec hash has not changed (dedup).
-	ns := id.Environment + "--" + id.Namespace
-	existing, _ := a.Store.Get(ctx, ns, id.Name)
-	if existing != nil && existing.Spec.Hash != "" {
-		localHash := computeHash(specMarshaled)
-		if localHash == existing.Spec.Hash && existing.Spec.Lint != nil {
-			apiSpec.Spec.Lint = existing.Spec.Lint
-			return nil
-		}
 	}
 
 	categoryEnforcesBlock := apiCategory != nil &&
@@ -345,25 +342,10 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshal
 		return nil, errors.New("input api specification has length 0 or nil")
 	}
 
-	localHash, same, err := a.isHashEqual(ctx, id, specMarshaled)
-	if err != nil {
-		return nil, err
-	}
-
 	fileId := generateFileId(id)
 	fileContentType := "application/yaml"
 
-	resp := &filesapi.FileUploadResponse{
-		FileHash:    localHash,
-		FileId:      fileId,
-		ContentType: fileContentType,
-	}
-
-	if !same {
-		resp, err = file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
-	}
-
-	return resp, err
+	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 }
 
 // isHashEqual checks if the hash of the data is the same as the hash of the api specification in the store.

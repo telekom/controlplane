@@ -410,7 +410,7 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 				}}, nil)
 
 			specStore := mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
-			// Get is called by lintSpec (hash dedup) and isHashEqual; return not-found so it proceeds
+			// Update calls Get for hash dedup; return not-found so it proceeds.
 			specStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(
 				nil, problems.NotFound())
 			specStore.EXPECT().CreateOrReplace(mock.Anything, mock.Anything).Return(nil)
@@ -448,7 +448,7 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 				}}, nil)
 
 			specStore := mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
-			// lintSpec calls Get for hash dedup; return not-found so linting proceeds.
+			// Update calls Get for hash dedup; return not-found so it proceeds.
 			specStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(
 				nil, problems.NotFound())
 
