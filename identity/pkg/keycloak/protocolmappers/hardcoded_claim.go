@@ -19,12 +19,12 @@ func NewHardcodedClaimMapper(claimName, claimValue string) api.ProtocolMapperRep
 		Protocol:       toPtr("openid-connect"),
 		ProtocolMapper: toPtr("oidc-hardcoded-claim-mapper"),
 		Config: &map[string]interface{}{
-			"claim.name":           claimName,
-			"claim.value":          claimValue,
-			"jsonType.label":       "String",
-			"id.token.claim":       "true",
-			"access.token.claim":   "true",
-			"userinfo.token.claim": "false",
+			claimNameConfigKey:          claimName,
+			"claim.value":               claimValue,
+			jsonTypeLabelConfigKey:      jsonTypeLabelString,
+			idTokenClaimConfigKey:       stringTrue,
+			accessTokenClaimConfigKey:   stringTrue,
+			userInfoTokenClaimConfigKey: stringFalse,
 		},
 	}
 }

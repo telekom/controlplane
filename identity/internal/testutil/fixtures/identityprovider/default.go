@@ -5,9 +5,9 @@
 package identityprovider
 
 import (
-	"github.com/telekom/controlplane/common/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/config"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
 
@@ -20,7 +20,7 @@ func NewIdentityProviderSpec() *identityv1.IdentityProviderSpec {
 	}
 }
 
-func NewIdentityProviderMeta(name string, namespace string, environment string) *metav1.ObjectMeta {
+func NewIdentityProviderMeta(name, namespace, environment string) *metav1.ObjectMeta {
 	return &metav1.ObjectMeta{
 		Name:      name,
 		Namespace: namespace,
@@ -30,7 +30,7 @@ func NewIdentityProviderMeta(name string, namespace string, environment string) 
 	}
 }
 
-func NewIdentityProvider(name string, namespace string, environment string) *identityv1.IdentityProvider {
+func NewIdentityProvider(name, namespace, environment string) *identityv1.IdentityProvider {
 	return &identityv1.IdentityProvider{
 		ObjectMeta: *NewIdentityProviderMeta(name, namespace, environment),
 		Spec:       *NewIdentityProviderSpec(),

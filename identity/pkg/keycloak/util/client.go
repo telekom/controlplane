@@ -29,7 +29,10 @@ func GetClient(getRealmClients api.GetRealmClientsResponse) (*api.ClientRepresen
 // SecretRotationClientAttribute is the Keycloak client attribute key used by
 // the client-attributes policy condition to identify clients that opted into
 // graceful secret rotation.
-const SecretRotationClientAttribute = "controlplane.secret-rotation"
+const (
+	SecretRotationClientAttribute = "controlplane.secret-rotation"
+	stringTrue                    = "true"
+)
 
 func MapToClientRepresentation(client *identityv1.Client) api.ClientRepresentation {
 	rep := api.ClientRepresentation{
@@ -45,7 +48,7 @@ func MapToClientRepresentation(client *identityv1.Client) api.ClientRepresentati
 
 	if client.SupportsSecretRotation() {
 		rep.Attributes = &map[string]interface{}{
-			SecretRotationClientAttribute: "true",
+			SecretRotationClientAttribute: stringTrue,
 		}
 	}
 
@@ -93,8 +96,8 @@ func getSecretRotationAttr(c *api.ClientRepresentation) string {
 	if !ok {
 		return ""
 	}
-	if s, ok := v.(string); ok && s == "true" {
-		return "true"
+	if s, ok := v.(string); ok && s == stringTrue {
+		return stringTrue
 	}
 	return ""
 }
@@ -125,11 +128,9 @@ func MergeClientRepresentation(existingClient, newClient *api.ClientRepresentati
 			existingClient.Attributes = &map[string]interface{}{}
 		}
 		(*existingClient.Attributes)[SecretRotationClientAttribute] = (*newClient.Attributes)[SecretRotationClientAttribute]
-	} else {
+	} else if existingClient.Attributes != nil {
 		// New client doesn't set the attribute — remove it from existing if present.
-		if existingClient.Attributes != nil {
-			delete(*existingClient.Attributes, SecretRotationClientAttribute)
-		}
+		delete(*existingClient.Attributes, SecretRotationClientAttribute)
 	}
 
 	return existingClient

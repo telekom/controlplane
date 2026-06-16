@@ -19,10 +19,11 @@ import (
 )
 
 const (
-	Realm          = "test-realm"
-	RealmForClient = "realm-test-client"
-	ClientId       = "test-client"
-	ClientSecret   = "test-secret"
+	Realm              = "test-realm"
+	RealmForClient     = "realm-test-client"
+	ClientId           = "test-client"
+	ClientSecret       = "test-secret"
+	protocolMapperTrue = "true"
 )
 
 func NewKeycloakClientMock(testing ginkgo.FullGinkgoTInterface) *keycloakclient.MockKeycloakClient {
@@ -31,12 +32,15 @@ func NewKeycloakClientMock(testing ginkgo.FullGinkgoTInterface) *keycloakclient.
 	// DeferCleanup() in Ginkgo. When called from BeforeSuite, this creates a
 	// nested DeferCleanup-inside-DeferCleanup which Ginkgo forbids.
 	mockKeycloakClient := &keycloakclient.MockKeycloakClient{}
-	mockKeycloakClient.Mock.Test(testing)
+	mockKeycloakClient.Test(testing)
 	return mockKeycloakClient
 }
 
 func ConfigureKeycloakClientMock(mockedClient *keycloakclient.MockKeycloakClient) {
-	var mockedBody, _ = io.ReadAll(io.NopCloser(strings.NewReader(fmt.Sprintf(`{"realm":"%s"}`, Realm))))
+	mockedBody, err := io.ReadAll(io.NopCloser(strings.NewReader(fmt.Sprintf(`{"realm":%q}`, Realm))))
+	if err != nil {
+		panic(fmt.Sprintf("read mocked realm body: %v", err))
+	}
 
 	// The parameter "reqEditors ...RequestEditorFn" is not used in the implementation and therefore omitted
 	// in the mock configuration.
@@ -231,7 +235,6 @@ func ConfigureKeycloakClientMock(mockedClient *keycloakclient.MockKeycloakClient
 		Return(&api.PutRealmClientPoliciesPoliciesResponse{
 			HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
 		}, nil).Maybe()
-
 }
 
 func mockGetRealmResponse(realm string, body []byte) *api.GetRealmResponse {
@@ -271,21 +274,21 @@ func mockPostResponse(body []byte) *api.PostResponse {
 }
 
 func mockGetRealmClientsWithResponse(body []byte, clientId, clientSecret string) *api.GetRealmClientsResponse {
-	var protocolMapper = api.ProtocolMapperRepresentation{
+	protocolMapper := api.ProtocolMapperRepresentation{
 		Name:           ptr.To("Client ID"),
 		Protocol:       ptr.To("openid-connect"),
 		ProtocolMapper: ptr.To("oidc-usersessionmodel-note-mapper"),
 		Config: &map[string]interface{}{
 			"user.session.note":    "clientId",
-			"id.token.claim":       "true",
-			"access.token.claim":   "true",
-			"userinfo.token.claim": "true",
+			"id.token.claim":       protocolMapperTrue,
+			"access.token.claim":   protocolMapperTrue,
+			"userinfo.token.claim": protocolMapperTrue,
 			"claim.name":           "clientId",
 			"jsonType.label":       "String",
 		},
 	}
 
-	var clientRepresentation = api.ClientRepresentation{
+	clientRepresentation := api.ClientRepresentation{
 		Id:                     ptr.To("mock-client-uuid"),
 		ClientId:               ptr.To(clientId),
 		Name:                   ptr.To(clientId),
