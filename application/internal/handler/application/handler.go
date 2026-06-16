@@ -282,6 +282,9 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 	resourceName := clientId + "--" + zone.Name
 
 	// Resolve realm name from zone status (decoupled from environment name)
+	if zone.Status.IdentityRealm == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %s has no IdentityRealm status set", zone.Name)
+	}
 	realmName := zone.Status.IdentityRealm.Name
 	namespace := zone.Status.Namespace
 
@@ -359,6 +362,9 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	resourceName := clientId + "--" + zone.Name
 
 	// Resolve realm name from zone status (decoupled from environment name)
+	if zone.Status.GatewayRealm == nil {
+		return ctrlerrors.BlockedErrorf("zone %s has no GatewayRealm status set", zone.Name)
+	}
 	realmName := zone.Status.GatewayRealm.Name
 
 	realmRef := types.ObjectRef{
