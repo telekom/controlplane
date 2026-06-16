@@ -18,10 +18,20 @@ type EnvironmentSpec struct {
 	// When set, identity and gateway realms will be created with this name instead
 	// of deriving it from the environment's metadata.name.
 	// This field is immutable after first reconciliation.
+	// If not set, defaults to the environment's metadata.name.
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-[a-z0-9]+)*$`
 	// +kubebuilder:validation:MaxLength=63
-	// +required
-	RealmName string `json:"realmName"`
+	// +optional
+	RealmName string `json:"realmName,omitempty"`
+}
+
+// GetRealmName returns the realm name for the environment.
+// If spec.realmName is set, it returns that; otherwise it defaults to the environment's metadata.name.
+func (e *Environment) GetRealmName() string {
+	if e.Spec.RealmName != "" {
+		return e.Spec.RealmName
+	}
+	return e.GetName()
 }
 
 // EnvironmentStatus defines the observed state of Environment

@@ -28,7 +28,7 @@ spec:
   realmName: dev
 ```
 
-The `realmName` field defines the name used for identity and gateway realms in this environment. It is decoupled from the environment name — for example, you could name your environment `playground` but set `realmName: default` to keep existing realm URLs stable.
+The `realmName` field defines the name used for identity and gateway realms in this environment. It is decoupled from the environment name — for example, you could name your environment `playground` but set `realmName: default` to keep existing realm URLs stable. If omitted, it defaults to the environment's `metadata.name`.
 
 :::tip
 Create the Kubernetes namespace before applying the Environment resource, or use a namespace provisioning tool that handles this automatically.

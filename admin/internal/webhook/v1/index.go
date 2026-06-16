@@ -22,7 +22,7 @@ func RegisterIndexesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		if !ok {
 			return nil
 		}
-		return []string{env.Spec.RealmName}
+		return []string{env.GetRealmName()}
 	})
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create field index for Environment", "field", IndexFieldRealmName)
