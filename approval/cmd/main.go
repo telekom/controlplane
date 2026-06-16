@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/internal/config"
 	"github.com/telekom/controlplane/approval/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/approval/internal/webhook/v1"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -121,11 +122,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	expirationConfig, err := config.LoadExpirationConfig()
+	if err != nil {
+		setupLog.Error(err, "unable to load expiration config")
+		os.Exit(1)
+	}
+	setupLog.Info("Loaded expiration config",
+		"expirationDuration", expirationConfig.ExpirationDuration,
+		"thresholds", expirationConfig.DefaultThresholds,
+	)
+
 	if err = (&controller.ApprovalReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		ExpirationConfig: expirationConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Approval")
+		os.Exit(1)
+	}
+	if err = (&controller.ApprovalExpirationReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Approval")
+		setupLog.Error(err, "unable to create controller", "controller", "ApprovalExpiration")
 		os.Exit(1)
 	}
 	if err = (&controller.ApprovalRequestReconciler{
@@ -142,7 +161,12 @@ func main() {
 		}
 	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = webhookv1.SetupApprovalWebhookWithManager(mgr); err != nil {
+		webhookConfig, err := config.LoadWebhookConfig()
+		if err != nil {
+			setupLog.Error(err, "unable to load webhook config")
+			os.Exit(1)
+		}
+		if err = webhookv1.SetupApprovalWebhookWithManager(mgr, webhookConfig.OperatorServiceAccount); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Approval")
 			os.Exit(1)
 		}

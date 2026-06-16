@@ -72,6 +72,7 @@ type AppConfig struct {
 	EnableMetrics bool
 	EnableCors    bool
 	Timeout       time.Duration
+	Debug         bool
 }
 
 func NewAppConfig() AppConfig {
@@ -91,6 +92,7 @@ func NewAppConfig() AppConfig {
 		EnableMetrics: true,
 		EnableCors:    false,
 		Timeout:       10 * time.Second,
+		Debug:         false,
 	}
 }
 
@@ -104,7 +106,7 @@ func NewAppWithConfig(cfg AppConfig) *fiber.App {
 			// TODO: in the future use the otel integration here
 			app.Use(middleware.NewContextLogger(cfg.CtxLog))
 		}
-		app.Use(middleware.NewLogger())
+		app.Use(middleware.NewLogger(middleware.WithDebug(cfg.Debug)))
 	}
 	if cfg.EnableCors {
 		app.Use(cors.New(cors.Config{

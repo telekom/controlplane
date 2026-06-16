@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/internal/config"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -120,10 +121,21 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&ApprovalExpirationReconciler{
+		Client:   k8sManager.GetClient(),
+		Scheme:   k8sManager.GetScheme(),
+		Recorder: &mock.EventRecorder{},
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	err = (&ApprovalReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &mock.EventRecorder{},
+		ExpirationConfig: &config.ExpirationConfig{
+			ExpirationDuration: 12 * 30 * 24 * time.Hour, // 12 months
+			DefaultThresholds:  nil,
+		},
 	}).SetupWithManager(k8sManager)
 
 	Expect(err).ToNot(HaveOccurred())
