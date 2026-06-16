@@ -12,14 +12,19 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	rover_handler "github.com/telekom/controlplane/rover/internal/handler/rover"
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 )
@@ -76,9 +81,41 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		b = b.Owns(&permissionv1.PermissionSet{})
 	}
 
+	b = b.Watches(&organizationv1.Team{},
+		handler.EnqueueRequestsFromMapFunc(r.MapTeamToRovers),
+		builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+	)
+
 	return b.WithOptions(controller.Options{
 		MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 		RateLimiter:             cc.NewRateLimiter(),
 	}).
 		Complete(r)
+}
+
+// MapTeamToRovers maps a Team to all Rovers in the team's namespace.
+// This enables re-reconciliation of Rovers when Team.Spec (e.g. Email) changes.
+func (r *RoverReconciler) MapTeamToRovers(ctx context.Context, obj client.Object) []reconcile.Request {
+	team, ok := obj.(*organizationv1.Team)
+	if !ok {
+		return nil
+	}
+
+	// Team namespace follows the convention: <environment>--<team.Name>
+	// where team.Name is already "<group>--<teamName>"
+	teamNamespace := organizationv1.TeamNamespace(team.Namespace, team.Name)
+
+	roverList := &rover.RoverList{}
+	if err := r.List(ctx, roverList, client.InNamespace(teamNamespace)); err != nil {
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(roverList.Items))
+	for i := range roverList.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&roverList.Items[i]),
+		})
+	}
+
+	return reqs
 }

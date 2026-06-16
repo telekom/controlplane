@@ -697,6 +697,71 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		})
 	})
 
+	Context("Team email update propagation", func() {
+		It("should update Application TeamEmail when Team.Spec.Email changes", func() {
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+
+			By("creating the Rover")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			By("verifying initial TeamEmail in Application")
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.TeamEmail).To(Equal("team@mail.de"))
+			}, timeout, interval).Should(Succeed())
+
+			By("updating Team.Spec.Email")
+			fetchedTeam := &organizationv1.Team{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Name:      team.Name,
+				Namespace: team.Namespace,
+			}, fetchedTeam)).To(Succeed())
+
+			fetchedTeam.Spec.Email = "updated-team@mail.de"
+			Expect(k8sClient.Update(ctx, fetchedTeam)).To(Succeed())
+
+			By("verifying Application TeamEmail is updated")
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.TeamEmail).To(Equal("updated-team@mail.de"))
+			}, timeout, interval).Should(Succeed())
+
+			By("restoring original Team email for other tests")
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Name:      team.Name,
+				Namespace: team.Namespace,
+			}, fetchedTeam)).To(Succeed())
+			fetchedTeam.Spec.Email = "team@mail.de"
+			Expect(k8sClient.Update(ctx, fetchedTeam)).To(Succeed())
+
+			By("waiting for Application to reflect restored email before cleanup")
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.TeamEmail).To(Equal("team@mail.de"))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
 	Context("Rover with ExternalIds", func() {
 		It("propagates ExternalIds verbatim to the derived Application", func() {
 			spec := roverv1.RoverSpec{
