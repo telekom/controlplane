@@ -208,24 +208,16 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	// Look up the specific ApiCategory for linting.
 	var apiCategory *apiv1.ApiCategory
 	if categoryList != nil {
-		apiCategory, _ = categoryList.FindByLabelValue(apiSpec.Spec.Category)
+		cat, ok := categoryList.FindByLabelValue(apiSpec.Spec.Category)
+		if !ok {
+			return res, problems.BadRequest(fmt.Sprintf("Invalid ApiCategory %q", apiSpec.Spec.Category))
+		}
+		apiCategory = cat
 	}
 
-	// Lint the spec before uploading or storing. If linting blocks,
-	// reject immediately without persisting.
-	var lintOutcome LintOutcome
-	var lintErr error
-	if a.Linter != nil {
-		lintOutcome, lintErr = a.Linter.Lint(ctx, apiSpec, apiCategory, bytes.NewReader(specMarshaled))
-	}
-
-	if lintOutcome == LintBlocked {
-		return res, problems.BadRequest(lintErr.Error())
-	}
-
-	// If the linter is unreachable and the category enforces blocking, reject.
-	if lintErr != nil && apiCategory != nil && apiCategory.Spec.Linting != nil && apiCategory.Spec.Linting.Mode == apiv1.LintingModeBlock {
-		return res, problems.InternalServerError("Linting failed", lintErr.Error())
+	// Lint before uploading or storing; reject immediately on failure.
+	if err := a.lintSpec(ctx, apiSpec, apiCategory, id, specMarshaled); err != nil {
+		return res, err
 	}
 
 	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, id)
@@ -306,6 +298,48 @@ func (a *ApiSpecificationController) validateApiCategoryFromList(categoryList *a
 	return nil
 }
 
+// lintSpec performs OAS linting for the given spec before it is persisted.
+// It skips linting when the spec hash is unchanged (dedup) or when no linter is configured.
+// Returns an error (as a Problem) if linting blocks or the linter is unreachable in block mode.
+func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *roverv1.ApiSpecification, apiCategory *apiv1.ApiCategory, id mapper.ResourceIdInfo, specMarshaled []byte) error {
+	if a.Linter == nil {
+		return nil
+	}
+
+	// Skip linting if the spec hash has not changed (dedup).
+	ns := id.Environment + "--" + id.Namespace
+	existing, _ := a.Store.Get(ctx, ns, id.Name)
+	if existing != nil && existing.Spec.Hash != "" {
+		localHash := computeHash(specMarshaled)
+		if localHash == existing.Spec.Hash && existing.Spec.Lint != nil {
+			apiSpec.Spec.Lint = existing.Spec.Lint
+			return nil
+		}
+	}
+
+	categoryEnforcesBlock := apiCategory != nil &&
+		apiCategory.Spec.Linting != nil &&
+		apiCategory.Spec.Linting.Mode == apiv1.LintingModeBlock
+
+	outcome, err := a.Linter.Lint(ctx, apiSpec, apiCategory, bytes.NewReader(specMarshaled))
+	if err != nil && categoryEnforcesBlock {
+		logr.FromContextOrDiscard(ctx).Error(err, "OAS service failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
+		return problems.InternalServerError(
+			"OAS linting is currently unavailable. Please try again later.",
+			"The linting service could not be reached. Your API specification was not saved.",
+		)
+	}
+	if outcome == LintBlocked {
+		msg := "OAS linting did not pass"
+		if apiSpec.Spec.Lint != nil && apiSpec.Spec.Lint.Message != "" {
+			msg = fmt.Sprintf("%s: %s", msg, apiSpec.Spec.Lint.Message)
+		}
+		return problems.BadRequest(msg)
+	}
+
+	return nil
+}
+
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
 	if len(specMarshaled) == 0 || specMarshaled == nil {
 		return nil, errors.New("input api specification has length 0 or nil")
@@ -344,10 +378,14 @@ func (a *ApiSpecificationController) isHashEqual(ctx context.Context, id mapper.
 		return "", false, err
 	}
 
+	hash := computeHash(data)
+	return hash, hash == apiSpec.Spec.Hash, nil
+}
+
+func computeHash(data []byte) string {
 	hasher := sha256.New()
 	hasher.Write(data)
-	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
-	return hash, hash == apiSpec.Spec.Hash, nil
+	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 }
 
 func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (io.Reader, error) {

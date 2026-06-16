@@ -181,12 +181,11 @@ var _ = Describe("Linting helpers", func() {
 				linterServer = startLinterServer(3)
 			})
 
-			It("should return LintBlocked with error in Block mode", func() {
+			It("should return LintBlocked without error in Block mode", func() {
 				linter = &apiLinterImpl{url: linterServer.URL, httpClient: linterServer.Client()}
 				category = newCategory(apiv1.LintingModeBlock)
 				outcome, err := linter.Lint(lintCtx, apiSpec, category, specBytes)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("linting failed in block mode"))
+				Expect(err).ToNot(HaveOccurred())
 				Expect(outcome).To(Equal(LintBlocked))
 				Expect(apiSpec.Spec.Lint).ToNot(BeNil())
 				Expect(apiSpec.Spec.Lint.Passed).To(BeFalse())
@@ -382,6 +381,9 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 				}}, nil)
 
 			specStore := mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
+			// lintSpec calls Get for hash dedup; return not-found so linting proceeds.
+			specStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(
+				nil, problems.NotFound())
 
 			ctrl = &ApiSpecificationController{
 				stores: &s.Stores{APICategoryStore: categoryStore},
@@ -395,7 +397,7 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 			problem, ok := err.(problems.Problem)
 			Expect(ok).To(BeTrue(), "error should be a problems.Problem")
 			Expect(problem.Code()).To(Equal(http.StatusInternalServerError))
-			Expect(problem.Error()).To(ContainSubstring("connection refused"))
+			Expect(problem.Error()).To(ContainSubstring("linting service could not be reached"))
 		})
 	})
 
@@ -408,7 +410,7 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 				}}, nil)
 
 			specStore := mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
-			// The store Get is called by isHashEqual; return not-found so it proceeds to upload
+			// Get is called by lintSpec (hash dedup) and isHashEqual; return not-found so it proceeds
 			specStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(
 				nil, problems.NotFound())
 			specStore.EXPECT().CreateOrReplace(mock.Anything, mock.Anything).Return(nil)
@@ -446,11 +448,14 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 				}}, nil)
 
 			specStore := mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
+			// lintSpec calls Get for hash dedup; return not-found so linting proceeds.
+			specStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(
+				nil, problems.NotFound())
 
 			ctrl = &ApiSpecificationController{
 				stores: &s.Stores{APICategoryStore: categoryStore},
 				Store:  specStore,
-				Linter: &mockLinter{outcome: LintBlocked, err: fmt.Errorf("linting failed in block mode: 3 errors")},
+				Linter: &mockLinter{outcome: LintBlocked, err: nil},
 			}
 
 			_, err := ctrl.Update(testCtx, "eni--hyperion--test-api-v1", newUpdateRequest())
@@ -459,7 +464,7 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 			problem, ok := err.(problems.Problem)
 			Expect(ok).To(BeTrue(), "error should be a problems.Problem")
 			Expect(problem.Code()).To(Equal(http.StatusBadRequest))
-			Expect(problem.Error()).To(ContainSubstring("linting failed in block mode"))
+			Expect(problem.Error()).To(ContainSubstring("OAS linting did not pass"))
 		})
 	})
 })
