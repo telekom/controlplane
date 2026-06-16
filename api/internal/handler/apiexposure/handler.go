@@ -15,12 +15,14 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
+	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 )
 
 var _ handler.Handler[*apiapi.ApiExposure] = (*ApiExposureHandler)(nil)
@@ -60,9 +62,16 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	// Core Validations are done, can continue
 
+	apiExpApplication, err := util.GetApplicationFromLabel(ctx, apiExp)
+	if err != nil {
+		return err
+	}
+
+	if !validateApiCategoryPolicy(ctx, api, apiExpApplication, apiExp) {
+		return nil
+	}
+
 	// Scopes: check if scopes exist and are a valid subset of the Api's scopes.
-	// TODO: further validations (currently contained in the old code)
-	// - validate if team category allows exposure of api category
 	if !validateExposureScopes(ctx, api, apiExp) {
 		return nil
 	}
@@ -231,5 +240,33 @@ func validateExposureScopes(ctx context.Context, api *apiapi.Api, apiExp *apiapi
 		return false
 	}
 	log.FromContext(ctx).V(1).Info("✅ Scopes are valid and exist")
+	return true
+}
+
+func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application *applicationapi.Application, apiExp *apiapi.ApiExposure) bool {
+	team, err := organizationapi.FindTeamForObject(ctx, application)
+	if err != nil {
+		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
+		apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+		apiExp.SetCondition(condition.NewBlockedCondition(msg))
+		return false
+	}
+
+	apiCategory, err := util.ResolveActiveApiCategoryForApi(ctx, api)
+	if err != nil {
+		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
+		apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+		apiExp.SetCondition(condition.NewBlockedCondition(msg))
+		return false
+	}
+
+	teamCategory := string(team.Spec.Category)
+	if !apiCategory.IsAllowedForTeamCategory(teamCategory) {
+		msg := util.BuildApiCategoryExposureDeniedMessage(teamCategory, apiCategory.Spec.LabelValue)
+		apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryTeamCategoryNotAllowedReason, msg))
+		apiExp.SetCondition(condition.NewBlockedCondition(msg))
+		return false
+	}
+
 	return true
 }

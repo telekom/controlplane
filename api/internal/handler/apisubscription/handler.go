@@ -15,6 +15,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/apisubscription/remote"
 	"github.com/telekom/controlplane/api/internal/handler/util"
+	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -24,6 +25,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 )
 
 var _ handler.Handler[*apiapi.ApiSubscription] = (*ApiSubscriptionHandler)(nil)
@@ -97,8 +99,9 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return err
 	}
 
-	// TODO: further validations (currently contained in the old code)
-	// - validate if team category allows subscription of api category
+	if !validateApiCategoryPolicy(ctx, api, apiSubApplication, apiSub) {
+		return nil
+	}
 
 	// 5. Manage Approval process
 
@@ -366,4 +369,32 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the proxy route for this zone"))
 		return nil, nil
 	}
+}
+
+func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application *applicationapi.Application, apiSub *apiapi.ApiSubscription) bool {
+	team, err := organizationapi.FindTeamForObject(ctx, application)
+	if err != nil {
+		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
+		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+		apiSub.SetCondition(condition.NewBlockedCondition(msg))
+		return false
+	}
+
+	apiCategory, err := util.ResolveActiveApiCategoryForApi(ctx, api)
+	if err != nil {
+		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
+		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+		apiSub.SetCondition(condition.NewBlockedCondition(msg))
+		return false
+	}
+
+	teamCategory := string(team.Spec.Category)
+	if !apiCategory.IsAllowedForTeamCategory(teamCategory) {
+		msg := util.BuildApiCategorySubscriptionDeniedMessage(teamCategory, apiCategory.Spec.LabelValue)
+		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryTeamCategoryNotAllowedReason, msg))
+		apiSub.SetCondition(condition.NewBlockedCondition(msg))
+		return false
+	}
+
+	return true
 }

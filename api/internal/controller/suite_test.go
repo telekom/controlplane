@@ -27,6 +27,7 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
+	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -39,9 +40,18 @@ import (
 const (
 	timeout         = 2 * time.Second
 	interval        = 100 * time.Millisecond
-	testNamespace   = "default"
 	testEnvironment = "test"
+	testGroup       = "dev"
+	testTeamName    = "api"
+	testCategory    = "Customer"
 )
+
+var testNamespace string
+
+func init() {
+	// testNamespace is constructed using the convention: <environment>--<group>--<team>
+	testNamespace = testEnvironment + "--" + testGroup + "--" + testTeamName
+}
 
 var (
 	cfg       *rest.Config
@@ -74,6 +84,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "gateway", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "identity", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "organization", "config", "crd", "bases"),
 		),
 		ErrorIfCRDPathMissing: true,
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
@@ -149,6 +160,16 @@ var _ = BeforeSuite(func() {
 	By("Creating the environment namespace")
 	CreateNamespace(testEnvironment)
 
+	By("Creating the test group and team")
+	CreateTestGroup()
+	CreateTestTeam()
+
+	By("Creating the test namespace")
+	CreateNamespace(testNamespace)
+
+	By("Creating the test API category")
+	CreateTestApiCategory()
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
@@ -170,4 +191,72 @@ func CreateNamespace(name string) {
 		},
 	}
 	Expect(k8sClient.Create(ctx, ns)).To(Succeed())
+}
+
+func CreateTestGroup() *organizationapi.Group {
+	group := &organizationapi.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testGroup,
+			Namespace: testEnvironment,
+			Labels: map[string]string{
+				"cp.ei.telekom.de/environment": testEnvironment,
+			},
+		},
+		Spec: organizationapi.GroupSpec{
+			DisplayName: "Test Group",
+			Description: "Test group for API tests",
+		},
+	}
+	Expect(k8sClient.Create(ctx, group)).To(Succeed())
+	return group
+}
+
+func CreateTestTeam() *organizationapi.Team {
+	team := &organizationapi.Team{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      organizationapi.TeamResourceName(testGroup, testTeamName),
+			Namespace: testEnvironment,
+			Labels: map[string]string{
+				"cp.ei.telekom.de/environment": testEnvironment,
+			},
+		},
+		Spec: organizationapi.TeamSpec{
+			Name:     testTeamName,
+			Group:    testGroup,
+			Email:    "test-team@example.com",
+			Category: organizationapi.TeamCategory(testCategory),
+			Members: []organizationapi.Member{
+				{
+					Name:  "Test User",
+					Email: "test@example.com",
+				},
+			},
+		},
+	}
+	Expect(k8sClient.Create(ctx, team)).To(Succeed())
+	return team
+}
+
+func CreateTestApiCategory() *apiv1.ApiCategory {
+	apiCat := &apiv1.ApiCategory{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "other",
+			Namespace: testNamespace,
+			Labels: map[string]string{
+				"cp.ei.telekom.de/environment": testEnvironment,
+			},
+		},
+		Spec: apiv1.ApiCategorySpec{
+			LabelValue:  "other",
+			Active:      true,
+			Description: "Other category for testing",
+			AllowTeams: &apiv1.AllowTeamsConfig{
+				Categories: []string{string(organizationapi.TeamCategoryCustomer)},
+				Names:      []string{},
+			},
+			MustHaveGroupPrefix: false,
+		},
+	}
+	Expect(k8sClient.Create(ctx, apiCat)).To(Succeed())
+	return apiCat
 }
