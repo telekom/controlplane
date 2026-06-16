@@ -48,6 +48,7 @@ type ApiExposureResolver interface {
 }
 type ApiSubscriptionResolver interface {
 	Target(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiExposureInfo, error)
+	GatewayURL(ctx context.Context, obj *ent.ApiSubscription) (*string, error)
 }
 type ApplicationResolver interface {
 	ClientSecret(ctx context.Context, obj *ent.Application) (*string, error)
@@ -64,9 +65,11 @@ type ApprovalRequestResolver interface {
 }
 type EventExposureResolver interface {
 	Subscriptions(ctx context.Context, obj *ent.EventExposure) ([]*model.EventSubscriptionInfo, error)
+	GatewayProviderURL(ctx context.Context, obj *ent.EventExposure) (*string, error)
 }
 type EventSubscriptionResolver interface {
 	Target(ctx context.Context, obj *ent.EventSubscription) (*model.EventExposureInfo, error)
+	GatewayConsumerSseURL(ctx context.Context, obj *ent.EventSubscription) (*string, error)
 }
 type EventTypeResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.EventType) (*string, error)
@@ -94,6 +97,8 @@ type TeamResolver interface {
 }
 type ZoneResolver interface {
 	TokenURL(ctx context.Context, obj *ent.Zone) (*string, error)
+	Cloud(ctx context.Context, obj *ent.Zone) (string, error)
+	Hidden(ctx context.Context, obj *ent.Zone) (bool, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -2564,6 +2569,29 @@ func (ec *executionContext) fieldContext_ApiSubscription_target(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiSubscription_gatewayURL(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.ApiSubscription().GatewayURL(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscription_gatewayURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApiSubscription", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _ApiSubscriptionConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscriptionConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4961,6 +4989,29 @@ func (ec *executionContext) fieldContext_EventExposure_subscriptions(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _EventExposure_gatewayProviderURL(ctx context.Context, field graphql.CollectedField, obj *ent.EventExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventExposure_gatewayProviderURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.EventExposure().GatewayProviderURL(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventExposure_gatewayProviderURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventExposure", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _EventExposureConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.EventExposureConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5482,6 +5533,29 @@ func (ec *executionContext) fieldContext_EventSubscription_target(_ context.Cont
 		},
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _EventSubscription_gatewayConsumerSseURL(ctx context.Context, field graphql.CollectedField, obj *ent.EventSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventSubscription_gatewayConsumerSseURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.EventSubscription().GatewayConsumerSseURL(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventSubscription_gatewayConsumerSseURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventSubscription", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _EventSubscriptionConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.EventSubscriptionConnection) (ret graphql.Marshaler) {
@@ -7921,6 +7995,52 @@ func (ec *executionContext) _Zone_tokenURL(ctx context.Context, field graphql.Co
 }
 func (ec *executionContext) fieldContext_Zone_tokenURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Zone", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Zone_cloud(ctx context.Context, field graphql.CollectedField, obj *ent.Zone) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Zone_cloud(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Zone().Cloud(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Zone_cloud(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Zone", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Zone_hidden(ctx context.Context, field graphql.CollectedField, obj *ent.Zone) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Zone_hidden(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Zone().Hidden(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Zone_hidden(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Zone", field, true, true, errors.New("field of type Boolean does not have child fields"))
 }
 
 // endregion **************************** field.gotpl *****************************
@@ -19774,6 +19894,39 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "gatewayURL":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ApiSubscription_gatewayURL(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -20973,6 +21126,39 @@ func (ec *executionContext) _EventExposure(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "gatewayProviderURL":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._EventExposure_gatewayProviderURL(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -21252,6 +21438,39 @@ func (ec *executionContext) _EventSubscription(ctx context.Context, sel ast.Sele
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "gatewayConsumerSseURL":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._EventSubscription_gatewayConsumerSseURL(ctx, field, obj)
 				return res
 			}
 
@@ -22674,6 +22893,78 @@ func (ec *executionContext) _Zone(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Zone_tokenURL(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "cloud":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Zone_cloud(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "hidden":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Zone_hidden(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 

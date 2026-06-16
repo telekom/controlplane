@@ -139,11 +139,17 @@ extend type Application {
 extend type Zone {
   "Token endpoint URL derived from the issuer URL. Returns null if no issuer URL is set."
   tokenURL: String @goField(forceResolver: true)
+  "Cloud identifier for the zone (always equals zone name)."
+  cloud: String! @goField(forceResolver: true)
+  "Whether this zone is hidden from the UI (deprecated, but there for backward compatibility)."
+  hidden: Boolean! @goField(forceResolver: true)
 }
 
 extend type ApiSubscription {
   "Target exposure (reduced view — cross-tenant boundary)"
   target: ApiExposureInfo! @goField(forceResolver: true)
+  "Full gateway URL for this subscription (Zone.gatewayURL + basePath). Returns null if zone has no gateway URL."
+  gatewayURL: String @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
@@ -154,11 +160,15 @@ extend type ApiExposure {
 extend type EventSubscription {
   "Target exposure (reduced view — cross-tenant boundary)"
   target: EventExposureInfo! @goField(forceResolver: true)
+  "SSE URL for this subscription. Returns null if zone has no gateway URL or delivery type is not SSE."
+  gatewayConsumerSseURL: String @goField(forceResolver: true)
 }
 
 extend type EventExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
+  "Gateway provider URL for this event exposure. Returns null if zone has no gateway URL."
+  gatewayProviderURL: String @goField(forceResolver: true)
 }
 
 "A subscription related to an approval — either an API or event subscription."

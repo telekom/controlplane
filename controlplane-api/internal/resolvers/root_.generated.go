@@ -142,6 +142,7 @@ type ComplexityRoot struct {
 		CreatedAt        func(childComplexity int) int
 		Environment      func(childComplexity int) int
 		FailoverZones    func(childComplexity int) int
+		GatewayURL       func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		M2mAuthMethod    func(childComplexity int) int
@@ -313,20 +314,21 @@ type ComplexityRoot struct {
 	}
 
 	EventExposure struct {
-		Active         func(childComplexity int) int
-		ApprovalConfig func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		Environment    func(childComplexity int) int
-		EventType      func(childComplexity int) int
-		EventTypeDef   func(childComplexity int) int
-		ID             func(childComplexity int) int
-		LastModifiedAt func(childComplexity int) int
-		Namespace      func(childComplexity int) int
-		Owner          func(childComplexity int) int
-		StatusMessage  func(childComplexity int) int
-		StatusPhase    func(childComplexity int) int
-		Subscriptions  func(childComplexity int) int
-		Visibility     func(childComplexity int) int
+		Active             func(childComplexity int) int
+		ApprovalConfig     func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		Environment        func(childComplexity int) int
+		EventType          func(childComplexity int) int
+		EventTypeDef       func(childComplexity int) int
+		GatewayProviderURL func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		LastModifiedAt     func(childComplexity int) int
+		Namespace          func(childComplexity int) int
+		Owner              func(childComplexity int) int
+		StatusMessage      func(childComplexity int) int
+		StatusPhase        func(childComplexity int) int
+		Subscriptions      func(childComplexity int) int
+		Visibility         func(childComplexity int) int
 	}
 
 	EventExposureConnection struct {
@@ -351,21 +353,22 @@ type ComplexityRoot struct {
 	}
 
 	EventSubscription struct {
-		Approval         func(childComplexity int) int
-		ApprovalRequests func(childComplexity int) int
-		CallbackURL      func(childComplexity int) int
-		CreatedAt        func(childComplexity int) int
-		DeliveryType     func(childComplexity int) int
-		Environment      func(childComplexity int) int
-		EventType        func(childComplexity int) int
-		ID               func(childComplexity int) int
-		LastModifiedAt   func(childComplexity int) int
-		Name             func(childComplexity int) int
-		Namespace        func(childComplexity int) int
-		Owner            func(childComplexity int) int
-		StatusMessage    func(childComplexity int) int
-		StatusPhase      func(childComplexity int) int
-		Target           func(childComplexity int) int
+		Approval              func(childComplexity int) int
+		ApprovalRequests      func(childComplexity int) int
+		CallbackURL           func(childComplexity int) int
+		CreatedAt             func(childComplexity int) int
+		DeliveryType          func(childComplexity int) int
+		Environment           func(childComplexity int) int
+		EventType             func(childComplexity int) int
+		GatewayConsumerSseURL func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		LastModifiedAt        func(childComplexity int) int
+		Name                  func(childComplexity int) int
+		Namespace             func(childComplexity int) int
+		Owner                 func(childComplexity int) int
+		StatusMessage         func(childComplexity int) int
+		StatusPhase           func(childComplexity int) int
+		Target                func(childComplexity int) int
 	}
 
 	EventSubscriptionConnection struct {
@@ -549,8 +552,10 @@ type ComplexityRoot struct {
 
 	Zone struct {
 		Applications func(childComplexity int) int
+		Cloud        func(childComplexity int) int
 		Environment  func(childComplexity int) int
 		GatewayURL   func(childComplexity int) int
+		Hidden       func(childComplexity int) int
 		ID           func(childComplexity int) int
 		IssuerURL    func(childComplexity int) int
 		Name         func(childComplexity int) int
@@ -999,6 +1004,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.FailoverZones(childComplexity), true
+
+	case "ApiSubscription.gatewayURL":
+		if e.ComplexityRoot.ApiSubscription.GatewayURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.GatewayURL(childComplexity), true
 
 	case "ApiSubscription.id":
 		if e.ComplexityRoot.ApiSubscription.ID == nil {
@@ -1839,6 +1851,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventExposure.EventTypeDef(childComplexity), true
 
+	case "EventExposure.gatewayProviderURL":
+		if e.ComplexityRoot.EventExposure.GatewayProviderURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.GatewayProviderURL(childComplexity), true
+
 	case "EventExposure.id":
 		if e.ComplexityRoot.EventExposure.ID == nil {
 			break
@@ -2027,6 +2046,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscription.EventType(childComplexity), true
+
+	case "EventSubscription.gatewayConsumerSseURL":
+		if e.ComplexityRoot.EventSubscription.GatewayConsumerSseURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.GatewayConsumerSseURL(childComplexity), true
 
 	case "EventSubscription.id":
 		if e.ComplexityRoot.EventSubscription.ID == nil {
@@ -2997,6 +3023,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Zone.Applications(childComplexity), true
 
+	case "Zone.cloud":
+		if e.ComplexityRoot.Zone.Cloud == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.Cloud(childComplexity), true
+
 	case "Zone.environment":
 		if e.ComplexityRoot.Zone.Environment == nil {
 			break
@@ -3010,6 +3043,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.GatewayURL(childComplexity), true
+
+	case "Zone.hidden":
+		if e.ComplexityRoot.Zone.Hidden == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.Hidden(childComplexity), true
 
 	case "Zone.id":
 		if e.ComplexityRoot.Zone.ID == nil {
@@ -6945,11 +6985,17 @@ extend type Application {
 extend type Zone {
   "Token endpoint URL derived from the issuer URL. Returns null if no issuer URL is set."
   tokenURL: String @goField(forceResolver: true)
+  "Cloud identifier for the zone (always equals zone name)."
+  cloud: String! @goField(forceResolver: true)
+  "Whether this zone is hidden from the UI (deprecated, but there for backward compatibility)."
+  hidden: Boolean! @goField(forceResolver: true)
 }
 
 extend type ApiSubscription {
   "Target exposure (reduced view — cross-tenant boundary)"
   target: ApiExposureInfo! @goField(forceResolver: true)
+  "Full gateway URL for this subscription (Zone.gatewayURL + basePath). Returns null if zone has no gateway URL."
+  gatewayURL: String @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
@@ -6960,11 +7006,15 @@ extend type ApiExposure {
 extend type EventSubscription {
   "Target exposure (reduced view — cross-tenant boundary)"
   target: EventExposureInfo! @goField(forceResolver: true)
+  "SSE URL for this subscription. Returns null if zone has no gateway URL or delivery type is not SSE."
+  gatewayConsumerSseURL: String @goField(forceResolver: true)
 }
 
 extend type EventExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
+  "Gateway provider URL for this event exposure. Returns null if zone has no gateway URL."
+  gatewayProviderURL: String @goField(forceResolver: true)
 }
 
 "A subscription related to an approval — either an API or event subscription."
@@ -7217,6 +7267,8 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_approvalRequests(ctx, field)
 	case "target":
 		return ec.fieldContext_ApiSubscription_target(ctx, field)
+	case "gatewayURL":
+		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscription", field.Name)
 }
@@ -7569,6 +7621,8 @@ func (ec *executionContext) childFields_EventExposure(ctx context.Context, field
 		return ec.fieldContext_EventExposure_eventTypeDef(ctx, field)
 	case "subscriptions":
 		return ec.fieldContext_EventExposure_subscriptions(ctx, field)
+	case "gatewayProviderURL":
+		return ec.fieldContext_EventExposure_gatewayProviderURL(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventExposure", field.Name)
 }
@@ -7647,6 +7701,8 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_approvalRequests(ctx, field)
 	case "target":
 		return ec.fieldContext_EventSubscription_target(ctx, field)
+	case "gatewayConsumerSseURL":
+		return ec.fieldContext_EventSubscription_gatewayConsumerSseURL(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventSubscription", field.Name)
 }
@@ -7971,6 +8027,10 @@ func (ec *executionContext) childFields_Zone(ctx context.Context, field graphql.
 		return ec.fieldContext_Zone_applications(ctx, field)
 	case "tokenURL":
 		return ec.fieldContext_Zone_tokenURL(ctx, field)
+	case "cloud":
+		return ec.fieldContext_Zone_cloud(ctx, field)
+	case "hidden":
+		return ec.fieldContext_Zone_hidden(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Zone", field.Name)
 }

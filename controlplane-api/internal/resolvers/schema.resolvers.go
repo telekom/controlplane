@@ -160,6 +160,33 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 	return loadApiExposureInfo(sysCtx, exposure)
 }
 
+// GatewayURL is the resolver for the gatewayURL field.
+// Computes Zone.gatewayURL + "/" + basePath for the subscription.
+func (r *apiSubscriptionResolver) GatewayURL(ctx context.Context, obj *ent.ApiSubscription) (*string, error) {
+	app, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		app, err = obj.QueryOwner().Only(ctx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading owner for api subscription %d: %w", obj.ID, err)
+	}
+
+	z, err := app.Edges.ZoneOrErr()
+	if ent.IsNotLoaded(err) {
+		z, err = app.QueryZone().Only(ctx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading zone for application %d: %w", app.ID, err)
+	}
+
+	if z.GatewayURL == nil {
+		return nil, nil
+	}
+
+	gatewayURL := *z.GatewayURL + "/" + obj.BasePath
+	return &gatewayURL, nil
+}
+
 // StatusPhase is the resolver for the statusPhase field.
 func (r *apiSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error) {
 	if obj.StatusPhase == nil {
@@ -368,6 +395,33 @@ func (r *eventExposureResolver) Subscriptions(ctx context.Context, obj *ent.Even
 	return result, nil
 }
 
+// GatewayProviderURL is the resolver for the gatewayProviderURL field.
+// Computes Zone.gatewayURL + "/<zoneName>/publish/v1" for the exposure.
+func (r *eventExposureResolver) GatewayProviderURL(ctx context.Context, obj *ent.EventExposure) (*string, error) {
+	app, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		app, err = obj.QueryOwner().Only(ctx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading owner for event exposure %d: %w", obj.ID, err)
+	}
+
+	z, err := app.Edges.ZoneOrErr()
+	if ent.IsNotLoaded(err) {
+		z, err = app.QueryZone().Only(ctx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading zone for application %d: %w", app.ID, err)
+	}
+
+	if z.GatewayURL == nil {
+		return nil, nil
+	}
+
+	providerURL := *z.GatewayURL + "/" + z.Name + "/publish/v1"
+	return &providerURL, nil
+}
+
 // Visibility is the resolver for the visibility field.
 func (r *eventExposureInfoResolver) Visibility(ctx context.Context, obj *model.EventExposureInfo) (eventexposure.Visibility, error) {
 	return eventexposure.Visibility(obj.Visibility), nil
@@ -389,6 +443,11 @@ func (r *eventSubscriptionResolver) Target(ctx context.Context, obj *ent.EventSu
 	}
 
 	return loadEventExposureInfo(sysCtx, exposure)
+}
+
+// GatewayConsumerSseURL is the resolver for the gatewayConsumerSseURL field.
+func (r *eventSubscriptionResolver) GatewayConsumerSseURL(ctx context.Context, obj *ent.EventSubscription) (*string, error) {
+	panic(fmt.Errorf("not implemented: GatewayConsumerSseURL - gatewayConsumerSseURL"))
 }
 
 // DeliveryType is the resolver for the deliveryType field.
@@ -507,6 +566,16 @@ func (r *zoneResolver) TokenURL(ctx context.Context, obj *ent.Zone) (*string, er
 	return &tokenURL, nil
 }
 
+// Cloud is the resolver for the cloud field.
+func (r *zoneResolver) Cloud(ctx context.Context, obj *ent.Zone) (string, error) {
+	return obj.Name, nil
+}
+
+// Hidden is the resolver for the hidden field.
+func (r *zoneResolver) Hidden(ctx context.Context, obj *ent.Zone) (bool, error) {
+	return false, nil
+}
+
 // ApiExposureInfo returns ApiExposureInfoResolver implementation.
 func (r *Resolver) ApiExposureInfo() ApiExposureInfoResolver { return &apiExposureInfoResolver{r} }
 
@@ -543,3 +612,15 @@ type availableTransitionResolver struct{ *Resolver }
 type decisionResolver struct{ *Resolver }
 type eventExposureInfoResolver struct{ *Resolver }
 type eventSubscriptionInfoResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *eventSubscriptionResolver) SseEndpoint(ctx context.Context, obj *ent.EventSubscription) (*string, error) {
+	panic(fmt.Errorf("not implemented: SseEndpoint - sseEndpoint"))
+}
+*/
