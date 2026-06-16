@@ -99,7 +99,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	if err != nil {
 		return errors.Wrapf(err, "failed to get zone %s for apiExposure: %s", apiExp.Spec.Zone.Name, apiExp.Name)
 	}
-	realmName := util.RealmNameForZone(exposureZone)
+	realmName := exposureZone.Status.GatewayRealm.Name
 
 	// Reset proxy routes status
 	apiExp.Status.ProxyRoutes = nil

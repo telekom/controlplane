@@ -218,7 +218,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	if err != nil {
 		return errors.Wrapf(err, "failed to get exposure zone %s", apiExposure.Spec.Zone.Name)
 	}
-	realmName := util.RealmNameForZone(exposureZone)
+	realmName := exposureZone.Status.GatewayRealm.Name
 
 	sameZoneAsExposure := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
 	inProviderFailoverZone := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(apiSub.Spec.Zone)
