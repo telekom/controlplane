@@ -48,7 +48,8 @@ func CompareProtocolMapperRepresentation(existingMapper, newMapper *api.Protocol
 }
 
 func MergeProtocolMappers(existingMappers,
-	newMappers *[]api.ProtocolMapperRepresentation) *[]api.ProtocolMapperRepresentation {
+	newMappers *[]api.ProtocolMapperRepresentation,
+) *[]api.ProtocolMapperRepresentation {
 	if newMappers == nil {
 		return existingMappers
 	}
@@ -73,7 +74,8 @@ func MergeProtocolMappers(existingMappers,
 }
 
 func MergeProtocolMapperRepresentation(existingMapper,
-	newMapper *api.ProtocolMapperRepresentation) *api.ProtocolMapperRepresentation {
+	newMapper *api.ProtocolMapperRepresentation,
+) *api.ProtocolMapperRepresentation {
 	// ID stays the same
 	existingMapper.Name = newMapper.Name
 	existingMapper.Protocol = newMapper.Protocol

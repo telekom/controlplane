@@ -5,14 +5,14 @@
 package realm
 
 import (
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
 
-func NewRealmSpec(identityProviderName string, namespace string) *identityv1.RealmSpec {
+func NewRealmSpec(identityProviderName, namespace string) *identityv1.RealmSpec {
 	return &identityv1.RealmSpec{
 		IdentityProvider: &types.ObjectRef{
 			Name:      identityProviderName,
@@ -21,7 +21,7 @@ func NewRealmSpec(identityProviderName string, namespace string) *identityv1.Rea
 	}
 }
 
-func NewRealmMeta(name string, namespace string, environment string) *metav1.ObjectMeta {
+func NewRealmMeta(name, namespace, environment string) *metav1.ObjectMeta {
 	return &metav1.ObjectMeta{
 		Name:      name,
 		Namespace: namespace,
@@ -31,7 +31,7 @@ func NewRealmMeta(name string, namespace string, environment string) *metav1.Obj
 	}
 }
 
-func NewRealm(name string, namespace string, environment string, identityProviderName string) *identityv1.Realm {
+func NewRealm(name, namespace, environment, identityProviderName string) *identityv1.Realm {
 	return &identityv1.Realm{
 		ObjectMeta: *NewRealmMeta(name, namespace, environment),
 		Spec:       *NewRealmSpec(identityProviderName, namespace),

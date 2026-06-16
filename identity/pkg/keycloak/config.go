@@ -12,11 +12,13 @@ import "strings"
 // AdminTokenURL example:
 //			"https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/master/protocol/openid-connect/token"
 
-const MasterRealm = "master"
-const TokenEndpointSuffix = "/protocol/openid-connect/token"
-const ConsoleEndpointSuffix = "/console/#/" // + realm name to directly open the realm in the console
+const (
+	MasterRealm           = "master"
+	TokenEndpointSuffix   = "/protocol/openid-connect/token"
+	ConsoleEndpointSuffix = "/console/#/" // + realm name to directly open the realm in the console
+)
 
-func DetermineAdminConsoleUrlFrom(adminUrl string, realmName string) string {
+func DetermineAdminConsoleUrlFrom(adminUrl, realmName string) string {
 	i := strings.Index(adminUrl, "/realms")
 	if i == -1 {
 		return adminUrl + MasterRealm + ConsoleEndpointSuffix + realmName

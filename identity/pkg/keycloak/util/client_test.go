@@ -7,10 +7,11 @@ package util
 import (
 	"testing"
 
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	"github.com/telekom/controlplane/identity/pkg/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	"github.com/telekom/controlplane/identity/pkg/api"
 )
 
 func TestMapToClientRepresentation_SetsAttributeByDefault(t *testing.T) {

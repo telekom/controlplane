@@ -7,17 +7,18 @@ package controller
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	ghErrors "github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
 	realmModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/realm"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Realm Controller", func() {
@@ -67,12 +68,12 @@ var _ = Describe("Realm Controller", func() {
 		It("should successfully reconcile the resource", func() {
 			Eventually(func(g Gomega) {
 				VerifyRealm(ctx, g, realmRef, testRealm, expectedRealmStatus)
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})
 })
 
+//nolint:gocritic // Test helper compares the full expected status structure.
 func VerifyRealm(ctx context.Context, gomega Gomega, namespacedName client.ObjectKey, realmToVerify *identityv1.Realm, expectedRealmStatus identityv1.RealmStatus) {
 	realmResource := &identityv1.Realm{}
 	err := k8sClient.Get(ctx, namespacedName, realmResource)
@@ -89,7 +90,6 @@ func VerifyRealm(ctx context.Context, gomega Gomega, namespacedName client.Objec
 	gomega.Expect(realmResource.Status.AdminTokenUrl).To(Equal(expectedRealmStatus.AdminTokenUrl))
 	gomega.Expect(meta.IsStatusConditionTrue(realmResource.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
 	gomega.Expect(meta.IsStatusConditionTrue(realmResource.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-
 }
 
 func VerifyRealmIsAvailable(clientRealmRef client.ObjectKey) {

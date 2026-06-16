@@ -2,14 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:dupl // Controllers intentionally mirror each other.
 package controller
 
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,6 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	clientHandler "github.com/telekom/controlplane/identity/internal/handler/client"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
@@ -93,14 +94,15 @@ func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj 
 	}
 
 	list := &identityv1.ClientList{}
-	if err := r.Client.List(ctx, list, listOpts...); err != nil {
+	if err := r.List(ctx, list, listOpts...); err != nil {
 		logger.Error(err, "failed to list Clients")
 		return nil
 	}
 
 	requests := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+	for i := range list.Items {
+		item := &list.Items[i]
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
 	}
 
 	return requests
