@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -96,17 +97,17 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // MapTeamToRovers maps a Team to all Rovers in the team's namespace.
 // This enables re-reconciliation of Rovers when Team.Spec (e.g. Email) changes.
 func (r *RoverReconciler) MapTeamToRovers(ctx context.Context, obj client.Object) []reconcile.Request {
+
+	logger := log.FromContext(ctx)
+
 	team, ok := obj.(*organizationv1.Team)
-	if !ok {
+	if !ok || team.Status.Namespace == "" {
 		return nil
 	}
 
-	// Team namespace follows the convention: <environment>--<team.Name>
-	// where team.Name is already "<group>--<teamName>"
-	teamNamespace := organizationv1.TeamNamespace(team.Namespace, team.Name)
-
 	roverList := &rover.RoverList{}
-	if err := r.List(ctx, roverList, client.InNamespace(teamNamespace)); err != nil {
+	if err := r.List(ctx, roverList, client.InNamespace(team.Status.Namespace)); err != nil {
+		logger.Error(err, "Failed to list Rovers", "namespace", team.Status.Namespace)
 		return nil
 	}
 

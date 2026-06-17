@@ -717,7 +717,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 					Namespace: teamNamespace,
 				}, application)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(application.Spec.TeamEmail).To(Equal("team@mail.de"))
+				g.Expect(application.Spec.TeamEmail).To(Equal(team.Spec.Email))
 			}, timeout, interval).Should(Succeed())
 
 			By("updating Team.Spec.Email")
@@ -726,6 +726,14 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				Name:      team.Name,
 				Namespace: team.Namespace,
 			}, fetchedTeam)).To(Succeed())
+
+			originalEmail := fetchedTeam.Spec.Email
+			DeferCleanup(func() {
+				restore := &organizationv1.Team{}
+				Expect(k8sClient.Get(ctx, client.ObjectKey{Name: team.Name, Namespace: team.Namespace}, restore)).To(Succeed())
+				restore.Spec.Email = originalEmail
+				Expect(k8sClient.Update(ctx, restore)).To(Succeed())
+			})
 
 			fetchedTeam.Spec.Email = "updated-team@mail.de"
 			Expect(k8sClient.Update(ctx, fetchedTeam)).To(Succeed())
@@ -739,25 +747,6 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				}, application)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(application.Spec.TeamEmail).To(Equal("updated-team@mail.de"))
-			}, timeout, interval).Should(Succeed())
-
-			By("restoring original Team email for other tests")
-			Expect(k8sClient.Get(ctx, client.ObjectKey{
-				Name:      team.Name,
-				Namespace: team.Namespace,
-			}, fetchedTeam)).To(Succeed())
-			fetchedTeam.Spec.Email = "team@mail.de"
-			Expect(k8sClient.Update(ctx, fetchedTeam)).To(Succeed())
-
-			By("waiting for Application to reflect restored email before cleanup")
-			Eventually(func(g Gomega) {
-				application := &applicationv1.Application{}
-				err := k8sClient.Get(ctx, client.ObjectKey{
-					Name:      resourceName,
-					Namespace: teamNamespace,
-				}, application)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(application.Spec.TeamEmail).To(Equal("team@mail.de"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})
