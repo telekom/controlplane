@@ -42,6 +42,7 @@ var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
 
 type ZoneHandler struct{}
 
+//nolint:gocyclo // orchestration function, complexity from sequential resource creation
 func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) error {
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
@@ -286,6 +287,7 @@ func reconcileAiGateway(ctx context.Context, handlingContext HandlingContext, zo
 	return nil
 }
 
+//nolint:dupl // intentional similarity with createGateway for separate AI gateway config
 func createAiGateway(ctx context.Context, handlingContext HandlingContext) (*gatewayapi.Gateway, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	gateway := &gatewayapi.Gateway{
@@ -511,6 +513,7 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 	return gatewayRealm, nil
 }
 
+//nolint:dupl // intentional similarity with createAiGateway for separate gateway config
 func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatewayapi.Gateway, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	gateway := &gatewayapi.Gateway{
