@@ -31,6 +31,16 @@ type RequesterInfo {
   applicationName: String
 }
 
+type ExternalId {
+  Id: String!
+  Schema: String!
+}
+
+type IpRestrictions {
+  Allow: [String!]
+  Deny: [String!]
+}
+
 type DeciderInfo {
   teamName: String!
   teamEmail: String

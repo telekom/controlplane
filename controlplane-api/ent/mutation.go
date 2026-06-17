@@ -3818,6 +3818,9 @@ type ApplicationMutation struct {
 	current_expires_at       *time.Time
 	secret_rotation_phase    *application.SecretRotationPhase
 	secret_rotation_message  *string
+	external_ids             *[]model.ExternalId
+	appendexternal_ids       []model.ExternalId
+	ip_restrictions          *model.IpRestrictions
 	clearedFields            map[string]struct{}
 	zone                     *int
 	clearedzone              bool
@@ -4559,6 +4562,120 @@ func (m *ApplicationMutation) ResetSecretRotationMessage() {
 	delete(m.clearedFields, application.FieldSecretRotationMessage)
 }
 
+// SetExternalIds sets the "external_ids" field.
+func (m *ApplicationMutation) SetExternalIds(mi []model.ExternalId) {
+	m.external_ids = &mi
+	m.appendexternal_ids = nil
+}
+
+// ExternalIds returns the value of the "external_ids" field in the mutation.
+func (m *ApplicationMutation) ExternalIds() (r []model.ExternalId, exists bool) {
+	v := m.external_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalIds returns the old "external_ids" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldExternalIds(ctx context.Context) (v []model.ExternalId, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalIds: %w", err)
+	}
+	return oldValue.ExternalIds, nil
+}
+
+// AppendExternalIds adds mi to the "external_ids" field.
+func (m *ApplicationMutation) AppendExternalIds(mi []model.ExternalId) {
+	m.appendexternal_ids = append(m.appendexternal_ids, mi...)
+}
+
+// AppendedExternalIds returns the list of values that were appended to the "external_ids" field in this mutation.
+func (m *ApplicationMutation) AppendedExternalIds() ([]model.ExternalId, bool) {
+	if len(m.appendexternal_ids) == 0 {
+		return nil, false
+	}
+	return m.appendexternal_ids, true
+}
+
+// ClearExternalIds clears the value of the "external_ids" field.
+func (m *ApplicationMutation) ClearExternalIds() {
+	m.external_ids = nil
+	m.appendexternal_ids = nil
+	m.clearedFields[application.FieldExternalIds] = struct{}{}
+}
+
+// ExternalIdsCleared returns if the "external_ids" field was cleared in this mutation.
+func (m *ApplicationMutation) ExternalIdsCleared() bool {
+	_, ok := m.clearedFields[application.FieldExternalIds]
+	return ok
+}
+
+// ResetExternalIds resets all changes to the "external_ids" field.
+func (m *ApplicationMutation) ResetExternalIds() {
+	m.external_ids = nil
+	m.appendexternal_ids = nil
+	delete(m.clearedFields, application.FieldExternalIds)
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (m *ApplicationMutation) SetIPRestrictions(mr model.IpRestrictions) {
+	m.ip_restrictions = &mr
+}
+
+// IPRestrictions returns the value of the "ip_restrictions" field in the mutation.
+func (m *ApplicationMutation) IPRestrictions() (r model.IpRestrictions, exists bool) {
+	v := m.ip_restrictions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIPRestrictions returns the old "ip_restrictions" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldIPRestrictions(ctx context.Context) (v model.IpRestrictions, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIPRestrictions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIPRestrictions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIPRestrictions: %w", err)
+	}
+	return oldValue.IPRestrictions, nil
+}
+
+// ClearIPRestrictions clears the value of the "ip_restrictions" field.
+func (m *ApplicationMutation) ClearIPRestrictions() {
+	m.ip_restrictions = nil
+	m.clearedFields[application.FieldIPRestrictions] = struct{}{}
+}
+
+// IPRestrictionsCleared returns if the "ip_restrictions" field was cleared in this mutation.
+func (m *ApplicationMutation) IPRestrictionsCleared() bool {
+	_, ok := m.clearedFields[application.FieldIPRestrictions]
+	return ok
+}
+
+// ResetIPRestrictions resets all changes to the "ip_restrictions" field.
+func (m *ApplicationMutation) ResetIPRestrictions() {
+	m.ip_restrictions = nil
+	delete(m.clearedFields, application.FieldIPRestrictions)
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by id.
 func (m *ApplicationMutation) SetZoneID(id int) {
 	m.zone = &id
@@ -4887,7 +5004,7 @@ func (m *ApplicationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApplicationMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, application.FieldCreatedAt)
 	}
@@ -4930,6 +5047,12 @@ func (m *ApplicationMutation) Fields() []string {
 	if m.secret_rotation_message != nil {
 		fields = append(fields, application.FieldSecretRotationMessage)
 	}
+	if m.external_ids != nil {
+		fields = append(fields, application.FieldExternalIds)
+	}
+	if m.ip_restrictions != nil {
+		fields = append(fields, application.FieldIPRestrictions)
+	}
 	return fields
 }
 
@@ -4966,6 +5089,10 @@ func (m *ApplicationMutation) Field(name string) (ent.Value, bool) {
 		return m.SecretRotationPhase()
 	case application.FieldSecretRotationMessage:
 		return m.SecretRotationMessage()
+	case application.FieldExternalIds:
+		return m.ExternalIds()
+	case application.FieldIPRestrictions:
+		return m.IPRestrictions()
 	}
 	return nil, false
 }
@@ -5003,6 +5130,10 @@ func (m *ApplicationMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldSecretRotationPhase(ctx)
 	case application.FieldSecretRotationMessage:
 		return m.OldSecretRotationMessage(ctx)
+	case application.FieldExternalIds:
+		return m.OldExternalIds(ctx)
+	case application.FieldIPRestrictions:
+		return m.OldIPRestrictions(ctx)
 	}
 	return nil, fmt.Errorf("unknown Application field %s", name)
 }
@@ -5110,6 +5241,20 @@ func (m *ApplicationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSecretRotationMessage(v)
 		return nil
+	case application.FieldExternalIds:
+		v, ok := value.([]model.ExternalId)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalIds(v)
+		return nil
+	case application.FieldIPRestrictions:
+		v, ok := value.(model.IpRestrictions)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIPRestrictions(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Application field %s", name)
 }
@@ -5167,6 +5312,12 @@ func (m *ApplicationMutation) ClearedFields() []string {
 	if m.FieldCleared(application.FieldSecretRotationMessage) {
 		fields = append(fields, application.FieldSecretRotationMessage)
 	}
+	if m.FieldCleared(application.FieldExternalIds) {
+		fields = append(fields, application.FieldExternalIds)
+	}
+	if m.FieldCleared(application.FieldIPRestrictions) {
+		fields = append(fields, application.FieldIPRestrictions)
+	}
 	return fields
 }
 
@@ -5207,6 +5358,12 @@ func (m *ApplicationMutation) ClearField(name string) error {
 		return nil
 	case application.FieldSecretRotationMessage:
 		m.ClearSecretRotationMessage()
+		return nil
+	case application.FieldExternalIds:
+		m.ClearExternalIds()
+		return nil
+	case application.FieldIPRestrictions:
+		m.ClearIPRestrictions()
 		return nil
 	}
 	return fmt.Errorf("unknown Application nullable field %s", name)
@@ -5257,6 +5414,12 @@ func (m *ApplicationMutation) ResetField(name string) error {
 		return nil
 	case application.FieldSecretRotationMessage:
 		m.ResetSecretRotationMessage()
+		return nil
+	case application.FieldExternalIds:
+		m.ResetExternalIds()
+		return nil
+	case application.FieldIPRestrictions:
+		m.ResetIPRestrictions()
 		return nil
 	}
 	return fmt.Errorf("unknown Application field %s", name)

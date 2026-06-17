@@ -1061,6 +1061,98 @@ func (ec *executionContext) fieldContext_EventSubscriptionInfo_ownerTeam(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _ExternalId_Id(ctx context.Context, field graphql.CollectedField, obj *model.ExternalId) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalId_Id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Id, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalId_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalId", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ExternalId_Schema(ctx context.Context, field graphql.CollectedField, obj *model.ExternalId) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalId_Schema(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Schema, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalId_Schema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalId", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _IpRestrictions_Allow(ctx context.Context, field graphql.CollectedField, obj *model.IpRestrictions) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_IpRestrictions_Allow(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Allow, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_IpRestrictions_Allow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("IpRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _IpRestrictions_Deny(ctx context.Context, field graphql.CollectedField, obj *model.IpRestrictions) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_IpRestrictions_Deny(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Deny, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_IpRestrictions_Deny(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("IpRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _RequesterInfo_teamName(ctx context.Context, field graphql.CollectedField, obj *model.RequesterInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2115,6 +2207,88 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 	return out
 }
 
+var externalIdImplementors = []string{"ExternalId"}
+
+func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSet, obj *model.ExternalId) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, externalIdImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ExternalId")
+		case "Id":
+			out.Values[i] = ec._ExternalId_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Schema":
+			out.Values[i] = ec._ExternalId_Schema(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var ipRestrictionsImplementors = []string{"IpRestrictions"}
+
+func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.SelectionSet, obj *model.IpRestrictions) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, ipRestrictionsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IpRestrictions")
+		case "Allow":
+			out.Values[i] = ec._IpRestrictions_Allow(ctx, field, obj)
+		case "Deny":
+			out.Values[i] = ec._IpRestrictions_Deny(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var requesterInfoImplementors = []string{"RequesterInfo"}
 
 func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.SelectionSet, obj *model.RequesterInfo) graphql.Marshaler {
@@ -2451,6 +2625,10 @@ func (ec *executionContext) marshalNEventSubscriptionInfo2ᚖgithubᚗcomᚋtele
 	return ec._EventSubscriptionInfo(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx context.Context, sel ast.SelectionSet, v model.ExternalId) graphql.Marshaler {
+	return ec._ExternalId(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNRequesterInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRequesterInfo(ctx context.Context, sel ast.SelectionSet, v model.RequesterInfo) graphql.Marshaler {
 	return ec._RequesterInfo(ctx, sel, &v)
 }
@@ -2530,6 +2708,29 @@ func (ec *executionContext) marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekom�
 		return graphql.Null
 	}
 	return ec._EventExposureInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ExternalId) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx context.Context, sel ast.SelectionSet, v model.IpRestrictions) graphql.Marshaler {
+	return ec._IpRestrictions(ctx, sel, &v)
 }
 
 // endregion ***************************** type.gotpl *****************************

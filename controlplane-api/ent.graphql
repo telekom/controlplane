@@ -768,6 +768,8 @@ type Application implements Node {
   currentExpiresAt: Time
   secretRotationPhase: ApplicationSecretRotationPhase!
   secretRotationMessage: String
+  externalIds: [ExternalId!]
+  ipRestrictions: IpRestrictions
   zone: Zone!
   exposedApis(
     """

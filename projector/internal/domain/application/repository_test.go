@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
 	"github.com/telekom/controlplane/projector/internal/domain/application"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
@@ -111,6 +112,20 @@ var _ = Describe("Application Repository", func() {
 				TeamName:            "platform--narvi",
 				ZoneName:            "caas",
 				SecretRotationPhase: "DONE",
+				ExternalIds: []model.ExternalId{
+					model.ExternalId{
+						Id:     "abc",
+						Schema: "schema1",
+					},
+					model.ExternalId{
+						Id:     "123",
+						Schema: "schema2",
+					},
+				},
+				IpRestrictions: model.IpRestrictions{
+					Allow: []string{"127.0.0.1", "127.0.0.2"},
+					Deny:  []string{"127.0.0.4", "127.0.0.5"},
+				},
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -120,6 +135,20 @@ var _ = Describe("Application Repository", func() {
 			Expect(app.ClientID).ToNot(BeNil())
 			Expect(*app.ClientID).To(Equal("client-123"))
 
+			Expect(app.ExternalIds).To(ContainElements(
+				model.ExternalId{
+					Id:     "abc",
+					Schema: "schema1",
+				},
+				model.ExternalId{
+					Id:     "123",
+					Schema: "schema2",
+				},
+			),
+			)
+			Expect(app.IPRestrictions.Allow).To(ContainElements("127.0.0.1", "127.0.0.2"))
+			Expect(app.IPRestrictions.Deny).To(ContainElements("127.0.0.4", "127.0.0.5"))
+
 			// Verify FK edges.
 			ownerTeam, err := app.QueryOwnerTeam().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -128,6 +157,7 @@ var _ = Describe("Application Repository", func() {
 			appZone, err := app.QueryZone().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(appZone.ID).To(Equal(zoneID))
+
 		})
 
 		It("should return ErrDependencyMissing when team is missing", func() {

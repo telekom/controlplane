@@ -9,6 +9,7 @@ import (
 	"time"
 
 	appv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -84,6 +85,36 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 		currentExpiresAt = &t
 	}
 
+	var externalIds []model.ExternalId
+	if len(obj.Spec.ExternalIds) > 0 {
+		externalIds := []model.ExternalId{}
+		for i := range obj.Spec.ExternalIds {
+			externalIds = append(externalIds, model.ExternalId{
+				Id:     obj.Spec.ExternalIds[i].Id,
+				Schema: obj.Spec.ExternalIds[i].Scheme,
+			},
+			)
+		}
+	}
+
+	var ipRestrictionsAllow []string
+	var ipRestrictionsDeny []string
+	if obj.Spec.Security != nil && obj.Spec.Security.IpRestrictions != nil {
+		if len(obj.Spec.Security.IpRestrictions.Allow) > 0 {
+			ipRestrictionsAllow := []string{}
+			for i := range obj.Spec.Security.IpRestrictions.Allow {
+				ipRestrictionsAllow = append(ipRestrictionsAllow, obj.Spec.Security.IpRestrictions.Allow[i])
+			}
+		}
+
+		if len(obj.Spec.Security.IpRestrictions.Deny) > 0 {
+			ipRestrictionsDeny := []string{}
+			for i := range obj.Spec.Security.IpRestrictions.Deny {
+				ipRestrictionsDeny = append(ipRestrictionsDeny, obj.Spec.Security.IpRestrictions.Deny[i])
+			}
+		}
+	}
+
 	return &ApplicationData{
 		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:   phase,
@@ -99,6 +130,11 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 		CurrentExpiresAt:      currentExpiresAt,
 		SecretRotationPhase:   rotationPhase,
 		SecretRotationMessage: rotationMessage,
+		ExternalIds:           externalIds,
+		IpRestrictions: model.IpRestrictions{
+			Allow: ipRestrictionsAllow,
+			Deny:  ipRestrictionsDeny,
+		},
 	}, nil
 }
 

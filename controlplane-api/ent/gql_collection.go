@@ -978,6 +978,16 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, application.FieldSecretRotationMessage)
 				fieldSeen[application.FieldSecretRotationMessage] = struct{}{}
 			}
+		case "externalIds":
+			if _, ok := fieldSeen[application.FieldExternalIds]; !ok {
+				selectedFields = append(selectedFields, application.FieldExternalIds)
+				fieldSeen[application.FieldExternalIds] = struct{}{}
+			}
+		case "ipRestrictions":
+			if _, ok := fieldSeen[application.FieldIPRestrictions]; !ok {
+				selectedFields = append(selectedFields, application.FieldIPRestrictions)
+				fieldSeen[application.FieldIPRestrictions] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:

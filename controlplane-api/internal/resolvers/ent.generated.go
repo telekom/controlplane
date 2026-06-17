@@ -3051,6 +3051,70 @@ func (ec *executionContext) fieldContext_Application_secretRotationMessage(_ con
 	return graphql.NewScalarFieldContext("Application", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _Application_externalIds(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Application_externalIds(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExternalIds, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.ExternalId) graphql.Marshaler {
+			return ec.marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Application_externalIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Application",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ExternalId(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Application_ipRestrictions(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Application_ipRestrictions(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.IPRestrictions, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.IpRestrictions) graphql.Marshaler {
+			return ec.marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Application_ipRestrictions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Application",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_IpRestrictions(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Application_zone(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -20005,6 +20069,10 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 		case "secretRotationMessage":
 			out.Values[i] = ec._Application_secretRotationMessage(ctx, field, obj)
+		case "externalIds":
+			out.Values[i] = ec._Application_externalIds(ctx, field, obj)
+		case "ipRestrictions":
+			out.Values[i] = ec._Application_ipRestrictions(ctx, field, obj)
 		case "zone":
 			field := field
 

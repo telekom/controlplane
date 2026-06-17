@@ -181,7 +181,9 @@ type ComplexityRoot struct {
 		Environment           func(childComplexity int) int
 		ExposedApis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
 		ExposedEvents         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
+		ExternalIds           func(childComplexity int) int
 		ID                    func(childComplexity int) int
+		IPRestrictions        func(childComplexity int) int
 		LastModifiedAt        func(childComplexity int) int
 		Name                  func(childComplexity int) int
 		Namespace             func(childComplexity int) int
@@ -416,6 +418,11 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ExternalId struct {
+		Id     func(childComplexity int) int
+		Schema func(childComplexity int) int
+	}
+
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
@@ -424,6 +431,11 @@ type ComplexityRoot struct {
 		Name        func(childComplexity int) int
 		Namespace   func(childComplexity int) int
 		Teams       func(childComplexity int) int
+	}
+
+	IpRestrictions struct {
+		Allow func(childComplexity int) int
+		Deny  func(childComplexity int) int
 	}
 
 	Member struct {
@@ -1199,12 +1211,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Application.ExposedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
 
+	case "Application.externalIds":
+		if e.ComplexityRoot.Application.ExternalIds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.ExternalIds(childComplexity), true
+
 	case "Application.id":
 		if e.ComplexityRoot.Application.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ID(childComplexity), true
+
+	case "Application.ipRestrictions":
+		if e.ComplexityRoot.Application.IPRestrictions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.IPRestrictions(childComplexity), true
 
 	case "Application.lastModifiedAt":
 		if e.ComplexityRoot.Application.LastModifiedAt == nil {
@@ -2294,6 +2320,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventTypeEdge.Node(childComplexity), true
 
+	case "ExternalId.Id":
+		if e.ComplexityRoot.ExternalId.Id == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalId.Id(childComplexity), true
+
+	case "ExternalId.Schema":
+		if e.ComplexityRoot.ExternalId.Schema == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalId.Schema(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -2342,6 +2382,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Group.Teams(childComplexity), true
+
+	case "IpRestrictions.Allow":
+		if e.ComplexityRoot.IpRestrictions.Allow == nil {
+			break
+		}
+
+		return e.ComplexityRoot.IpRestrictions.Allow(childComplexity), true
+
+	case "IpRestrictions.Deny":
+		if e.ComplexityRoot.IpRestrictions.Deny == nil {
+			break
+		}
+
+		return e.ComplexityRoot.IpRestrictions.Deny(childComplexity), true
 
 	case "Member.email":
 		if e.ComplexityRoot.Member.Email == nil {
@@ -3923,6 +3977,8 @@ type Application implements Node {
   currentExpiresAt: Time
   secretRotationPhase: ApplicationSecretRotationPhase!
   secretRotationMessage: String
+  externalIds: [ExternalId!]
+  ipRestrictions: IpRestrictions
   zone: Zone!
   exposedApis(
     """
@@ -6837,6 +6893,16 @@ type RequesterInfo {
   applicationName: String
 }
 
+type ExternalId {
+  Id: String!
+  Schema: String!
+}
+
+type IpRestrictions {
+  Allow: [String!]
+  Deny: [String!]
+}
+
 type DeciderInfo {
   teamName: String!
   teamEmail: String
@@ -7293,6 +7359,10 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_secretRotationPhase(ctx, field)
 	case "secretRotationMessage":
 		return ec.fieldContext_Application_secretRotationMessage(ctx, field)
+	case "externalIds":
+		return ec.fieldContext_Application_externalIds(ctx, field)
+	case "ipRestrictions":
+		return ec.fieldContext_Application_ipRestrictions(ctx, field)
 	case "zone":
 		return ec.fieldContext_Application_zone(ctx, field)
 	case "exposedApis":
@@ -7747,6 +7817,16 @@ func (ec *executionContext) childFields_EventTypeEdge(ctx context.Context, field
 	return nil, fmt.Errorf("no field named %q was found under type EventTypeEdge", field.Name)
 }
 
+func (ec *executionContext) childFields_ExternalId(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "Id":
+		return ec.fieldContext_ExternalId_Id(ctx, field)
+	case "Schema":
+		return ec.fieldContext_ExternalId_Schema(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ExternalId", field.Name)
+}
+
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -7765,6 +7845,16 @@ func (ec *executionContext) childFields_Group(ctx context.Context, field graphql
 		return ec.fieldContext_Group_teams(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+}
+
+func (ec *executionContext) childFields_IpRestrictions(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "Allow":
+		return ec.fieldContext_IpRestrictions_Allow(ctx, field)
+	case "Deny":
+		return ec.fieldContext_IpRestrictions_Deny(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type IpRestrictions", field.Name)
 }
 
 func (ec *executionContext) childFields_Member(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

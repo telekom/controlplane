@@ -105,6 +105,12 @@ models:
         resolver: true
       rotatedClientSecret:
         resolver: true
+  ExternalId:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ExternalId
+  IpRestrictions:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.IpRestrictions
   Team:
     fields:
       teamToken:

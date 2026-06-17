@@ -47,3 +47,15 @@ type AvailableTransition struct {
 	Action  string `json:"action"`
 	ToState string `json:"toState"`
 }
+
+// IpRestrictions represents the IP allowlist and denylist for an application.
+type IpRestrictions struct {
+	Allow []string `json:"allow,omitempty"`
+	Deny  []string `json:"deny,omitempty"`
+}
+
+// ExternalId represents an external identifier for an application.
+type ExternalId struct {
+	Id     string `json:"id"`
+	Schema string `json:"schema"`
+}
