@@ -219,3 +219,58 @@ func (e ErrorCode) MarshalJSON() ([]byte, error) {
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
 }
+
+type TokenRequestMethod string
+
+const (
+	TokenRequestMethodClientSecretBasic TokenRequestMethod = "client_secret_basic"
+	TokenRequestMethodClientSecretPost  TokenRequestMethod = "client_secret_post"
+)
+
+var AllTokenRequestMethod = []TokenRequestMethod{
+	TokenRequestMethodClientSecretBasic,
+	TokenRequestMethodClientSecretPost,
+}
+
+func (e TokenRequestMethod) IsValid() bool {
+	switch e {
+	case TokenRequestMethodClientSecretBasic, TokenRequestMethodClientSecretPost:
+		return true
+	}
+	return false
+}
+
+func (e TokenRequestMethod) String() string {
+	return string(e)
+}
+
+func (e *TokenRequestMethod) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TokenRequestMethod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TokenRequestMethod", str)
+	}
+	return nil
+}
+
+func (e TokenRequestMethod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TokenRequestMethod) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TokenRequestMethod) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}

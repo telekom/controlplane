@@ -101,6 +101,93 @@ type ApiExposureInfo {
   ownerTeam: TeamInfo!
 }
 
+# Security
+
+enum TokenRequestMethod {
+  client_secret_basic
+  client_secret_post
+}
+
+type BasicAuthCredentials {
+  username: String!
+  password: String!
+}
+
+type OAuth2ClientCredentials {
+  clientId: String!
+  clientSecret: String
+  clientKey: String
+}
+
+type ExternalIdentityProvider {
+  tokenEndpoint: String!
+  tokenRequest: TokenRequestMethod
+  grantType: String
+  basic: BasicAuthCredentials
+  client: OAuth2ClientCredentials
+}
+
+type Machine2MachineAuthentication {
+  externalIDP: ExternalIdentityProvider
+  basic: BasicAuthCredentials
+  scopes: [String!]
+}
+
+type SubscriberMachine2MachineAuthentication {
+  client: OAuth2ClientCredentials
+  basic: BasicAuthCredentials
+  scopes: [String!]
+}
+
+type ApiExposureSecurity {
+  m2m: Machine2MachineAuthentication
+}
+
+type ApiSubscriptionSecurity {
+  m2m: SubscriberMachine2MachineAuthentication
+}
+
+# Traffic 
+
+type Limits {
+  second: Int
+  minute: Int
+  hour: Int
+}
+
+type RateLimitOptions {
+  hideClientHeaders: Boolean
+  faultTolerant: Boolean
+}
+
+type RateLimitConfig {
+  limits: Limits!
+  options: RateLimitOptions
+}
+
+type SubscriberRateLimitDefaults {
+  limits: Limits!
+}
+
+type RateLimitOverrides {
+  subscriber: String!
+  limits: Limits!
+}
+
+type SubscriberRateLimits {
+  default: SubscriberRateLimitDefaults
+  overrides: [RateLimitOverrides!]
+}
+
+type RateLimit {
+  provider: RateLimitConfig
+  subscriberRateLimit: SubscriberRateLimits
+}
+
+type Traffic {
+  rateLimit: RateLimit
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
 type ApiSubscriptionInfo {
   id: ID!

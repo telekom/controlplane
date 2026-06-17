@@ -127,3 +127,58 @@ models:
   EventExposureInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.EventExposureInfo
+  # Security
+  ApiExposureSecurity:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiExposureSecurity
+  ApiSubscriptionSecurity:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionSecurity
+  Machine2MachineAuthentication:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Machine2MachineAuthentication
+  SubscriberMachine2MachineAuthentication:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.SubscriberMachine2MachineAuthentication
+  ExternalIdentityProvider:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ExternalIdentityProvider
+  BasicAuthCredentials:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.BasicAuthCredentials
+    fields: 
+      password:
+        resolver: true
+  OAuth2ClientCredentials:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.OAuth2ClientCredentials
+    fields:
+      clientSecret:
+        resolver: true
+      clientKey:
+        resolver: true
+# Traffic
+  Traffic:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Traffic
+  RateLimit:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimit
+  RateLimitConfig:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitConfig
+  Limits:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Limits
+  RateLimitOptions:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitOptions
+  SubscriberRateLimits:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.SubscriberRateLimits
+  SubscriberRateLimitDefaults:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.SubscriberRateLimitDefaults
+  RateLimitOverrides:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitOverrides

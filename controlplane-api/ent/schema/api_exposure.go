@@ -52,6 +52,12 @@ func (ApiExposure) Fields() []ent.Field {
 		field.JSON("upstreams", []model.Upstream{}).
 			Default([]model.Upstream{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.JSON("security", model.ApiExposureSecurity{}).
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.JSON("rate_limit", model.RateLimit{}).
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("approval_config", model.ApprovalConfig{}).
 			Default(model.ApprovalConfig{Strategy: "AUTO"}).
 			Annotations(entgql.Type("ApprovalConfig"), entgql.Skip(entgql.SkipWhereInput)),

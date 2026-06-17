@@ -63,6 +63,8 @@ var (
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "features", Type: field.TypeJSON},
 		{Name: "upstreams", Type: field.TypeJSON},
+		{Name: "security", Type: field.TypeJSON, Nullable: true},
+		{Name: "rate_limit", Type: field.TypeJSON, Nullable: true},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "api_exposures", Type: field.TypeInt, Nullable: true},
@@ -76,13 +78,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_exposures_apis_exposures",
-				Columns:    []*schema.Column{APIExposuresColumns[14]},
+				Columns:    []*schema.Column{APIExposuresColumns[16]},
 				RefColumns: []*schema.Column{ApisColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_exposures_applications_exposed_apis",
-				Columns:    []*schema.Column{APIExposuresColumns[15]},
+				Columns:    []*schema.Column{APIExposuresColumns[17]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -91,7 +93,7 @@ var (
 			{
 				Name:    "apiexposure_base_path_application_exposed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[15]},
+				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[17]},
 			},
 		},
 	}

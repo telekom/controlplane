@@ -60,6 +60,8 @@ type ApiExposure implements Node {
   active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
+  security: ApiExposureSecurity
+  rateLimit: RateLimit
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!

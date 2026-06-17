@@ -528,6 +528,26 @@ func ActiveNotNil() predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldNotNull(FieldActive))
 }
 
+// SecurityIsNil applies the IsNil predicate on the "security" field.
+func SecurityIsNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIsNull(FieldSecurity))
+}
+
+// SecurityNotNil applies the NotNil predicate on the "security" field.
+func SecurityNotNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotNull(FieldSecurity))
+}
+
+// RateLimitIsNil applies the IsNil predicate on the "rate_limit" field.
+func RateLimitIsNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIsNull(FieldRateLimit))
+}
+
+// RateLimitNotNil applies the NotNil predicate on the "rate_limit" field.
+func RateLimitNotNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotNull(FieldRateLimit))
+}
+
 // APIVersionEQ applies the EQ predicate on the "api_version" field.
 func APIVersionEQ(v string) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldEQ(FieldAPIVersion, v))

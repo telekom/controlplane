@@ -151,6 +151,34 @@ func (_c *ApiExposureCreate) SetUpstreams(v []model.Upstream) *ApiExposureCreate
 	return _c
 }
 
+// SetSecurity sets the "security" field.
+func (_c *ApiExposureCreate) SetSecurity(v model.ApiExposureSecurity) *ApiExposureCreate {
+	_c.mutation.SetSecurity(v)
+	return _c
+}
+
+// SetNillableSecurity sets the "security" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureCreate {
+	if v != nil {
+		_c.SetSecurity(*v)
+	}
+	return _c
+}
+
+// SetRateLimit sets the "rate_limit" field.
+func (_c *ApiExposureCreate) SetRateLimit(v model.RateLimit) *ApiExposureCreate {
+	_c.mutation.SetRateLimit(v)
+	return _c
+}
+
+// SetNillableRateLimit sets the "rate_limit" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableRateLimit(v *model.RateLimit) *ApiExposureCreate {
+	if v != nil {
+		_c.SetRateLimit(*v)
+	}
+	return _c
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_c *ApiExposureCreate) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureCreate {
 	_c.mutation.SetApprovalConfig(v)
@@ -418,6 +446,14 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 		_spec.SetField(apiexposure.FieldUpstreams, field.TypeJSON, value)
 		_node.Upstreams = value
 	}
+	if value, ok := _c.mutation.Security(); ok {
+		_spec.SetField(apiexposure.FieldSecurity, field.TypeJSON, value)
+		_node.Security = value
+	}
+	if value, ok := _c.mutation.RateLimit(); ok {
+		_spec.SetField(apiexposure.FieldRateLimit, field.TypeJSON, value)
+		_node.RateLimit = value
+	}
 	if value, ok := _c.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
 		_node.ApprovalConfig = value
@@ -672,6 +708,42 @@ func (u *ApiExposureUpsert) UpdateUpstreams() *ApiExposureUpsert {
 	return u
 }
 
+// SetSecurity sets the "security" field.
+func (u *ApiExposureUpsert) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldSecurity, v)
+	return u
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateSecurity() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldSecurity)
+	return u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiExposureUpsert) ClearSecurity() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldSecurity)
+	return u
+}
+
+// SetRateLimit sets the "rate_limit" field.
+func (u *ApiExposureUpsert) SetRateLimit(v model.RateLimit) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldRateLimit, v)
+	return u
+}
+
+// UpdateRateLimit sets the "rate_limit" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateRateLimit() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldRateLimit)
+	return u
+}
+
+// ClearRateLimit clears the value of the "rate_limit" field.
+func (u *ApiExposureUpsert) ClearRateLimit() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldRateLimit)
+	return u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (u *ApiExposureUpsert) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpsert {
 	u.Set(apiexposure.FieldApprovalConfig, v)
@@ -912,6 +984,48 @@ func (u *ApiExposureUpsertOne) SetUpstreams(v []model.Upstream) *ApiExposureUpse
 func (u *ApiExposureUpsertOne) UpdateUpstreams() *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.UpdateUpstreams()
+	})
+}
+
+// SetSecurity sets the "security" field.
+func (u *ApiExposureUpsertOne) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetSecurity(v)
+	})
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateSecurity() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateSecurity()
+	})
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiExposureUpsertOne) ClearSecurity() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearSecurity()
+	})
+}
+
+// SetRateLimit sets the "rate_limit" field.
+func (u *ApiExposureUpsertOne) SetRateLimit(v model.RateLimit) *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetRateLimit(v)
+	})
+}
+
+// UpdateRateLimit sets the "rate_limit" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateRateLimit() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateRateLimit()
+	})
+}
+
+// ClearRateLimit clears the value of the "rate_limit" field.
+func (u *ApiExposureUpsertOne) ClearRateLimit() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearRateLimit()
 	})
 }
 
@@ -1326,6 +1440,48 @@ func (u *ApiExposureUpsertBulk) SetUpstreams(v []model.Upstream) *ApiExposureUps
 func (u *ApiExposureUpsertBulk) UpdateUpstreams() *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.UpdateUpstreams()
+	})
+}
+
+// SetSecurity sets the "security" field.
+func (u *ApiExposureUpsertBulk) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetSecurity(v)
+	})
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateSecurity() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateSecurity()
+	})
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiExposureUpsertBulk) ClearSecurity() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearSecurity()
+	})
+}
+
+// SetRateLimit sets the "rate_limit" field.
+func (u *ApiExposureUpsertBulk) SetRateLimit(v model.RateLimit) *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetRateLimit(v)
+	})
+}
+
+// UpdateRateLimit sets the "rate_limit" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateRateLimit() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateRateLimit()
+	})
+}
+
+// ClearRateLimit clears the value of the "rate_limit" field.
+func (u *ApiExposureUpsertBulk) ClearRateLimit() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearRateLimit()
 	})
 }
 

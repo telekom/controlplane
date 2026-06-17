@@ -188,6 +188,46 @@ func (_u *ApiExposureUpdate) AppendUpstreams(v []model.Upstream) *ApiExposureUpd
 	return _u
 }
 
+// SetSecurity sets the "security" field.
+func (_u *ApiExposureUpdate) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpdate {
+	_u.mutation.SetSecurity(v)
+	return _u
+}
+
+// SetNillableSecurity sets the "security" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetSecurity(*v)
+	}
+	return _u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (_u *ApiExposureUpdate) ClearSecurity() *ApiExposureUpdate {
+	_u.mutation.ClearSecurity()
+	return _u
+}
+
+// SetRateLimit sets the "rate_limit" field.
+func (_u *ApiExposureUpdate) SetRateLimit(v model.RateLimit) *ApiExposureUpdate {
+	_u.mutation.SetRateLimit(v)
+	return _u
+}
+
+// SetNillableRateLimit sets the "rate_limit" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableRateLimit(v *model.RateLimit) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetRateLimit(*v)
+	}
+	return _u
+}
+
+// ClearRateLimit clears the value of the "rate_limit" field.
+func (_u *ApiExposureUpdate) ClearRateLimit() *ApiExposureUpdate {
+	_u.mutation.ClearRateLimit()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *ApiExposureUpdate) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpdate {
 	_u.mutation.SetApprovalConfig(v)
@@ -438,6 +478,18 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, apiexposure.FieldUpstreams, value)
 		})
+	}
+	if value, ok := _u.mutation.Security(); ok {
+		_spec.SetField(apiexposure.FieldSecurity, field.TypeJSON, value)
+	}
+	if _u.mutation.SecurityCleared() {
+		_spec.ClearField(apiexposure.FieldSecurity, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RateLimit(); ok {
+		_spec.SetField(apiexposure.FieldRateLimit, field.TypeJSON, value)
+	}
+	if _u.mutation.RateLimitCleared() {
+		_spec.ClearField(apiexposure.FieldRateLimit, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -723,6 +775,46 @@ func (_u *ApiExposureUpdateOne) AppendUpstreams(v []model.Upstream) *ApiExposure
 	return _u
 }
 
+// SetSecurity sets the "security" field.
+func (_u *ApiExposureUpdateOne) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpdateOne {
+	_u.mutation.SetSecurity(v)
+	return _u
+}
+
+// SetNillableSecurity sets the "security" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetSecurity(*v)
+	}
+	return _u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (_u *ApiExposureUpdateOne) ClearSecurity() *ApiExposureUpdateOne {
+	_u.mutation.ClearSecurity()
+	return _u
+}
+
+// SetRateLimit sets the "rate_limit" field.
+func (_u *ApiExposureUpdateOne) SetRateLimit(v model.RateLimit) *ApiExposureUpdateOne {
+	_u.mutation.SetRateLimit(v)
+	return _u
+}
+
+// SetNillableRateLimit sets the "rate_limit" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableRateLimit(v *model.RateLimit) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetRateLimit(*v)
+	}
+	return _u
+}
+
+// ClearRateLimit clears the value of the "rate_limit" field.
+func (_u *ApiExposureUpdateOne) ClearRateLimit() *ApiExposureUpdateOne {
+	_u.mutation.ClearRateLimit()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *ApiExposureUpdateOne) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpdateOne {
 	_u.mutation.SetApprovalConfig(v)
@@ -1003,6 +1095,18 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, apiexposure.FieldUpstreams, value)
 		})
+	}
+	if value, ok := _u.mutation.Security(); ok {
+		_spec.SetField(apiexposure.FieldSecurity, field.TypeJSON, value)
+	}
+	if _u.mutation.SecurityCleared() {
+		_spec.ClearField(apiexposure.FieldSecurity, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RateLimit(); ok {
+		_spec.SetField(apiexposure.FieldRateLimit, field.TypeJSON, value)
+	}
+	if _u.mutation.RateLimitCleared() {
+		_spec.ClearField(apiexposure.FieldRateLimit, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)

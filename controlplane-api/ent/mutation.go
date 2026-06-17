@@ -1261,6 +1261,8 @@ type ApiExposureMutation struct {
 	appendfeatures       []string
 	upstreams            *[]model.Upstream
 	appendupstreams      []model.Upstream
+	security             *model.ApiExposureSecurity
+	rate_limit           *model.RateLimit
 	approval_config      *model.ApprovalConfig
 	api_version          *string
 	clearedFields        map[string]struct{}
@@ -1852,6 +1854,104 @@ func (m *ApiExposureMutation) ResetUpstreams() {
 	m.appendupstreams = nil
 }
 
+// SetSecurity sets the "security" field.
+func (m *ApiExposureMutation) SetSecurity(mes model.ApiExposureSecurity) {
+	m.security = &mes
+}
+
+// Security returns the value of the "security" field in the mutation.
+func (m *ApiExposureMutation) Security() (r model.ApiExposureSecurity, exists bool) {
+	v := m.security
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecurity returns the old "security" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldSecurity(ctx context.Context) (v model.ApiExposureSecurity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
+	}
+	return oldValue.Security, nil
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (m *ApiExposureMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[apiexposure.FieldSecurity] = struct{}{}
+}
+
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *ApiExposureMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldSecurity]
+	return ok
+}
+
+// ResetSecurity resets all changes to the "security" field.
+func (m *ApiExposureMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, apiexposure.FieldSecurity)
+}
+
+// SetRateLimit sets the "rate_limit" field.
+func (m *ApiExposureMutation) SetRateLimit(ml model.RateLimit) {
+	m.rate_limit = &ml
+}
+
+// RateLimit returns the value of the "rate_limit" field in the mutation.
+func (m *ApiExposureMutation) RateLimit() (r model.RateLimit, exists bool) {
+	v := m.rate_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRateLimit returns the old "rate_limit" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldRateLimit(ctx context.Context) (v model.RateLimit, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRateLimit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRateLimit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRateLimit: %w", err)
+	}
+	return oldValue.RateLimit, nil
+}
+
+// ClearRateLimit clears the value of the "rate_limit" field.
+func (m *ApiExposureMutation) ClearRateLimit() {
+	m.rate_limit = nil
+	m.clearedFields[apiexposure.FieldRateLimit] = struct{}{}
+}
+
+// RateLimitCleared returns if the "rate_limit" field was cleared in this mutation.
+func (m *ApiExposureMutation) RateLimitCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldRateLimit]
+	return ok
+}
+
+// ResetRateLimit resets all changes to the "rate_limit" field.
+func (m *ApiExposureMutation) ResetRateLimit() {
+	m.rate_limit = nil
+	delete(m.clearedFields, apiexposure.FieldRateLimit)
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (m *ApiExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
 	m.approval_config = &mc
@@ -2103,7 +2203,7 @@ func (m *ApiExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiExposureMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, apiexposure.FieldCreatedAt)
 	}
@@ -2136,6 +2236,12 @@ func (m *ApiExposureMutation) Fields() []string {
 	}
 	if m.upstreams != nil {
 		fields = append(fields, apiexposure.FieldUpstreams)
+	}
+	if m.security != nil {
+		fields = append(fields, apiexposure.FieldSecurity)
+	}
+	if m.rate_limit != nil {
+		fields = append(fields, apiexposure.FieldRateLimit)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, apiexposure.FieldApprovalConfig)
@@ -2173,6 +2279,10 @@ func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Features()
 	case apiexposure.FieldUpstreams:
 		return m.Upstreams()
+	case apiexposure.FieldSecurity:
+		return m.Security()
+	case apiexposure.FieldRateLimit:
+		return m.RateLimit()
 	case apiexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	case apiexposure.FieldAPIVersion:
@@ -2208,6 +2318,10 @@ func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldFeatures(ctx)
 	case apiexposure.FieldUpstreams:
 		return m.OldUpstreams(ctx)
+	case apiexposure.FieldSecurity:
+		return m.OldSecurity(ctx)
+	case apiexposure.FieldRateLimit:
+		return m.OldRateLimit(ctx)
 	case apiexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	case apiexposure.FieldAPIVersion:
@@ -2298,6 +2412,20 @@ func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUpstreams(v)
 		return nil
+	case apiexposure.FieldSecurity:
+		v, ok := value.(model.ApiExposureSecurity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurity(v)
+		return nil
+	case apiexposure.FieldRateLimit:
+		v, ok := value.(model.RateLimit)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRateLimit(v)
+		return nil
 	case apiexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
 		if !ok {
@@ -2354,6 +2482,12 @@ func (m *ApiExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(apiexposure.FieldActive) {
 		fields = append(fields, apiexposure.FieldActive)
 	}
+	if m.FieldCleared(apiexposure.FieldSecurity) {
+		fields = append(fields, apiexposure.FieldSecurity)
+	}
+	if m.FieldCleared(apiexposure.FieldRateLimit) {
+		fields = append(fields, apiexposure.FieldRateLimit)
+	}
 	if m.FieldCleared(apiexposure.FieldAPIVersion) {
 		fields = append(fields, apiexposure.FieldAPIVersion)
 	}
@@ -2382,6 +2516,12 @@ func (m *ApiExposureMutation) ClearField(name string) error {
 		return nil
 	case apiexposure.FieldActive:
 		m.ClearActive()
+		return nil
+	case apiexposure.FieldSecurity:
+		m.ClearSecurity()
+		return nil
+	case apiexposure.FieldRateLimit:
+		m.ClearRateLimit()
 		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ClearAPIVersion()
@@ -2426,6 +2566,12 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 		return nil
 	case apiexposure.FieldUpstreams:
 		m.ResetUpstreams()
+		return nil
+	case apiexposure.FieldSecurity:
+		m.ResetSecurity()
+		return nil
+	case apiexposure.FieldRateLimit:
+		m.ResetRateLimit()
 		return nil
 	case apiexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()

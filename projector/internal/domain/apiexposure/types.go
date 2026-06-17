@@ -35,4 +35,6 @@ type APIExposureData struct {
 	APIVersion     *string // optional/nillable — always nil from CR
 	AppName        string  // resolved to owner Application FK
 	TeamName       string  // used to resolve owner Application FK
+	Security       *model.ApiExposureSecurity
+	Traffic        *model.Traffic
 }

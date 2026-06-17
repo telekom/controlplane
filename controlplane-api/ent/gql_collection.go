@@ -265,6 +265,16 @@ func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, apiexposure.FieldUpstreams)
 				fieldSeen[apiexposure.FieldUpstreams] = struct{}{}
 			}
+		case "security":
+			if _, ok := fieldSeen[apiexposure.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldSecurity)
+				fieldSeen[apiexposure.FieldSecurity] = struct{}{}
+			}
+		case "rateLimit":
+			if _, ok := fieldSeen[apiexposure.FieldRateLimit]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldRateLimit)
+				fieldSeen[apiexposure.FieldRateLimit] = struct{}{}
+			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[apiexposure.FieldApprovalConfig]; !ok {
 				selectedFields = append(selectedFields, apiexposure.FieldApprovalConfig)

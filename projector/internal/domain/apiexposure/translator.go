@@ -12,6 +12,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+	"github.com/telekom/controlplane/projector/internal/util"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -54,6 +55,51 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		}
 	}
 
+	var security *model.ApiExposureSecurity
+	if obj.Spec.Security != nil {
+		security = &model.ApiExposureSecurity{}
+		if obj.Spec.Security.M2M != nil {
+			security.M2M = &model.Machine2MachineAuthentication{}
+			if obj.Spec.Security.M2M.Basic != nil {
+				security.M2M.Basic = util.MapCrBasicAuthToCpApi(obj.Spec.Security.M2M.Basic)
+			}
+			if obj.Spec.Security.M2M.ExternalIDP != nil {
+				security.M2M.ExternalIDP = util.MapCrExternalIdpToCpApi(obj.Spec.Security.M2M.ExternalIDP)
+			}
+			if len(obj.Spec.Security.M2M.Scopes) > 0 {
+				security.M2M.Scopes = obj.Spec.Security.M2M.Scopes
+			}
+		}
+	}
+
+	traffic := &model.Traffic{}
+	if obj.Spec.Traffic.RateLimit != nil {
+		traffic.RateLimit = &model.RateLimit{}
+		if obj.Spec.Traffic.RateLimit.Provider != nil {
+			traffic.RateLimit.Provider = &model.RateLimitConfig{
+				Limits:  model.Limits(obj.Spec.Traffic.RateLimit.Provider.Limits),
+				Options: model.RateLimitOptions(obj.Spec.Traffic.RateLimit.Provider.Options),
+			}
+		}
+		if obj.Spec.Traffic.RateLimit.SubscriberRateLimit != nil {
+			traffic.RateLimit.SubscriberRateLimit = &model.SubscriberRateLimits{
+				Default: &model.SubscriberRateLimitDefaults{
+					Limits: model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits),
+				},
+				Overrides: []model.RateLimitOverrides{},
+			}
+			for i := range obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides {
+				traffic.RateLimit.SubscriberRateLimit.Overrides = append(traffic.RateLimit.SubscriberRateLimit.Overrides,
+					model.RateLimitOverrides{
+						Subscriber: obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Subscriber,
+						Limits:     model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Limits),
+					},
+				)
+			}
+		}
+
+	}
+
 	return &APIExposureData{
 		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:   phase,
@@ -70,6 +116,8 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		APIVersion: nil,
 		AppName:    obj.Labels[applicationLabelKey],
 		TeamName:   shared.TeamNameFromNamespace(obj.Namespace),
+		Security:   security,
+		Traffic:    traffic,
 	}, nil
 }
 
