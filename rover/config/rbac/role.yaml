@@ -23,6 +23,19 @@ rules:
   - list
   - watch
 - apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpexposures
+  - mcpsubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - api.cp.ei.telekom.de
   resources:
   - apicategories

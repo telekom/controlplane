@@ -1708,6 +1708,50 @@ components:
           description: "Allows you to specify a list of header names that will be removed before forwarding the request to the provider"
         circuitBreaker:
           $ref: '#/components/schemas/CircuitBreaker'
+    AiExposure:
+      type: object
+      required:
+        - type
+        - approval
+        - visibility
+        - basePath
+        - variant
+      properties:
+        type:
+          type: string
+        approval:
+          $ref: '#/components/schemas/ApprovalStrategy'
+        trustedTeams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrustedTeam'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        basePath:
+          type: string
+        variant:
+          type: string
+          enum:
+            - MCP
+            - TELECONTEXTMCP
+          description: "The MCP exposure variant"
+        upstream:
+          type: string
+        security:
+          $ref: '#/components/schemas/Security'
+        rateLimit:
+          $ref: '#/components/schemas/RateLimitContainer'
+        failover:
+          $ref: '#/components/schemas/Failover'
+        loadBalancing:
+          $ref: '#/components/schemas/LoadBalancing'
+        removeHeaders:
+          type: array
+          items:
+            type: string
+          description: "Allows you to specify a list of header names that will be removed before forwarding the request to the MCP server"
+        circuitBreaker:
+          $ref: '#/components/schemas/CircuitBreaker'
     EventExposure:
       type: object
       required:
@@ -1746,9 +1790,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiExposure'
           event: '#/components/schemas/EventExposure'
+          ai: '#/components/schemas/AiExposure'
       oneOf:
         - $ref: '#/components/schemas/ApiExposure'
         - $ref: '#/components/schemas/EventExposure'
+        - $ref: '#/components/schemas/AiExposure'
 
 
     ApiExposureInfo:
@@ -1769,15 +1815,26 @@ components:
               type: string
               enum:
                 - event
+    AiExposureInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/AiExposure'
+        - properties:
+            type:
+              type: string
+              enum:
+                - ai
     ExposureInfo:
       discriminator:
         propertyName: type
         mapping:
           api: '#/components/schemas/ApiExposureInfo'
           event: '#/components/schemas/EventExposureInfo'
+          ai: '#/components/schemas/AiExposureInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiExposureInfo'
         - $ref: '#/components/schemas/EventExposureInfo'
+        - $ref: '#/components/schemas/AiExposureInfo'
 
     ApplicationInfo:
       type: object
@@ -2409,6 +2466,20 @@ components:
           description: >
             If true, the health check will be performed with a GET request
             instead of a HEAD request
+    AiSubscription:
+      type: object
+      required:
+        - type
+        - basePath
+      properties:
+        type:
+          type: string
+        basePath:
+          type: string
+        failover:
+          $ref: '#/components/schemas/Failover'
+        security:
+          $ref: '#/components/schemas/Security'
     Subscription:
       type: object
       discriminator:
@@ -2416,9 +2487,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiSubscription'
           event: '#/components/schemas/EventSubscription'
+          ai: '#/components/schemas/AiSubscription'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscription'
         - $ref: '#/components/schemas/EventSubscription'
+        - $ref: '#/components/schemas/AiSubscription'
 
     ApiSubscriptionInfo:
       type: object
@@ -2446,6 +2519,15 @@ components:
               type: string
             horizonSubscriptionUrl:
               type: string
+    AiSubscriptionInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/AiSubscription'
+        - properties:
+            type:
+              type: string
+              enum:
+                - ai
     SubscriptionInfo:
       readOnly: true
       discriminator:
@@ -2453,9 +2535,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiSubscriptionInfo'
           event: '#/components/schemas/EventSubscriptionInfo'
+          ai: '#/components/schemas/AiSubscriptionInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscriptionInfo'
         - $ref: '#/components/schemas/EventSubscriptionInfo'
+        - $ref: '#/components/schemas/AiSubscriptionInfo'
 
     EventTrigger:
       type: object

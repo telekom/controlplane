@@ -58,13 +58,14 @@ func newMcpSubscription(name, basePath, zoneName string) *agenticv1.McpSubscript
 		Spec: agenticv1.McpSubscriptionSpec{
 			McpBasePath: basePath,
 			Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
-			Requestor: ctypes.TypedObjectRef{
-				ObjectRef: ctypes.ObjectRef{Name: "requestor-app", Namespace: "default"},
+			Requestor: agenticv1.Requestor{
+				Application: ctypes.ObjectRef{Name: "requestor-app", Namespace: "default"},
 			},
 		},
 	}
 }
 
+//nolint:unparam // test helper designed for reuse with different basePaths
 func makeReadyMcpServer(basePath string) agenticv1.McpServer {
 	s := agenticv1.McpServer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -88,6 +89,7 @@ func makeReadyMcpServer(basePath string) agenticv1.McpServer {
 	return s
 }
 
+//nolint:unparam // test helper designed for reuse with different basePaths
 func makeReadyMcpExposure(basePath, zoneName string) agenticv1.McpExposure {
 	exp := agenticv1.McpExposure{
 		ObjectMeta: metav1.ObjectMeta{
@@ -101,7 +103,7 @@ func makeReadyMcpExposure(basePath, zoneName string) agenticv1.McpExposure {
 			Visibility:  agenticv1.VisibilityEnterprise,
 			Approval:    agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
 			Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
-			Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "provider-app", Namespace: "default"}},
+			Provider:    ctypes.ObjectRef{Name: "provider-app", Namespace: "default"},
 			Variant:     agenticv1.McpVariantMCP,
 		},
 		Status: agenticv1.McpExposureStatus{

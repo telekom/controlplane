@@ -38,18 +38,19 @@ func newMcpExposure(name, basePath string) *agenticv1.McpExposure {
 		},
 		Spec: agenticv1.McpExposureSpec{
 			McpBasePath: basePath,
-			Upstreams: []gatewayv1.Upstream{
-				{Host: "mcp-server.internal", Port: 8080},
+			Upstreams: []agenticv1.Upstream{
+				{Url: "http://mcp-server.internal:8080"},
 			},
 			Visibility: agenticv1.VisibilityEnterprise,
 			Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
 			Zone:       ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
-			Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "test-app", Namespace: "default"}},
+			Provider:   ctypes.ObjectRef{Name: "test-app", Namespace: "default"},
 			Variant:    agenticv1.McpVariantMCP,
 		},
 	}
 }
 
+//nolint:unparam // test helper designed for reuse with different basePaths
 func makeReadyMcpServer(basePath string) agenticv1.McpServer {
 	s := agenticv1.McpServer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -306,7 +307,7 @@ var _ = Describe("McpExposureHandler", func() {
 				},
 				Spec: agenticv1.McpExposureSpec{
 					McpBasePath: "/mcp/weather/v1",
-					Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "other-app", Namespace: "other-ns"}},
+					Provider:    ctypes.ObjectRef{Name: "other-app", Namespace: "other-ns"},
 				},
 				Status: agenticv1.McpExposureStatus{
 					Active: true,

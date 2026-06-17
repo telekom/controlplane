@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -21,6 +22,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/ai"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/event"
@@ -44,6 +46,10 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	if config.FeaturePermission.IsEnabled() {
 		c.AddKnownTypeToState(&permissionv1.PermissionSet{})
 	}
+	if config.FeatureAiGateway.IsEnabled() {
+		c.AddKnownTypeToState(&agenticv1.McpExposure{})
+		c.AddKnownTypeToState(&agenticv1.McpSubscription{})
+	}
 
 	// Create Application from Rover
 	err := application.HandleApplication(ctx, c, roverObj)
@@ -54,6 +60,7 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	// Handle exposures
 	roverObj.Status.ApiExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	roverObj.Status.EventExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
+	roverObj.Status.AiExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	seenDescriminators := make(map[string]struct{})
 
 	for _, exp := range roverObj.Spec.Exposures {
@@ -82,6 +89,20 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 				return errors.Wrap(err, "failed to handle event exposure")
 			}
 
+		case roverv1.TypeAi:
+			if _, exists := seenDescriminators[exp.Ai.BasePath]; exists {
+				return ctrlerrors.BlockedErrorf("duplicate AI base path in exposures: %s", exp.Ai.BasePath)
+			}
+			seenDescriminators[exp.Ai.BasePath] = struct{}{}
+			if !config.FeatureAiGateway.IsEnabled() {
+				log.Info("AI exposure skipped, feature has not been enabled")
+				continue
+			}
+			err := ai.HandleExposure(ctx, c, roverObj, exp.Ai)
+			if err != nil {
+				return errors.Wrap(err, "failed to handle AI exposure")
+			}
+
 		default:
 			return errors.New("unknown exposure type: " + exp.Type().String())
 		}
@@ -90,6 +111,7 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	// Handle subscriptions
 	roverObj.Status.ApiSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 	roverObj.Status.EventSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
+	roverObj.Status.AiSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 	for _, sub := range roverObj.Spec.Subscriptions {
 		switch sub.Type() {
 		case roverv1.TypeApi:
@@ -106,6 +128,16 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 			err := event.HandleSubscription(ctx, c, roverObj, sub.Event)
 			if err != nil {
 				return errors.Wrap(err, "failed to handle event subscription")
+			}
+
+		case roverv1.TypeAi:
+			if !config.FeatureAiGateway.IsEnabled() {
+				log.Info("AI subscription skipped, feature has not been enabled")
+				continue
+			}
+			err := ai.HandleSubscription(ctx, c, roverObj, sub.Ai)
+			if err != nil {
+				return errors.Wrap(err, "failed to handle AI subscription")
 			}
 
 		default:

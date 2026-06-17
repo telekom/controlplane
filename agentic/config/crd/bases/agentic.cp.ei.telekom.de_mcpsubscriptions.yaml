@@ -68,34 +68,27 @@ spec:
                 description: Requestor identifies the application requesting access
                   to the MCP server.
                 properties:
-                  apiVersion:
+                  application:
                     description: |-
-                      APIVersion defines the versioned schema of this representation of an object.
-                      Servers should convert recognized schemas to the latest internal value, and
-                      may reject unrecognized values.
-                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-                    type: string
-                  kind:
-                    description: |-
-                      Kind is a string value representing the REST resource this object represents.
-                      Servers may infer this from the endpoint the client submits requests to.
-                      Cannot be updated.
-                      In CamelCase.
-                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-                    type: string
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    description: |-
-                      UID is a type that holds unique ID values, including UUIDs.  Because we
-                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                      intent and helps make sure that UIDs and names do not get conflated.
-                    type: string
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
                 required:
-                - name
-                - namespace
+                - application
                 type: object
               security:
                 description: Security configures optional security settings for the
@@ -128,7 +121,7 @@ spec:
                             minLength: 1
                             type: string
                           clientKey:
-                            description: clientKey is the private key associated with
+                            description: ClientKey is the private key associated with
                               the client ID
                             type: string
                           clientSecret:
@@ -167,32 +160,35 @@ spec:
               traffic:
                 description: Traffic configures traffic management for the ConsumeRoute.
                 properties:
-                  rateLimit:
-                    description: RateLimit defines the rate limit configuration for
-                      the ConsumeRoute
+                  failover:
+                    description: Failover defines the failover configuration for the
+                      API exposure.
                     properties:
-                      limits:
-                        description: Limits defines the actual rate limit values for
-                          different time windows
-                        properties:
-                          hour:
-                            description: Hour defines the maximum number of requests
-                              allowed per hour
-                            minimum: 0
-                            type: integer
-                          minute:
-                            description: Minute defines the maximum number of requests
-                              allowed per minute
-                            minimum: 0
-                            type: integer
-                          second:
-                            description: Second defines the maximum number of requests
-                              allowed per second
-                            minimum: 0
-                            type: integer
-                        type: object
+                      zone:
+                        description: Zone is the zone to which the traffic should
+                          be failed over in case of an error.
+                        items:
+                          description: |-
+                            ObjectRef is a reference to a Kubernetes object
+                            It is similar to types.NamespacedName but has the required json tags for serialization
+                          properties:
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                            uid:
+                              description: |-
+                                UID is a type that holds unique ID values, including UUIDs.  Because we
+                                don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                                intent and helps make sure that UIDs and names do not get conflated.
+                              type: string
+                          required:
+                          - name
+                          - namespace
+                          type: object
+                        type: array
                     required:
-                    - limits
+                    - zone
                     type: object
                 type: object
               zone:

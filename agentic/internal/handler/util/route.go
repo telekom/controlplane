@@ -6,6 +6,7 @@ package util
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -59,6 +60,11 @@ func CreateMcpRoute(
 		return nil, errors.Wrap(err, "failed to create downstream")
 	}
 
+	gatewayUpstreams, err := MapUpstreamsToGateway(exposure.Spec.Upstreams)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to map upstreams")
+	}
+
 	// 5. Create or update the Route
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -78,7 +84,7 @@ func CreateMcpRoute(
 
 		route.Spec = gatewayapi.RouteSpec{
 			Realm:       *ctypes.ObjectRefFromObject(realm),
-			Upstreams:   exposure.Spec.Upstreams,
+			Upstreams:   gatewayUpstreams,
 			Downstreams: []gatewayapi.Downstream{downstream},
 			// Critical: disable buffering for MCP streaming (SSE)
 			Buffering: gatewayapi.Buffering{
@@ -89,7 +95,7 @@ func CreateMcpRoute(
 
 		// Apply security settings if provided, otherwise disable access control
 		if exposure.Spec.Security != nil {
-			route.Spec.Security = exposure.Spec.Security
+			route.Spec.Security = MapSecurityToGateway(exposure.Spec.Security)
 		} else {
 			route.Spec.Security = &gatewayapi.Security{
 				DisableAccessControl: true,
@@ -97,8 +103,11 @@ func CreateMcpRoute(
 		}
 
 		// Apply traffic settings if provided
-		if exposure.Spec.Traffic != nil {
-			route.Spec.Traffic = *exposure.Spec.Traffic
+		route.Spec.Traffic = MapTrafficToGateway(&exposure.Spec.Traffic)
+
+		// Apply transformation settings if provided
+		if exposure.Spec.Transformation != nil {
+			route.Spec.Transformation = MapTransformationToGateway(exposure.Spec.Transformation)
 		}
 
 		// If this Route is a target of proxy Routes, allow mesh-client access
@@ -261,4 +270,155 @@ func DeleteRouteIfExists(ctx context.Context, ref *ctypes.ObjectRef) error {
 		return errors.Wrapf(err, "failed to delete Route %q", ref.String())
 	}
 	return nil
+}
+
+func MapUpstreamsToGateway(upstreams []agenticv1.Upstream) ([]gatewayapi.Upstream, error) {
+	mapped := make([]gatewayapi.Upstream, 0, len(upstreams))
+	for _, upstream := range upstreams {
+		gatewayUpstream, err := mapUpstreamToGateway(upstream)
+		if err != nil {
+			return nil, err
+		}
+		mapped = append(mapped, gatewayUpstream)
+	}
+	return mapped, nil
+}
+
+func mapUpstreamToGateway(upstream agenticv1.Upstream) (gatewayapi.Upstream, error) {
+	parsedURL, err := url.Parse(upstream.Url)
+	if err != nil {
+		return gatewayapi.Upstream{}, errors.Wrapf(err, "failed to parse URL %s", upstream.Url)
+	}
+
+	return gatewayapi.Upstream{
+		Scheme: parsedURL.Scheme,
+		Host:   parsedURL.Hostname(),
+		Port:   gatewayapi.GetPortOrDefaultFromScheme(parsedURL),
+		Path:   parsedURL.Path,
+		Weight: upstream.Weight,
+	}, nil
+}
+
+func MapSecurityToGateway(security *agenticv1.Security) *gatewayapi.Security {
+	if security == nil {
+		return nil
+	}
+
+	gatewaySecurity := &gatewayapi.Security{}
+	if security.M2M != nil {
+		gatewaySecurity.M2M = &gatewayapi.Machine2MachineAuthentication{
+			Scopes: append([]string(nil), security.M2M.Scopes...),
+		}
+		if security.M2M.ExternalIDP != nil {
+			gatewaySecurity.M2M.ExternalIDP = &gatewayapi.ExternalIdentityProvider{
+				TokenEndpoint: security.M2M.ExternalIDP.TokenEndpoint,
+				TokenRequest:  gatewayapi.TokenRequestMethod(security.M2M.ExternalIDP.TokenRequest),
+				GrantType:     security.M2M.ExternalIDP.GrantType,
+				Basic:         mapBasicAuthToGateway(security.M2M.ExternalIDP.Basic),
+				Client:        mapOAuth2ClientToGateway(security.M2M.ExternalIDP.Client),
+			}
+		}
+		gatewaySecurity.M2M.Basic = mapBasicAuthToGateway(security.M2M.Basic)
+	}
+
+	return gatewaySecurity
+}
+
+func MapTrafficToGateway(traffic *agenticv1.Traffic) gatewayapi.Traffic {
+	if traffic == nil {
+		return gatewayapi.Traffic{}
+	}
+
+	gatewayTraffic := gatewayapi.Traffic{}
+	if traffic.RateLimit != nil && traffic.RateLimit.Provider != nil {
+		gatewayTraffic.RateLimit = &gatewayapi.RateLimit{
+			Limits:  mapLimitsToGateway(traffic.RateLimit.Provider.Limits),
+			Options: mapRateLimitOptionsToGateway(traffic.RateLimit.Provider.Options),
+		}
+	}
+	if traffic.CircuitBreaker != nil {
+		gatewayTraffic.CircuitBreaker = &gatewayapi.CircuitBreaker{
+			Enabled: traffic.CircuitBreaker.Enabled,
+		}
+	}
+
+	return gatewayTraffic
+}
+
+func MapSubscriberSecurityToGateway(security *agenticv1.SubscriberSecurity) *gatewayapi.ConsumeRouteSecurity {
+	if security == nil {
+		return nil
+	}
+
+	gatewaySecurity := &gatewayapi.ConsumeRouteSecurity{}
+	if security.M2M != nil {
+		gatewaySecurity.M2M = &gatewayapi.ConsumerMachine2MachineAuthentication{
+			Scopes: append([]string(nil), security.M2M.Scopes...),
+			Client: mapOAuth2ClientToGateway(security.M2M.Client),
+			Basic:  mapBasicAuthToGateway(security.M2M.Basic),
+		}
+	}
+
+	return gatewaySecurity
+}
+
+func MapSubscriberTrafficToGateway(traffic *agenticv1.SubscriberTraffic) *gatewayapi.ConsumeRouteTraffic {
+	if traffic == nil {
+		return nil
+	}
+
+	return nil
+}
+
+func mapBasicAuthToGateway(credentials *agenticv1.BasicAuthCredentials) *gatewayapi.BasicAuthCredentials {
+	if credentials == nil {
+		return nil
+	}
+
+	return &gatewayapi.BasicAuthCredentials{
+		Username: credentials.Username,
+		Password: credentials.Password,
+	}
+}
+
+func mapOAuth2ClientToGateway(credentials *agenticv1.OAuth2ClientCredentials) *gatewayapi.OAuth2ClientCredentials {
+	if credentials == nil {
+		return nil
+	}
+
+	return &gatewayapi.OAuth2ClientCredentials{
+		ClientId:     credentials.ClientId,
+		ClientSecret: credentials.ClientSecret,
+		ClientKey:    credentials.ClientKey,
+	}
+}
+
+func mapLimitsToGateway(limits agenticv1.Limits) gatewayapi.Limits {
+	return gatewayapi.Limits{
+		Second: limits.Second,
+		Minute: limits.Minute,
+		Hour:   limits.Hour,
+	}
+}
+
+func mapRateLimitOptionsToGateway(options agenticv1.RateLimitOptions) gatewayapi.RateLimitOptions {
+	return gatewayapi.RateLimitOptions{
+		HideClientHeaders: options.HideClientHeaders,
+		FaultTolerant:     options.FaultTolerant,
+	}
+}
+
+func MapTransformationToGateway(transformation *agenticv1.Transformation) *gatewayapi.Transformation {
+	if transformation == nil {
+		return nil
+	}
+
+	return &gatewayapi.Transformation{
+		Request: gatewayapi.RequestResponseTransformation{
+			Headers: gatewayapi.HeaderTransformation{
+				Remove: transformation.Request.Headers.Remove,
+				Add:    transformation.Request.Headers.Add,
+			},
+		},
+	}
 }

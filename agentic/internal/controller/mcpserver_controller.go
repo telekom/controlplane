@@ -62,6 +62,8 @@ func (r *McpServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // MapMcpServerToMcpServer enqueues other McpServers with the same basePath
 // when any McpServer changes or is deleted.
+//
+//nolint:dupl // parallel structure with MapMcpExposureToMcpExposure; operates on different types
 func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj client.Object) []reconcile.Request {
 	server, ok := obj.(*agenticv1.McpServer)
 	if !ok {

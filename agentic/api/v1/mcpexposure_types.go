@@ -6,7 +6,6 @@ package v1
 
 import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,7 +21,7 @@ type McpExposureSpec struct {
 	// Upstreams define the backend MCP server targets.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
-	Upstreams []gatewayapi.Upstream `json:"upstreams"`
+	Upstreams []Upstream `json:"upstreams"`
 
 	// Visibility defines who can see and subscribe to this MCP server.
 	// +kubebuilder:default=Enterprise
@@ -35,7 +34,7 @@ type McpExposureSpec struct {
 	Zone ctypes.ObjectRef `json:"zone"`
 
 	// Provider identifies the providing application.
-	Provider ctypes.TypedObjectRef `json:"provider"`
+	Provider ctypes.ObjectRef `json:"provider"`
 
 	// Variant defines the exposure variant (MCP or TELECONTEXTMCP).
 	// +kubebuilder:default=MCP
@@ -43,11 +42,15 @@ type McpExposureSpec struct {
 
 	// Security configures optional security settings for the route.
 	// +optional
-	Security *gatewayapi.Security `json:"security,omitempty"`
+	Security *Security `json:"security,omitempty"`
 
 	// Traffic configures traffic management for the route.
 	// +optional
-	Traffic *gatewayapi.Traffic `json:"traffic,omitempty"`
+	Traffic Traffic `json:"traffic"`
+
+	// Transformation configures request/response transformations for the route.
+	// +optional
+	Transformation *Transformation `json:"transformation,omitempty"`
 }
 
 // McpExposureStatus defines the observed state of McpExposure.

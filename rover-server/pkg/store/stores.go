@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -48,6 +49,9 @@ type Stores struct {
 	ZoneStore               store.ObjectStore[*adminv1.Zone]
 	EventConfigStore        store.ObjectStore[*eventv1.EventConfig]
 
+	McpExposureStore     store.ObjectStore[*agenticv1.McpExposure]
+	McpSubscriptionStore store.ObjectStore[*agenticv1.McpSubscription]
+
 	ApiChangelogStore store.ObjectStore[*roverv1.ApiChangelog]
 }
 
@@ -59,6 +63,11 @@ var secretsForKinds = map[string][]string{
 		"spec.exposures.#.api.security.m2m.externalIDP.client.clientSecret",
 		"spec.exposures.#.api.security.m2m.externalIDP.basic.password",
 		"spec.exposures.#.api.security.m2m.basic.password",
+		"spec.subscriptions.#.ai.security.m2m.client.clientSecret",
+		"spec.subscriptions.#.ai.security.m2m.basic.password",
+		"spec.exposures.#.ai.security.m2m.externalIDP.client.clientSecret",
+		"spec.exposures.#.ai.security.m2m.externalIDP.basic.password",
+		"spec.exposures.#.ai.security.m2m.basic.password",
 	},
 	"Application": {
 		"status.clientSecret",
@@ -97,6 +106,14 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 	}
 
 	s.ApiChangelogStore = NewOrDie[*roverv1.ApiChangelog](ctx, dynamicClient, roverv1.GroupVersion.WithResource("apichangelogs"), roverv1.GroupVersion.WithKind("ApiChangelog"))
+
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		s.McpExposureStore = NewOrDie[*agenticv1.McpExposure](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpexposures"), agenticv1.GroupVersion.WithKind("McpExposure"))
+		s.McpSubscriptionStore = NewOrDie[*agenticv1.McpSubscription](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpsubscriptions"), agenticv1.GroupVersion.WithKind("McpSubscription"))
+	} else {
+		s.McpExposureStore = noop.NewStore[*agenticv1.McpExposure](agenticv1.GroupVersion.WithResource("mcpexposures"), agenticv1.GroupVersion.WithKind("McpExposure"))
+		s.McpSubscriptionStore = noop.NewStore[*agenticv1.McpSubscription](agenticv1.GroupVersion.WithResource("mcpsubscriptions"), agenticv1.GroupVersion.WithKind("McpSubscription"))
+	}
 
 	s.ZoneStore = NewOrDie[*adminv1.Zone](ctx, dynamicClient, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"))
 

@@ -8,7 +8,6 @@ go 1.26.4
 
 require (
 	github.com/telekom/controlplane/common v0.0.0
-	github.com/telekom/controlplane/gateway/api v0.0.0
 	k8s.io/apimachinery v0.36.0
 	sigs.k8s.io/controller-runtime v0.24.0
 )
@@ -62,7 +61,4 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace (
-	github.com/telekom/controlplane/common => ../../common
-	github.com/telekom/controlplane/gateway/api => ../../gateway/api
-)
+replace github.com/telekom/controlplane/common => ../../common

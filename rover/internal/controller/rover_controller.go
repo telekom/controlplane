@@ -17,6 +17,7 @@ import (
 
 	rover_handler "github.com/telekom/controlplane/rover/internal/handler/rover"
 
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
@@ -48,6 +49,9 @@ type RoverReconciler struct {
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventexposures,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventsubscriptions,verbs=get;list;watch;create;update;patch;delete
 
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpexposures,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpsubscriptions,verbs=get;list;watch;create;update;patch;delete
+
 // +kubebuilder:rbac:groups=permission.cp.ei.telekom.de,resources=permissionsets,verbs=get;list;watch;create;update;patch;delete
 
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch;create;update;patch;delete
@@ -74,6 +78,11 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	if cconfig.FeaturePermission.IsEnabled() {
 		b = b.Owns(&permissionv1.PermissionSet{})
+	}
+
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		b = b.Owns(&agenticv1.McpExposure{}).
+			Owns(&agenticv1.McpSubscription{})
 	}
 
 	return b.WithOptions(controller.Options{

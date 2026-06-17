@@ -98,13 +98,13 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	}
 
 	// 5. Get requestor application
-	requestorApp, err := util.GetApplication(ctx, obj.Spec.Requestor.ObjectRef)
+	requestorApp, err := util.GetApplication(ctx, obj.Spec.Requestor.Application)
 	if err != nil {
 		return err
 	}
 
 	// 6. Get provider application
-	providerApp, err := util.GetApplication(ctx, exposure.Spec.Provider.ObjectRef)
+	providerApp, err := util.GetApplication(ctx, exposure.Spec.Provider)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get application from McpExposure provider %q", exposure.Spec.Provider.Name)
 	}
@@ -276,8 +276,8 @@ func (h *McpSubscriptionHandler) createConsumeRoute(
 		consumeRoute.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        routeRef,
 			ConsumerName: application.Status.ClientId,
-			Security:     obj.Spec.Security,
-			Traffic:      obj.Spec.Traffic,
+			Security:     util.MapSubscriberSecurityToGateway(obj.Spec.Security),
+			Traffic:      util.MapSubscriberTrafficToGateway(&obj.Spec.Traffic),
 		}
 		return nil
 	}
@@ -294,7 +294,7 @@ func (h *McpSubscriptionHandler) createConsumeRoute(
 }
 
 // validateVisibility checks if the subscription is allowed given the exposure's visibility.
-func validateVisibility(exposure *agenticv1.McpExposure, sub *agenticv1.McpSubscription, subscriberZone *adminv1.Zone) bool {
+func validateVisibility(exposure *agenticv1.McpExposure, sub *agenticv1.McpSubscription, _ *adminv1.Zone) bool {
 	switch exposure.Spec.Visibility {
 	case agenticv1.VisibilityZone:
 		// Only same-zone subscriptions

@@ -6,7 +6,6 @@ package v1
 
 import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -20,18 +19,26 @@ type McpSubscriptionSpec struct {
 	McpBasePath string `json:"mcpBasePath"`
 
 	// Requestor identifies the application requesting access to the MCP server.
-	Requestor ctypes.TypedObjectRef `json:"requestor"`
+	Requestor Requestor `json:"requestor"`
+
+	// TODO: Consider adding Organization field for cross-org MCP subscriptions (remote subscription flow).
+	// See api domain's ApiSubscriptionSpec.Organization and RemoteApiSubscription handler for reference.
 
 	// Zone references the Zone CR where the subscriber resides.
 	Zone ctypes.ObjectRef `json:"zone"`
 
 	// Security configures optional security settings for the ConsumeRoute.
 	// +optional
-	Security *gatewayapi.ConsumeRouteSecurity `json:"security,omitempty"`
+	Security *SubscriberSecurity `json:"security,omitempty"`
 
 	// Traffic configures traffic management for the ConsumeRoute.
 	// +optional
-	Traffic *gatewayapi.ConsumeRouteTraffic `json:"traffic,omitempty"`
+	Traffic SubscriberTraffic `json:"traffic"`
+}
+
+// Requestor identifies the requesting application.
+type Requestor struct {
+	Application ctypes.ObjectRef `json:"application"`
 }
 
 // McpSubscriptionStatus defines the observed state of McpSubscription.

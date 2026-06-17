@@ -29,6 +29,7 @@ import (
 	"github.com/telekom/controlplane/rover/internal/controller"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -63,6 +64,9 @@ func init() {
 	}
 	if cconfig.FeaturePermission.IsEnabled() {
 		utilruntime.Must(permissionv1.AddToScheme(scheme))
+	}
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		utilruntime.Must(agenticv1.AddToScheme(scheme))
 	}
 	//+kubebuilder:scaffold:scheme
 }
