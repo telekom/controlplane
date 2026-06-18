@@ -49,8 +49,10 @@ type Stores struct {
 	ZoneStore               store.ObjectStore[*adminv1.Zone]
 	EventConfigStore        store.ObjectStore[*eventv1.EventConfig]
 
-	McpExposureStore     store.ObjectStore[*agenticv1.McpExposure]
-	McpSubscriptionStore store.ObjectStore[*agenticv1.McpSubscription]
+	McpExposureStore      store.ObjectStore[*agenticv1.McpExposure]
+	McpSubscriptionStore  store.ObjectStore[*agenticv1.McpSubscription]
+	McpSpecificationStore store.ObjectStore[*roverv1.McpSpecification]
+	McpServerStore        store.ObjectStore[*agenticv1.McpServer]
 
 	ApiChangelogStore store.ObjectStore[*roverv1.ApiChangelog]
 }
@@ -110,9 +112,13 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		s.McpExposureStore = NewOrDie[*agenticv1.McpExposure](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpexposures"), agenticv1.GroupVersion.WithKind("McpExposure"))
 		s.McpSubscriptionStore = NewOrDie[*agenticv1.McpSubscription](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpsubscriptions"), agenticv1.GroupVersion.WithKind("McpSubscription"))
+		s.McpSpecificationStore = NewOrDie[*roverv1.McpSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("mcpspecifications"), roverv1.GroupVersion.WithKind("McpSpecification"))
+		s.McpServerStore = NewOrDie[*agenticv1.McpServer](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpservers"), agenticv1.GroupVersion.WithKind("McpServer"))
 	} else {
 		s.McpExposureStore = noop.NewStore[*agenticv1.McpExposure](agenticv1.GroupVersion.WithResource("mcpexposures"), agenticv1.GroupVersion.WithKind("McpExposure"))
 		s.McpSubscriptionStore = noop.NewStore[*agenticv1.McpSubscription](agenticv1.GroupVersion.WithResource("mcpsubscriptions"), agenticv1.GroupVersion.WithKind("McpSubscription"))
+		s.McpSpecificationStore = noop.NewStore[*roverv1.McpSpecification](roverv1.GroupVersion.WithResource("mcpspecifications"), roverv1.GroupVersion.WithKind("McpSpecification"))
+		s.McpServerStore = noop.NewStore[*agenticv1.McpServer](agenticv1.GroupVersion.WithResource("mcpservers"), agenticv1.GroupVersion.WithKind("McpServer"))
 	}
 
 	s.ZoneStore = NewOrDie[*adminv1.Zone](ctx, dynamicClient, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"))

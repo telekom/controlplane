@@ -7,6 +7,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -217,24 +218,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	webhooksEnabled := os.Getenv("ENABLE_WEBHOOKS") != disabledEnvValue
-	if webhooksEnabled {
-		if err = webhookv1.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "Rover")
-			os.Exit(1)
-		}
+	if err := setupOptionalControllers(mgr); err != nil {
+		setupLog.Error(err, "unable to create optional controllers")
+		os.Exit(1)
 	}
-	if webhooksEnabled {
-		if err := webhookv1.SetupApiSpecificationWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ApiSpecification")
-			os.Exit(1)
-		}
-	}
-	if webhooksEnabled {
-		if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ApiChangelog")
-			os.Exit(1)
-		}
+
+	if err := setupWebhooks(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhooks")
+		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 
@@ -252,4 +243,44 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func setupOptionalControllers(mgr ctrl.Manager) error {
+	if cconfig.FeaturePubSub.IsEnabled() {
+		if err := (&controller.EventSpecificationReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			return fmt.Errorf("create EventSpecification controller: %w", err)
+		}
+	}
+
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		if err := (&controller.McpSpecificationReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			return fmt.Errorf("create McpSpecification controller: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func setupWebhooks(mgr ctrl.Manager) error {
+	if os.Getenv("ENABLE_WEBHOOKS") == disabledEnvValue {
+		return nil
+	}
+
+	if err := webhookv1.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
+		return fmt.Errorf("create Rover webhook: %w", err)
+	}
+	if err := webhookv1.SetupApiSpecificationWebhookWithManager(mgr); err != nil {
+		return fmt.Errorf("create ApiSpecification webhook: %w", err)
+	}
+	if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
+		return fmt.Errorf("create ApiChangelog webhook: %w", err)
+	}
+
+	return nil
 }

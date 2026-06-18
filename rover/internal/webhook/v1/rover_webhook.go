@@ -284,6 +284,8 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.V
 		return r.ValidateApiExposure(ctx, valErr, environment, exposure, zoneRef, idx)
 	case roverv1.TypeEvent:
 		return r.ValidateEventExposure(ctx, valErr, environment, exposure, zoneRef, idx)
+	case roverv1.TypeAi:
+		return nil // AI exposures have no special validation at this time
 	default:
 		valErr.AddInvalidError(
 			field.NewPath("spec").Child("exposures").Index(idx).Child("type"),
@@ -414,49 +416,71 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 	if len(subs) == 0 && len(exps) == 0 {
 		return nil // No subscriptions or exposures, no duplicates to check
 	}
+
+	checkDuplicate := func(existing map[string]bool, value string, path *field.Path, message string) {
+		if _, exists := existing[value]; exists {
+			valErr.AddInvalidError(path, value, message)
+		}
+		existing[value] = true
+	}
+
 	existingSubs := make(map[string]bool)
 	for idx, sub := range subs {
 		if sub.Api != nil {
-			if _, exists := existingSubs[sub.Api.BasePath]; exists {
-				valErr.AddInvalidError(
-					field.NewPath("spec").Child("subscriptions").Index(idx).Child("api").Child("basePath"),
-					sub.Api.BasePath, fmt.Sprintf("duplicate subscription for base path %s", sub.Api.BasePath),
-				)
-			}
-			existingSubs[sub.Api.BasePath] = true
+			checkDuplicate(
+				existingSubs,
+				sub.Api.BasePath,
+				field.NewPath("spec").Child("subscriptions").Index(idx).Child("api").Child("basePath"),
+				fmt.Sprintf("duplicate subscription for base path %s", sub.Api.BasePath),
+			)
 		}
 
 		if sub.Event != nil {
-			if _, exists := existingSubs[sub.Event.EventType]; exists {
-				valErr.AddInvalidError(
-					field.NewPath("spec").Child("subscriptions").Index(idx).Child("event").Child("eventType"),
-					sub.Event.EventType, fmt.Sprintf("duplicate subscription for event-type %s", sub.Event.EventType),
-				)
-			}
-			existingSubs[sub.Event.EventType] = true
+			checkDuplicate(
+				existingSubs,
+				sub.Event.EventType,
+				field.NewPath("spec").Child("subscriptions").Index(idx).Child("event").Child("eventType"),
+				fmt.Sprintf("duplicate subscription for event-type %s", sub.Event.EventType),
+			)
+		}
+
+		if sub.Ai != nil {
+			checkDuplicate(
+				existingSubs,
+				sub.Ai.BasePath,
+				field.NewPath("spec").Child("subscriptions").Index(idx).Child("ai").Child("basePath"),
+				fmt.Sprintf("duplicate subscription for ai base path %s", sub.Ai.BasePath),
+			)
 		}
 	}
 
 	existingExps := make(map[string]bool)
 	for idx, exposure := range exps {
 		if exposure.Api != nil {
-			if _, exists := existingExps[exposure.Api.BasePath]; exists {
-				valErr.AddInvalidError(
-					field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("basePath"),
-					exposure.Api.BasePath, fmt.Sprintf("duplicate exposure for base path %s", exposure.Api.BasePath),
-				)
-			}
-			existingExps[exposure.Api.BasePath] = true
+			checkDuplicate(
+				existingExps,
+				exposure.Api.BasePath,
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("basePath"),
+				fmt.Sprintf("duplicate exposure for base path %s", exposure.Api.BasePath),
+			)
 		}
 
 		if exposure.Event != nil {
-			if _, exists := existingExps[exposure.Event.EventType]; exists {
-				valErr.AddInvalidError(
-					field.NewPath("spec").Child("exposures").Index(idx).Child("event").Child("eventType"),
-					exposure.Event.EventType, fmt.Sprintf("duplicate exposure for event-type %s", exposure.Event.EventType),
-				)
-			}
-			existingExps[exposure.Event.EventType] = true
+			checkDuplicate(
+				existingExps,
+				exposure.Event.EventType,
+				field.NewPath("spec").Child("exposures").Index(idx).Child("event").Child("eventType"),
+				fmt.Sprintf("duplicate exposure for event-type %s", exposure.Event.EventType),
+			)
+		}
+
+		if exposure.Ai != nil {
+			checkDuplicate(
+				existingExps,
+				exposure.Ai.BasePath,
+				field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("basePath"),
+				fmt.Sprintf("duplicate exposure for ai base path %s", exposure.Ai.BasePath),
+			)
 		}
 	}
 
@@ -614,6 +638,8 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerro
 	case roverv1.TypeEvent:
 		// There is no special validation needed at this time.
 		return nil
+	case roverv1.TypeAi:
+		return nil // AI subscriptions have no special validation at this time
 	}
 
 	return nil
