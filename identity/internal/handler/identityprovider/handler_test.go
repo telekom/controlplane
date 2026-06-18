@@ -7,19 +7,18 @@ package identityprovider
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("HandlerIdentityProvider", func() {
-
 	Context("CreateOrUpdate", func() {
-
 		It("should return an error when the IdentityProvider is nil", func() {
 			handler := &HandlerIdentityProvider{}
 			err := handler.CreateOrUpdate(context.Background(), nil)

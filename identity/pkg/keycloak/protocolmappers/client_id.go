@@ -18,12 +18,12 @@ func NewClientIdProtocolMapper() api.ProtocolMapperRepresentation {
 		Protocol:       toPtr("openid-connect"),
 		ProtocolMapper: toPtr("oidc-usersessionmodel-note-mapper"),
 		Config: &map[string]interface{}{
-			"user.session.note":    "clientId",
-			"id.token.claim":       "true",
-			"access.token.claim":   "true",
-			"userinfo.token.claim": "false",
-			"claim.name":           "clientId",
-			"jsonType.label":       "String",
+			"user.session.note":         "clientId",
+			idTokenClaimConfigKey:       stringTrue,
+			accessTokenClaimConfigKey:   stringTrue,
+			userInfoTokenClaimConfigKey: stringFalse,
+			claimNameConfigKey:          "clientId",
+			jsonTypeLabelConfigKey:      jsonTypeLabelString,
 		},
 	}
 }

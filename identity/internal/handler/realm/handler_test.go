@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,6 +26,9 @@ import (
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/identity/test/mocks/keycloakservice"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // notFoundError implements the apierrors interface for testing.
@@ -82,7 +83,6 @@ func newValidRealm() *identityv1.Realm {
 }
 
 var _ = Describe("HandlerRealm", func() {
-
 	var (
 		mockK8s *fake.MockJanitorClient
 		ctx     context.Context
@@ -94,7 +94,6 @@ var _ = Describe("HandlerRealm", func() {
 	})
 
 	Context("CreateOrUpdate", func() {
-
 		It("should return an error when the realm is nil", func() {
 			handler := NewHandlerRealm(keycloak.NewServiceFactory())
 			err := handler.CreateOrUpdate(context.Background(), nil)
@@ -473,7 +472,6 @@ var _ = Describe("HandlerRealm", func() {
 	})
 
 	Context("Delete", func() {
-
 		It("should succeed and not mutate the admin password", func() {
 			realm := newValidRealm()
 			realm.Status = identityv1.RealmStatus{

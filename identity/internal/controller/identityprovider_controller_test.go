@@ -7,15 +7,16 @@ package controller
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("IdentityProvider Controller", func() {
@@ -42,7 +43,6 @@ var _ = Describe("IdentityProvider Controller", func() {
 		It("should successfully reconcile the resource", func() {
 			Eventually(func(g Gomega) {
 				VerifyIdentityProvider(ctx, g, idpRef, testIdp)
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})
