@@ -130,7 +130,6 @@ func (r *ApiSubscriptionReconciler) MapApiToApiSubscription(ctx context.Context,
 	return reqs
 }
 
-//nolint:dupl // controller map helpers intentionally mirror each other
 func (r *ApiSubscriptionReconciler) MapApiExposureToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 
@@ -192,6 +191,8 @@ func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.
 
 // MapRouteToApiSubscription enqueues ApiSubscriptions when a Route they reference is deleted.
 // Routes live in zone namespaces; we use basepath + environment labels to find affected subscriptions.
+//
+//nolint:dupl // controller map helpers intentionally mirror each other across exposure/subscription
 func (r *ApiSubscriptionReconciler) MapRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 	route, ok := obj.(*gatewayapi.Route)
@@ -224,7 +225,7 @@ func (r *ApiSubscriptionReconciler) MapRouteToApiSubscription(ctx context.Contex
 // MapZoneToApiSubscription enqueues ApiSubscriptions that reference a changed Zone.
 // This ensures subscriptions react to zone readiness or visibility changes.
 func (r *ApiSubscriptionReconciler) MapZoneToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	zone, ok := obj.(*adminv1.Zone)
 	if !ok {
 		return nil
@@ -236,7 +237,7 @@ func (r *ApiSubscriptionReconciler) MapZoneToApiSubscription(ctx context.Context
 		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
 	})
 	if err != nil {
-		log.Error(err, "failed to list API-Subscriptions for Zone")
+		logger.Error(err, "failed to list API-Subscriptions for Zone")
 		return nil
 	}
 

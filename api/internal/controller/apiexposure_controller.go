@@ -152,8 +152,10 @@ func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context,
 
 // MapRouteToApiExposure enqueues ApiExposures when a Route they manage is externally modified.
 // Routes are created in zone namespaces, so we use the basepath label to find the owning exposures.
+//
+//nolint:dupl // controller map helpers intentionally mirror each other across exposure/subscription
 func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	route, ok := obj.(*gatewayv1.Route)
 	if !ok {
 		return nil
@@ -170,7 +172,7 @@ func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj c
 		apiv1.BasePathLabelKey:      basePathLabel,
 	})
 	if err != nil {
-		log.Error(err, "failed to list API-Exposures for Route")
+		logger.Error(err, "failed to list API-Exposures for Route")
 		return nil
 	}
 
