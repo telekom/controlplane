@@ -86,9 +86,23 @@ var _ = Describe("ApiSubscription Handler", func() {
 				expectedReason: util.ApiCategoryTeamCategoryNotAllowedReason,
 			},
 			{
-				name:           "unresolved category",
+				name:           "no categories configured",
 				teamCategory:   organizationapi.TeamCategoryCustomer,
 				apiCategories:  nil,
+				expectedResult: true,
+			},
+			{
+				name:         "missing category",
+				teamCategory: organizationapi.TeamCategoryCustomer,
+				apiCategories: []apiv1.ApiCategory{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
+						Spec: apiv1.ApiCategorySpec{
+							LabelValue: "other",
+							Active:     true,
+						},
+					},
+				},
 				expectedResult: false,
 				expectedReason: util.ApiCategoryPolicyResolutionFailedReason,
 			},

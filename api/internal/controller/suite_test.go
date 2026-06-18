@@ -26,6 +26,7 @@ import (
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 
@@ -199,7 +200,7 @@ func CreateTestGroup() *organizationapi.Group {
 			Name:      testGroup,
 			Namespace: testEnvironment,
 			Labels: map[string]string{
-				"cp.ei.telekom.de/environment": testEnvironment,
+				config.EnvironmentLabelKey: testEnvironment,
 			},
 		},
 		Spec: organizationapi.GroupSpec{
@@ -217,7 +218,7 @@ func CreateTestTeam() *organizationapi.Team {
 			Name:      organizationapi.TeamResourceName(testGroup, testTeamName),
 			Namespace: testEnvironment,
 			Labels: map[string]string{
-				"cp.ei.telekom.de/environment": testEnvironment,
+				config.EnvironmentLabelKey: testEnvironment,
 			},
 		},
 		Spec: organizationapi.TeamSpec{
@@ -243,7 +244,7 @@ func CreateTestApiCategory() *apiv1.ApiCategory {
 			Name:      "other",
 			Namespace: testNamespace,
 			Labels: map[string]string{
-				"cp.ei.telekom.de/environment": testEnvironment,
+				config.EnvironmentLabelKey: testEnvironment,
 			},
 		},
 		Spec: apiv1.ApiCategorySpec{

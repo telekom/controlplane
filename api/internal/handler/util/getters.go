@@ -177,13 +177,17 @@ func ResolveActiveApiCategoryForApi(ctx context.Context, api *apiv1.Api) (*apiv1
 func ResolveActiveApiCategoryByLabelValue(ctx context.Context, labelValue string) (*apiv1.ApiCategory, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	normalizedLabelValue := strings.TrimSpace(labelValue)
-	if normalizedLabelValue == "" {
-		return nil, ctrlerrors.BlockedErrorf("ApiCategory label value is empty")
-	}
-
 	apiCategoryList := &apiv1.ApiCategoryList{}
 	if err := scopedClient.List(ctx, apiCategoryList); err != nil {
 		return nil, errors.Wrap(err, "failed to list ApiCategories")
+	}
+
+	if len(apiCategoryList.Items) == 0 {
+		return nil, nil
+	}
+
+	if normalizedLabelValue == "" {
+		return nil, ctrlerrors.BlockedErrorf("ApiCategory label value is empty")
 	}
 
 	apiCategory, found := apiCategoryList.FindByLabelValue(normalizedLabelValue)
@@ -201,11 +205,11 @@ func BuildApiCategoryPolicyResolutionMessage(apiCategoryLabel string, err error)
 }
 
 func BuildApiCategoryExposureDeniedMessage(teamCategory, apiCategoryLabel string) string {
-	return fmt.Sprintf("Team of category %s are not allowed to expose APIs of category %s", teamCategory, apiCategoryLabel)
+	return fmt.Sprintf("Team with category %q is not allowed to expose APIs of category %q", teamCategory, apiCategoryLabel)
 }
 
 func BuildApiCategorySubscriptionDeniedMessage(teamCategory, apiCategoryLabel string) string {
-	return fmt.Sprintf("Team of category %s are not allowed to subscribe APIs of category %s", teamCategory, apiCategoryLabel)
+	return fmt.Sprintf("Team with category %q is not allowed to subscribe to APIs of category %q", teamCategory, apiCategoryLabel)
 }
 
 // FindAPIExposure checks if there is an active ApiExposure corresponding to the given apiBasePath.

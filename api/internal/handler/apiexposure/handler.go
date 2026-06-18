@@ -259,6 +259,10 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 		apiExp.SetCondition(condition.NewBlockedCondition(msg))
 		return false
 	}
+	if apiCategory == nil {
+		log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because no ApiCategories exist")
+		return true
+	}
 
 	teamCategory := string(team.Spec.Category)
 	if !apiCategory.IsAllowedForTeamCategory(teamCategory) {

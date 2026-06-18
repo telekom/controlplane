@@ -34,7 +34,7 @@ Runtime enforcement in this phase is intentionally scoped to `allowTeams.categor
 :::
 
 :::info
-If no `ApiCategory` resources exist in the environment, the platform skips category validation entirely and accepts any value. This means you can adopt API Categories gradually — they only take effect once you create your first one.
+If no `ApiCategory` resources exist in the environment, the platform skips runtime category validation entirely and accepts any value. This means you can adopt API Categories gradually — they only take effect once you create your first one.
 :::
 
 :::caution
