@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+## Append samples of your project ##
+resources:
+- spectre.ei.telekom.de_v1_listener.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
