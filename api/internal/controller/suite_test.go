@@ -44,7 +44,7 @@ const (
 	testEnvironment = "test"
 	testGroup       = "dev"
 	testTeamName    = "api"
-	testCategory    = "Customer"
+	testCategory    = organizationapi.TeamCategoryCustomer
 )
 
 var testNamespace string
@@ -225,7 +225,7 @@ func CreateTestTeam() *organizationapi.Team {
 			Name:     testTeamName,
 			Group:    testGroup,
 			Email:    "test-team@example.com",
-			Category: organizationapi.TeamCategory(testCategory),
+			Category: testCategory,
 			Members: []organizationapi.Member{
 				{
 					Name:  "Test User",

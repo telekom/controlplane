@@ -64,7 +64,10 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	apiExpApplication, err := util.GetApplicationFromLabel(ctx, apiExp)
 	if err != nil {
-		return err
+		msg := fmt.Sprintf("Application for ApiExposure cannot be resolved: %v", err)
+		apiExp.SetCondition(condition.NewNotReadyCondition("ApplicationResolutionFailed", msg))
+		apiExp.SetCondition(condition.NewBlockedCondition(msg))
+		return nil
 	}
 
 	if !validateApiCategoryPolicy(ctx, api, apiExpApplication, apiExp) {
