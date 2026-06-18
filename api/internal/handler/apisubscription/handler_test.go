@@ -7,8 +7,6 @@ package apisubscription
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -22,6 +20,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	organizationapi "github.com/telekom/controlplane/organization/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiSubscription Handler", func() {
@@ -109,7 +110,6 @@ var _ = Describe("ApiSubscription Handler", func() {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			It(tt.name, func() {
 				team := &organizationapi.Team{
 					ObjectMeta: metav1.ObjectMeta{
