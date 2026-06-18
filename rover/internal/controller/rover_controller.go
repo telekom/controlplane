@@ -7,21 +7,21 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	rover_handler "github.com/telekom/controlplane/rover/internal/handler/rover"
-
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
+	rover_handler "github.com/telekom/controlplane/rover/internal/handler/rover"
 )
 
 // RoverReconciler reconciles a Rover object
@@ -47,6 +47,9 @@ type RoverReconciler struct {
 
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventexposures,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventsubscriptions,verbs=get;list;watch;create;update;patch;delete
+
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpexposures,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpsubscriptions,verbs=get;list;watch;create;update;patch;delete
 
 // +kubebuilder:rbac:groups=permission.cp.ei.telekom.de,resources=permissionsets,verbs=get;list;watch;create;update;patch;delete
 
@@ -74,6 +77,11 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	if cconfig.FeaturePermission.IsEnabled() {
 		b = b.Owns(&permissionv1.PermissionSet{})
+	}
+
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		b = b.Owns(&agenticv1.McpExposure{}).
+			Owns(&agenticv1.McpSubscription{})
 	}
 
 	return b.WithOptions(controller.Options{

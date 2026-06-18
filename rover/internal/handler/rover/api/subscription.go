@@ -8,6 +8,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -15,15 +19,11 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	rover "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rover.Rover, sub *rover.ApiSubscription) error {
-
-	log := log.FromContext(ctx)
-	log.V(1).Info("Handle APISubscription", "basePath", sub.BasePath)
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Handle APISubscription", "basePath", sub.BasePath)
 
 	name := MakeName(owner.Name, sub.BasePath, sub.Organization)
 
@@ -83,9 +83,9 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		Namespace: apiSubscription.Namespace,
 	})
 
-	log.V(1).Info("Created ApiSubscription", "subscription", apiSubscription)
+	logger.V(1).Info("Created ApiSubscription", "subscription", apiSubscription)
 
-	return err
+	return nil
 }
 
 func mapSubscriberSecurityToApiSecurity(roverSecurity *rover.SubscriberSecurity) *apiapi.SubscriberSecurity {

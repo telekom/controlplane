@@ -42,6 +42,7 @@ var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
 
 type ZoneHandler struct{}
 
+//nolint:gocyclo // orchestration function, complexity from sequential resource creation
 func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) error {
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
@@ -172,6 +173,17 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		return errors.Wrapf(err, "failed to cleanup stale managed routes for zone %s", obj.Name)
 	}
 
+	// AI Gateway configuration
+	if cconfig.FeatureAiGateway.IsEnabled() && obj.Spec.AiGateway != nil {
+		if err := reconcileAiGateway(ctx, handlingContext, obj); err != nil {
+			return err
+		}
+	} else {
+		obj.Status.AiGateway = nil
+		obj.Status.AiGatewayRealm = nil
+		obj.ManageFeature(adminv1.FeatureAiGateway, false)
+	}
+
 	// Populate Permissions URL if configured and feature enabled
 	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Permissions != nil {
 		// Use url.JoinPath to properly handle slashes when combining gateway URL with ApiBasePath
@@ -256,6 +268,102 @@ func reconcileTeamAPIRoutes(ctx context.Context, handlingContext HandlingContext
 	}
 
 	return nil
+}
+
+func reconcileAiGateway(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone) error {
+	aiGateway, err := createAiGateway(ctx, handlingContext)
+	if err != nil {
+		return err
+	}
+	zone.Status.AiGateway = types.ObjectRefFromObject(aiGateway)
+
+	aiGatewayRealm, err := createAiGatewayRealm(ctx, handlingContext, aiGateway)
+	if err != nil {
+		return err
+	}
+	zone.Status.AiGatewayRealm = types.ObjectRefFromObject(aiGatewayRealm)
+
+	zone.EnableFeature(adminv1.FeatureAiGateway)
+	return nil
+}
+
+//nolint:dupl // intentional similarity with createGateway for separate AI gateway config
+func createAiGateway(ctx context.Context, handlingContext HandlingContext) (*gatewayapi.Gateway, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	gateway := &gatewayapi.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      labelutil.NormalizeValue(naming.ForAiGateway()),
+			Namespace: labelutil.NormalizeValue(handlingContext.Namespace.Name),
+		},
+	}
+
+	mutator := func() error {
+		gateway.Labels = map[string]string{
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+		}
+
+		var adminUrl string
+		if handlingContext.Zone.Spec.AiGateway.Admin.Url != nil {
+			adminUrl = *handlingContext.Zone.Spec.AiGateway.Admin.Url
+		} else {
+			adminUrl = urls.ForGatewayAdminUrl(handlingContext.Zone.Spec.AiGateway.Url)
+		}
+
+		gateway.Spec = gatewayapi.GatewaySpec{
+			Admin: gatewayapi.AdminConfig{
+				ClientId:     naming.ForGatewayAdminClientId(),
+				ClientSecret: handlingContext.Zone.Spec.AiGateway.Admin.ClientSecret,
+				IssuerUrl:    urls.ForGatewayAdminIssuerUrl(handlingContext.Zone.Spec.IdentityProvider.Url),
+				Url:          adminUrl,
+			},
+			Redis: gatewayapi.RedisConfig{
+				Host:      handlingContext.Zone.Spec.Redis.Host,
+				Port:      handlingContext.Zone.Spec.Redis.Port,
+				Password:  handlingContext.Zone.Spec.Redis.Password,
+				EnableTLS: handlingContext.Zone.Spec.Redis.EnableTLS,
+			},
+		}
+
+		return nil
+	}
+	_, err := scopedClient.CreateOrUpdate(ctx, gateway, mutator)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create or update AI Gateway in zone %s", handlingContext.Zone.Name)
+	}
+	return gateway, nil
+}
+
+func createAiGatewayRealm(ctx context.Context, handlingContext HandlingContext, gateway *gatewayapi.Gateway) (*gatewayapi.Realm, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	realmName := naming.ForAiGatewayRealm(handlingContext.Environment)
+	gatewayRealm := &gatewayapi.Realm{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      realmName,
+			Namespace: handlingContext.Namespace.Name,
+		},
+	}
+
+	mutator := func() error {
+		gatewayRealm.Labels = map[string]string{
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+		}
+
+		gatewayRealm.Spec = gatewayapi.RealmSpec{
+			Gateway:          types.ObjectRefFromObject(gateway),
+			Urls:             []string{handlingContext.Zone.Spec.AiGateway.Url},
+			IssuerUrls:       []string{urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName)},
+			DefaultConsumers: []string{},
+		}
+		return nil
+	}
+
+	_, err := scopedClient.CreateOrUpdate(ctx, gatewayRealm, mutator)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create or update AI Gateway Realm in zone %s", handlingContext.Zone.Name)
+	}
+	return gatewayRealm, nil
 }
 
 func createManagedRoute(ctx context.Context, handlingContext HandlingContext, routeConfig adminv1.ManagedRouteConfig, gatewayRealm *gatewayapi.Realm, passThrough bool) (*gatewayapi.Route, error) {
@@ -405,6 +513,7 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 	return gatewayRealm, nil
 }
 
+//nolint:dupl // intentional similarity with createAiGateway for separate gateway config
 func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatewayapi.Gateway, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	gateway := &gatewayapi.Gateway{

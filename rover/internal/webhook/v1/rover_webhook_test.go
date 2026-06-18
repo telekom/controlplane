@@ -5,21 +5,23 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewRover(zone *adminv1.Zone) *roverv1.Rover {
@@ -60,7 +62,8 @@ func assertValidationFailedWith(warnings admission.Warnings, err error, expected
 	Expect(err).To(HaveOccurred())
 	Expect(apierrors.IsInvalid(err)).To(BeTrue(), "Expected an Invalid error")
 
-	statusErr, ok := err.(*apierrors.StatusError)
+	statusErr := &apierrors.StatusError{}
+	ok := errors.As(err, &statusErr)
 	Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 	Expect(statusErr.ErrStatus.Details.Causes).NotTo(BeEmpty(), "Expected error causes to not be empty")
 
@@ -95,7 +98,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 	Context("RoverDefaulter", func() {
 		It("should return nil for Default", func() {
 			err := defaulter.Default(ctx, roverObj)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
@@ -104,7 +107,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			It("should call ValidateCreateOrUpdate", func() {
 				warnings, err := validator.ValidateCreate(ctx, roverObj)
 				Expect(warnings).To(BeNil())
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should fail when environment label is missing", func() {
@@ -122,7 +125,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			It("should call ValidateCreateOrUpdate", func() {
 				warnings, err := validator.ValidateUpdate(ctx, roverObj, roverObj)
 				Expect(warnings).To(BeNil())
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
@@ -130,7 +133,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			It("should return nil", func() {
 				warnings, err := validator.ValidateDelete(ctx, roverObj)
 				Expect(warnings).To(BeNil())
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
@@ -138,7 +141,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			It("should validate successfully with valid rover", func() {
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverObj)
 				Expect(warnings).To(BeNil())
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should fail when zone doesn't exist", func() {
@@ -178,7 +181,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 						Api: &roverv1.ApiExposure{
 							BasePath: "/exp1",
 							Upstreams: []roverv1.Upstream{
-								{URL: "https://example.com"},
+								{URL: "https://example.com", Weight: 1},
 							},
 							Approval: roverv1.Approval{},
 						},
@@ -187,7 +190,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithSubscriptionsAndExposures)
 				Expect(warnings).To(BeNil())
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should validate rover with event exposures only", func() {
@@ -203,7 +206,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithEventExposures)
 				Expect(warnings).To(BeNil())
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should fail with duplicate subscriptions", func() {
@@ -234,7 +237,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 						Api: &roverv1.ApiExposure{
 							BasePath: "/duplicate",
 							Upstreams: []roverv1.Upstream{
-								{URL: "https://example.com"},
+								{URL: "https://example.com", Weight: 1},
 							},
 							Approval: roverv1.Approval{},
 						},
@@ -332,7 +335,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				}
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(warnings).To(BeEmpty())
 			})
 
@@ -358,7 +361,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				}
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(warnings).To(BeEmpty())
 			})
 		})
@@ -366,13 +369,13 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		Context("ResourceMustExist", func() {
 			It("should return true when resource exists", func() {
 				exists, err := validator.ResourceMustExist(ctx, client.ObjectKey{Name: testZone.Name, Namespace: testZone.Namespace}, &adminv1.Zone{})
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(exists).To(BeTrue())
 			})
 
 			It("should return false when resource doesn't exist", func() {
 				exists, err := validator.ResourceMustExist(ctx, client.ObjectKey{Name: "non-existent", Namespace: testNamespace}, &adminv1.Zone{})
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(exists).To(BeFalse())
 			})
 		})
@@ -381,7 +384,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			It("should return the zone when it exists", func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zone, err := validator.GetZone(ctx, valErr, client.ObjectKey{Name: testZone.Name, Namespace: testZone.Namespace})
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(zone).NotTo(BeNil())
 				Expect(zone.Name).To(Equal(testZone.Name))
 				Expect(valErr.HasErrors()).To(BeFalse())
@@ -391,7 +394,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				nonExistentZoneRef := client.ObjectKey{Name: "non-existent", Namespace: testNamespace}
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zone, err := validator.GetZone(ctx, valErr, nonExistentZoneRef)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(zone).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
 				Expect(valErr.Errors).To(HaveLen(1))
@@ -418,7 +421,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := validator.ValidateSubscription(ctx, valErr, testNamespace, sub, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
@@ -432,7 +435,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := validator.ValidateSubscription(ctx, valErr, testNamespace, sub, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 
 				// Check error details
@@ -450,7 +453,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := validator.ValidateSubscription(ctx, valErr, testNamespace, sub, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
@@ -464,7 +467,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := validator.ValidateSubscription(ctx, valErr, testNamespace, sub, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 		})
@@ -475,7 +478,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					Api: &roverv1.ApiExposure{
 						BasePath: "/test",
 						Upstreams: []roverv1.Upstream{
-							{URL: "https://example.com"},
+							{URL: "https://example.com", Weight: 1},
 						},
 						Approval: roverv1.Approval{},
 					},
@@ -484,7 +487,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
@@ -502,7 +505,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 				Expect(valErr.Errors).To(HaveLen(1))
 				Expect(valErr.Errors[0].Detail).To(Equal("upstream URL must not be empty"))
@@ -522,7 +525,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 				Expect(valErr.Errors).To(HaveLen(1))
 				Expect(valErr.Errors[0].Detail).To(ContainSubstring("must start with http://"))
@@ -542,7 +545,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 				Expect(valErr.Errors).To(HaveLen(1))
 				Expect(valErr.Errors[0].Detail).To(ContainSubstring("must not contain 'localhost'"))
@@ -558,7 +561,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
@@ -577,7 +580,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 				Expect(valErr.Errors).To(HaveLen(1))
 				Expect(valErr.Errors[0].Detail).To(ContainSubstring("all upstreams must have a weight set or none must have a weight set"))
@@ -598,7 +601,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 		})
@@ -659,7 +662,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, subs, exps)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
@@ -671,7 +674,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, subs, []roverv1.Exposure{})
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 			})
 
@@ -683,7 +686,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, subs, []roverv1.Exposure{})
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 			})
 
@@ -695,7 +698,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, []roverv1.Subscription{}, exps)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 			})
 
@@ -707,7 +710,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, []roverv1.Subscription{}, exps)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 			})
 		})
@@ -718,7 +721,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				exposure := roverv1.Exposure{
 					Api: &roverv1.ApiExposure{
 						BasePath:  "/test",
-						Upstreams: []roverv1.Upstream{{URL: "https://example.com"}},
+						Upstreams: []roverv1.Upstream{{URL: "https://example.com", Weight: 1}},
 						Transformation: &roverv1.Transformation{
 							Request: roverv1.RequestResponseTransformation{
 								Headers: roverv1.HeaderTransformation{
@@ -732,7 +735,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
@@ -748,7 +751,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				exposure := roverv1.Exposure{
 					Api: &roverv1.ApiExposure{
 						BasePath:  "/test",
-						Upstreams: []roverv1.Upstream{{URL: "https://example.com"}},
+						Upstreams: []roverv1.Upstream{{URL: "https://example.com", Weight: 1}},
 						Transformation: &roverv1.Transformation{
 							Request: roverv1.RequestResponseTransformation{
 								Headers: roverv1.HeaderTransformation{
@@ -762,7 +765,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: internalZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 				Expect(valErr.Errors).To(HaveLen(1))
 				Expect(valErr.Errors[0].Detail).To(ContainSubstring("removing 'Authorization' header is only allowed on external zones"))
@@ -780,7 +783,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				exposure := roverv1.Exposure{
 					Api: &roverv1.ApiExposure{
 						BasePath:  "/test",
-						Upstreams: []roverv1.Upstream{{URL: "https://example.com"}},
+						Upstreams: []roverv1.Upstream{{URL: "https://example.com", Weight: 1}},
 						Transformation: &roverv1.Transformation{
 							Request: roverv1.RequestResponseTransformation{
 								Headers: roverv1.HeaderTransformation{
@@ -794,7 +797,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: internalZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
@@ -810,7 +813,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				exposure := roverv1.Exposure{
 					Api: &roverv1.ApiExposure{
 						BasePath:  "/test",
-						Upstreams: []roverv1.Upstream{{URL: "https://example.com"}},
+						Upstreams: []roverv1.Upstream{{URL: "https://example.com", Weight: 1}},
 						Transformation: &roverv1.Transformation{
 							Request: roverv1.RequestResponseTransformation{
 								Headers: roverv1.HeaderTransformation{
@@ -824,7 +827,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: internalZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 				Expect(valErr.Errors[0].Detail).To(ContainSubstring("removing 'Authorization' header is only allowed on external zones"))
 			})
@@ -833,7 +836,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				exposure := roverv1.Exposure{
 					Api: &roverv1.ApiExposure{
 						BasePath:  "/test",
-						Upstreams: []roverv1.Upstream{{URL: "https://example.com"}},
+						Upstreams: []roverv1.Upstream{{URL: "https://example.com", Weight: 1}},
 						// No transformation
 					},
 				}
@@ -841,21 +844,20 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 		})
 
 		Context("RateLimiting", func() {
-
-			var newRoverWithApiExposure = func(testZone *adminv1.Zone) *roverv1.Rover {
+			newRoverWithApiExposure := func(testZone *adminv1.Zone) *roverv1.Rover {
 				rover := NewRover(testZone)
 				rover.Spec.Exposures = []roverv1.Exposure{
 					{
 						Api: &roverv1.ApiExposure{
 							BasePath: "/test",
 							Upstreams: []roverv1.Upstream{
-								{URL: "https://example.com"},
+								{URL: "https://example.com", Weight: 1},
 							},
 							Approval: roverv1.Approval{
 								Strategy: roverv1.ApprovalStrategySimple,
@@ -1081,9 +1083,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 	})
 
 	Context("When validating trusted teams in approval", func() {
-		var (
-			team1, team2 *organizationv1.Team
-		)
+		var team1, team2 *organizationv1.Team
 
 		BeforeAll(func() {
 			// Create test teams
@@ -1191,9 +1191,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 	})
 
 	Context("External IDs validation", func() {
-		var (
-			zoneWithPolicies *adminv1.Zone
-		)
+		var zoneWithPolicies *adminv1.Zone
 
 		BeforeAll(func() {
 			zoneWithPolicies = NewZone("zone-extids", testNamespace)
@@ -1280,5 +1278,4 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
-
 })

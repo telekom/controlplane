@@ -1,0 +1,4 @@
+basePath: /team/assistant
+tools:
+  - name: summarize
+    description: Summarize the provided text

@@ -13,6 +13,8 @@ const (
 	gatewayAdminClientId       = "rover"
 	gateway                    = "gateway"
 	gatewayConsumer            = "gateway"
+	aiGateway                  = "ai-gateway"
+	aiGatewayRealmPrefix       = "ai-"
 )
 
 func ForDefaultIdentityRealm(environment *adminv1.Environment) string {
@@ -57,4 +59,12 @@ func ForGatewayConsumer() string {
 
 func ForGatewayRoute(config adminv1.ManagedRouteConfig) string {
 	return config.Name
+}
+
+func ForAiGateway() string {
+	return aiGateway
+}
+
+func ForAiGatewayRealm(environment *adminv1.Environment) string {
+	return aiGatewayRealmPrefix + environment.GetName()
 }

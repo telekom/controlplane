@@ -17,6 +17,7 @@ require (
 
 replace (
 	github.com/telekom/controlplane/admin/api => ../admin/api
+	github.com/telekom/controlplane/agentic/api => ../agentic/api
 	github.com/telekom/controlplane/api/api => ../api/api
 	github.com/telekom/controlplane/application/api => ../application/api
 	github.com/telekom/controlplane/common => ../common
@@ -41,6 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
+	github.com/telekom/controlplane/agentic/api v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/file-manager v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/secret-manager v0.0.0

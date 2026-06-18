@@ -44,6 +44,30 @@ spec:
           spec:
             description: ZoneSpec defines the desired state of Zone
             properties:
+              aiGateway:
+                description: |-
+                  AiGateway configures a dedicated AI Gateway for this zone.
+                  When present, the zone supports MCP exposures routed through a separate gateway
+                  with streaming support (buffering disabled).
+                properties:
+                  admin:
+                    description: Admin contains the admin credentials for the AI Gateway.
+                    properties:
+                      clientSecret:
+                        type: string
+                      url:
+                        type: string
+                    required:
+                    - clientSecret
+                    type: object
+                  url:
+                    description: Url is the public URL of the AI Gateway.
+                    format: uri
+                    type: string
+                required:
+                - admin
+                - url
+                type: object
               externalIdPolicies:
                 description: |-
                   ExternalIdPolicies configures, per identifier scheme, the format and
@@ -279,6 +303,42 @@ spec:
           status:
             description: ZoneStatus defines the observed state of Zone
             properties:
+              aiGateway:
+                description: AiGateway references the AI Gateway CR created for this
+                  zone.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              aiGatewayRealm:
+                description: AiGatewayRealm references the AI Gateway Realm CR created
+                  for this zone.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current

@@ -8,22 +8,24 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	handler "github.com/telekom/controlplane/rover/internal/handler/apispecification"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func newApiSpec(hash, category string) *roverv1.ApiSpecification {
+func newApiSpec(category string) *roverv1.ApiSpecification {
 	return &roverv1.ApiSpecification{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-spec",
@@ -37,7 +39,7 @@ func newApiSpec(hash, category string) *roverv1.ApiSpecification {
 			Specification: "file-id-123",
 			Category:      category,
 			BasePath:      "/eni/test/v1",
-			Hash:          hash,
+			Hash:          "hash1",
 			Version:       "1.0.0",
 		},
 	}
@@ -59,18 +61,18 @@ func newApiCategory(name string, linting *apiapi.LintingConfig) *apiapi.ApiCateg
 	}
 }
 
-func hasCondition(apiSpec *roverv1.ApiSpecification, condType string) bool {
+func hasCondition(apiSpec *roverv1.ApiSpecification) bool {
 	for _, c := range apiSpec.GetConditions() {
-		if c.Type == condType {
+		if c.Type == condition.ConditionTypeProcessing {
 			return true
 		}
 	}
 	return false
 }
 
-func conditionMessage(apiSpec *roverv1.ApiSpecification, condType string) string {
+func conditionMessage(apiSpec *roverv1.ApiSpecification) string {
 	for _, c := range apiSpec.GetConditions() {
-		if c.Type == condType {
+		if c.Type == condition.ConditionTypeProcessing {
 			return c.Message
 		}
 	}
@@ -144,12 +146,12 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 			})
 			mockCtx := setupMockClient(ctx, cat)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "other")
+			apiSpec := newApiSpec("other")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("API updated"))
 		})
 	})
 
@@ -160,12 +162,12 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 			})
 			mockCtx := setupMockClient(ctx, cat)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "warn-cat")
+			apiSpec := newApiSpec("warn-cat")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("API updated"))
 		})
 	})
 
@@ -176,13 +178,13 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 			})
 			mockCtx := setupMockClient(ctx, cat)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "strict-cat")
+			apiSpec := newApiSpec("strict-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: false, Message: "found 3 errors"}
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("found 3 errors"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("found 3 errors"))
 		})
 
 		It("should set blocked condition with dashboard URL", func() {
@@ -191,7 +193,7 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 			})
 			mockCtx := setupMockClient(ctx, cat)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "strict-cat")
+			apiSpec := newApiSpec("strict-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{
 				Passed:       false,
 				Message:      "found 3 errors",
@@ -200,9 +202,9 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("View details"))
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("scan-123"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("View details"))
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("scan-123"))
 		})
 
 		It("should default to block mode when linting mode is empty string", func() {
@@ -211,12 +213,12 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 			})
 			mockCtx := setupMockClient(ctx, cat)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "test-cat")
+			apiSpec := newApiSpec("test-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: false, Message: "found errors"}
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(hasCondition(apiSpec)).To(BeTrue())
 		})
 	})
 
@@ -227,13 +229,13 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 			})
 			mockCtx := setupMockClient(ctx, cat)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "warn-cat")
+			apiSpec := newApiSpec("warn-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: false, Message: "found 2 warnings"}
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("API updated"))
 		})
 	})
 
@@ -241,13 +243,13 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 		It("should proceed with Api creation", func() {
 			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "other")
+			apiSpec := newApiSpec("other")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: true, Message: "no errors"}
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("API updated"))
 		})
 	})
 
@@ -255,42 +257,42 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 		It("should proceed when no category is found", func() {
 			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "other")
+			apiSpec := newApiSpec("other")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("API updated"))
 		})
 
 		It("should proceed when category has no linting config", func() {
 			cat := newApiCategory("other", nil)
 			mockCtx := setupMockClient(ctx, cat)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "other")
+			apiSpec := newApiSpec("other")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("API updated"))
 		})
 
 		It("should proceed when category lookup returns error", func() {
 			mockCtx := setupMockClientWithListError(ctx, fmt.Errorf("api category lookup failed"))
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "other")
+			apiSpec := newApiSpec("other")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
+			Expect(hasCondition(apiSpec)).To(BeTrue())
+			Expect(conditionMessage(apiSpec)).To(ContainSubstring("API updated"))
 		})
 	})
 
 	Context("Delete", func() {
 		It("should return nil", func() {
 			h := &handler.ApiSpecificationHandler{}
-			err := h.Delete(ctx, newApiSpec("hash1", "other"))
+			err := h.Delete(ctx, newApiSpec("other"))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
