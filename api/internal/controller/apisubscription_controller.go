@@ -26,7 +26,6 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -70,7 +69,7 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&apiapi.ApiSubscription{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Owns(&approvalapi.ApprovalRequest{}).
 		Owns(&approvalapi.Approval{}).
-		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&gatewayv1.ConsumeRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&apiapi.RemoteApiSubscription{}).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiSubscription),

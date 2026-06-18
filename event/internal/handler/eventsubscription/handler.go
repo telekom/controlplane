@@ -285,7 +285,7 @@ func (h *EventSubscriptionHandler) resolveSSEUrl(ctx context.Context, obj *event
 		contextutil.RecorderFromContextOrDie(ctx).Event(obj, "Warning", "WaitingForSubscriptionId",
 			fmt.Sprintf("Waiting for subscription ID to be available in Subscriber status for zone %q", obj.Spec.Zone.Name))
 
-		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonBlocked, "Waiting for subscription ID to be available in Subscriber status"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for subscription ID to be available in Subscriber status"))
 		return ctrlerrors.BlockedErrorf("Waiting for SSE URL for zone %q to be available", obj.Spec.Zone.Name)
 	}
 
