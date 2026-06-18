@@ -8,8 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
@@ -22,10 +25,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func CreateApplication(name string) *applicationapi.Application {
@@ -152,7 +154,6 @@ func ProgressApproval(apiSub *apiapi.ApiSubscription, state approvalapi.Approval
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(ctx, k8sClient, approval, func() error {
-
 		err := controllerutil.SetControllerReference(apiSub, approval, k8sClient.Scheme())
 		Expect(err).ToNot(HaveOccurred())
 
@@ -178,23 +179,23 @@ func ProgressApproval(apiSub *apiapi.ApiSubscription, state approvalapi.Approval
 
 var _ = Describe("ApiSubscription Controller", Ordered, func() {
 	// API that is used for the tests
-	var apiBasePath = "/apisubctrl/test/v1"
+	apiBasePath := "/apisubctrl/test/v1"
 
 	// Provider side
 	var api *apiapi.Api
 	var apiExposure *apiapi.ApiExposure
 
 	// Provider/Exposure zone
-	var zoneName = "apisub-test"
+	zoneName := "apisub-test"
 	var zone *adminapi.Zone
 
 	// Consumer/Subscription zone
-	var otherZoneName = "other-zone"
+	otherZoneName := "other-zone"
 	var otherZone *adminapi.Zone
 
 	// Consumer side
-	var apiSubAppName = "my-test-app-sub"
-	var apiExpAppName = "my-test-app-exp"
+	apiSubAppName := "my-test-app-sub"
+	apiExpAppName := "my-test-app-exp"
 	var apiSubApplication *applicationapi.Application
 	var apiExpApplication *applicationapi.Application
 	var apiSubscription *apiapi.ApiSubscription
@@ -234,7 +235,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 	})
 
 	Context("Creating and Updating", func() {
-
 		It("should block until an API is exposed", func() {
 			By("Creating the resource")
 			err := k8sClient.Create(ctx, apiSubscription)
@@ -248,9 +248,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(processingCondition).ToNot(BeNil())
 				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(processingCondition.Reason).To(Equal("Blocked"))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should automatically progress when an API is exposed", func() {
@@ -272,9 +270,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 				By("Checking the conditions")
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeProcessing), "Blocked")
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should correctly use the approval-workflow", func() {
@@ -300,7 +296,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				err = json.Unmarshal(approvalRequest.Spec.Requester.Properties.Raw, &propertiesMap)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(propertiesMap["scopes"]).To(HaveLen(2))
-
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -324,7 +319,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				By("Checking if the route is the real-route")
 				g.Expect(apiSubRoute.Name).To(Equal(apiExpRoute.Name))
 				g.Expect(apiSubRoute.Namespace).To(Equal(apiExpRoute.Namespace))
-
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -342,18 +336,16 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[0]).To(Equal("scope1"))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[1]).To(Equal("scope2"))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(ConsistOf("scope1", "scope2"))
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})
 
 	Context("Meshing", func() {
-
-		var apiSubscription *apiapi.ApiSubscription
+		var meshingApiSubscription *apiapi.ApiSubscription
 
 		BeforeAll(func() {
 			By("Initializing the ApiSubscription")
-			apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
+			meshingApiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
 
 			By("Creating the Zone")
 			otherZone = CreateZone(otherZoneName)
@@ -363,31 +355,28 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 		})
 
 		It("should create a proxy-route if on a different zone as the API-Exposure", func() {
-
 			By("Creating the resource")
-			err := k8sClient.Create(ctx, apiSubscription)
+			err := k8sClient.Create(ctx, meshingApiSubscription)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Checking if the resource has the expected state")
 			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
+				getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(meshingApiSubscription), meshingApiSubscription)
+				g.Expect(getErr).ToNot(HaveOccurred())
 				By("Checking the conditions")
-				readyCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
+				readyCondition := meta.FindStatusCondition(meshingApiSubscription.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(readyCondition.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
-
 			}, timeout, interval).Should(Succeed())
 
 			By("Progressing the Approval resources")
-			approvalReq := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-			approval := ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+			approvalReq := ProgressApprovalRequest(meshingApiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+			approval := ProgressApproval(meshingApiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
 			Expect(approval).ToNot(BeNil())
 		})
 
 		It("should create a proxy-route", func() {
-
 			By("Checking if the resource has the expected state")
 			Eventually(func(g Gomega) {
 				By("Getting the ApiExposure")
@@ -402,12 +391,12 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				proxyRouteRef := apiExposure.Status.ProxyRoutes[0]
 
 				By("Checking the ApiSubscription")
-				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(meshingApiSubscription), meshingApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeProcessing), "Done")
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
-				g.Expect(apiSubscription.Status.Route).ToNot(BeNil())
-				apiSubRoute := apiSubscription.Status.Route
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(meshingApiSubscription.GetConditions(), condition.ConditionTypeProcessing), "Done")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(meshingApiSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
+				g.Expect(meshingApiSubscription.Status.Route).ToNot(BeNil())
+				apiSubRoute := meshingApiSubscription.Status.Route
 
 				By("Verifying the subscription references the proxy route")
 				g.Expect(apiSubRoute).ToNot(Equal(apiExpRoute), "Subscription route should be different from the real route")
@@ -420,22 +409,19 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.apisub-test:8080/auth/realms/test"))
-
 			}, timeout, interval).Should(Succeed())
 		})
-
 	})
 
 	Context("Prevent deletion of underlying Routes if multiple Api-Subscriptions exist", func() {
-
-		apiSubAppName := "my-second-app"
+		secondApiSubAppName := "my-second-app"
 		var secondApiSubscription *apiapi.ApiSubscription
 
 		BeforeAll(func() {
 			By("Initializing the second ApiSubscription")
-			secondApiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
+			secondApiSubscription = NewApiSubscription(apiBasePath, otherZoneName, secondApiSubAppName)
 			By("Creating the Application")
-			CreateApplication(apiSubAppName)
+			CreateApplication(secondApiSubAppName)
 
 			By("Setting up a second ApiSubscription")
 			err := k8sClient.Create(ctx, secondApiSubscription)
@@ -450,7 +436,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(readyCondition.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
-
 			}, timeout, interval).Should(Succeed())
 
 			By("Progressing the Approval resources")
@@ -459,7 +444,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 		})
 
 		It("should never remove the proxy-route if there is another active API-Subscription", func() {
-
 			By("Ensuring that both Api-Subscription are actually ready and active")
 			Eventually(func(g Gomega) {
 				By("Checking the first ApiSubscription")
@@ -470,7 +454,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApiSubscription), secondApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApiSubscription.Status.Route).ToNot(BeNil())
-
 			}, timeout, interval).Should(Succeed())
 
 			By("Deleting the first ApiSubscription")
@@ -482,7 +465,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				route := &gatewayapi.Route{}
 				err := k8sClient.Get(ctx, apiSubscription.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -493,7 +475,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 			BeforeEach(func() {
 				apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
-				apiSubscription.ObjectMeta.Name = apiSubscription.Name + "-security"
+				apiSubscription.Name += "-security"
 			})
 
 			AfterEach(func() {
@@ -515,8 +497,8 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 				By("Checking if the resource the approval is pending")
 				Eventually(func(g Gomega) {
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
-					g.Expect(err).ToNot(HaveOccurred())
+					getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+					g.Expect(getErr).ToNot(HaveOccurred())
 					By("checking that the resource is in the BLOCKED state")
 					testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing), "Blocked")
 				}, timeout, interval).Should(Succeed())
@@ -548,7 +530,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
 					g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(Equal([]string{"scope1", "scope2"}))
 					g.Expect(consumeRoute.Spec.Route).To(Equal(*apiSubscription.Status.Route))
-
 				}, timeout, interval).Should(Succeed())
 			})
 		})
@@ -569,7 +550,6 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 	var remoteApiSubscription *apiapi.RemoteApiSubscription
 
 	Context("Remote Subscription Flow", func() {
-
 		BeforeAll(func() {
 			By("Creating the RemoteOrganisation")
 			remoteOrganisation = CreateRemoteOrganisation(remoteOrgId, remoteZoneName)
@@ -616,9 +596,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 
 				Expect(remoteApiSubscription.Spec.TargetOrganization).To(Equal(remoteOrgId))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should progress when the RemoteApiSubscription has been approved and is ready", func() {
@@ -651,12 +629,10 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiSubscription.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
-
 			}, timeout, interval).Should(Succeed())
 		})
 
 		It("should re-use the Route created by the RemoteApiSubscription and not create a proxy-route", func() {
-
 			By("Checking if the resource has the expected state")
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
@@ -673,13 +649,10 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 				By("Checking that the route is the same as the RemoteApiSubscription")
 				g.Expect(apiSubscription.Status.Route.Name).To(Equal("esp--apisubctrl-remotetest-v1"))
 				g.Expect(apiSubscription.Status.Route.Namespace).To(Equal("test--remote-zone"))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should create a proxy-route if the RemoteApiSubscription is in a different zone", func() {
-
 			By("Changing the zone of the ApiSubscription")
 			apiSubscription.Spec.Zone = types.ObjectRef{
 				Name:      consumerZoneName,
@@ -691,15 +664,12 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 
 			By("Checking if the resource has the expected state")
 			Eventually(func(g Gomega) {
-
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(apiSubscription.Status.Route.Name).To(Equal("esp--apisubctrl-remotetest-v1"))
 				g.Expect(apiSubscription.Status.Route.Namespace).To(Equal("test--consumer-zone"))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 	})
 })

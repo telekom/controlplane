@@ -7,8 +7,6 @@ package keycloak_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/utils/ptr"
 
@@ -17,6 +15,9 @@ import (
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/identity/pkg/keycloak/protocolmappers"
 	"github.com/telekom/controlplane/identity/test/mocks/keycloakclient"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const testRealm = "test-realm"
@@ -49,6 +50,8 @@ func emptyDefaultScopesResp() *api.GetRealmDefaultDefaultClientScopesResponse {
 
 // managedScope builds a ClientScopeRepresentation mimicking the managed scope
 // in Keycloak, with the given mappers and a Keycloak-assigned scope ID.
+//
+//nolint:unparam // Keeping the explicit scopeID parameter makes table-style tests easier to read.
 func managedScope(scopeID string, mappers []api.ProtocolMapperRepresentation) api.ClientScopeRepresentation {
 	return api.ClientScopeRepresentation{
 		Id:              ptr.To(scopeID),

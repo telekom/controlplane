@@ -10,6 +10,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -18,8 +21,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*apiapi.ApiExposure] = (*ApiExposureHandler)(nil)
@@ -27,7 +28,7 @@ var _ handler.Handler[*apiapi.ApiExposure] = (*ApiExposureHandler)(nil)
 type ApiExposureHandler struct{}
 
 func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.ApiExposure) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// For an ApiExposure to be valid, two conditions need to be met:
 	// 1. There must be a corresponding active Api.
@@ -46,7 +47,8 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	}
 
 	// check if there is already a different active apiExposure with same basepath
-	if err := ApiExposureMustNotAlreadyExist(ctx, apiExp); err != nil {
+	err = ApiExposureMustNotAlreadyExist(ctx, apiExp)
+	if err != nil {
 		return errors.Wrapf(err, "failed to validate uniqueness of ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
 
@@ -58,37 +60,14 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	// Core Validations are done, can continue
 
-	// Scopes
-	// check if scopes exist and scopes are subset from api
-	if apiExp.HasM2M() {
-		// If scopes are set and its not externalIDP (here its allowed to have unknown/external scopes)
-		if apiExp.Spec.Security.M2M.Scopes != nil && !apiExp.HasExternalIdp() {
-			if len(api.Spec.Oauth2Scopes) == 0 {
-				apiExp.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
-				apiExp.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
-				return nil
-			} else {
-				scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiExp.Spec.Security.M2M.Scopes)
-				if !scopesExist {
-					var message = fmt.Sprintf("Some defined scopes are not available. Available scopes: \"%s\". Unsupported scopes: \"%s\"",
-						strings.Join(api.Spec.Oauth2Scopes, ", "),
-						strings.Join(invalidScopes, ", "),
-					)
-					apiExp.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
-					apiExp.SetCondition(condition.NewBlockedCondition(message))
-					return nil
-				}
-			}
-
-			log.V(1).Info("✅ Scopes are valid and exist")
-		}
-	}
-
+	// Scopes: check if scopes exist and are a valid subset of the Api's scopes.
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
+	if !validateExposureScopes(ctx, api, apiExp) {
+		return nil
+	}
 
 	// --- Proxy Route Management ---
-	// Query cross-zone subscription zones (exposure-driven pattern)
 	crossZoneRefs, err := util.FindCrossZoneApiSubscriptionZones(ctx, apiExp)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find cross-zone subscription zones for apiExposure: %s", apiExp.Name)
@@ -111,27 +90,27 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 			options = append(options, util.WithServiceRateLimit(apiExp.Spec.Traffic.RateLimit.Provider))
 		}
 
-		proxyRoute, err := util.CreateProxyRoute(ctx, subscriberZoneRef, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
+		proxyRoute, createErr := util.CreateProxyRoute(ctx, subscriberZoneRef, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
 			contextutil.EnvFromContextOrDie(ctx),
 			options...,
 		)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create proxy route for zone %s", subscriberZoneRef.Name)
+		if createErr != nil {
+			return errors.Wrapf(createErr, "failed to create proxy route for zone %s", subscriberZoneRef.Name)
 		}
 		apiExp.Status.ProxyRoutes = append(apiExp.Status.ProxyRoutes, *types.ObjectRefFromObject(proxyRoute))
-		log.V(1).Info("Proxy route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
+		logger.V(1).Info("Proxy route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
 	}
 
 	// Create provider failover route if configured (must be before cleanup to prevent deletion)
 	if apiExp.HasFailover() {
 		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
-		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
+		failoverRoute, createErr := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
 			contextutil.EnvFromContextOrDie(ctx),
 			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
 			util.WithFailoverSecurity(apiExp.Spec.Security),
 		)
-		if err != nil {
-			return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
+		if createErr != nil {
+			return errors.Wrapf(createErr, "unable to create failover route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 		}
 		apiExp.Status.FailoverRoute = types.ObjectRefFromObject(failoverRoute)
 	}
@@ -142,7 +121,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return errors.Wrap(err, "failed to cleanup stale proxy routes")
 	}
 	if deleted > 0 {
-		log.V(1).Info("Cleaned up stale proxy routes", "deleted", deleted)
+		logger.V(1).Info("Cleaned up stale proxy routes", "deleted", deleted)
 	}
 
 	// Create real route with proxy target flag if there are cross-zone subscribers
@@ -164,14 +143,14 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	apiExp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
-	log.Info("✅ ApiExposure is processed")
+	logger.Info("✅ ApiExposure is processed")
 
 	return nil
 }
 
 func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure) error {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// Clean up proxy routes
 	for i := range obj.Status.ProxyRoutes {
@@ -184,7 +163,7 @@ func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure
 			}
 			return errors.Wrapf(err, "failed to get proxy route %s", ref.String())
 		}
-		log.Info("🧹 Deleting proxy route of exposure", "route", ref.String())
+		logger.Info("🧹 Deleting proxy route of exposure", "route", ref.String())
 		err = scopedClient.Delete(ctx, proxyRoute)
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete proxy route %s", ref.String())
@@ -202,12 +181,12 @@ func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure
 			return errors.Wrap(err, "failed to get route")
 		}
 
-		log.Info("🧹 Deleting real route of exposure")
+		logger.Info("🧹 Deleting real route of exposure")
 		err = scopedClient.Delete(ctx, route)
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete route")
 		}
-		log.Info("✅ Successfully deleted obsolete route")
+		logger.Info("✅ Successfully deleted obsolete route")
 	}
 
 	if obj.Status.FailoverRoute != nil {
@@ -219,13 +198,38 @@ func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure
 			}
 			return errors.Wrap(err, "failed to get failover route")
 		}
-		log.Info("🧹 Deleting failover proxy route of exposure")
+		logger.Info("🧹 Deleting failover proxy route of exposure")
 		err = scopedClient.Delete(ctx, failoverRoute)
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete failover route")
 		}
-		log.Info("✅ Successfully deleted obsolete failover route")
+		logger.Info("✅ Successfully deleted obsolete failover route")
 	}
 
 	return nil
+}
+
+// validateExposureScopes checks that the M2M scopes in apiExp are a valid subset of the Api's scopes.
+// It sets blocking conditions on apiExp and returns false if processing should stop.
+func validateExposureScopes(ctx context.Context, api *apiapi.Api, apiExp *apiapi.ApiExposure) bool {
+	if !apiExp.HasM2M() || apiExp.Spec.Security.M2M.Scopes == nil || apiExp.HasExternalIdp() {
+		return true
+	}
+	if len(api.Spec.Oauth2Scopes) == 0 {
+		apiExp.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+		apiExp.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
+		return false
+	}
+	scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiExp.Spec.Security.M2M.Scopes)
+	if !scopesExist {
+		message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
+			strings.Join(api.Spec.Oauth2Scopes, ", "),
+			strings.Join(invalidScopes, ", "),
+		)
+		apiExp.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
+		apiExp.SetCondition(condition.NewBlockedCondition(message))
+		return false
+	}
+	log.FromContext(ctx).V(1).Info("✅ Scopes are valid and exist")
+	return true
 }

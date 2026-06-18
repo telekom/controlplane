@@ -7,17 +7,18 @@ package controller
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	clientModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/client"
 	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
 	realmModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/realm"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Client Controller", func() {
@@ -69,7 +70,6 @@ var _ = Describe("Client Controller", func() {
 
 			By("deleting the custom resource for the Kind IdentityProvider")
 			DeleteIdentityProvider(ctx, clientIdpRef)
-
 		})
 		It("should successfully reconcile the resource", func() {
 			Eventually(func(g Gomega) {

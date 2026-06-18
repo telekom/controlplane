@@ -7,11 +7,12 @@ package controller
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
@@ -21,9 +22,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func CreateRemoteOrganisation(orgId, zoneName string) *adminapi.RemoteOrganization {
@@ -68,7 +69,7 @@ func NewRemoteApiSubscription(apiBasePath, appName string) *apiapi.RemoteApiSubs
 			Namespace: testNamespace,
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
-				apiv1.BasePathLabelKey:     labelutil.NormalizeLabelValue(apiBasePath),
+				apiapi.BasePathLabelKey:    labelutil.NormalizeLabelValue(apiBasePath),
 			},
 		},
 		Spec: apiapi.RemoteApiSubscriptionSpec{
@@ -109,10 +110,10 @@ func ProgressApplication(appName string) *applicationapi.Application {
 }
 
 var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered, func() {
-	var apiBasePath = "/remoteapisubctrl/testprov/v1"
-	var zoneName = "remoteapisub-test"
-	var remoteOrgId = "ger"
-	var appName = "my-remote-test-app"
+	apiBasePath := "/remoteapisubctrl/testprov/v1"
+	zoneName := "remoteapisub-test"
+	remoteOrgId := "ger"
+	appName := "my-remote-test-app"
 
 	var api *apiapi.Api
 	var apiExposure *apiapi.ApiExposure
@@ -122,7 +123,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 
 	var remoteApiSubscription *apiapi.RemoteApiSubscription
 
-	var apiExpAppName = "api-exposure-app"
+	apiExpAppName := "api-exposure-app"
 	var apiExpApplication *applicationapi.Application
 
 	BeforeAll(func() {
@@ -164,7 +165,6 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 	})
 
 	Context("We are the target of the remote API subscription", func() {
-
 		It("should block until an API is registered", func() {
 			By("Creating the resource")
 			err := k8sClient.Create(ctx, remoteApiSubscription)
@@ -175,14 +175,12 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), "NoApi")
-
 			}, timeout, interval).Should(Succeed())
 
 			By("Progressing the application")
 			ProgressApplication(appName)
 
 			// TODO: test if syncClient was called
-
 		})
 
 		It("should automatically progress when an API is exposed", func() {
@@ -193,10 +191,9 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 			Eventually(func(g Gomega) {
 				By("Checking the conditions on Api")
 				apiRes := &apiapi.Api{}
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(api), apiRes)
-				g.Expect(err).ToNot(HaveOccurred())
+				getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(api), apiRes)
+				g.Expect(getErr).ToNot(HaveOccurred())
 				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiRes.GetConditions(), condition.ConditionTypeReady), "ApiActive")
-
 			}, timeout, interval).Should(Succeed())
 
 			By("Creating the APIExposure resource")
@@ -211,17 +208,15 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				g.Expect(err).ToNot(HaveOccurred())
 				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 				g.Expect(apiExp.Status.Active).To(BeTrue())
-				g.Expect(apiExp.GetLabels()[apiv1.BasePathLabelKey]).To(Equal(labelutil.NormalizeLabelValue(apiBasePath)))
+				g.Expect(apiExp.GetLabels()[apiapi.BasePathLabelKey]).To(Equal(labelutil.NormalizeLabelValue(apiBasePath)))
 
 				By("Checking the conditions on RemoteApiSubscription")
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), approvalbuilder.ReasonApprovalPending)
-
 			}, timeout, interval).Should(Succeed())
 
 			// TODO: test if syncClient was called
-
 		})
 
 		It("should create the application", func() {
@@ -235,7 +230,6 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				g.Expect(application.Spec.NeedsClient).To(BeFalse())
 				g.Expect(application.Spec.NeedsConsumer).To(BeTrue())
 				g.Expect(application.Spec.Zone.Name).To(Equal(remoteZone.Name))
-
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -262,7 +256,6 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(readyCondition.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
-
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -282,18 +275,16 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 
 				By("checking that the route-info is filled")
 				g.Expect(remoteApiSubscription.Status.GatewayUrl).To(Equal("https://ger.gateway.es/remoteapisubctrl/testprov/v1"))
-
 			}, timeout, interval).Should(Succeed())
 		})
-
 	})
 })
 
 var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered, func() {
-	var apiBasePath = "/remoteapisubctrl/testcons/v1"
-	var zoneName = "remoteapisub-test-cons"
-	var appName = "my-remote-test-cons-app"
-	var remoteOrgId = "pol"
+	apiBasePath := "/remoteapisubctrl/testcons/v1"
+	zoneName := "remoteapisub-test-cons"
+	appName := "my-remote-test-cons-app"
+	remoteOrgId := "pol"
 
 	var zone *adminapi.Zone
 	var remoteOrg *adminapi.RemoteOrganization
@@ -313,7 +304,6 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 
 		By("Creating the RemoteOrganization")
 		remoteOrg = CreateRemoteOrganisation(remoteOrgId, zoneName)
-
 	})
 
 	AfterAll(func() {
@@ -323,7 +313,6 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 	})
 
 	Context("We are the consumer of the remote API subscription", func() {
-
 		It("should send the RemoteApiSubscription to the target", func() {
 			By("Creating the resource")
 			err := k8sClient.Create(ctx, remoteApiSubscription)
@@ -339,9 +328,7 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 				readyCondition := meta.FindStatusCondition(remoteApiSubscription.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionUnknown))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should progress the RemoteApiSubscription if the sync was successful and approved", func() {
@@ -370,7 +357,6 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 				testutil.ExpectConditionToMatch(g, meta.FindStatusCondition(remoteApiSubscription.Status.Conditions, condition.ConditionTypeReady), "RemoteApiSubscriptionReady", true)
 
 				g.Expect(remoteApiSubscription.Status.Route).ToNot(BeNil())
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -389,8 +375,6 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 			g.Expect(err).To(HaveOccurred())
 
 			// TODO: test if syncClient was called
-
 		}, timeout, interval).Should(Succeed())
 	})
-
 })

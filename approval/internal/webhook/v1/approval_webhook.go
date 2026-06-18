@@ -6,6 +6,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,10 +21,10 @@ import (
 var approvallog = logf.Log.WithName("approval-resource")
 
 // SetupApprovalWebhookWithManager will set up the manager to manage the webhooks
-func SetupApprovalWebhookWithManager(mgr ctrl.Manager) error {
+func SetupApprovalWebhookWithManager(mgr ctrl.Manager, operatorServiceAccount string) error {
 	return ctrl.NewWebhookManagedBy(mgr, &approvalv1.Approval{}).
 		WithDefaulter(&ApprovalCustomDefaulter{}).
-		WithValidator(&ApprovalCustomValidator{}).
+		WithValidator(&ApprovalCustomValidator{OperatorServiceAccount: operatorServiceAccount}).
 		Complete()
 }
 
@@ -58,7 +59,12 @@ func (a *ApprovalCustomDefaulter) Default(_ context.Context, obj *approvalv1.App
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type ApprovalCustomValidator struct{}
+type ApprovalCustomValidator struct {
+	// OperatorServiceAccount is the full username of the operator's service account
+	// (e.g. "system:serviceaccount:system:controller-manager"). Only this identity
+	// is permitted to transition an Approval to the Expired state.
+	OperatorServiceAccount string
+}
 
 var _ admission.Validator[*approvalv1.Approval] = &ApprovalCustomValidator{}
 
@@ -73,7 +79,7 @@ func (a *ApprovalCustomValidator) ValidateCreate(_ context.Context, obj *approva
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
+func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
 	approvallog.Info("validate update", "name", newObj.Name)
 
 	stateChanged := oldObj.Spec.State != newObj.Spec.State
@@ -82,14 +88,8 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj, newO
 	// instead of Status.AvailableTransitions (which may be stale or nil before
 	// the controller has reconciled). Auto strategy uses its own FSM.
 	if stateChanged {
-		fsmDef, ok := approvalhandler.ApprovalStrategyFSM[newObj.Spec.Strategy]
-		if !ok {
-			err = apierrors.NewBadRequest("Unknown approval strategy")
-			return warnings, err
-		}
-		computed := approvalv1.AvailableTransitions(fsmDef.AvailableTransitions(oldObj.Spec.State))
-		if len(computed) == 0 || !computed.HasState(newObj.Spec.State) {
-			err = apierrors.NewBadRequest("Invalid state transition")
+		err = a.validateStateTransition(ctx, oldObj, newObj)
+		if err != nil {
 			return warnings, err
 		}
 	}
@@ -119,4 +119,38 @@ func (a *ApprovalCustomValidator) ValidateDelete(_ context.Context, obj *approva
 	approvallog.Info("validate delete", "name", obj.Name)
 
 	return nil, nil
+}
+
+// validateStateTransition checks FSM validity and operator-only constraints for state changes.
+func (a *ApprovalCustomValidator) validateStateTransition(ctx context.Context, oldObj, newObj *approvalv1.Approval) error {
+	fsmDef, ok := approvalhandler.ApprovalStrategyFSM[newObj.Spec.Strategy]
+	if !ok {
+		return apierrors.NewBadRequest("Unknown approval strategy")
+	}
+	computed := approvalv1.AvailableTransitions(fsmDef.AvailableTransitions(oldObj.Spec.State))
+	if len(computed) == 0 || !computed.HasState(newObj.Spec.State) {
+		return apierrors.NewBadRequest("Invalid state transition")
+	}
+
+	// Transition to Expired is reserved for the operator — no manual expiry.
+	if newObj.Spec.State == approvalv1.ApprovalStateExpired {
+		return a.validateOperatorOnly(ctx, newObj)
+	}
+	return nil
+}
+
+// validateOperatorOnly ensures that only the operator service account may perform the transition.
+func (a *ApprovalCustomValidator) validateOperatorOnly(ctx context.Context, obj *approvalv1.Approval) error {
+	req, err := admission.RequestFromContext(ctx)
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+	if req.UserInfo.Username != a.OperatorServiceAccount {
+		return apierrors.NewForbidden(
+			approvalv1.GroupVersion.WithResource("approvals").GroupResource(),
+			obj.Name,
+			fmt.Errorf("only the operator service account may transition an Approval to Expired"),
+		)
+	}
+	return nil
 }

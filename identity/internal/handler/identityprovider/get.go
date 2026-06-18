@@ -8,17 +8,18 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	common "github.com/telekom/controlplane/common/pkg/types"
-
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
 
 func GetIdentityProviderByName(
 	ctx context.Context,
-	identityProviderRef *common.ObjectRef) (*identityv1.IdentityProvider, error) {
+	identityProviderRef *common.ObjectRef,
+) (*identityv1.IdentityProvider, error) {
 	clientFromContext := client.ClientFromContextOrDie(ctx)
 
 	identityProvider := &identityv1.IdentityProvider{}

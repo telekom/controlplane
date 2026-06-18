@@ -8,6 +8,11 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -17,10 +22,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // IsRemoteApiSubscription checks if the given object is a remote api subscription.
@@ -30,15 +31,15 @@ func IsRemoteApiSubscription(obj *apiapi.ApiSubscription) bool {
 }
 
 func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscription) (err error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	cleanup := func() error {
-		n, err := c.CleanupAll(ctx, cclient.OwnedBy(owner))
-		if err != nil {
-			return errors.Wrapf(err, "failed to cleanup all resources")
+		n, cleanupErr := c.CleanupAll(ctx, cclient.OwnedBy(owner))
+		if cleanupErr != nil {
+			return errors.Wrapf(cleanupErr, "failed to cleanup all resources")
 		}
-		log.Info("🧹 Cleaned up resources", "count", n)
+		logger.Info("🧹 Cleaned up resources", "count", n)
 		return nil
 	}
 
@@ -63,14 +64,14 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	}
 
 	if !meta.IsStatusConditionTrue(application.GetConditions(), condition.ConditionTypeReady) {
-		log.Info("🫷 Application not ready")
+		logger.Info("🫷 Application not ready")
 		return nil
 	}
 
 	mutate := func() error {
-		err := controllerutil.SetControllerReference(owner, req, c.Scheme())
-		if err != nil {
-			return errors.Wrapf(err, "failed to set controller reference")
+		setRefErr := controllerutil.SetControllerReference(owner, req, c.Scheme())
+		if setRefErr != nil {
+			return errors.Wrapf(setRefErr, "failed to set controller reference")
 		}
 		req.Labels = owner.Labels
 		req.Labels[config.BuildLabelKey("org.id")] = owner.Spec.Organization
@@ -101,14 +102,14 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	owner.SetCondition(condition.NewNotReadyCondition("NotReady", "RemoteApiSubscription is provisoned but not ready yet"))
 
 	if res != controllerutil.OperationResultNone {
-		log.Info("🔗 RemoteApiSubscription created or updated", "result", res)
+		logger.Info("🔗 RemoteApiSubscription created or updated", "result", res)
 		return nil
 	}
 
 	approvalResult := IsApproved(ctx, req)
 
 	if approvalResult == ApprovalResultCleanup {
-		log.Info("🧹 RemoteApiSubscription not granted. We need to cleanup")
+		logger.Info("🧹 RemoteApiSubscription not granted. We need to cleanup")
 		owner.SetCondition(condition.NewBlockedCondition("RemoteApiSubscription not granted"))
 		owner.SetCondition(condition.NewNotReadyCondition("RemoteApiSubscriptionNotGranted", "RemoteApiSubscription not granted"))
 
@@ -120,18 +121,18 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	}
 
 	if approvalResult == ApprovalResultBlock {
-		log.Info("🫷 RemoteApiSubscription not approved yet")
+		logger.Info("🫷 RemoteApiSubscription not approved yet")
 		owner.SetCondition(condition.NewBlockedCondition("RemoteApiSubscription not granted yet"))
 		return nil
 	}
 
 	if !meta.IsStatusConditionTrue(req.GetConditions(), condition.ConditionTypeReady) {
-		log.Info("🫷 RemoteApiSubscription not ready")
+		logger.Info("🫷 RemoteApiSubscription not ready")
 		owner.SetCondition(condition.NewBlockedCondition("RemoteApiSubscription is granted but not rerady yet"))
 		return nil
 	}
 
-	log.Info("👌 RemoteApiSubscription ready, we will continue")
+	logger.Info("👌 RemoteApiSubscription ready, we will continue")
 	owner.SetCondition(condition.NewProcessingCondition("RemoteApiSubscriptionReady", "Continue processing"))
 
 	remoteOrg, err := util.GetRemoteOrganization(ctx, types.ObjectRef{
@@ -154,16 +155,16 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 
 	var routeRef *types.ObjectRef
 	if !remoteOrg.Spec.Zone.Equals(subscriptionZone) {
-		log.Info("RemoteApiSubscription is in a different zone")
+		logger.Info("RemoteApiSubscription is in a different zone")
 
-		route, err := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath, remoteOrg.Spec.Id)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create proxy route")
+		route, createErr := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath, remoteOrg.Spec.Id)
+		if createErr != nil {
+			return errors.Wrapf(createErr, "failed to create proxy route")
 		}
 
 		routeRef = types.ObjectRefFromObject(route)
 	} else {
-		log.Info("RemoteApiSubscription is in the same zone")
+		logger.Info("RemoteApiSubscription is in the same zone")
 		// Set route as RealRoute
 		routeRef = req.Status.Route
 	}
@@ -184,8 +185,9 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	}
 
 	mutate = func() error {
-		if err := controllerutil.SetControllerReference(owner, routeConsumer, c.Scheme()); err != nil {
-			return errors.Wrapf(err, "failed to set owner-reference on %v", routeConsumer)
+		setRouteConsumerRefErr := controllerutil.SetControllerReference(owner, routeConsumer, c.Scheme())
+		if setRouteConsumerRefErr != nil {
+			return errors.Wrapf(setRouteConsumerRefErr, "failed to set owner-reference on %v", routeConsumer)
 		}
 		routeConsumer.Labels = owner.Labels
 
@@ -194,7 +196,6 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 			ConsumerName: application.Status.ClientId,
 		}
 		return nil
-
 	}
 
 	_, err = c.CreateOrUpdate(ctx, routeConsumer, mutate)
