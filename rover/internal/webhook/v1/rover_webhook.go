@@ -12,6 +12,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
@@ -20,13 +27,6 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/validation/field"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -81,7 +81,7 @@ func (r *RoverValidator) ValidateCreate(ctx context.Context, rover *roverv1.Rove
 	return r.ValidateCreateOrUpdate(ctx, rover)
 }
 
-func (r *RoverValidator) ValidateUpdate(ctx context.Context, _ *roverv1.Rover, rover *roverv1.Rover) (admission.Warnings, error) {
+func (r *RoverValidator) ValidateUpdate(ctx context.Context, _, rover *roverv1.Rover) (admission.Warnings, error) {
 	roverlog.V(2).Info("validate update")
 
 	return r.ValidateCreateOrUpdate(ctx, rover)
@@ -94,7 +94,6 @@ func (r *RoverValidator) ValidateDelete(ctx context.Context, rover *roverv1.Rove
 }
 
 func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *roverv1.Rover) (admission.Warnings, error) {
-
 	log := roverlog.WithValues("name", rover.GetName(), "namespace", rover.GetNamespace())
 	ctx = logr.NewContext(ctx, log)
 
@@ -108,6 +107,41 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, valErr.BuildError()
 	}
 
+	zoneRef, zone, err := r.validateZone(ctx, valErr, rover, environment)
+	if err != nil {
+		return nil, err
+	}
+	if zone == nil {
+		return nil, valErr.BuildError()
+	}
+
+	if err := r.validatePermissions(valErr, rover); err != nil {
+		return nil, err
+	}
+
+	r.validateExternalIDs(valErr, rover, zone)
+	r.validatePermissionEntries(valErr, rover)
+
+	if err := r.validateEventSupport(ctx, valErr, rover, environment, zone); err != nil {
+		return nil, err
+	}
+
+	if err := MustNotHaveDuplicates(valErr, rover.Spec.Subscriptions, rover.Spec.Exposures); err != nil {
+		return nil, err
+	}
+
+	if err := r.validateSubscriptions(ctx, log, valErr, rover, environment); err != nil {
+		return nil, err
+	}
+
+	if err := r.validateExposures(ctx, log, valErr, rover, environment, zoneRef); err != nil {
+		return nil, err
+	}
+
+	return valErr.BuildWarnings(), valErr.BuildError()
+}
+
+func (r *RoverValidator) validateZone(ctx context.Context, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string) (client.ObjectKey, *adminv1.Zone, error) {
 	zoneRef := client.ObjectKey{
 		Name:      rover.Spec.Zone,
 		Namespace: environment,
@@ -115,29 +149,38 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 	zone := &adminv1.Zone{}
 	if exists, err := r.ResourceMustExist(ctx, zoneRef, zone); !exists {
 		if err != nil {
-			return nil, err
+			return zoneRef, nil, err
 		}
 		valErr.AddInvalidError(field.NewPath("spec").Child("zone"), rover.Spec.Zone, fmt.Sprintf("zone '%s' not found", rover.Spec.Zone))
-		return nil, valErr.BuildError()
+		return zoneRef, nil, nil
 	}
 
-	// Validate permissions: feature must be enabled if permissions are configured
-	if !cconfig.FeaturePermission.IsEnabled() && len(rover.Spec.Permissions) > 0 {
-		valErr.AddInvalidError(
-			field.NewPath("spec").Child("zone"),
-			rover.Spec.Zone,
-			fmt.Sprintf("zone '%s' does not support permissions", rover.Spec.Zone))
-		return nil, valErr.BuildError()
+	return zoneRef, zone, nil
+}
+
+func (r *RoverValidator) validatePermissions(valErr *cerrors.ValidationError, rover *roverv1.Rover) error {
+	if cconfig.FeaturePermission.IsEnabled() || len(rover.Spec.Permissions) == 0 {
+		return nil
 	}
 
-	// Validate externalIds against the zone's policies.
+	valErr.AddInvalidError(
+		field.NewPath("spec").Child("zone"),
+		rover.Spec.Zone,
+		fmt.Sprintf("zone '%s' does not support permissions", rover.Spec.Zone),
+	)
+	return valErr.BuildError()
+}
+
+func (r *RoverValidator) validateExternalIDs(valErr *cerrors.ValidationError, rover *roverv1.Rover, zone *adminv1.Zone) {
 	entries := make([]externalIdEntry, len(rover.Spec.ExternalIds))
 	for i, eid := range rover.Spec.ExternalIds {
 		entries[i] = externalIdEntry{Scheme: eid.Scheme, Id: eid.Id}
 	}
-	validateExternalIds(valErr, entries, zone, field.NewPath("spec").Child("externalIds"))
 
-	// Validate permission structure: nested entries must have required fields based on parent format
+	validateExternalIds(valErr, entries, zone, field.NewPath("spec").Child("externalIds"))
+}
+
+func (r *RoverValidator) validatePermissionEntries(valErr *cerrors.ValidationError, rover *roverv1.Rover) {
 	// This validation is done here in the webhook rather than via CEL in the CRD because CEL rules with
 	// .all() iteration over the entries array would exceed the Kubernetes validation cost budget by
 	// over 40x (even with MaxItems=50). Webhook validation has no such budget constraints.
@@ -147,78 +190,81 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 	// - Resource-oriented format (resource + entries): each entry must have a non-empty role
 	// - Role-oriented format (role + entries): each entry must have a non-empty resource
 	// - Flat format (role + resource + actions): validated by existing CEL rules, no nested entries
-	//
-	// Without this validation, entries like {resource: "api", entries: [{actions: ["read"]}]} would
-	// pass CRD validation but fail when the permission operator tries to create the PermissionSet CR.
 	for i, perm := range rover.Spec.Permissions {
 		permPath := field.NewPath("spec").Child("permissions").Index(i)
 
-		// Resource-oriented: if resource is set, all entries must have role
 		if perm.Resource != "" && len(perm.Entries) > 0 {
 			for j, entry := range perm.Entries {
 				if entry.Role == "" {
 					valErr.AddInvalidError(
 						permPath.Child("entries").Index(j).Child("role"),
 						"",
-						"role is required when parent permission has resource set (resource-oriented format)")
+						"role is required when parent permission has resource set (resource-oriented format)",
+					)
 				}
 			}
 		}
 
-		// Role-oriented: if role is set, all entries must have resource
 		if perm.Role != "" && len(perm.Entries) > 0 {
 			for j, entry := range perm.Entries {
 				if entry.Resource == "" {
 					valErr.AddInvalidError(
 						permPath.Child("entries").Index(j).Child("resource"),
 						"",
-						"resource is required when parent permission has role set (role-oriented format)")
+						"resource is required when parent permission has role set (role-oriented format)",
+					)
 				}
 			}
 		}
 	}
+}
 
-	// Validate that if the rover subscribes to or exposes events, the zone actually supports it
+func (r *RoverValidator) validateEventSupport(ctx context.Context, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string, zone *adminv1.Zone) error {
 	subscribesToEvents := slices.ContainsFunc(rover.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
 		return sub.Type() == roverv1.TypeEvent
 	})
 	exposesEvents := slices.ContainsFunc(rover.Spec.Exposures, func(exp roverv1.Exposure) bool {
 		return exp.Type() == roverv1.TypeEvent
 	})
-
-	if cconfig.FeaturePubSub.IsEnabled() && (subscribesToEvents || exposesEvents) {
-		eventConfigRef := client.ObjectKey{
-			Name:      environment,
-			Namespace: zone.Status.Namespace,
-		}
-		eventConfig := eventv1.EventConfig{}
-		if exists, err := r.ResourceMustExist(ctx, eventConfigRef, &eventConfig); !exists {
-			if err != nil {
-				return nil, err
-			}
-			valErr.AddInvalidError(field.NewPath("spec").Child("zone"), rover.Spec.Zone, fmt.Sprintf("zone '%s' does not support event subscriptions or exposures", rover.Spec.Zone))
-		}
+	if !cconfig.FeaturePubSub.IsEnabled() || (!subscribesToEvents && !exposesEvents) {
+		return nil
 	}
 
-	if err := MustNotHaveDuplicates(valErr, rover.Spec.Subscriptions, rover.Spec.Exposures); err != nil {
-		return nil, err
+	eventConfigRef := client.ObjectKey{
+		Name:      environment,
+		Namespace: zone.Status.Namespace,
+	}
+	eventConfig := eventv1.EventConfig{}
+	if exists, err := r.ResourceMustExist(ctx, eventConfigRef, &eventConfig); !exists {
+		if err != nil {
+			return err
+		}
+		valErr.AddInvalidError(field.NewPath("spec").Child("zone"), rover.Spec.Zone, fmt.Sprintf("zone '%s' does not support event subscriptions or exposures", rover.Spec.Zone))
 	}
 
+	return nil
+}
+
+func (r *RoverValidator) validateSubscriptions(ctx context.Context, log logr.Logger, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string) error {
 	for i, sub := range rover.Spec.Subscriptions {
 		log.V(2).Info("validate subscription", "index", i, "subscription", sub)
 		if err := r.ValidateSubscription(ctx, valErr, environment, sub, i); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
+	return nil
+}
+
+func (r *RoverValidator) validateExposures(ctx context.Context, log logr.Logger, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string, zoneRef client.ObjectKey) error {
 	for i, exposure := range rover.Spec.Exposures {
 		log.V(2).Info("validate exposure", "index", i, "exposure", exposure)
 		if err := r.ValidateExposure(ctx, valErr, environment, exposure, zoneRef, i); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return valErr.BuildWarnings(), valErr.BuildError()
+	return nil
 }
 
 func (r *RoverValidator) ResourceMustExist(ctx context.Context, objRef client.ObjectKey, obj client.Object) (bool, error) {
@@ -233,7 +279,6 @@ func (r *RoverValidator) ResourceMustExist(ctx context.Context, objRef client.Ob
 }
 
 func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
-
 	switch exposure.Type() {
 	case roverv1.TypeApi:
 		return r.ValidateApiExposure(ctx, valErr, environment, exposure, zoneRef, idx)
@@ -248,20 +293,20 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.V
 	}
 }
 
-func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *cerrors.ValidationError, exposure roverv1.Exposure, idx int) error {
+func (r *RoverValidator) validateExposureRateLimit(valErr *cerrors.ValidationError, exposure roverv1.Exposure, idx int) {
 	// Check if API is nil
 	if exposure.Api == nil {
-		return nil
+		return
 	}
 
 	// Check if Traffic is nil
 	if exposure.Api.Traffic == nil {
-		return nil
+		return
 	}
 
 	// Check if RateLimit is nil
 	if exposure.Api.Traffic.RateLimit == nil {
-		return nil
+		return
 	}
 
 	// Validate provider rate limits
@@ -277,7 +322,7 @@ func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *
 
 	// Validate consumer rate limits
 	if exposure.Api.Traffic.RateLimit.Consumers == nil {
-		return nil
+		return
 	}
 
 	// Validate default consumer rate limit
@@ -301,12 +346,9 @@ func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *
 			}
 		}
 	}
-
-	return nil
 }
 
 func (r *RoverValidator) validateApproval(ctx context.Context, valErr *cerrors.ValidationError, environment string, approval roverv1.Approval) error {
-
 	for i := range approval.TrustedTeams {
 		ref := types.ObjectRef{
 			Name:      approval.TrustedTeams[i].Group + "--" + approval.TrustedTeams[i].Team,
@@ -436,18 +478,16 @@ func (r *RoverValidator) validateRemoveHeaders(ctx context.Context, valErr *cerr
 		// Zone-missing error has been recorded on valErr; nothing further to check.
 		return nil
 	}
-	if exp.Api.Transformation != nil {
-		if len(exp.Api.Transformation.Request.Headers.Remove) > 0 {
-			for _, header := range exp.Api.Transformation.Request.Headers.Remove {
-				if strings.EqualFold(header, "Authorization") {
-					if zone.Spec.Visibility != adminv1.ZoneVisibilityWorld {
-						valErr.AddInvalidError(
-							field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("transformation").Child("request").Child("headers").Child("remove"),
-							header, "removing 'Authorization' header is only allowed on external zones",
-						)
-					}
-				}
-			}
+	if exp.Api.Transformation == nil || len(exp.Api.Transformation.Request.Headers.Remove) == 0 {
+		return nil
+	}
+
+	for _, header := range exp.Api.Transformation.Request.Headers.Remove {
+		if strings.EqualFold(header, "Authorization") && zone.Spec.Visibility != adminv1.ZoneVisibilityWorld {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("transformation").Child("request").Child("headers").Child("remove"),
+				header, "removing 'Authorization' header is only allowed on external zones",
+			)
 		}
 	}
 
@@ -480,7 +520,6 @@ func (r *RoverValidator) GetTeam(ctx context.Context, teamRef client.ObjectKey) 
 	team := &organizationv1.Team{}
 	err := r.client.Get(ctx, teamRef, team)
 	return team, err
-
 }
 
 func (r *RoverValidator) ValidateEventExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
@@ -528,9 +567,7 @@ func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerror
 	}
 
 	// Validate rate limits if they are set
-	if err := r.validateExposureRateLimit(ctx, valErr, exposure, idx); err != nil {
-		return errors.Wrap(err, "failed to validate exposure rate limits")
-	}
+	r.validateExposureRateLimit(valErr, exposure, idx)
 
 	// Check if all upstreams have a weight set or none
 	all, none := CheckWeightSetOnAllOrNone(exposure.Api.Upstreams)

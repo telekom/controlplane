@@ -7,9 +7,10 @@ package rover_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -18,8 +19,9 @@ import (
 	"github.com/telekom/controlplane/rover/internal/handler/rover"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretsapifake "github.com/telekom/controlplane/secret-manager/api/fake"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func createRoverObject() *roverv1.Rover {
@@ -33,7 +35,6 @@ func createRoverObject() *roverv1.Rover {
 }
 
 var _ = Describe("Rover Handler", func() {
-
 	var ctx context.Context
 	var secretManagerMock *secretsapifake.MockSecretManager
 	var roverHandler *rover.RoverHandler

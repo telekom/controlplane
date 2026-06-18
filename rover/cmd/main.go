@@ -9,12 +9,6 @@ import (
 	"flag"
 	"os"
 
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -22,11 +16,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	"github.com/telekom/controlplane/rover/internal/controller"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
@@ -36,20 +29,23 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
-
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
+	"github.com/telekom/controlplane/rover/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
-	//+kubebuilder:scaffold:imports
-
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
+
+const disabledEnvValue = "false"
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -68,7 +64,7 @@ func init() {
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		utilruntime.Must(agenticv1.AddToScheme(scheme))
 	}
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -221,27 +217,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+	webhooksEnabled := os.Getenv("ENABLE_WEBHOOKS") != disabledEnvValue
+	if webhooksEnabled {
 		if err = webhookv1.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Rover")
 			os.Exit(1)
 		}
 	}
-	// nolint:goconst
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+	if webhooksEnabled {
 		if err := webhookv1.SetupApiSpecificationWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "ApiSpecification")
 			os.Exit(1)
 		}
 	}
-	// nolint:goconst
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+	if webhooksEnabled {
 		if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "ApiChangelog")
 			os.Exit(1)
 		}
 	}
-	//+kubebuilder:scaffold:builder
+	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")

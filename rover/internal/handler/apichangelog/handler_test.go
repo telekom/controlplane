@@ -7,14 +7,16 @@ package apichangelog_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/apichangelog"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func createApiChangelogObject() *roverv1.ApiChangelog {
@@ -41,7 +43,6 @@ func createApiChangelogObject() *roverv1.ApiChangelog {
 }
 
 var _ = Describe("ApiChangelog Handler", func() {
-
 	var ctx context.Context
 	var changelogHandler *apichangelog.ApiChangelogHandler
 
