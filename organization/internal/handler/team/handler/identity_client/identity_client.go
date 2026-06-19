@@ -7,12 +7,13 @@ package identity_client
 import (
 	"context"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"
 	"github.com/telekom/controlplane/organization/internal/handler/util"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func MakeClientId(owner *organisationv1.Team) string {
