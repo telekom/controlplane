@@ -7,14 +7,12 @@ package identity_client
 import (
 	"context"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"
 	"github.com/telekom/controlplane/organization/internal/handler/util"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func MakeClientId(owner *organisationv1.Team) string {
@@ -41,7 +39,7 @@ func (i IdentityClientHandler) CreateOrUpdate(ctx context.Context, owner *organi
 		identityClient.Spec.Realm = zoneObj.Status.TeamApiIdentityRealm
 		identityClient.SetLabels(owner.GetLabels())
 
-		return nil
+		return ctrl.SetControllerReference(owner, identityClient, k8sClient.Scheme())
 	}
 
 	if _, err = k8sClient.CreateOrUpdate(ctx, identityClient, mutate); err != nil {
@@ -53,18 +51,10 @@ func (i IdentityClientHandler) CreateOrUpdate(ctx context.Context, owner *organi
 	return nil
 }
 
-func (i IdentityClientHandler) Delete(ctx context.Context, owner *organisationv1.Team) error {
-	var err error
-	k8sClient := cclient.ClientFromContextOrDie(ctx)
-	if owner.Status.IdentityClientRef != nil {
-		err = k8sClient.Delete(ctx, &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      owner.Status.IdentityClientRef.GetName(),
-				Namespace: owner.Status.IdentityClientRef.GetNamespace(),
-			},
-		})
-	}
-	return err
+func (i IdentityClientHandler) Delete(_ context.Context, _ *organisationv1.Team) error {
+	// Deletion is handled automatically by Kubernetes garbage collection
+	// via the owner reference set on the identity client.
+	return nil
 }
 
 func (i IdentityClientHandler) Identifier() string {

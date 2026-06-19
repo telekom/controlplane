@@ -165,11 +165,9 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				err = k8sClient.Delete(ctx, group)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(func(g Gomega) {
-					By("Checking if the identity client has been deleted")
-					err = k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), &identityv1.Client{})
-					g.Expect(errors.IsNotFound(err)).To(BeTrue())
-				}, timeout, interval).Should(Succeed())
+				// Identity client deletion is handled by K8s garbage collection via owner reference.
+				// EnvTest does not run the GC controller, so we skip the deletion assertion here.
+				// Owner reference correctness is verified in the main test.
 			})
 
 			It("should be ready and all resources created", func() {
@@ -196,7 +194,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					g.Expect(team.Status.GatewayConsumerRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--team-user"))
 
 					By("Checking the team identity client ref")
-					g.Expect(team.Status.IdentityClientRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--team-user"))
+					g.Expect(team.Status.IdentityClientRef.String()).To(Equal(testNamespace + "/" + groupName + "--" + teamName + "--team-user"))
 
 					By("Checking the Webhook changes")
 					By("Checking the set secret")

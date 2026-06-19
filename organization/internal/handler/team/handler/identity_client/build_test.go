@@ -18,6 +18,9 @@ import (
 func TestBuildIdentityClientObj(t *testing.T) {
 	RegisterTestingT(t)
 	team := &organizationv1.Team{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "env",
+		},
 		Spec: organizationv1.TeamSpec{
 			Name:  "team",
 			Group: "group",
@@ -30,7 +33,7 @@ func TestBuildIdentityClientObj(t *testing.T) {
 	expected := &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "group--team--team-user",
-			Namespace: "env--group--team",
+			Namespace: "env",
 		},
 	}
 	got := buildIdentityClientObj(team)
