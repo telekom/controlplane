@@ -6,6 +6,8 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/types"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -67,6 +69,16 @@ type Listener struct {
 	// +optional
 	Status ListenerStatus `json:"status,omitzero"`
 }
+
+func (l *Listener) GetConditions() []metav1.Condition {
+	return l.Status.Conditions
+}
+
+func (l *Listener) SetCondition(condition metav1.Condition) bool {
+	return meta.SetStatusCondition(&l.Status.Conditions, condition)
+}
+
+var _ types.Object = &Listener{}
 
 // +kubebuilder:object:root=true
 
