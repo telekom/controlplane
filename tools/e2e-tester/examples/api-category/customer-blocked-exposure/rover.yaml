@@ -1,0 +1,15 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: e2e-api-category-customer-blocked-exposure
+spec:
+  zone: dataplane1
+  exposures:
+    - basePath: /devops/e2e-api-category-customer-blocked-exposure/v1
+      visibility: ENTERPRISE
+      approval: AUTO
+      upstream: http://test-service:8080
