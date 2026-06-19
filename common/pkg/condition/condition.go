@@ -20,14 +20,36 @@ const (
 	ReasonDone       = "Done"
 )
 
-// Ready condition reasons shared across all sub-resource handlers.
+// Ready condition reasons — Success.
 const (
 	// ReasonProvisioned indicates all sub-resources have been successfully provisioned.
 	ReasonProvisioned = "Provisioned"
+)
+
+// Ready condition reasons — Processing (transient, will resolve on its own).
+const (
 	// ReasonSubResourceNotReady indicates at least one child/sub-resource is not yet ready.
 	ReasonSubResourceNotReady = "SubResourceNotReady"
-	// ReasonDeletionFailed indicates a failure during resource cleanup.
-	ReasonDeletionFailed = "DeletionFailed"
+	// ReasonProvisioning indicates the resource is actively being set up.
+	ReasonProvisioning = "Provisioning"
+)
+
+// Ready condition reasons — Blocked (user-actionable, cannot progress without intervention).
+const (
+	// ReasonPreconditionNotMet indicates a required precondition is not satisfied.
+	ReasonPreconditionNotMet = "PreconditionNotMet"
+	// ReasonApprovalPending indicates the resource is awaiting approval.
+	ReasonApprovalPending = "ApprovalPending"
+	// ReasonAccessDenied indicates the caller lacks required permissions.
+	ReasonAccessDenied = "AccessDenied"
+	// ReasonValidationFailed indicates the resource spec failed validation.
+	ReasonValidationFailed = "ValidationFailed"
+)
+
+// Ready condition reasons — Error (internal, not user-controllable).
+const (
+	// ReasonError indicates an internal error occurred that the user cannot resolve.
+	ReasonError = "Error"
 )
 
 var (

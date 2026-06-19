@@ -158,7 +158,8 @@ func getAllProblemsInSubResource[T SubResource](ctx context.Context, owner types
 		subOverall := GetOverallStatus(res.GetConditions())
 		result.WorstOverallStatus = CompareAndReturn(result.WorstOverallStatus, subOverall)
 
-		if !result.HasStale && isProcessingStale(res.GetConditions(), res.GetGeneration()) {
+		processingCond := meta.FindStatusCondition(res.GetConditions(), condition.ConditionTypeProcessing)
+		if !result.HasStale && isStale(processingCond, res.GetGeneration()) {
 			result.HasStale = true
 		}
 

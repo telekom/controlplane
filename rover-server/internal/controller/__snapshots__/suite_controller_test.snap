@@ -930,7 +930,7 @@
  ],
  "name": "eni-test-api",
  "status": {
-  "processingState": "none",
+  "processingState": "pending",
   "state": "none",
   "warnings": [
    {
@@ -1371,7 +1371,7 @@
  ],
  "name": "eni-test-api",
  "status": {
-  "processingState": "none",
+  "processingState": "pending",
   "state": "none",
   "warnings": [
    {
@@ -1761,7 +1761,7 @@
  ],
  "name": "eni-test-api",
  "status": {
-  "processingState": "none",
+  "processingState": "pending",
   "state": "none",
   "warnings": [
    {

@@ -522,7 +522,7 @@ var _ = Describe("EventConfigHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(readyCond.Reason).To(Equal("EventConfigProvisioned"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())

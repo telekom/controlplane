@@ -20,9 +20,25 @@ import (
 // is actively being processed (transient, will resolve on its own).
 // All other Ready=False reasons are treated as blocked/failed.
 var processingReasons = map[string]bool{
-	condition.ReasonProcessing:          true, // "Processing"
 	condition.ReasonSubResourceNotReady: true, // "SubResourceNotReady"
-	"Provisioning":                      true,
+	condition.ReasonProvisioning:        true, // "Provisioning"
+	condition.ReasonProcessing:          true, // "Processing" (legacy/transitional)
+}
+
+// blockedReasons lists Ready condition reasons that indicate the resource is blocked
+// and cannot make progress until an external action is taken.
+var blockedReasons = map[string]bool{
+	condition.ReasonPreconditionNotMet: true, // "PreconditionNotMet"
+	condition.ReasonApprovalPending:    true, // "ApprovalPending"
+	condition.ReasonAccessDenied:       true, // "AccessDenied"
+	condition.ReasonValidationFailed:   true, // "ValidationFailed"
+	condition.ReasonBlocked:            true, // "Blocked"
+}
+
+// errorReasons lists Ready condition reasons that indicate an internal error
+// (not user-controllable).
+var errorReasons = map[string]bool{
+	condition.ReasonError: true, // "Error"
 }
 
 // isStale returns true if a condition's ObservedGeneration is behind the
@@ -35,13 +51,6 @@ func isStale(cond *metav1.Condition, objectGeneration int64) bool {
 		return false
 	}
 	return objectGeneration > 0 && cond.ObservedGeneration > 0 && cond.ObservedGeneration < objectGeneration
-}
-
-// isProcessingStale is a convenience wrapper that checks staleness on the
-// Processing condition. Retained for use outside fillStateInfo.
-func isProcessingStale(conditions []metav1.Condition, objectGeneration int64) bool {
-	processing := meta.FindStatusCondition(conditions, condition.ConditionTypeProcessing)
-	return isStale(processing, objectGeneration)
 }
 
 // fillStateInfo derives State and ProcessingState from Kubernetes conditions.
@@ -64,7 +73,7 @@ func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status
 	// --- No conditions at all ---
 	if processing == nil && ready == nil {
 		status.State = api.None
-		status.ProcessingState = api.ProcessingStateNone
+		status.ProcessingState = api.ProcessingStatePending
 		status.Warnings = []api.StateInfo{
 			{Message: "No conditions found"},
 		}
@@ -73,27 +82,25 @@ func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status
 
 	// --- Staleness detection  ---
 	if isStale(ready, objectGeneration) {
+		// None is the only State that is acceptable with stale conditions, since Blocked/Complete would be misleading.
 		status.State = api.None
 		status.ProcessingState = api.ProcessingStatePending
 		return
 	}
 
 	// --- Ready condition is the primary driver ---
+
 	if ready != nil && ready.Status == metav1.ConditionTrue {
-		// Ready=True: resource is functional.
-		// Guard against stale Ready when Processing explicitly says Blocked.
-		if processing != nil && processing.Reason == condition.ReasonBlocked {
-			// Contradictory: Ready=True but Processing=Blocked → trust Processing (Ready is stale).
-			status.State = api.Blocked
-			status.ProcessingState = api.ProcessingStateDone
-			status.Warnings = []api.StateInfo{
-				{Message: processing.Message},
-			}
-			return
-		}
+		// Success: Ready=True and not stale → Complete.
 		status.State = api.Complete
 		status.ProcessingState = api.ProcessingStateDone
 		return
+	}
+
+	if ready != nil && ready.Status == metav1.ConditionUnknown {
+		status.State = api.None
+		status.ProcessingState = api.ProcessingStatePending
+		status.Warnings = append(status.Errors, api.StateInfo{Message: "Internal Error: Ready condition is Unknown"})
 	}
 
 	if ready != nil && ready.Status == metav1.ConditionFalse {
@@ -103,22 +110,56 @@ func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status
 			status.ProcessingState = api.ProcessingStateProcessing
 			return
 		}
-		// Not a processing reason → resource is blocked.
+
+		// Ready=False with a blocked reason is treated as blocked.
+		if blockedReasons[ready.Reason] {
+			status.State = api.Blocked
+			status.ProcessingState = api.ProcessingStateDone
+			status.Warnings = append(status.Warnings, api.StateInfo{Message: ready.Message})
+			return
+		}
+
+		// Ready=False with an error reason is treated as an internal error.
+		if errorReasons[ready.Reason] {
+			status.State = api.Invalid
+			status.ProcessingState = api.ProcessingStateFailed
+			status.Errors = append(status.Errors, api.StateInfo{Message: ready.Message})
+			return
+		}
+
+		// If Ready is not enough to determine the state (e.g. Ready=False with an unexpected reason), we can use the Processing condition as a tiebreaker if it's not stale.
+		if processing != nil && !isStale(processing, objectGeneration) {
+			// If there's a non-stale Processing condition, use it to determine if we're actively processing or blocked.
+			if processing.Status == metav1.ConditionTrue {
+				status.State = api.None
+				status.ProcessingState = api.ProcessingStateProcessing
+				status.Infos = append(status.Infos, api.StateInfo{Message: processing.Message})
+				return
+			}
+			if processing.Reason == condition.ReasonBlocked {
+				status.State = api.Blocked
+				status.ProcessingState = api.ProcessingStateDone
+				status.Warnings = append(status.Warnings, api.StateInfo{Message: processing.Message})
+				return
+			}
+
+			status.Infos = append(status.Infos, api.StateInfo{Message: processing.Message})
+		}
+
+		// Last resort: unknown Ready=False reason is treated as blocked (defensive default).
 		status.State = api.Blocked
 		status.ProcessingState = api.ProcessingStateDone
-		status.Warnings = []api.StateInfo{
-			{Message: ready.Message},
-		}
+		status.Warnings = append(status.Warnings, api.StateInfo{Message: ready.Message})
 		return
 	}
+
+	// Fallback to Processing condition when Ready is nil, since Ready doesn't provide a clear signal.
 
 	// --- Ready is Unknown or nil: fall back to Processing condition ---
 	if processing == nil {
 		status.State = api.None
 		status.ProcessingState = api.ProcessingStateNone
-		status.Warnings = []api.StateInfo{
-			{Message: "Ready condition not found"},
-		}
+		status.Warnings = append(status.Warnings, api.StateInfo{})
 		return
 	}
 

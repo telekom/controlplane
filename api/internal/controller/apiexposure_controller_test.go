@@ -463,7 +463,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApiExposure.Status.Active).To(BeFalse())
 				readyCond := meta.FindStatusCondition(secondApiExposure.GetConditions(), condition.ConditionTypeReady)
-				testutil.ExpectConditionToBeFalse(g, readyCond, "ApiCaseConflict")
+				testutil.ExpectConditionToBeFalse(g, readyCond, condition.ReasonPreconditionNotMet)
 				Expect(readyCond.Message).To(ContainSubstring(`API is registered but the case does not match (got="/ApiExpctrl/Test/v1", found="/apiexpctrl/test/v1").`))
 			}, timeout, interval).Should(Succeed())
 		})

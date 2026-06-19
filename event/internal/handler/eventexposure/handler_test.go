@@ -411,7 +411,7 @@ var _ = Describe("EventExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventTypeNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -462,7 +462,7 @@ var _ = Describe("EventExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventExposureAlreadyExists"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("should return error when GetZone fails", func() {

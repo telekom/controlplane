@@ -128,7 +128,7 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	// --- Done ---
 
-	obj.SetCondition(condition.NewReadyCondition("EventConfigProvisioned", "EventConfig has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "EventConfig has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("EventConfig has been provisioned"))
 
 	return nil

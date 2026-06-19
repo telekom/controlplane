@@ -471,7 +471,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventTypeNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -503,7 +503,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventExposureNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -539,7 +539,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventExposureNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("should return error when GetEventConfigForZone fails for exposure zone", func() {
@@ -577,7 +577,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ZoneNotSupported"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -764,7 +764,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("InvalidRequestor"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonValidationFailed))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -844,7 +844,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal(approvalbuilder.ReasonApprovalDenied))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -864,7 +864,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal(approvalbuilder.ReasonApprovalRequestDenied))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -885,7 +885,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("PublisherNotReady"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())

@@ -174,7 +174,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), "NoApi")
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonPreconditionNotMet)
 			}, timeout, interval).Should(Succeed())
 
 			By("Progressing the application")
@@ -193,7 +193,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				apiRes := &apiapi.Api{}
 				getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(api), apiRes)
 				g.Expect(getErr).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiRes.GetConditions(), condition.ConditionTypeReady), "ApiActive")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiRes.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 			}, timeout, interval).Should(Succeed())
 
 			By("Creating the APIExposure resource")

@@ -42,7 +42,7 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 			msg = fmt.Sprintf("%s. View details: %s", msg, apiSpec.Spec.Lint.DashboardURL)
 		}
 		apiSpec.SetCondition(condition.NewBlockedCondition(msg))
-		apiSpec.SetCondition(condition.NewNotReadyCondition("LintingFailed",
+		apiSpec.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
 			"API specification did not pass linting"))
 		return nil
 	}
@@ -121,11 +121,11 @@ func (h *ApiSpecificationHandler) createOrUpdateApi(ctx context.Context, apiSpec
 	}
 
 	if c.AnyChanged() {
-		apiSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "API updated"))
-		apiSpec.SetCondition(condition.NewNotReadyCondition("Provisioning", "API is not ready"))
+		apiSpec.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "API updated"))
+		apiSpec.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "API is not ready"))
 	} else {
 		apiSpec.SetCondition(condition.NewDoneProcessingCondition("API created"))
-		apiSpec.SetCondition(condition.NewReadyCondition("Provisioned", "API is ready"))
+		apiSpec.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "API is ready"))
 	}
 
 	return nil

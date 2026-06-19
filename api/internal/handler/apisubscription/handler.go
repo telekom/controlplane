@@ -87,7 +87,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 	apiSub.SetCondition(NewVisibilityAllowedCondition(apiSub, string(apiExposure.Spec.Visibility), valid))
 	if !valid {
-		apiSub.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation", "ApiExposure and ApiSubscription visibility combination is not allowed"))
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "ApiExposure and ApiSubscription visibility combination is not allowed"))
 		return ctrlerrors.BlockedErrorf("ApiSubscription is blocked. Subscriptions from zone %q are not allowed due to exposure visiblity constraints", apiSub.Spec.Zone.GetName())
 	}
 
@@ -155,16 +155,16 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	switch res {
 	case builder.ApprovalResultRequestDenied:
 		logger.Info("🛑 ApprovalRequest was denied. In this case we will not touch child resources")
-		apiSub.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalRequestDenied, "ApprovalRequest has been denied"))
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "ApprovalRequest has been denied"))
 		apiSub.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
 		return nil
 	case builder.ApprovalResultPending:
 		logger.Info("🫷 Approval is pending and we will wait for it")
-		apiSub.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalPending, "Approval has not been approved"))
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, "Approval has not been approved"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Approval has not been approved"))
 		return nil
 	case builder.ApprovalResultDenied:
-		apiSub.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalDenied, "Approval has been denied"))
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		apiSub.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
 		deleted, cleanupErr := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
@@ -309,7 +309,7 @@ func validateSubscriptionScopes(ctx context.Context, api *apiapi.Api, apiSub *ap
 	}
 	if len(api.Spec.Oauth2Scopes) == 0 {
 		apiSub.SetCondition(NewScopesAllowedCondition(apiSub, nil, false))
-		apiSub.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Api does not define any Oauth2 scopes"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
 		return false
 	}
@@ -320,7 +320,7 @@ func validateSubscriptionScopes(ctx context.Context, api *apiapi.Api, apiSub *ap
 			strings.Join(invalidScopes, ", "),
 		)
 		apiSub.SetCondition(NewScopesAllowedCondition(apiSub, invalidScopes, false))
-		apiSub.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
 		apiSub.SetCondition(condition.NewBlockedCondition(message))
 		return false
 	}

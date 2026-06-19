@@ -44,7 +44,7 @@ func setAlreadyExposedConditions(existing, candidate *apiv1.ApiExposure) {
 
 	msg := sb.String()
 
-	candidate.SetCondition(condition.NewNotReadyCondition("ApiExposureNotActive", msg))
+	candidate.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 	candidate.SetCondition(condition.NewBlockedCondition(msg))
 }
 
@@ -95,7 +95,7 @@ func ApiMustExist(ctx context.Context, apiExp *apiv1.ApiExposure) (*apiv1.Api, e
 				"failed to cleanup owned routes for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 		}
 
-		apiExp.SetCondition(condition.NewNotReadyCondition("NoApi",
+		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("API %q is not registered. Cannot provision ApiExposure", apiExp.Spec.ApiBasePath)),
 		)
 		msg := fmt.Sprintf("API %q is not registered. ApiExposure will be automatically processed, when the API is registered", apiExp.Spec.ApiBasePath)
@@ -114,7 +114,7 @@ func ApiMustExist(ctx context.Context, apiExp *apiv1.ApiExposure) (*apiv1.Api, e
 	msg := fmt.Sprintf("API is registered but the case does not match (got=%q, found=%q). "+
 		"Please resolve the conflict by changing the BasePath of either the Api or the ApiExposure.",
 		apiExp.Spec.ApiBasePath, api.Spec.BasePath)
-	apiExp.SetCondition(condition.NewNotReadyCondition("ApiCaseConflict", msg))
+	apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 	apiExp.SetCondition(condition.NewBlockedCondition(msg))
 
 	return nil, nil
