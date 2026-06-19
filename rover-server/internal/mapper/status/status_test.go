@@ -29,9 +29,10 @@ var _ = Describe("Rover Status Mapper", func() {
 
 			Expect(err).To(BeNil())
 			Expect(status).ToNot(BeNil())
-			// Rover fixture has Ready=False/SubResourceNotReady → Processing
-			Expect(status.State).To(Equal(api.None))
-			Expect(status.ProcessingState).To(Equal(api.ProcessingStateProcessing))
+			// Rover fixture: Ready=False/SubResourceNotReady, sub-resource blocked (NoApproval)
+			// reconcileWithSubResources overrides to Blocked/Done
+			Expect(status.State).To(Equal(api.Blocked))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
 		})
 
 		It("stays Complete/Done when sub-resources have no ObservedGeneration (backward compat)", func() {
@@ -77,11 +78,11 @@ var _ = Describe("Rover Status Mapper", func() {
 
 			Expect(err).To(BeNil())
 			Expect(response).ToNot(BeNil())
-			// Rover fixture has Ready=False/SubResourceNotReady → Processing
-			// But sub-resource (ApiSubscription) has Ready=False/NoApproval → Blocked
-			// CompareAndReturn(Processing, Blocked) → Blocked (higher priority)
-			Expect(response.State).To(Equal(api.None))
-			Expect(response.ProcessingState).To(Equal(api.ProcessingStateProcessing))
+			// Rover fixture: Ready=False/SubResourceNotReady, sub-resource blocked (NoApproval)
+			// reconcileWithSubResources overrides parent to Blocked/Done
+			// CompareAndReturn(Blocked, Blocked) → Blocked
+			Expect(response.State).To(Equal(api.Blocked))
+			Expect(response.ProcessingState).To(Equal(api.ProcessingStateDone))
 			Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
 		})
 

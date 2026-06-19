@@ -29,9 +29,10 @@ type SubResource interface {
 // OverallStatus observed across all sub-resources and whether any sub-resource
 // has stale conditions (spec changed but controller hasn't reconciled yet).
 type ProblemsResult struct {
-	Problems           []api.Problem
-	WorstOverallStatus api.OverallStatus
-	HasStale           bool
+	Problems              []api.Problem
+	WorstOverallStatus    api.OverallStatus
+	HasStale              bool
+	HasActiveSubResources bool // true if any sub-resource has OverallStatus Processing or Pending
 }
 
 // SubResourceChecker collects problems from one type of sub-resource owned by a parent resource
@@ -127,6 +128,7 @@ func runCheckers(ctx context.Context, owner types.Object, checkers []SubResource
 		combined.Problems = append(combined.Problems, result.Problems...)
 		combined.WorstOverallStatus = CompareAndReturn(combined.WorstOverallStatus, result.WorstOverallStatus)
 		combined.HasStale = combined.HasStale || result.HasStale
+		combined.HasActiveSubResources = combined.HasActiveSubResources || result.HasActiveSubResources
 	}
 	return combined, nil
 }
@@ -157,6 +159,10 @@ func getAllProblemsInSubResource[T SubResource](ctx context.Context, owner types
 	for _, res := range subResources {
 		subOverall := GetOverallStatus(res.GetConditions())
 		result.WorstOverallStatus = CompareAndReturn(result.WorstOverallStatus, subOverall)
+
+		if subOverall == api.OverallStatusProcessing || subOverall == api.OverallStatusPending {
+			result.HasActiveSubResources = true
+		}
 
 		processingCond := meta.FindStatusCondition(res.GetConditions(), condition.ConditionTypeProcessing)
 		if !result.HasStale && isStale(processingCond, res.GetGeneration()) {

@@ -222,6 +222,8 @@ func MapRoverStatus(ctx context.Context, rover *v1.Rover, stores *store.Stores) 
 		status.ProcessingState = api.ProcessingStateProcessing
 	}
 
+	reconcileWithSubResources(rover.GetConditions(), &status, result)
+
 	status.Errors = append(status.Errors, mapProblemsToStateInfos(result.Problems)...)
 
 	return status, nil
@@ -244,6 +246,8 @@ func MapAPISpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification
 		status.ProcessingState = api.ProcessingStateProcessing
 	}
 
+	reconcileWithSubResources(apiSpec.GetConditions(), &status, result)
+
 	status.Errors = append(status.Errors, mapProblemsToStateInfos(result.Problems)...)
 
 	return status, nil
@@ -265,6 +269,8 @@ func MapEventSpecificationStatus(ctx context.Context, eventSpec *v1.EventSpecifi
 	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
 		status.ProcessingState = api.ProcessingStateProcessing
 	}
+
+	reconcileWithSubResources(eventSpec.GetConditions(), &status, result)
 
 	status.Errors = append(status.Errors, mapProblemsToStateInfos(result.Problems)...)
 
@@ -330,4 +336,42 @@ func CompareAndReturn(a, b api.OverallStatus) api.OverallStatus {
 		return a
 	}
 	return b
+}
+
+// reconcileWithSubResources adjusts the parent's state/processingState when the
+// parent is waiting on sub-resources (Ready.Reason=SubResourceNotReady) but the
+// sub-resource analysis reveals a worse effective state than "processing".
+//
+// Without this, a parent whose only problem is a blocked child would report
+// processingState="processing" (implying forward progress) while the child is
+// stuck. This reconciliation ensures state/processingState reflect the effective
+// situation visible through sub-resource conditions.
+//
+// Guard: only fires when Ready.Reason == SubResourceNotReady. If the parent is
+// processing for its own reasons (e.g. Provisioning), we don't override.
+// Additionally, if any sub-resource is still actively progressing (Processing or
+// Pending), the parent remains "processing" — there is still work underway.
+func reconcileWithSubResources(conditions []metav1.Condition, status *api.Status, result ProblemsResult) {
+	if status.ProcessingState != api.ProcessingStateProcessing {
+		return
+	}
+
+	ready := meta.FindStatusCondition(conditions, condition.ConditionTypeReady)
+	if ready == nil || ready.Reason != condition.ReasonSubResourceNotReady {
+		return
+	}
+
+	// If any sub-resource is still actively progressing, the parent IS making progress.
+	if result.HasActiveSubResources {
+		return
+	}
+
+	switch result.WorstOverallStatus {
+	case api.OverallStatusBlocked:
+		status.State = api.Blocked
+		status.ProcessingState = api.ProcessingStateDone
+	case api.OverallStatusFailed, api.OverallStatusInvalid:
+		status.State = api.Invalid
+		status.ProcessingState = api.ProcessingStateFailed
+	}
 }

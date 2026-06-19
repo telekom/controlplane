@@ -405,3 +405,119 @@ var _ = Describe("isStale", func() {
 		Expect(isStale(nil, 5)).To(BeFalse())
 	})
 })
+
+var _ = Describe("reconcileWithSubResources", func() {
+	DescribeTable("adjusts parent state based on sub-resource reality",
+		func(
+			parentReadyReason string,
+			parentState api.State,
+			parentPS api.ProcessingState,
+			worstSubStatus api.OverallStatus,
+			hasActive bool,
+			expectedState api.State,
+			expectedPS api.ProcessingState,
+		) {
+			conditions := toConditions([]conditionInput{
+				{typeReady, metav1.ConditionFalse, parentReadyReason, "test message", 0},
+			})
+			status := &api.Status{
+				State:           parentState,
+				ProcessingState: parentPS,
+			}
+			result := ProblemsResult{
+				WorstOverallStatus:    worstSubStatus,
+				HasActiveSubResources: hasActive,
+			}
+			reconcileWithSubResources(conditions, status, result)
+			Expect(status.State).To(Equal(expectedState))
+			Expect(status.ProcessingState).To(Equal(expectedPS))
+		},
+
+		// --- Override fires: all subs stuck, parent waiting on sub-resources ---
+		Entry("all subs blocked, none active → override to blocked",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusBlocked, false,
+			api.Blocked, api.ProcessingStateDone,
+		),
+		Entry("all subs failed, none active → override to invalid/failed",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusFailed, false,
+			api.Invalid, api.ProcessingStateFailed,
+		),
+		Entry("all subs invalid, none active → override to invalid/failed",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusInvalid, false,
+			api.Invalid, api.ProcessingStateFailed,
+		),
+
+		// --- No override: at least one sub still active ---
+		Entry("worst=blocked but one sub still processing → no override",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusBlocked, true,
+			api.None, api.ProcessingStateProcessing,
+		),
+		Entry("worst=failed but one sub still processing → no override",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusFailed, true,
+			api.None, api.ProcessingStateProcessing,
+		),
+
+		// --- No override: parent is processing for own reasons (not SubResourceNotReady) ---
+		Entry("parent Provisioning + subs blocked → no override",
+			condition.ReasonProvisioning, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusBlocked, false,
+			api.None, api.ProcessingStateProcessing,
+		),
+		Entry("parent Processing + subs blocked → no override",
+			"Processing", api.None, api.ProcessingStateProcessing,
+			api.OverallStatusBlocked, false,
+			api.None, api.ProcessingStateProcessing,
+		),
+
+		// --- No override: parent is not in processing state ---
+		Entry("parent already done → no override",
+			condition.ReasonSubResourceNotReady, api.Blocked, api.ProcessingStateDone,
+			api.OverallStatusBlocked, false,
+			api.Blocked, api.ProcessingStateDone,
+		),
+		Entry("parent pending → no override",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStatePending,
+			api.OverallStatusBlocked, false,
+			api.None, api.ProcessingStatePending,
+		),
+
+		// --- No override: sub-resource status not worse than processing ---
+		Entry("worst=processing, one sub still active → no override",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusProcessing, true,
+			api.None, api.ProcessingStateProcessing,
+		),
+		Entry("worst=complete → no override (switch doesn't match)",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusComplete, false,
+			api.None, api.ProcessingStateProcessing,
+		),
+
+		// --- Mixed scenarios (the user's key question) ---
+		Entry("sub A complete + sub B processing → no override (HasActive=true from B)",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusProcessing, true,
+			api.None, api.ProcessingStateProcessing,
+		),
+		Entry("sub A complete + sub B blocked, none active → override to blocked",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusBlocked, false,
+			api.Blocked, api.ProcessingStateDone,
+		),
+		Entry("sub A processing + sub B blocked → HasActive=true, no override",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusBlocked, true,
+			api.None, api.ProcessingStateProcessing,
+		),
+		Entry("sub A pending + sub B blocked → HasActive=true, no override",
+			condition.ReasonSubResourceNotReady, api.None, api.ProcessingStateProcessing,
+			api.OverallStatusBlocked, true,
+			api.None, api.ProcessingStateProcessing,
+		),
+	)
+})
