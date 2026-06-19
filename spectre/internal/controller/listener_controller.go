@@ -9,17 +9,24 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	spectreeitelekomdev1 "github.com/telekom/controlplane/spectre/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
+	"github.com/telekom/controlplane/spectre/internal/handler"
 )
 
 // ListenerReconciler reconciles a Listener object
 type ListenerReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
+
+	cc.Controller[*spectrev1.Listener]
 }
 
 // +kubebuilder:rbac:groups=spectre.ei.telekom.de.cp.ei.telekom.de,resources=listeners,verbs=get;list;watch;create;update;patch;delete
@@ -36,17 +43,20 @@ type ListenerReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.24.1/pkg/reconcile
 func (r *ListenerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
-
-	// TODO(user): your logic here
-
-	return ctrl.Result{}, nil
+	return r.Controller.Reconcile(ctx, req, &spectrev1.Listener{})
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.Recorder = mgr.GetEventRecorderFor("listener-controller")
+	r.Controller = cc.NewController(&handler.ListenerHandler{}, r.Client, r.Recorder)
+
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&spectreeitelekomdev1.Listener{}).
+		For(&spectrev1.Listener{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Named("listener").
 		Complete(r)
 }
