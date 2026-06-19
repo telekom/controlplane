@@ -42,6 +42,7 @@ type ListenerStatus struct {
 	// - "Available": the resource is fully functional
 	// - "Progressing": the resource is being created or updated
 	// - "Degraded": the resource failed to reach or maintain its desired state
+	// See also: https://telekom.github.io/controlplane/docs/developer-journey/creating-an-operator#condition-system
 	//
 	// The status of each condition is one of True, False, or Unknown.
 	// +listType=map
