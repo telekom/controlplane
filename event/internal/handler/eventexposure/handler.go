@@ -103,7 +103,30 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	logger.V(1).Info("Publisher created/updated", "publisher", publisher.Name)
 
 	// --- SSE Route management ---
+	if err := h.reconcileSSERoutes(ctx, obj, zone, eventConfig); err != nil {
+		return err
+	}
 
+	// 9. Set final conditions
+	c := cclient.ClientFromContextOrDie(ctx)
+	if !c.AllReady() {
+		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
+			"One or more child resources are not yet ready"))
+		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		return nil
+	}
+
+	obj.SetCondition(condition.NewReadyCondition("EventExposureProvisioned",
+		"EventExposure has been provisioned"))
+	obj.SetCondition(condition.NewDoneProcessingCondition(
+		"EventExposure has been provisioned"))
+
+	return nil
+}
+
+// reconcileSSERoutes manages SSE Route creation for cross-zone proxy routes and the primary route.
+func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *eventv1.EventExposure, zone *adminv1.Zone, eventConfig *eventv1.EventConfig) error {
+	logger := log.FromContext(ctx)
 	realmName := adminv1.RealmNameFromContext(ctx)
 
 	obj.Status.Route = nil
@@ -115,46 +138,14 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 		return errors.Wrap(err, "failed to find cross-zone SSE subscriptions")
 	}
 
-	// Collect subscriber zones for LMS issuers
-	var subscriberZones []*adminv1.Zone
-	for _, subscriberZoneRef := range crossZones {
-		subscriberZone, zoneErr := util.GetZone(ctx, subscriberZoneRef.K8s())
-		if zoneErr != nil {
-			return errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
-		}
-		subscriberZones = append(subscriberZones, subscriberZone)
-
-		// Proxy SSE routes: use subscriber zone's LMS issuer (mesh-client authentication)
-		var proxyTrustedIssuers []string
-		if subscriberZone.Status.Links.LmsIssuer != "" {
-			proxyTrustedIssuers = []string{subscriberZone.Status.Links.LmsIssuer}
-		}
-
-		proxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, subscriberZone, zone,
-			util.WithTrustedIssuers(proxyTrustedIssuers),
-			util.WithRealmName(realmName),
-		)
-		if routeErr != nil {
-			return errors.Wrapf(routeErr, "failed to create SSE proxy Route for zone %q", subscriberZoneRef.Name)
-		}
-		obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *types.ObjectRefFromObject(proxyRoute))
-		obj.Status.SseURLs[subscriberZoneRef.Name] = util.RouteDownstreamURL(proxyRoute)
-		logger.V(1).Info("SSE proxy Route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
+	subscriberZones, err := h.createProxySSERoutes(ctx, obj, zone, crossZones, realmName)
+	if err != nil {
+		return err
 	}
 
 	// Primary SSE route: trusted issuers = [IDP issuer] + [LMS issuers from subscriber proxy zones]
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
-	var primaryTrustedIssuers []string
-	if zone.Status.Links.Issuer != "" {
-		primaryTrustedIssuers = append(primaryTrustedIssuers, zone.Status.Links.Issuer)
-	}
-	if isProxyTarget {
-		for _, subZone := range subscriberZones {
-			if subZone.Status.Links.LmsIssuer != "" {
-				primaryTrustedIssuers = append(primaryTrustedIssuers, subZone.Status.Links.LmsIssuer)
-			}
-		}
-	}
+	primaryTrustedIssuers := collectPrimaryTrustedIssuers(zone, subscriberZones, isProxyTarget)
 
 	route, err := util.CreateSSERoute(ctx, obj.Spec.EventType, zone, eventConfig, isProxyTarget,
 		util.WithTrustedIssuers(primaryTrustedIssuers),
@@ -174,21 +165,56 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 		logger.V(1).Info("Cleaned up stale SSE Routes", "deleted", deleted)
 	}
 
-	// 9. Set final conditions
-	c := cclient.ClientFromContextOrDie(ctx)
-	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
-			"One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
-		return nil
+	return nil
+}
+
+// createProxySSERoutes creates proxy SSE routes for cross-zone subscribers and returns the subscriber zones.
+func (h *EventExposureHandler) createProxySSERoutes(ctx context.Context, obj *eventv1.EventExposure, zone *adminv1.Zone, crossZones []types.ObjectRef, realmName string) ([]*adminv1.Zone, error) {
+	logger := log.FromContext(ctx)
+
+	var subscriberZones []*adminv1.Zone
+	for _, subscriberZoneRef := range crossZones {
+		subscriberZone, zoneErr := util.GetZone(ctx, subscriberZoneRef.K8s())
+		if zoneErr != nil {
+			return nil, errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
+		}
+		subscriberZones = append(subscriberZones, subscriberZone)
+
+		// Proxy SSE routes: use subscriber zone's LMS issuer (mesh-client authentication)
+		var proxyTrustedIssuers []string
+		if subscriberZone.Status.Links.LmsIssuer != "" {
+			proxyTrustedIssuers = []string{subscriberZone.Status.Links.LmsIssuer}
+		}
+
+		proxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, subscriberZone, zone,
+			util.WithTrustedIssuers(proxyTrustedIssuers),
+			util.WithRealmName(realmName),
+		)
+		if routeErr != nil {
+			return nil, errors.Wrapf(routeErr, "failed to create SSE proxy Route for zone %q", subscriberZoneRef.Name)
+		}
+		obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *types.ObjectRefFromObject(proxyRoute))
+		obj.Status.SseURLs[subscriberZoneRef.Name] = util.RouteDownstreamURL(proxyRoute)
+		logger.V(1).Info("SSE proxy Route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("EventExposureProvisioned",
-		"EventExposure has been provisioned"))
-	obj.SetCondition(condition.NewDoneProcessingCondition(
-		"EventExposure has been provisioned"))
+	return subscriberZones, nil
+}
 
-	return nil
+// collectPrimaryTrustedIssuers builds the trusted issuer list for the primary SSE route.
+func collectPrimaryTrustedIssuers(zone *adminv1.Zone, subscriberZones []*adminv1.Zone, isProxyTarget bool) []string {
+	var issuers []string
+	if zone.Status.Links.Issuer != "" {
+		issuers = append(issuers, zone.Status.Links.Issuer)
+	}
+	if isProxyTarget {
+		for _, subZone := range subscriberZones {
+			if subZone.Status.Links.LmsIssuer != "" {
+				issuers = append(issuers, subZone.Status.Links.LmsIssuer)
+			}
+		}
+	}
+	return issuers
 }
 
 func (h *EventExposureHandler) Delete(ctx context.Context, obj *eventv1.EventExposure) error {

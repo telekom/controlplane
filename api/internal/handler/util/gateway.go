@@ -5,7 +5,6 @@
 package util
 
 import (
-	"math"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -21,14 +20,11 @@ func AsUpstreamForRealRoute(rawUrl string, weight int32) (ups gatewayapi.Upstrea
 	}
 
 	port := gatewayapi.GetPortOrDefaultFromScheme(u)
-	if port < 0 || port > math.MaxInt32 {
-		return ups, errors.Errorf("port %d out of int32 range for URL %s", port, rawUrl)
-	}
 
 	return gatewayapi.Upstream{
 		Scheme:   u.Scheme,
 		Hostname: u.Hostname(),
-		Port:     int32(port),
+		Port:     port,
 		Path:     u.Path,
 		Weight:   weight,
 	}, nil

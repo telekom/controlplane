@@ -139,7 +139,7 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 		upstream := gatewayapi.Upstream{
 			Scheme:   upstreamUrl.Scheme,
 			Hostname: upstreamUrl.Hostname(),
-			Port:     int32(gatewayapi.GetPortOrDefaultFromScheme(upstreamUrl)),
+			Port:     gatewayapi.GetPortOrDefaultFromScheme(upstreamUrl),
 			Path:     upstreamUrl.Path,
 		}
 

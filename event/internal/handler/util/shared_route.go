@@ -52,7 +52,7 @@ func parseUpstream(rawUrl string) (gatewayapi.Upstream, error) {
 	return gatewayapi.Upstream{
 		Scheme:   u.Scheme,
 		Hostname: u.Hostname(),
-		Port:     int32(gatewayapi.GetPortOrDefaultFromScheme(u)),
+		Port:     gatewayapi.GetPortOrDefaultFromScheme(u),
 		Path:     u.Path,
 	}, nil
 }

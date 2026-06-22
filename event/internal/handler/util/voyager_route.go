@@ -7,6 +7,7 @@ package util
 import (
 	"context"
 	"net/url"
+	"slices"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +60,7 @@ func CreateVoyagerRoute(
 	// Hostnames are the same for both paths (from the same preset), so we only use one set.
 	// Paths are different (mesh vs local) so we combine them.
 	allHostnames := meshHostnames
-	allPaths := append(meshPaths, localPaths...)
+	allPaths := slices.Concat(meshPaths, localPaths)
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{

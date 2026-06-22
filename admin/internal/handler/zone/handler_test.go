@@ -336,7 +336,7 @@ var _ = Describe("Zone Handler Steps", func() {
 			route := &gatewayapi.Route{}
 			routeKey := client.ObjectKey{
 				Namespace: hc.Namespace.Name,
-				Name:      fmt.Sprintf("gateway--team-api"),
+				Name:      "gateway--team-api",
 			}
 			Expect(k8sClient.Get(ctx, routeKey, route)).To(Succeed())
 			Expect(route.Spec.PassThrough).To(BeFalse())

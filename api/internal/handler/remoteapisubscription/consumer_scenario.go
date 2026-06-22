@@ -6,7 +6,6 @@ package remoteapisubscription
 
 import (
 	"context"
-	"math"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -90,9 +89,6 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 		}
 
 		port := gatewayapi.GetPortOrDefaultFromScheme(u)
-		if port < 0 || port > math.MaxInt32 {
-			return errors.Errorf("port %d out of int32 range for gateway URL %s", port, obj.Status.GatewayUrl)
-		}
 
 		hostnames, paths := preset.ResolveHostnamesAndPaths(obj.Spec.ApiBasePath)
 
@@ -104,7 +100,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 					{
 						Scheme:   u.Scheme,
 						Hostname: u.Hostname(),
-						Port:     int32(port),
+						Port:     port,
 						Path:     u.Path,
 					},
 				},
