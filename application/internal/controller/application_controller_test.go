@@ -53,6 +53,18 @@ var _ = Describe("Application Controller", func() {
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
+						Presets: []adminv1.GatewayConfigPreset{
+							{
+								Name:    "default",
+								Default: true,
+								Urls: []adminv1.UrlConfig{
+									{
+										Hostname: "gateway.test.local",
+										BasePath: "/",
+									},
+								},
+							},
+						},
 					},
 					IdentityProvider: adminv1.IdentityProviderConfig{
 						Url: "http://idp.test.local:8080",
@@ -66,6 +78,21 @@ var _ = Describe("Application Controller", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, zoneA)).To(Succeed())
+
+			By("simulating Zone A status (normally set by admin controller)")
+			zoneA.Status = adminv1.ZoneStatus{
+				Namespace: testNamespace,
+				Gateway: &ctypes.ObjectRef{
+					Name:      "test-gateway-a",
+					Namespace: testNamespace,
+				},
+				Links: adminv1.Links{
+					Url:       "https://gateway.test.local",
+					Issuer:    "https://idp.test.local/realms/test-env",
+					LmsIssuer: "https://idp.test.local/realms/test-env-lms",
+				},
+			}
+			Expect(k8sClient.Status().Update(ctx, zoneA)).To(Succeed())
 
 			By("creating the Zone B")
 			zoneB = &adminv1.Zone{
@@ -82,6 +109,18 @@ var _ = Describe("Application Controller", func() {
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
+						Presets: []adminv1.GatewayConfigPreset{
+							{
+								Name:    "default",
+								Default: true,
+								Urls: []adminv1.UrlConfig{
+									{
+										Hostname: "gateway-b.test.local",
+										BasePath: "/",
+									},
+								},
+							},
+						},
 					},
 					IdentityProvider: adminv1.IdentityProviderConfig{
 						Url: "http://idp.test.local:8080",
@@ -95,6 +134,21 @@ var _ = Describe("Application Controller", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, zoneB)).To(Succeed())
+
+			By("simulating Zone B status (normally set by admin controller)")
+			zoneB.Status = adminv1.ZoneStatus{
+				Namespace: testNamespace,
+				Gateway: &ctypes.ObjectRef{
+					Name:      "test-gateway-b",
+					Namespace: testNamespace,
+				},
+				Links: adminv1.Links{
+					Url:       "https://gateway-b.test.local",
+					Issuer:    "https://idp.test.local/realms/test-env",
+					LmsIssuer: "https://idp.test.local/realms/test-env-lms",
+				},
+			}
+			Expect(k8sClient.Status().Update(ctx, zoneB)).To(Succeed())
 		})
 
 		AfterEach(func() {

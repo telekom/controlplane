@@ -40,7 +40,7 @@ type LoadBalancing struct {
 
 type LoadBalancingServer struct {
 	Upstream string `json:"upstream"`
-	Weight   int    `json:"weight,omitempty"`
+	Weight   int32  `json:"weight,omitempty"`
 }
 
 type JumperConfig struct {

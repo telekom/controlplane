@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"context"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,27 +13,23 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	identityapi "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-func NewZone(name, namespace string) *adminv1.Zone {
+func newZone(name string) *adminv1.Zone {
 	gatewayAdminSecret := "test-gateway-admin-secret"
 	identityAdminUrl := "https://test-iris.de/auth/admin/realms"
 
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: testNamespace,
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 			},
 		},
-
 		Spec: adminv1.ZoneSpec{
 			IdentityProvider: adminv1.IdentityProviderConfig{
 				Admin: adminv1.IdentityProviderAdminConfig{
@@ -51,7 +45,19 @@ func NewZone(name, namespace string) *adminv1.Zone {
 					ClientSecret: &gatewayAdminSecret,
 					Url:          "https://test-stargate.de/admin-api",
 				},
-				Url: "https://test-stargate.de/",
+				Presets: []adminv1.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{
+							{
+								Hostname: "test-stargate.de",
+								Scheme:   "https",
+								BasePath: "/",
+							},
+						},
+					},
+				},
 			},
 			Redis: adminv1.RedisConfig{
 				Host:      "http://test-redis.de/",
@@ -59,447 +65,71 @@ func NewZone(name, namespace string) *adminv1.Zone {
 				Password:  "test-redis-password",
 				EnableTLS: true,
 			},
-			ManagedRoutes: &adminv1.ManagedRoutesConfig{
-				Routes: []adminv1.ManagedRouteConfig{{
-					Name: "test-team-api1",
-					Path: "/test/team/api/v1",
-					Url:  "https://test-team-api-host.de/test-team-api-v1",
-					Type: adminv1.ManagedRouteTypeTeamAPI,
-				}},
-			},
 			Visibility: adminv1.ZoneVisibilityWorld,
 		},
 	}
 }
 
 var _ = Describe("Zone Controller", func() {
-	Context("When reconciling a resource", func() {
-		const zoneName = "test-zone"
+	Context("When reconciling a zone", func() {
+		It("should reach Ready and populate status", func() {
+			zone := newZone("smoke-zone")
+			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{
+				Routes: []adminv1.ManagedRouteConfig{{
+					Name: "team-api",
+					Path: "/team/v1",
+					Url:  "https://team.de/v1",
+					Type: adminv1.ManagedRouteTypeTeamAPI,
+				}},
+			}
 
-		testZoneRef := client.ObjectKey{
-			Name:      zoneName,
-			Namespace: testNamespace,
-		}
-
-		environmentRef := client.ObjectKey{
-			Name:      testEnvironment,
-			Namespace: testEnvironment,
-		}
-		environment := &adminv1.Environment{}
-
-		testZone := NewZone(zoneName, testNamespace)
-
-		BeforeEach(func() {
-			By("creating the custom resource for the Kind Environment")
-			err := k8sClient.Get(ctx, environmentRef, environment)
-			if err != nil && errors.IsNotFound(err) {
-				resource := &adminv1.Environment{
+			By("creating the Environment prerequisite")
+			env := &adminv1.Environment{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: testEnvironment, Namespace: testEnvironment}, env)
+			if errors.IsNotFound(err) {
+				env = &adminv1.Environment{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      testEnvironment,
 						Namespace: testEnvironment,
-						Labels: map[string]string{
-							config.EnvironmentLabelKey: testEnvironment,
-						},
+						Labels:    map[string]string{config.EnvironmentLabelKey: testEnvironment},
 					},
 					Spec: adminv1.EnvironmentSpec{},
 				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Create(ctx, env)).To(Succeed())
 			}
 
-			By("creating the custom resource for the Kind Zone")
-			existingZone := &adminv1.Zone{}
-			err = k8sClient.Get(ctx, testZoneRef, existingZone)
-			if err != nil && errors.IsNotFound(err) {
-				Expect(k8sClient.Create(ctx, testZone)).To(Succeed())
-			}
-		})
-
-		AfterEach(func() {
-			resource := &adminv1.Zone{}
-			err := k8sClient.Get(ctx, testZoneRef, resource)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Cleanup the specific resource instance Zone")
-			Expect(k8sClient.Delete(ctx, testZone)).To(Succeed())
-		})
-		It("should successfully reconcile the resource", func() {
-			Eventually(func(g Gomega) {
-				VerifyZone(ctx, g, testZoneRef, testZone)
-
-				expectedNamespaceName := "test--test-zone"
-				VerifyNamespace(ctx, g, expectedNamespaceName)
-			}, timeout, interval).Should(Succeed())
-		})
-	})
-
-	Context("When reconciling a zone with a Proxy managed route", func() {
-		It("should create a passthrough route on the default gateway realm", func() {
-			zone := NewZone("test-zone-proxy", testNamespace)
-			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{
-				Routes: []adminv1.ManagedRouteConfig{
-					{
-						Name: "test-team-api1",
-						Path: "/test/team/api/v1",
-						Url:  "https://test-team-api-host.de/test-team-api-v1",
-						Type: adminv1.ManagedRouteTypeTeamAPI,
-					},
-					{
-						Name: "test-proxy",
-						Path: "/proxy/path",
-						Url:  "https://proxy-upstream.de/backend",
-						Type: adminv1.ManagedRouteTypeProxy,
-					},
-				},
-			}
+			By("creating the Zone resource")
 			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
 			})
 
+			By("waiting for the zone to become Ready")
 			Eventually(func(g Gomega) {
 				got := &adminv1.Zone{}
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)
-				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)).To(Succeed())
 				g.Expect(meta.IsStatusConditionTrue(got.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 
-				// The proxy route should be created on the default gateway realm (named "test")
-				proxyRoute := &gatewayapi.Route{}
-				proxyRouteRef := client.ObjectKey{
-					Namespace: "test--test-zone-proxy",
-					Name:      "test--test-proxy",
-				}
-				err = k8sClient.Get(ctx, proxyRouteRef, proxyRoute)
-				g.Expect(err).NotTo(HaveOccurred())
+				By("verifying the namespace was created")
+				VerifyNamespace(ctx, g, got.Status.Namespace)
 
-				g.Expect(proxyRoute.Spec.PassThrough).To(BeTrue())
-				g.Expect(proxyRoute.Spec.Security).To(BeNil())
-				g.Expect(proxyRoute.Spec.Upstreams).To(HaveLen(1))
-				g.Expect(proxyRoute.Spec.Upstreams[0].Host).To(Equal("proxy-upstream.de"))
-				g.Expect(proxyRoute.Spec.Upstreams[0].Path).To(Equal("/backend"))
-				g.Expect(proxyRoute.Spec.Downstreams).To(HaveLen(1))
-				g.Expect(proxyRoute.Spec.Downstreams[0].IssuerUrl).To(BeEmpty())
-				g.Expect(proxyRoute.Spec.Downstreams[0].Path).To(Equal("/proxy/path"))
+				By("verifying core status references are populated")
+				g.Expect(got.Status.Namespace).NotTo(BeEmpty())
+				g.Expect(got.Status.IdentityProvider).NotTo(BeNil())
+				g.Expect(got.Status.IdentityRealm).NotTo(BeNil())
+				g.Expect(got.Status.InternalIdentityRealm).NotTo(BeNil())
+				g.Expect(got.Status.Gateway).NotTo(BeNil())
+				g.Expect(got.Status.GatewayClient).NotTo(BeNil())
+				g.Expect(got.Status.GatewayAdminClient).NotTo(BeNil())
+				g.Expect(got.Status.GatewayConsumer).NotTo(BeNil())
+				g.Expect(got.Status.TeamApiIdentityRealm).NotTo(BeNil())
+				g.Expect(got.Status.ManagedRoutes).NotTo(BeEmpty())
 
-				// Verify ManagedRoutes status contains refs for both routes
-				g.Expect(got.Status.ManagedRoutes).To(HaveLen(2))
+				By("verifying links are populated")
+				g.Expect(got.Status.Links.Url).NotTo(BeEmpty())
+				g.Expect(got.Status.Links.Issuer).NotTo(BeEmpty())
+				g.Expect(got.Status.Links.LmsIssuer).NotTo(BeEmpty())
 			}, timeout, interval).Should(Succeed())
-		})
-	})
-
-	Context("When reconciling an Enterprise zone", func() {
-		It("should not add RouteOverwrites to the gateway realm", func() {
-			zone := NewZone("test-zone-enterprise", testNamespace)
-			zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
-			zone.Spec.ManagedRoutes = nil
-			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
-			})
-
-			Eventually(func(g Gomega) {
-				got := &adminv1.Zone{}
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(meta.IsStatusConditionTrue(got.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-
-				gatewayRealm := &gatewayapi.Realm{}
-				err = k8sClient.Get(ctx, client.ObjectKey{
-					Namespace: "test--test-zone-enterprise",
-					Name:      "test",
-				}, gatewayRealm)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(gatewayRealm.Spec.RouteOverwrites).To(BeEmpty())
-			}, timeout, interval).Should(Succeed())
-		})
-	})
-
-	Context("ExternalIdPolicies round-trip", func() {
-		It("persists ExternalIdPolicies on the Zone spec", func() {
-			zone := NewZone("test-zone-extids", testNamespace)
-			zone.Spec.ExternalIdPolicies = []adminv1.ExternalIdPolicy{
-				{Scheme: "psi", Required: true, Pattern: `^PSI-[0-9]{6}$`},
-				{Scheme: "icto", Required: false, Pattern: `^icto-[0-9]+$`},
-			}
-			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
-			})
-
-			got := &adminv1.Zone{}
-			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)).To(Succeed())
-			Expect(got.Spec.ExternalIdPolicies).To(ConsistOf(
-				adminv1.ExternalIdPolicy{Scheme: "psi", Required: true, Pattern: `^PSI-[0-9]{6}$`},
-				adminv1.ExternalIdPolicy{Scheme: "icto", Required: false, Pattern: `^icto-[0-9]+$`},
-			))
 		})
 	})
 })
-
-func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, zoneToVerify *adminv1.Zone) {
-	By("Checking if the Zone is created and all conditions are set")
-	zone := &adminv1.Zone{}
-	err := k8sClient.Get(ctx, namespacedName, zone)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	g.Expect(zone.Spec).To(Equal(zoneToVerify.Spec))
-
-	// Verify all created sub-resources
-	// idp
-	// idp realm
-	// idp client (gateway)
-	// gateway
-	// gateway realm
-	// gateway consumer
-	// team api gateway realm
-	// team api gateway route
-
-	// Identity provider
-	By("Checking if the Identity provider is created and spec is valid")
-	identityProvider := &identityapi.IdentityProvider{}
-	identityProviderRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "test-zone",
-	}
-	err = k8sClient.Get(ctx, identityProviderRef, identityProvider)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	identityProviderSpec := &identityapi.IdentityProviderSpec{
-		AdminUrl:      "https://test-iris.de/auth/admin/realms",
-		AdminClientId: "test-idp-admin-id",
-		AdminUserName: "test-idp-admin-username",
-		AdminPassword: "test-idp-admin-password",
-	}
-	g.Expect(identityProvider.Spec).To(Equal(*identityProviderSpec))
-	g.Expect(zone.Status.IdentityProvider).To(Equal(types.ObjectRefFromObject(identityProvider)))
-
-	// Identity provider realm
-	By("Checking if the identity provider realm is created and spec is valid")
-	identityProviderRealm := &identityapi.Realm{}
-	identityProviderRealmRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "test",
-	}
-	err = k8sClient.Get(ctx, identityProviderRealmRef, identityProviderRealm)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	identityProviderSpecRealm := &identityapi.RealmSpec{
-		IdentityProvider: &types.ObjectRef{
-			Name:      "test-zone",
-			Namespace: "test--test-zone",
-		},
-		Claims: []identityapi.ClaimConfig{
-			{
-				Name:  "originZone",
-				Value: zoneToVerify.Name,
-				Type:  identityapi.ClaimTypeHardcodedClaim,
-			},
-			{
-				Name:  "originStargate",
-				Value: zoneToVerify.Spec.Gateway.Url,
-				Type:  identityapi.ClaimTypeHardcodedClaim,
-			},
-			{
-				Name: "clientId",
-				Type: identityapi.ClaimTypeSessionNote,
-			},
-		},
-	}
-	g.Expect(identityProviderRealm.Spec).To(Equal(*identityProviderSpecRealm))
-	g.Expect(zone.Status.IdentityRealm).To(Equal(types.ObjectRefFromObject(identityProviderRealm)))
-
-	// Internal identity realm (rover) for admin-config clients
-	By("Checking if the internal identity realm (rover) is created and spec is valid")
-	internalIdentityRealm := &identityapi.Realm{}
-	internalIdentityRealmRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "rover",
-	}
-	err = k8sClient.Get(ctx, internalIdentityRealmRef, internalIdentityRealm)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	internalIdentityRealmSpec := identityapi.RealmSpec{
-		IdentityProvider: &types.ObjectRef{
-			Name:      "test-zone",
-			Namespace: "test--test-zone",
-		},
-		Claims: []identityapi.ClaimConfig{
-			{
-				Name:  "originZone",
-				Value: zoneToVerify.Name,
-				Type:  identityapi.ClaimTypeHardcodedClaim,
-			},
-			{
-				Name:  "originStargate",
-				Value: zoneToVerify.Spec.Gateway.Url,
-				Type:  identityapi.ClaimTypeHardcodedClaim,
-			},
-			{
-				Name: "clientId",
-				Type: identityapi.ClaimTypeSessionNote,
-			},
-		},
-	}
-	g.Expect(internalIdentityRealm.Spec).To(Equal(internalIdentityRealmSpec))
-	g.Expect(zone.Status.InternalIdentityRealm).To(Equal(types.ObjectRefFromObject(internalIdentityRealm)))
-
-	// Identity provider client (gateway client)
-	By("Checking if the identity provider client (gateway) is created and spec is valid")
-	identityProviderClient := &identityapi.Client{}
-	identityProviderClientRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "gateway",
-	}
-	err = k8sClient.Get(ctx, identityProviderClientRef, identityProviderClient)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	// IMPORTANT !!! - manually set the password of the client from the cluster, to satisfy matching - todo find a better way
-	identityProviderClient.Spec.ClientSecret = "randomly-generated-will-be-ignored"
-
-	identityProviderClientSpec := &identityapi.ClientSpec{
-		Realm:        types.ObjectRefFromObject(identityProviderRealm),
-		ClientId:     "gateway",
-		ClientSecret: "randomly-generated-will-be-ignored",
-	}
-	g.Expect(identityProviderClient.Spec).To(Equal(*identityProviderClientSpec))
-	g.Expect(zone.Status.GatewayClient).To(Equal(types.ObjectRefFromObject(identityProviderClient)))
-
-	// verify the created gateway
-	By("Checking if the gateway is created and spec is valid")
-	gateway := &gatewayapi.Gateway{}
-	gatewayRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "gateway",
-	}
-
-	err = k8sClient.Get(ctx, gatewayRef, gateway)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	gatewaySpec := gatewayapi.GatewaySpec{
-		Redis: gatewayapi.RedisConfig{
-			Host:      "http://test-redis.de/",
-			Port:      123,
-			Password:  "test-redis-password",
-			EnableTLS: true,
-		},
-		Admin: gatewayapi.AdminConfig{
-			ClientId:     "rover",
-			ClientSecret: "test-gateway-admin-secret",
-			IssuerUrl:    "https://test-iris.de/auth/realms/rover",
-			Url:          "https://test-stargate.de/admin-api",
-		},
-		Features: nil,
-	}
-	g.Expect(gateway.Spec).To(Equal(gatewaySpec))
-	g.Expect(zone.Status.Gateway).To(Equal(types.ObjectRefFromObject(gateway)))
-
-	// verify the created gateway realm
-	By("Checking if the gateway realm is created and spec is valid")
-	gatewayRealm := &gatewayapi.Realm{}
-	gatewayRealmRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "test",
-	}
-	err = k8sClient.Get(ctx, gatewayRealmRef, gatewayRealm)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	gatewayRealmSpec := gatewayapi.RealmSpec{
-		Gateway:          types.ObjectRefFromObject(gateway),
-		Urls:             []string{"https://test-stargate.de/"},
-		IssuerUrls:       []string{"https://test-iris.de/auth/realms/test"},
-		DefaultConsumers: []string{},
-		RouteOverwrites: []gatewayapi.RouteOverwrite{
-			{Type: gatewayapi.RouteTypeIssuer, Enabled: true, PathPrefix: "/spacegate"},
-			{Type: gatewayapi.RouteTypeCerts, Enabled: true, PathPrefix: "/spacegate"},
-			{Type: gatewayapi.RouteTypeDiscovery, Enabled: true, PathPrefix: "/spacegate"},
-		},
-	}
-	g.Expect(gatewayRealm.Spec).To(Equal(gatewayRealmSpec))
-	g.Expect(zone.Status.GatewayRealm).To(Equal(types.ObjectRefFromObject(gatewayRealm)))
-
-	// verify the created gateway consumer
-	By("Checking if the gateway consumer is created and spec is valid")
-	gatewayConsumer := &gatewayapi.Consumer{}
-	gatewayConsumerRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "gateway",
-	}
-	err = k8sClient.Get(ctx, gatewayConsumerRef, gatewayConsumer)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	gatewayConsumerSpec := gatewayapi.ConsumerSpec{
-		Realm: *types.ObjectRefFromObject(gatewayRealm),
-		Name:  "gateway",
-	}
-	g.Expect(gatewayConsumer.Spec).To(Equal(gatewayConsumerSpec))
-	g.Expect(zone.Status.GatewayConsumer).To(Equal(types.ObjectRefFromObject(gatewayConsumer)))
-
-	// verify the team api gateway realm
-	By("Checking if the team api gateway realm is created and spec is valid")
-	teamApiGatewayRealm := &gatewayapi.Realm{}
-	teamApiGatewayRealmRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "team-test",
-	}
-	err = k8sClient.Get(ctx, teamApiGatewayRealmRef, teamApiGatewayRealm)
-	g.Expect(err).NotTo(HaveOccurred())
-
-	teamApiGatewayRealmSpec := gatewayapi.RealmSpec{
-		Gateway:          types.ObjectRefFromObject(gateway),
-		Urls:             []string{"https://test-stargate.de/"},
-		IssuerUrls:       []string{"https://test-iris.de/auth/realms/team-test"},
-		DefaultConsumers: []string{},
-		RouteOverwrites: []gatewayapi.RouteOverwrite{
-			{Type: gatewayapi.RouteTypeIssuer, Enabled: true, PathPrefix: "/spacegate"},
-			{Type: gatewayapi.RouteTypeCerts, Enabled: true, PathPrefix: "/spacegate"},
-			{Type: gatewayapi.RouteTypeDiscovery, Enabled: true, PathPrefix: "/spacegate"},
-		},
-	}
-	g.Expect(teamApiGatewayRealm.Spec).To(Equal(teamApiGatewayRealmSpec))
-	g.Expect(zone.Status.TeamApiGatewayRealm).To(Equal(types.ObjectRefFromObject(teamApiGatewayRealm)))
-
-	// verify the team api gateway route
-	By("Checking if the team api route is created and spec is valid")
-	teamApiRoute := &gatewayapi.Route{}
-	teamApiRouteRef := client.ObjectKey{
-		Namespace: "test--test-zone",
-		Name:      "team-test--test-team-api1",
-	}
-	err = k8sClient.Get(ctx, teamApiRouteRef, teamApiRoute)
-	g.Expect(err).NotTo(HaveOccurred())
-	teamApiRouteSpec := gatewayapi.RouteSpec{
-		Realm:       *types.ObjectRefFromObject(teamApiGatewayRealm),
-		PassThrough: false,
-		Upstreams: []gatewayapi.Upstream{
-			{
-				Scheme: "https",
-				Host:   "test-team-api-host.de",
-				Port:   443,
-				Path:   "/test-team-api-v1",
-			},
-		},
-		Downstreams: []gatewayapi.Downstream{
-			{
-				Host:      "test-stargate.de",
-				Port:      0,
-				Path:      "/test/team/api/v1",
-				IssuerUrl: "https://test-iris.de/auth/realms/team-test",
-			},
-		},
-		Security: &gatewayapi.Security{
-			DisableAccessControl: true,
-		},
-	}
-	g.Expect(teamApiRoute.Spec).To(Equal(teamApiRouteSpec))
-	g.Expect(zone.Status.Gateway).To(Equal(types.ObjectRefFromObject(gateway)))
-
-	// verify the links
-	By("Checking if the links in the status are created and valid")
-	g.Expect(zone.Status.Links.Issuer).To(Equal("https://test-iris.de/auth/realms/test"))
-	g.Expect(zone.Status.Links.Url).To(Equal("https://test-stargate.de/"))
-	g.Expect(zone.Status.Links.LmsIssuer).To(Equal("https://test-stargate.de/auth/realms/test"))
-	g.Expect(zone.Status.Links.TeamIssuer).To(Equal("https://test-iris.de/auth/realms/team-test"))
-
-	g.Expect(zone.Status.Conditions).To(HaveLen(2))
-	g.Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
-	g.Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-}

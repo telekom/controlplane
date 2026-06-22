@@ -85,7 +85,19 @@ func newValidZone() *adminv1.Zone {
 				Admin: adminv1.GatewayAdminConfig{
 					Url: "https://gateway.example.com/admin",
 				},
-				Url: "https://gateway.example.com",
+				Presets: []adminv1.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{
+							{
+								Hostname: "gateway.example.com",
+								Scheme:   "https",
+								BasePath: "/",
+							},
+						},
+					},
+				},
 			},
 			Redis: adminv1.RedisConfig{
 				Host:     "redis://redis-master:6379",

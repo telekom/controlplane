@@ -66,12 +66,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		failoverZone = CreateZone(failoverZoneName)
 		CreateGatewayClient(failoverZone)
 
-		By("Creating the provider Realm")
-		CreateRealm(testEnvironment, providerZone.Name)
-
-		By("Creating the failover Realm")
-		CreateRealm(testEnvironment, failoverZone.Name)
-
 		By("Creating the Application")
 		application = CreateApplication(appName)
 
@@ -146,18 +140,16 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				err = k8sClient.Get(ctx, sameZoneSubscription.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				// Verify route has proper downstream configuration
-				g.Expect(route.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.apisub-failover-zone:8080/apisub/failovertest/v1"))
-				g.Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("http://my-issuer.apisub-failover-zone:8080/auth/realms/test"))
+				// Verify route has proper downstream configuration (hostnames and paths)
+				g.Expect(route.Spec.Hostnames).To(ContainElement("my-gateway.apisub-failover-zone"))
+				g.Expect(route.Spec.Paths).To(ContainElement("/apisub/failovertest/v1"))
 
 				// Verify route has proper upstream configuration pointing to provider zone
-				g.Expect(route.Spec.Upstreams[0].Url()).To(Equal("http://my-gateway.provider-zone:8080/apisub/failovertest/v1"))
-				g.Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.provider-zone:8080/auth/realms/test"))
+				g.Expect(route.Spec.Backend.Upstreams[0].Url()).To(Equal("http://my-gateway.provider-zone:8080/apisub/failovertest/v1"))
 
 				// Verify route has proper failover configuration pointing to provider API
 				g.Expect(route.Spec.Traffic.Failover).ToNot(BeNil())
 				g.Expect(route.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
-				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].IssuerUrl).To(Equal(""))
 				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].Url()).To(Equal("http://my-provider-api:8080/api/v1"))
 
 			}, timeout, interval).Should(Succeed())
@@ -188,9 +180,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating a different zone")
 			differentZone = CreateZone(differentZoneName)
 			CreateGatewayClient(differentZone)
-
-			By("Creating the Realm for different zone")
-			CreateRealm(testEnvironment, differentZone.Name)
 
 			By("Creating ApiSubscription in a different zone")
 			differentZoneSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -230,19 +219,17 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				err = k8sClient.Get(ctx, differentZoneSubscription.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				// Verify route has proper downstream configuration
-				g.Expect(route.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.different-zone:8080/apisub/failovertest/v1"))
-				g.Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("http://my-issuer.different-zone:8080/auth/realms/test"))
+				// Verify route has proper downstream configuration (hostnames and paths)
+				g.Expect(route.Spec.Hostnames).To(ContainElement("my-gateway.different-zone"))
+				g.Expect(route.Spec.Paths).To(ContainElement("/apisub/failovertest/v1"))
 
 				// Verify route has proper upstream configuration pointing to provider zone
-				g.Expect(route.Spec.Upstreams[0].Url()).To(Equal("http://my-gateway.provider-zone:8080/apisub/failovertest/v1"))
-				g.Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.provider-zone:8080/auth/realms/test"))
+				g.Expect(route.Spec.Backend.Upstreams[0].Url()).To(Equal("http://my-gateway.provider-zone:8080/apisub/failovertest/v1"))
 
 				// Verify route has proper failover configuration pointing to provider failover zone
 				g.Expect(route.Labels[config.BuildLabelKey("type")]).To(Equal("proxy"))
 				g.Expect(route.Spec.Traffic.Failover).ToNot(BeNil())
 				g.Expect(route.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
-				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.apisub-failover-zone:8080/auth/realms/test"))
 				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].Url()).To(Equal("http://my-gateway.apisub-failover-zone:8080/apisub/failovertest/v1"))
 
 				g.Expect(route.Labels[config.BuildLabelKey("failover.zone")]).To(Equal(labelutil.NormalizeValue(failoverZone.Name)))
@@ -277,10 +264,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			multiFailoverZone2 = CreateZone(multiFailoverZoneName2)
 			CreateGatewayClient(multiFailoverZone1)
 			CreateGatewayClient(multiFailoverZone2)
-
-			By("Creating the Realms for failover zones")
-			CreateRealm(testEnvironment, multiFailoverZone1.Name)
-			CreateRealm(testEnvironment, multiFailoverZone2.Name)
 
 			By("Creating ApiSubscription with multiple failover zones")
 			multiFailoverSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -332,8 +315,9 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				err = k8sClient.Get(ctx, multiFailoverSubscription.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				// Verify proxy route has proper downstream configuration
-				g.Expect(route.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.different-zone:8080/apisub/failovertest/v1"))
+				// Verify proxy route has proper downstream configuration (hostnames and paths)
+				g.Expect(route.Spec.Hostnames).To(ContainElement("my-gateway.different-zone"))
+				g.Expect(route.Spec.Paths).To(ContainElement("/apisub/failovertest/v1"))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -418,9 +402,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating the Application")
 			application = CreateApplication(appName)
 
-			By("Creating the Realm for different zone")
-			CreateRealm(testEnvironment, differentZone.Name)
-
 			By("Creating ApiSubscription in different zone with provider zone as failover")
 			subscription = NewApiSubscription(apiBasePath, differentZoneName, appName)
 			// Configure failover zone to be the same as ApiExposure zone
@@ -495,7 +476,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating zone for approval denial test")
 			denialZone = CreateZone(denialZoneName)
 			CreateGatewayClient(denialZone)
-			CreateRealm(testEnvironment, denialZone.Name)
 
 			By("Creating ApiSubscription in cross-zone")
 			denialSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -592,7 +572,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating subscription zone (cross-zone from exposure)")
 			subFailoverToProviderZone = CreateZone(subFailoverToProviderZoneName)
 			CreateGatewayClient(subFailoverToProviderZone)
-			CreateRealm(testEnvironment, subFailoverToProviderZone.Name)
 
 			By("Creating ApiSubscription with subscriber failover to provider failover zone")
 			subFailoverToProviderSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -731,7 +710,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating failover zone for same-zone subscription")
 			sameZoneFailoverZone = CreateZone(sameZoneFailoverZoneName)
 			CreateGatewayClient(sameZoneFailoverZone)
-			CreateRealm(testEnvironment, sameZoneFailoverZone.Name)
 
 			By("Creating ApiSubscription in same zone as exposure with cross-zone failover")
 			sameZoneWithFailoverSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -784,8 +762,8 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(route.Labels[config.BuildLabelKey("type")]).To(Equal("real"))
 
 				// Real route should point to actual upstreams (not gateway proxy)
-				g.Expect(route.Spec.Upstreams).ToNot(BeEmpty())
-				g.Expect(route.Spec.Upstreams[0].Host).To(Equal("my-provider-api"))
+				g.Expect(route.Spec.Backend.Upstreams).ToNot(BeEmpty())
+				g.Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-provider-api"))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -835,8 +813,8 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 					"Should be regular proxy route, not provider failover secondary")
 
 				// Verify it proxies to provider zone
-				g.Expect(route.Spec.Upstreams).ToNot(BeEmpty())
-				g.Expect(route.Spec.Upstreams[0].Host).To(ContainSubstring("gateway"))
+				g.Expect(route.Spec.Backend.Upstreams).ToNot(BeEmpty())
+				g.Expect(route.Spec.Backend.Upstreams[0].Hostname).To(ContainSubstring("gateway"))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -875,12 +853,10 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating shared zone for both subscriptions")
 			sharedZone = CreateZone(sharedZoneName)
 			CreateGatewayClient(sharedZone)
-			CreateRealm(testEnvironment, sharedZone.Name)
 
 			By("Creating failover zone for subscription2")
 			sharedFailoverZone = CreateZone(sharedFailoverZoneName)
 			CreateGatewayClient(sharedFailoverZone)
-			CreateRealm(testEnvironment, sharedFailoverZone.Name)
 
 			By("Creating ApiSubscription 1 (no failover)")
 			subscription1 = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -1059,9 +1035,6 @@ var _ = Describe("ApiSubscription Controller - All Subscriptions Same Zone", Ord
 		providerZone = CreateZone(providerZoneName)
 		CreateGatewayClient(providerZone)
 
-		By("Creating the provider Realm")
-		CreateRealm(testEnvironment, providerZone.Name)
-
 		By("Creating the Application")
 		CreateApplication(appName)
 
@@ -1190,8 +1163,8 @@ var _ = Describe("ApiSubscription Controller - All Subscriptions Same Zone", Ord
 			g.Expect(err).ToNot(HaveOccurred())
 
 			// Real route should point to actual provider API (not gateway proxy)
-			g.Expect(route.Spec.Upstreams).ToNot(BeEmpty())
-			g.Expect(route.Spec.Upstreams[0].Host).To(Equal("my-provider-api"),
+			g.Expect(route.Spec.Backend.Upstreams).ToNot(BeEmpty())
+			g.Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-provider-api"),
 				"Real route should point to actual API, not gateway proxy")
 		}, timeout, interval).Should(Succeed())
 	})
@@ -1259,17 +1232,14 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 		By("Creating the provider main zone")
 		providerZone = CreateZone(providerZoneName)
 		CreateGatewayClient(providerZone)
-		CreateRealm(testEnvironment, providerZone.Name)
 
 		By("Creating the provider failover zone")
 		providerFailoverZone = CreateZone(providerFailoverZoneName)
 		CreateGatewayClient(providerFailoverZone)
-		CreateRealm(testEnvironment, providerFailoverZone.Name)
 
 		By("Creating the subscriber zone")
 		subscriberZone = CreateZone(subscriberZoneName)
 		CreateGatewayClient(subscriberZone)
-		CreateRealm(testEnvironment, subscriberZone.Name)
 
 		By("Creating the Application")
 		CreateApplication(appName)

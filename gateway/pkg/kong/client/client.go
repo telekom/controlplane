@@ -23,9 +23,6 @@ import (
 
 type MutatorFunc[T any] func(T) (T, error)
 
-// todo replace by mockery
-//
-//go:generate mockgen -source=client.go -destination=mock/client.gen.go -package=mock
 type KongClient interface {
 	CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error
 	DeleteRoute(ctx context.Context, route CustomRoute) error
@@ -427,12 +424,12 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 	routeName := route.GetName()
 	upstreamPath := upstream.GetPath()
 	serviceName := routeName
-	serviceHost := upstream.GetHost()
+	serviceHostname := upstream.GetHostname()
 
 	serviceBody := kong.CreateServiceJSONRequestBody{
 		Enabled:  true,
 		Name:     &serviceName,
-		Host:     serviceHost,
+		Host:     serviceHostname,
 		Path:     &upstreamPath,
 		Protocol: kong.CreateServiceRequestProtocol(upstream.GetScheme()),
 		Port:     upstream.GetPort(),
@@ -459,12 +456,8 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 			"http",
 			"https",
 		},
-		Paths: &[]string{
-			route.GetPath(),
-		},
-		Hosts: &[]string{
-			route.GetHost(),
-		},
+		Paths: toPtrOrNil(route.GetPaths()),
+		Hosts: toPtrOrNil(route.GetHostnames()),
 		Service: &kong.CreateRouteRequestService{
 			Id: service.Id,
 		},
@@ -639,4 +632,11 @@ func encodeTags(tags []string) *string {
 	}
 	strTags := strings.Join(tags, ",")
 	return &strTags
+}
+
+func toPtrOrNil[T any](v []T) *[]T {
+	if len(v) == 0 {
+		return nil
+	}
+	return &v
 }

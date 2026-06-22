@@ -90,6 +90,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 					Admin: adminv1.GatewayAdminConfig{
 						Url: "http://gateway-admin.test.local:8001",
 					},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{{
+							Hostname: "gateway.test.local",
+							BasePath: "/",
+						}},
+					}},
 				},
 				IdentityProvider: adminv1.IdentityProviderConfig{
 					Url: "http://idp.test.local:8080",
@@ -108,7 +116,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 				Name:      "team-api-identity-realm",
 				Namespace: testNamespace,
 			},
-			TeamApiGatewayRealm: &types.ObjectRef{
+			Gateway: &types.ObjectRef{
 				Name:      "team-api-gateway-realm",
 				Namespace: testNamespace,
 			},
@@ -130,7 +138,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 			By("Checking if the zone is status is updated")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone.Status.TeamApiGatewayRealm).NotTo(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).NotTo(BeNil())
 
 			By("Mocking Secret Manager")
@@ -262,7 +269,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking the team gateway consumer object spec")
 					g.Expect(gatewayConsumer.Spec).To(BeEquivalentTo(gatewayv1.ConsumerSpec{
-						Realm: types.ObjectRef{
+						Gateway: types.ObjectRef{
 							Name:      "team-api-gateway-realm",
 							Namespace: "default",
 							UID:       "",
@@ -585,6 +592,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 					Admin: adminv1.GatewayAdminConfig{
 						Url: "http://gateway-admin.test.local:8001",
 					},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{{
+							Hostname: "gateway.test.local",
+							BasePath: "/",
+						}},
+					}},
 				},
 				IdentityProvider: adminv1.IdentityProviderConfig{
 					Url: "http://idp.test.local:8080",
@@ -605,7 +620,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 			By("Checking if the zone realm refs are nil")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone.Status.TeamApiGatewayRealm).To(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).To(BeNil())
 		})
 
@@ -666,7 +680,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					g.Expect(readyCondition).NotTo(BeNil())
 					g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
 					g.Expect(readyCondition.Reason).To(Equal("ErrorOccurred"))
-					g.Expect(readyCondition.Message).To(ContainSubstring("found no zone with team apis"))
+					g.Expect(readyCondition.Message).To(ContainSubstring("no zone with managed routes found"))
 
 					By("Checking the team namespace in status")
 					g.Expect(team.Status.Namespace).To(Equal(expectedTeamNamespaceName))

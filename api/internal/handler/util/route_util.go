@@ -7,6 +7,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -48,6 +49,16 @@ type CreateRouteOptions struct {
 	// When true, the gateway mesh-client consumer is added to the route's DefaultConsumers
 	// to allow the proxy route to access this route.
 	IsProxyTarget bool
+
+	// TrustedIssuers is the list of trusted token issuers for this route.
+	// For real routes: includes the zone's IDP issuer (for consumer access) and
+	// LMS issuers from proxy zones (for cross-zone mesh access).
+	// For proxy routes: includes the subscriber zone's IDP issuer (for consumer access).
+	TrustedIssuers []string
+
+	// RealmName is the identity realm name used by the Jumper sidecar for
+	// Last-Mile-Security token issuance. Typically equals the environment name.
+	RealmName string
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
@@ -116,6 +127,29 @@ func WithProxyTarget(isProxyTarget bool) CreateRouteOption {
 	}
 }
 
+// WithTrustedIssuers sets the trusted token issuers for the route.
+// These issuers are used by the gateway's JWT plugin to validate incoming tokens.
+func WithTrustedIssuers(issuers []string) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.TrustedIssuers = issuers
+	}
+}
+
+// AddTrustedIssuers appends trusted token issuers to the route's existing list of trusted issuers.
+func AddTrustedIssuers(issuers ...string) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.TrustedIssuers = append(opts.TrustedIssuers, issuers...)
+	}
+}
+
+// WithRealmName sets the identity realm name on the route's Security.
+// The Jumper sidecar uses this to determine which realm to use for LMS token issuance.
+func WithRealmName(realmName string) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.RealmName = realmName
+	}
+}
+
 // IsFailoverSecondary checks if the route is a failover secondary route.
 // This means that this route has the real upstream as a failover upstream.
 func (o *CreateRouteOptions) IsFailoverSecondary() bool {
@@ -139,15 +173,11 @@ func WithConsumerRouteRateLimit(rateLimit apiapi.Limits) CreateConsumeRouteOptio
 	}
 }
 
-func MakeRouteName(apiBasePath, realmName string) string {
-	routeName := labelutil.NormalizeValue(apiBasePath)
-	if realmName != "default" {
-		routeName = realmName + "--" + routeName
-	}
-	return routeName
+func MakeRouteName(apiBasePath string) string {
+	return labelutil.NormalizeValue(apiBasePath)
 }
 
-func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstreamZoneRef types.ObjectRef, apiBasePath, realmName string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
+func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstreamZoneRef types.ObjectRef, apiBasePath string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	log := log.FromContext(ctx)
 
@@ -156,25 +186,28 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 		opt(options)
 	}
 
-	// Downstream
-	downstreamRealm, downstreamZone, err := GetRealmForZone(ctx, downstreamZoneRef, realmName)
+	// Downstream: get zone + default preset to derive hostnames/paths and gateway ref
+	downstreamPreset, downstreamZone, err := GetDefaultPresetForZone(ctx, downstreamZoneRef)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get downstream-realm %s", downstreamZoneRef.String())
+		return nil, errors.Wrapf(err, "failed to get downstream preset for zone %s", downstreamZoneRef.String())
+	}
+	if downstreamZone.Status.Gateway == nil {
+		return nil, errors.Errorf("zone %s has no gateway reference in status", downstreamZoneRef.String())
 	}
 
-	// Upstream
-	upstreamRealm, upstreamZone, err := GetRealmForZone(ctx, upstreamZoneRef, realmName)
+	// Upstream: get zone + default preset to derive the upstream URL
+	upstreamPreset, upstreamZone, err := GetDefaultPresetForZone(ctx, upstreamZoneRef)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get upstream-realm %s", upstreamZoneRef.Name)
+		return nil, errors.Wrapf(err, "failed to get upstream preset for zone %s", upstreamZoneRef.Name)
 	}
 
 	// Creating the Route
-	routeName := MakeRouteName(apiBasePath, realmName)
+	routeName := MakeRouteName(apiBasePath)
 
 	proxyRoute := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeNameValue(routeName),
-			Namespace: downstreamRealm.Namespace,
+			Namespace: downstreamZone.Status.Namespace,
 		},
 	}
 
@@ -185,30 +218,40 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 	mutate := func() error {
 		proxyRoute.Labels = map[string]string{
-			apiapi.BasePathLabelKey:       labelutil.NormalizeLabelValue(apiBasePath),
-			config.BuildLabelKey("zone"):  labelutil.NormalizeValue(downstreamZone.GetName()),
-			config.BuildLabelKey("realm"): labelutil.NormalizeValue(realmName),
-			config.BuildLabelKey("type"):  "proxy",
+			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
+			config.BuildLabelKey("zone"): labelutil.NormalizeValue(downstreamZone.GetName()),
+			config.BuildLabelKey("type"): "proxy",
 		}
 
-		downstream, err := downstreamRealm.AsDownstream(apiBasePath)
+		// Upstream for proxy route: points at the upstream zone's gateway URL for this basepath
+		upstreamUrl, err := url.JoinPath(upstreamPreset.Urls[0].GetFullUrl(), apiBasePath)
 		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+			return errors.Wrap(err, "failed to build upstream URL for proxy route")
 		}
-
-		upstream, err := AsUpstreamForProxyRoute(ctx, upstreamRealm, apiBasePath)
+		upstream, err := AsUpstreamForRealRoute(upstreamUrl, 0)
 		if err != nil {
 			return errors.Wrap(err, "failed to create upstream")
 		}
 
+		hostnames, paths := downstreamPreset.ResolveHostnamesAndPaths(apiBasePath)
+
 		proxyRoute.Spec = gatewayapi.RouteSpec{
-			Realm: *types.ObjectRefFromObject(downstreamRealm),
-			Upstreams: []gatewayapi.Upstream{
-				upstream,
-			},
-			Downstreams: []gatewayapi.Downstream{
-				downstream,
-			},
+			GatewayRef: *downstreamZone.Status.Gateway,
+			Type:       gatewayapi.RouteTypeProxy,
+			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
+			Hostnames:  hostnames,
+			Paths:      paths,
+			Traffic:    gatewayapi.Traffic{},
+		}
+
+		// Set trusted issuers for consumer token validation on the proxy route.
+		// The proxy route lives in the subscriber zone and accepts consumer traffic,
+		// so it must validate tokens from the subscriber zone's IDP.
+		if downstreamZone.Status.Links.Issuer != "" {
+			proxyRoute.Spec.Security.TrustedIssuers = []string{downstreamZone.Status.Links.Issuer}
+		}
+		if options.RealmName != "" {
+			proxyRoute.Spec.Security.RealmName = options.RealmName
 		}
 
 		log.Info("Creating proxy route", "route", proxyRoute.Name, "namespace", proxyRoute.Namespace, "failover", options.HasFailover())
@@ -224,14 +267,17 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 			// A failover secondary route is the target of cross-zone proxy requests,
 			// so the gateway mesh-client must be allowed to access it.
-			if proxyRoute.Spec.Security == nil {
-				proxyRoute.Spec.Security = &gatewayapi.Security{}
-			}
 			proxyRoute.Spec.Security.DefaultConsumers = append(proxyRoute.Spec.Security.DefaultConsumers, GatewayConsumerName)
+
+			// The failover secondary also needs the same TrustedIssuers as the primary route,
+			// since proxy routes may fail over to it and present LMS tokens.
+			if len(options.TrustedIssuers) > 0 {
+				proxyRoute.Spec.Security.TrustedIssuers = append(proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...)
+			}
 
 			failoverUpstreams := make([]gatewayapi.Upstream, 0, len(options.FailoverUpstreams))
 			for _, rawUpstream := range options.FailoverUpstreams {
-				failoverUpstream, err := AsUpstreamForRealRoute(ctx, rawUpstream.Url, rawUpstream.Weight)
+				failoverUpstream, err := AsUpstreamForRealRoute(rawUpstream.Url, int32(rawUpstream.Weight))
 				if err != nil {
 					return errors.Wrapf(err, "failed to create failover upstream %s", rawUpstream.Url)
 				}
@@ -254,11 +300,18 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 		if options.HasFailover() {
 			proxyRoute.Labels[config.BuildLabelKey("failover.zone")] = labelutil.NormalizeValue(options.FailoverZone.Name)
-			failoverUpstreamRealm, _, err := GetRealmForZone(ctx, options.FailoverZone, realmName)
+			failoverPreset, _, err := GetDefaultPresetForZone(ctx, options.FailoverZone)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get failover zone %s", options.FailoverZone.String())
 			}
-			failoverUpstream, err := AsUpstreamForProxyRoute(ctx, failoverUpstreamRealm, apiBasePath)
+			failoverUrl, err := url.JoinPath(failoverPreset.Urls[0].GetFullUrl(), apiBasePath)
+			if err != nil {
+				return errors.Wrapf(err, "failed to build failover URL for zone %s", options.FailoverZone.String())
+			}
+			failoverUpstream, err := AsUpstreamForRealRoute(failoverUrl, 0)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create failover upstream for zone %s", options.FailoverZone.String())
+			}
 
 			proxyRoute.Spec.Traffic = gatewayapi.Traffic{
 				Failover: &gatewayapi.Failover{
@@ -365,7 +418,7 @@ func CleanupStaleProxyRoutes(ctx context.Context, apiBasePath string) (int, erro
 	return deleted, nil
 }
 
-func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, apiExposure *apiapi.ApiExposure, realmName string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
+func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, apiExposure *apiapi.ApiExposure, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	options := &CreateRouteOptions{}
@@ -373,57 +426,47 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		opt(options)
 	}
 
-	// get referenced Zone from exposure
-	zone, err := GetZone(ctx, scopedClient, downstreamZoneRef.K8s())
+	// Get zone + default preset to derive hostnames/paths and gateway ref
+	preset, zone, err := GetDefaultPresetForZone(ctx, downstreamZoneRef)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("Unable to get zone %s", downstreamZoneRef.String()))
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to get default preset for zone %s", downstreamZoneRef.String()))
 	}
-	downstreamRealmRef := client.ObjectKey{
-		Name:      realmName,
-		Namespace: zone.Status.Namespace,
-	}
-
-	downstreamRealm, err := GetRealm(ctx, downstreamRealmRef)
-	if err != nil {
-		return nil, err
+	if zone.Status.Gateway == nil {
+		return nil, errors.Errorf("zone %s has no gateway reference in status", downstreamZoneRef.String())
 	}
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      MakeRouteName(apiExposure.Spec.ApiBasePath, realmName),
+			Name:      MakeRouteName(apiExposure.Spec.ApiBasePath),
 			Namespace: zone.Status.Namespace,
 		},
 	}
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			apiapi.BasePathLabelKey:       labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"):  labelutil.NormalizeValue(zone.Name),
-			config.BuildLabelKey("realm"): labelutil.NormalizeValue(downstreamRealm.Name),
-			config.BuildLabelKey("type"):  "real",
-		}
-
-		downstream, err := downstreamRealm.AsDownstream(apiExposure.Spec.ApiBasePath)
-		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
+			config.BuildLabelKey("zone"): labelutil.NormalizeValue(zone.Name),
+			config.BuildLabelKey("type"): "real",
 		}
 
 		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
 		for _, upstream := range apiExposure.Spec.Upstreams {
-			gatewayUpstream, err := AsUpstreamForRealRoute(ctx, upstream.Url, upstream.Weight)
+			gatewayUpstream, err := AsUpstreamForRealRoute(upstream.Url, int32(upstream.Weight))
 			if err != nil {
 				return errors.Wrapf(err, "failed to create upstream for URL %s", upstream.Url)
 			}
 			gatewayUpstreams = append(gatewayUpstreams, gatewayUpstream)
 		}
 
+		hostnames, paths := preset.ResolveHostnamesAndPaths(apiExposure.Spec.ApiBasePath)
+
 		route.Spec = gatewayapi.RouteSpec{
-			Realm:     *types.ObjectRefFromObject(downstreamRealm),
-			Upstreams: gatewayUpstreams,
-			Downstreams: []gatewayapi.Downstream{
-				downstream,
-			},
-			Traffic: gatewayapi.Traffic{},
+			GatewayRef: *zone.Status.Gateway,
+			Type:       gatewayapi.RouteTypePrimary,
+			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
+			Hostnames:  hostnames,
+			Paths:      paths,
+			Traffic:    gatewayapi.Traffic{},
 		}
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
 		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
@@ -431,10 +474,14 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		if options.IsProxyTarget {
 			// If this Route is the target of a cross-zone proxy Route,
 			// the gateway mesh-client must be allowed to access it.
-			if route.Spec.Security == nil {
-				route.Spec.Security = &gatewayapi.Security{}
-			}
 			route.Spec.Security.DefaultConsumers = append(route.Spec.Security.DefaultConsumers, GatewayConsumerName)
+		}
+
+		if len(options.TrustedIssuers) > 0 {
+			route.Spec.Security.TrustedIssuers = options.TrustedIssuers
+		}
+		if options.RealmName != "" {
+			route.Spec.Security.RealmName = options.RealmName
 		}
 
 		if apiExposure.HasProviderRateLimit() {
@@ -506,12 +553,12 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 	return routeConsumer, nil
 }
 
-func mapSecurity(apiSecurity *apiapi.Security) *gatewayapi.Security {
+func mapSecurity(apiSecurity *apiapi.Security) gatewayapi.Security {
 	if apiSecurity == nil {
-		return nil
+		return gatewayapi.Security{}
 	}
 
-	security := &gatewayapi.Security{}
+	security := gatewayapi.Security{}
 
 	if apiSecurity.M2M != nil {
 		security.M2M = &gatewayapi.Machine2MachineAuthentication{

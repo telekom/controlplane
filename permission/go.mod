@@ -10,7 +10,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.3
 	github.com/onsi/gomega v1.40.0
 	github.com/pkg/errors v0.9.1
-	github.com/telekom/controlplane/admin/api v0.0.0-20260414123009-b87fb31d28d8
+	github.com/telekom/controlplane/admin/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/permission/api v0.0.0
 	k8s.io/api v0.36.0
@@ -22,6 +22,7 @@ require (
 replace (
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/permission/api => ./api
+	github.com/telekom/controlplane/admin/api => ../admin/api
 )
 
 require (

@@ -35,6 +35,12 @@ type SubscriberTraffic struct {
 }
 
 type Failover struct {
+	// Enabled flags if failover is enabled
+	// This automatically selects eligible zones for failover based on the owner zone
+	// and available zones in the cluster.
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled"`
+
 	// Zone is the zone to which the traffic should be failed over in case of an error.
 	// +kubebuilder:validation:Required
 	Zones []ctypes.ObjectRef `json:"zone"`

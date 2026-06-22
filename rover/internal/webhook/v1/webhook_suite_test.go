@@ -201,6 +201,19 @@ func NewZone(name string, environment string) *adminv1.Zone {
 				Admin: adminv1.GatewayAdminConfig{
 					Url: "http://gateway-admin.test.local:8001",
 				},
+				Presets: []adminv1.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{
+							{
+								Hostname: "gateway.test.local",
+								Scheme:   "https",
+								BasePath: "/",
+							},
+						},
+					},
+				},
 			},
 			IdentityProvider: adminv1.IdentityProviderConfig{
 				Url: "http://idp.test.local:8080",

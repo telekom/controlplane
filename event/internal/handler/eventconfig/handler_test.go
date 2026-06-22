@@ -26,6 +26,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventconfig"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -85,9 +86,8 @@ func newEventConfig() *eventv1.EventConfig {
 }
 
 var (
-	realmKey   = k8stypes.NamespacedName{Name: "test-realm", Namespace: "default"}
-	zoneKey    = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
-	gwRealmKey = k8stypes.NamespacedName{Name: "gw-realm", Namespace: "default"}
+	realmKey = k8stypes.NamespacedName{Name: "test-realm", Namespace: "default"}
+	zoneKey  = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
 )
 
 func makeReadyRealm() *identityv1.Realm {
@@ -109,10 +109,23 @@ func makeReadyZone() *adminv1.Zone {
 			Name:      "test-zone",
 			Namespace: "default",
 		},
+		Spec: adminv1.ZoneSpec{
+			Gateway: adminv1.GatewayConfig{
+				Presets: []adminv1.GatewayConfigPreset{{
+					Name:    "default",
+					Default: true,
+					Urls: []adminv1.UrlConfig{{
+						Hostname: "gateway.example.com",
+						Port:     443,
+						Scheme:   "https",
+					}},
+				}},
+			},
+		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			GatewayRealm: &ctypes.ObjectRef{
-				Name:      "gw-realm",
+			Gateway: &ctypes.ObjectRef{
+				Name:      "gw",
 				Namespace: "default",
 			},
 			InternalIdentityRealm: &ctypes.ObjectRef{
@@ -131,26 +144,6 @@ func makeReadyZone() *adminv1.Zone {
 		Reason: "Ready",
 	})
 	return z
-}
-
-func makeReadyGatewayRealm() *gatewayv1.Realm {
-	r := &gatewayv1.Realm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gw-realm",
-			Namespace: "default",
-		},
-		Spec: gatewayv1.RealmSpec{
-			Urls:             []string{"https://gateway.example.com:443"},
-			IssuerUrls:       []string{"https://issuer.example.com"},
-			DefaultConsumers: []string{},
-		},
-	}
-	meta.SetStatusCondition(&r.Status.Conditions, metav1.Condition{
-		Type:   condition.ConditionTypeReady,
-		Status: metav1.ConditionTrue,
-		Reason: "Ready",
-	})
-	return r
 }
 
 // buildScheme creates a runtime.Scheme with all types needed by the handler.
@@ -172,6 +165,7 @@ var _ = Describe("EventConfigHandler", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
+		ctx = contextutil.WithEnv(ctx, "test-env")
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
 		h = &eventconfig.EventConfigHandler{}
@@ -252,16 +246,6 @@ var _ = Describe("EventConfigHandler", func() {
 			Return(err).Once()
 	}
 
-	// mockGetGatewayRealm sets up a mock for c.Get on the gateway realm key.
-	mockGetGatewayRealm := func(realm *gatewayv1.Realm, times int) {
-		fakeClient.EXPECT().
-			Get(ctx, gwRealmKey, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayv1.Realm) = *realm
-			}).
-			Return(nil).Times(times)
-	}
-
 	// mockScheme sets up a mock for c.Scheme() used by SetControllerReference in route mutators.
 	mockScheme := func() {
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
@@ -303,7 +287,6 @@ var _ = Describe("EventConfigHandler", func() {
 	setupFullHappyPath := func() {
 		realm := makeReadyRealm()
 		zone := makeReadyZone()
-		gwRealm := makeReadyGatewayRealm()
 
 		mockScheme()
 		mockGetZone(zone, 1)   // fetched once at the top of CreateOrUpdate
@@ -311,7 +294,6 @@ var _ = Describe("EventConfigHandler", func() {
 		mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 		mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 		mockListEventConfigs([]eventv1.EventConfig{}, 2) // callback + voyager
-		mockGetGatewayRealm(gwRealm, 3)                  // callback + voyager + publish
 		mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
 		mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
 		mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)
@@ -446,7 +428,6 @@ var _ = Describe("EventConfigHandler", func() {
 		It("should return error when List EventConfigs fails in createVoyagerRoutes", func() {
 			zone := makeReadyZone()
 			realm := makeReadyRealm()
-			gwRealm := makeReadyGatewayRealm()
 
 			mockGetZone(zone, 1)
 			mockGetRealm(realm, 2)
@@ -456,7 +437,6 @@ var _ = Describe("EventConfigHandler", func() {
 
 			// Callback routes succeed
 			mockListEventConfigs([]eventv1.EventConfig{}, 1)
-			mockGetGatewayRealm(gwRealm, 1)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
 
 			// Voyager routes: List fails
@@ -472,7 +452,6 @@ var _ = Describe("EventConfigHandler", func() {
 			obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
 			zone := makeReadyZone()
 			realm := makeReadyRealm()
-			gwRealm := makeReadyGatewayRealm()
 
 			mockScheme()
 			mockGetZone(zone, 1)
@@ -480,7 +459,6 @@ var _ = Describe("EventConfigHandler", func() {
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockListEventConfigs([]eventv1.EventConfig{}, 2)
-			mockGetGatewayRealm(gwRealm, 3)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)
@@ -498,7 +476,6 @@ var _ = Describe("EventConfigHandler", func() {
 			}}
 			zone := makeReadyZone()
 			realm := makeReadyRealm()
-			gwRealm := makeReadyGatewayRealm()
 
 			mockScheme()
 			mockGetZone(zone, 1)
@@ -506,7 +483,6 @@ var _ = Describe("EventConfigHandler", func() {
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockListEventConfigs([]eventv1.EventConfig{}, 2)
-			mockGetGatewayRealm(gwRealm, 3)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)

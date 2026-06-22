@@ -78,6 +78,13 @@ func createDefaultIdentityRealm(ctx context.Context, hc *HandlingContext) error 
 
 	hc.DefaultIdentityRealm = realm
 	hc.Zone.Status.IdentityRealm = types.ObjectRefFromObject(realm)
+
+	if realm.Spec.SecretRotation != nil {
+		hc.Zone.EnableFeature(adminv1.FeatureSecretRotation)
+	} else {
+		hc.Zone.ManageFeature(adminv1.FeatureSecretRotation, false)
+	}
+
 	return nil
 }
 
@@ -227,11 +234,8 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 				ExpirationPeriod:        secretRotationConfig.ExpirationPeriod,
 				RemainingRotationPeriod: secretRotationConfig.ExpirationPeriod,
 			}
-
-			hc.Zone.EnableFeature(adminv1.FeatureSecretRotation)
 		} else {
 			identityRealm.Spec.SecretRotation = nil
-			hc.Zone.ManageFeature(adminv1.FeatureSecretRotation, false)
 		}
 
 		return nil

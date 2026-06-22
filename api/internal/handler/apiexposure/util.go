@@ -152,3 +152,32 @@ func HasCrossZoneSubscribers(ctx context.Context, apiExp *apiv1.ApiExposure) (bo
 
 	return false, nil
 }
+
+// HasLocalSubscribers checks if there are any ApiSubscriptions for the given basepath
+// where the subscription zone is the same as the exposure zone.
+// This indicates consumers directly access the real route and need IDP token validation.
+func HasLocalSubscribers(ctx context.Context, apiExp *apiv1.ApiExposure) (bool, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	apiSubscriptions := &apiv1.ApiSubscriptionList{}
+	err := scopedClient.List(ctx, apiSubscriptions,
+		client.MatchingLabels{
+			apiv1.BasePathLabelKey: labelutil.NormalizeLabelValue(apiExp.Spec.ApiBasePath),
+		},
+	)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to list ApiSubscriptions for basepath %q", apiExp.Spec.ApiBasePath)
+	}
+
+	for i := range apiSubscriptions.Items {
+		sub := &apiSubscriptions.Items[i]
+		if controller.IsBeingDeleted(sub) {
+			continue
+		}
+		if sub.Spec.Zone.Equals(&apiExp.Spec.Zone) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}

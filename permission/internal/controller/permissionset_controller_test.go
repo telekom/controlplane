@@ -158,10 +158,21 @@ var _ = Describe("PermissionSet Controller", func() {
 						},
 					},
 					Gateway: adminv1.GatewayConfig{
-						Url:            "https://gateway.example.com",
-						CircuitBreaker: false,
 						Admin: adminv1.GatewayAdminConfig{
-							Url: ptr.To("https://gateway-admin.example.com"),
+							Url: "https://gateway-admin.example.com",
+						},
+						Presets: []adminv1.GatewayConfigPreset{
+							{
+								Name:    "test",
+								Default: true,
+								Urls: []adminv1.UrlConfig{
+									{
+										Hostname: "gateway.example.com",
+										Scheme:   "https",
+										BasePath: "/",
+									},
+								},
+							},
 						},
 					},
 					Redis: adminv1.RedisConfig{

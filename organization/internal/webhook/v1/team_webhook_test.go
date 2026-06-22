@@ -54,6 +54,14 @@ var _ = Describe("Team Webhook", func() {
 				Admin: adminv1.GatewayAdminConfig{
 					Url: "http://gateway-admin.test.local:8001",
 				},
+				Presets: []adminv1.GatewayConfigPreset{{
+					Name:    "default",
+					Default: true,
+					Urls: []adminv1.UrlConfig{{
+						Hostname: "gateway.test.local",
+						BasePath: "/",
+					}},
+				}},
 			},
 			IdentityProvider: adminv1.IdentityProviderConfig{
 				Url: "http://idp.test.local:8080",
@@ -70,10 +78,6 @@ var _ = Describe("Team Webhook", func() {
 	zoneStatus := adminv1.ZoneStatus{
 		TeamApiIdentityRealm: &types.ObjectRef{
 			Name:      "team-api-identity-realm",
-			Namespace: testNamespace,
-		},
-		TeamApiGatewayRealm: &types.ObjectRef{
-			Name:      "team-api-gateway-realm",
 			Namespace: testNamespace,
 		},
 		Links: adminv1.Links{

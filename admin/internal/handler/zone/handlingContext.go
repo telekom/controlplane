@@ -45,10 +45,8 @@ type HandlingContext struct {
 	GatewayAdminClient    *identityapi.Client
 	GatewayClient         *identityapi.Client
 	Gateway               *gatewayapi.Gateway
-	DefaultGatewayRealm   *gatewayapi.Realm
 	GatewayConsumer       *gatewayapi.Consumer
 	TeamApiIdentityRealm  *identityapi.Realm
-	TeamApiGatewayRealm   *gatewayapi.Realm
 }
 
 // newHandlingContext fetches the Environment, creates/updates the zone Namespace,
@@ -88,6 +86,11 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone) (*HandlingContex
 
 	obj.Status.Namespace = namespace.Name
 
+	defaultPreset, err := obj.Spec.Gateway.GetDefaultPreset()
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("failed to get default gateway preset for zone %s: %s", obj.Name, err)
+	}
+
 	defaultClaims := []identityapi.ClaimConfig{
 		{
 			Name:  claimOriginZone,
@@ -96,7 +99,7 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone) (*HandlingContex
 		},
 		{
 			Name:  claimOriginStargate,
-			Value: obj.Spec.Gateway.Url,
+			Value: defaultPreset.GetDefaultUrl(),
 			Type:  identityapi.ClaimTypeHardcodedClaim,
 		},
 		{

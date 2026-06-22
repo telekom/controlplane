@@ -156,7 +156,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	if !remoteOrg.Spec.Zone.Equals(subscriptionZone) {
 		log.Info("RemoteApiSubscription is in a different zone")
 
-		route, err := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath, remoteOrg.Spec.Id)
+		route, err := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create proxy route")
 		}

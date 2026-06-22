@@ -1,132 +1,86 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package v1
 
 import (
-	"slices"
-	"strconv"
-
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Upstream struct {
-	Weight       int    `json:"weight,omitempty"`
-	Scheme       string `json:"scheme"`
-	Host         string `json:"host"`
-	Port         int    `json:"port"`
-	Path         string `json:"path"`
-	IssuerUrl    string `json:"issuerUrl,omitempty"`
-	ClientId     string `json:"clientId,omitempty"`
-	ClientSecret string `json:"clientSecret,omitempty"`
-}
+// RouteType defines the type of the route.
+// +kubebuilder:validation:Enum=primary;secondary;proxy
+type RouteType string
 
-func (u Upstream) GetScheme() string {
-	return u.Scheme
-}
+const (
+	// RouteTypePrimary is the primary route that is the main egress point for all traffic on this Route.
+	// It is the target of proxy routes.
+	RouteTypePrimary RouteType = "primary"
+	// RouteTypeSecondary is the failover route in case the primary route is not available.
+	// It becomes the target of proxy routes if the primary route is not available.
+	RouteTypeSecondary RouteType = "secondary"
+	// RouteTypeProxy is the route that enables meshing between Gateways by proxying all requests to either
+	// the primary or the secondary route. It never sends traffic to the upstream directly.
+	RouteTypeProxy RouteType = "proxy"
+)
 
-func (u Upstream) GetHost() string {
-	return u.Host
-}
-
-func (u Upstream) GetPort() int {
-	return u.Port
-}
-
-func (u Upstream) GetPath() string {
-	return u.Path
-}
-
-func (u Upstream) Url() string {
-	return u.Scheme + "://" + u.Host + ":" + strconv.Itoa(u.Port) + u.Path
-}
-
-// IsProxy checks if the upstream is a proxy
-// In most cases a proxy-upstream is identified by having an IssuerUrl set.
-func (u Upstream) IsProxy() bool {
-	return u.IssuerUrl != ""
-}
-
-type Downstream struct {
-	Host      string `json:"host"`
-	Port      int    `json:"port"`
-	Path      string `json:"path"`
-	IssuerUrl string `json:"issuerUrl,omitempty"`
-}
-
-// GetUrl returns the complete URL consiting of Host, Port and Path
-// The scheme is always "https"
-func (d Downstream) Url() string {
-	return "https://" + d.Host + ":" + strconv.Itoa(d.Port) + d.Path
+type Backend struct {
+	// Upstreams defines the upstream targets for this route. If multiple targets are defined, they will be load balanced according to their weight.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=10
+	Upstreams []Upstream `json:"upstreams"`
 }
 
 // RouteSpec defines the desired state of Route
 type RouteSpec struct {
-	Realm types.ObjectRef `json:"realm"`
+	// GatewayRef is a reference to the Gateway this Route belongs to
+	// +kubebuilder:validation:Required
+	GatewayRef types.ObjectRef `json:"gatewayRef"`
+
+	// Type defines the type of the route. It can be either primary, secondary or proxy. The default is primary.
+	// +kubebuilder:default=primary
+	Type RouteType `json:"type"`
+
+	// Hostnames defines the hostnames that are accepted for this route. If empty, all hostnames are accepted.
+	// +listType=set
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=20
+	// +kubebuilder:validation:items:MaxLength=253
+	// +kubebuilder:validation:XValidation:rule="self.all(h, !format.dns1123Subdomain().validate(h).hasValue())",message="each hostname must be a valid DNS-1123 subdomain"
+	Hostnames []string `json:"hostnames,omitempty"`
+
+	// Backend defines the backend for this route. Only one of Backend or Traffic can be set.
+	// +kubebuilder:validation:Required
+	Backend Backend `json:"backend"`
+
+	// Paths defines the paths that are accepted for this route. If empty, all paths are accepted.
+	// +listType=set
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=10
+	Paths []string `json:"paths,omitempty"`
+
 	// PassThrough is a flag to pass through the request to the upstream without authentication
 	// +kubebuilder:default=false
 	PassThrough bool `json:"passThrough"`
-	// +kubebuilder:validation:MinItems=1
-	Upstreams []Upstream `json:"upstreams"`
-	// +kubebuilder:validation:MinItems=1
-	Downstreams []Downstream `json:"downstreams"`
 
+	// Traffic defines the traffic configuration for this route.
 	Traffic Traffic `json:"traffic"`
+
+	// Security is the security configuration for the route
+	// +kubebuilder:validation:Optional
+	Security Security `json:"security,omitempty"`
 
 	// Transformation defines optional request/response transformations for this API
 	// +kubebuilder:validation:Optional
 	Transformation *Transformation `json:"transformation,omitempty"`
 
-	// Security is the security configuration for the route
-	// +kubebuilder:validation:Optional
-	Security *Security `json:"security,omitempty"`
-
 	// Buffering configures Kong request/response body buffering for this route
 	Buffering Buffering `json:"buffering,omitempty"`
 }
 
-func (route *Route) HasM2M() bool {
-	if route.Spec.Security == nil {
-		return false
-	}
-	return route.Spec.Security.M2M != nil
-}
-
-func (route *Route) HasM2MExternalIdp() bool {
-	if !route.HasM2M() {
-		return false
-	}
-	return route.Spec.Security.M2M.ExternalIDP != nil
-}
-
-func (route *Route) HasM2MExternalIdpClient() bool {
-	if !route.HasM2M() {
-		return false
-	}
-	if !route.HasM2MExternalIdp() {
-		return false
-	}
-	return route.Spec.Security.M2M.ExternalIDP.Client != nil
-}
-
-func (route *Route) HasM2MExternalIdpBasic() bool {
-	if !route.HasM2M() {
-		return false
-	}
-	if !route.HasM2MExternalIdp() {
-		return false
-	}
-	return route.Spec.Security.M2M.ExternalIDP.Basic != nil
-}
-
-func (g *Route) HasDynamicUpstream() bool {
-	return g.Spec.Traffic.DynamicUpstream != nil
-}
-
-// RouteStatus defines the observed state of Route
+// RouteStatus defines the observed state of Route.
 type RouteStatus struct {
 	// +listType=map
 	// +listMapKey=type
@@ -147,11 +101,19 @@ type RouteStatus struct {
 
 // Route is the Schema for the routes API
 type Route struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 
-	Spec   RouteSpec   `json:"spec,omitempty"`
-	Status RouteStatus `json:"status,omitempty"`
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
+
+	// spec defines the desired state of Route
+	// +required
+	Spec RouteSpec `json:"spec"`
+
+	// status defines the observed state of Route
+	// +optional
+	Status RouteStatus `json:"status,omitzero"`
 }
 
 var _ types.Object = &Route{}
@@ -164,18 +126,49 @@ func (g *Route) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&g.Status.Conditions, condition)
 }
 
-func (g *Route) GetHost() string {
-	return g.Spec.Downstreams[0].Host
+func (g *Route) SetProperty(key, val string) {
+	if g.Status.Properties == nil {
+		g.Status.Properties = make(map[string]string)
+	}
+	g.Status.Properties[key] = val
 }
 
-func (g *Route) GetPath() string {
-	return g.Spec.Downstreams[0].Path
+func (g *Route) GetProperty(key string) string {
+	if g.Status.Properties == nil {
+		return ""
+	}
+	val := g.Status.Properties[key]
+	return val
 }
 
+func (g *Route) IsProxy() bool {
+	return g.Spec.Type != RouteTypePrimary
+}
+
+func (g *Route) IsFailoverSecondary() bool {
+	return g.Spec.Type == RouteTypeSecondary
+}
+
+func (g *Route) GetTrustedIssuers() []string {
+	return g.Spec.Security.TrustedIssuers
+}
+
+// GetHostnames implements the CustomRoute interface for Route
+func (g *Route) GetHostnames() []string {
+	return g.Spec.Hostnames
+}
+
+// GetPaths implements the CustomRoute interface for Route
+func (g *Route) GetPaths() []string {
+	return g.Spec.Paths
+}
+
+// GetRequestBuffering implements the CustomRoute interface for Route
 func (g *Route) GetRequestBuffering() bool {
 	return !g.Spec.Buffering.DisableRequestBuffering
 }
 
+// GetResponseBuffering implements the CustomRoute interface for Route
 func (g *Route) GetResponseBuffering() bool {
 	return !g.Spec.Buffering.DisableResponseBuffering
 }
@@ -204,57 +197,12 @@ func (g *Route) GetTargetsId() string {
 	return g.GetProperty("targetsId")
 }
 
-func (g *Route) SetProperty(key, val string) {
-	if g.Status.Properties == nil {
-		g.Status.Properties = make(map[string]string)
-	}
-	g.Status.Properties[key] = val
-}
-
-func (g *Route) GetProperty(key string) string {
-	if g.Status.Properties == nil {
-		return ""
-	}
-	val := g.Status.Properties[key]
-	return val
-}
-
-func (g *Route) IsProxy() bool {
-	// If the first upstream has an issuer URL, it is a proxy route
-	return len(g.Spec.Upstreams) > 0 && g.Spec.Upstreams[0].IsProxy()
-}
-
-func (g *Route) HasFailover() bool {
-	return g.Spec.Traffic.Failover != nil
-}
-
-func (g *Route) HasFailoverSecurity() bool {
-	return g.HasFailover() && g.Spec.Traffic.Failover.Security != nil
-}
-
-// IsFailoverSecondary checks if the route is a failover target.
-// A Route is a failover target if atleast one failover upstream is a real upstream (not a proxy).
-// ! Assumption: It is not possible to mix proxy and non-proxy upstreams in the same failover configuration.
-func (g *Route) IsFailoverSecondary() bool {
-	if !g.HasFailover() {
-		return false
-	}
-	return slices.ContainsFunc(g.Spec.Traffic.Failover.Upstreams, func(upstream Upstream) bool {
-		return !upstream.IsProxy()
-	})
-}
-
-// HasRateLimit checks if the route has rate limit configuration
-func (g *Route) HasRateLimit() bool {
-	return g.Spec.Traffic.RateLimit != nil
-}
-
 // +kubebuilder:object:root=true
 
 // RouteList contains a list of Route
 type RouteList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []Route `json:"items"`
 }
 

@@ -98,6 +98,14 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					Admin: adminv1.GatewayAdminConfig{
 						Url: "http://gateway-admin.test.local:8001",
 					},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{{
+							Hostname: "gateway.test.local",
+							BasePath: "/",
+						}},
+					}},
 				},
 				IdentityProvider: adminv1.IdentityProviderConfig{
 					Url: "http://idp.test.local:8080",
@@ -116,7 +124,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Name:      "team-api-identity-realm",
 				Namespace: testNamespace,
 			},
-			TeamApiGatewayRealm: &types.ObjectRef{
+			Gateway: &types.ObjectRef{
 				Name:      "team-api-gateway-realm",
 				Namespace: testNamespace,
 			},
@@ -143,7 +151,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			By("Checking if the zone is status is updated")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone.Status.TeamApiGatewayRealm).NotTo(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).NotTo(BeNil())
 		})
 

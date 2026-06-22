@@ -45,9 +45,10 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		createGatewayAdminClient,
 		createGatewayClient,
 		createGateway,
-		createDefaultGatewayRealm,
 		createGatewayConsumer,
 		reconcileInternalRoutes,
+		createIdentityRoutes,
+		cleanupStaleRoutes,
 		populateLinks,
 	}
 

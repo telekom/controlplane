@@ -203,6 +203,13 @@ spec:
                     description: Failover defines the failover configuration for the
                       API exposure.
                     properties:
+                      enabled:
+                        default: false
+                        description: |-
+                          Enabled flags if failover is enabled
+                          This automatically selects eligible zones for failover based on the owner zone
+                          and available zones in the cluster.
+                        type: boolean
                       zone:
                         description: Zone is the zone to which the traffic should
                           be failed over in case of an error.
@@ -227,6 +234,7 @@ spec:
                           type: object
                         type: array
                     required:
+                    - enabled
                     - zone
                     type: object
                   rateLimit:

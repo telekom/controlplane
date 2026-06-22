@@ -24,6 +24,10 @@ CLUSTER_NAME="${CLUSTER_NAME:-controlplane}"
 CONTROLPLANE_NAMESPACE="controlplane-system"
 IMAGE_TAG="latest"
 
+# ko ldflags require these env vars for version stamping
+export VERSION="${VERSION:-dev}"
+export BUILD_TIME="${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+
 CERT_MANAGER_VERSION="v1.18.2"
 TRUST_MANAGER_VERSION="v0.19.0"
 PROM_OPERATOR_CRDS_VERSION="v23.0.0"
@@ -305,7 +309,8 @@ step_build_and_load_images() {
             set -e
             echo "[build] ${name} -> ${full_image}"
             cd "${REPO_ROOT}/${working_dir}"
-            KO_DOCKER_REPO="${image_name}" ko build --bare --local . \
+            KO_DOCKER_REPO="${image_name}" KO_CONFIG_PATH="${REPO_ROOT}/.ko.yaml" \
+                ko build --bare --local . \
                 --tags "${IMAGE_TAG}" \
                 --platform "${platform}" 2>&1
 

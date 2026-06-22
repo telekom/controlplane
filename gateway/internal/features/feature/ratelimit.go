@@ -50,7 +50,7 @@ func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.Features
 		return consumer.Spec.Route.Equals(route) && consumer.HasTrafficRateLimit()
 	})
 
-	return route.HasRateLimit() || anyConsumerHasRateLimiting
+	return HasRateLimit(route) || anyConsumerHasRateLimiting
 }
 
 func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
@@ -59,7 +59,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 		return features.ErrNoRoute
 	}
 
-	if !route.IsProxy() && route.HasRateLimit() {
+	if !route.IsProxy() && HasRateLimit(route) {
 		// If this is a primary-route, we need to apply the rate-limiting plugin for the provider-side
 
 		rateLimitPlugin := builder.RateLimitPluginRoute()
@@ -98,7 +98,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 
 			// If this is a primary-route, we need to apply the provider rate-limiting config
 			// to the consumer rate-limiting plugin as well.
-			if !route.IsProxy() && route.HasRateLimit() {
+			if !route.IsProxy() && HasRateLimit(route) {
 				rateLimitPlugin.Config.Limits.Service = &plugin.LimitConfig{
 					Second: route.Spec.Traffic.RateLimit.Limits.Second,
 					Minute: route.Spec.Traffic.RateLimit.Limits.Minute,
@@ -108,7 +108,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 				rateLimitPlugin = setOptions(rateLimitPlugin,
 					&route.Spec.Traffic.RateLimit.Options,
 				)
-			} else if route.HasRateLimit() {
+			} else if HasRateLimit(route) {
 				rateLimitPlugin = setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
 			}
 		}

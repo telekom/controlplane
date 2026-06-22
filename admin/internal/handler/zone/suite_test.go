@@ -116,7 +116,7 @@ func createTestEnvironment() {
 	Expect(k8sClient.Create(ctx, env)).To(Succeed())
 }
 
-// newTestZone creates a fully populated zone fixture.
+// newTestZone creates a fully populated zone fixture using the Presets-based GatewayConfig.
 func newTestZone(name string) *adminv1.Zone {
 	gatewayAdminSecret := "test-gateway-admin-secret"
 	identityAdminUrl := "https://test-iris.de/auth/admin/realms"
@@ -144,7 +144,19 @@ func newTestZone(name string) *adminv1.Zone {
 					ClientSecret: &gatewayAdminSecret,
 					Url:          "https://test-stargate.de/admin-api",
 				},
-				Url: "https://test-stargate.de/",
+				Presets: []adminv1.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{
+							{
+								Hostname: "test-stargate.de",
+								Scheme:   "https",
+								BasePath: "/",
+							},
+						},
+					},
+				},
 			},
 			Redis: adminv1.RedisConfig{
 				Host:      "http://test-redis.de/",

@@ -5,8 +5,14 @@
 package v1
 
 import (
+	"context"
+	"fmt"
+	"path"
+	"slices"
+
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,14 +24,27 @@ const (
 	ZoneVisibilityEnterprise ZoneVisibility = "Enterprise"
 )
 
+var (
+	ErrNoMatchingGatewayPreset = fmt.Errorf("no matching gateway preset found for the requested features")
+	ErrNoPresetFound           = fmt.Errorf("no gateway preset found with the specified name")
+)
+
 type RedisConfig struct {
-	// Host is the Redis host (including scheme, e.g. redis://redis-master:6379)
+	// Host is the Redis server hostname (e.g. "redis-master.svc.cluster.local").
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Format=uri
-	Host      string `json:"host"`
-	Port      int    `json:"port"`
-	Password  string `json:"password"`
-	EnableTLS bool   `json:"enableTLS"`
+	Host string `json:"host"`
+	// Port is the Redis server port.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:default=6379
+	Port int `json:"port,omitempty"`
+	// Password is a reference to the Redis password in the secret manager.
+	// +kubebuilder:validation:Optional
+	Password string `json:"password,omitempty"`
+	// EnableTLS controls whether TLS is used for the Redis connection.
+	// +kubebuilder:validation:Optional
+	EnableTLS bool `json:"enableTLS,omitempty"`
 }
 
 type IdentityProviderAdminConfig struct {
@@ -98,13 +117,142 @@ type GatewayAdminConfig struct {
 	ClientSecret *string `json:"clientSecret,omitempty"`
 }
 
+// UrlConfig defines the configuration for a single URL (hostname + base path) exposed by the gateway for this zone.
+type UrlConfig struct {
+	// Hostname is the hostname part of the URL (e.g. "api.example.com").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:XValidation:rule="!format.dns1123Subdomain().validate(self).hasValue()",message="hostname must be a valid DNS-1123 subdomain"
+	Hostname string `json:"hostname"`
+	// Port is the port number of the URL (e.g. 8000). If not set, the default port for the scheme is used (443 for https, 80 for http).
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port,omitempty"`
+	// Scheme is the URL scheme (e.g. "http" or "https"). Defaults to "https" if not set.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=http;https
+	// +kubebuilder:default=https
+	Scheme string `json:"scheme,omitempty"`
+	// BasePath is the base path part of the URL which will be the prefix of all routes exposed on this URL (e.g. "/v1").
+	// It is appended to the hostname to construct the full URL (e.g. "https://api.example.com/v1").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/.*$`
+	BasePath string `json:"basePath"`
+	// Hidden controls whether this URL should be hidden from the Links section in the Zone status.
+	// This can be used to hide internal-only URLs that should not be exposed to API consumers.
+	Hidden bool `json:"hidden"`
+}
+
+func (u UrlConfig) GetScheme() string {
+	if u.Scheme == "" {
+		return "https"
+	}
+	return u.Scheme
+}
+
+func (u UrlConfig) GetFullUrl() string {
+	scheme := u.GetScheme()
+	if u.Port != 0 {
+		return fmt.Sprintf("%s://%s:%d%s", scheme, u.Hostname, u.Port, u.BasePath)
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, u.Hostname, u.BasePath)
+}
+
+type GatewayConfigPreset struct {
+	// Name of the preset. This is used to reference the preset in the Zone spec.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
+	Name string `json:"name"`
+
+	// Default indicates whether this preset is the default preset for the zone.
+	// If true, this preset will be used if no other preset is explicitly selected.
+	// There must be at least one preset with Default=true in the gateway configuration, otherwise the operator will return an error.
+	// +kubebuilder:default=false
+	Default bool `json:"default"`
+
+	// Urls defines a list of URLs (hostname + base path) that should be exposed by the gateway for this zone. At least one URL is required.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=5
+	Urls []UrlConfig `json:"urls"`
+
+	// Features is a list of features that are enabled on this Preset.
+	// This can be used to enable certain features on the zone when this preset is applied.
+	// +listType=map
+	// +listMapKey=name
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +optional
+	Features []Feature `json:"features,omitempty"`
+}
+
+// ResolveHostnamesAndPaths derives route hostnames and paths from the preset's URL configuration.
+// Each URL contributes one hostname and one path (basePath + routePath).
+func (p *GatewayConfigPreset) ResolveHostnamesAndPaths(routePath string) (hostnames []string, paths []string) {
+	for _, u := range p.Urls {
+		hostnames = append(hostnames, u.Hostname)
+		paths = append(paths, path.Join(u.BasePath, routePath))
+	}
+	return
+}
+
+// GetDefaultUrl returns the full URL of the first non-hidden UrlConfig in this preset, or an empty string if all UrlConfigs are hidden.
+func (p *GatewayConfigPreset) GetDefaultUrl() string {
+	for _, u := range p.Urls {
+		if !u.Hidden {
+			return u.GetFullUrl()
+		}
+	}
+	return ""
+}
+
+func (p *GatewayConfigPreset) SupportsFeatures(featureNames []FeatureName) bool {
+	for _, featureName := range featureNames {
+		hasFeatureEnabled := func(feature Feature) bool {
+			return feature.Name == featureName && feature.Enabled
+		}
+		if !slices.ContainsFunc(p.Features, hasFeatureEnabled) {
+			return false
+		}
+	}
+	return true
+}
+
 type GatewayConfig struct {
 	Admin GatewayAdminConfig `json:"admin"`
+	// Presets defines a list of gateway configuration presets that can be applied to this zone. At least one preset is required.
+	// This allows to define different sets of features and URLs that can be selected for the zone based on the desired features.
+	// +listType=map
+	// +listMapKey=name
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=5
+	Presets []GatewayConfigPreset `json:"presets"`
+}
 
-	Url string `json:"url"`
+// GetPresetByName returns the gateway configuration preset with the specified name.
+// If no preset with the given name is found, it returns an error.
+func (g GatewayConfig) GetPresetByName(name string) (*GatewayConfigPreset, error) {
+	for _, preset := range g.Presets {
+		if preset.Name == name {
+			return &preset, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: %s", ErrNoPresetFound, name)
+}
 
-	// CircuitBreaker flag that controls if circuit breaker should be enabled on this zone. the config of the CB itself comes from hardcoded values, not configurable
-	CircuitBreaker bool `json:"circuitBreaker"`
+// GetDefaultPreset returns the default preset for this gateway configuration.
+// If no preset is marked as default, it returns an error.
+func (g GatewayConfig) GetDefaultPreset() (*GatewayConfigPreset, error) {
+	for _, preset := range g.Presets {
+		if preset.Default {
+			return &preset, nil
+		}
+	}
+	return nil, fmt.Errorf("no default gateway preset found: %w", ErrNoPresetFound)
 }
 
 // ManagedRouteType defines the type of a managed route.
@@ -128,6 +276,7 @@ type ManagedRouteConfig struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
 	Name string `json:"name"`
+
 	// Path is the path of the route exposed on the gateway.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^/.*$`
@@ -253,13 +402,11 @@ type ZoneStatus struct {
 	InternalIdentityRealm *types.ObjectRef `json:"internalIdentityRealm,omitempty"`
 
 	Gateway            *types.ObjectRef `json:"gateway,omitempty"`
-	GatewayRealm       *types.ObjectRef `json:"gatewayRealm,omitempty"`
 	GatewayClient      *types.ObjectRef `json:"gatewayClient,omitempty"`
 	GatewayAdminClient *types.ObjectRef `json:"gatewayAdminClient,omitempty"`
 	GatewayConsumer    *types.ObjectRef `json:"gatewayConsumer,omitempty"`
 
 	TeamApiIdentityRealm *types.ObjectRef  `json:"teamApiIdentityRealm,omitempty"`
-	TeamApiGatewayRealm  *types.ObjectRef  `json:"teamApiGatewayRealm,omitempty"`
 	ManagedRoutes        []types.ObjectRef `json:"managedRoutes,omitempty"`
 	Links                Links             `json:"links,omitempty"`
 
@@ -295,6 +442,19 @@ func (z *Zone) GetConditions() []metav1.Condition {
 
 func (z *Zone) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&z.Status.Conditions, condition)
+}
+
+func SelectGatewayPreset(requestedFeatures []FeatureName, presets []GatewayConfigPreset) (*GatewayConfigPreset, error) {
+	for _, preset := range presets {
+		if preset.SupportsFeatures(requestedFeatures) {
+			return &preset, nil
+		}
+	}
+	return nil, ErrNoMatchingGatewayPreset
+}
+
+func (z *Zone) SelectGatewayPreset(requestedFeatures []FeatureName) (*GatewayConfigPreset, error) {
+	return SelectGatewayPreset(requestedFeatures, z.Spec.Gateway.Presets)
 }
 
 // +kubebuilder:object:root=true
@@ -358,4 +518,12 @@ func (z *Zone) ManageFeature(featureName FeatureName, enabled bool) {
 		}
 	}
 	z.Status.Features = append(z.Status.Features, Feature{Name: featureName, Enabled: enabled})
+}
+
+// RealmNameFromContext returns the identity realm name for the current environment.
+// By convention, the default identity realm name equals the environment name.
+// This is used to populate Security.RealmName on gateway Routes, which tells the
+// Jumper sidecar which realm to use for Last-Mile-Security token issuance.
+func RealmNameFromContext(ctx context.Context) string {
+	return contextutil.EnvFromContextOrDie(ctx)
 }

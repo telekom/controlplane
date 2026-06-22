@@ -189,7 +189,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 	// Consumer/Subscription zone
 	var otherZoneName = "other-zone"
-	var otherZone *adminapi.Zone
 
 	// Consumer side
 	var apiSubAppName = "my-test-app-sub"
@@ -207,9 +206,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 		By("Creating the Zone")
 		zone = CreateZone(zoneName)
 		CreateGatewayClient(zone)
-
-		By("Creating the Realm")
-		CreateRealm(testEnvironment, zone.Name)
 
 		By("Creating the Application for subscription")
 		apiSubApplication = CreateApplication(apiSubAppName)
@@ -355,10 +351,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 			apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
 
 			By("Creating the Zone")
-			otherZone = CreateZone(otherZoneName)
-
-			By("Creating the Realm")
-			CreateRealm(testEnvironment, otherZone.Name)
+			CreateZone(otherZoneName)
 		})
 
 		It("should create a proxy-route if on a different zone as the API-Exposure", func() {
@@ -418,7 +411,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, proxyRouteRef.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				g.Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.apisub-test:8080/auth/realms/test"))
+				g.Expect(route.Spec.Security.TrustedIssuers).To(ContainElement("http://issuer.other-zone.de:8080/auth/realms/test"))
 
 			}, timeout, interval).Should(Succeed())
 		})
@@ -572,16 +565,12 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 		BeforeAll(func() {
 			By("Creating the RemoteOrganisation")
 			remoteOrganisation = CreateRemoteOrganisation(remoteOrgId, remoteZoneName)
-			By("Creating the remote zone and its realms")
+			By("Creating the remote zone")
 			zone := CreateZone(remoteZoneName)
-			CreateRealm(testEnvironment, zone.Name)
 			CreateGatewayClient(zone)
-			CreateRealm(remoteOrgId, zone.Name)
 
-			By("Creating the consumer zone and its realms")
-			zone = CreateZone(consumerZoneName)
-			CreateRealm(testEnvironment, zone.Name)
-			CreateRealm(remoteOrgId, zone.Name)
+			By("Creating the consumer zone")
+			CreateZone(consumerZoneName)
 
 			By("Creating the Application")
 			CreateApplication(appName)
@@ -694,7 +683,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				g.Expect(apiSubscription.Status.Route.Name).To(Equal("esp--apisubctrl-remotetest-v1"))
+				g.Expect(apiSubscription.Status.Route.Name).To(Equal("apisubctrl-remotetest-v1"))
 				g.Expect(apiSubscription.Status.Route.Namespace).To(Equal("test--consumer-zone"))
 
 			}, timeout, interval).Should(Succeed())

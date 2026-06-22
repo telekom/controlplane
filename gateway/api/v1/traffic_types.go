@@ -4,6 +4,37 @@
 
 package v1
 
+import "strconv"
+
+type Upstream struct {
+	Weight int32 `json:"weight,omitempty"`
+
+	Scheme string `json:"scheme"`
+
+	Hostname string `json:"hostname"`
+
+	Port int32 `json:"port"`
+
+	Path string `json:"path"`
+}
+
+func (t Upstream) Url() string {
+	return t.Scheme + "://" + t.Hostname + ":" + strconv.Itoa(int(t.Port)) + t.Path
+}
+
+func (t Upstream) GetScheme() string {
+	return t.Scheme
+}
+func (t Upstream) GetHostname() string {
+	return t.Hostname
+}
+func (t Upstream) GetPort() int {
+	return int(t.Port)
+}
+func (t Upstream) GetPath() string {
+	return t.Path
+}
+
 type Traffic struct {
 	Failover  *Failover  `json:"failover,omitempty"`
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
@@ -28,7 +59,7 @@ type CircuitBreaker struct {
 type Failover struct {
 	TargetZoneName string     `json:"targetZoneName"`
 	Upstreams      []Upstream `json:"upstreams"`
-	Security       *Security  `json:"security,omitempty"`
+	Security       Security   `json:"security,omitempty"`
 }
 
 // RateLimit defines rate limits for different time windows

@@ -83,7 +83,9 @@ func fillRouteInfo(ctx context.Context, obj *apiapi.RemoteApiSubscription, apiSu
 		}
 		return nil
 	}
-	// TODO: This is shit. What if we have multiple downstreams? Why is it like this?
-	obj.Status.GatewayUrl = "https://" + downstreamRoute.Spec.Downstreams[0].Host + downstreamRoute.Spec.Downstreams[0].Path
+	// Derive the gateway URL from the route's hostnames and paths
+	if len(downstreamRoute.Spec.Hostnames) > 0 && len(downstreamRoute.Spec.Paths) > 0 {
+		obj.Status.GatewayUrl = "https://" + downstreamRoute.Spec.Hostnames[0] + downstreamRoute.Spec.Paths[0]
+	}
 	return
 }

@@ -21,12 +21,8 @@ var _ = Describe("Route Util", func() {
 	})
 
 	Describe("MakeRouteName", func() {
-		It("should omit realm prefix for default realm", func() {
-			Expect(MakeRouteName("/my/api/v1", "default")).To(Equal("my-api-v1"))
-		})
-
-		It("should include realm prefix for non-default realm", func() {
-			Expect(MakeRouteName("/my/api/v1", "test")).To(Equal("test--my-api-v1"))
+		It("should normalize the path to a valid route name", func() {
+			Expect(MakeRouteName("/my/api/v1")).To(Equal("my-api-v1"))
 		})
 	})
 

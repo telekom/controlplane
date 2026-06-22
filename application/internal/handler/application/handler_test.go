@@ -60,6 +60,10 @@ func newZone() *adminv1.Zone {
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "zone-ns",
+			Gateway: &commontypes.ObjectRef{
+				Name:      "test-gateway",
+				Namespace: "zone-ns",
+			},
 		},
 	}
 }

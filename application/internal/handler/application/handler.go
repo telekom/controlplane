@@ -358,12 +358,11 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
-	realmName := contextutil.EnvFromContextOrDie(ctx)
 
-	realmRef := types.ObjectRef{
-		Name:      realmName,
-		Namespace: zone.Status.Namespace,
+	if zone.Status.Gateway == nil {
+		return ctrlerrors.BlockedErrorf("zone %q does not contain a Gateway", zone.Name)
 	}
+	gatewayRef := *zone.Status.Gateway
 
 	consumer := &gateway.Consumer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -376,7 +375,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 		consumer.Labels = map[string]string{
 			config.BuildLabelKey("application"): owner.Name,
 			config.BuildLabelKey("team"):        owner.Spec.Team,
-			config.BuildLabelKey("realm"):       realmName,
+			config.BuildLabelKey("gateway"):     gatewayRef.Name,
 			config.BuildLabelKey("zone"):        zone.Name,
 		}
 		if options.Failover {
@@ -388,8 +387,8 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 			return errors.Wrapf(err, "failed to set controller reference for gateway consumer %s", resourceName)
 		}
 		consumer.Spec = gateway.ConsumerSpec{
-			Realm: realmRef,
-			Name:  clientId,
+			Gateway: gatewayRef,
+			Name:    clientId,
 		}
 
 		if owner.Spec.Security != nil && owner.Spec.Security.IpRestrictions != nil {

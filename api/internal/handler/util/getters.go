@@ -22,7 +22,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,25 +82,8 @@ func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationapi.A
 	return application, nil
 }
 
-func GetRealm(ctx context.Context, ref client.ObjectKey) (*gatewayapi.Realm, error) {
-	client := cclient.ClientFromContextOrDie(ctx)
-
-	realm := &gatewayapi.Realm{}
-	err := client.Get(ctx, ref, realm)
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return nil, errors.Wrap(err, fmt.Sprintf("failed to find realm %q", ref.String()))
-		}
-		return nil, ctrlerrors.BlockedErrorf("realm %q not found", ref.String())
-	}
-	if err := condition.EnsureReady(realm); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", ref.String())
-	}
-
-	return realm, nil
-}
-
-func GetRealmForZone(ctx context.Context, zoneRef types.ObjectRef, realmName string) (*gatewayapi.Realm, *adminapi.Zone, error) {
+// GetDefaultPresetForZone fetches the Zone for the given ref and returns its default gateway preset.
+func GetDefaultPresetForZone(ctx context.Context, zoneRef types.ObjectRef) (*adminapi.GatewayConfigPreset, *adminapi.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	zone, err := GetZone(ctx, c, zoneRef.K8s())
@@ -109,16 +91,29 @@ func GetRealmForZone(ctx context.Context, zoneRef types.ObjectRef, realmName str
 		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
 	}
 
-	realmRef := client.ObjectKey{
-		Name:      realmName,
-		Namespace: zone.Status.Namespace,
-	}
-	realm, err := GetRealm(ctx, realmRef)
+	preset, err := zone.Spec.Gateway.GetDefaultPreset()
 	if err != nil {
-		return nil, zone, errors.Wrapf(err, "failed to get realm %s", realmRef.String())
+		return nil, zone, errors.Wrapf(err, "failed to get default preset for zone %s", zoneRef.String())
 	}
 
-	return realm, zone, nil
+	return preset, zone, nil
+}
+
+// GetPresetForZone fetches the Zone for the given ref and returns the gateway preset with the given name.
+func GetPresetForZone(ctx context.Context, zoneRef types.ObjectRef, presetName string) (*adminapi.GatewayConfigPreset, *adminapi.Zone, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	zone, err := GetZone(ctx, c, zoneRef.K8s())
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
+	}
+
+	preset, err := zone.Spec.Gateway.GetPresetByName(presetName)
+	if err != nil {
+		return nil, zone, errors.Wrapf(err, "failed to get preset %q for zone %s", presetName, zoneRef.String())
+	}
+
+	return preset, zone, nil
 }
 
 // FindAPI checks if there is an active Api corresponding to the given apiBasePath.
@@ -253,7 +248,18 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 		var candidateZones []types.ObjectRef
 		candidateZones = append(candidateZones, sub.Spec.Zone)
 		if sub.HasFailover() {
-			candidateZones = append(candidateZones, sub.Spec.Traffic.Failover.Zones...)
+			if len(sub.Spec.Traffic.Failover.Zones) == 0 && sub.Spec.Traffic.Failover.Enabled {
+				// auto-discover all eligible failover zones for the subscription zone
+				failoverZones, err := FindFailoverEligibleZones(ctx, sub.Spec.Zone)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to find failover eligible zones for subscription %q in zone %q", sub.Name, sub.Spec.Zone.Name)
+				}
+				logger.V(1).Info("Auto-discovered failover zones for subscription", "subscription", sub.Name, "zone", sub.Spec.Zone.Name, "failoverZones", failoverZones)
+				candidateZones = append(candidateZones, failoverZones...)
+
+			} else {
+				candidateZones = append(candidateZones, sub.Spec.Traffic.Failover.Zones...)
+			}
 		}
 
 		// Filter and deduplicate zones
@@ -278,4 +284,58 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 	}
 
 	return zones, nil
+}
+
+// FindFailoverEligibleZones lists all zones and returns those that are eligible for failover for a given zone.
+// A zone is eligible for failover if:
+// - It's not being deleted
+// - It's not the same as the given zone (a zone cannot failover to itself)
+// - It's ready
+// - It has the failover feature enabled
+func FindFailoverEligibleZones(ctx context.Context, myZone types.ObjectRef) ([]types.ObjectRef, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	zoneList := &adminapi.ZoneList{}
+	if err := c.List(ctx, zoneList); err != nil {
+		return nil, errors.Wrap(err, "failed to list zones")
+	}
+
+	var eligibleZones []types.ObjectRef
+	for i := range zoneList.Items {
+		zone := &zoneList.Items[i]
+
+		// Skip zones that are being deleted; their finalizer may still
+		// be running, but they should no longer be considered for failover.
+		if controller.IsBeingDeleted(zone) {
+			continue
+		}
+
+		// Skip my own zone; a zone cannot failover to itself
+		if myZone.Equals(zone) {
+			continue
+		}
+
+		// Only consider zones that are ready ...
+		if err := condition.EnsureReady(zone); err != nil {
+			logger.V(1).Info("Skipping zone that is not ready", "zone", zone.Name)
+			continue
+		}
+
+		// ... and have the failover feature enabled
+		if !zone.IsFeatureEnabled(adminapi.FeatureName("failover")) {
+			logger.V(1).Info("Skipping zone that does not have failover feature enabled", "zone", zone.Name)
+			continue
+		}
+
+		eligibleZones = append(eligibleZones, *types.ObjectRefFromObject(zone))
+	}
+
+	return eligibleZones, nil
+}
+
+type FailoverZoneInfo struct {
+	Ref types.ObjectRef
+
+	TrustedIssuers []string
 }

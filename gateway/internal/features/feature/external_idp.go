@@ -46,14 +46,14 @@ func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.Featur
 	if !ok {
 		return false
 	}
-	isPrimaryRoute := !route.IsProxy()
+	isPrimaryRoute := route.Spec.Type == gatewayv1.RouteTypePrimary
 	isConfigured := false
 
-	if route.HasFailoverSecurity() {
+	if HasFailoverSecurity(route) {
 		isConfigured = route.Spec.Traffic.Failover.Security.HasM2MExternalIDP()
 	}
 
-	if isPrimaryRoute && route.HasM2MExternalIdp() {
+	if isPrimaryRoute && HasM2MExternalIdp(route) {
 		isConfigured = true
 	}
 
@@ -72,7 +72,7 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	// If the route is a failover secondary route, we use the failover security settings
 	// Otherwise, we use the primary route security settings.
 	security := route.Spec.Security
-	if route.HasFailoverSecurity() {
+	if HasFailoverSecurity(route) {
 		security = route.Spec.Traffic.Failover.Security
 	}
 

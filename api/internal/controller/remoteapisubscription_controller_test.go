@@ -135,17 +135,19 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 
 		By("Creating the normal Zone")
 		zone = CreateZone(zoneName)
-		CreateRealm(testEnvironment, zone.Name)
 		CreateGatewayClient(zone)
 
-		By("Creating the remote Zone")
+		By("Creating the remote Zone with custom gateway URL")
 		remoteZone = CreateZone(remoteOrgId + "-" + zoneName)
-		remoteRealm := NewRealm(testEnvironment, remoteZone.Name)
-		remoteRealm.Spec.Urls = []string{"https://ger.gateway.es"}
-		err := k8sClient.Create(ctx, remoteRealm)
-		Expect(err).ToNot(HaveOccurred())
-		remoteRealm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
-		err = k8sClient.Status().Update(ctx, remoteRealm)
+		// Update the zone's preset to use the expected gateway URL
+		remoteZone.Spec.Gateway.Presets[0].Urls = []adminapi.UrlConfig{
+			{
+				Hostname: "ger.gateway.es",
+				Scheme:   "https",
+				BasePath: "/",
+			},
+		}
+		err := k8sClient.Update(ctx, remoteZone)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Creating the RemoteOrganization")
@@ -294,7 +296,6 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 	var appName = "my-remote-test-cons-app"
 	var remoteOrgId = "pol"
 
-	var zone *adminapi.Zone
 	var remoteOrg *adminapi.RemoteOrganization
 
 	var remoteApiSubscription *apiapi.RemoteApiSubscription
@@ -305,10 +306,7 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 		remoteApiSubscription.Spec.TargetOrganization = remoteOrgId
 
 		By("Creating the Zone")
-		zone = CreateZone(zoneName)
-
-		By("Creating the Realm")
-		CreateRealm(remoteOrgId, zone.Name)
+		CreateZone(zoneName)
 
 		By("Creating the RemoteOrganization")
 		remoteOrg = CreateRemoteOrganisation(remoteOrgId, zoneName)

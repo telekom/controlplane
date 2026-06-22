@@ -56,14 +56,11 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 
 	// This is the proxy upstream that should be used in all non-failover cases (primary upstream).
 	// The target is the zone where the API is exposed on.
-	upstream := route.Spec.Upstreams[0]
+	upstream := route.Spec.Backend.Upstreams[0]
 	proxyRoutingCfg := &plugin.RoutingConfig{
 		RemoteApiUrl:   upstream.Url(),
 		ApiBasePath:    upstream.Path,
-		Realm:          route.Spec.Realm.Name,
-		Issuer:         upstream.IssuerUrl,
-		ClientId:       upstream.ClientId,
-		ClientSecret:   upstream.ClientSecret,
+		Realm:          route.Spec.Security.RealmName,
 		Environment:    envName,
 		TargetZoneName: failover.TargetZoneName, // The zone where the API is exposed on
 		JumperConfig:   nil,                     // JumperConfig ist not needed for the proxy routing config
@@ -74,13 +71,13 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 	// It does so by checking the health of the TargetZoneName using the ZoneHealthCheckService.
 
 	hasLoadbalancing := len(failover.Upstreams) > 1
-	hasFailoverSecurity := route.HasFailoverSecurity()
-	IsFailoverSecondary := route.IsFailoverSecondary()
+	hasFailoverSecurity := HasFailoverSecurity(route)
+	IsFailoverSecondary := route.Spec.Type == gatewayv1.RouteTypeSecondary
 
 	jumperCfg := builder.JumperConfig()
 	routingCfg := &plugin.RoutingConfig{
 		JumperConfig: jumperCfg,
-		Realm:        route.Spec.Realm.Name,
+		Realm:        route.Spec.Security.RealmName,
 		Environment:  envName,
 	}
 	routingConfigs.Add(routingCfg)
@@ -113,9 +110,6 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 		failoverUpstream := failover.Upstreams[0]
 		routingCfg.RemoteApiUrl = failoverUpstream.Url()
 		routingCfg.ApiBasePath = failoverUpstream.Path
-		routingCfg.Issuer = failoverUpstream.IssuerUrl
-		routingCfg.ClientId = failoverUpstream.ClientId
-		routingCfg.ClientSecret = failoverUpstream.ClientSecret
 		routingCfg.TargetZoneName = "" // No target zone for failover upstreams
 	}
 

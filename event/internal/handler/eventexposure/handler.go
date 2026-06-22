@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -103,6 +104,8 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 
 	// --- SSE Route management ---
 
+	realmName := adminv1.RealmNameFromContext(ctx)
+
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil
 	obj.Status.SseURLs = make(map[string]string)
@@ -112,28 +115,56 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 		return errors.Wrap(err, "failed to find cross-zone SSE subscriptions")
 	}
 
+	// Collect subscriber zones for LMS issuers
+	var subscriberZones []*adminv1.Zone
 	for _, subscriberZoneRef := range crossZones {
 		subscriberZone, zoneErr := util.GetZone(ctx, subscriberZoneRef.K8s())
 		if zoneErr != nil {
 			return errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
 		}
+		subscriberZones = append(subscriberZones, subscriberZone)
 
-		proxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, eventConfig, subscriberZone, zone)
+		// Proxy SSE routes: use subscriber zone's LMS issuer (mesh-client authentication)
+		var proxyTrustedIssuers []string
+		if subscriberZone.Status.Links.LmsIssuer != "" {
+			proxyTrustedIssuers = []string{subscriberZone.Status.Links.LmsIssuer}
+		}
+
+		proxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, subscriberZone, zone,
+			util.WithTrustedIssuers(proxyTrustedIssuers),
+			util.WithRealmName(realmName),
+		)
 		if routeErr != nil {
 			return errors.Wrapf(routeErr, "failed to create SSE proxy Route for zone %q", subscriberZoneRef.Name)
 		}
 		obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *types.ObjectRefFromObject(proxyRoute))
-		obj.Status.SseURLs[subscriberZoneRef.Name] = proxyRoute.Spec.Downstreams[0].Url()
+		obj.Status.SseURLs[subscriberZoneRef.Name] = util.RouteDownstreamURL(proxyRoute)
 		logger.V(1).Info("SSE proxy Route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
 	}
 
+	// Primary SSE route: trusted issuers = [IDP issuer] + [LMS issuers from subscriber proxy zones]
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
-	route, err := util.CreateSSERoute(ctx, obj.Spec.EventType, zone, eventConfig, isProxyTarget)
+	var primaryTrustedIssuers []string
+	if zone.Status.Links.Issuer != "" {
+		primaryTrustedIssuers = append(primaryTrustedIssuers, zone.Status.Links.Issuer)
+	}
+	if isProxyTarget {
+		for _, subZone := range subscriberZones {
+			if subZone.Status.Links.LmsIssuer != "" {
+				primaryTrustedIssuers = append(primaryTrustedIssuers, subZone.Status.Links.LmsIssuer)
+			}
+		}
+	}
+
+	route, err := util.CreateSSERoute(ctx, obj.Spec.EventType, zone, eventConfig, isProxyTarget,
+		util.WithTrustedIssuers(primaryTrustedIssuers),
+		util.WithRealmName(realmName),
+	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create SSE Route")
 	}
 	obj.Status.Route = types.ObjectRefFromObject(route)
-	obj.Status.SseURLs[zone.Name] = route.Spec.Downstreams[0].Url()
+	obj.Status.SseURLs[zone.Name] = util.RouteDownstreamURL(route)
 
 	deleted, err := util.CleanupOldSSERoutes(ctx, obj.Spec.EventType)
 	if err != nil {

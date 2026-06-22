@@ -17,8 +17,13 @@ import (
 func populateLinks(ctx context.Context, hc *HandlingContext) error {
 	zone := hc.Zone
 
-	// Gateway base URL
-	zone.Status.Links.Url = zone.Spec.Gateway.Url
+	defaultPreset, err := zone.Spec.Gateway.GetDefaultPreset()
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("cannot resolve default gateway preset for links: %s", err)
+	}
+
+	// Gateway base URL (from default preset)
+	zone.Status.Links.Url = defaultPreset.GetDefaultUrl()
 
 	// Issuer URL: <idpUrl>/auth/realms/<realmName>
 	issuer, err := url.JoinPath(zone.Spec.IdentityProvider.Url, "auth/realms/", hc.DefaultIdentityRealm.Name)
@@ -27,10 +32,15 @@ func populateLinks(ctx context.Context, hc *HandlingContext) error {
 	}
 	zone.Status.Links.Issuer = issuer
 
-	// LMS Issuer URL: <gatewayUrl>/auth/realms/<realmName>
-	lmsIssuer, err := url.JoinPath(zone.Spec.Gateway.Url, "auth/realms/", hc.DefaultGatewayRealm.Name)
+	// LMS Issuer URL: <gatewayPresetUrl>/auth/realms/<identityRealmName>
+	// or for Spacegate: <gatewayPresetUrl>/spacegate/auth/realms/<identityRealmName>
+	pathPrefix := defaultPreset.GetDefaultUrl()
+	if hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
+		pathPrefix = defaultPreset.GetDefaultUrl() + spacegatePathPrefix
+	}
+	lmsIssuer, err := url.JoinPath(pathPrefix, "auth/realms/", hc.DefaultIdentityRealm.Name)
 	if err != nil {
-		return ctrlerrors.BlockedErrorf("cannot combine gatewayUrl %s with realm name %s: %s", zone.Spec.Gateway.Url, hc.DefaultGatewayRealm.Name, err)
+		return ctrlerrors.BlockedErrorf("cannot combine gateway preset URL with realm name %s: %s", hc.DefaultIdentityRealm.Name, err)
 	}
 	zone.Status.Links.LmsIssuer = lmsIssuer
 
