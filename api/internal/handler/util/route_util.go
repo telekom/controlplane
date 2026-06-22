@@ -178,7 +178,7 @@ func MakeRouteName(apiBasePath string) string {
 	return labelutil.NormalizeValue(apiBasePath)
 }
 
-func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstreamZoneRef types.ObjectRef, apiBasePath string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
+func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef types.ObjectRef, apiBasePath string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -225,13 +225,13 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 		}
 
 		// Upstream for proxy route: points at the upstream zone's gateway URL for this basepath
-		upstreamUrl, err := url.JoinPath(upstreamPreset.Urls[0].GetFullUrl(), apiBasePath)
-		if err != nil {
-			return errors.Wrap(err, "failed to build upstream URL for proxy route")
+		upstreamUrl, joinErr := url.JoinPath(upstreamPreset.Urls[0].GetFullUrl(), apiBasePath)
+		if joinErr != nil {
+			return errors.Wrap(joinErr, "failed to build upstream URL for proxy route")
 		}
-		upstream, err := AsUpstreamForRealRoute(upstreamUrl, 0)
-		if err != nil {
-			return errors.Wrap(err, "failed to create upstream")
+		upstream, upstreamErr := AsUpstreamForRealRoute(upstreamUrl, 0)
+		if upstreamErr != nil {
+			return errors.Wrap(upstreamErr, "failed to create upstream")
 		}
 
 		hostnames, paths := downstreamPreset.ResolveHostnamesAndPaths(apiBasePath)
@@ -264,63 +264,14 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 		}
 
 		if options.IsFailoverSecondary() {
-			proxyRoute.Labels[LabelFailoverSecondary] = labelTrue
-
-			// A failover secondary route is the target of cross-zone proxy requests,
-			// so the gateway mesh-client must be allowed to access it.
-			proxyRoute.Spec.Security.DefaultConsumers = append(proxyRoute.Spec.Security.DefaultConsumers, GatewayConsumerName)
-
-			// The failover secondary also needs the same TrustedIssuers as the primary route,
-			// since proxy routes may fail over to it and present LMS tokens.
-			if len(options.TrustedIssuers) > 0 {
-				proxyRoute.Spec.Security.TrustedIssuers = append(proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...)
-			}
-
-			failoverUpstreams := make([]gatewayapi.Upstream, 0, len(options.FailoverUpstreams))
-			for _, rawUpstream := range options.FailoverUpstreams {
-				failoverUpstream, err := AsUpstreamForRealRoute(rawUpstream.Url, int32(rawUpstream.Weight))
-				if err != nil {
-					return errors.Wrapf(err, "failed to create failover upstream %s", rawUpstream.Url)
-				}
-				failoverUpstreams = append(failoverUpstreams, failoverUpstream)
-			}
-
-			proxyRoute.Spec.Traffic = gatewayapi.Traffic{
-				Failover: &gatewayapi.Failover{
-					TargetZoneName: upstreamZone.Name,
-					Upstreams:      failoverUpstreams,
-				},
-			}
-
-			// Add the provided security config (mostly copied from primary-route)
-			// to the failover config of the secondary route
-			if options.FailoverSecurity != nil {
-				proxyRoute.Spec.Traffic.Failover.Security = mapSecurity(options.FailoverSecurity)
+			if secondaryErr := applyFailoverSecondary(ctx, proxyRoute, options, upstreamZone.Name); secondaryErr != nil {
+				return secondaryErr
 			}
 		}
 
 		if options.HasFailover() {
-			proxyRoute.Labels[config.BuildLabelKey("failover.zone")] = labelutil.NormalizeValue(options.FailoverZone.Name)
-			failoverPreset, _, err := GetDefaultPresetForZone(ctx, options.FailoverZone)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get failover zone %s", options.FailoverZone.String())
-			}
-			failoverUrl, err := url.JoinPath(failoverPreset.Urls[0].GetFullUrl(), apiBasePath)
-			if err != nil {
-				return errors.Wrapf(err, "failed to build failover URL for zone %s", options.FailoverZone.String())
-			}
-			failoverUpstream, err := AsUpstreamForRealRoute(failoverUrl, 0)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create failover upstream for zone %s", options.FailoverZone.String())
-			}
-
-			proxyRoute.Spec.Traffic = gatewayapi.Traffic{
-				Failover: &gatewayapi.Failover{
-					TargetZoneName: upstreamZone.Name,
-					Upstreams: []gatewayapi.Upstream{
-						failoverUpstream,
-					},
-				},
+			if primaryErr := applyFailoverPrimary(ctx, proxyRoute, options, apiBasePath, upstreamZone.Name); primaryErr != nil {
+				return primaryErr
 			}
 		}
 
@@ -333,6 +284,72 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 	}
 
 	return proxyRoute, nil
+}
+
+// applyFailoverSecondary configures the proxy route as a failover secondary target.
+func applyFailoverSecondary(_ context.Context, proxyRoute *gatewayapi.Route, options *CreateRouteOptions, upstreamZoneName string) error {
+	proxyRoute.Labels[LabelFailoverSecondary] = labelTrue
+
+	// A failover secondary route is the target of cross-zone proxy requests,
+	// so the gateway mesh-client must be allowed to access it.
+	proxyRoute.Spec.Security.DefaultConsumers = append(proxyRoute.Spec.Security.DefaultConsumers, GatewayConsumerName)
+
+	// The failover secondary also needs the same TrustedIssuers as the primary route,
+	// since proxy routes may fail over to it and present LMS tokens.
+	if len(options.TrustedIssuers) > 0 {
+		proxyRoute.Spec.Security.TrustedIssuers = append(proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...)
+	}
+
+	failoverUpstreams := make([]gatewayapi.Upstream, 0, len(options.FailoverUpstreams))
+	for _, rawUpstream := range options.FailoverUpstreams {
+		failoverUpstream, upstreamErr := AsUpstreamForRealRoute(rawUpstream.Url, int32(rawUpstream.Weight)) //nolint:gosec // weight is a small positive integer
+		if upstreamErr != nil {
+			return errors.Wrapf(upstreamErr, "failed to create failover upstream %s", rawUpstream.Url)
+		}
+		failoverUpstreams = append(failoverUpstreams, failoverUpstream)
+	}
+
+	proxyRoute.Spec.Traffic = gatewayapi.Traffic{
+		Failover: &gatewayapi.Failover{
+			TargetZoneName: upstreamZoneName,
+			Upstreams:      failoverUpstreams,
+		},
+	}
+
+	// Add the provided security config (mostly copied from primary-route)
+	// to the failover config of the secondary route
+	if options.FailoverSecurity != nil {
+		proxyRoute.Spec.Traffic.Failover.Security = mapSecurity(options.FailoverSecurity)
+	}
+
+	return nil
+}
+
+// applyFailoverPrimary configures the proxy route with a failover upstream for the primary route.
+func applyFailoverPrimary(ctx context.Context, proxyRoute *gatewayapi.Route, options *CreateRouteOptions, apiBasePath, upstreamZoneName string) error {
+	proxyRoute.Labels[config.BuildLabelKey("failover.zone")] = labelutil.NormalizeValue(options.FailoverZone.Name)
+	failoverPreset, _, err := GetDefaultPresetForZone(ctx, options.FailoverZone)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get failover zone %s", options.FailoverZone.String())
+	}
+	failoverUrl, err := url.JoinPath(failoverPreset.Urls[0].GetFullUrl(), apiBasePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to build failover URL for zone %s", options.FailoverZone.String())
+	}
+	failoverUpstream, err := AsUpstreamForRealRoute(failoverUrl, 0)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create failover upstream for zone %s", options.FailoverZone.String())
+	}
+
+	proxyRoute.Spec.Traffic = gatewayapi.Traffic{
+		Failover: &gatewayapi.Failover{
+			TargetZoneName: upstreamZoneName,
+			Upstreams: []gatewayapi.Upstream{
+				failoverUpstream,
+			},
+		},
+	}
+	return nil
 }
 
 // CleanupProxyRoute deletes the route only if no other subscriptions (size > 1) for this route exist
@@ -452,9 +469,9 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 
 		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
 		for _, upstream := range apiExposure.Spec.Upstreams {
-			gatewayUpstream, err := AsUpstreamForRealRoute(upstream.Url, int32(upstream.Weight))
-			if err != nil {
-				return errors.Wrapf(err, "failed to create upstream for URL %s", upstream.Url)
+			gatewayUpstream, upstreamErr := AsUpstreamForRealRoute(upstream.Url, int32(upstream.Weight)) //nolint:gosec // weight is a small positive integer
+			if upstreamErr != nil {
+				return errors.Wrapf(upstreamErr, "failed to create upstream for URL %s", upstream.Url)
 			}
 			gatewayUpstreams = append(gatewayUpstreams, gatewayUpstream)
 		}
@@ -565,35 +582,43 @@ func mapSecurity(apiSecurity *apiapi.Security) gatewayapi.Security {
 		security.M2M = &gatewayapi.Machine2MachineAuthentication{
 			Scopes: apiSecurity.M2M.Scopes,
 		}
-		if apiSecurity.M2M.ExternalIDP != nil {
-			security.M2M.ExternalIDP = &gatewayapi.ExternalIdentityProvider{
-				TokenEndpoint: apiSecurity.M2M.ExternalIDP.TokenEndpoint,
-				TokenRequest:  gatewayapi.TokenRequestMethod(apiSecurity.M2M.ExternalIDP.TokenRequest),
-				GrantType:     apiSecurity.M2M.ExternalIDP.GrantType,
-			}
-			if apiSecurity.M2M.ExternalIDP.Basic != nil {
-				security.M2M.ExternalIDP.Basic = &gatewayapi.BasicAuthCredentials{
-					Username: apiSecurity.M2M.ExternalIDP.Basic.Username,
-					Password: apiSecurity.M2M.ExternalIDP.Basic.Password,
-				}
-			} else if apiSecurity.M2M.ExternalIDP.Client != nil {
-				security.M2M.ExternalIDP.Client = &gatewayapi.OAuth2ClientCredentials{
-					ClientId:     apiSecurity.M2M.ExternalIDP.Client.ClientId,
-					ClientSecret: apiSecurity.M2M.ExternalIDP.Client.ClientSecret,
-					ClientKey:    apiSecurity.M2M.ExternalIDP.Client.ClientKey,
-				}
-			}
-		}
+		security.M2M.ExternalIDP = mapExternalIDP(apiSecurity.M2M.ExternalIDP)
 		if apiSecurity.M2M.Basic != nil {
 			security.M2M.Basic = &gatewayapi.BasicAuthCredentials{
 				Username: apiSecurity.M2M.Basic.Username,
 				Password: apiSecurity.M2M.Basic.Password,
 			}
 		}
-
 	}
 
 	return security
+}
+
+func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.ExternalIdentityProvider {
+	if externalIDP == nil {
+		return nil
+	}
+
+	idp := &gatewayapi.ExternalIdentityProvider{
+		TokenEndpoint: externalIDP.TokenEndpoint,
+		TokenRequest:  gatewayapi.TokenRequestMethod(externalIDP.TokenRequest),
+		GrantType:     externalIDP.GrantType,
+	}
+
+	if externalIDP.Basic != nil {
+		idp.Basic = &gatewayapi.BasicAuthCredentials{
+			Username: externalIDP.Basic.Username,
+			Password: externalIDP.Basic.Password,
+		}
+	} else if externalIDP.Client != nil {
+		idp.Client = &gatewayapi.OAuth2ClientCredentials{
+			ClientId:     externalIDP.Client.ClientId,
+			ClientSecret: externalIDP.Client.ClientSecret,
+			ClientKey:    externalIDP.Client.ClientKey,
+		}
+	}
+
+	return idp
 }
 
 func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.ConsumeRouteSecurity {

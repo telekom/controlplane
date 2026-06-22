@@ -5,8 +5,9 @@
 package controller
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
@@ -67,8 +68,8 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 	apiBasePath := "/apiexpctrl/trustedteams/v1"
 	zoneName := "apiexp-trustedteams"
 
-	var apiExposure *apiv1.ApiExposure
-	var api *apiv1.Api
+	var apiExposure *apiapi.ApiExposure
+	var api *apiapi.Api
 	var team1, team2, team3 types.ObjectRef
 
 	apiExpAppName := "api-exposure-app"

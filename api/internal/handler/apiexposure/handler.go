@@ -10,6 +10,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
@@ -65,9 +68,33 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	}
 
 	// --- Proxy Route Management ---
+	crossZoneLmsIssuers, err := h.manageProxyRoutes(ctx, apiExp)
+	if err != nil {
+		return err
+	}
+
+	// --- Real Route ---
+	realRoute, err := h.createRealRoute(ctx, apiExp, crossZoneLmsIssuers)
+	if err != nil {
+		return err
+	}
+
+	apiExp.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
+	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
+	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
+	logger.Info("✅ ApiExposure is processed")
+
+	return nil
+}
+
+// manageProxyRoutes creates proxy routes for each cross-zone subscriber zone, handles failover routes,
+// cleans up stale routes, and returns the collected LMS issuers from subscriber zones.
+func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apiapi.ApiExposure) ([]string, error) {
+	logger := log.FromContext(ctx)
+
 	crossZoneRefs, err := util.FindCrossZoneApiSubscriptionZones(ctx, apiExp)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find cross-zone subscription zones for apiExposure: %s", apiExp.Name)
+		return nil, errors.Wrapf(err, "failed to find cross-zone subscription zones for apiExposure: %s", apiExp.Name)
 	}
 
 	// Resolve the realm name (= environment name) for route security
@@ -96,14 +123,14 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 			options = append(options, util.WithServiceRateLimit(apiExp.Spec.Traffic.RateLimit.Provider))
 		}
 
-		proxyRoute, err := util.CreateProxyRoute(ctx, subscriberZoneRef, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
+		proxyRoute, proxyErr := util.CreateProxyRoute(ctx, subscriberZoneRef, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
 			options...,
 		)
-		if createErr != nil {
-			return errors.Wrapf(createErr, "failed to create proxy route for zone %s", subscriberZoneRef.Name)
+		if proxyErr != nil {
+			return nil, errors.Wrapf(proxyErr, "failed to create proxy route for zone %s", subscriberZoneRef.Name)
 		}
 		apiExp.Status.ProxyRoutes = append(apiExp.Status.ProxyRoutes, *types.ObjectRefFromObject(proxyRoute))
-		log.V(1).Info("Proxy route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
+		logger.V(1).Info("Proxy route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
 
 		// Collect the subscriber zone's LMS issuer for the real route
 		_, subscriberZone, zErr := util.GetDefaultPresetForZone(ctx, subscriberZoneRef)
@@ -115,14 +142,14 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	// Create provider failover route if configured (must be before cleanup to prevent deletion)
 	if apiExp.HasFailover() {
 		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
-		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
+		failoverRoute, failoverErr := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
 			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
 			util.WithFailoverSecurity(apiExp.Spec.Security),
 			util.WithTrustedIssuers(crossZoneLmsIssuers),
 			util.WithRealmName(realmName),
 		)
-		if createErr != nil {
-			return errors.Wrapf(createErr, "unable to create failover route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
+		if failoverErr != nil {
+			return nil, errors.Wrapf(failoverErr, "unable to create failover route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 		}
 		apiExp.Status.FailoverRoute = types.ObjectRefFromObject(failoverRoute)
 	}
@@ -130,30 +157,33 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	// Cleanup stale proxy routes that were not touched in this reconciliation
 	deleted, err := util.CleanupStaleProxyRoutes(ctx, apiExp.Spec.ApiBasePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to cleanup stale proxy routes")
+		return nil, errors.Wrap(err, "failed to cleanup stale proxy routes")
 	}
 	if deleted > 0 {
 		logger.V(1).Info("Cleaned up stale proxy routes", "deleted", deleted)
 	}
 
-	// --- Real Route ---
-	// Build TrustedIssuers for the real route:
-	// - IDP issuer (for local subscriber token validation) if local subscribers exist
-	// - LMS issuers from cross-zone subscriber zones (for mesh token validation)
+	return crossZoneLmsIssuers, nil
+}
+
+// createRealRoute builds the TrustedIssuers list and creates the real route for the ApiExposure.
+func (h *ApiExposureHandler) createRealRoute(ctx context.Context, apiExp *apiapi.ApiExposure, crossZoneLmsIssuers []string) (*gatewayapi.Route, error) {
+	realmName := adminv1.RealmNameFromContext(ctx)
+
 	hasCrossZoneSubs, err := HasCrossZoneSubscribers(ctx, apiExp)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check cross-zone subscribers for apiExposure: %s", apiExp.Name)
+		return nil, errors.Wrapf(err, "failed to check cross-zone subscribers for apiExposure: %s", apiExp.Name)
 	}
 
 	hasLocalSubs, err := HasLocalSubscribers(ctx, apiExp)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check local subscribers for apiExposure: %s", apiExp.Name)
+		return nil, errors.Wrapf(err, "failed to check local subscribers for apiExposure: %s", apiExp.Name)
 	}
 
 	// Get exposure zone to read its IDP issuer
 	_, exposureZone, err := util.GetDefaultPresetForZone(ctx, apiExp.Spec.Zone)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get exposure zone %s", apiExp.Spec.Zone.Name)
+		return nil, errors.Wrapf(err, "failed to get exposure zone %s", apiExp.Spec.Zone.Name)
 	}
 
 	var realRouteTrustedIssuers []string
@@ -162,21 +192,11 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	}
 	realRouteTrustedIssuers = append(realRouteTrustedIssuers, crossZoneLmsIssuers...)
 
-	realRoute, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp,
+	return util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp,
 		util.WithProxyTarget(hasCrossZoneSubs),
 		util.WithTrustedIssuers(realRouteTrustedIssuers),
 		util.WithRealmName(realmName),
 	)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
-	}
-
-	apiExp.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
-	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
-	logger.Info("✅ ApiExposure is processed")
-
-	return nil
 }
 
 func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure) error {

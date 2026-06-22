@@ -189,7 +189,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 	var zone *adminapi.Zone
 
 	// Consumer/Subscription zone
-	var otherZoneName = "other-zone"
+	otherZoneName := "other-zone"
 
 	// Consumer side
 	apiSubAppName := "my-test-app-sub"
@@ -401,7 +401,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(route.Spec.Security.TrustedIssuers).To(ContainElement("http://issuer.other-zone.de:8080/auth/realms/test"))
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})

@@ -88,5 +88,5 @@ func fillRouteInfo(ctx context.Context, obj *apiapi.RemoteApiSubscription, apiSu
 	if len(downstreamRoute.Spec.Hostnames) > 0 && len(downstreamRoute.Spec.Paths) > 0 {
 		obj.Status.GatewayUrl = "https://" + downstreamRoute.Spec.Hostnames[0] + downstreamRoute.Spec.Paths[0]
 	}
-	return
+	return nil
 }

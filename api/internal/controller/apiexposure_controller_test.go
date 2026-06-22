@@ -92,7 +92,7 @@ func CreateZone(name string) *adminapi.Zone {
 	return zone
 }
 
-func NewApiExposure(apiBasePath, zoneName string, appName string) *apiv1.ApiExposure {
+func NewApiExposure(apiBasePath, zoneName, appName string) *apiv1.ApiExposure {
 	return &apiv1.ApiExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeValue(apiBasePath),
