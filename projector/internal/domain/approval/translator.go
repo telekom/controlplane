@@ -214,7 +214,7 @@ func mapAvailableTransitions(transitions approvalv1.AvailableTransitions) []mode
 	}
 	result := make([]model.AvailableTransition, 0, len(transitions))
 	for _, at := range transitions {
-		if strings.EqualFold(string(at.To), "expired") {
+		if at.To == approvalv1.ApprovalStateExpired {
 			continue
 		}
 		result = append(result, model.AvailableTransition{
