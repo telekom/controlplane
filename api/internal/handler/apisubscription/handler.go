@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -374,6 +375,10 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application *applicationapi.Application, apiSub *apiapi.ApiSubscription) bool {
 	team, err := organizationapi.FindTeamForObject(ctx, application)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because team was not found")
+			return true
+		}
 		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
 		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
 		apiSub.SetCondition(condition.NewBlockedCondition(msg))
@@ -383,8 +388,21 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 	apiCategory, err := util.ResolveActiveApiCategoryForApi(ctx, api)
 	if err != nil {
 		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
-		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-		apiSub.SetCondition(condition.NewBlockedCondition(msg))
+		var be ctrlerrors.BlockedError
+		var re ctrlerrors.RetryableError
+
+		if errors.As(err, &be) {
+			log.FromContext(ctx).V(1).Info("ApiCategory policy validation blocked", "reason", err.Error())
+			apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+			apiSub.SetCondition(condition.NewBlockedCondition(msg))
+		} else if errors.As(err, &re) {
+			log.FromContext(ctx).V(1).Info("ApiCategory policy validation retryable", "reason", err.Error())
+			apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+		} else {
+			log.FromContext(ctx).V(1).Info("ApiCategory policy validation failed", "reason", err.Error())
+			apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+			apiSub.SetCondition(condition.NewBlockedCondition(msg))
+		}
 		return false
 	}
 	if apiCategory == nil {

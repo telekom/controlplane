@@ -18,6 +18,7 @@ import (
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -249,6 +250,10 @@ func validateExposureScopes(ctx context.Context, api *apiapi.Api, apiExp *apiapi
 func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application *applicationapi.Application, apiExp *apiapi.ApiExposure) bool {
 	team, err := organizationapi.FindTeamForObject(ctx, application)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because team was not found")
+			return true
+		}
 		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
 		apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
 		apiExp.SetCondition(condition.NewBlockedCondition(msg))
@@ -258,8 +263,21 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 	apiCategory, err := util.ResolveActiveApiCategoryForApi(ctx, api)
 	if err != nil {
 		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
-		apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-		apiExp.SetCondition(condition.NewBlockedCondition(msg))
+		var be ctrlerrors.BlockedError
+		var re ctrlerrors.RetryableError
+
+		if errors.As(err, &be) {
+			log.FromContext(ctx).V(1).Info("ApiCategory policy validation blocked", "reason", err.Error())
+			apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+			apiExp.SetCondition(condition.NewBlockedCondition(msg))
+		} else if errors.As(err, &re) {
+			log.FromContext(ctx).V(1).Info("ApiCategory policy validation retryable", "reason", err.Error())
+			apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+		} else {
+			log.FromContext(ctx).V(1).Info("ApiCategory policy validation failed", "reason", err.Error())
+			apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+			apiExp.SetCondition(condition.NewBlockedCondition(msg))
+		}
 		return false
 	}
 	if apiCategory == nil {
