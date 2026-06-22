@@ -14,6 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -183,7 +184,7 @@ func ResolveActiveApiCategoryByLabelValue(ctx context.Context, labelValue string
 	}
 
 	if len(apiCategoryList.Items) == 0 {
-		return nil, nil
+		return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "apicategories"}, normalizedLabelValue)
 	}
 
 	if normalizedLabelValue == "" {

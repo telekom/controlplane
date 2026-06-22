@@ -71,7 +71,7 @@ var _ = Describe("ApiCategory Policy", func() {
 			Expect(category.Spec.LabelValue).To(Equal(labelValue))
 		},
 		Entry("resolves an active category", []crclient.Object{activeCategory}, "partner", false, false),
-		Entry("skips validation when no categories exist", []crclient.Object{}, "partner", true, false),
+		Entry("skips validation when no categories exist", []crclient.Object{}, "partner", true, true),
 		Entry("rejects an inactive category", []crclient.Object{inactiveCategory}, "legacy", true, true),
 		Entry("rejects a missing category when categories exist", []crclient.Object{activeCategory}, "missing", true, true),
 	)

@@ -387,6 +387,10 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 
 	apiCategory, err := util.ResolveActiveApiCategoryForApi(ctx, api)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because no ApiCategories exist")
+			return true
+		}
 		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
 		var be ctrlerrors.BlockedError
 		var re ctrlerrors.RetryableError
@@ -404,10 +408,6 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 			apiSub.SetCondition(condition.NewBlockedCondition(msg))
 		}
 		return false
-	}
-	if apiCategory == nil {
-		log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because no ApiCategories exist")
-		return true
 	}
 
 	teamCategory := string(team.Spec.Category)
