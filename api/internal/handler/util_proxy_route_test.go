@@ -119,9 +119,7 @@ func CreateGatewayClient(zone *adminapi.Zone) *identityapi.Client {
 }
 
 var _ = Describe("Util Tests", func() {
-
 	Context("Creation of Proxy-Routes", Ordered, func() {
-
 		ctx = context.Background()
 		var consumerZone *adminapi.Zone
 		var providerZone *adminapi.Zone
@@ -138,7 +136,6 @@ var _ = Describe("Util Tests", func() {
 			By("Creating the provider Zone")
 			providerZone = CreateZone("provider")
 			CreateGatewayClient(providerZone)
-
 		})
 
 		It("should create a normal Proxy-Route", func() {
@@ -160,6 +157,5 @@ var _ = Describe("Util Tests", func() {
 			Expect(upstream.Hostname).To(Equal("test.provider.de"))
 			Expect(upstream.Path).To(Equal("/api/test/v1"))
 		})
-
 	})
 })

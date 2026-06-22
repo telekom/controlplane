@@ -37,7 +37,7 @@ type ApprovalSpec struct {
 	Strategy ApprovalStrategy `json:"strategy"`
 
 	// State defines the state of the approval
-	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended
+	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended;Expired
 	// +kubebuilder:default=Pending
 	State ApprovalState `json:"state"`
 
@@ -57,9 +57,14 @@ type ApprovalStatus struct {
 	AvailableTransitions AvailableTransitions `json:"availableTransitions,omitempty"`
 
 	// LastState defines the last state of the approval
-	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended
+	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended;Expired
 	// +kubebuilder:default=Pending
 	LastState ApprovalState `json:"lastState,omitempty"`
+
+	// ExpiresAt is the timestamp at which this approval expires.
+	// +optional
+	// +kubebuilder:printcolumn:name="ExpiresAt",type="date",JSONPath=".status.expiresAt"
+	ExpiresAt *metav1.Time `json:"expiresAt,omitempty"`
 
 	// NotificationRefs is a reference to the notifications that were sent for this approval request
 	NotificationRefs []types.ObjectRef `json:"notificationRefs,omitempty"`

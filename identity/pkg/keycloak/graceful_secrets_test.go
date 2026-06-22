@@ -5,18 +5,17 @@
 package keycloak
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 
 	"github.com/telekom/controlplane/identity/pkg/api"
 	"github.com/telekom/controlplane/identity/pkg/keycloak/util"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("GracefulSecrets (pure functions)", func() {
-
 	Describe("epochSecondsFromAttr", func() {
-
 		DescribeTable("should extract or reject epoch-seconds values",
 			func(attrs map[string]interface{}, key string, expected *int64) {
 				got := epochSecondsFromAttr(attrs, key)
@@ -37,7 +36,6 @@ var _ = Describe("GracefulSecrets (pure functions)", func() {
 	})
 
 	Describe("GetSecretCreationTime", func() {
-
 		It("should return nil for nil attrs", func() {
 			Expect(GetSecretCreationTime(nil)).To(BeNil())
 		})
@@ -63,7 +61,6 @@ var _ = Describe("GracefulSecrets (pure functions)", func() {
 	})
 
 	Describe("NewClientSecretRotationInfo", func() {
-
 		It("should handle nil cred and nil client", func() {
 			info := NewClientSecretRotationInfo(nil, nil)
 			Expect(info.RotatedSecret).To(BeEmpty())
@@ -97,7 +94,6 @@ var _ = Describe("GracefulSecrets (pure functions)", func() {
 	})
 
 	Describe("marshalPolicyAttributes", func() {
-
 		It("should produce a JSON array of key-value pairs", func() {
 			result := marshalPolicyAttributes(util.SecretRotationClientAttribute, "true")
 			expected := `[{"key":"` + util.SecretRotationClientAttribute + `","value":"true"}]`

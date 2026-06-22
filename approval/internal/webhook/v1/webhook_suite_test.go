@@ -108,7 +108,7 @@ var _ = BeforeSuite(func() {
 	err = SetupApprovalRequestWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = SetupApprovalWebhookWithManager(mgr)
+	err = SetupApprovalWebhookWithManager(mgr, "system:serviceaccount:system:controller-manager")
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:webhook

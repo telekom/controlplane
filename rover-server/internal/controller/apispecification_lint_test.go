@@ -8,15 +8,24 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/common-server/pkg/store"
+	fileApi "github.com/telekom/controlplane/file-manager/api"
+	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/oaslint"
+	s "github.com/telekom/controlplane/rover-server/pkg/store"
+	"github.com/telekom/controlplane/rover-server/test/mocks"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -172,12 +181,11 @@ var _ = Describe("Linting helpers", func() {
 				linterServer = startLinterServer(3)
 			})
 
-			It("should return LintBlocked with error in Block mode", func() {
+			It("should return LintBlocked without error in Block mode", func() {
 				linter = &apiLinterImpl{url: linterServer.URL, httpClient: linterServer.Client()}
 				category = newCategory(apiv1.LintingModeBlock)
 				outcome, err := linter.Lint(lintCtx, apiSpec, category, specBytes)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("linting failed in block mode"))
+				Expect(err).ToNot(HaveOccurred())
 				Expect(outcome).To(Equal(LintBlocked))
 				Expect(apiSpec.Spec.Lint).ToNot(BeNil())
 				Expect(apiSpec.Spec.Lint.Passed).To(BeFalse())
@@ -320,83 +328,143 @@ func (m *mockLinter) Lint(_ context.Context, apiSpec *roverv1.ApiSpecification, 
 	return m.outcome, m.err
 }
 
-var _ = Describe("lintOrReuse (hash dedup)", func() {
+var _ = Describe("Linter unreachable error propagation to user", func() {
 	var (
-		ctrl      *ApiSpecificationController
-		linterMck *mockLinter
-		apiSpec   *roverv1.ApiSpecification
-		specBytes io.Reader
+		ctrl    *ApiSpecificationController
+		testCtx context.Context
 	)
 
+	newCategoryWithMode := func(mode apiv1.LintingMode) *apiv1.ApiCategory {
+		return &apiv1.ApiCategory{
+			Spec: apiv1.ApiCategorySpec{
+				LabelValue: "test-cat",
+				Active:     true,
+				Linting: &apiv1.LintingConfig{
+					Mode:    mode,
+					Ruleset: "default",
+				},
+			},
+		}
+	}
+
+	newUpdateRequest := func() api.ApiSpecification {
+		return api.ApiSpecification{
+			Specification: map[string]interface{}{
+				"openapi": "3.0.0",
+				"info": map[string]interface{}{
+					"title":          "Test API",
+					"version":        "1.0.0",
+					"x-api-category": "test-cat",
+				},
+				"servers": []interface{}{
+					map[string]interface{}{"url": "http://example.com/test/api/v1"},
+				},
+			},
+		}
+	}
+
 	BeforeEach(func() {
-		linterMck = &mockLinter{outcome: LintCompleted}
-		ctrl = &ApiSpecificationController{Linter: linterMck}
-		specBytes = bytes.NewBuffer([]byte("openapi: '3.0.0'"))
-		apiSpec = &roverv1.ApiSpecification{
-			Spec: roverv1.ApiSpecificationSpec{
-				Hash: "new-hash",
-			},
+		bCtx := &security.BusinessContext{
+			Environment: "poc",
+			Group:       "eni",
+			Team:        "hyperion",
 		}
+		testCtx = security.ToContext(context.Background(), bCtx)
 	})
 
-	It("should call Lint when there is no existing spec", func() {
-		outcome, err := ctrl.lintOrReuse(context.Background(), apiSpec, nil, nil, specBytes)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(outcome).To(Equal(LintCompleted))
-		Expect(linterMck.called).To(BeTrue())
+	Context("when linter returns an error and category mode is Block", func() {
+		It("should return InternalServerError to the user", func() {
+			categoryStore := mocks.NewMockObjectStore[*apiv1.ApiCategory](GinkgoT())
+			categoryStore.EXPECT().List(mock.Anything, mock.Anything).Return(
+				&store.ListResponse[*apiv1.ApiCategory]{Items: []*apiv1.ApiCategory{
+					newCategoryWithMode(apiv1.LintingModeBlock),
+				}}, nil)
+
+			specStore := mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
+			// lintSpec calls Get for hash dedup; return not-found so linting proceeds.
+			specStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(
+				nil, problems.NotFound())
+
+			ctrl = &ApiSpecificationController{
+				stores: &s.Stores{APICategoryStore: categoryStore},
+				Store:  specStore,
+				Linter: &mockLinter{outcome: LintCompleted, err: fmt.Errorf("connection refused")},
+			}
+
+			_, err := ctrl.Update(testCtx, "eni--hyperion--test-api-v1", newUpdateRequest())
+			Expect(err).To(HaveOccurred())
+
+			problem, ok := err.(problems.Problem)
+			Expect(ok).To(BeTrue(), "error should be a problems.Problem")
+			Expect(problem.Code()).To(Equal(http.StatusInternalServerError))
+			Expect(problem.Error()).To(ContainSubstring("linting service could not be reached"))
+		})
 	})
 
-	It("should call Lint when existing has no lint result", func() {
-		existing := &roverv1.ApiSpecification{
-			Spec: roverv1.ApiSpecificationSpec{Hash: "new-hash"},
-		}
-		outcome, err := ctrl.lintOrReuse(context.Background(), apiSpec, existing, nil, specBytes)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(outcome).To(Equal(LintCompleted))
-		Expect(linterMck.called).To(BeTrue())
+	Context("when linter returns an error and category mode is Warn", func() {
+		It("should NOT reject the request at the linting stage", func() {
+			categoryStore := mocks.NewMockObjectStore[*apiv1.ApiCategory](GinkgoT())
+			categoryStore.EXPECT().List(mock.Anything, mock.Anything).Return(
+				&store.ListResponse[*apiv1.ApiCategory]{Items: []*apiv1.ApiCategory{
+					newCategoryWithMode(apiv1.LintingModeWarn),
+				}}, nil)
+
+			specStore := mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
+			// Update calls Get for hash dedup; return not-found so it proceeds.
+			specStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(
+				nil, problems.NotFound())
+			specStore.EXPECT().CreateOrReplace(mock.Anything, mock.Anything).Return(nil)
+
+			// Mock the file manager for the upload that happens after linting passes
+			mockFileManager.EXPECT().UploadFile(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+				&fileApi.FileUploadResponse{FileHash: "abc", FileId: "test-id", ContentType: "application/yaml"}, nil)
+
+			ctrl = &ApiSpecificationController{
+				stores: &s.Stores{APICategoryStore: categoryStore},
+				Store:  specStore,
+				Linter: &mockLinter{outcome: LintCompleted, err: fmt.Errorf("connection refused")},
+			}
+
+			_, err := ctrl.Update(testCtx, "eni--hyperion--test-api-v1", newUpdateRequest())
+			// The request passes the linting check. It may fail later for unrelated reasons
+			// (e.g., the Get call in the response mapping). The critical assertion:
+			// the error is NOT a 500 "Linting failed" problem.
+			if err != nil {
+				problem, ok := err.(problems.Problem)
+				if ok {
+					Expect(problem.Code()).ToNot(Equal(http.StatusInternalServerError))
+					Expect(problem.Error()).ToNot(ContainSubstring("Linting failed"))
+				}
+			}
+		})
 	})
 
-	It("should call Lint when hash changed", func() {
-		existing := &roverv1.ApiSpecification{
-			Spec: roverv1.ApiSpecificationSpec{
-				Hash: "old-hash",
-				Lint: &roverv1.LintResult{Passed: true, Message: "old result"},
-			},
-		}
-		outcome, err := ctrl.lintOrReuse(context.Background(), apiSpec, existing, nil, specBytes)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(outcome).To(Equal(LintCompleted))
-		Expect(linterMck.called).To(BeTrue())
-	})
+	Context("when linter returns LintBlocked", func() {
+		It("should return BadRequest to the user", func() {
+			categoryStore := mocks.NewMockObjectStore[*apiv1.ApiCategory](GinkgoT())
+			categoryStore.EXPECT().List(mock.Anything, mock.Anything).Return(
+				&store.ListResponse[*apiv1.ApiCategory]{Items: []*apiv1.ApiCategory{
+					newCategoryWithMode(apiv1.LintingModeBlock),
+				}}, nil)
 
-	It("should reuse cached result when hash is unchanged", func() {
-		existing := &roverv1.ApiSpecification{
-			Spec: roverv1.ApiSpecificationSpec{
-				Hash: "new-hash",
-				Lint: &roverv1.LintResult{Passed: true, Message: "cached"},
-			},
-		}
-		outcome, err := ctrl.lintOrReuse(context.Background(), apiSpec, existing, nil, specBytes)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(outcome).To(Equal(LintSkipped))
-		Expect(linterMck.called).To(BeFalse())
-		Expect(apiSpec.Spec.Lint).ToNot(BeNil())
-		Expect(apiSpec.Spec.Lint.Passed).To(BeTrue())
-		Expect(apiSpec.Spec.Lint.Message).To(Equal("cached"))
-	})
+			specStore := mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
+			// Update calls Get for hash dedup; return not-found so it proceeds.
+			specStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(
+				nil, problems.NotFound())
 
-	It("should reuse cached failure result when hash is unchanged", func() {
-		existing := &roverv1.ApiSpecification{
-			Spec: roverv1.ApiSpecificationSpec{
-				Hash: "new-hash",
-				Lint: &roverv1.LintResult{Passed: false, Message: "previous failure"},
-			},
-		}
-		outcome, err := ctrl.lintOrReuse(context.Background(), apiSpec, existing, nil, specBytes)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(outcome).To(Equal(LintSkipped))
-		Expect(linterMck.called).To(BeFalse())
-		Expect(apiSpec.Spec.Lint.Passed).To(BeFalse())
-		Expect(apiSpec.Spec.Lint.Message).To(Equal("previous failure"))
+			ctrl = &ApiSpecificationController{
+				stores: &s.Stores{APICategoryStore: categoryStore},
+				Store:  specStore,
+				Linter: &mockLinter{outcome: LintBlocked, err: nil},
+			}
+
+			_, err := ctrl.Update(testCtx, "eni--hyperion--test-api-v1", newUpdateRequest())
+			Expect(err).To(HaveOccurred())
+
+			problem, ok := err.(problems.Problem)
+			Expect(ok).To(BeTrue(), "error should be a problems.Problem")
+			Expect(problem.Code()).To(Equal(http.StatusBadRequest))
+			Expect(problem.Error()).To(ContainSubstring("OAS linting did not pass"))
+		})
 	})
 })

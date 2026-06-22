@@ -11,12 +11,11 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
-
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	cpv1 "github.com/telekom/controlplane/cpapi/api/v1"
 )
 
@@ -67,8 +66,8 @@ type syncerClient struct {
 }
 
 func (c *syncerClient) Send(ctx context.Context, resource *apiv1.RemoteApiSubscription) (bool, *apiv1.RemoteApiSubscription, error) {
-	log := log.FromContext(ctx)
-	log.Info("Sending RemoteApiSubscription to remote CP")
+	logger := log.FromContext(ctx)
+	logger.Info("Sending RemoteApiSubscription to remote CP")
 
 	body := cpv1.RemoteSubscriptionSpec{
 		ApiBasePath: resource.Spec.ApiBasePath,
@@ -102,8 +101,8 @@ func (c *syncerClient) Send(ctx context.Context, resource *apiv1.RemoteApiSubscr
 }
 
 func (c *syncerClient) SendStatus(ctx context.Context, resource *apiv1.RemoteApiSubscription) (bool, *apiv1.RemoteApiSubscription, error) {
-	log := log.FromContext(ctx)
-	log.Info("Sending RemoteApiSubscriptionStatus to remote CP")
+	logger := log.FromContext(ctx)
+	logger.Info("Sending RemoteApiSubscriptionStatus to remote CP")
 
 	body := cpv1.RemoteSubscriptionStatus{
 		Conditions: MapConditions(resource.Status.Conditions),
@@ -138,8 +137,8 @@ func (c *syncerClient) SendStatus(ctx context.Context, resource *apiv1.RemoteApi
 }
 
 func (c *syncerClient) Delete(ctx context.Context, resource *apiv1.RemoteApiSubscription) error {
-	log := log.FromContext(ctx)
-	log.Info("Deleting RemoteApiSubscription from remote CP")
+	logger := log.FromContext(ctx)
+	logger.Info("Deleting RemoteApiSubscription from remote CP")
 
 	resourceId := MakeResourceId(resource)
 

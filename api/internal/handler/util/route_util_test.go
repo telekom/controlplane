@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Route Util", func() {
-
 	Describe("GatewayConsumerName", func() {
 		It("should equal 'gateway'", func() {
 			Expect(GatewayConsumerName).To(Equal("gateway"))
@@ -27,7 +26,6 @@ var _ = Describe("Route Util", func() {
 	})
 
 	Describe("CreateRouteOptions", func() {
-
 		Describe("WithProxyTarget", func() {
 			It("should set IsProxyTarget to true", func() {
 				opts := &CreateRouteOptions{}
@@ -179,7 +177,6 @@ var _ = Describe("Route Util", func() {
 	})
 
 	Describe("CreateConsumeRouteOptions", func() {
-
 		Describe("WithConsumerRouteRateLimit", func() {
 			It("should set consumer rate limit on options", func() {
 				limits := apiapi.Limits{Second: 5, Minute: 50, Hour: 500}

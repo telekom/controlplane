@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/common/pkg/handler"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/handler"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	realmHandler "github.com/telekom/controlplane/identity/internal/handler/realm"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
@@ -57,8 +57,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	}
 
 	mapToClientStatus(&realm.Status, &client.Status)
-	err = realmHandler.ValidateRealmStatus(&realm.Status)
-	if err != nil {
+	if err = realmHandler.ValidateRealmStatus(&realm.Status); err != nil {
 		return ctrlerrors.BlockedErrorf("Realm %q is not valid: %s", client.Spec.Realm.String(), err)
 	}
 
@@ -82,21 +81,15 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	// We skip forceSecretRotation to avoid re-entering the Accepted state
 	// (which would cause an Accepted→Completed loop on every reconcile)
 	// and to prevent evicting the original secret from Keycloak's rotated slot.
-	skipForceRotation := false
-	if supportsRotation {
-		if cond := meta.FindStatusCondition(client.GetConditions(), identityv1.SecretRotationConditionType); cond != nil {
-			if cond.ObservedGeneration == client.Generation {
-				skipForceRotation = true
-			}
-		}
-		// Mark rotation as accepted before calling CreateOrReplaceClient.
-		// If the handler returns an error after forceSecretRotation, the
-		// controller persists this condition so that the next reconciliation
-		// can detect the retry and skip the destructive rotation step.
-		if !skipForceRotation {
-			logger.Info("Marking secret rotation as accepted", "client", client.Name)
-			client.SetCondition(identityv1.NewSecretRotationAcceptedCondition())
-		}
+	skipForceRotation := supportsRotation && shouldSkipForceRotation(client)
+
+	// Mark rotation as accepted before calling CreateOrReplaceClient.
+	// If the handler returns an error after forceSecretRotation, the
+	// controller persists this condition so that the next reconciliation
+	// can detect the retry and skip the destructive rotation step.
+	if supportsRotation && !skipForceRotation {
+		logger.Info("Marking secret rotation as accepted", "client", client.Name)
+		client.SetCondition(identityv1.NewSecretRotationAcceptedCondition())
 	}
 
 	err = realmClient.CreateOrReplaceClient(ctx, realm.Name, clientCopy, keycloak.ClientUpdateOptions{
@@ -107,73 +100,8 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return fmt.Errorf("failed to create or update client: %w", err)
 	}
 
-	// --- Graceful rotation: check for a rotated (old) secret ---
-	// Only query rotation state when both the realm and client support it.
-	if supportsRotation {
-		rotationInfo, rotErr := realmClient.GetClientSecretRotationInfo(ctx, realm.Name, clientCopy)
-		if rotErr != nil {
-			return fmt.Errorf("failed to check client secret rotation info: %w", rotErr)
-		}
-
-		if rotationInfo.RotatedSecret != "" {
-			// if the original client secret was a reference, we should not expose the rotated secret in the status, as it may be sensitive.
-			if !secrets.IsRef(client.Spec.ClientSecret) {
-				client.Status.RotatedClientSecret = rotationInfo.RotatedSecret
-			} else {
-				client.Status.RotatedClientSecret = ""
-			}
-
-			// Use the expiration timestamp directly from Keycloak's client
-			// attributes (epoch seconds). This is the final expiry — no grace
-			// period arithmetic is needed on our side.
-			if rotationInfo.RotatedExpiresAt != nil {
-				expiresAt := time.Unix(*rotationInfo.RotatedExpiresAt, 0)
-				client.Status.RotatedSecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
-			} else {
-				client.Status.RotatedSecretExpiresAt = nil
-			}
-			if rotationInfo.RotatedCreatedAt != nil {
-				// Only transition to Rotated if the condition is not already
-				// in the Rotated state. This avoids resetting LastTransitionTime
-				// on every reconciliation which would cause a status update loop.
-				existing := meta.FindStatusCondition(client.Status.Conditions, identityv1.SecretRotationConditionType)
-				if existing == nil || existing.Reason != identityv1.SecretRotationReasonRotated {
-					createdAt := time.Unix(*rotationInfo.RotatedCreatedAt, 0)
-					client.SetCondition(identityv1.NewSecretRotatedCondition(createdAt))
-				}
-			}
-
-		} else {
-			logger.Info("No rotated secret in Keycloak, clearing rotation status", "client", client.Name)
-			// No rotation in progress — clear the status fields.
-			client.Status.RotatedClientSecret = ""
-			client.Status.RotatedSecretExpiresAt = nil
-			// Only mark as Completed if a rotation was previously active
-			// (Accepted or Rotated). Avoid setting a misleading condition
-			// on clients that were never rotated.
-			existing := meta.FindStatusCondition(client.Status.Conditions, identityv1.SecretRotationConditionType)
-			if existing != nil {
-				isAccepted := existing.Reason == identityv1.SecretRotationReasonAccepted
-				isRotated := existing.Reason == identityv1.SecretRotationReasonRotated
-				if isAccepted || isRotated {
-					client.SetCondition(identityv1.NewSecretRotationCompletedCondition())
-				}
-			}
-		}
-
-		// --- Current secret expiry: read directly from Keycloak's attribute ---
-		if rotationInfo.SecretExpiresAt != nil {
-			expiresAt := time.Unix(*rotationInfo.SecretExpiresAt, 0)
-			client.Status.SecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
-		} else {
-			client.Status.SecretExpiresAt = nil
-		}
-	} else {
-		// Rotation not supported (or was just disabled) — clear any stale
-		// rotation status fields from a previous opt-in.
-		client.Status.RotatedClientSecret = ""
-		client.Status.RotatedSecretExpiresAt = nil
-		client.Status.SecretExpiresAt = nil
+	if err := syncRotationStatus(ctx, client, realmClient, realm.Name, clientCopy, supportsRotation); err != nil {
+		return err
 	}
 
 	client.Status.ClientUid = clientCopy.Status.ClientUid
@@ -181,6 +109,108 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	client.SetCondition(condition.NewReadyCondition("Ready", "Client is ready"))
 
 	return nil
+}
+
+// shouldSkipForceRotation reports whether the force-rotation step should be
+// skipped for this reconcile cycle. It returns true when the SecretRotation
+// condition's ObservedGeneration already matches the current generation,
+// indicating that a previous reconciliation already processed the rotation
+// for this spec revision.
+func shouldSkipForceRotation(client *identityv1.Client) bool {
+	cond := meta.FindStatusCondition(client.GetConditions(), identityv1.SecretRotationConditionType)
+	return cond != nil && cond.ObservedGeneration == client.Generation
+}
+
+// syncRotationStatus updates client.Status rotation fields after a successful
+// CreateOrReplaceClient call. When supportsRotation is false it clears any
+// stale fields left from a previous opt-in.
+func syncRotationStatus(ctx context.Context, client *identityv1.Client, realmClient keycloak.KeycloakService, realmName string, clientCopy *identityv1.Client, supportsRotation bool) error {
+	if !supportsRotation {
+		// Rotation not supported (or was just disabled) — clear any stale
+		// rotation status fields from a previous opt-in.
+		client.Status.RotatedClientSecret = ""
+		client.Status.RotatedSecretExpiresAt = nil
+		client.Status.SecretExpiresAt = nil
+		return nil
+	}
+
+	logger := logr.FromContextOrDiscard(ctx)
+
+	rotationInfo, err := realmClient.GetClientSecretRotationInfo(ctx, realmName, clientCopy)
+	if err != nil {
+		return fmt.Errorf("failed to check client secret rotation info: %w", err)
+	}
+
+	if rotationInfo.RotatedSecret != "" {
+		updateActiveRotationStatus(client, rotationInfo)
+	} else {
+		clearRotationStatus(logger, client)
+	}
+
+	// --- Current secret expiry: read directly from Keycloak's attribute ---
+	if rotationInfo.SecretExpiresAt != nil {
+		expiresAt := time.Unix(*rotationInfo.SecretExpiresAt, 0)
+		client.Status.SecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
+	} else {
+		client.Status.SecretExpiresAt = nil
+	}
+
+	return nil
+}
+
+// updateActiveRotationStatus sets the rotation status fields when a rotated
+// (old) secret is present in Keycloak. If the original secret was a
+// secret-manager reference the rotated value is not exposed in the status.
+func updateActiveRotationStatus(client *identityv1.Client, rotationInfo *keycloak.ClientSecretRotationInfo) {
+	// Do not expose the plaintext rotated secret when the original was a reference.
+	if !secrets.IsRef(client.Spec.ClientSecret) {
+		client.Status.RotatedClientSecret = rotationInfo.RotatedSecret
+	} else {
+		client.Status.RotatedClientSecret = ""
+	}
+
+	// Use the expiration timestamp directly from Keycloak's client
+	// attributes (epoch seconds). This is the final expiry — no grace
+	// period arithmetic is needed on our side.
+	if rotationInfo.RotatedExpiresAt != nil {
+		expiresAt := time.Unix(*rotationInfo.RotatedExpiresAt, 0)
+		client.Status.RotatedSecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
+	} else {
+		client.Status.RotatedSecretExpiresAt = nil
+	}
+
+	if rotationInfo.RotatedCreatedAt != nil {
+		// Only transition to Rotated if the condition is not already
+		// in the Rotated state. This avoids resetting LastTransitionTime
+		// on every reconciliation which would cause a status update loop.
+		existing := meta.FindStatusCondition(client.Status.Conditions, identityv1.SecretRotationConditionType)
+		if existing == nil || existing.Reason != identityv1.SecretRotationReasonRotated {
+			createdAt := time.Unix(*rotationInfo.RotatedCreatedAt, 0)
+			client.SetCondition(identityv1.NewSecretRotatedCondition(createdAt))
+		}
+	}
+}
+
+// clearRotationStatus removes the rotated-secret status fields and, when a
+// rotation was previously active (Accepted or Rotated), transitions the
+// condition to Completed.
+func clearRotationStatus(logger logr.Logger, client *identityv1.Client) {
+	logger.Info("No rotated secret in Keycloak, clearing rotation status", "client", client.Name)
+
+	// No rotation in progress — clear the status fields.
+	client.Status.RotatedClientSecret = ""
+	client.Status.RotatedSecretExpiresAt = nil
+
+	// Only mark as Completed if a rotation was previously active
+	// (Accepted or Rotated). Avoid setting a misleading condition
+	// on clients that were never rotated.
+	existing := meta.FindStatusCondition(client.Status.Conditions, identityv1.SecretRotationConditionType)
+	if existing == nil {
+		return
+	}
+	if existing.Reason == identityv1.SecretRotationReasonAccepted || existing.Reason == identityv1.SecretRotationReasonRotated {
+		client.SetCondition(identityv1.NewSecretRotationCompletedCondition())
+	}
 }
 
 func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) error {

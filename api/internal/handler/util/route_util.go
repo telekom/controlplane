@@ -10,17 +10,18 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -29,9 +30,9 @@ const (
 	GatewayConsumerName = "gateway"
 )
 
-var (
-	LabelFailoverSecondary = config.BuildLabelKey("failover.secondary")
-)
+const labelTrue = "true"
+
+var LabelFailoverSecondary = config.BuildLabelKey("failover.secondary")
 
 type CreateRouteOptions struct {
 	FailoverUpstreams   []apiapi.Upstream
@@ -179,7 +180,7 @@ func MakeRouteName(apiBasePath string) string {
 
 func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstreamZoneRef types.ObjectRef, apiBasePath string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	options := &CreateRouteOptions{}
 	for _, opt := range opts {
@@ -254,7 +255,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 			proxyRoute.Spec.Security.RealmName = options.RealmName
 		}
 
-		log.Info("Creating proxy route", "route", proxyRoute.Name, "namespace", proxyRoute.Namespace, "failover", options.HasFailover())
+		logger.Info("Creating proxy route", "route", proxyRoute.Name, "namespace", proxyRoute.Namespace, "failover", options.HasFailover())
 
 		if options.HasServiceRateLimit() {
 			proxyRoute.Spec.Traffic = gatewayapi.Traffic{
@@ -263,7 +264,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 		}
 
 		if options.IsFailoverSecondary() {
-			proxyRoute.Labels[LabelFailoverSecondary] = "true"
+			proxyRoute.Labels[LabelFailoverSecondary] = labelTrue
 
 			// A failover secondary route is the target of cross-zone proxy requests,
 			// so the gateway mesh-client must be allowed to access it.
@@ -341,7 +342,7 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	if routeRef == nil {
 		return nil
 	}
-	log := log.FromContext(ctx).WithValues("route.name", routeRef.Name, "route.namespace", routeRef.Namespace)
+	logger := log.FromContext(ctx).WithValues("route.name", routeRef.Name, "route.namespace", routeRef.Namespace)
 
 	options := &CreateRouteOptions{}
 	for _, opt := range opts {
@@ -358,12 +359,12 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	}
 
 	if route.GetLabels()[config.BuildLabelKey("type")] == "real" { // DO NOT DELETE REAL ROUTES
-		log.V(1).Info("🫷 Not deleting route as it is a real route")
+		logger.V(1).Info("🫷 Not deleting route as it is a real route")
 		return nil
 	}
 
-	if route.GetLabels()[LabelFailoverSecondary] == "true" { // DO NOT DELETE FAILOVER ROUTES
-		log.V(1).Info("🫷 Not deleting route as it is a failover secondary")
+	if route.GetLabels()[LabelFailoverSecondary] == labelTrue { // DO NOT DELETE FAILOVER ROUTES
+		logger.V(1).Info("🫷 Not deleting route as it is a failover secondary")
 		return nil
 	}
 
@@ -380,17 +381,17 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	}
 
 	if len(apiSubscriptions.Items) > 1 {
-		log.Info("🫷 Not deleting route as more than 1 subscriptions exists")
+		logger.Info("🫷 Not deleting route as more than 1 subscriptions exists")
 		return nil
 	}
 
-	log.Info("🧹 Deleting route as no more subscriptions exist")
+	logger.Info("🧹 Deleting route as no more subscriptions exist")
 
 	err = scopedClient.Delete(ctx, route)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete route")
 	}
-	log.Info("✅ Successfully deleted obsolete route")
+	logger.Info("✅ Successfully deleted obsolete route")
 
 	return nil
 }
@@ -504,7 +505,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 	return route, nil
 }
 
-func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
+func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef, routeRef types.ObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	options := &CreateConsumeRouteOptions{}

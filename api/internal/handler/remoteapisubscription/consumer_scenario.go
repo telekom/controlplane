@@ -9,6 +9,10 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -18,20 +22,17 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // handleConsumerScenario handles the case where the RemoteApiSubscription is handled by another CP.
 // That means that the current CP just needs to create the route to the other CP.
 // This route is considered a real-route and is shared for all subscriptions to the same API and target CP.
 func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Context, obj *apiapi.RemoteApiSubscription) (err error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
 
 	// Send it to other CP
-	log.V(1).Info("I need to send this to the other CP")
+	logger.V(1).Info("I need to send this to the other CP")
 	remoteOrgRef := types.ObjectRef{
 		Name:      obj.Spec.TargetOrganization,
 		Namespace: contextutil.EnvFromContextOrDie(ctx),
@@ -51,7 +52,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 		obj.SetCondition(condition.NewNotReadyCondition("Syncing", "Syncing with remote CP"))
 		return nil
 	}
-	log.V(1).Info("RemoteApiSubscription synced with remote CP but not updated")
+	logger.V(1).Info("RemoteApiSubscription synced with remote CP but not updated")
 
 	if !meta.IsStatusConditionTrue(obj.GetConditions(), condition.ConditionTypeReady) {
 		log.V(1).Info("RemoteApiSubscription not ready")

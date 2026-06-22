@@ -20,14 +20,12 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/apisubscription"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-
-	"github.com/telekom/controlplane/api/internal/handler/apisubscription"
 )
 
 // ApiSubscriptionReconciler reconciles a ApiSubscription object
@@ -82,11 +80,11 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToApiSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
-		Watches(&gatewayv1.Route{},
+		Watches(&gatewayapi.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiSubscription),
 			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
 		).
-		Watches(&gatewayv1.ConsumeRoute{},
+		Watches(&gatewayapi.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.MapConsumeRouteToApiSubscription),
 			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
 		).
@@ -96,92 +94,98 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
-			RateLimiter:             cc.NewRateLimiter()}).
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Complete(r)
 }
 
+//nolint:dupl // controller map helpers intentionally mirror each other
 func (r *ApiSubscriptionReconciler) MapApiToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	api, ok := obj.(*apiapi.Api)
+	apiObj, ok := obj.(*apiapi.Api)
 	if !ok {
-		log.Info("object is not an API")
+		logger.Info("object is not an API")
 		return nil
 	}
 
 	list := &apiapi.ApiSubscriptionList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: api.Labels[cconfig.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:     api.Labels[apiapi.BasePathLabelKey],
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: apiObj.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     apiObj.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
-		log.Error(err, "failed to list API-Subscriptions")
+		logger.Error(err, "failed to list API-Subscriptions")
 		return nil
 	}
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		if api.UID == item.UID {
+	for i := range list.Items {
+		item := &list.Items[i]
+		if apiObj.UID == item.UID {
 			continue
 		}
-		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
 	}
 
 	return reqs
 }
 
+//nolint:dupl // controller map helpers intentionally mirror each other
 func (r *ApiSubscriptionReconciler) MapApiExposureToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	apiExposure, ok := obj.(*apiapi.ApiExposure)
 	if !ok {
-		log.Info("object is not an API-Exposure")
+		logger.Info("object is not an API-Exposure")
 		return nil
 	}
 
 	list := &apiapi.ApiSubscriptionList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
+	err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: apiExposure.Labels[cconfig.EnvironmentLabelKey],
 		apiapi.BasePathLabelKey:     apiExposure.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
-		log.Error(err, "failed to list API-Subscriptions")
+		logger.Error(err, "failed to list API-Subscriptions")
 		return nil
 	}
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
+	for i := range list.Items {
+		item := &list.Items[i]
 		if apiExposure.UID == item.UID {
 			continue
 		}
-		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
 	}
 
 	return reqs
 }
 
 func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	application, ok := obj.(*applicationapi.Application)
 	if !ok {
-		log.Info("object is not an Application")
+		logger.Info("object is not an Application")
 		return nil
 	}
 
 	list := &apiapi.ApiSubscriptionList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
+	err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("application"): application.Labels[cconfig.BuildLabelKey("application")],
 	}, client.InNamespace(application.Namespace))
 	if err != nil {
-		log.Error(err, "failed to list API-Subscriptions")
+		logger.Error(err, "failed to list API-Subscriptions")
 		return nil
 	}
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+	for i := range list.Items {
+		item := &list.Items[i]
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
 	}
 
 	return reqs

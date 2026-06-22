@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
-	apiapi "github.com/telekom/controlplane/api/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
@@ -153,13 +152,13 @@ func NewApiExposure(apiBasePath, zoneName string, appName string) *apiv1.ApiExpo
 					},
 				},
 			},
-			Security: &apiapi.Security{
-				M2M: &apiapi.Machine2MachineAuthentication{
-					ExternalIDP: &apiapi.ExternalIdentityProvider{
+			Security: &apiv1.Security{
+				M2M: &apiv1.Machine2MachineAuthentication{
+					ExternalIDP: &apiv1.ExternalIdentityProvider{
 						TokenEndpoint: "https://example.com/token",
-						TokenRequest:  apiapi.TokenRequestClientSecretBasic,
+						TokenRequest:  apiv1.TokenRequestClientSecretBasic,
 						GrantType:     "client_credentials",
-						Client: &apiapi.OAuth2ClientCredentials{
+						Client: &apiv1.OAuth2ClientCredentials{
 							ClientId:  "client-id",
 							ClientKey: "******",
 						},
@@ -169,7 +168,7 @@ func NewApiExposure(apiBasePath, zoneName string, appName string) *apiv1.ApiExpo
 				},
 			},
 			Visibility: apiv1.VisibilityWorld,
-			Approval:   apiv1.Approval{Strategy: apiapi.ApprovalStrategyAuto},
+			Approval:   apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
 			Zone: types.ObjectRef{
 				Name:      zoneName,
 				Namespace: testEnvironment,
@@ -180,13 +179,13 @@ func NewApiExposure(apiBasePath, zoneName string, appName string) *apiv1.ApiExpo
 }
 
 var _ = Describe("ApiExposure Controller", Ordered, func() {
-	var apiBasePath = "/apiexpctrl/test/v1"
-	var zoneName = "apiexp-test"
+	apiBasePath := "/apiexpctrl/test/v1"
+	zoneName := "apiexp-test"
 
 	var apiExposure *apiv1.ApiExposure
 	var api *apiv1.Api
 
-	var appName = "api-exposure-app-2"
+	appName := "api-exposure-app-2"
 	var apiExpApplication *applicationapi.Application
 
 	BeforeAll(func() {
@@ -212,7 +211,6 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 	})
 
 	Context("Creating and Updating ApiExposures", Ordered, func() {
-
 		It("should block until an API is registered", func() {
 			By("Creating the resource")
 			err := k8sClient.Create(ctx, apiExposure)
@@ -223,9 +221,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(apiExposure.Status.Active).To(BeFalse())
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should automatically progress when an API is registered", func() {
@@ -238,9 +234,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(apiExposure.Status.Active).To(BeTrue())
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should create the real-route", func() {
@@ -254,9 +248,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(route.Spec.Transformation.Request.Headers.Remove).To(ContainElement("X-Remove-Header"))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should pass rate limit configuration from ApiExposure to Route", func() {
@@ -283,15 +275,13 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				// Verify that the provider rate limit options are correctly passed
 				g.Expect(route.Spec.Traffic.RateLimit.Options.HideClientHeaders).To(Equal(apiExposure.Spec.Traffic.RateLimit.Provider.Options.HideClientHeaders))
 				g.Expect(route.Spec.Traffic.RateLimit.Options.FaultTolerant).To(Equal(apiExposure.Spec.Traffic.RateLimit.Provider.Options.FaultTolerant))
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})
 
 	Context("Deleting and Switching the Active ApiExposure", Ordered, func() {
-
 		var secondApiExposure *apiv1.ApiExposure
-		var appName = "api-exposure-app-3"
+		appName := "api-exposure-app-3"
 		var apiExpApplication *applicationapi.Application
 
 		BeforeAll(func() {
@@ -319,7 +309,6 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApiExposure), secondApiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApiExposure.Status.Active).To(BeFalse())
-
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -333,7 +322,6 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApiExposure), secondApiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApiExposure.Status.Active).To(BeTrue())
-
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -346,16 +334,13 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApiExposure), secondApiExposure)
 				g.Expect(err).To(HaveOccurred())
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 	})
 
 	Context("ApiExposure with ExternalIDPConfig Configured", Ordered, func() {
-
 		var thirdApiExposure *apiv1.ApiExposure
-		var appName = "api-exposure-app-4"
+		appName := "api-exposure-app-4"
 		var apiExpApplication *applicationapi.Application
 
 		BeforeAll(func() {
@@ -439,13 +424,11 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			}, timeout, interval).Should(Succeed())
 		})
-
 	})
 
 	Context("Validating the basePath", Ordered, func() {
-
-		var apiBasePath = "/ApiExpctrl/Test/v1"
-		var appName = "api-exposure-app-5"
+		apiBasePath := "/ApiExpctrl/Test/v1"
+		appName := "api-exposure-app-5"
 		var apiExpApplication *applicationapi.Application
 
 		var secondApiExposure *apiv1.ApiExposure
@@ -477,18 +460,15 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				readyCond := meta.FindStatusCondition(secondApiExposure.GetConditions(), condition.ConditionTypeReady)
 				testutil.ExpectConditionToBeFalse(g, readyCond, "ApiCaseConflict")
 				Expect(readyCond.Message).To(ContainSubstring(`API is registered but the case does not match (got="/ApiExpctrl/Test/v1", found="/apiexpctrl/test/v1").`))
-
 			}, timeout, interval).Should(Succeed())
 		})
-
 	})
-
 })
 
 var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func() {
-	var apiBasePath = "/apiexpctrl/failovertest/v1"
-	var zoneName = "apiexp-failovertest"
-	var failoverZoneName = "failover-zone"
+	apiBasePath := "/apiexpctrl/failovertest/v1"
+	zoneName := "apiexp-failovertest"
+	failoverZoneName := "failover-zone"
 
 	var apiExposure *apiv1.ApiExposure
 	var api *apiv1.Api
@@ -517,9 +497,9 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 		err := k8sClient.Delete(ctx, apiExposure)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
-			g.Expect(err).To(HaveOccurred())
-			g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "ApiExposure should be deleted")
+			getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
+			g.Expect(getErr).To(HaveOccurred())
+			g.Expect(apierrors.IsNotFound(getErr)).To(BeTrue(), "ApiExposure should be deleted")
 		}, timeout, interval).Should(Succeed())
 
 		By("Cleaning up all the created Routes")
@@ -539,8 +519,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 	})
 
 	Context("Creating and Updating ApiExposures", Ordered, func() {
-
-		var appName = "api-exposure-app-6"
+		appName := "api-exposure-app-6"
 		var apiExpApplication *applicationapi.Application
 
 		BeforeAll(func() {
@@ -617,15 +596,12 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Path).To(Equal("/api/v1"))
 				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Scheme).To(Equal("http"))
 				Expect(failoverRoute.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 	})
 
 	Context("Creating and Updating ApiExposures with Security", Ordered, func() {
-
-		var secondAppName = "api-exposure-app-7"
+		secondAppName := "api-exposure-app-7"
 		var secondApiExpApplication *applicationapi.Application
 
 		BeforeAll(func() {
@@ -710,24 +686,22 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.GrantType).To(Equal("password"))
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.Basic.Username).To(Equal("my-username"))
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.Basic.Password).To(Equal("my-password"))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 	})
 })
 
 var _ = Describe("ApiExposure Controller cross-zone proxy target ACL", Ordered, func() {
-	var apiBasePath = "/apiexpctrl/crosszone/v1"
-	var zoneName = "crosszone-exp-zone"
-	var otherZoneName = "crosszone-sub-zone"
+	apiBasePath := "/apiexpctrl/crosszone/v1"
+	zoneName := "crosszone-exp-zone"
+	otherZoneName := "crosszone-sub-zone"
 
 	var apiExposure *apiv1.ApiExposure
 	var api *apiv1.Api
 
-	var appName = "crosszone-app"
+	appName := "crosszone-app"
 
-	var crossZoneSub *apiapi.ApiSubscription
+	var crossZoneSub *apiv1.ApiSubscription
 
 	BeforeAll(func() {
 		By("Creating the Application")
@@ -751,7 +725,6 @@ var _ = Describe("ApiExposure Controller cross-zone proxy target ACL", Ordered, 
 	})
 
 	Context("Gateway consumer management based on cross-zone subscriptions", Ordered, func() {
-
 		It("should NOT have gateway consumer in DefaultConsumers when no cross-zone subscriptions exist", func() {
 			By("Creating the ApiExposure")
 			apiExposure = NewApiExposure(apiBasePath, zoneName, appName)
