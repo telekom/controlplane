@@ -266,18 +266,20 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 			log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because no ApiCategories exist")
 			return true
 		}
-		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
+
 		var be ctrlerrors.BlockedError
 		var re ctrlerrors.RetryableError
 
-		if errors.As(err, &be) {
+		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
+		switch {
+		case errors.As(err, &be):
 			log.FromContext(ctx).V(1).Info("ApiCategory policy validation blocked", "reason", err.Error())
 			apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
 			apiExp.SetCondition(condition.NewBlockedCondition(msg))
-		} else if errors.As(err, &re) {
+		case errors.As(err, &re):
 			log.FromContext(ctx).V(1).Info("ApiCategory policy validation retryable", "reason", err.Error())
 			apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-		} else {
+		default:
 			log.FromContext(ctx).V(1).Info("ApiCategory policy validation failed", "reason", err.Error())
 			apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
 			apiExp.SetCondition(condition.NewBlockedCondition(msg))
