@@ -12,8 +12,8 @@ import (
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
-// AsUpstreamForRealRoute parses the given URL and returns an Upstream pointing at it.
-func AsUpstreamForRealRoute(rawUrl string, weight int32) (ups gatewayapi.Upstream, err error) {
+// AsUpstream converts a raw URL to an Upstream struct, extracting the scheme, hostname, port, and path.
+func AsUpstream(rawUrl string, weight int32) (ups gatewayapi.Upstream, err error) {
 	u, err := url.Parse(rawUrl)
 	if err != nil {
 		return ups, errors.Wrapf(err, "failed to parse URL %s", rawUrl)

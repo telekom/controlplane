@@ -72,6 +72,9 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
 			AddHeader("issuer", "mock-issuer") // TODO: this needs to be removed after talking to the gateway team about it
 
+		jumperCfg := builder.JumperConfig()
+		jumperCfg.Mesh = true
+
 	} else {
 		// Real Route
 

@@ -178,12 +178,18 @@ var _ = Describe("LastMileSecurityFeature", func() {
 					}
 					rtpPlugin := plugin.RequestTransformerPluginFromRoute(route)
 
+					jumperConfig := plugin.NewJumperConfig()
+
 					builder.EXPECT().GetRoute().Return(route, true)
 					builder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
 					builder.EXPECT().SetUpstream(mock.Anything).Return()
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
 
 					err := f.Apply(ctx, builder)
 					Expect(err).ToNot(HaveOccurred())
+
+					// Mesh should be set to true for proxy routes
+					Expect(jumperConfig.Mesh).To(BeTrue())
 
 					// Add headers: environment and realm
 					Expect(rtpPlugin.Config.Add.Headers).ToNot(BeNil())

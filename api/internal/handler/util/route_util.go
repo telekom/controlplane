@@ -225,11 +225,11 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		}
 
 		// Upstream for proxy route: points at the upstream zone's gateway URL for this basepath
-		upstreamUrl, joinErr := url.JoinPath(upstreamPreset.Urls[0].GetFullUrl(), apiBasePath)
+		upstreamUrl, joinErr := url.JoinPath(upstreamPreset.GetDefaultUrl(), apiBasePath)
 		if joinErr != nil {
 			return errors.Wrap(joinErr, "failed to build upstream URL for proxy route")
 		}
-		upstream, upstreamErr := AsUpstreamForRealRoute(upstreamUrl, 0)
+		upstream, upstreamErr := AsUpstream(upstreamUrl, 0)
 		if upstreamErr != nil {
 			return errors.Wrap(upstreamErr, "failed to create upstream")
 		}
@@ -264,13 +264,13 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		}
 
 		if options.IsFailoverSecondary() {
-			if secondaryErr := applyFailoverSecondary(ctx, proxyRoute, options, upstreamZone.Name); secondaryErr != nil {
+			if secondaryErr := configureAsFailoverTarget(ctx, proxyRoute, options, upstreamZone.Name); secondaryErr != nil {
 				return secondaryErr
 			}
 		}
 
 		if options.HasFailover() {
-			if primaryErr := applyFailoverPrimary(ctx, proxyRoute, options, apiBasePath, upstreamZone.Name); primaryErr != nil {
+			if primaryErr := addFailoverFallback(ctx, proxyRoute, options, apiBasePath, upstreamZone.Name); primaryErr != nil {
 				return primaryErr
 			}
 		}
@@ -286,9 +286,11 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 	return proxyRoute, nil
 }
 
-// applyFailoverSecondary configures the proxy route as a failover secondary target.
-func applyFailoverSecondary(_ context.Context, proxyRoute *gatewayapi.Route, options *CreateRouteOptions, upstreamZoneName string) error {
+// configureAsFailoverTarget configures the proxy route as a failover target (secondary route).
+// This route becomes the destination where traffic lands when the primary zone is unavailable.
+func configureAsFailoverTarget(_ context.Context, proxyRoute *gatewayapi.Route, options *CreateRouteOptions, upstreamZoneName string) error {
 	proxyRoute.Labels[LabelFailoverSecondary] = labelTrue
+	proxyRoute.Spec.Type = gatewayapi.RouteTypeSecondary
 
 	// A failover secondary route is the target of cross-zone proxy requests,
 	// so the gateway mesh-client must be allowed to access it.
@@ -302,7 +304,7 @@ func applyFailoverSecondary(_ context.Context, proxyRoute *gatewayapi.Route, opt
 
 	failoverUpstreams := make([]gatewayapi.Upstream, 0, len(options.FailoverUpstreams))
 	for _, rawUpstream := range options.FailoverUpstreams {
-		failoverUpstream, upstreamErr := AsUpstreamForRealRoute(rawUpstream.Url, int32(rawUpstream.Weight)) //nolint:gosec // weight is a small positive integer
+		failoverUpstream, upstreamErr := AsUpstream(rawUpstream.Url, int32(rawUpstream.Weight)) //nolint:gosec // weight is a small positive integer
 		if upstreamErr != nil {
 			return errors.Wrapf(upstreamErr, "failed to create failover upstream %s", rawUpstream.Url)
 		}
@@ -325,18 +327,20 @@ func applyFailoverSecondary(_ context.Context, proxyRoute *gatewayapi.Route, opt
 	return nil
 }
 
-// applyFailoverPrimary configures the proxy route with a failover upstream for the primary route.
-func applyFailoverPrimary(ctx context.Context, proxyRoute *gatewayapi.Route, options *CreateRouteOptions, apiBasePath, upstreamZoneName string) error {
+// addFailoverFallback configures the proxy route with a fallback upstream for when the primary zone is unavailable.
+// The fallback points to the failover zone's gateway where the secondary route lives.
+func addFailoverFallback(ctx context.Context, proxyRoute *gatewayapi.Route, options *CreateRouteOptions, apiBasePath, upstreamZoneName string) error {
 	proxyRoute.Labels[config.BuildLabelKey("failover.zone")] = labelutil.NormalizeValue(options.FailoverZone.Name)
 	failoverPreset, _, err := GetDefaultPresetForZone(ctx, options.FailoverZone)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get failover zone %s", options.FailoverZone.String())
 	}
-	failoverUrl, err := url.JoinPath(failoverPreset.Urls[0].GetFullUrl(), apiBasePath)
+	failoverUrl, err := url.JoinPath(failoverPreset.GetDefaultUrl(), apiBasePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to build failover URL for zone %s", options.FailoverZone.String())
 	}
-	failoverUpstream, err := AsUpstreamForRealRoute(failoverUrl, 0)
+
+	failoverUpstream, err := AsUpstream(failoverUrl, 0)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create failover upstream for zone %s", options.FailoverZone.String())
 	}
@@ -469,7 +473,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 
 		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
 		for _, upstream := range apiExposure.Spec.Upstreams {
-			gatewayUpstream, upstreamErr := AsUpstreamForRealRoute(upstream.Url, int32(upstream.Weight)) //nolint:gosec // weight is a small positive integer
+			gatewayUpstream, upstreamErr := AsUpstream(upstream.Url, int32(upstream.Weight)) //nolint:gosec // weight is a small positive integer
 			if upstreamErr != nil {
 				return errors.Wrapf(upstreamErr, "failed to create upstream for URL %s", upstream.Url)
 			}
