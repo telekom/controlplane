@@ -139,10 +139,6 @@ extend type Application {
 extend type Zone {
   "Token endpoint URL derived from the issuer URL. Returns null if no issuer URL is set."
   tokenURL: String @goField(forceResolver: true)
-  "Cloud identifier for the zone (always equals zone name)."
-  cloud: String! @goField(forceResolver: true)
-  "Whether this zone is hidden from the UI (deprecated, but there for backward compatibility)."
-  hidden: Boolean! @goField(forceResolver: true)
 }
 
 extend type ApiSubscription {

@@ -552,10 +552,8 @@ type ComplexityRoot struct {
 
 	Zone struct {
 		Applications func(childComplexity int) int
-		Cloud        func(childComplexity int) int
 		Environment  func(childComplexity int) int
 		GatewayURL   func(childComplexity int) int
-		Hidden       func(childComplexity int) int
 		ID           func(childComplexity int) int
 		IssuerURL    func(childComplexity int) int
 		Name         func(childComplexity int) int
@@ -3023,13 +3021,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Zone.Applications(childComplexity), true
 
-	case "Zone.cloud":
-		if e.ComplexityRoot.Zone.Cloud == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Zone.Cloud(childComplexity), true
-
 	case "Zone.environment":
 		if e.ComplexityRoot.Zone.Environment == nil {
 			break
@@ -3043,13 +3034,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.GatewayURL(childComplexity), true
-
-	case "Zone.hidden":
-		if e.ComplexityRoot.Zone.Hidden == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Zone.Hidden(childComplexity), true
 
 	case "Zone.id":
 		if e.ComplexityRoot.Zone.ID == nil {
@@ -6985,10 +6969,6 @@ extend type Application {
 extend type Zone {
   "Token endpoint URL derived from the issuer URL. Returns null if no issuer URL is set."
   tokenURL: String @goField(forceResolver: true)
-  "Cloud identifier for the zone (always equals zone name)."
-  cloud: String! @goField(forceResolver: true)
-  "Whether this zone is hidden from the UI (deprecated, but there for backward compatibility)."
-  hidden: Boolean! @goField(forceResolver: true)
 }
 
 extend type ApiSubscription {
@@ -8027,10 +8007,6 @@ func (ec *executionContext) childFields_Zone(ctx context.Context, field graphql.
 		return ec.fieldContext_Zone_applications(ctx, field)
 	case "tokenURL":
 		return ec.fieldContext_Zone_tokenURL(ctx, field)
-	case "cloud":
-		return ec.fieldContext_Zone_cloud(ctx, field)
-	case "hidden":
-		return ec.fieldContext_Zone_hidden(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Zone", field.Name)
 }

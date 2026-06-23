@@ -566,16 +566,6 @@ func (r *zoneResolver) TokenURL(ctx context.Context, obj *ent.Zone) (*string, er
 	return &tokenURL, nil
 }
 
-// Cloud is the resolver for the cloud field.
-func (r *zoneResolver) Cloud(ctx context.Context, obj *ent.Zone) (string, error) {
-	return obj.Name, nil
-}
-
-// Hidden is the resolver for the hidden field.
-func (r *zoneResolver) Hidden(ctx context.Context, obj *ent.Zone) (bool, error) {
-	return false, nil
-}
-
 // ApiExposureInfo returns ApiExposureInfoResolver implementation.
 func (r *Resolver) ApiExposureInfo() ApiExposureInfoResolver { return &apiExposureInfoResolver{r} }
 
