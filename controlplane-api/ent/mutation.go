@@ -1262,7 +1262,7 @@ type ApiExposureMutation struct {
 	upstreams            *[]model.Upstream
 	appendupstreams      []model.Upstream
 	security             *model.ApiExposureSecurity
-	rate_limit           *model.RateLimit
+	traffic              *model.Traffic
 	approval_config      *model.ApprovalConfig
 	api_version          *string
 	clearedFields        map[string]struct{}
@@ -1903,53 +1903,53 @@ func (m *ApiExposureMutation) ResetSecurity() {
 	delete(m.clearedFields, apiexposure.FieldSecurity)
 }
 
-// SetRateLimit sets the "rate_limit" field.
-func (m *ApiExposureMutation) SetRateLimit(ml model.RateLimit) {
-	m.rate_limit = &ml
+// SetTraffic sets the "traffic" field.
+func (m *ApiExposureMutation) SetTraffic(value model.Traffic) {
+	m.traffic = &value
 }
 
-// RateLimit returns the value of the "rate_limit" field in the mutation.
-func (m *ApiExposureMutation) RateLimit() (r model.RateLimit, exists bool) {
-	v := m.rate_limit
+// Traffic returns the value of the "traffic" field in the mutation.
+func (m *ApiExposureMutation) Traffic() (r model.Traffic, exists bool) {
+	v := m.traffic
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldRateLimit returns the old "rate_limit" field's value of the ApiExposure entity.
+// OldTraffic returns the old "traffic" field's value of the ApiExposure entity.
 // If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldRateLimit(ctx context.Context) (v model.RateLimit, err error) {
+func (m *ApiExposureMutation) OldTraffic(ctx context.Context) (v model.Traffic, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRateLimit is only allowed on UpdateOne operations")
+		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRateLimit requires an ID field in the mutation")
+		return v, errors.New("OldTraffic requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRateLimit: %w", err)
+		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
 	}
-	return oldValue.RateLimit, nil
+	return oldValue.Traffic, nil
 }
 
-// ClearRateLimit clears the value of the "rate_limit" field.
-func (m *ApiExposureMutation) ClearRateLimit() {
-	m.rate_limit = nil
-	m.clearedFields[apiexposure.FieldRateLimit] = struct{}{}
+// ClearTraffic clears the value of the "traffic" field.
+func (m *ApiExposureMutation) ClearTraffic() {
+	m.traffic = nil
+	m.clearedFields[apiexposure.FieldTraffic] = struct{}{}
 }
 
-// RateLimitCleared returns if the "rate_limit" field was cleared in this mutation.
-func (m *ApiExposureMutation) RateLimitCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldRateLimit]
+// TrafficCleared returns if the "traffic" field was cleared in this mutation.
+func (m *ApiExposureMutation) TrafficCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldTraffic]
 	return ok
 }
 
-// ResetRateLimit resets all changes to the "rate_limit" field.
-func (m *ApiExposureMutation) ResetRateLimit() {
-	m.rate_limit = nil
-	delete(m.clearedFields, apiexposure.FieldRateLimit)
+// ResetTraffic resets all changes to the "traffic" field.
+func (m *ApiExposureMutation) ResetTraffic() {
+	m.traffic = nil
+	delete(m.clearedFields, apiexposure.FieldTraffic)
 }
 
 // SetApprovalConfig sets the "approval_config" field.
@@ -2240,8 +2240,8 @@ func (m *ApiExposureMutation) Fields() []string {
 	if m.security != nil {
 		fields = append(fields, apiexposure.FieldSecurity)
 	}
-	if m.rate_limit != nil {
-		fields = append(fields, apiexposure.FieldRateLimit)
+	if m.traffic != nil {
+		fields = append(fields, apiexposure.FieldTraffic)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, apiexposure.FieldApprovalConfig)
@@ -2281,8 +2281,8 @@ func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Upstreams()
 	case apiexposure.FieldSecurity:
 		return m.Security()
-	case apiexposure.FieldRateLimit:
-		return m.RateLimit()
+	case apiexposure.FieldTraffic:
+		return m.Traffic()
 	case apiexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	case apiexposure.FieldAPIVersion:
@@ -2320,8 +2320,8 @@ func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldUpstreams(ctx)
 	case apiexposure.FieldSecurity:
 		return m.OldSecurity(ctx)
-	case apiexposure.FieldRateLimit:
-		return m.OldRateLimit(ctx)
+	case apiexposure.FieldTraffic:
+		return m.OldTraffic(ctx)
 	case apiexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	case apiexposure.FieldAPIVersion:
@@ -2419,12 +2419,12 @@ func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSecurity(v)
 		return nil
-	case apiexposure.FieldRateLimit:
-		v, ok := value.(model.RateLimit)
+	case apiexposure.FieldTraffic:
+		v, ok := value.(model.Traffic)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetRateLimit(v)
+		m.SetTraffic(v)
 		return nil
 	case apiexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
@@ -2485,8 +2485,8 @@ func (m *ApiExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(apiexposure.FieldSecurity) {
 		fields = append(fields, apiexposure.FieldSecurity)
 	}
-	if m.FieldCleared(apiexposure.FieldRateLimit) {
-		fields = append(fields, apiexposure.FieldRateLimit)
+	if m.FieldCleared(apiexposure.FieldTraffic) {
+		fields = append(fields, apiexposure.FieldTraffic)
 	}
 	if m.FieldCleared(apiexposure.FieldAPIVersion) {
 		fields = append(fields, apiexposure.FieldAPIVersion)
@@ -2520,8 +2520,8 @@ func (m *ApiExposureMutation) ClearField(name string) error {
 	case apiexposure.FieldSecurity:
 		m.ClearSecurity()
 		return nil
-	case apiexposure.FieldRateLimit:
-		m.ClearRateLimit()
+	case apiexposure.FieldTraffic:
+		m.ClearTraffic()
 		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ClearAPIVersion()
@@ -2570,8 +2570,8 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 	case apiexposure.FieldSecurity:
 		m.ResetSecurity()
 		return nil
-	case apiexposure.FieldRateLimit:
-		m.ResetRateLimit()
+	case apiexposure.FieldTraffic:
+		m.ResetTraffic()
 		return nil
 	case apiexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()

@@ -87,11 +87,11 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 
 	var externalIds []model.ExternalId
 	if len(obj.Spec.ExternalIds) > 0 {
-		externalIds := []model.ExternalId{}
+		externalIds = []model.ExternalId{}
 		for i := range obj.Spec.ExternalIds {
 			externalIds = append(externalIds, model.ExternalId{
 				Id:     obj.Spec.ExternalIds[i].Id,
-				Schema: obj.Spec.ExternalIds[i].Scheme,
+				Scheme: obj.Spec.ExternalIds[i].Scheme,
 			},
 			)
 		}
@@ -101,14 +101,14 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 	var ipRestrictionsDeny []string
 	if obj.Spec.Security != nil && obj.Spec.Security.IpRestrictions != nil {
 		if len(obj.Spec.Security.IpRestrictions.Allow) > 0 {
-			ipRestrictionsAllow := []string{}
+			ipRestrictionsAllow = []string{}
 			for i := range obj.Spec.Security.IpRestrictions.Allow {
 				ipRestrictionsAllow = append(ipRestrictionsAllow, obj.Spec.Security.IpRestrictions.Allow[i])
 			}
 		}
 
 		if len(obj.Spec.Security.IpRestrictions.Deny) > 0 {
-			ipRestrictionsDeny := []string{}
+			ipRestrictionsDeny = []string{}
 			for i := range obj.Spec.Security.IpRestrictions.Deny {
 				ipRestrictionsDeny = append(ipRestrictionsDeny, obj.Spec.Security.IpRestrictions.Deny[i])
 			}

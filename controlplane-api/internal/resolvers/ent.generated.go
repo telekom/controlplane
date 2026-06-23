@@ -1890,33 +1890,33 @@ func (ec *executionContext) fieldContext_ApiExposure_security(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiExposure_rateLimit(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiExposure_traffic(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposure_rateLimit(ctx, field)
+			return ec.fieldContext_ApiExposure_traffic(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.RateLimit, nil
+			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.RateLimit) graphql.Marshaler {
-			return ec.marshalORateLimit2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimit(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v model.Traffic) graphql.Marshaler {
+			return ec.marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
 		},
 		true,
 		false,
 	)
 }
-func (ec *executionContext) fieldContext_ApiExposure_rateLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApiExposure_traffic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApiExposure",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_RateLimit(ctx, field)
+			return ec.childFields_Traffic(ctx, field)
 		},
 	}
 	return fc, nil
@@ -19454,8 +19454,8 @@ func (ec *executionContext) _ApiExposure(ctx context.Context, sel ast.SelectionS
 			}
 		case "security":
 			out.Values[i] = ec._ApiExposure_security(ctx, field, obj)
-		case "rateLimit":
-			out.Values[i] = ec._ApiExposure_rateLimit(ctx, field, obj)
+		case "traffic":
+			out.Values[i] = ec._ApiExposure_traffic(ctx, field, obj)
 		case "approvalConfig":
 			out.Values[i] = ec._ApiExposure_approvalConfig(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -115,11 +115,11 @@ var _ = Describe("Application Repository", func() {
 				ExternalIds: []model.ExternalId{
 					model.ExternalId{
 						Id:     "abc",
-						Schema: "schema1",
+						Scheme: "schema1",
 					},
 					model.ExternalId{
 						Id:     "123",
-						Schema: "schema2",
+						Scheme: "schema2",
 					},
 				},
 				IpRestrictions: model.IpRestrictions{
@@ -138,11 +138,11 @@ var _ = Describe("Application Repository", func() {
 			Expect(app.ExternalIds).To(ContainElements(
 				model.ExternalId{
 					Id:     "abc",
-					Schema: "schema1",
+					Scheme: "schema1",
 				},
 				model.ExternalId{
 					Id:     "123",
-					Schema: "schema2",
+					Scheme: "schema2",
 				},
 			),
 			)

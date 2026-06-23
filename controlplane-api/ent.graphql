@@ -61,7 +61,7 @@ type ApiExposure implements Node {
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
   security: ApiExposureSecurity
-  rateLimit: RateLimit
+  traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!

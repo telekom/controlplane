@@ -44,6 +44,7 @@ type ResolverRoot interface {
 	EventSubscription() EventSubscriptionResolver
 	EventSubscriptionInfo() EventSubscriptionInfoResolver
 	EventType() EventTypeResolver
+	ExternalId() ExternalIdResolver
 	ExternalIdentityProvider() ExternalIdentityProviderResolver
 	Mutation() MutationResolver
 	OAuth2ClientCredentials() OAuth2ClientCredentialsResolver
@@ -107,11 +108,11 @@ type ComplexityRoot struct {
 		LastModifiedAt func(childComplexity int) int
 		Namespace      func(childComplexity int) int
 		Owner          func(childComplexity int) int
-		RateLimit      func(childComplexity int) int
 		Security       func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
 		Subscriptions  func(childComplexity int) int
+		Traffic        func(childComplexity int) int
 		Upstreams      func(childComplexity int) int
 		Visibility     func(childComplexity int) int
 	}
@@ -913,13 +914,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposure.Owner(childComplexity), true
 
-	case "ApiExposure.rateLimit":
-		if e.ComplexityRoot.ApiExposure.RateLimit == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiExposure.RateLimit(childComplexity), true
-
 	case "ApiExposure.security":
 		if e.ComplexityRoot.ApiExposure.Security == nil {
 			break
@@ -947,6 +941,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposure.Subscriptions(childComplexity), true
+
+	case "ApiExposure.traffic":
+		if e.ComplexityRoot.ApiExposure.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.Traffic(childComplexity), true
 
 	case "ApiExposure.upstreams":
 		if e.ComplexityRoot.ApiExposure.Upstreams == nil {
@@ -3598,7 +3599,7 @@ type ApiExposure implements Node {
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
   security: ApiExposureSecurity
-  rateLimit: RateLimit
+  traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
@@ -7293,7 +7294,7 @@ type ApiExposureInfo {
   ownerTeam: TeamInfo!
 }
 
-# -- Security types --
+# Security
 
 enum TokenRequestMethod {
   client_secret_basic
@@ -7339,7 +7340,7 @@ type ApiSubscriptionSecurity {
   m2m: SubscriberMachine2MachineAuthentication
 }
 
-# -- Traffic types --
+# Traffic 
 
 type Limits {
   second: Int
@@ -7608,8 +7609,8 @@ func (ec *executionContext) childFields_ApiExposure(ctx context.Context, field g
 		return ec.fieldContext_ApiExposure_upstreams(ctx, field)
 	case "security":
 		return ec.fieldContext_ApiExposure_security(ctx, field)
-	case "rateLimit":
-		return ec.fieldContext_ApiExposure_rateLimit(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiExposure_traffic(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_ApiExposure_approvalConfig(ctx, field)
 	case "apiVersion":
@@ -8580,6 +8581,14 @@ func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field grap
 		return ec.fieldContext_TeamInfo_email(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TeamInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_Traffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "rateLimit":
+		return ec.fieldContext_Traffic_rateLimit(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Traffic", field.Name)
 }
 
 func (ec *executionContext) childFields_UpdateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

@@ -208,23 +208,23 @@ func (_u *ApiExposureUpdate) ClearSecurity() *ApiExposureUpdate {
 	return _u
 }
 
-// SetRateLimit sets the "rate_limit" field.
-func (_u *ApiExposureUpdate) SetRateLimit(v model.RateLimit) *ApiExposureUpdate {
-	_u.mutation.SetRateLimit(v)
+// SetTraffic sets the "traffic" field.
+func (_u *ApiExposureUpdate) SetTraffic(v model.Traffic) *ApiExposureUpdate {
+	_u.mutation.SetTraffic(v)
 	return _u
 }
 
-// SetNillableRateLimit sets the "rate_limit" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableRateLimit(v *model.RateLimit) *ApiExposureUpdate {
+// SetNillableTraffic sets the "traffic" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableTraffic(v *model.Traffic) *ApiExposureUpdate {
 	if v != nil {
-		_u.SetRateLimit(*v)
+		_u.SetTraffic(*v)
 	}
 	return _u
 }
 
-// ClearRateLimit clears the value of the "rate_limit" field.
-func (_u *ApiExposureUpdate) ClearRateLimit() *ApiExposureUpdate {
-	_u.mutation.ClearRateLimit()
+// ClearTraffic clears the value of the "traffic" field.
+func (_u *ApiExposureUpdate) ClearTraffic() *ApiExposureUpdate {
+	_u.mutation.ClearTraffic()
 	return _u
 }
 
@@ -485,11 +485,11 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if _u.mutation.SecurityCleared() {
 		_spec.ClearField(apiexposure.FieldSecurity, field.TypeJSON)
 	}
-	if value, ok := _u.mutation.RateLimit(); ok {
-		_spec.SetField(apiexposure.FieldRateLimit, field.TypeJSON, value)
+	if value, ok := _u.mutation.Traffic(); ok {
+		_spec.SetField(apiexposure.FieldTraffic, field.TypeJSON, value)
 	}
-	if _u.mutation.RateLimitCleared() {
-		_spec.ClearField(apiexposure.FieldRateLimit, field.TypeJSON)
+	if _u.mutation.TrafficCleared() {
+		_spec.ClearField(apiexposure.FieldTraffic, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -795,23 +795,23 @@ func (_u *ApiExposureUpdateOne) ClearSecurity() *ApiExposureUpdateOne {
 	return _u
 }
 
-// SetRateLimit sets the "rate_limit" field.
-func (_u *ApiExposureUpdateOne) SetRateLimit(v model.RateLimit) *ApiExposureUpdateOne {
-	_u.mutation.SetRateLimit(v)
+// SetTraffic sets the "traffic" field.
+func (_u *ApiExposureUpdateOne) SetTraffic(v model.Traffic) *ApiExposureUpdateOne {
+	_u.mutation.SetTraffic(v)
 	return _u
 }
 
-// SetNillableRateLimit sets the "rate_limit" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableRateLimit(v *model.RateLimit) *ApiExposureUpdateOne {
+// SetNillableTraffic sets the "traffic" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableTraffic(v *model.Traffic) *ApiExposureUpdateOne {
 	if v != nil {
-		_u.SetRateLimit(*v)
+		_u.SetTraffic(*v)
 	}
 	return _u
 }
 
-// ClearRateLimit clears the value of the "rate_limit" field.
-func (_u *ApiExposureUpdateOne) ClearRateLimit() *ApiExposureUpdateOne {
-	_u.mutation.ClearRateLimit()
+// ClearTraffic clears the value of the "traffic" field.
+func (_u *ApiExposureUpdateOne) ClearTraffic() *ApiExposureUpdateOne {
+	_u.mutation.ClearTraffic()
 	return _u
 }
 
@@ -1102,11 +1102,11 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 	if _u.mutation.SecurityCleared() {
 		_spec.ClearField(apiexposure.FieldSecurity, field.TypeJSON)
 	}
-	if value, ok := _u.mutation.RateLimit(); ok {
-		_spec.SetField(apiexposure.FieldRateLimit, field.TypeJSON, value)
+	if value, ok := _u.mutation.Traffic(); ok {
+		_spec.SetField(apiexposure.FieldTraffic, field.TypeJSON, value)
 	}
-	if _u.mutation.RateLimitCleared() {
-		_spec.ClearField(apiexposure.FieldRateLimit, field.TypeJSON)
+	if _u.mutation.TrafficCleared() {
+		_spec.ClearField(apiexposure.FieldTraffic, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)

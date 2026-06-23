@@ -479,6 +479,11 @@ func (r *eventTypeResolver) Owner(ctx context.Context, obj *ent.EventType) (*mod
 	return mapTeamInfo(team, group), nil
 }
 
+// Schema is the resolver for the Schema field.
+func (r *externalIdResolver) Schema(ctx context.Context, obj *model.ExternalId) (string, error) {
+	panic(fmt.Errorf("not implemented: Schema - Schema"))
+}
+
 // TokenRequest is the resolver for the tokenRequest field.
 func (r *externalIdentityProviderResolver) TokenRequest(ctx context.Context, obj *model.ExternalIdentityProvider) (*gqlmodel.TokenRequestMethod, error) {
 	panic(fmt.Errorf("not implemented: TokenRequest - tokenRequest"))
@@ -561,6 +566,9 @@ func (r *Resolver) EventSubscriptionInfo() EventSubscriptionInfoResolver {
 	return &eventSubscriptionInfoResolver{r}
 }
 
+// ExternalId returns ExternalIdResolver implementation.
+func (r *Resolver) ExternalId() ExternalIdResolver { return &externalIdResolver{r} }
+
 // ExternalIdentityProvider returns ExternalIdentityProviderResolver implementation.
 func (r *Resolver) ExternalIdentityProvider() ExternalIdentityProviderResolver {
 	return &externalIdentityProviderResolver{r}
@@ -579,5 +587,6 @@ type basicAuthCredentialsResolver struct{ *Resolver }
 type decisionResolver struct{ *Resolver }
 type eventExposureInfoResolver struct{ *Resolver }
 type eventSubscriptionInfoResolver struct{ *Resolver }
+type externalIdResolver struct{ *Resolver }
 type externalIdentityProviderResolver struct{ *Resolver }
 type oAuth2ClientCredentialsResolver struct{ *Resolver }

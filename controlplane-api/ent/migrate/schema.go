@@ -64,7 +64,7 @@ var (
 		{Name: "features", Type: field.TypeJSON},
 		{Name: "upstreams", Type: field.TypeJSON},
 		{Name: "security", Type: field.TypeJSON, Nullable: true},
-		{Name: "rate_limit", Type: field.TypeJSON, Nullable: true},
+		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "api_exposures", Type: field.TypeInt, Nullable: true},

@@ -54,6 +54,9 @@ type EventSubscriptionInfoResolver interface {
 	DeliveryType(ctx context.Context, obj *model.EventSubscriptionInfo) (eventsubscription.DeliveryType, error)
 	StatusPhase(ctx context.Context, obj *model.EventSubscriptionInfo) (*eventsubscription.StatusPhase, error)
 }
+type ExternalIdResolver interface {
+	Schema(ctx context.Context, obj *model.ExternalId) (string, error)
+}
 type ExternalIdentityProviderResolver interface {
 	TokenRequest(ctx context.Context, obj *model.ExternalIdentityProvider) (*model1.TokenRequestMethod, error)
 }
@@ -1213,7 +1216,7 @@ func (ec *executionContext) _ExternalId_Schema(ctx context.Context, field graphq
 			return ec.fieldContext_ExternalId_Schema(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.Schema, nil
+			return ec.Resolvers.ExternalId().Schema(ctx, obj)
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
@@ -1224,7 +1227,7 @@ func (ec *executionContext) _ExternalId_Schema(ctx context.Context, field graphq
 	)
 }
 func (ec *executionContext) fieldContext_ExternalId_Schema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ExternalId", field, false, false, errors.New("field of type String does not have child fields"))
+	return graphql.NewScalarFieldContext("ExternalId", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ExternalIdentityProvider_tokenEndpoint(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
@@ -3290,13 +3293,44 @@ func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSe
 		case "Id":
 			out.Values[i] = ec._ExternalId_Id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "Schema":
-			out.Values[i] = ec._ExternalId_Schema(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalId_Schema(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4419,10 +4453,6 @@ func (ec *executionContext) marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋte
 	return ec._OAuth2ClientCredentials(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalORateLimit2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimit(ctx context.Context, sel ast.SelectionSet, v model.RateLimit) graphql.Marshaler {
-	return ec._RateLimit(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalORateLimit2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimit(ctx context.Context, sel ast.SelectionSet, v *model.RateLimit) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -4495,6 +4525,10 @@ func (ec *executionContext) marshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekom
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v model.Traffic) graphql.Marshaler {
+	return ec._Traffic(ctx, sel, &v)
 }
 
 // endregion ***************************** type.gotpl *****************************

@@ -46,8 +46,8 @@ const (
 	FieldUpstreams = "upstreams"
 	// FieldSecurity holds the string denoting the security field in the database.
 	FieldSecurity = "security"
-	// FieldRateLimit holds the string denoting the rate_limit field in the database.
-	FieldRateLimit = "rate_limit"
+	// FieldTraffic holds the string denoting the traffic field in the database.
+	FieldTraffic = "traffic"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
 	FieldApprovalConfig = "approval_config"
 	// FieldAPIVersion holds the string denoting the api_version field in the database.
@@ -98,7 +98,7 @@ var Columns = []string{
 	FieldFeatures,
 	FieldUpstreams,
 	FieldSecurity,
-	FieldRateLimit,
+	FieldTraffic,
 	FieldApprovalConfig,
 	FieldAPIVersion,
 }

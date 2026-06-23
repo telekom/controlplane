@@ -57,7 +57,7 @@ type IpRestrictions struct {
 // ExternalId represents an external identifier for an application.
 type ExternalId struct {
 	Id     string `json:"id"`
-	Schema string `json:"schema"`
+	Scheme string `json:"scheme"`
 }
 
 // Security

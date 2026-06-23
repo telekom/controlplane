@@ -55,7 +55,7 @@ func (ApiExposure) Fields() []ent.Field {
 		field.JSON("security", model.ApiExposureSecurity{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
-		field.JSON("rate_limit", model.RateLimit{}).
+		field.JSON("traffic", model.Traffic{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("approval_config", model.ApprovalConfig{}).

@@ -35,11 +35,11 @@ var _ = Describe("Application.ExternalIds", func() {
 			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").SetExternalIds([]model.ExternalId{
 			{
 				Id:     "abc",
-				Schema: "schema1",
+				Scheme: "schema1",
 			},
 			{
 				Id:     "123",
-				Schema: "schema2",
+				Scheme: "schema2",
 			},
 		}).
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
@@ -49,10 +49,10 @@ var _ = Describe("Application.ExternalIds", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.ExternalIds).To(ContainElements(model.ExternalId{
 			Id:     "abc",
-			Schema: "schema1",
+			Scheme: "schema1",
 		}, model.ExternalId{
 			Id:     "123",
-			Schema: "schema2",
+			Scheme: "schema2",
 		}))
 	})
 
@@ -84,7 +84,7 @@ var _ = Describe("Application.ExternalIds", func() {
 			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").SetExternalIds([]model.ExternalId{
 			{
 				Id:     "abc",
-				Schema: "schema1",
+				Scheme: "schema1",
 			},
 		}).
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
@@ -95,7 +95,7 @@ var _ = Describe("Application.ExternalIds", func() {
 		Expect(fetched.ExternalIds).To(HaveLen(1))
 		Expect(fetched.ExternalIds).To(ContainElements(model.ExternalId{
 			Id:     "abc",
-			Schema: "schema1",
+			Scheme: "schema1",
 		}))
 	})
 
@@ -110,7 +110,7 @@ var _ = Describe("Application.ExternalIds", func() {
 			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").SetExternalIds([]model.ExternalId{
 			{
 				Id:     "abc",
-				Schema: "schema1",
+				Scheme: "schema1",
 			},
 		}).
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
@@ -121,22 +121,22 @@ var _ = Describe("Application.ExternalIds", func() {
 		Expect(fetched.ExternalIds).To(HaveLen(1))
 		Expect(fetched.ExternalIds).To(ContainElements(model.ExternalId{
 			Id:     "abc",
-			Schema: "schema1",
+			Scheme: "schema1",
 		}))
 
 		updated, err := client.Application.UpdateOneID(app.ID).AppendExternalIds([]model.ExternalId{
 			{
 				Id:     "123",
-				Schema: "schema2",
+				Scheme: "schema2",
 			},
 		}).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(updated.ExternalIds).To(ContainElements(model.ExternalId{
 			Id:     "abc",
-			Schema: "schema1",
+			Scheme: "schema1",
 		}, model.ExternalId{
 			Id:     "123",
-			Schema: "schema2",
+			Scheme: "schema2",
 		}))
 
 		updated, err = client.Application.UpdateOneID(app.ID).ClearExternalIds().Save(ctx)

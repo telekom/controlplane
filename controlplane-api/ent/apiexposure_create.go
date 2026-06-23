@@ -165,16 +165,16 @@ func (_c *ApiExposureCreate) SetNillableSecurity(v *model.ApiExposureSecurity) *
 	return _c
 }
 
-// SetRateLimit sets the "rate_limit" field.
-func (_c *ApiExposureCreate) SetRateLimit(v model.RateLimit) *ApiExposureCreate {
-	_c.mutation.SetRateLimit(v)
+// SetTraffic sets the "traffic" field.
+func (_c *ApiExposureCreate) SetTraffic(v model.Traffic) *ApiExposureCreate {
+	_c.mutation.SetTraffic(v)
 	return _c
 }
 
-// SetNillableRateLimit sets the "rate_limit" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableRateLimit(v *model.RateLimit) *ApiExposureCreate {
+// SetNillableTraffic sets the "traffic" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableTraffic(v *model.Traffic) *ApiExposureCreate {
 	if v != nil {
-		_c.SetRateLimit(*v)
+		_c.SetTraffic(*v)
 	}
 	return _c
 }
@@ -450,9 +450,9 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 		_spec.SetField(apiexposure.FieldSecurity, field.TypeJSON, value)
 		_node.Security = value
 	}
-	if value, ok := _c.mutation.RateLimit(); ok {
-		_spec.SetField(apiexposure.FieldRateLimit, field.TypeJSON, value)
-		_node.RateLimit = value
+	if value, ok := _c.mutation.Traffic(); ok {
+		_spec.SetField(apiexposure.FieldTraffic, field.TypeJSON, value)
+		_node.Traffic = value
 	}
 	if value, ok := _c.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -726,21 +726,21 @@ func (u *ApiExposureUpsert) ClearSecurity() *ApiExposureUpsert {
 	return u
 }
 
-// SetRateLimit sets the "rate_limit" field.
-func (u *ApiExposureUpsert) SetRateLimit(v model.RateLimit) *ApiExposureUpsert {
-	u.Set(apiexposure.FieldRateLimit, v)
+// SetTraffic sets the "traffic" field.
+func (u *ApiExposureUpsert) SetTraffic(v model.Traffic) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldTraffic, v)
 	return u
 }
 
-// UpdateRateLimit sets the "rate_limit" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateRateLimit() *ApiExposureUpsert {
-	u.SetExcluded(apiexposure.FieldRateLimit)
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateTraffic() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldTraffic)
 	return u
 }
 
-// ClearRateLimit clears the value of the "rate_limit" field.
-func (u *ApiExposureUpsert) ClearRateLimit() *ApiExposureUpsert {
-	u.SetNull(apiexposure.FieldRateLimit)
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiExposureUpsert) ClearTraffic() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldTraffic)
 	return u
 }
 
@@ -1008,24 +1008,24 @@ func (u *ApiExposureUpsertOne) ClearSecurity() *ApiExposureUpsertOne {
 	})
 }
 
-// SetRateLimit sets the "rate_limit" field.
-func (u *ApiExposureUpsertOne) SetRateLimit(v model.RateLimit) *ApiExposureUpsertOne {
+// SetTraffic sets the "traffic" field.
+func (u *ApiExposureUpsertOne) SetTraffic(v model.Traffic) *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
-		s.SetRateLimit(v)
+		s.SetTraffic(v)
 	})
 }
 
-// UpdateRateLimit sets the "rate_limit" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateRateLimit() *ApiExposureUpsertOne {
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateTraffic() *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
-		s.UpdateRateLimit()
+		s.UpdateTraffic()
 	})
 }
 
-// ClearRateLimit clears the value of the "rate_limit" field.
-func (u *ApiExposureUpsertOne) ClearRateLimit() *ApiExposureUpsertOne {
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiExposureUpsertOne) ClearTraffic() *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
-		s.ClearRateLimit()
+		s.ClearTraffic()
 	})
 }
 
@@ -1464,24 +1464,24 @@ func (u *ApiExposureUpsertBulk) ClearSecurity() *ApiExposureUpsertBulk {
 	})
 }
 
-// SetRateLimit sets the "rate_limit" field.
-func (u *ApiExposureUpsertBulk) SetRateLimit(v model.RateLimit) *ApiExposureUpsertBulk {
+// SetTraffic sets the "traffic" field.
+func (u *ApiExposureUpsertBulk) SetTraffic(v model.Traffic) *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
-		s.SetRateLimit(v)
+		s.SetTraffic(v)
 	})
 }
 
-// UpdateRateLimit sets the "rate_limit" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateRateLimit() *ApiExposureUpsertBulk {
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateTraffic() *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
-		s.UpdateRateLimit()
+		s.UpdateTraffic()
 	})
 }
 
-// ClearRateLimit clears the value of the "rate_limit" field.
-func (u *ApiExposureUpsertBulk) ClearRateLimit() *ApiExposureUpsertBulk {
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiExposureUpsertBulk) ClearTraffic() *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
-		s.ClearRateLimit()
+		s.ClearTraffic()
 	})
 }
 
