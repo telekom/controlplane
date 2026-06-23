@@ -182,8 +182,8 @@ func (r *apiSubscriptionResolver) GatewayURL(ctx context.Context, obj *ent.ApiSu
 	if z.GatewayURL == nil {
 		return nil, nil
 	}
-
-	gatewayURL := *z.GatewayURL + "/" + obj.BasePath
+	// + "/" not needed as "/" part of basepath
+	gatewayURL := *z.GatewayURL + obj.BasePath
 	return &gatewayURL, nil
 }
 
@@ -447,6 +447,7 @@ func (r *eventSubscriptionResolver) Target(ctx context.Context, obj *ent.EventSu
 
 // GatewayConsumerSseURL is the resolver for the gatewayConsumerSseURL field.
 func (r *eventSubscriptionResolver) GatewayConsumerSseURL(ctx context.Context, obj *ent.EventSubscription) (*string, error) {
+	// TODO: implemented in a different PR
 	panic(fmt.Errorf("not implemented: GatewayConsumerSseURL - gatewayConsumerSseURL"))
 }
 
