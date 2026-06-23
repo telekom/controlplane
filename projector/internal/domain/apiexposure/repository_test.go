@@ -355,6 +355,91 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(exp.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
 		})
 
+		It("should update features, security and traffic on upsert conflict", func() {
+			data := &apiexposure.APIExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "feat-exp", nil),
+				StatusPhase:    "READY",
+				StatusMessage:  "ok",
+				BasePath:       "/api/v1/features",
+				Visibility:     "WORLD",
+				Active:         true,
+				Features:       []string{"LAST_MILE_SECURITY"},
+				Upstreams:      []model.Upstream{{URL: "https://backend.example.com", Weight: 100}},
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/features")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.Features).To(HaveLen(1))
+			Expect(exp.Features).To(ContainElement("LAST_MILE_SECURITY"))
+			Expect(exp.Security.M2M).To(BeNil())
+			Expect(exp.Traffic.RateLimit).To(BeNil())
+
+			// Update with security, traffic, and expanded features.
+			data.Features = []string{"LAST_MILE_SECURITY", "EXTERNAL_IDP", "CUSTOM_SCOPES", "RATE_LIMIT", "FAILOVER"}
+			data.Security = &model.ApiExposureSecurity{
+				M2M: &model.Machine2MachineAuthentication{
+					Scopes: []string{"read", "write"},
+				},
+			}
+			data.Traffic = &model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+					},
+				},
+				Failover: &model.Failover{
+					Zones: []string{"zone-a"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/features")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.Features).To(HaveLen(5))
+			Expect(exp.Features).To(ContainElements("LAST_MILE_SECURITY", "EXTERNAL_IDP", "CUSTOM_SCOPES", "RATE_LIMIT", "FAILOVER"))
+			Expect(exp.Security.M2M).NotTo(BeNil())
+			Expect(exp.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
+			Expect(exp.Traffic.RateLimit).NotTo(BeNil())
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Second).To(Equal(10))
+			Expect(exp.Traffic.Failover).NotTo(BeNil())
+			Expect(exp.Traffic.Failover.Zones).To(Equal([]string{"zone-a"}))
+
+			// Update again: remove security features, add load balancing.
+			data.Features = []string{"LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING"}
+			data.Security = nil
+			data.Upstreams = []model.Upstream{
+				{URL: "https://primary.example.com", Weight: 80},
+				{URL: "https://secondary.example.com", Weight: 20},
+			}
+			data.Traffic = &model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 50, Minute: 500, Hour: 5000},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/features")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.Features).To(HaveLen(3))
+			Expect(exp.Features).To(ContainElements("LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING"))
+			Expect(exp.Security.M2M).To(BeNil())
+			Expect(exp.Upstreams).To(HaveLen(2))
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Second).To(Equal(50))
+			Expect(exp.Traffic.Failover).To(BeNil())
+		})
+
 		It("should populate the edge cache after upsert", func() {
 			data := &apiexposure.APIExposureData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "cached-exp", nil),

@@ -354,3 +354,103 @@ var _ = Describe("ApiExposure.Traffic", func() {
 		Expect(fetched.Traffic.Failover.Zones).To(ConsistOf("zone-a", "zone-b", "zone-c"))
 	})
 })
+
+var _ = Describe("ApiExposure.Features", func() {
+	var client *ent.Client
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should store and return features on ApiExposure", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
+			SetBasePath("/api/v1/features").
+			SetOwner(app).
+			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
+			SetFeatures([]string{"LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING"}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.Features).To(HaveLen(3))
+		Expect(fetched.Features).To(ConsistOf("LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING"))
+	})
+
+	It("should default to empty features on ApiExposure", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
+			SetBasePath("/api/v1/no-features").
+			SetOwner(app).
+			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.Features).To(BeEmpty())
+	})
+
+	It("should update features on ApiExposure", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
+			SetBasePath("/api/v1/update-features").
+			SetOwner(app).
+			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
+			SetFeatures([]string{"LAST_MILE_SECURITY"}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exposure.Features).To(Equal([]string{"LAST_MILE_SECURITY"}))
+
+		updated, err := client.ApiExposure.UpdateOneID(exposure.ID).
+			SetFeatures([]string{"LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING", "IP_RESTRICTION"}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(updated.Features).To(HaveLen(4))
+		Expect(updated.Features).To(ConsistOf("LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING", "IP_RESTRICTION"))
+
+		cleared, err := client.ApiExposure.UpdateOneID(exposure.ID).
+			SetFeatures([]string{}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cleared.Features).To(BeEmpty())
+	})
+})

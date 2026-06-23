@@ -29,37 +29,31 @@ const (
 	APIExposureFeatureBasicAuth            APIExposureFeature = "BASIC_AUTH"
 	APIExposureFeatureCircuitBreaker       APIExposureFeature = "CIRCUIT_BREAKER"
 	APIExposureFeatureCustomScopes         APIExposureFeature = "CUSTOM_SCOPES"
-	APIExposureFeatureDynamicUpstream      APIExposureFeature = "DYNAMIC_UPSTREAM"
 	APIExposureFeatureExternalIDP          APIExposureFeature = "EXTERNAL_IDP"
 	APIExposureFeatureFailover             APIExposureFeature = "FAILOVER"
 	APIExposureFeatureHeaderTransformation APIExposureFeature = "HEADER_TRANSFORMATION"
 	APIExposureFeatureIPRestriction        APIExposureFeature = "IP_RESTRICTION"
 	APIExposureFeatureLastMileSecurity     APIExposureFeature = "LAST_MILE_SECURITY"
 	APIExposureFeatureLoadBalancing        APIExposureFeature = "LOAD_BALANCING"
-	APIExposureFeaturePassthrough          APIExposureFeature = "PASSTHROUGH"
 	APIExposureFeatureRateLimit            APIExposureFeature = "RATE_LIMIT"
-	APIExposureFeatureAccessControl        APIExposureFeature = "ACCESS_CONTROL"
 )
 
 var AllAPIExposureFeature = []APIExposureFeature{
 	APIExposureFeatureBasicAuth,
 	APIExposureFeatureCircuitBreaker,
 	APIExposureFeatureCustomScopes,
-	APIExposureFeatureDynamicUpstream,
 	APIExposureFeatureExternalIDP,
 	APIExposureFeatureFailover,
 	APIExposureFeatureHeaderTransformation,
 	APIExposureFeatureIPRestriction,
 	APIExposureFeatureLastMileSecurity,
 	APIExposureFeatureLoadBalancing,
-	APIExposureFeaturePassthrough,
 	APIExposureFeatureRateLimit,
-	APIExposureFeatureAccessControl,
 }
 
 func (e APIExposureFeature) IsValid() bool {
 	switch e {
-	case APIExposureFeatureBasicAuth, APIExposureFeatureCircuitBreaker, APIExposureFeatureCustomScopes, APIExposureFeatureDynamicUpstream, APIExposureFeatureExternalIDP, APIExposureFeatureFailover, APIExposureFeatureHeaderTransformation, APIExposureFeatureIPRestriction, APIExposureFeatureLastMileSecurity, APIExposureFeatureLoadBalancing, APIExposureFeaturePassthrough, APIExposureFeatureRateLimit, APIExposureFeatureAccessControl:
+	case APIExposureFeatureBasicAuth, APIExposureFeatureCircuitBreaker, APIExposureFeatureCustomScopes, APIExposureFeatureExternalIDP, APIExposureFeatureFailover, APIExposureFeatureHeaderTransformation, APIExposureFeatureIPRestriction, APIExposureFeatureLastMileSecurity, APIExposureFeatureLoadBalancing, APIExposureFeatureRateLimit:
 		return true
 	}
 	return false

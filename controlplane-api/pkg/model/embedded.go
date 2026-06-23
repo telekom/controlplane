@@ -88,7 +88,7 @@ type SubscriberMachine2MachineAuthentication struct {
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
 type ExternalIdentityProvider struct {
-	TokenEndpoint string                   `json:"tokenEndpoint"`          // optional/nillable
+	TokenEndpoint string                   `json:"tokenEndpoint"`          //
 	TokenRequest  *string                  `json:"tokenRequest,omitempty"` // optional/nillable - only "client_secret_basic" or "client_secret_post"
 	GrantType     *string                  `json:"grantType,omitempty"`    // optional/nillable
 	Basic         *BasicAuthCredentials    `json:"basic,omitempty"`        // optional/nillable

@@ -14,6 +14,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/metrics"
@@ -96,10 +97,14 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 
 	if data.Security != nil {
 		create.SetSecurity(*data.Security)
+	} else {
+		create.SetSecurity(model.ApiExposureSecurity{})
 	}
 
 	if data.Traffic != nil {
 		create.SetTraffic(*data.Traffic)
+	} else {
+		create.SetTraffic(model.Traffic{})
 	}
 
 	if data.APIVersion != nil {

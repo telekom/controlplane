@@ -105,6 +105,8 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		}
 	}
 
+	features := mapFeatures(obj)
+
 	return &APIExposureData{
 		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:   phase,
@@ -112,7 +114,7 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		BasePath:      obj.Spec.ApiBasePath,
 		Visibility:    strings.ToUpper(string(obj.Spec.Visibility)),
 		Active:        obj.Status.Active,
-		Features:      []string{},
+		Features:      features,
 		Upstreams:     upstreams,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     mapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
@@ -124,6 +126,49 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		Security:   security,
 		Traffic:    traffic,
 	}, nil
+}
+
+// determineFeatures checks for the feature of a given APIExposures
+func mapFeatures(obj *apiv1.ApiExposure) []string {
+	featureList := []string{""}
+
+	// SECURITY RELATED
+	featureList = append(featureList, "LAST_MILE_SECURITY")
+	if obj.Spec.Security != nil {
+		if obj.Spec.Security.M2M != nil {
+			if obj.Spec.Security.M2M.ExternalIDP != nil {
+				featureList = append(featureList, "EXTERNAL_IDP")
+			}
+			if len(obj.Spec.Security.M2M.Scopes) > 0 {
+				featureList = append(featureList, "CUSTOM_SCOPES")
+			}
+			if obj.Spec.Security.M2M.Basic != nil {
+				featureList = append(featureList, "BASIC_AUTH")
+			}
+		}
+	}
+
+	// TRAFFIC RELATED
+	if obj.Spec.Traffic.RateLimit != nil {
+		featureList = append(featureList, "RATE_LIMIT")
+	}
+	if obj.Spec.Traffic.Failover != nil {
+		featureList = append(featureList, "FAILOVER")
+	}
+	if obj.Spec.Traffic.CircuitBreaker != nil {
+		featureList = append(featureList, "CIRCUIT_BREAKER")
+	}
+
+	if len(obj.Spec.Upstreams) > 1 {
+		featureList = append(featureList, "LOAD_BALANCING")
+	}
+
+	// TRANSFORMATION
+	if obj.Spec.Transformation != nil {
+		featureList = append(featureList, "HEADER_TRANSFORMATION")
+	}
+
+	return featureList
 }
 
 // KeyFromObject derives the composite identity key from a live ApiExposure.
