@@ -90,11 +90,17 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 		SetStatusMessage(data.StatusMessage).
 		SetEnvironment(data.Meta.Environment).
 		SetNamespace(data.Meta.Namespace).
-		SetSecurity(*data.Security).
-		SetTraffic(*data.Traffic).
 		SetOwnerID(appID).
 		SetUpstreams(data.Upstreams).
 		SetApprovalConfig(data.ApprovalConfig)
+
+	if data.Security != nil {
+		create.SetSecurity(*data.Security)
+	}
+
+	if data.Traffic != nil {
+		create.SetTraffic(*data.Traffic)
+	}
 
 	if data.APIVersion != nil {
 		create.SetAPIVersion(*data.APIVersion)

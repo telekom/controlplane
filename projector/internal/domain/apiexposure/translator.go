@@ -97,7 +97,12 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 				)
 			}
 		}
-
+	}
+	if obj.Spec.Traffic.Failover != nil {
+		traffic.Failover = &model.Failover{}
+		for i := range obj.Spec.Traffic.Failover.Zones {
+			traffic.Failover.Zones = append(traffic.Failover.Zones, obj.Spec.Traffic.Failover.Zones[i].Name)
+		}
 	}
 
 	return &APIExposureData{

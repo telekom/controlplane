@@ -110,13 +110,20 @@ type OAuth2ClientCredentials struct {
 
 // Traffic
 type Traffic struct {
-	// ToDo zones
+	Failover  *Failover  `json:"failover,omitempty"`
 	RateLimit *RateLimit `json:"rateLimit,omitempty"` // optional/nillable
 }
 
+// RateLimit defines the exporure based rate limiting
 type RateLimit struct {
 	Provider            *RateLimitConfig      `json:"provider,omitempty"`            // optional
 	SubscriberRateLimit *SubscriberRateLimits `json:"subscriberRateLimit,omitempty"` // optional
+}
+
+type Failover struct {
+	// Zones reflect only the zones as string, no cross-tenant references, as the consumer based
+	// failover is deprecated and is subject to be removed
+	Zones []string `json:"zones,omitempty"`
 }
 
 // RateLimitConfig defines rate limits for different time windows

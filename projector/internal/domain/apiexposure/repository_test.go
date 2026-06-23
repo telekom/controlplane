@@ -218,6 +218,9 @@ var _ = Describe("ApiExposure Repository", func() {
 							},
 						},
 					},
+					Failover: &model.Failover{
+						Zones: []string{"zoneA", "zoneB"},
+					},
 				},
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
@@ -244,21 +247,25 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(*exp.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("ext-client-key"))
 
 			// RateLimit assertions
-			Expect(exp.RateLimit.Provider).NotTo(BeNil())
-			Expect(exp.RateLimit.Provider.Limits.Second).To(Equal(10))
-			Expect(exp.RateLimit.Provider.Limits.Minute).To(Equal(100))
-			Expect(exp.RateLimit.Provider.Limits.Hour).To(Equal(1000))
-			Expect(exp.RateLimit.Provider.Options.HideClientHeaders).To(BeTrue())
-			Expect(exp.RateLimit.Provider.Options.FaultTolerant).To(BeTrue())
-			Expect(exp.RateLimit.SubscriberRateLimit).NotTo(BeNil())
-			Expect(exp.RateLimit.SubscriberRateLimit.Default.Limits.Second).To(Equal(5))
-			Expect(exp.RateLimit.SubscriberRateLimit.Default.Limits.Minute).To(Equal(50))
-			Expect(exp.RateLimit.SubscriberRateLimit.Default.Limits.Hour).To(Equal(500))
-			Expect(exp.RateLimit.SubscriberRateLimit.Overrides).To(HaveLen(1))
-			Expect(exp.RateLimit.SubscriberRateLimit.Overrides[0].Subscriber).To(Equal("sub-a"))
-			Expect(exp.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Second).To(Equal(20))
-			Expect(exp.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Minute).To(Equal(200))
-			Expect(exp.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Hour).To(Equal(2000))
+			Expect(exp.Traffic.RateLimit.Provider).NotTo(BeNil())
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Second).To(Equal(10))
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Minute).To(Equal(100))
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Hour).To(Equal(1000))
+			Expect(exp.Traffic.RateLimit.Provider.Options.HideClientHeaders).To(BeTrue())
+			Expect(exp.Traffic.RateLimit.Provider.Options.FaultTolerant).To(BeTrue())
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit).NotTo(BeNil())
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Default.Limits.Second).To(Equal(5))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Default.Limits.Minute).To(Equal(50))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Default.Limits.Hour).To(Equal(500))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides).To(HaveLen(1))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Subscriber).To(Equal("sub-a"))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Second).To(Equal(20))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Minute).To(Equal(200))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Hour).To(Equal(2000))
+
+			// Failover
+			Expect(exp.Traffic.Failover.Zones).To(Equal([]string{"zoneA", "zoneB"}))
+
 		})
 
 		It("should return ErrDependencyMissing when application is missing", func() {

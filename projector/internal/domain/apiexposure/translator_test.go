@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
@@ -51,7 +52,18 @@ var _ = Describe("ApiExposure Translator", func() {
 						TrustedTeams: []string{"team-a"},
 					},
 					Traffic: apiv1.Traffic{
-						// TODO Zone
+						Failover: &apiv1.Failover{
+							Zones: []ctypes.ObjectRef{
+								{
+									Name:      "zoneA",
+									Namespace: "ns",
+								},
+								{
+									Name:      "zoneB",
+									Namespace: "ns",
+								},
+							},
+						},
 						RateLimit: &apiv1.RateLimit{
 							Provider: &apiv1.RateLimitConfig{
 								Limits: apiv1.Limits{
@@ -168,7 +180,6 @@ var _ = Describe("ApiExposure Translator", func() {
 			Expect(*data.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("key"))
 
 			// Traffic
-			// Traffic
 			Expect(data.Traffic).NotTo(BeNil())
 			Expect(data.Traffic.RateLimit).NotTo(BeNil())
 			Expect(data.Traffic.RateLimit.Provider).NotTo(BeNil())
@@ -191,6 +202,10 @@ var _ = Describe("ApiExposure Translator", func() {
 			Expect(data.Traffic.RateLimit.SubscriberRateLimit.Overrides[1].Limits.Second).To(Equal(1111))
 			Expect(data.Traffic.RateLimit.SubscriberRateLimit.Overrides[1].Limits.Minute).To(Equal(2222))
 			Expect(data.Traffic.RateLimit.SubscriberRateLimit.Overrides[1].Limits.Hour).To(Equal(3333))
+
+			Expect(data.Traffic.Failover.Zones).To(ContainElements("zoneA", "zoneB"))
+			Expect(len(data.Traffic.Failover.Zones)).To(Equal(2))
+
 		})
 
 		It("should upper-case Zone visibility", func() {
