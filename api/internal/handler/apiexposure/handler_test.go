@@ -172,7 +172,17 @@ func newClientContext(environment string, objects ...crclient.Object) context.Co
 	Expect(apiv1.AddToScheme(sch)).To(Succeed())
 	Expect(applicationapi.AddToScheme(sch)).To(Succeed())
 	Expect(organizationapi.AddToScheme(sch)).To(Succeed())
-	fakeClient := fake.NewClientBuilder().WithScheme(sch).WithObjects(objects...).Build()
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(sch).
+		WithObjects(objects...).
+		WithIndex(&apiv1.ApiCategory{}, "spec.labelValue", func(obj crclient.Object) []string {
+			apiCategory, ok := obj.(*apiv1.ApiCategory)
+			if !ok || apiCategory.Spec.LabelValue == "" {
+				return nil
+			}
+			return []string{apiCategory.Spec.LabelValue}
+		}).
+		Build()
 	janitorClient := cclient.NewJanitorClient(cclient.NewScopedClient(fakeClient, environment))
 	return cclient.WithClient(context.Background(), janitorClient)
 }

@@ -109,7 +109,17 @@ var _ = Describe("ApiCategory Policy", func() {
 func newClientContext(environment string, objects ...crclient.Object) context.Context {
 	sch := runtime.NewScheme()
 	Expect(apiv1.AddToScheme(sch)).To(Succeed())
-	fakeClient := fake.NewClientBuilder().WithScheme(sch).WithObjects(objects...).Build()
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(sch).
+		WithObjects(objects...).
+		WithIndex(&apiv1.ApiCategory{}, "spec.labelValue", func(obj crclient.Object) []string {
+			apiCategory, ok := obj.(*apiv1.ApiCategory)
+			if !ok || apiCategory.Spec.LabelValue == "" {
+				return nil
+			}
+			return []string{apiCategory.Spec.LabelValue}
+		}).
+		Build()
 	janitorClient := cclient.NewJanitorClient(cclient.NewScopedClient(fakeClient, environment))
 	return cclient.WithClient(context.Background(), janitorClient)
 }

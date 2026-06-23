@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"strings"
 
@@ -376,6 +377,8 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 	team, err := organizationapi.FindTeamForObject(ctx, application)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
+			// Defensive fallback: team-not-found should not happen in normal lifecycle,
+			// because team deletion removes the namespace and with it ApiSubscriptions.
 			log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because team was not found")
 			return true
 		}
@@ -386,39 +389,37 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 	}
 
 	apiCategory, err := util.ResolveActiveApiCategoryForApi(ctx, api)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because no ApiCategories exist")
-			return true
-		}
-
-		var be ctrlerrors.BlockedError
-		var re ctrlerrors.RetryableError
-
-		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
-		switch {
-		case errors.As(err, &be):
-			log.FromContext(ctx).V(1).Info("ApiCategory policy validation blocked", "reason", err.Error())
-			apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+	if err == nil {
+		teamCategory := string(team.Spec.Category)
+		if !apiCategory.IsAllowedForTeamCategory(teamCategory) {
+			msg := util.BuildApiCategorySubscriptionDeniedMessage(teamCategory, apiCategory.Spec.LabelValue)
+			apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryTeamCategoryNotAllowedReason, msg))
 			apiSub.SetCondition(condition.NewBlockedCondition(msg))
-		case errors.As(err, &re):
-			log.FromContext(ctx).V(1).Info("ApiCategory policy validation retryable", "reason", err.Error())
-			apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-		default:
-			log.FromContext(ctx).V(1).Info("ApiCategory policy validation failed", "reason", err.Error())
-			apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-			apiSub.SetCondition(condition.NewBlockedCondition(msg))
+			return false
 		}
-		return false
+		return true
 	}
 
-	teamCategory := string(team.Spec.Category)
-	if !apiCategory.IsAllowedForTeamCategory(teamCategory) {
-		msg := util.BuildApiCategorySubscriptionDeniedMessage(teamCategory, apiCategory.Spec.LabelValue)
-		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryTeamCategoryNotAllowedReason, msg))
+	if apierrors.IsNotFound(err) {
+		log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because no ApiCategories exist")
+		return true
+	}
+
+	msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
+	blockedErr, isBlocked := stderrors.AsType[ctrlerrors.BlockedError](err)
+	retryableErr, isRetryable := stderrors.AsType[ctrlerrors.RetryableError](err)
+	switch {
+	case isBlocked:
+		log.FromContext(ctx).V(1).Info("ApiCategory policy validation blocked", "reason", blockedErr.Error())
+		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
 		apiSub.SetCondition(condition.NewBlockedCondition(msg))
-		return false
+	case isRetryable:
+		log.FromContext(ctx).V(1).Info("ApiCategory policy validation retryable", "reason", retryableErr.Error())
+		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+	default:
+		log.FromContext(ctx).V(1).Info("ApiCategory policy validation failed", "reason", err.Error())
+		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
+		apiSub.SetCondition(condition.NewBlockedCondition(msg))
 	}
-
-	return true
+	return false
 }

@@ -178,23 +178,25 @@ func ResolveActiveApiCategoryForApi(ctx context.Context, api *apiv1.Api) (*apiv1
 func ResolveActiveApiCategoryByLabelValue(ctx context.Context, labelValue string) (*apiv1.ApiCategory, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	normalizedLabelValue := strings.TrimSpace(labelValue)
-	apiCategoryList := &apiv1.ApiCategoryList{}
-	if err := scopedClient.List(ctx, apiCategoryList); err != nil {
-		return nil, errors.Wrap(err, "failed to list ApiCategories")
-	}
-
-	if len(apiCategoryList.Items) == 0 {
-		return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "apicategories"}, normalizedLabelValue)
-	}
-
 	if normalizedLabelValue == "" {
 		return nil, ctrlerrors.BlockedErrorf("ApiCategory label value is empty")
 	}
 
-	apiCategory, found := apiCategoryList.FindByLabelValue(normalizedLabelValue)
-	if !found {
+	apiCategoryList := &apiv1.ApiCategoryList{}
+	if err := scopedClient.List(ctx, apiCategoryList, client.MatchingFields{"spec.labelValue": normalizedLabelValue}); err != nil {
+		return nil, errors.Wrap(err, "failed to list ApiCategories by label value")
+	}
+	if len(apiCategoryList.Items) == 0 {
+		anyApiCategoryList := &apiv1.ApiCategoryList{}
+		if err := scopedClient.List(ctx, anyApiCategoryList, client.Limit(1)); err != nil {
+			return nil, errors.Wrap(err, "failed to verify whether ApiCategories exist")
+		}
+		if len(anyApiCategoryList.Items) == 0 {
+			return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "apicategories"}, normalizedLabelValue)
+		}
 		return nil, ctrlerrors.BlockedErrorf("ApiCategory %q not found", normalizedLabelValue)
 	}
+	apiCategory := &apiCategoryList.Items[0]
 	if !apiCategory.Spec.Active {
 		return nil, ctrlerrors.BlockedErrorf("ApiCategory %q is not active", normalizedLabelValue)
 	}
