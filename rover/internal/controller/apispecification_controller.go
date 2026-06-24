@@ -36,7 +36,6 @@ type ApiSpecificationReconciler struct {
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=apispecifications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=apispecifications/finalizers,verbs=update
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apis,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apicategories,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 
 func (r *ApiSpecificationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
