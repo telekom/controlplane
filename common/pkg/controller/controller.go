@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,6 +71,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	}
 
 	logger.V(1).Info("Fetched object")
+	original := object.DeepCopyObject().(T)
 
 	env, ok := GetEnvironment(object)
 	if !ok {
@@ -77,7 +79,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		c.Event(ctx, object, "Warning", "Processing", "Environment label is missing")
 		if object.SetCondition(condition.NewBlockedCondition("Environment label is missing")) {
 			StampObservedGeneration(object)
-			if updateErr := c.Client.Status().Update(ctx, object); updateErr != nil {
+			if updateErr := c.MaybeUpdateStatus(ctx, original, object); updateErr != nil {
 				return HandleError(ctx, updateErr, object, c.Recorder), nil
 			}
 		}
@@ -98,13 +100,13 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 
 	c.Event(ctx, object, "Normal", "Processing", "Processing resource")
 
-	logger.V(1).Info("Creating or updating")
+	logger.Info("Creating or updating")
 	err = c.Handler.CreateOrUpdate(ctx, object)
 	if err != nil {
 		EnsureNotReadyOnError(ctx, c.Client, object, err)
 		result := HandleError(ctx, err, object, c.Recorder)
 		StampObservedGeneration(object)
-		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
+		if statusErr := c.MaybeUpdateStatus(ctx, original, object); statusErr != nil {
 			return HandleError(ctx, statusErr, object, c.Recorder), nil
 		}
 		return result, nil
@@ -119,7 +121,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	}
 
 	StampObservedGeneration(object)
-	if err = c.Client.Status().Update(ctx, object); err != nil {
+	if err = c.MaybeUpdateStatus(ctx, original, object); err != nil {
 		return HandleError(ctx, err, object, c.Recorder), nil
 	}
 
@@ -141,7 +143,7 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 		return reconcile.Result{}, nil
 	}
 
-	logger.V(0).Info("Deleting")
+	logger.Info("Deleting")
 	err := c.Handler.Delete(ctx, object)
 	if err != nil {
 		EnsureNotReadyOnError(ctx, c.Client, object, err)
@@ -161,6 +163,16 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 
 	logger.V(1).Info("Deleted", "resource", object)
 	return reconcile.Result{}, nil
+}
+
+// MaybeUpdateStatus updates the status of the object if it has changed.
+// It compares the old and new objects using DeepEqual and only performs the update if they are different.
+// This helps to avoid unnecessary status updates and reduce API server load.
+func (c *ControllerImpl[T]) MaybeUpdateStatus(ctx context.Context, old, new T) error {
+	if !equality.Semantic.DeepEqual(old, new) {
+		return c.Client.Status().Update(ctx, new)
+	}
+	return nil
 }
 
 func (c *ControllerImpl[T]) Event(ctx context.Context, object common_types.Object, eventType, reason, message string) {
