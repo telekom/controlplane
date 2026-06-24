@@ -8,6 +8,7 @@ import (
 	"context"
 	"slices"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -35,8 +36,15 @@ func (f *RateLimitFeature) Priority() int {
 }
 
 func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
+	logger := logr.FromContextOrDiscard(ctx)
 	route, ok := builder.GetRoute()
 	if !ok {
+		return false
+	}
+
+	gateway := builder.GetGateway()
+	if gateway.Spec.Redis == nil {
+		logger.Info("Redis configuration is missing in gateway spec, skipping rate-limiting feature")
 		return false
 	}
 
@@ -118,6 +126,9 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 }
 
 func setCommonConfigs(ctx context.Context, rateLimitPlugin *plugin.RateLimitPlugin, gateway *gatewayv1.Gateway) error {
+	if gateway.Spec.Redis == nil {
+		return errors.New("gateway redis configuration is missing")
+	}
 	rateLimitPlugin.Config.Policy = plugin.PolicyRedis
 	redisPassword, err := secretManagerApi.Get(ctx, gateway.Spec.Redis.Password)
 	if err != nil {

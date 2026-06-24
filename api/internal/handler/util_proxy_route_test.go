@@ -59,7 +59,7 @@ func CreateZone(name string) *adminapi.Zone {
 					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
 			},
-			Redis: adminapi.RedisConfig{
+			Redis: &adminapi.RedisConfig{
 				Host: "redis://redis.test.local:6379",
 			},
 		},

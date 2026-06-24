@@ -48,6 +48,19 @@ var _ = Describe("RateLimitFeature", func() {
 	})
 
 	Describe("IsUsed()", func() {
+		var gatewayWithRedis *gatewayv1.Gateway
+
+		BeforeEach(func() {
+			gatewayWithRedis = &gatewayv1.Gateway{
+				Spec: gatewayv1.GatewaySpec{
+					Redis: &gatewayv1.RedisConfig{
+						Host: "redis.example.com",
+						Port: 6379,
+					},
+				},
+			}
+		})
+
 		Context("when route has RateLimit configured", func() {
 			It("returns true", func() {
 				route := &gatewayv1.Route{
@@ -64,6 +77,7 @@ var _ = Describe("RateLimitFeature", func() {
 					},
 				}
 				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().GetGateway().Return(gatewayWithRedis)
 				builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 				Expect(f.IsUsed(ctx, builder)).To(BeTrue())
@@ -95,6 +109,7 @@ var _ = Describe("RateLimitFeature", func() {
 					},
 				}
 				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().GetGateway().Return(gatewayWithRedis)
 				builder.EXPECT().GetAllowedConsumers().Return(consumers)
 
 				Expect(f.IsUsed(ctx, builder)).To(BeTrue())
@@ -126,6 +141,7 @@ var _ = Describe("RateLimitFeature", func() {
 					},
 				}
 				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().GetGateway().Return(gatewayWithRedis)
 				builder.EXPECT().GetAllowedConsumers().Return(consumers)
 
 				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
@@ -149,6 +165,7 @@ var _ = Describe("RateLimitFeature", func() {
 					},
 				}
 				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().GetGateway().Return(gatewayWithRedis)
 
 				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
 			})
@@ -166,7 +183,33 @@ var _ = Describe("RateLimitFeature", func() {
 					},
 				}
 				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().GetGateway().Return(gatewayWithRedis)
 				builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+			})
+		})
+
+		Context("when Redis is not configured in gateway", func() {
+			It("returns false", func() {
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-route",
+						Namespace: "test-ns",
+					},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							RateLimit: &gatewayv1.RateLimit{
+								Limits: gatewayv1.Limits{Second: 10},
+							},
+						},
+					},
+				}
+				gatewayNoRedis := &gatewayv1.Gateway{
+					Spec: gatewayv1.GatewaySpec{},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().GetGateway().Return(gatewayNoRedis)
 
 				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
 			})
@@ -191,7 +234,7 @@ var _ = Describe("RateLimitFeature", func() {
 					Namespace: "test-ns",
 				},
 				Spec: gatewayv1.GatewaySpec{
-					Redis: gatewayv1.RedisConfig{
+					Redis: &gatewayv1.RedisConfig{
 						Host:      "redis.example.com",
 						Port:      6379,
 						Password:  "redis-secret-password",

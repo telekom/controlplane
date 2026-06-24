@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -60,12 +61,20 @@ type CreateRouteOptions struct {
 	// RealmName is the identity realm name used by the Jumper sidecar for
 	// Last-Mile-Security token issuance. Typically equals the environment name.
 	RealmName string
+
+	// AdditionalHostnames are used to add extra hostnames to the route's Hostnames list.
+	// This is useful for failover routes that need to accept traffic from multiple hostnames.
+	AdditionalHostnames []string
+	// AdditionalPaths are used to add extra paths to the route's Paths list.
+	AdditionalPaths []string
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
 
 type CreateConsumeRouteOptions struct {
 	ConsumerRateLimit *apiapi.Limits // Rate limit configuration for the consumer
+
+	FailoverFlag bool // If true, this consume route is created due to failover
 }
 
 func (o *CreateConsumeRouteOptions) HasConsumerRateLimit() bool { return o.ConsumerRateLimit != nil }
@@ -96,6 +105,18 @@ func WithFailoverZone(failoverZone types.ObjectRef) CreateRouteOption {
 func WithFailoverSecurity(security *apiapi.Security) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.FailoverSecurity = security
+	}
+}
+
+func WithAdditionalHostnames(hostnames ...string) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.AdditionalHostnames = append(opts.AdditionalHostnames, hostnames...)
+	}
+}
+
+func WithAdditionalPaths(paths ...string) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.AdditionalPaths = append(opts.AdditionalPaths, paths...)
 	}
 }
 
@@ -174,6 +195,12 @@ func WithConsumerRouteRateLimit(rateLimit apiapi.Limits) CreateConsumeRouteOptio
 	}
 }
 
+func WithFailoverLabel() CreateConsumeRouteOption {
+	return func(opts *CreateConsumeRouteOptions) {
+		opts.FailoverFlag = true
+	}
+}
+
 func MakeRouteName(apiBasePath string) string {
 	return labelutil.NormalizeValue(apiBasePath)
 }
@@ -240,8 +267,8 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 			GatewayRef: *downstreamZone.Status.Gateway,
 			Type:       gatewayapi.RouteTypeProxy,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
-			Hostnames:  hostnames,
-			Paths:      paths,
+			Hostnames:  slices.Compact(slices.Clip(slices.Concat(hostnames, options.AdditionalHostnames))),
+			Paths:      slices.Compact(slices.Clip(slices.Concat(paths, options.AdditionalPaths))),
 			Traffic:    gatewayapi.Traffic{},
 		}
 
@@ -250,6 +277,14 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		// so it must validate tokens from the subscriber zone's IDP.
 		if downstreamZone.Status.Links.Issuer != "" {
 			proxyRoute.Spec.Security.TrustedIssuers = []string{downstreamZone.Status.Links.Issuer}
+		}
+		// Append any additional trusted issuers from options (e.g. consumer failover IDP issuers)
+		// and deduplicate (the downstream issuer may already be in the consumer failover list).
+		if len(options.TrustedIssuers) > 0 {
+			proxyRoute.Spec.Security.TrustedIssuers = append(
+				proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...)
+			slices.Sort(proxyRoute.Spec.Security.TrustedIssuers)
+			proxyRoute.Spec.Security.TrustedIssuers = slices.Compact(proxyRoute.Spec.Security.TrustedIssuers)
 		}
 		if options.RealmName != "" {
 			proxyRoute.Spec.Security.RealmName = options.RealmName
@@ -300,6 +335,8 @@ func configureAsFailoverTarget(_ context.Context, proxyRoute *gatewayapi.Route, 
 	// since proxy routes may fail over to it and present LMS tokens.
 	if len(options.TrustedIssuers) > 0 {
 		proxyRoute.Spec.Security.TrustedIssuers = append(proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...)
+		slices.Sort(proxyRoute.Spec.Security.TrustedIssuers)
+		proxyRoute.Spec.Security.TrustedIssuers = slices.Compact(proxyRoute.Spec.Security.TrustedIssuers)
 	}
 
 	failoverUpstreams := make([]gatewayapi.Upstream, 0, len(options.FailoverUpstreams))
@@ -486,8 +523,8 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 			GatewayRef: *zone.Status.Gateway,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
-			Hostnames:  hostnames,
-			Paths:      paths,
+			Hostnames:  slices.Compact(slices.Clip(slices.Concat(hostnames, options.AdditionalHostnames))),
+			Paths:      slices.Compact(slices.Clip(slices.Concat(paths, options.AdditionalPaths))),
 			Traffic:    gatewayapi.Traffic{},
 		}
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
@@ -500,7 +537,8 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		}
 
 		if len(options.TrustedIssuers) > 0 {
-			route.Spec.Security.TrustedIssuers = options.TrustedIssuers
+			slices.Sort(options.TrustedIssuers)
+			route.Spec.Security.TrustedIssuers = slices.Compact(slices.Clip(options.TrustedIssuers))
 		}
 		if options.RealmName != "" {
 			route.Spec.Security.RealmName = options.RealmName
@@ -547,6 +585,10 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 			return errors.Wrapf(err, "failed to set owner-reference on %v", routeConsumer)
 		}
 		routeConsumer.Labels = apiSub.GetLabels()
+
+		if options.FailoverFlag {
+			routeConsumer.Labels[config.BuildLabelKey("failover")] = "true"
+		}
 
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        routeRef,

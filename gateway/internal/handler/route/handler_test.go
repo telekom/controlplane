@@ -100,7 +100,7 @@ var _ = Describe("RouteHandler", func() {
 					ClientSecret: "client-secret",
 					IssuerUrl:    "http://idp/realms/test",
 				}
-				gw.Spec.Redis = gatewayv1.RedisConfig{
+				gw.Spec.Redis = &gatewayv1.RedisConfig{
 					Host:     "redis",
 					Port:     6379,
 					Password: "redis-pass",

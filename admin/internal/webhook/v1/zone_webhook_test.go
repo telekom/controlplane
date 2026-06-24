@@ -99,7 +99,7 @@ func newValidZone() *adminv1.Zone {
 					},
 				},
 			},
-			Redis: adminv1.RedisConfig{
+			Redis: &adminv1.RedisConfig{
 				Host:     "redis://redis-master:6379",
 				Port:     6379,
 				Password: "",

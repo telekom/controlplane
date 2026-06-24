@@ -203,16 +203,11 @@ spec:
                     description: Failover defines the failover configuration for the
                       API exposure.
                     properties:
-                      enabled:
-                        default: false
+                      zones:
                         description: |-
-                          Enabled flags if failover is enabled
-                          This automatically selects eligible zones for failover based on the owner zone
-                          and available zones in the cluster.
-                        type: boolean
-                      zone:
-                        description: Zone is the zone to which the traffic should
-                          be failed over in case of an error.
+                          Zones defines the list of zones that are eligible for failover.
+                          If empty, the Provider failover feature is disabled.
+                          If set, it must be exactly 1 zone that is different from the exposure zone.
                         items:
                           description: |-
                             ObjectRef is a reference to a Kubernetes object
@@ -233,9 +228,6 @@ spec:
                           - namespace
                           type: object
                         type: array
-                    required:
-                    - enabled
-                    - zone
                     type: object
                   rateLimit:
                     description: RateLimit defines request rate limiting for this

@@ -72,7 +72,7 @@ var _ = Describe("Application Controller", func() {
 							Url: ptr.To("http://idp-admin.test.local:8080"),
 						},
 					},
-					Redis: adminv1.RedisConfig{
+					Redis: &adminv1.RedisConfig{
 						Host: "redis://redis.test.local:6379",
 					},
 				},
@@ -128,7 +128,7 @@ var _ = Describe("Application Controller", func() {
 							Url: ptr.To("http://idp-admin.test.local:8080"),
 						},
 					},
-					Redis: adminv1.RedisConfig{
+					Redis: &adminv1.RedisConfig{
 						Host: "redis://redis.test.local:6379",
 					},
 				},
@@ -148,6 +148,7 @@ var _ = Describe("Application Controller", func() {
 					LmsIssuer: "https://idp.test.local/realms/test-env-lms",
 				},
 			}
+			zoneB.EnableFeature(adminv1.FeatureConsumerFailover)
 			Expect(k8sClient.Status().Update(ctx, zoneB)).To(Succeed())
 		})
 
@@ -227,8 +228,8 @@ var _ = Describe("Application Controller", func() {
 					NeedsClient:   true,
 					NeedsConsumer: true,
 					Zone:          *ctypes.ObjectRefFromObject(zoneA),
-					FailoverZones: []ctypes.ObjectRef{
-						*ctypes.ObjectRefFromObject(zoneB),
+					Failover: applicationv1.Failover{
+						Enabled: true,
 					},
 				},
 			}

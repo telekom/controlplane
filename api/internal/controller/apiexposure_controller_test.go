@@ -64,7 +64,7 @@ func CreateZone(name string) *adminapi.Zone {
 					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
 			},
-			Redis: adminapi.RedisConfig{
+			Redis: &adminapi.RedisConfig{
 				Host: "redis://redis.test.local:6379",
 			},
 		},
@@ -537,7 +537,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			By("Creating the resource")
 			apiExposure = NewApiExposure(apiBasePath, zoneName, appName)
 			apiExposure.Spec.Traffic = apiv1.Traffic{
-				Failover: &apiv1.Failover{
+				Failover: &apiv1.ProviderFailover{
 					Zones: []types.ObjectRef{
 						{
 							Name:      failoverZone.Name,
@@ -619,7 +619,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			By("Creating the resource")
 			apiExposure = NewApiExposure(apiBasePath, zoneName, secondAppName)
 			apiExposure.Spec.Traffic = apiv1.Traffic{
-				Failover: &apiv1.Failover{
+				Failover: &apiv1.ProviderFailover{
 					Zones: []types.ObjectRef{
 						{
 							Name:      failoverZone.Name,

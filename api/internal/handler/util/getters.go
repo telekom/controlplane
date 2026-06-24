@@ -11,15 +11,12 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
-	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -43,9 +40,10 @@ func GetZone(ctx context.Context, scopedClient cclient.ScopedClient, ref client.
 		}
 		return nil, ctrlerrors.BlockedErrorf("zone %q not found", ref.String())
 	}
-	if err := condition.EnsureReady(zone); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q is not ready", ref.String())
-	}
+	// TODO: figure out if we actually want to check this. Do we really care?
+	// if err := condition.EnsureReady(zone); err != nil {
+	// 	return nil, ctrlerrors.BlockedErrorf("zone %q is not ready", ref.String())
+	// }
 
 	return zone, nil
 }
@@ -198,16 +196,27 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 	return true, relevantApiExposure, nil
 }
 
-// FindCrossZoneApiSubscriptionZones lists all ApiSubscriptions for a given apiBasePath
-// and returns the unique zone ObjectRefs where proxy routes should be created.
-// This includes both subscription zones and subscriber failover zones (exposure-driven pattern).
-// A zone is included if:
-// - It's a subscription zone that differs from the exposure's zone (cross-zone)
-// - It's a subscriber failover zone (for any approved subscription)
-// Zones are excluded if:
-// - Same as exposure zone (no proxy needed, real route serves them)
-// - In provider's failover zone (provider failover route serves them)
-func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExposure) ([]types.ObjectRef, error) {
+// FindFailoverEligibleZones lists all zones and returns those that are eligible for failover for a given zone.
+func FindFailoverEligibleZones(ctx context.Context, myZone types.ObjectRef) ([]types.ObjectRef, error) {
+	allZones, err := FindAllZonesWithFeatureEnabled(ctx, adminapi.FeatureConsumerFailover)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find zones with consumer failover feature enabled")
+	}
+
+	var eligibleZones []types.ObjectRef
+	for _, zone := range allZones {
+		// Skip same-zone as myZone (a zone cannot failover to itself)
+		if zone.Name == myZone.Name {
+			continue
+		}
+		eligibleZones = append(eligibleZones, *types.ObjectRefFromObject(zone))
+	}
+
+	return eligibleZones, nil
+}
+
+// FindAllSubscribersForApiExposure lists all ApiSubscriptions for a given ApiExposure that are approved and have a matching basepath.
+func FindAllSubscribersForApiExposure(ctx context.Context, apiExp *apiv1.ApiExposure) ([]*apiv1.ApiSubscription, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -218,8 +227,7 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 		return nil, errors.Wrapf(err, "failed to list ApiSubscriptions for basepath %q", apiExp.Spec.ApiBasePath)
 	}
 
-	seen := make(map[string]bool)
-	var zones []types.ObjectRef
+	var subscribers []*apiv1.ApiSubscription
 
 	for i := range subList.Items {
 		sub := &subList.Items[i]
@@ -237,105 +245,46 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 			continue
 		}
 
-		// Check approval status
-		approvalCond := meta.FindStatusCondition(sub.GetConditions(), approvalbuilder.ConditionTypeApprovalGranted)
-		if approvalCond == nil || approvalCond.Status != metav1.ConditionTrue {
-			logger.V(1).Info("Skipping subscription without approval", "subscription", sub.Name, "zone", sub.Spec.Zone.Name)
-			continue
-		}
+		// We could check the Approval state here, however, we MUST NEVER remove a Route when a subscription (which was approved previously) is updated.
+		// A pending or rejected ApprovalRequest MUST NOT remove a Route, as this would break the API for the consumer.
+		// Therefore, we do not filter by Approval state here.
 
-		// Collect candidate zones: subscription zone + subscriber failover zones
-		var candidateZones []types.ObjectRef
-		candidateZones = append(candidateZones, sub.Spec.Zone)
-		if sub.HasFailover() {
-			if len(sub.Spec.Traffic.Failover.Zones) == 0 && sub.Spec.Traffic.Failover.Enabled {
-				// auto-discover all eligible failover zones for the subscription zone
-				failoverZones, err := FindFailoverEligibleZones(ctx, sub.Spec.Zone)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to find failover eligible zones for subscription %q in zone %q", sub.Name, sub.Spec.Zone.Name)
-				}
-				logger.V(1).Info("Auto-discovered failover zones for subscription", "subscription", sub.Name, "zone", sub.Spec.Zone.Name, "failoverZones", failoverZones)
-				candidateZones = append(candidateZones, failoverZones...)
-
-			} else {
-				candidateZones = append(candidateZones, sub.Spec.Traffic.Failover.Zones...)
-			}
-		}
-
-		// Filter and deduplicate zones
-		for _, zone := range candidateZones {
-			// Skip same-zone as exposure (no cross-zone proxy needed)
-			if zone.Equals(&apiExp.Spec.Zone) {
-				continue
-			}
-
-			// CRITICAL: Skip if zone IS the provider's failover zone
-			// The provider failover route already exists in that zone and serves those zones
-			if apiExp.HasFailover() && apiExp.Spec.Traffic.Failover.ContainsZone(zone) {
-				continue
-			}
-
-			// Add zone if not already seen
-			if !seen[zone.Name] {
-				seen[zone.Name] = true
-				zones = append(zones, zone)
-			}
-		}
+		subscribers = append(subscribers, sub)
 	}
 
-	return zones, nil
+	return subscribers, nil
 }
 
-// FindFailoverEligibleZones lists all zones and returns those that are eligible for failover for a given zone.
-// A zone is eligible for failover if:
-// - It's not being deleted
-// - It's not the same as the given zone (a zone cannot failover to itself)
-// - It's ready
-// - It has the failover feature enabled
-func FindFailoverEligibleZones(ctx context.Context, myZone types.ObjectRef) ([]types.ObjectRef, error) {
+// FindAllZonesWithFeatureEnabled lists all zones and returns those that have the given feature enabled.
+func FindAllZonesWithFeatureEnabled(ctx context.Context, featureName adminapi.FeatureName) ([]*adminapi.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
 
 	zoneList := &adminapi.ZoneList{}
 	if err := c.List(ctx, zoneList); err != nil {
 		return nil, errors.Wrap(err, "failed to list zones")
 	}
 
-	var eligibleZones []types.ObjectRef
+	var zonesWithFeature []*adminapi.Zone
 	for i := range zoneList.Items {
 		zone := &zoneList.Items[i]
 
 		// Skip zones that are being deleted; their finalizer may still
-		// be running, but they should no longer be considered for failover.
+		// be running, but they should no longer be considered for feature checks.
 		if controller.IsBeingDeleted(zone) {
 			continue
 		}
 
-		// Skip my own zone; a zone cannot failover to itself
-		if myZone.Equals(zone) {
-			continue
-		}
-
+		// TODO: Consider whether we should skip zones that are not ready. For now, we will include them in the list, but this may change in the future.
 		// Only consider zones that are ready ...
-		if err := condition.EnsureReady(zone); err != nil {
-			logger.V(1).Info("Skipping zone that is not ready", "zone", zone.Name)
-			continue
-		}
+		// if err := condition.EnsureReady(zone); err != nil {
+		// 	logger.V(1).Info("Skipping zone that is not ready", "zone", zone.Name)
+		// 	continue
+		// }
 
-		// ... and have the failover feature enabled
-		if !zone.IsFeatureEnabled(adminapi.FeatureName("failover")) {
-			logger.V(1).Info("Skipping zone that does not have failover feature enabled", "zone", zone.Name)
-			continue
+		if zone.IsFeatureEnabled(featureName) {
+			zonesWithFeature = append(zonesWithFeature, zone)
 		}
-
-		eligibleZones = append(eligibleZones, *types.ObjectRefFromObject(zone))
 	}
 
-	return eligibleZones, nil
-}
-
-type FailoverZoneInfo struct {
-	Ref types.ObjectRef
-
-	TrustedIssuers []string
+	return zonesWithFeature, nil
 }

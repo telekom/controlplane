@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -162,7 +163,7 @@ func (u UrlConfig) GetFullUrl() string {
 type GatewayConfigPreset struct {
 	// Name of the preset. This is used to reference the preset in the Zone spec.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
+	// +kubebuilder:validation:Pattern=`^[aA-zZ0-9]+(-?[aA-zZ0-9]+)*$`
 	Name string `json:"name"`
 
 	// Default indicates whether this preset is the default preset for the zone.
@@ -210,7 +211,7 @@ func (p *GatewayConfigPreset) GetDefaultUrl() string {
 func (p *GatewayConfigPreset) SupportsFeatures(featureNames []FeatureName) bool {
 	for _, featureName := range featureNames {
 		hasFeatureEnabled := func(feature Feature) bool {
-			return feature.Name == featureName && feature.Enabled
+			return strings.EqualFold(string(feature.Name), string(featureName)) && feature.Enabled
 		}
 		if !slices.ContainsFunc(p.Features, hasFeatureEnabled) {
 			return false
@@ -343,7 +344,7 @@ type ExternalIdPolicy struct {
 type ZoneSpec struct {
 	IdentityProvider IdentityProviderConfig `json:"identityProvider"`
 	Gateway          GatewayConfig          `json:"gateway"`
-	Redis            RedisConfig            `json:"redis"`
+	Redis            *RedisConfig           `json:"redis,omitempty"`
 	ManagedRoutes    *ManagedRoutesConfig   `json:"managedRoutes,omitempty"`
 	// +kubebuilder:validation:Enum=World;Enterprise
 	// Visibility controls what subscriptions are allowed from and to this zone. It's also relevant for features like failover
@@ -444,7 +445,7 @@ func (z *Zone) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&z.Status.Conditions, condition)
 }
 
-func SelectGatewayPreset(requestedFeatures []FeatureName, presets []GatewayConfigPreset) (*GatewayConfigPreset, error) {
+func SelectGatewayPreset(presets []GatewayConfigPreset, requestedFeatures ...FeatureName) (*GatewayConfigPreset, error) {
 	for _, preset := range presets {
 		if preset.SupportsFeatures(requestedFeatures) {
 			return &preset, nil
@@ -453,8 +454,12 @@ func SelectGatewayPreset(requestedFeatures []FeatureName, presets []GatewayConfi
 	return nil, ErrNoMatchingGatewayPreset
 }
 
-func (z *Zone) SelectGatewayPreset(requestedFeatures []FeatureName) (*GatewayConfigPreset, error) {
-	return SelectGatewayPreset(requestedFeatures, z.Spec.Gateway.Presets)
+func (z *Zone) SelectGatewayPreset(requestedFeatures ...FeatureName) (*GatewayConfigPreset, error) {
+	return SelectGatewayPreset(z.Spec.Gateway.Presets, requestedFeatures...)
+}
+
+func (z *Zone) GetDefaultGatewayPreset() (*GatewayConfigPreset, error) {
+	return z.Spec.Gateway.GetDefaultPreset()
 }
 
 // +kubebuilder:object:root=true
@@ -490,6 +495,14 @@ const (
 
 	// FeaturePermissions indicates that permission service integration is enabled for the zone.
 	FeaturePermissions FeatureName = "Permissions"
+
+	// FeatureConsumerFailover indicates that consumer failover is enabled for the zone.
+	// This feature is automatically enabled if the Zone has a "ConsumerFailover" gateway preset configured.
+	FeatureConsumerFailover FeatureName = "ConsumerFailover"
+
+	// FeatureRateLimiting indicates that rate limiting is enabled for the zone.
+	// The zone requires a valid Redis configuration to support rate limiting
+	FeatureRateLimiting FeatureName = "RateLimiting"
 )
 
 type Feature struct {
@@ -499,7 +512,7 @@ type Feature struct {
 
 func (z *Zone) IsFeatureEnabled(featureName FeatureName) bool {
 	for _, feature := range z.Status.Features {
-		if feature.Name == featureName {
+		if strings.EqualFold(string(featureName), string(feature.Name)) {
 			return feature.Enabled
 		}
 	}

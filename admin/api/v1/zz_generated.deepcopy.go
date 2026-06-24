@@ -540,7 +540,11 @@ func (in *ZoneSpec) DeepCopyInto(out *ZoneSpec) {
 	*out = *in
 	in.IdentityProvider.DeepCopyInto(&out.IdentityProvider)
 	in.Gateway.DeepCopyInto(&out.Gateway)
-	out.Redis = in.Redis
+	if in.Redis != nil {
+		in, out := &in.Redis, &out.Redis
+		*out = new(RedisConfig)
+		**out = **in
+	}
 	if in.ManagedRoutes != nil {
 		in, out := &in.ManagedRoutes, &out.ManagedRoutes
 		*out = new(ManagedRoutesConfig)

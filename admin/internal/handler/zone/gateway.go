@@ -9,6 +9,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -50,12 +51,19 @@ func createGateway(ctx context.Context, hc *HandlingContext) error {
 				IssuerUrl:    issuerUrl,
 				Url:          adminUrl,
 			},
-			Redis: gatewayapi.RedisConfig{
+		}
+
+		if hc.Zone.Spec.Redis != nil {
+			gateway.Spec.Redis = &gatewayapi.RedisConfig{
 				Host:      hc.Zone.Spec.Redis.Host,
 				Port:      hc.Zone.Spec.Redis.Port,
 				Password:  hc.Zone.Spec.Redis.Password,
 				EnableTLS: hc.Zone.Spec.Redis.EnableTLS,
-			},
+			}
+
+			hc.Zone.EnableFeature(adminapi.FeatureRateLimiting)
+		} else {
+			hc.Zone.ManageFeature(adminapi.FeatureRateLimiting, false)
 		}
 
 		return nil

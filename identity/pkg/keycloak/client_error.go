@@ -5,7 +5,7 @@
 package keycloak
 
 import (
-	stderrors "errors"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -104,12 +104,8 @@ func CheckHTTPStatus(statusCode int, okStatusCodes ...int) ApiError {
 // e.g. when checking for a rotated client secret that hasn't been created yet.
 func IsNotFound(err error) bool {
 	var ae *apiError
-	if ok := errorAs(err, &ae); ok {
+	if ok := errors.As(err, &ae); ok {
 		return ae.statusCode == http.StatusNotFound
 	}
 	return false
 }
-
-// errorAs is a thin wrapper around errors.As to allow testing with the
-// unexported apiError type. Production code uses the standard library.
-var errorAs = stderrors.As

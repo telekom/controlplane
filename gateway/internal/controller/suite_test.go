@@ -226,7 +226,7 @@ func newGateway(name, namespace string) *gatewayv1.Gateway {
 				ClientSecret: "test-client-secret",
 				IssuerUrl:    "http://issuer:8080/realms/test",
 			},
-			Redis: gatewayv1.RedisConfig{
+			Redis: &gatewayv1.RedisConfig{
 				Host:     "redis:6379",
 				Port:     6379,
 				Password: "redis-password",

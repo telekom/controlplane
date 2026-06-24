@@ -7,11 +7,13 @@ package apisubscription
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/apisubscription/remote"
 	"github.com/telekom/controlplane/api/internal/handler/util"
@@ -171,13 +173,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			return errors.Wrapf(cleanupErr, "Unable to cleanup consume routes for ApiSubscription:  %q in namespace: %q",
 				apiSub.Name, apiSub.Namespace)
 		}
-		logger.Info("🧹 Approval was denied. Cleaning up Consumer of ApiSubscription", "deleted", deleted)
-
-		err = util.CleanupProxyRoute(ctx, apiSub.Status.Route)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete route")
-		}
-		logger.Info("🧹 Approval was denied. Cleaning up ProxyRoute of ApiSubscription")
+		logger.Info("🧹 Approval was denied. Cleaning up ConsumeRoutes of ApiSubscription", "deleted", deleted)
 		return nil
 	case builder.ApprovalResultGranted:
 		logger.Info("👌 Approval is granted and will continue with processing")
@@ -203,6 +199,28 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 
 	apiSub.Status.Route = routeRef
+
+	zone, err := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get subscription zone %s", apiSub.Spec.Zone.Name)
+	}
+	apiSub.Status.IdpIssuer = zone.Status.Links.Issuer
+
+	var preset *adminapi.GatewayConfigPreset
+	if apiSub.HasFailover() {
+		preset, _ = zone.SelectGatewayPreset(adminapi.FeatureConsumerFailover)
+	}
+	if preset == nil {
+		// always fallback to default preset
+		preset, err = zone.GetDefaultGatewayPreset()
+	}
+	if err != nil {
+		return errors.Wrapf(err, "failed to select gateway preset for zone %s", apiSub.Spec.Zone.Name)
+	}
+	apiSub.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultUrl(), apiSub.Spec.ApiBasePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to construct gateway URL for zone %s", apiSub.Spec.Zone.Name)
+	}
 
 	consumeRouteOptions := []util.CreateConsumeRouteOption{}
 
@@ -243,18 +261,17 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 func processSubscriberFailover(ctx context.Context, scopedClient cclient.JanitorClient, apiSub *apiapi.ApiSubscription, apiExposure *apiapi.ApiExposure, clientId string) error {
 	logger := log.FromContext(ctx)
 
-	failoverZones := apiSub.Spec.Traffic.Failover.Zones
-	if len(failoverZones) == 0 && apiSub.Spec.Traffic.Failover.Enabled {
-		// auto-discover all eligible failover zones
-		var err error
-		failoverZones, err = util.FindFailoverEligibleZones(ctx, apiSub.Spec.Zone)
-		if err != nil {
-			return errors.Wrapf(err, "failed to find failover eligible zones for zone %s", apiSub.Spec.Zone.Name)
-		}
-		logger.V(1).Info("Auto-discovered failover zones", "zones", failoverZones)
+	if !apiSub.HasFailover() {
+		logger.V(1).Info("Subscriber failover is not enabled for this ApiSubscription")
+		return nil
 	}
 
-	for _, subFailoverZone := range apiSub.Spec.Traffic.Failover.Zones {
+	failoverZones, err := util.FindFailoverEligibleZones(ctx, apiSub.Spec.Zone)
+	if err != nil {
+		return fmt.Errorf("failed to find failover eligible zones for ApiSubscription: %w", err)
+	}
+
+	for _, subFailoverZone := range failoverZones {
 		failoverRouteRef, err := resolveFailoverRouteRef(ctx, scopedClient, apiSub, apiExposure, subFailoverZone)
 		if err != nil {
 			return err
@@ -264,7 +281,7 @@ func processSubscriberFailover(ctx context.Context, scopedClient cclient.Janitor
 
 		// Create ConsumeRoute for the failover route
 		logger.V(1).Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone.Name)
-		failoverConsumeRoute, createErr := util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, failoverRouteRef, clientId)
+		failoverConsumeRoute, createErr := util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, failoverRouteRef, clientId, util.WithFailoverLabel())
 		if createErr != nil {
 			return errors.Wrapf(createErr, "failed to create failover ConsumeRoute for zone %s", subFailoverZone.Name)
 		}
@@ -318,15 +335,9 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 }
 
 func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiSubscription) error {
-	// Main proxy route cleanup is now handled by ApiExposure (exposure-driven pattern)
-	// Only cleanup subscriber failover routes
-
-	for _, failoverRoute := range apiSub.Status.FailoverRoutes {
-		err := util.CleanupProxyRoute(ctx, &failoverRoute)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete failover route")
-		}
-	}
+	// All route lifecycle (proxy + failover) is managed by ApiExposure.
+	// When this subscription is deleted, ApiExposure reconciles (via watch) and
+	// CleanupStaleProxyRoutes removes routes for zones with no remaining subscribers.
 	return nil
 }
 

@@ -145,7 +145,7 @@ spec:
                         name:
                           description: Name of the preset. This is used to reference
                             the preset in the Zone spec.
-                          pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
+                          pattern: ^[aA-zZ0-9]+(-?[aA-zZ0-9]+)*$
                           type: string
                         urls:
                           description: Urls defines a list of URLs (hostname + base
@@ -397,7 +397,6 @@ spec:
             required:
             - gateway
             - identityProvider
-            - redis
             - visibility
             type: object
           status:

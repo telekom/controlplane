@@ -174,6 +174,60 @@ var _ = Describe("Route Util", func() {
 				Expect(opts.HasServiceRateLimit()).To(BeFalse())
 			})
 		})
+
+		Describe("WithAdditionalHostnames", func() {
+			It("should append hostnames", func() {
+				opts := &CreateRouteOptions{}
+				WithAdditionalHostnames("zone-b.gateway.com", "zone-c.gateway.com")(opts)
+
+				Expect(opts.AdditionalHostnames).To(ConsistOf("zone-b.gateway.com", "zone-c.gateway.com"))
+			})
+
+			It("should accumulate across multiple calls", func() {
+				opts := &CreateRouteOptions{}
+				WithAdditionalHostnames("zone-b.gateway.com")(opts)
+				WithAdditionalHostnames("zone-c.gateway.com")(opts)
+
+				Expect(opts.AdditionalHostnames).To(HaveLen(2))
+				Expect(opts.AdditionalHostnames).To(ContainElements("zone-b.gateway.com", "zone-c.gateway.com"))
+			})
+		})
+
+		Describe("WithAdditionalPaths", func() {
+			It("should append paths", func() {
+				opts := &CreateRouteOptions{}
+				WithAdditionalPaths("/api/v1", "/failover/api/v1")(opts)
+
+				Expect(opts.AdditionalPaths).To(ConsistOf("/api/v1", "/failover/api/v1"))
+			})
+
+			It("should accumulate across multiple calls", func() {
+				opts := &CreateRouteOptions{}
+				WithAdditionalPaths("/api/v1")(opts)
+				WithAdditionalPaths("/failover/api/v1")(opts)
+
+				Expect(opts.AdditionalPaths).To(HaveLen(2))
+				Expect(opts.AdditionalPaths).To(ContainElements("/api/v1", "/failover/api/v1"))
+			})
+		})
+
+		Describe("AddTrustedIssuers", func() {
+			It("should append issuers", func() {
+				opts := &CreateRouteOptions{}
+				AddTrustedIssuers("https://idp.zone-b.com", "https://idp.zone-c.com")(opts)
+
+				Expect(opts.TrustedIssuers).To(ConsistOf("https://idp.zone-b.com", "https://idp.zone-c.com"))
+			})
+
+			It("should accumulate across multiple calls", func() {
+				opts := &CreateRouteOptions{}
+				AddTrustedIssuers("https://idp.zone-b.com")(opts)
+				AddTrustedIssuers("https://idp.zone-c.com")(opts)
+
+				Expect(opts.TrustedIssuers).To(HaveLen(2))
+				Expect(opts.TrustedIssuers).To(ContainElements("https://idp.zone-b.com", "https://idp.zone-c.com"))
+			})
+		})
 	})
 
 	Describe("CreateConsumeRouteOptions", func() {

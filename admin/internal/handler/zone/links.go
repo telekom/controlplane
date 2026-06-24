@@ -57,5 +57,12 @@ func populateLinks(ctx context.Context, hc *HandlingContext) error {
 		zone.ManageFeature(adminv1.FeaturePermissions, false)
 	}
 
+	_, presetErr := adminv1.SelectGatewayPreset(hc.Zone.Spec.Gateway.Presets, adminv1.FeatureConsumerFailover)
+	if presetErr == nil {
+		zone.EnableFeature(adminv1.FeatureConsumerFailover)
+	} else {
+		zone.ManageFeature(adminv1.FeatureConsumerFailover, false)
+	}
+
 	return nil
 }

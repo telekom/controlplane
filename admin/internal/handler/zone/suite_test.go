@@ -158,7 +158,7 @@ func newTestZone(name string) *adminv1.Zone {
 					},
 				},
 			},
-			Redis: adminv1.RedisConfig{
+			Redis: &adminv1.RedisConfig{
 				Host:      "http://test-redis.de/",
 				Port:      123,
 				Password:  "test-redis-password",

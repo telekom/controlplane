@@ -113,10 +113,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 		owner.SetCondition(condition.NewBlockedCondition("RemoteApiSubscription not granted"))
 		owner.SetCondition(condition.NewNotReadyCondition("RemoteApiSubscriptionNotGranted", "RemoteApiSubscription not granted"))
 
-		err = util.CleanupProxyRoute(ctx, owner.Status.Route)
-		if err != nil {
-			return errors.Wrapf(err, "failed to cleanup proxy route")
-		}
+		// Proxy route lifecycle is managed by ApiExposure; no route cleanup here.
 		return nil
 	}
 

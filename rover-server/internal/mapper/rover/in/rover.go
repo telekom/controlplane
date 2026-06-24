@@ -35,14 +35,15 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 	}
 
 	apiRover := &api.Rover{
-		Authentication: in.Authentication,
-		Authorization:  in.Authorization,
-		Exposures:      in.Exposures,
-		Icto:           in.Icto,
-		Psiid:          in.Psiid,
-		IpRestrictions: in.IpRestrictions,
-		Subscriptions:  in.Subscriptions,
-		Zone:           in.Zone,
+		Authentication:  in.Authentication,
+		Authorization:   in.Authorization,
+		Exposures:       in.Exposures,
+		Icto:            in.Icto,
+		Psiid:           in.Psiid,
+		IpRestrictions:  in.IpRestrictions,
+		Subscriptions:   in.Subscriptions,
+		Zone:            in.Zone,
+		FailoverEnabled: in.FailoverEnabled,
 	}
 	if err = MapRover(apiRover, res); err != nil {
 		return res, errors.Wrap(err, "failed to map rover")
@@ -79,6 +80,12 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 		Icto:  in.Icto,
 	})
 	mapAuthentication(in, out)
+
+	// Consumer Failover
+	if in.FailoverEnabled {
+		out.EnableFailoverOnAllSubscriptions()
+	}
+
 	return nil
 }
 

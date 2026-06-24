@@ -7,6 +7,7 @@ package util
 import (
 	"context"
 	"net/url"
+	"slices"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -112,7 +113,8 @@ func (o *Options) apply(ctx context.Context, route *gatewayapi.Route) error {
 // applySecurity sets TrustedIssuers and RealmName on the route's Security from options.
 func (o *Options) applySecurity(route *gatewayapi.Route) {
 	if len(o.TrustedIssuers) > 0 {
-		route.Spec.Security.TrustedIssuers = o.TrustedIssuers
+		slices.Sort(o.TrustedIssuers)
+		route.Spec.Security.TrustedIssuers = slices.Compact(o.TrustedIssuers)
 	}
 	if o.RealmName != "" {
 		route.Spec.Security.RealmName = o.RealmName

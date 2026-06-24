@@ -26,8 +26,8 @@ type AdminConfig struct {
 
 // GatewaySpec defines the desired state of Gateway
 type GatewaySpec struct {
-	Redis RedisConfig `json:"redis,omitempty"`
-	Admin AdminConfig `json:"admin,omitempty"`
+	Redis *RedisConfig `json:"redis,omitempty"`
+	Admin AdminConfig  `json:"admin"`
 
 	Features []FeatureType `json:"features,omitempty"`
 }

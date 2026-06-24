@@ -93,6 +93,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 }
 
 func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedClient, app *application.Application) (*admin.Zone, []*admin.Zone, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	zone, err := GetZone(ctx, c, app.Spec.Zone)
 	if err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
@@ -101,20 +102,25 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 		return nil, nil, ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
 	}
 
-	failoverZones := make([]*admin.Zone, 0, len(app.Spec.FailoverZones))
-	if app.Spec.NeedsClient || app.Spec.NeedsConsumer {
-		for _, zoneRef := range app.Spec.FailoverZones {
-			foZone, err := GetZone(ctx, c, zoneRef)
-			if err != nil {
-				if apierrors.IsNotFound(errors.Cause(err)) {
-					return nil, nil, ctrlerrors.BlockedErrorf("Zone %s not found", zoneRef.Name)
-				}
-				return nil, nil, ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
+	// If failover is enabled, find all zones that support failover and are not the primary zone.
+	var failoverZones []*admin.Zone
+	if app.Spec.Failover.Enabled {
+		zoneList := &admin.ZoneList{}
+		if err := c.List(ctx, zoneList); err != nil {
+			return nil, nil, ctrlerrors.RetryableErrorf("failed to list Zones when creating application: %s", err.Error())
+		}
+
+		for _, candidate := range zoneList.Items {
+			if types.Equals(zone, &candidate) {
+				continue
 			}
-			failoverZones = append(failoverZones, foZone)
+			if candidate.IsFeatureEnabled(admin.FeatureConsumerFailover) {
+				failoverZones = append(failoverZones, &candidate)
+			}
 		}
 	}
 
+	logger.Info("Resolved zones for application", "primary", zone.Name, "#failover", len(failoverZones))
 	return zone, failoverZones, nil
 }
 
