@@ -15,9 +15,11 @@ import (
 
 var _ = Describe("ApiSubscription.M2MAuthMethod", func() {
 	var client *ent.Client
+	var s *testutil.SeedData
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
+		s = testutil.SeedStandard(client)
 	})
 
 	AfterEach(func() {
@@ -27,20 +29,11 @@ var _ = Describe("ApiSubscription.M2MAuthMethod", func() {
 	It("should store and return m2m_auth_method and approved_scopes", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		sub, err := client.ApiSubscription.Create().
 			SetNamespace("default").
 			SetName("sub-oauth").
 			SetBasePath("/api/v1/users").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetM2mAuthMethod(apisubscription.M2mAuthMethodOauth2Client).
 			SetApprovedScopes([]string{"read", "write"}).
 			Save(ctx)
@@ -55,20 +48,11 @@ var _ = Describe("ApiSubscription.M2MAuthMethod", func() {
 	It("should default to NONE and empty scopes", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		sub, err := client.ApiSubscription.Create().
 			SetNamespace("default").
 			SetName("sub-default").
 			SetBasePath("/api/v1/default").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -81,20 +65,11 @@ var _ = Describe("ApiSubscription.M2MAuthMethod", func() {
 	It("should update m2m_auth_method from OAUTH2_CLIENT to BASIC_AUTH", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		sub, err := client.ApiSubscription.Create().
 			SetNamespace("default").
 			SetName("sub-update").
 			SetBasePath("/api/v1/update-auth").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetM2mAuthMethod(apisubscription.M2mAuthMethodOauth2Client).
 			SetApprovedScopes([]string{"read"}).
 			Save(ctx)
@@ -114,20 +89,11 @@ var _ = Describe("ApiSubscription.M2MAuthMethod", func() {
 	It("should update from BASIC_AUTH to OAUTH2_CLIENT", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		sub, err := client.ApiSubscription.Create().
 			SetNamespace("default").
 			SetName("sub-switch").
 			SetBasePath("/api/v1/switch-auth").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetM2mAuthMethod(apisubscription.M2mAuthMethodBasicAuth).
 			SetApprovedScopes([]string{"scope1"}).
 			Save(ctx)
@@ -147,20 +113,11 @@ var _ = Describe("ApiSubscription.M2MAuthMethod", func() {
 	It("should clear scopes and reset to NONE", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		sub, err := client.ApiSubscription.Create().
 			SetNamespace("default").
 			SetName("sub-clear").
 			SetBasePath("/api/v1/clear-auth").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetM2mAuthMethod(apisubscription.M2mAuthMethodScopesOnly).
 			SetApprovedScopes([]string{"read", "write"}).
 			Save(ctx)
@@ -180,20 +137,11 @@ var _ = Describe("ApiSubscription.M2MAuthMethod", func() {
 	It("should support SCOPES_ONLY auth method", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		sub, err := client.ApiSubscription.Create().
 			SetNamespace("default").
 			SetName("sub-scopes").
 			SetBasePath("/api/v1/scopes-only").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetM2mAuthMethod(apisubscription.M2mAuthMethodScopesOnly).
 			SetApprovedScopes([]string{"admin", "superuser"}).
 			Save(ctx)

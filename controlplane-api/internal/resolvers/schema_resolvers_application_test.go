@@ -15,9 +15,11 @@ import (
 
 var _ = Describe("Application.ExternalIds", func() {
 	var client *ent.Client
+	var s *testutil.SeedData
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
+		s = testutil.SeedStandard(client)
 	})
 
 	AfterEach(func() {
@@ -27,12 +29,8 @@ var _ = Describe("Application.ExternalIds", func() {
 	It("should store and return externalIds", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").SetExternalIds([]model.ExternalId{
+			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIds([]model.ExternalId{
 			{
 				Id:     "abc",
 				Scheme: "schema1",
@@ -42,7 +40,7 @@ var _ = Describe("Application.ExternalIds", func() {
 				Scheme: "schema2",
 			},
 		}).
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+			SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		fetched, err := client.Application.Get(ctx, app.ID)
@@ -59,16 +57,7 @@ var _ = Describe("Application.ExternalIds", func() {
 	It("should default to an empty externalId list", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		fetched, err := client.Application.Get(ctx, app.ID)
+		fetched, err := client.Application.Get(ctx, s.AppAlpha.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.ExternalIds).To(BeEmpty())
 	})
@@ -76,18 +65,14 @@ var _ = Describe("Application.ExternalIds", func() {
 	It("should allow a single externalId team", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").SetExternalIds([]model.ExternalId{
+			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIds([]model.ExternalId{
 			{
 				Id:     "abc",
 				Scheme: "schema1",
 			},
 		}).
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+			SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		fetched, err := client.Application.Get(ctx, app.ID)
@@ -102,18 +87,14 @@ var _ = Describe("Application.ExternalIds", func() {
 	It("should update externalIds", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").SetExternalIds([]model.ExternalId{
+			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIds([]model.ExternalId{
 			{
 				Id:     "abc",
 				Scheme: "schema1",
 			},
 		}).
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+			SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		fetched, err := client.Application.Get(ctx, app.ID)
@@ -147,9 +128,11 @@ var _ = Describe("Application.ExternalIds", func() {
 
 var _ = Describe("Application.IpRestrictions", func() {
 	var client *ent.Client
+	var s *testutil.SeedData
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
+		s = testutil.SeedStandard(client)
 	})
 
 	AfterEach(func() {
@@ -159,17 +142,13 @@ var _ = Describe("Application.IpRestrictions", func() {
 	It("should store and return IpRestrictions", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
+			SetNamespace("default").SetName("app-ip").SetClientID("cid-ip").
 			SetIPRestrictions(model.IpRestrictions{
 				Allow: []string{"127.0.0.1", "127.0.0.2", "127.0.0.3"},
 				Deny:  []string{"127.0.0.4", "127.0.0.5", "127.0.0.6"},
 			}).
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+			SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		fetched, err := client.Application.Get(ctx, app.ID)
@@ -183,16 +162,7 @@ var _ = Describe("Application.IpRestrictions", func() {
 	It("should default to an empty IpRestrictions list", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		fetched, err := client.Application.Get(ctx, app.ID)
+		fetched, err := client.Application.Get(ctx, s.AppAlpha.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.IPRestrictions.Allow).To(HaveLen(0))
 		Expect(fetched.IPRestrictions.Deny).To(HaveLen(0))
@@ -201,17 +171,13 @@ var _ = Describe("Application.IpRestrictions", func() {
 	It("should allow a single IpRestrictions team", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
+			SetNamespace("default").SetName("app-ip").SetClientID("cid-ip").
 			SetIPRestrictions(model.IpRestrictions{
 				Allow: []string{"127.0.0.1"},
 				Deny:  []string{"127.0.0.4"},
 			}).
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+			SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		fetched, err := client.Application.Get(ctx, app.ID)
@@ -225,17 +191,13 @@ var _ = Describe("Application.IpRestrictions", func() {
 	It("should update IpRestrictions", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
+			SetNamespace("default").SetName("app-ip").SetClientID("cid-ip").
 			SetIPRestrictions(model.IpRestrictions{
 				Allow: []string{"127.0.0.1"},
 				Deny:  []string{"127.0.0.4"},
 			}).
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+			SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		fetched, err := client.Application.Get(ctx, app.ID)

@@ -15,9 +15,11 @@ import (
 
 var _ = Describe("ApiExposure.Security", func() {
 	var client *ent.Client
+	var s *testutil.SeedData
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
+		s = testutil.SeedStandard(client)
 	})
 
 	AfterEach(func() {
@@ -27,15 +29,6 @@ var _ = Describe("ApiExposure.Security", func() {
 	It("should store and return security on ApiExposure", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		clientSecret := "test-dummy-client-secret"
 		clientKey := "test-dummy-client-key"
 		tokenRequest := "client_secret_basic"
@@ -43,7 +36,7 @@ var _ = Describe("ApiExposure.Security", func() {
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/secure").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			SetSecurity(model.ApiExposureSecurity{
 				M2M: &model.Machine2MachineAuthentication{
@@ -91,19 +84,10 @@ var _ = Describe("ApiExposure.Security", func() {
 	It("should default to empty security on ApiExposure", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/no-sec").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -116,19 +100,10 @@ var _ = Describe("ApiExposure.Security", func() {
 	It("should update security on ApiExposure", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/update-sec").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			SetSecurity(model.ApiExposureSecurity{
 				M2M: &model.Machine2MachineAuthentication{
@@ -160,9 +135,11 @@ var _ = Describe("ApiExposure.Security", func() {
 
 var _ = Describe("ApiExposure.Traffic", func() {
 	var client *ent.Client
+	var s *testutil.SeedData
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
+		s = testutil.SeedStandard(client)
 	})
 
 	AfterEach(func() {
@@ -171,19 +148,10 @@ var _ = Describe("ApiExposure.Traffic", func() {
 	It("should store and return traffic on ApiExposure with full RateLimit", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/traffic").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			SetTraffic(model.Traffic{
 				RateLimit: &model.RateLimit{
@@ -244,19 +212,10 @@ var _ = Describe("ApiExposure.Traffic", func() {
 	It("should default to empty traffic on ApiExposure", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/no-traffic").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -270,19 +229,10 @@ var _ = Describe("ApiExposure.Traffic", func() {
 	It("should update traffic on ApiExposure", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/update-traffic").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			SetTraffic(model.Traffic{
 				RateLimit: &model.RateLimit{
@@ -325,19 +275,10 @@ var _ = Describe("ApiExposure.Traffic", func() {
 	It("should store traffic with only failover zones", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/failover-only").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			SetTraffic(model.Traffic{
 				Failover: &model.Failover{
@@ -357,9 +298,11 @@ var _ = Describe("ApiExposure.Traffic", func() {
 
 var _ = Describe("ApiExposure.Features", func() {
 	var client *ent.Client
+	var s *testutil.SeedData
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
+		s = testutil.SeedStandard(client)
 	})
 
 	AfterEach(func() {
@@ -369,19 +312,10 @@ var _ = Describe("ApiExposure.Features", func() {
 	It("should store and return features on ApiExposure", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/features").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			SetFeatures([]string{"LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING"}).
 			Save(ctx)
@@ -396,19 +330,10 @@ var _ = Describe("ApiExposure.Features", func() {
 	It("should default to empty features on ApiExposure", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/no-features").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -421,19 +346,10 @@ var _ = Describe("ApiExposure.Features", func() {
 	It("should update features on ApiExposure", func() {
 		ctx := testutil.AllowContext()
 
-		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
-			SetOwnerTeam(team).SetZone(zone).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
 		exposure, err := client.ApiExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/update-features").
-			SetOwner(app).
+			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
 			SetFeatures([]string{"LAST_MILE_SECURITY"}).
 			Save(ctx)
