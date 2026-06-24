@@ -208,7 +208,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	var preset *adminapi.GatewayConfigPreset
 	if apiSub.HasFailover() {
-		preset, _ = zone.SelectGatewayPreset(adminapi.FeatureConsumerFailover)
+		// fallback to default preset if no failover preset is found
+		preset, _ = zone.SelectGatewayPreset(adminapi.FeatureConsumerFailover) //nolint:errcheck // fallback to default preset below
 	}
 	if preset == nil {
 		// always fallback to default preset

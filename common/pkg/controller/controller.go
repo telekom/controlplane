@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -71,7 +72,11 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	}
 
 	logger.V(1).Info("Fetched object")
-	original := object.DeepCopyObject().(T)
+	original, ok := object.DeepCopyObject().(T)
+	if !ok {
+		// This should never happen, but if it does, we return an error to avoid panicking.
+		return reconcile.Result{}, fmt.Errorf("failed to deep copy object of type %T", object)
+	}
 
 	env, ok := GetEnvironment(object)
 	if !ok {
@@ -168,9 +173,9 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 // MaybeUpdateStatus updates the status of the object if it has changed.
 // It compares the old and new objects using DeepEqual and only performs the update if they are different.
 // This helps to avoid unnecessary status updates and reduce API server load.
-func (c *ControllerImpl[T]) MaybeUpdateStatus(ctx context.Context, old, new T) error {
-	if !equality.Semantic.DeepEqual(old, new) {
-		return c.Client.Status().Update(ctx, new)
+func (c *ControllerImpl[T]) MaybeUpdateStatus(ctx context.Context, oldObj, newObj T) error {
+	if !equality.Semantic.DeepEqual(oldObj, newObj) {
+		return c.Client.Status().Update(ctx, newObj)
 	}
 	return nil
 }

@@ -369,7 +369,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(len(multiFailoverSubscription.Status.FailoverRoutes)).To(BeNumerically(">=", 2))
 
 				// Verify routes exist in the expected failover zones
-				var namespaces []string
+				namespaces := make([]string, 0, len(multiFailoverSubscription.Status.FailoverRoutes))
 				for _, ref := range multiFailoverSubscription.Status.FailoverRoutes {
 					route := &gatewayapi.Route{}
 					err = k8sClient.Get(ctx, ref.K8s(), route)
@@ -451,7 +451,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 				// Failover routes should exist (for zones with the feature) but none should
 				// target the provider zone since it doesn't have ConsumerFailover enabled.
-				g.Expect(len(subscription.Status.FailoverRoutes)).To(BeNumerically(">=", 1))
+				g.Expect(subscription.Status.FailoverRoutes).ToNot(BeEmpty())
 				for _, ref := range subscription.Status.FailoverRoutes {
 					g.Expect(ref.Namespace).ToNot(Equal(providerZone.Status.Namespace),
 						"No failover route should be created in provider zone without ConsumerFailover feature")
@@ -474,7 +474,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(proxyConsumeRoute.Spec.Route).To(Equal(*subscription.Status.Route)) // should be the proxy route
 
 				// Check failover consume routes exist for each failover route
-				g.Expect(len(subscription.Status.FailoverConsumeRoutes)).To(Equal(len(subscription.Status.FailoverRoutes)))
+				g.Expect(subscription.Status.FailoverConsumeRoutes).To(HaveLen(len(subscription.Status.FailoverRoutes)))
 				for _, consumeRef := range subscription.Status.FailoverConsumeRoutes {
 					failoverConsumeRoute := &gatewayapi.ConsumeRoute{}
 					err = k8sClient.Get(ctx, consumeRef.K8s(), failoverConsumeRoute)
@@ -643,7 +643,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(err).ToNot(HaveOccurred())
 
 				// Should have at least 1 failover route reference including the provider failover zone
-				g.Expect(len(subFailoverToProviderSubscription.Status.FailoverRoutes)).To(BeNumerically(">=", 1))
+				g.Expect(subFailoverToProviderSubscription.Status.FailoverRoutes).ToNot(BeEmpty())
 
 				// Find the failover route in the provider failover zone
 				var found bool
@@ -707,7 +707,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(err).ToNot(HaveOccurred())
 
 				// Failover consume route - find the one referencing provider failover zone
-				g.Expect(len(subFailoverToProviderSubscription.Status.FailoverConsumeRoutes)).To(BeNumerically(">=", 1))
+				g.Expect(subFailoverToProviderSubscription.Status.FailoverConsumeRoutes).ToNot(BeEmpty())
 
 				// Find consume route that references a failover route in the provider failover zone
 				var foundConsumeRoute bool
@@ -839,7 +839,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(err).ToNot(HaveOccurred())
 
 				// Should have at least 1 failover route reference including same-zone failover zone
-				g.Expect(len(sameZoneWithFailoverSubscription.Status.FailoverRoutes)).To(BeNumerically(">=", 1))
+				g.Expect(sameZoneWithFailoverSubscription.Status.FailoverRoutes).ToNot(BeEmpty())
 
 				// Find failover route in the expected zone
 				var found bool
@@ -879,7 +879,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(mainConsumeRoute.Spec.ConsumerName).To(Equal(application.Status.ClientId))
 
 				// Failover consume route - at least 1 exists with correct consumer
-				g.Expect(len(sameZoneWithFailoverSubscription.Status.FailoverConsumeRoutes)).To(BeNumerically(">=", 1))
+				g.Expect(sameZoneWithFailoverSubscription.Status.FailoverConsumeRoutes).ToNot(BeEmpty())
 				failoverConsumeRoute := &gatewayapi.ConsumeRoute{}
 				err = k8sClient.Get(ctx, sameZoneWithFailoverSubscription.Status.FailoverConsumeRoutes[0].K8s(), failoverConsumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -1056,7 +1056,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(err).ToNot(HaveOccurred())
 
 				// Subscription2 should have at least 1 failover route including sharedFailoverZone
-				g.Expect(len(subscription2.Status.FailoverRoutes)).To(BeNumerically(">=", 1))
+				g.Expect(subscription2.Status.FailoverRoutes).ToNot(BeEmpty())
 
 				// Find route in the expected failover zone
 				var found bool
@@ -1072,7 +1072,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(found).To(BeTrue(), "Should have failover route in sharedFailoverZone")
 
 				// Verify failover consume route exists
-				g.Expect(len(subscription2.Status.FailoverConsumeRoutes)).To(BeNumerically(">=", 1))
+				g.Expect(subscription2.Status.FailoverConsumeRoutes).ToNot(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -1379,8 +1379,7 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 			g.Expect(err).ToNot(HaveOccurred())
 
 			// Should have at least 1 proxy route including the subscriber zone
-			g.Expect(len(apiExposure.Status.ProxyRoutes)).To(BeNumerically(">=", 1),
-				"Should have at least one proxy route")
+			g.Expect(apiExposure.Status.ProxyRoutes).ToNot(BeEmpty(), "Should have at least one proxy route")
 
 			// Verify there is a proxy in subscriber zone
 			var found bool
@@ -1419,8 +1418,7 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 			g.Expect(err).ToNot(HaveOccurred())
 
 			// Should have at least 1 failover route including the provider failover zone
-			g.Expect(len(subscription.Status.FailoverRoutes)).To(BeNumerically(">=", 1),
-				"Should reference at least one failover route")
+			g.Expect(subscription.Status.FailoverRoutes).ToNot(BeEmpty(), "Should reference at least one failover route")
 
 			// Find the failover route in the provider failover zone
 			var found bool
@@ -1446,7 +1444,7 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(len(subscription.Status.FailoverConsumeRoutes)).To(BeNumerically(">=", 1))
+			g.Expect(subscription.Status.FailoverConsumeRoutes).ToNot(BeEmpty())
 
 			// Find a consume route that references the provider failover zone
 			var found bool

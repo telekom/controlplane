@@ -294,7 +294,6 @@ var _ = Describe("ApiExposureHandler", func() {
 	// ──────────────────────────────────────────────────────────────────────
 
 	Describe("CreateOrUpdate", func() {
-
 		// Scenario 1: Baseline — one cross-zone subscriber, no failover
 		//
 		// Exposure in zone-a, subscriber in zone-b, no consumer or provider failover.

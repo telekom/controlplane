@@ -113,9 +113,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 						Url: ptr.To("http://idp-admin.test.local:8080"),
 					},
 				},
-				Redis: adminv1.RedisConfig{
-					Host: "redis://redis.test.local:6379",
-				},
 			},
 		}
 

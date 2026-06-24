@@ -69,9 +69,6 @@ var _ = Describe("Team Webhook", func() {
 					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
 			},
-			Redis: adminv1.RedisConfig{
-				Host: "redis://redis.test.local:6379",
-			},
 		},
 	}
 

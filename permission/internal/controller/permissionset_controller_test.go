@@ -175,12 +175,6 @@ var _ = Describe("PermissionSet Controller", func() {
 							},
 						},
 					},
-					Redis: adminv1.RedisConfig{
-						Host:      "redis://redis.example.com:6379",
-						Port:      6379,
-						Password:  "redis-password",
-						EnableTLS: true,
-					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, zone)).To(Succeed())

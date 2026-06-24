@@ -110,12 +110,12 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 			return nil, nil, ctrlerrors.RetryableErrorf("failed to list Zones when creating application: %s", err.Error())
 		}
 
-		for _, candidate := range zoneList.Items {
-			if types.Equals(zone, &candidate) {
+		for i := range zoneList.Items {
+			if types.Equals(zone, &zoneList.Items[i]) {
 				continue
 			}
-			if candidate.IsFeatureEnabled(admin.FeatureConsumerFailover) {
-				failoverZones = append(failoverZones, &candidate)
+			if zoneList.Items[i].IsFeatureEnabled(admin.FeatureConsumerFailover) {
+				failoverZones = append(failoverZones, &zoneList.Items[i])
 			}
 		}
 	}
