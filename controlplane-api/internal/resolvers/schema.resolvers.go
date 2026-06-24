@@ -497,6 +497,27 @@ func (r *queryResolver) APICategories(ctx context.Context) ([]*gqlmodel.APICateg
 	return categories, nil
 }
 
+// Mode is the resolver for the mode field.
+func (r *responseFilterResolver) Mode(ctx context.Context, obj *model.ResponseFilter) (*gqlmodel.ResponseFilterMode, error) {
+	if obj.Mode == "" {
+		return nil, nil
+	}
+	m := gqlmodel.ResponseFilterMode(obj.Mode)
+	return &m, nil
+}
+
+// Attributes is the resolver for the attributes field.
+func (r *selectionFilterResolver) Attributes(ctx context.Context, obj *model.SelectionFilter) (map[string]any, error) {
+	if obj.Attributes == nil {
+		return nil, nil
+	}
+	result := make(map[string]any, len(obj.Attributes))
+	for k, v := range obj.Attributes {
+		result[k] = v
+	}
+	return result, nil
+}
+
 // TokenURL is the resolver for the tokenUrl field.
 func (r *zoneResolver) TokenURL(ctx context.Context, obj *ent.Zone) (*string, error) {
 	if obj.IssuerURL == nil {
@@ -536,6 +557,12 @@ func (r *Resolver) EventSubscriptionInfo() EventSubscriptionInfoResolver {
 	return &eventSubscriptionInfoResolver{r}
 }
 
+// ResponseFilter returns ResponseFilterResolver implementation.
+func (r *Resolver) ResponseFilter() ResponseFilterResolver { return &responseFilterResolver{r} }
+
+// SelectionFilter returns SelectionFilterResolver implementation.
+func (r *Resolver) SelectionFilter() SelectionFilterResolver { return &selectionFilterResolver{r} }
+
 type apiExposureInfoResolver struct{ *Resolver }
 type apiSubscriptionInfoResolver struct{ *Resolver }
 type approvalConfigResolver struct{ *Resolver }
@@ -543,3 +570,5 @@ type availableTransitionResolver struct{ *Resolver }
 type decisionResolver struct{ *Resolver }
 type eventExposureInfoResolver struct{ *Resolver }
 type eventSubscriptionInfoResolver struct{ *Resolver }
+type responseFilterResolver struct{ *Resolver }
+type selectionFilterResolver struct{ *Resolver }

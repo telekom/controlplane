@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
@@ -47,6 +48,29 @@ var _ = Describe("EventExposure Translator", func() {
 						Strategy:     eventv1.ApprovalStrategyAuto,
 						TrustedTeams: []string{"team-a"},
 					},
+					Scopes: []eventv1.EventScope{
+						{
+							Name: "scope-a",
+							Trigger: eventv1.EventTrigger{
+								ResponseFilter: &eventv1.ResponseFilter{
+									Paths: []string{"$.data.id", "$.data.name"},
+									Mode:  eventv1.ResponseFilterModeInclude,
+								},
+								SelectionFilter: &eventv1.SelectionFilter{
+									Attributes: map[string]string{"type": "de.telekom.eni.quickstart.v1"},
+									Expression: &apiextensionsv1.JSON{Raw: []byte(`{"op":"eq","path":"$.source","value":"my-app"}`)}},
+							},
+						},
+						{
+							Name: "scope-b",
+							Trigger: eventv1.EventTrigger{
+								ResponseFilter: &eventv1.ResponseFilter{
+									Paths: []string{"$.data.secret"},
+									Mode:  eventv1.ResponseFilterModeExclude,
+								},
+							},
+						},
+					},
 				},
 				Status: eventv1.EventExposureStatus{
 					Active: true,
@@ -73,6 +97,139 @@ var _ = Describe("EventExposure Translator", func() {
 			Expect(data.StatusPhase).To(Equal("READY"))
 			Expect(data.StatusMessage).To(Equal("all good"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
+
+			Expect(data.Scopes).To(HaveLen(2))
+
+			Expect(data.Scopes[0].Name).To(Equal("scope-a"))
+			Expect(data.Scopes[0].Trigger.ResponseFilter).NotTo(BeNil())
+			Expect(data.Scopes[0].Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.id", "$.data.name"}))
+			Expect(data.Scopes[0].Trigger.ResponseFilter.Mode).To(Equal("Include"))
+			Expect(data.Scopes[0].Trigger.SelectionFilter).NotTo(BeNil())
+			Expect(data.Scopes[0].Trigger.SelectionFilter.Attributes).To(Equal(map[string]string{"type": "de.telekom.eni.quickstart.v1"}))
+			Expect(data.Scopes[0].Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.source","value":"my-app"}`))
+
+			Expect(data.Scopes[1].Name).To(Equal("scope-b"))
+			Expect(data.Scopes[1].Trigger.ResponseFilter).NotTo(BeNil())
+			Expect(data.Scopes[1].Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.secret"}))
+			Expect(data.Scopes[1].Trigger.ResponseFilter.Mode).To(Equal("Exclude"))
+			Expect(data.Scopes[1].Trigger.SelectionFilter).To(BeNil())
+		})
+
+		It("should translate a single scope with only a selection filter", func() {
+			obj := &eventv1.EventExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "single-scope",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: eventv1.EventExposureSpec{
+					EventType:  "de.telekom.single.v1",
+					Visibility: eventv1.VisibilityWorld,
+					Approval:   eventv1.Approval{Strategy: eventv1.ApprovalStrategyAuto},
+					Scopes: []eventv1.EventScope{
+						{
+							Name: "only-selection",
+							Trigger: eventv1.EventTrigger{
+								SelectionFilter: &eventv1.SelectionFilter{
+									Attributes: map[string]string{"source": "my-service"},
+									Expression: &apiextensionsv1.JSON{Raw: []byte(`{"op":"eq","path":"$.type","value":"order.created"}`)},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(data.Scopes).To(HaveLen(1))
+			Expect(data.Scopes[0].Name).To(Equal("only-selection"))
+			Expect(data.Scopes[0].Trigger.ResponseFilter).To(BeNil())
+			Expect(data.Scopes[0].Trigger.SelectionFilter).NotTo(BeNil())
+			Expect(data.Scopes[0].Trigger.SelectionFilter.Attributes).To(Equal(map[string]string{"source": "my-service"}))
+			Expect(data.Scopes[0].Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.type","value":"order.created"}`))
+		})
+
+		It("should return empty scopes when none are set", func() {
+			obj := &eventv1.EventExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "no-scopes",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: eventv1.EventExposureSpec{
+					EventType:  "de.telekom.noscopes.v1",
+					Visibility: eventv1.VisibilityWorld,
+					Approval:   eventv1.Approval{Strategy: eventv1.ApprovalStrategyAuto},
+					Scopes:     nil,
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Scopes).To(BeEmpty())
+		})
+
+		It("should handle selection filter with nil expression", func() {
+			obj := &eventv1.EventExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nil-expr",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: eventv1.EventExposureSpec{
+					EventType:  "de.telekom.nilexpr.v1",
+					Visibility: eventv1.VisibilityWorld,
+					Approval:   eventv1.Approval{Strategy: eventv1.ApprovalStrategyAuto},
+					Scopes: []eventv1.EventScope{
+						{
+							Name: "attrs-only",
+							Trigger: eventv1.EventTrigger{
+								SelectionFilter: &eventv1.SelectionFilter{
+									Attributes: map[string]string{"source": "svc"},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Scopes).To(HaveLen(1))
+			Expect(data.Scopes[0].Name).To(Equal("attrs-only"))
+			Expect(data.Scopes[0].Trigger.SelectionFilter).NotTo(BeNil())
+			Expect(data.Scopes[0].Trigger.SelectionFilter.Attributes).To(Equal(map[string]string{"source": "svc"}))
+			Expect(data.Scopes[0].Trigger.SelectionFilter.Expression).To(BeEmpty())
+		})
+
+		It("should handle scope with empty trigger", func() {
+			obj := &eventv1.EventExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "empty-trigger",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: eventv1.EventExposureSpec{
+					EventType:  "de.telekom.empty.v1",
+					Visibility: eventv1.VisibilityWorld,
+					Approval:   eventv1.Approval{Strategy: eventv1.ApprovalStrategyAuto},
+					Scopes: []eventv1.EventScope{
+						{
+							Name:    "bare",
+							Trigger: eventv1.EventTrigger{},
+						},
+					},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Scopes).To(HaveLen(1))
+			Expect(data.Scopes[0].Name).To(Equal("bare"))
+			Expect(data.Scopes[0].Trigger.ResponseFilter).To(BeNil())
+			Expect(data.Scopes[0].Trigger.SelectionFilter).To(BeNil())
 		})
 
 		It("should upper-case Zone visibility", func() {

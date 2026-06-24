@@ -56,9 +56,42 @@ func (t *Translator) Translate(_ context.Context, obj *eventv1.EventExposure) (*
 			Strategy:     mapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
 			TrustedTeams: obj.Spec.Approval.TrustedTeams,
 		},
+		Scopes:   mapEventScopes(obj.Spec.Scopes),
 		AppName:  obj.Labels[applicationLabelKey],
 		TeamName: shared.TeamNameFromNamespace(obj.Namespace),
 	}, nil
+}
+
+func mapEventScopes(eventScopes []eventv1.EventScope) []model.EventScope {
+	scopes := []model.EventScope{}
+
+	for i := range eventScopes {
+		scope := model.EventScope{}
+
+		scope.Name = eventScopes[i].Name
+		scope.Trigger = model.EventTrigger{}
+
+		if eventScopes[i].Trigger.ResponseFilter != nil {
+			scope.Trigger.ResponseFilter = &model.ResponseFilter{
+				Paths: eventScopes[i].Trigger.ResponseFilter.Paths,
+				Mode:  eventScopes[i].Trigger.ResponseFilter.Mode.String(),
+			}
+		}
+
+		if eventScopes[i].Trigger.SelectionFilter != nil {
+			sf := &model.SelectionFilter{
+				Attributes: eventScopes[i].Trigger.SelectionFilter.Attributes,
+			}
+			if eventScopes[i].Trigger.SelectionFilter.Expression != nil {
+				sf.Expression = string(eventScopes[i].Trigger.SelectionFilter.Expression.Raw)
+			}
+			scope.Trigger.SelectionFilter = sf
+		}
+
+		scopes = append(scopes, scope)
+	}
+
+	return scopes
 }
 
 // KeyFromObject derives the composite identity key from a live EventExposure.

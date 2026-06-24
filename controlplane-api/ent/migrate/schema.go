@@ -298,6 +298,7 @@ var (
 		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
+		{Name: "event_scopes", Type: field.TypeJSON},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "application_exposed_events", Type: field.TypeInt},
 		{Name: "event_type_exposures", Type: field.TypeInt, Nullable: true},
@@ -310,13 +311,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "event_exposures_applications_exposed_events",
-				Columns:    []*schema.Column{EventExposuresColumns[11]},
+				Columns:    []*schema.Column{EventExposuresColumns[12]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "event_exposures_event_types_exposures",
-				Columns:    []*schema.Column{EventExposuresColumns[12]},
+				Columns:    []*schema.Column{EventExposuresColumns[13]},
 				RefColumns: []*schema.Column{EventTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -325,7 +326,7 @@ var (
 			{
 				Name:    "eventexposure_event_type_application_exposed_events",
 				Unique:  true,
-				Columns: []*schema.Column{EventExposuresColumns[7], EventExposuresColumns[11]},
+				Columns: []*schema.Column{EventExposuresColumns[7], EventExposuresColumns[12]},
 			},
 		},
 	}

@@ -8115,6 +8115,8 @@ type EventExposureMutation struct {
 	event_type            *string
 	visibility            *eventexposure.Visibility
 	active                *bool
+	event_scopes          *[]model.EventScope
+	appendevent_scopes    []model.EventScope
 	approval_config       *model.ApprovalConfig
 	clearedFields         map[string]struct{}
 	owner                 *int
@@ -8603,6 +8605,57 @@ func (m *EventExposureMutation) ResetActive() {
 	delete(m.clearedFields, eventexposure.FieldActive)
 }
 
+// SetEventScopes sets the "event_scopes" field.
+func (m *EventExposureMutation) SetEventScopes(ms []model.EventScope) {
+	m.event_scopes = &ms
+	m.appendevent_scopes = nil
+}
+
+// EventScopes returns the value of the "event_scopes" field in the mutation.
+func (m *EventExposureMutation) EventScopes() (r []model.EventScope, exists bool) {
+	v := m.event_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventScopes returns the old "event_scopes" field's value of the EventExposure entity.
+// If the EventExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventExposureMutation) OldEventScopes(ctx context.Context) (v []model.EventScope, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventScopes: %w", err)
+	}
+	return oldValue.EventScopes, nil
+}
+
+// AppendEventScopes adds ms to the "event_scopes" field.
+func (m *EventExposureMutation) AppendEventScopes(ms []model.EventScope) {
+	m.appendevent_scopes = append(m.appendevent_scopes, ms...)
+}
+
+// AppendedEventScopes returns the list of values that were appended to the "event_scopes" field in this mutation.
+func (m *EventExposureMutation) AppendedEventScopes() ([]model.EventScope, bool) {
+	if len(m.appendevent_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendevent_scopes, true
+}
+
+// ResetEventScopes resets all changes to the "event_scopes" field.
+func (m *EventExposureMutation) ResetEventScopes() {
+	m.event_scopes = nil
+	m.appendevent_scopes = nil
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (m *EventExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
 	m.approval_config = &mc
@@ -8805,7 +8858,7 @@ func (m *EventExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventExposureMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, eventexposure.FieldCreatedAt)
 	}
@@ -8832,6 +8885,9 @@ func (m *EventExposureMutation) Fields() []string {
 	}
 	if m.active != nil {
 		fields = append(fields, eventexposure.FieldActive)
+	}
+	if m.event_scopes != nil {
+		fields = append(fields, eventexposure.FieldEventScopes)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, eventexposure.FieldApprovalConfig)
@@ -8862,6 +8918,8 @@ func (m *EventExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Visibility()
 	case eventexposure.FieldActive:
 		return m.Active()
+	case eventexposure.FieldEventScopes:
+		return m.EventScopes()
 	case eventexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	}
@@ -8891,6 +8949,8 @@ func (m *EventExposureMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldVisibility(ctx)
 	case eventexposure.FieldActive:
 		return m.OldActive(ctx)
+	case eventexposure.FieldEventScopes:
+		return m.OldEventScopes(ctx)
 	case eventexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	}
@@ -8964,6 +9024,13 @@ func (m *EventExposureMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetActive(v)
+		return nil
+	case eventexposure.FieldEventScopes:
+		v, ok := value.([]model.EventScope)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventScopes(v)
 		return nil
 	case eventexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
@@ -9074,6 +9141,9 @@ func (m *EventExposureMutation) ResetField(name string) error {
 		return nil
 	case eventexposure.FieldActive:
 		m.ResetActive()
+		return nil
+	case eventexposure.FieldEventScopes:
+		m.ResetEventScopes()
 		return nil
 	case eventexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()

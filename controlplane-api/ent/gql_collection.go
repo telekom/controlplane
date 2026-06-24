@@ -1465,6 +1465,11 @@ func (_q *EventExposureQuery) collectField(ctx context.Context, oneNode bool, op
 				selectedFields = append(selectedFields, eventexposure.FieldActive)
 				fieldSeen[eventexposure.FieldActive] = struct{}{}
 			}
+		case "eventScopes":
+			if _, ok := fieldSeen[eventexposure.FieldEventScopes]; !ok {
+				selectedFields = append(selectedFields, eventexposure.FieldEventScopes)
+				fieldSeen[eventexposure.FieldEventScopes] = struct{}{}
+			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[eventexposure.FieldApprovalConfig]; !ok {
 				selectedFields = append(selectedFields, eventexposure.FieldApprovalConfig)

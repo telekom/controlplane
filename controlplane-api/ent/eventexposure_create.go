@@ -139,6 +139,12 @@ func (_c *EventExposureCreate) SetNillableActive(v *bool) *EventExposureCreate {
 	return _c
 }
 
+// SetEventScopes sets the "event_scopes" field.
+func (_c *EventExposureCreate) SetEventScopes(v []model.EventScope) *EventExposureCreate {
+	_c.mutation.SetEventScopes(v)
+	return _c
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_c *EventExposureCreate) SetApprovalConfig(v model.ApprovalConfig) *EventExposureCreate {
 	_c.mutation.SetApprovalConfig(v)
@@ -257,6 +263,10 @@ func (_c *EventExposureCreate) defaults() error {
 		v := eventexposure.DefaultActive
 		_c.mutation.SetActive(v)
 	}
+	if _, ok := _c.mutation.EventScopes(); !ok {
+		v := eventexposure.DefaultEventScopes
+		_c.mutation.SetEventScopes(v)
+	}
 	if _, ok := _c.mutation.ApprovalConfig(); !ok {
 		v := eventexposure.DefaultApprovalConfig
 		_c.mutation.SetApprovalConfig(v)
@@ -300,6 +310,9 @@ func (_c *EventExposureCreate) check() error {
 		if err := eventexposure.VisibilityValidator(v); err != nil {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "EventExposure.visibility": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.EventScopes(); !ok {
+		return &ValidationError{Name: "event_scopes", err: errors.New(`ent: missing required field "EventExposure.event_scopes"`)}
 	}
 	if _, ok := _c.mutation.ApprovalConfig(); !ok {
 		return &ValidationError{Name: "approval_config", err: errors.New(`ent: missing required field "EventExposure.approval_config"`)}
@@ -369,6 +382,10 @@ func (_c *EventExposureCreate) createSpec() (*EventExposure, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.Active(); ok {
 		_spec.SetField(eventexposure.FieldActive, field.TypeBool, value)
 		_node.Active = &value
+	}
+	if value, ok := _c.mutation.EventScopes(); ok {
+		_spec.SetField(eventexposure.FieldEventScopes, field.TypeJSON, value)
+		_node.EventScopes = value
 	}
 	if value, ok := _c.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -596,6 +613,18 @@ func (u *EventExposureUpsert) ClearActive() *EventExposureUpsert {
 	return u
 }
 
+// SetEventScopes sets the "event_scopes" field.
+func (u *EventExposureUpsert) SetEventScopes(v []model.EventScope) *EventExposureUpsert {
+	u.Set(eventexposure.FieldEventScopes, v)
+	return u
+}
+
+// UpdateEventScopes sets the "event_scopes" field to the value that was provided on create.
+func (u *EventExposureUpsert) UpdateEventScopes() *EventExposureUpsert {
+	u.SetExcluded(eventexposure.FieldEventScopes)
+	return u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (u *EventExposureUpsert) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpsert {
 	u.Set(eventexposure.FieldApprovalConfig, v)
@@ -790,6 +819,20 @@ func (u *EventExposureUpsertOne) UpdateActive() *EventExposureUpsertOne {
 func (u *EventExposureUpsertOne) ClearActive() *EventExposureUpsertOne {
 	return u.Update(func(s *EventExposureUpsert) {
 		s.ClearActive()
+	})
+}
+
+// SetEventScopes sets the "event_scopes" field.
+func (u *EventExposureUpsertOne) SetEventScopes(v []model.EventScope) *EventExposureUpsertOne {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.SetEventScopes(v)
+	})
+}
+
+// UpdateEventScopes sets the "event_scopes" field to the value that was provided on create.
+func (u *EventExposureUpsertOne) UpdateEventScopes() *EventExposureUpsertOne {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.UpdateEventScopes()
 	})
 }
 
@@ -1155,6 +1198,20 @@ func (u *EventExposureUpsertBulk) UpdateActive() *EventExposureUpsertBulk {
 func (u *EventExposureUpsertBulk) ClearActive() *EventExposureUpsertBulk {
 	return u.Update(func(s *EventExposureUpsert) {
 		s.ClearActive()
+	})
+}
+
+// SetEventScopes sets the "event_scopes" field.
+func (u *EventExposureUpsertBulk) SetEventScopes(v []model.EventScope) *EventExposureUpsertBulk {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.SetEventScopes(v)
+	})
+}
+
+// UpdateEventScopes sets the "event_scopes" field to the value that was provided on create.
+func (u *EventExposureUpsertBulk) UpdateEventScopes() *EventExposureUpsertBulk {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.UpdateEventScopes()
 	})
 }
 

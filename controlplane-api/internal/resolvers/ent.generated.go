@@ -4833,6 +4833,38 @@ func (ec *executionContext) fieldContext_EventExposure_active(_ context.Context,
 	return graphql.NewScalarFieldContext("EventExposure", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
+func (ec *executionContext) _EventExposure_eventScopes(ctx context.Context, field graphql.CollectedField, obj *ent.EventExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventExposure_eventScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.EventScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.EventScope) graphql.Marshaler {
+			return ec.marshalNEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventExposure_eventScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventExposure",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_EventScope(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _EventExposure_approvalConfig(ctx context.Context, field graphql.CollectedField, obj *ent.EventExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -20863,6 +20895,11 @@ func (ec *executionContext) _EventExposure(ctx context.Context, sel ast.Selectio
 			}
 		case "active":
 			out.Values[i] = ec._EventExposure_active(ctx, field, obj)
+		case "eventScopes":
+			out.Values[i] = ec._EventExposure_eventScopes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "approvalConfig":
 			out.Values[i] = ec._EventExposure_approvalConfig(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

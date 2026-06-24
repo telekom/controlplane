@@ -40,6 +40,8 @@ const (
 	FieldVisibility = "visibility"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
+	// FieldEventScopes holds the string denoting the event_scopes field in the database.
+	FieldEventScopes = "event_scopes"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
 	FieldApprovalConfig = "approval_config"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -85,6 +87,7 @@ var Columns = []string{
 	FieldEventType,
 	FieldVisibility,
 	FieldActive,
+	FieldEventScopes,
 	FieldApprovalConfig,
 }
 
@@ -130,6 +133,8 @@ var (
 	EventTypeValidator func(string) error
 	// DefaultActive holds the default value on creation for the "active" field.
 	DefaultActive bool
+	// DefaultEventScopes holds the default value on creation for the "event_scopes" field.
+	DefaultEventScopes []model.EventScope
 	// DefaultApprovalConfig holds the default value on creation for the "approval_config" field.
 	DefaultApprovalConfig model.ApprovalConfig
 )

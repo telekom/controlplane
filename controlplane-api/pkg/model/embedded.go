@@ -47,3 +47,39 @@ type AvailableTransition struct {
 	Action  string `json:"action"`
 	ToState string `json:"toState"`
 }
+
+// EventScope defines a named scope with required trigger-based filtering for event exposure.
+type EventScope struct {
+	// Name is the unique identifier for this scope.
+	Name string `json:"name"`
+
+	// Trigger defines publisher-side filtering criteria for this scope.
+	Trigger EventTrigger `json:"trigger"`
+}
+
+// EventTrigger defines filtering criteria for event delivery.
+type EventTrigger struct {
+	// ResponseFilter controls payload shaping (which fields to return).
+	ResponseFilter *ResponseFilter `json:"responseFilter,omitempty"`
+
+	// SelectionFilter controls event matching (which events to deliver).
+	SelectionFilter *SelectionFilter `json:"selectionFilter,omitempty"`
+}
+
+// ResponseFilter controls which fields are included or excluded from the event payload.
+type ResponseFilter struct {
+	// Paths lists the JSON paths to include or exclude from the event payload.
+	Paths []string `json:"paths,omitempty"`
+
+	// Mode controls whether the listed paths are included or excluded.
+	Mode string `json:"mode"` // "Include" or "Exclude"
+}
+
+// SelectionFilter defines criteria for selecting which events are delivered.
+type SelectionFilter struct {
+	// Attributes defines simple key-value equality matches on CloudEvents attributes.
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// Expression contains an arbitrary JSON filter expression tree
+	Expression string `json:"expression"`
+}
