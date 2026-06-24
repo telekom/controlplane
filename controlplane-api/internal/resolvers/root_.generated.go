@@ -137,6 +137,7 @@ type ComplexityRoot struct {
 		ID                   func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
+		Traffic              func(childComplexity int) int
 		Visibility           func(childComplexity int) int
 	}
 
@@ -1053,6 +1054,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.OwnerTeam(childComplexity), true
+
+	case "ApiExposureInfo.traffic":
+		if e.ComplexityRoot.ApiExposureInfo.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.Traffic(childComplexity), true
 
 	case "ApiExposureInfo.visibility":
 		if e.ComplexityRoot.ApiExposureInfo.Visibility == nil {
@@ -7259,7 +7267,6 @@ enum ApiExposureFeature {
   EXTERNAL_IDP
   FAILOVER
   HEADER_TRANSFORMATION
-  IP_RESTRICTION
   LAST_MILE_SECURITY
   LOAD_BALANCING
   RATE_LIMIT
@@ -7285,6 +7292,8 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
+  # traffic required to depict rateLimiting information
+  traffic: Traffic 
   "Application name that owns this exposure"
   ownerApplicationName: String!
   "Owning team (reduced view)"
@@ -7660,6 +7669,8 @@ func (ec *executionContext) childFields_ApiExposureInfo(ctx context.Context, fie
 		return ec.fieldContext_ApiExposureInfo_features(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_ApiExposureInfo_approvalConfig(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiExposureInfo_traffic(ctx, field)
 	case "ownerApplicationName":
 		return ec.fieldContext_ApiExposureInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":

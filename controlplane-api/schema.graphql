@@ -91,6 +91,7 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
+  traffic: Traffic 
   "Application name that owns this exposure"
   ownerApplicationName: String!
   "Owning team (reduced view)"

@@ -13,6 +13,7 @@ type ApiExposureInfo struct {
 	Active               *bool          `json:"active,omitempty"`
 	ApiVersion           *string        `json:"apiVersion,omitempty"`
 	Features             []string       `json:"features"`
+	Traffic              Traffic        `json:"traffic"`
 	ApprovalConfig       ApprovalConfig `json:"approvalConfig"`
 	OwnerApplicationName string         `json:"ownerApplicationName"`
 	OwnerTeam            *TeamInfo      `json:"ownerTeam"`

@@ -37,6 +37,7 @@ func mapApiExposureInfo(exposure *ent.ApiExposure, app *ent.Application, team *e
 		Active:     exposure.Active,
 		ApiVersion: exposure.APIVersion,
 		Features:   exposure.Features,
+		Traffic:    exposure.Traffic,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     exposure.ApprovalConfig.Strategy,
 			TrustedTeams: exposure.ApprovalConfig.TrustedTeams,
