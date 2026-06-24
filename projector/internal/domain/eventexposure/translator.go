@@ -12,6 +12,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+	"github.com/telekom/controlplane/projector/internal/util"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -69,7 +70,7 @@ func mapEventScopes(eventScopes []eventv1.EventScope) []model.EventScope {
 		scope := model.EventScope{}
 
 		scope.Name = eventScopes[i].Name
-		scope.Trigger = model.EventTrigger{}
+		scope.Trigger = util.MapEventTrigger(eventScopes[i].Trigger)
 
 		if eventScopes[i].Trigger.ResponseFilter != nil {
 			scope.Trigger.ResponseFilter = &model.ResponseFilter{

@@ -397,6 +397,14 @@ func init() {
 	eventsubscriptionDescEventType := eventsubscriptionFields[0].Descriptor()
 	// eventsubscription.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
 	eventsubscription.EventTypeValidator = eventsubscriptionDescEventType.Validators[0].(func(string) error)
+	// eventsubscriptionDescTrigger is the schema descriptor for trigger field.
+	eventsubscriptionDescTrigger := eventsubscriptionFields[2].Descriptor()
+	// eventsubscription.DefaultTrigger holds the default value on creation for the trigger field.
+	eventsubscription.DefaultTrigger = eventsubscriptionDescTrigger.Default.(*model.EventTrigger)
+	// eventsubscriptionDescDelivery is the schema descriptor for delivery field.
+	eventsubscriptionDescDelivery := eventsubscriptionFields[3].Descriptor()
+	// eventsubscription.DefaultDelivery holds the default value on creation for the delivery field.
+	eventsubscription.DefaultDelivery = eventsubscriptionDescDelivery.Default.(model.EventDelivery)
 	eventtypeMixin := schema.EventType{}.Mixin()
 	eventtype.Policy = privacy.NewPolicies(eventtypeMixin[0], schema.EventType{})
 	eventtype.Hooks[0] = func(next ent.Mutator) ent.Mutator {

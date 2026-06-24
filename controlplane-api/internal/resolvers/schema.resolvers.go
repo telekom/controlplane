@@ -335,6 +335,11 @@ func (r *decisionResolver) ResultingState(ctx context.Context, obj *model.Decisi
 	return &s, nil
 }
 
+// Payload is the resolver for the payload field.
+func (r *eventDeliveryResolver) Payload(ctx context.Context, obj *model.EventDelivery) (gqlmodel.PayloadType, error) {
+	return gqlmodel.PayloadType(obj.Payload), nil
+}
+
 // Subscriptions is the resolver for the subscriptions field.
 // Returns reduced EventSubscriptionInfo types for cross-tenant safety.
 func (r *eventExposureResolver) Subscriptions(ctx context.Context, obj *ent.EventExposure) ([]*model.EventSubscriptionInfo, error) {
@@ -547,6 +552,9 @@ func (r *Resolver) AvailableTransition() AvailableTransitionResolver {
 // Decision returns DecisionResolver implementation.
 func (r *Resolver) Decision() DecisionResolver { return &decisionResolver{r} }
 
+// EventDelivery returns EventDeliveryResolver implementation.
+func (r *Resolver) EventDelivery() EventDeliveryResolver { return &eventDeliveryResolver{r} }
+
 // EventExposureInfo returns EventExposureInfoResolver implementation.
 func (r *Resolver) EventExposureInfo() EventExposureInfoResolver {
 	return &eventExposureInfoResolver{r}
@@ -568,6 +576,7 @@ type apiSubscriptionInfoResolver struct{ *Resolver }
 type approvalConfigResolver struct{ *Resolver }
 type availableTransitionResolver struct{ *Resolver }
 type decisionResolver struct{ *Resolver }
+type eventDeliveryResolver struct{ *Resolver }
 type eventExposureInfoResolver struct{ *Resolver }
 type eventSubscriptionInfoResolver struct{ *Resolver }
 type responseFilterResolver struct{ *Resolver }

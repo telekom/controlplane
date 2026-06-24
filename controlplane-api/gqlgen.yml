@@ -134,3 +134,6 @@ models:
   SelectionFilter:
     model:
      - github.com/telekom/controlplane/controlplane-api/pkg/model.SelectionFilter
+  EventDelivery:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.EventDelivery

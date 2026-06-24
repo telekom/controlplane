@@ -9287,6 +9287,10 @@ type EventSubscriptionMutation struct {
 	name                     *string
 	event_type               *string
 	delivery_type            *eventsubscription.DeliveryType
+	trigger                  **model.EventTrigger
+	delivery                 *model.EventDelivery
+	scopes                   *[]string
+	appendscopes             []string
 	callback_url             *string
 	clearedFields            map[string]struct{}
 	owner                    *int
@@ -9764,6 +9768,143 @@ func (m *EventSubscriptionMutation) ResetDeliveryType() {
 	m.delivery_type = nil
 }
 
+// SetTrigger sets the "trigger" field.
+func (m *EventSubscriptionMutation) SetTrigger(mt *model.EventTrigger) {
+	m.trigger = &mt
+}
+
+// Trigger returns the value of the "trigger" field in the mutation.
+func (m *EventSubscriptionMutation) Trigger() (r *model.EventTrigger, exists bool) {
+	v := m.trigger
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTrigger returns the old "trigger" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldTrigger(ctx context.Context) (v *model.EventTrigger, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTrigger is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTrigger requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTrigger: %w", err)
+	}
+	return oldValue.Trigger, nil
+}
+
+// ResetTrigger resets all changes to the "trigger" field.
+func (m *EventSubscriptionMutation) ResetTrigger() {
+	m.trigger = nil
+}
+
+// SetDelivery sets the "delivery" field.
+func (m *EventSubscriptionMutation) SetDelivery(md model.EventDelivery) {
+	m.delivery = &md
+}
+
+// Delivery returns the value of the "delivery" field in the mutation.
+func (m *EventSubscriptionMutation) Delivery() (r model.EventDelivery, exists bool) {
+	v := m.delivery
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDelivery returns the old "delivery" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldDelivery(ctx context.Context) (v model.EventDelivery, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDelivery is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDelivery requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDelivery: %w", err)
+	}
+	return oldValue.Delivery, nil
+}
+
+// ResetDelivery resets all changes to the "delivery" field.
+func (m *EventSubscriptionMutation) ResetDelivery() {
+	m.delivery = nil
+}
+
+// SetScopes sets the "scopes" field.
+func (m *EventSubscriptionMutation) SetScopes(s []string) {
+	m.scopes = &s
+	m.appendscopes = nil
+}
+
+// Scopes returns the value of the "scopes" field in the mutation.
+func (m *EventSubscriptionMutation) Scopes() (r []string, exists bool) {
+	v := m.scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScopes returns the old "scopes" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScopes: %w", err)
+	}
+	return oldValue.Scopes, nil
+}
+
+// AppendScopes adds s to the "scopes" field.
+func (m *EventSubscriptionMutation) AppendScopes(s []string) {
+	m.appendscopes = append(m.appendscopes, s...)
+}
+
+// AppendedScopes returns the list of values that were appended to the "scopes" field in this mutation.
+func (m *EventSubscriptionMutation) AppendedScopes() ([]string, bool) {
+	if len(m.appendscopes) == 0 {
+		return nil, false
+	}
+	return m.appendscopes, true
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (m *EventSubscriptionMutation) ClearScopes() {
+	m.scopes = nil
+	m.appendscopes = nil
+	m.clearedFields[eventsubscription.FieldScopes] = struct{}{}
+}
+
+// ScopesCleared returns if the "scopes" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) ScopesCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldScopes]
+	return ok
+}
+
+// ResetScopes resets all changes to the "scopes" field.
+func (m *EventSubscriptionMutation) ResetScopes() {
+	m.scopes = nil
+	m.appendscopes = nil
+	delete(m.clearedFields, eventsubscription.FieldScopes)
+}
+
 // SetCallbackURL sets the "callback_url" field.
 func (m *EventSubscriptionMutation) SetCallbackURL(s string) {
 	m.callback_url = &s
@@ -10018,7 +10159,7 @@ func (m *EventSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, eventsubscription.FieldCreatedAt)
 	}
@@ -10045,6 +10186,15 @@ func (m *EventSubscriptionMutation) Fields() []string {
 	}
 	if m.delivery_type != nil {
 		fields = append(fields, eventsubscription.FieldDeliveryType)
+	}
+	if m.trigger != nil {
+		fields = append(fields, eventsubscription.FieldTrigger)
+	}
+	if m.delivery != nil {
+		fields = append(fields, eventsubscription.FieldDelivery)
+	}
+	if m.scopes != nil {
+		fields = append(fields, eventsubscription.FieldScopes)
 	}
 	if m.callback_url != nil {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
@@ -10075,6 +10225,12 @@ func (m *EventSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.EventType()
 	case eventsubscription.FieldDeliveryType:
 		return m.DeliveryType()
+	case eventsubscription.FieldTrigger:
+		return m.Trigger()
+	case eventsubscription.FieldDelivery:
+		return m.Delivery()
+	case eventsubscription.FieldScopes:
+		return m.Scopes()
 	case eventsubscription.FieldCallbackURL:
 		return m.CallbackURL()
 	}
@@ -10104,6 +10260,12 @@ func (m *EventSubscriptionMutation) OldField(ctx context.Context, name string) (
 		return m.OldEventType(ctx)
 	case eventsubscription.FieldDeliveryType:
 		return m.OldDeliveryType(ctx)
+	case eventsubscription.FieldTrigger:
+		return m.OldTrigger(ctx)
+	case eventsubscription.FieldDelivery:
+		return m.OldDelivery(ctx)
+	case eventsubscription.FieldScopes:
+		return m.OldScopes(ctx)
 	case eventsubscription.FieldCallbackURL:
 		return m.OldCallbackURL(ctx)
 	}
@@ -10178,6 +10340,27 @@ func (m *EventSubscriptionMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetDeliveryType(v)
 		return nil
+	case eventsubscription.FieldTrigger:
+		v, ok := value.(*model.EventTrigger)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTrigger(v)
+		return nil
+	case eventsubscription.FieldDelivery:
+		v, ok := value.(model.EventDelivery)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDelivery(v)
+		return nil
+	case eventsubscription.FieldScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScopes(v)
+		return nil
 	case eventsubscription.FieldCallbackURL:
 		v, ok := value.(string)
 		if !ok {
@@ -10224,6 +10407,9 @@ func (m *EventSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(eventsubscription.FieldEnvironment) {
 		fields = append(fields, eventsubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(eventsubscription.FieldScopes) {
+		fields = append(fields, eventsubscription.FieldScopes)
+	}
 	if m.FieldCleared(eventsubscription.FieldCallbackURL) {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
 	}
@@ -10249,6 +10435,9 @@ func (m *EventSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case eventsubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case eventsubscription.FieldScopes:
+		m.ClearScopes()
 		return nil
 	case eventsubscription.FieldCallbackURL:
 		m.ClearCallbackURL()
@@ -10287,6 +10476,15 @@ func (m *EventSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case eventsubscription.FieldDeliveryType:
 		m.ResetDeliveryType()
+		return nil
+	case eventsubscription.FieldTrigger:
+		m.ResetTrigger()
+		return nil
+	case eventsubscription.FieldDelivery:
+		m.ResetDelivery()
+		return nil
+	case eventsubscription.FieldScopes:
+		m.ResetScopes()
 		return nil
 	case eventsubscription.FieldCallbackURL:
 		m.ResetCallbackURL()

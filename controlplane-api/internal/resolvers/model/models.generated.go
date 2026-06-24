@@ -220,11 +220,66 @@ func (e ErrorCode) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type PayloadType string
+
+const (
+	PayloadTypeData    PayloadType = "DATA"
+	PayloadTypeDataRef PayloadType = "DATA_REF"
+)
+
+var AllPayloadType = []PayloadType{
+	PayloadTypeData,
+	PayloadTypeDataRef,
+}
+
+func (e PayloadType) IsValid() bool {
+	switch e {
+	case PayloadTypeData, PayloadTypeDataRef:
+		return true
+	}
+	return false
+}
+
+func (e PayloadType) String() string {
+	return string(e)
+}
+
+func (e *PayloadType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PayloadType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PayloadType", str)
+	}
+	return nil
+}
+
+func (e PayloadType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PayloadType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PayloadType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type ResponseFilterMode string
 
 const (
-	ResponseFilterModeInclude ResponseFilterMode = "Include"
-	ResponseFilterModeExclude ResponseFilterMode = "Exclude"
+	ResponseFilterModeInclude ResponseFilterMode = "INCLUDE"
+	ResponseFilterModeExclude ResponseFilterMode = "EXCLUDE"
 )
 
 var AllResponseFilterMode = []ResponseFilterMode{

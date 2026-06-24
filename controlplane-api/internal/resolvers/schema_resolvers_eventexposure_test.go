@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
@@ -67,21 +68,60 @@ var _ = Describe("EventExposure resolver", func() {
 						},
 					},
 				},
+				{
+					Name: "scope2",
+					Trigger: model.EventTrigger{
+						ResponseFilter: &model.ResponseFilter{
+							Paths: []string{"$.data.status"},
+							Mode:  "Exclude",
+						},
+					},
+				},
 			}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
+
+		// Query back and assert all nested fields are persisted correctly.
+		exp, err := client.EventExposure.Query().
+			Where(eventexposure.EventTypeEQ("order.example")).
+			Only(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exp.EventType).To(Equal("order.example"))
+		Expect(exp.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
+		Expect(exp.ApprovalConfig.TrustedTeams).To(Equal([]string{"team-beta", "team-gamma"}))
+
+		// Scopes assertions.
+		Expect(exp.EventScopes).To(HaveLen(2))
+
+		// Scope 1: full trigger with both filters.
+		scope1 := exp.EventScopes[0]
+		Expect(scope1.Name).To(Equal("scope1"))
+		Expect(scope1.Trigger.ResponseFilter).NotTo(BeNil())
+		Expect(scope1.Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.id", "$.data.name"}))
+		Expect(scope1.Trigger.ResponseFilter.Mode).To(Equal("Include"))
+		Expect(scope1.Trigger.SelectionFilter).NotTo(BeNil())
+		Expect(scope1.Trigger.SelectionFilter.Attributes).To(HaveKeyWithValue("source", "order-service"))
+		Expect(scope1.Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.type","value":"order.created"}`))
+
+		// Scope 2: trigger with only response filter, no selection filter.
+		scope2 := exp.EventScopes[1]
+		Expect(scope2.Name).To(Equal("scope2"))
+		Expect(scope2.Trigger.ResponseFilter).NotTo(BeNil())
+		Expect(scope2.Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.status"}))
+		Expect(scope2.Trigger.ResponseFilter.Mode).To(Equal("Exclude"))
+		Expect(scope2.Trigger.SelectionFilter).To(BeNil())
 	})
 
 	Describe("ResponseFilter.Mode resolver", func() {
 		It("should convert Include string to ResponseFilterMode", func() {
-			mode, err := r.ResponseFilter().Mode(context.Background(), &model.ResponseFilter{Mode: "Include"})
+			mode, err := r.ResponseFilter().Mode(context.Background(), &model.ResponseFilter{Mode: "INCLUDE"})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(mode).NotTo(BeNil())
 			Expect(*mode).To(Equal(gqlmodel.ResponseFilterModeInclude))
 		})
 
 		It("should convert Exclude string to ResponseFilterMode", func() {
-			mode, err := r.ResponseFilter().Mode(context.Background(), &model.ResponseFilter{Mode: "Exclude"})
+			mode, err := r.ResponseFilter().Mode(context.Background(), &model.ResponseFilter{Mode: "EXCLUDE"})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(mode).NotTo(BeNil())
 			Expect(*mode).To(Equal(gqlmodel.ResponseFilterModeExclude))

@@ -38,6 +38,7 @@ type ResolverRoot interface {
 	ApprovalRequest() ApprovalRequestResolver
 	AvailableTransition() AvailableTransitionResolver
 	Decision() DecisionResolver
+	EventDelivery() EventDeliveryResolver
 	EventExposure() EventExposureResolver
 	EventExposureInfo() EventExposureInfoResolver
 	EventSubscription() EventSubscriptionResolver
@@ -314,6 +315,15 @@ type ComplexityRoot struct {
 		Timestamp      func(childComplexity int) int
 	}
 
+	EventDelivery struct {
+		CircuitBreakerOptOut                      func(childComplexity int) int
+		EnforceGetHttpRequestMethodForHealthCheck func(childComplexity int) int
+		EventRetentionTime                        func(childComplexity int) int
+		Payload                                   func(childComplexity int) int
+		RedeliveriesPerSecond                     func(childComplexity int) int
+		RetryableStatusCodes                      func(childComplexity int) int
+	}
+
 	EventExposure struct {
 		Active         func(childComplexity int) int
 		ApprovalConfig func(childComplexity int) int
@@ -363,6 +373,7 @@ type ComplexityRoot struct {
 		ApprovalRequests func(childComplexity int) int
 		CallbackURL      func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
+		Delivery         func(childComplexity int) int
 		DeliveryType     func(childComplexity int) int
 		Environment      func(childComplexity int) int
 		EventType        func(childComplexity int) int
@@ -371,9 +382,11 @@ type ComplexityRoot struct {
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		Scopes           func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
 		Target           func(childComplexity int) int
+		Trigger          func(childComplexity int) int
 	}
 
 	EventSubscriptionConnection struct {
@@ -1820,6 +1833,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Decision.Timestamp(childComplexity), true
 
+	case "EventDelivery.circuitBreakerOptOut":
+		if e.ComplexityRoot.EventDelivery.CircuitBreakerOptOut == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.CircuitBreakerOptOut(childComplexity), true
+
+	case "EventDelivery.enforceGetHttpRequestMethodForHealthCheck":
+		if e.ComplexityRoot.EventDelivery.EnforceGetHttpRequestMethodForHealthCheck == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.EnforceGetHttpRequestMethodForHealthCheck(childComplexity), true
+
+	case "EventDelivery.eventRetentionTime":
+		if e.ComplexityRoot.EventDelivery.EventRetentionTime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.EventRetentionTime(childComplexity), true
+
+	case "EventDelivery.payload":
+		if e.ComplexityRoot.EventDelivery.Payload == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.Payload(childComplexity), true
+
+	case "EventDelivery.redeliveriesPerSecond":
+		if e.ComplexityRoot.EventDelivery.RedeliveriesPerSecond == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.RedeliveriesPerSecond(childComplexity), true
+
+	case "EventDelivery.retryableStatusCodes":
+		if e.ComplexityRoot.EventDelivery.RetryableStatusCodes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.RetryableStatusCodes(childComplexity), true
+
 	case "EventExposure.active":
 		if e.ComplexityRoot.EventExposure.Active == nil {
 			break
@@ -2051,6 +2106,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventSubscription.CreatedAt(childComplexity), true
 
+	case "EventSubscription.delivery":
+		if e.ComplexityRoot.EventSubscription.Delivery == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Delivery(childComplexity), true
+
 	case "EventSubscription.deliveryType":
 		if e.ComplexityRoot.EventSubscription.DeliveryType == nil {
 			break
@@ -2107,6 +2169,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventSubscription.Owner(childComplexity), true
 
+	case "EventSubscription.scopes":
+		if e.ComplexityRoot.EventSubscription.Scopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Scopes(childComplexity), true
+
 	case "EventSubscription.statusMessage":
 		if e.ComplexityRoot.EventSubscription.StatusMessage == nil {
 			break
@@ -2127,6 +2196,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscription.Target(childComplexity), true
+
+	case "EventSubscription.trigger":
+		if e.ComplexityRoot.EventSubscription.Trigger == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Trigger(childComplexity), true
 
 	case "EventSubscriptionConnection.edges":
 		if e.ComplexityRoot.EventSubscriptionConnection.Edges == nil {
@@ -5210,6 +5286,9 @@ type EventSubscription implements Node {
   name: String!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
+  trigger: EventTrigger!
+  delivery: EventDelivery!
+  scopes: [String!]
   callbackURL: String
   owner: Application!
   approval: Approval
@@ -6956,8 +7035,8 @@ type EventTrigger {
 }
 
 enum ResponseFilterMode {
-  Include
-  Exclude
+  INCLUDE
+  EXCLUDE
 }
 
 type ResponseFilter {
@@ -6968,6 +7047,20 @@ type ResponseFilter {
 type SelectionFilter {
   attributes: Map
   expression: String!
+}
+
+type EventDelivery {
+  payload: PayloadType!
+  eventRetentionTime: String!
+  circuitBreakerOptOut: Boolean!
+  retryableStatusCodes: [Int!]
+  redeliveriesPerSecond: Int
+  enforceGetHttpRequestMethodForHealthCheck: Boolean!
+}
+
+enum PayloadType {
+  DATA
+  DATA_REF
 }
 
 enum ApiExposureFeature {
@@ -7654,6 +7747,24 @@ func (ec *executionContext) childFields_Decision(ctx context.Context, field grap
 	return nil, fmt.Errorf("no field named %q was found under type Decision", field.Name)
 }
 
+func (ec *executionContext) childFields_EventDelivery(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "payload":
+		return ec.fieldContext_EventDelivery_payload(ctx, field)
+	case "eventRetentionTime":
+		return ec.fieldContext_EventDelivery_eventRetentionTime(ctx, field)
+	case "circuitBreakerOptOut":
+		return ec.fieldContext_EventDelivery_circuitBreakerOptOut(ctx, field)
+	case "retryableStatusCodes":
+		return ec.fieldContext_EventDelivery_retryableStatusCodes(ctx, field)
+	case "redeliveriesPerSecond":
+		return ec.fieldContext_EventDelivery_redeliveriesPerSecond(ctx, field)
+	case "enforceGetHttpRequestMethodForHealthCheck":
+		return ec.fieldContext_EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventDelivery", field.Name)
+}
+
 func (ec *executionContext) childFields_EventExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -7764,6 +7875,12 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_eventType(ctx, field)
 	case "deliveryType":
 		return ec.fieldContext_EventSubscription_deliveryType(ctx, field)
+	case "trigger":
+		return ec.fieldContext_EventSubscription_trigger(ctx, field)
+	case "delivery":
+		return ec.fieldContext_EventSubscription_delivery(ctx, field)
+	case "scopes":
+		return ec.fieldContext_EventSubscription_scopes(ctx, field)
 	case "callbackURL":
 		return ec.fieldContext_EventSubscription_callbackURL(ctx, field)
 	case "owner":

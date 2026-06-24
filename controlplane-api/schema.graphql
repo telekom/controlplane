@@ -63,8 +63,8 @@ type EventTrigger {
 }
 
 enum ResponseFilterMode {
-  Include
-  Exclude
+  INCLUDE
+  EXCLUDE
 }
 
 type ResponseFilter {
@@ -75,6 +75,20 @@ type ResponseFilter {
 type SelectionFilter {
   attributes: Map
   expression: String!
+}
+
+type EventDelivery {
+  payload: PayloadType!
+  eventRetentionTime: String!
+  circuitBreakerOptOut: Boolean!
+  retryableStatusCodes: [Int!]
+  redeliveriesPerSecond: Int
+  enforceGetHttpRequestMethodForHealthCheck: Boolean!
+}
+
+enum PayloadType {
+  DATA
+  DATA_REF
 }
 
 enum ApiExposureFeature {

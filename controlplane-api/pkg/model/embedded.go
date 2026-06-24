@@ -83,3 +83,13 @@ type SelectionFilter struct {
 	// Expression contains an arbitrary JSON filter expression tree
 	Expression string `json:"expression"`
 }
+
+// EventDelivery configures how events are delivered to the subscriber.
+type EventDelivery struct {
+	Payload                                   string `json:"payload"` // Data or DataRef
+	EventRetentionTime                        string `json:"eventRetentionTime"`
+	CircuitBreakerOptOut                      bool   `json:"circuitBreakerOptOut"`
+	RetryableStatusCodes                      []int  `json:"retryableStatusCodes"`
+	RedeliveriesPerSecond                     *int   `json:"redeliveriesPerSecond"`
+	EnforceGetHttpRequestMethodForHealthCheck bool   `json:"enforceGetHttpRequestMethodForHealthCheck"`
+}
