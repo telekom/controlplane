@@ -99,7 +99,7 @@ func (l *apiLinterImpl) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecificat
 	}
 
 	if lintCfg.Mode == apiv1.LintingModeBlock && apiSpec.Spec.Lint != nil && !apiSpec.Spec.Lint.Passed {
-		return LintBlocked, fmt.Errorf("linting failed in block mode: %s", apiSpec.Spec.Lint.Message)
+		return LintBlocked, nil
 	}
 
 	return LintCompleted, nil
