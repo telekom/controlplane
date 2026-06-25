@@ -558,5 +558,40 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			Expect(parsed).To(HaveKeyWithValue("key1", "value1"))
 			Expect(parsed).To(HaveKeyWithValue("key2", "value2"))
 		})
+
+		It("should preserve externalSecrets on re-onboard with default replace strategy", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// First onboard with sub-secrets
+			_, err := onboarder.OnboardApplication(ctx, env, teamId, appId,
+				backend.WithSecretValue("externalSecrets/key1", backend.String("value1")),
+				backend.WithSecretValue("externalSecrets/key2", backend.String("value2")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify initial state
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: appId, Namespace: fmt.Sprintf("%s--%s", env, teamId)}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("externalSecrets"))
+			originalClientSecret := secret.Data["clientSecret"]
+
+			// Re-onboard without any options (default replace strategy)
+			_, err = onboarder.OnboardApplication(ctx, env, teamId, appId)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Both clientSecret and externalSecrets must be preserved
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: appId, Namespace: fmt.Sprintf("%s--%s", env, teamId)}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("clientSecret"))
+			Expect(secret.Data["clientSecret"]).To(Equal(originalClientSecret))
+
+			// externalSecrets is preserved — InitialString keys are never overwritten
+			Expect(secret.Data).To(HaveKey("externalSecrets"))
+			var preservedExternalSecrets map[string]string
+			Expect(json.Unmarshal(secret.Data["externalSecrets"], &preservedExternalSecrets)).To(Succeed())
+			Expect(preservedExternalSecrets).To(HaveKeyWithValue("key1", "value1"))
+			Expect(preservedExternalSecrets).To(HaveKeyWithValue("key2", "value2"))
+		})
 	})
 })
