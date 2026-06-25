@@ -90,7 +90,7 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 			log.Info("Using bucket", "bucket_name", bucketName)
 		}
 
-		if insecure, _ := strconv.ParseBool(cfg.Backend.Get("insecure_skip_tls")); insecure {
+		if insecure, err := strconv.ParseBool(cfg.Backend.Get("insecure_skip_tls")); err == nil && insecure {
 			options = append(options, buckets.WithInsecureSkipTLS(true))
 			log.Info("TLS verification is disabled")
 		}
