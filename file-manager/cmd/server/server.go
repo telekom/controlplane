@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
@@ -87,6 +88,11 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		if bucketName := cfg.Backend.Get("bucket_name"); bucketName != "" {
 			options = append(options, buckets.WithBucketName(bucketName))
 			log.Info("Using bucket", "bucket_name", bucketName)
+		}
+
+		if insecure, _ := strconv.ParseBool(cfg.Backend.Get("insecure_skip_tls")); insecure {
+			options = append(options, buckets.WithInsecureSkipTLS(true))
+			log.Info("TLS verification is disabled")
 		}
 
 		// Create credentials
