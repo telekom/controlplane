@@ -526,7 +526,7 @@ func mapSecurity(apiSecurity *apiapi.Security) *gatewayapi.Security {
 			security.M2M.ExternalIDP = &gatewayapi.ExternalIdentityProvider{
 				TokenEndpoint: apiSecurity.M2M.ExternalIDP.TokenEndpoint,
 				TokenRequest:  gatewayapi.TokenRequestMethod(apiSecurity.M2M.ExternalIDP.TokenRequest),
-				GrantType:     apiSecurity.M2M.ExternalIDP.GrantType,
+				GrantType:     gatewayapi.GrantType(apiSecurity.M2M.ExternalIDP.GrantType),
 			}
 			if apiSecurity.M2M.ExternalIDP.Basic != nil {
 				security.M2M.ExternalIDP.Basic = &gatewayapi.BasicAuthCredentials{

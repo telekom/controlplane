@@ -138,6 +138,8 @@ var _ = Describe("Route Controller", Ordered, func() {
 								ClientSecret: "******",
 							},
 							TokenEndpoint: "https://example.com/endpoint",
+							TokenRequest:  gatewayv1.TokenRequestClientSecretBasic,
+							GrantType:     "client_credentials",
 						},
 					},
 				}

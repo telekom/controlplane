@@ -152,7 +152,7 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 		return in, err
 	}
 	in.TokenRequest = tokenRequest
-	in.GrantType = providerSettings.GrantType
+	in.GrantType = string(providerSettings.GrantType)
 
 	return in, nil
 }
@@ -183,7 +183,7 @@ func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	}
 
 	in.Password = password
-	in.GrantType = providerSettings.GrantType
+	in.GrantType = string(providerSettings.GrantType)
 
 	return in, nil
 }

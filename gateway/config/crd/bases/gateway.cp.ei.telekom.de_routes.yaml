@@ -204,7 +204,9 @@ spec:
                             - client_secret_post
                             type: string
                         required:
+                        - grantType
                         - tokenEndpoint
+                        - tokenRequest
                         type: object
                         x-kubernetes-validations:
                         - message: Only one of basic or client credentials can be
@@ -361,7 +363,9 @@ spec:
                                     - client_secret_post
                                     type: string
                                 required:
+                                - grantType
                                 - tokenEndpoint
+                                - tokenRequest
                                 type: object
                                 x-kubernetes-validations:
                                 - message: Only one of basic or client credentials

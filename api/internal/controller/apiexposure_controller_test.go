@@ -359,6 +359,8 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				M2M: &apiv1.Machine2MachineAuthentication{
 					ExternalIDP: &apiv1.ExternalIdentityProvider{
 						TokenEndpoint: "https://example.com/token",
+						TokenRequest:  apiv1.TokenRequestClientSecretBasic,
+						GrantType:     "client_credentials",
 						Client: &apiv1.OAuth2ClientCredentials{
 							ClientId:     "client-id",
 							ClientSecret: "******",
@@ -642,6 +644,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				M2M: &apiv1.Machine2MachineAuthentication{
 					ExternalIDP: &apiv1.ExternalIdentityProvider{
 						TokenEndpoint: "https://my-issser.example.com/token",
+						TokenRequest:  apiv1.TokenRequestClientSecretBasic,
 						GrantType:     "password",
 						Basic: &apiv1.BasicAuthCredentials{
 							Username: "my-username",
