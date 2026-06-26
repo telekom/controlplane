@@ -1,0 +1,9 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+resources:
+- bases/file.cp.ei.telekom.de_filetypes.yaml
+- bases/file.cp.ei.telekom.de_fileexposures.yaml
+- bases/file.cp.ei.telekom.de_filesubscriptions.yaml
+- bases/file.cp.ei.telekom.de_zoneserviceconfigs.yaml
