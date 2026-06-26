@@ -428,7 +428,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal(gatewayapi.TokenRequestClientSecretBasic))
-				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal(gatewayapi.GrantTypeClientCredentials))
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -695,7 +695,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(failoverRoute.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
 
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://my-issser.example.com/token"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.GrantType).To(Equal("password"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.GrantType).To(Equal(gatewayapi.GrantTypePassword))
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.Basic.Username).To(Equal("my-username"))
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.Basic.Password).To(Equal("my-password"))
 			}, timeout, interval).Should(Succeed())
