@@ -1,0 +1,19 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+resources:
+- service_account.yaml
+- role.yaml
+- role_binding.yaml
+- leader_election_role.yaml
+- leader_election_role_binding.yaml
+- metrics_auth_role.yaml
+- metrics_auth_role_binding.yaml
+- metrics_reader_role.yaml
+- instance_editor_role.yaml
+- instance_viewer_role.yaml
+- user_editor_role.yaml
+- user_viewer_role.yaml
+- zoneserviceconfig_editor_role.yaml
+- zoneserviceconfig_viewer_role.yaml
