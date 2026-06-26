@@ -177,6 +177,16 @@ The following tables list all available schemas, grouped by domain. Click a sche
 
 ---
 
+### SFTP
+
+| Kind | Schema |
+| ---- | ------ |
+| **Instance** | [`instance_v1.json`](pathname:///schemas/sftp.cp.ei.telekom.de/instance_v1.json) |
+| **User** | [`user_v1.json`](pathname:///schemas/sftp.cp.ei.telekom.de/user_v1.json) |
+| **ZoneServiceConfig** | [`zoneserviceconfig_v1.json`](pathname:///schemas/sftp.cp.ei.telekom.de/zoneserviceconfig_v1.json) |
+
+---
+
 ## Schema Index
 
 A machine-readable index of all available schemas is published at [`schemas/index.json`](pathname:///schemas/index.json). This can be used by tooling to discover schemas programmatically.
