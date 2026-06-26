@@ -278,3 +278,14 @@ jobs:
       ko_build_path: "cmd/sftp-operator/main.go"
       coverage_threshold: 66
       lint_fail_on_issues: true
+
+  file:
+    name: File
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: file
+      module: file
+      run_check_generated_files: true
+      ko_build_path: "cmd/file-operator/main.go"
+      coverage_threshold: 10
+      lint_fail_on_issues: true

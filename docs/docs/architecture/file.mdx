@@ -1,0 +1,45 @@
+---
+sidebar_position: 12
+---
+
+<!--
+SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
+# File Domain
+
+The File domain manages file-type exposure and subscription resources. It acts as the business-logic layer between Rover-style file declarations and runtime solutions such as SFTP.
+
+## Custom Resources
+
+<CRDReference domain="file" />
+
+## Reconciliation Flow
+
+```
+FileType registered
+    │
+    ├──▶ FileExposure selected as active provider
+    │       ├──▶ SFTP Instance created for the active provider zone
+    │       └──▶ Provider SSH public keys synced to the FileType SFTP User
+    │
+    ├──▶ SFTP User created for the active file type with an instanceRef
+    │
+    └──▶ FileSubscription created by a consumer
+            ├──▶ ApprovalRequest created from the active FileExposure approval strategy
+            └──▶ Subscription-owned SFTP User synced after approval is granted
+```
+
+FileExposure and FileSubscription resources reference a `FileType` by name with `spec.fileType`. SFTP-specific public keys are configured through `spec.sftp`, and `spec.zone` points at the ZoneServiceConfig used for provider-side SFTP access. ZoneServiceConfig resources hold the SFTP API managed-route configuration plus internal and external service endpoints, and they must have the same name and namespace as the corresponding admin Zone. The File operator reads the identity realm reference from that Zone, creates an identity client for the managed route, and projects the resolved endpoint, token endpoint, client ID, and client secret to the SFTP domain as an SFTPServiceConfig with the same name and namespace. The active FileExposure creates an SFTP Instance for that zone, and SFTP users reference that instance through `spec.instanceRef`.
+
+## Domain Interactions
+
+- **Rover domain** - File declarations can create FileType, FileExposure, and FileSubscription resources.
+- **SFTP domain** - The File operator creates User, Instance, and SFTPServiceConfig resources. Provider keys are stored on the FileType-owned SFTP User, while each granted FileSubscription owns a separate SFTP User with its subscriber keys.
+- **Approval domain** - FileExposure carries approval settings for subscription workflows. FileSubscription creates ApprovalRequest and Approval references, waits while approval is pending, provisions a subscriber SFTP User after approval is granted, and deletes it if approval is denied.
+
+## Related Pages
+
+- [Architecture: Rover Domain](./rover.mdx)
