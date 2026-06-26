@@ -31,7 +31,8 @@ Most users do not create these resources directly. Instead, they write a single 
 | [Organization](#organization) | `organization.cp.ei.telekom.de/v1` | 2 |
 | [PubSub](#pubsub) | `pubsub.cp.ei.telekom.de/v1` | 3 |
 | [Rover](#rover) | `rover.cp.ei.telekom.de/v1` | 3 |
-| | **Total** | **34** |
+| [SFTP](#sftp) | `sftp.cp.ei.telekom.de/v1` | 3 |
+| | **Total** | **37** |
 
 ---
 
@@ -187,6 +188,20 @@ The primary user-facing interface for declarative application configuration.
 | **Rover** | The primary user-facing resource — defines an application's complete API and event posture declaratively. |
 | **ApiSpecification** | Stores an uploaded OpenAPI specification and creates the corresponding Api resource. |
 | **EventSpecification** | Stores event type metadata and creates the corresponding EventType resource. |
+
+---
+
+### SFTP
+
+**API Group:** `sftp.cp.ei.telekom.de/v1` · [Architecture →](../architecture/sftp.mdx)
+
+SFTP service provisioning and SSH public key synchronization.
+
+| Kind | Description |
+| ---- | ----------- |
+| **ZoneServiceConfig** | Configures zone-specific SFTP Tardis API access and OAuth2 client credentials. |
+| **Instance** | Represents an SFTP service instance and provisions a corresponding SFTP service user through the configured ZoneServiceConfig. |
+| **User** | Declares SSH public keys for an SFTP user and attaches them to an Instance. |
 
 ---
 
