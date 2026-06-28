@@ -86,14 +86,14 @@ func (r *McpSubscriptionReconciler) MapMcpExposureToMcpSubscription(ctx context.
 	list := &agenticv1.McpSubscriptionList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:   exposure.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.McpBasePath),
+		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if list.Items[i].Spec.McpBasePath == exposure.Spec.McpBasePath {
+		if list.Items[i].Spec.BasePath == exposure.Spec.BasePath {
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 			})

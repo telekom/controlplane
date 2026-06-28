@@ -113,7 +113,7 @@ var _ = Describe("HandleExposure", func() {
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure).ToNot(BeNil())
-		Expect(capturedExposure.Spec.McpBasePath).To(Equal("/mcp/weather/v1"))
+		Expect(capturedExposure.Spec.BasePath).To(Equal("/mcp/weather/v1"))
 		Expect(capturedExposure.Spec.Visibility).To(Equal(agenticv1.Visibility("World")))
 		Expect(capturedExposure.Spec.Variant).To(Equal(agenticv1.McpVariant("MCP")))
 		Expect(capturedExposure.Spec.Upstreams).To(HaveLen(1))
@@ -446,7 +446,7 @@ var _ = Describe("HandleSubscription", func() {
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub).ToNot(BeNil())
-		Expect(capturedSub.Spec.McpBasePath).To(Equal("/mcp/weather/v1"))
+		Expect(capturedSub.Spec.BasePath).To(Equal("/mcp/weather/v1"))
 		Expect(capturedSub.Spec.Zone.Name).To(Equal("zone1"))
 		Expect(capturedSub.Spec.Zone.Namespace).To(Equal(testEnvironment))
 		Expect(capturedSub.Spec.Requestor.Application.Name).To(Equal("my-app"))

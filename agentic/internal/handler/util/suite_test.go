@@ -93,9 +93,9 @@ func makeActiveMcpExposure(basePath, zoneName, uid string) agenticv1.McpExposure
 			UID:       k8stypes.UID(uid),
 		},
 		Spec: agenticv1.McpExposureSpec{
-			McpBasePath: basePath,
-			Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
-			Provider:    ctypes.ObjectRef{Name: "app", Namespace: "default"},
+			BasePath: basePath,
+			Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
+			Provider: ctypes.ObjectRef{Name: "app", Namespace: "default"},
 		},
 		Status: agenticv1.McpExposureStatus{Active: true},
 	}

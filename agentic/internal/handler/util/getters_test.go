@@ -412,8 +412,8 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		s := agenticv1.McpSubscription{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 			Spec: agenticv1.McpSubscriptionSpec{
-				McpBasePath: basePath,
-				Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
+				BasePath: basePath,
+				Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
 			},
 		}
 		setReady(&s.Status.Conditions)
@@ -429,8 +429,8 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		return agenticv1.McpSubscription{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 			Spec: agenticv1.McpSubscriptionSpec{
-				McpBasePath: basePath,
-				Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
+				BasePath: basePath,
+				Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
 			},
 		}
 	}

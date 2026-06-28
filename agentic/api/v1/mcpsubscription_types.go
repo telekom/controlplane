@@ -12,11 +12,11 @@ import (
 
 // McpSubscriptionSpec defines the desired state of McpSubscription.
 type McpSubscriptionSpec struct {
-	// McpBasePath references the McpServer/McpExposure via basePath.
+	// BasePath references the McpServer/McpExposure via basePath.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
-	McpBasePath string `json:"mcpBasePath"`
+	BasePath string `json:"basePath"`
 
 	// Requestor identifies the application requesting access to the MCP server.
 	Requestor Requestor `json:"requestor"`
@@ -65,7 +65,7 @@ type McpSubscriptionStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.mcpBasePath",description="The MCP server base path"
+// +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.basePath",description="The MCP server base path"
 // +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone.name",description="The subscriber zone"
 // +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
 

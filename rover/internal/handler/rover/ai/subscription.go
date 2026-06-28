@@ -54,8 +54,8 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		}
 
 		mcpSubscription.Spec = agenticv1.McpSubscriptionSpec{
-			McpBasePath: sub.BasePath,
-			Zone:        zoneRef,
+			BasePath: sub.BasePath,
+			Zone:     zoneRef,
 			Requestor: agenticv1.Requestor{
 				Application: *owner.Status.Application,
 			},

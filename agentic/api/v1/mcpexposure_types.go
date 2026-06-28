@@ -12,11 +12,11 @@ import (
 
 // McpExposureSpec defines the desired state of McpExposure.
 type McpExposureSpec struct {
-	// McpBasePath references the McpServer via its basePath.
+	// BasePath references the McpServer via its basePath.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
-	McpBasePath string `json:"mcpBasePath"`
+	BasePath string `json:"basePath"`
 
 	// Upstreams define the backend MCP server targets.
 	// +kubebuilder:validation:Required
@@ -81,7 +81,7 @@ type McpExposureStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.mcpBasePath",description="The MCP server base path"
+// +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.basePath",description="The MCP server base path"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this exposure is active"
 // +kubebuilder:printcolumn:name="Variant",type="string",JSONPath=".spec.variant",description="The exposure variant"
 // +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"

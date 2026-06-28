@@ -19,7 +19,7 @@ spec:
   versions:
   - additionalPrinterColumns:
     - description: The MCP server base path
-      jsonPath: .spec.mcpBasePath
+      jsonPath: .spec.basePath
       name: BasePath
       type: string
     - description: Whether this exposure is active
@@ -85,8 +85,8 @@ spec:
                 required:
                 - strategy
                 type: object
-              mcpBasePath:
-                description: McpBasePath references the McpServer via its basePath.
+              basePath:
+                description: BasePath references the McpServer via its basePath.
                 minLength: 1
                 pattern: ^/[a-z0-9-/]+$
                 type: string
@@ -465,7 +465,7 @@ spec:
                 type: object
             required:
             - approval
-            - mcpBasePath
+            - basePath
             - provider
             - upstreams
             - variant

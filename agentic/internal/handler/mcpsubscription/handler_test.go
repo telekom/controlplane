@@ -56,8 +56,8 @@ func newMcpSubscription(name, basePath, zoneName string) *agenticv1.McpSubscript
 			UID:       "sub-uid-1234",
 		},
 		Spec: agenticv1.McpSubscriptionSpec{
-			McpBasePath: basePath,
-			Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
+			BasePath: basePath,
+			Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
 			Requestor: agenticv1.Requestor{
 				Application: ctypes.ObjectRef{Name: "requestor-app", Namespace: "default"},
 			},
@@ -99,12 +99,12 @@ func makeReadyMcpExposure(basePath, zoneName string) agenticv1.McpExposure {
 			CreationTimestamp: metav1.Now(),
 		},
 		Spec: agenticv1.McpExposureSpec{
-			McpBasePath: basePath,
-			Visibility:  agenticv1.VisibilityEnterprise,
-			Approval:    agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-			Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
-			Provider:    ctypes.ObjectRef{Name: "provider-app", Namespace: "default"},
-			Variant:     agenticv1.McpVariantMCP,
+			BasePath:   basePath,
+			Visibility: agenticv1.VisibilityEnterprise,
+			Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
+			Zone:       ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
+			Provider:   ctypes.ObjectRef{Name: "provider-app", Namespace: "default"},
+			Variant:    agenticv1.McpVariantMCP,
 		},
 		Status: agenticv1.McpExposureStatus{
 			Active: true,

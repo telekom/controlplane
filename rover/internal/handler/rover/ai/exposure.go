@@ -72,9 +72,9 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		mcpExposure.Spec = agenticv1.McpExposureSpec{
-			McpBasePath: exp.BasePath,
-			Upstreams:   mapUpstreams(exp.Upstreams),
-			Visibility:  agenticv1.Visibility(exp.Visibility.String()),
+			BasePath:   exp.BasePath,
+			Upstreams:  mapUpstreams(exp.Upstreams),
+			Visibility: agenticv1.Visibility(exp.Visibility.String()),
 			Approval: agenticv1.Approval{
 				Strategy:     agenticv1.ApprovalStrategy(exp.Approval.Strategy),
 				TrustedTeams: trustedTeams,

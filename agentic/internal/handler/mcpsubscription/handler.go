@@ -40,33 +40,33 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// 1. Validate McpServer exists and is active
-	found, _, findErr := util.FindActiveMcpServer(ctx, obj.Spec.McpBasePath)
+	found, _, findErr := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
 	if findErr != nil {
 		return findErr
 	}
 	if !found {
 		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
-			"No active McpServer found for basePath "+obj.Spec.McpBasePath))
+			"No active McpServer found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
-			"McpServer " + obj.Spec.McpBasePath + " does not exist or is not active. " +
+			"McpServer " + obj.Spec.BasePath + " does not exist or is not active. " +
 				"McpSubscription will be automatically processed when the McpServer is registered"))
 		return nil
 	}
 
 	// 2. Find active McpExposure
-	exposures, err := util.FindMcpExposures(ctx, obj.Spec.McpBasePath)
+	exposures, err := util.FindMcpExposures(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return err
 	}
 	exposureFound, exposure, err := util.FindActiveMcpExposure(exposures)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find active McpExposure for basePath %q", obj.Spec.McpBasePath)
+		return errors.Wrapf(err, "failed to find active McpExposure for basePath %q", obj.Spec.BasePath)
 	}
 	if !exposureFound {
 		obj.SetCondition(condition.NewNotReadyCondition("McpExposureNotFound",
-			"No active McpExposure found for basePath "+obj.Spec.McpBasePath))
+			"No active McpExposure found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
-			"McpExposure for " + obj.Spec.McpBasePath + " does not exist or is not active. " +
+			"McpExposure for " + obj.Spec.BasePath + " does not exist or is not active. " +
 				"McpSubscription will be automatically processed when the McpExposure is registered"))
 		return nil
 	}
@@ -115,11 +115,11 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		TeamEmail:      requestorApp.Spec.TeamEmail,
 		ApplicationRef: types.TypedObjectRefFromObject(requestorApp, c.Scheme()),
 		Reason: fmt.Sprintf("Team %s requested MCP subscription to %s from zone %s",
-			requestorApp.Spec.Team, obj.Spec.McpBasePath, obj.Spec.Zone.Name),
+			requestorApp.Spec.Team, obj.Spec.BasePath, obj.Spec.Zone.Name),
 	}
 
 	properties := map[string]any{
-		"mcpBasePath": obj.Spec.McpBasePath,
+		"mcpBasePath": obj.Spec.BasePath,
 	}
 	if err = requester.SetProperties(properties); err != nil {
 		return errors.Wrapf(err, "unable to set approvalRequest properties for McpSubscription %q", obj.Name)
@@ -245,7 +245,7 @@ func (h *McpSubscriptionHandler) createConsumeRoute(
 	routeRef := *exposure.Status.Route
 	if obj.Spec.Zone.Name != exposure.Spec.Zone.Name {
 		// Cross-zone: find the proxy route in the subscriber zone
-		proxyRouteName := util.MakeMcpRouteName(obj.Spec.McpBasePath)
+		proxyRouteName := util.MakeMcpRouteName(obj.Spec.BasePath)
 		routeRef = types.ObjectRef{
 			Name:      proxyRouteName,
 			Namespace: subscriberZone.Status.Namespace,
@@ -268,7 +268,7 @@ func (h *McpSubscriptionHandler) createConsumeRoute(
 
 		consumeRoute.Labels = map[string]string{
 			config.DomainLabelKey:         "agentic",
-			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.McpBasePath),
+			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
 			config.BuildLabelKey("zone"):  obj.Spec.Zone.Name,
 			config.BuildLabelKey("type"):  "mcp-subscription",
 		}

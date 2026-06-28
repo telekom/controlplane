@@ -106,7 +106,7 @@ func (r *McpExposureReconciler) MapMcpServerToMcpExposure(ctx context.Context, o
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if list.Items[i].Spec.McpBasePath == server.Spec.BasePath {
+		if list.Items[i].Spec.BasePath == server.Spec.BasePath {
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 			})
@@ -127,7 +127,7 @@ func (r *McpExposureReconciler) MapMcpExposureToMcpExposure(ctx context.Context,
 	list := &agenticv1.McpExposureList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:   exposure.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.McpBasePath),
+		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}
@@ -137,7 +137,7 @@ func (r *McpExposureReconciler) MapMcpExposureToMcpExposure(ctx context.Context,
 		if list.Items[i].UID == exposure.UID {
 			continue
 		}
-		if list.Items[i].Spec.McpBasePath == exposure.Spec.McpBasePath {
+		if list.Items[i].Spec.BasePath == exposure.Spec.BasePath {
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 			})
@@ -168,7 +168,7 @@ func (r *McpExposureReconciler) MapRouteToMcpExposure(ctx context.Context, obj c
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		normalized := labelutil.NormalizeLabelValue(list.Items[i].Spec.McpBasePath)
+		normalized := labelutil.NormalizeLabelValue(list.Items[i].Spec.BasePath)
 		if normalized == basePathLabel {
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
@@ -215,14 +215,14 @@ func (r *McpExposureReconciler) MapMcpSubscriptionToMcpExposure(ctx context.Cont
 	list := &agenticv1.McpExposureList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:   sub.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(sub.Spec.McpBasePath),
+		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(sub.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if list.Items[i].Spec.McpBasePath == sub.Spec.McpBasePath {
+		if list.Items[i].Spec.BasePath == sub.Spec.BasePath {
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 			})

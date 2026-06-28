@@ -35,32 +35,32 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	logger := log.FromContext(ctx)
 
 	// 1. Validate McpServer exists and is active
-	found, _, err := util.FindActiveMcpServer(ctx, obj.Spec.McpBasePath)
+	found, _, err := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return err
 	}
 	if !found {
 		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
-			"No active McpServer found for basePath "+obj.Spec.McpBasePath))
+			"No active McpServer found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
-			"McpServer " + obj.Spec.McpBasePath + " does not exist or is not active. " +
+			"McpServer " + obj.Spec.BasePath + " does not exist or is not active. " +
 				"McpExposure will be automatically processed when the McpServer is registered"))
 		return nil
 	}
 
 	// 2. Check for competing exposures (oldest-wins)
-	existingExposures, err := util.FindMcpExposures(ctx, obj.Spec.McpBasePath)
+	existingExposures, err := util.FindMcpExposures(ctx, obj.Spec.BasePath)
 	if err != nil {
-		return errors.Wrapf(err, "failed to list McpExposures for basePath %q", obj.Spec.McpBasePath)
+		return errors.Wrapf(err, "failed to list McpExposures for basePath %q", obj.Spec.BasePath)
 	}
 	existingFound, existingExposure, err := util.FindActiveMcpExposure(existingExposures)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find active McpExposure for basePath %q", obj.Spec.McpBasePath)
+		return errors.Wrapf(err, "failed to find active McpExposure for basePath %q", obj.Spec.BasePath)
 	}
 
 	if existingFound && existingExposure.UID != obj.UID {
 		obj.Status.Active = false
-		msg := fmt.Sprintf("BasePath %q is already exposed by team %q.", obj.Spec.McpBasePath, existingExposure.Spec.Provider.Namespace)
+		msg := fmt.Sprintf("BasePath %q is already exposed by team %q.", obj.Spec.BasePath, existingExposure.Spec.Provider.Namespace)
 		obj.SetCondition(condition.NewNotReadyCondition("McpExposureAlreadyExists", msg))
 		obj.SetCondition(condition.NewBlockedCondition(msg + " McpExposure will be automatically processed when the existing one is deleted"))
 		return nil
@@ -86,7 +86,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil
 
-	crossZones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, obj.Spec.McpBasePath, obj.Spec.Zone.Name)
+	crossZones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, obj.Spec.BasePath, obj.Spec.Zone.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to find cross-zone MCP subscriptions")
 	}
@@ -97,7 +97,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 			return errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
 		}
 
-		proxyRoute, routeErr := util.CreateMcpProxyRoute(ctx, obj.Spec.McpBasePath, subscriberZone, zone)
+		proxyRoute, routeErr := util.CreateMcpProxyRoute(ctx, obj.Spec.BasePath, subscriberZone, zone)
 		if routeErr != nil {
 			return errors.Wrapf(routeErr, "failed to create MCP proxy Route for zone %q", subscriberZoneRef.Name)
 		}
@@ -133,7 +133,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	}
 
 	// 8. Cleanup stale routes
-	deleted, err := util.CleanupOldMcpRoutes(ctx, obj.Spec.McpBasePath)
+	deleted, err := util.CleanupOldMcpRoutes(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to cleanup old MCP Routes")
 	}
@@ -162,14 +162,14 @@ func (h *McpExposureHandler) Delete(ctx context.Context, obj *agenticv1.McpExpos
 	logger := log.FromContext(ctx)
 
 	// Check if another McpExposure exists for the same basePath.
-	otherExists, err := util.AnyOtherMcpExposureExists(ctx, obj.Spec.McpBasePath, obj.UID)
+	otherExists, err := util.AnyOtherMcpExposureExists(ctx, obj.Spec.BasePath, obj.UID)
 	if err != nil {
 		return errors.Wrap(err, "failed to check for other McpExposures")
 	}
 
 	if otherExists {
 		logger.Info("Skipping Route deletion — another McpExposure exists for this basePath",
-			"basePath", obj.Spec.McpBasePath)
+			"basePath", obj.Spec.BasePath)
 		return nil
 	}
 

@@ -19,7 +19,7 @@ spec:
   versions:
   - additionalPrinterColumns:
     - description: The MCP server base path
-      jsonPath: .spec.mcpBasePath
+      jsonPath: .spec.basePath
       name: BasePath
       type: string
     - description: The subscriber zone
@@ -58,9 +58,8 @@ spec:
           spec:
             description: McpSubscriptionSpec defines the desired state of McpSubscription.
             properties:
-              mcpBasePath:
-                description: McpBasePath references the McpServer/McpExposure via
-                  basePath.
+              basePath:
+                description: BasePath references the McpServer/McpExposure via basePath.
                 minLength: 1
                 pattern: ^/[a-z0-9-/]+$
                 type: string
@@ -209,7 +208,7 @@ spec:
                 - namespace
                 type: object
             required:
-            - mcpBasePath
+            - basePath
             - requestor
             - zone
             type: object

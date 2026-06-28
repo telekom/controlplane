@@ -115,7 +115,7 @@ func FindMcpExposures(ctx context.Context, basePath string) ([]agenticv1.McpExpo
 
 	var exposures []agenticv1.McpExposure
 	for i := range exposureList.Items {
-		if exposureList.Items[i].Spec.McpBasePath == basePath {
+		if exposureList.Items[i].Spec.BasePath == basePath {
 			exposures = append(exposures, exposureList.Items[i])
 		}
 	}
@@ -161,7 +161,7 @@ func AnyOtherMcpExposureExists(ctx context.Context, basePath string, excludeUID 
 		if candidates[i].UID == excludeUID {
 			continue
 		}
-		if candidates[i].Spec.McpBasePath == basePath {
+		if candidates[i].Spec.BasePath == basePath {
 			return true, nil
 		}
 	}
@@ -190,7 +190,7 @@ func FindCrossZoneMcpSubscriptionZones(ctx context.Context, basePath, exposureZo
 		if controller.IsBeingDeleted(sub) {
 			continue
 		}
-		if sub.Spec.McpBasePath != basePath {
+		if sub.Spec.BasePath != basePath {
 			continue
 		}
 		// Skip same-zone subscriptions

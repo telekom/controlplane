@@ -37,7 +37,7 @@ func newMcpExposure(name, basePath string) *agenticv1.McpExposure {
 			UID:       "test-uid",
 		},
 		Spec: agenticv1.McpExposureSpec{
-			McpBasePath: basePath,
+			BasePath: basePath,
 			Upstreams: []agenticv1.Upstream{
 				{Url: "http://mcp-server.internal:8080"},
 			},
@@ -306,8 +306,8 @@ var _ = Describe("McpExposureHandler", func() {
 					CreationTimestamp: metav1.Now(),
 				},
 				Spec: agenticv1.McpExposureSpec{
-					McpBasePath: "/mcp/weather/v1",
-					Provider:    ctypes.ObjectRef{Name: "other-app", Namespace: "other-ns"},
+					BasePath: "/mcp/weather/v1",
+					Provider: ctypes.ObjectRef{Name: "other-app", Namespace: "other-ns"},
 				},
 				Status: agenticv1.McpExposureStatus{
 					Active: true,
@@ -491,7 +491,7 @@ var _ = Describe("McpExposureHandler", func() {
 					UID:       "other-uid",
 				},
 				Spec: agenticv1.McpExposureSpec{
-					McpBasePath: "/mcp/weather/v1",
+					BasePath: "/mcp/weather/v1",
 				},
 			}
 			fakeClient.EXPECT().

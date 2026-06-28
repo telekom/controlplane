@@ -55,7 +55,7 @@ func CreateMcpRoute(
 	}
 
 	// 4. Build downstream from realm
-	downstream, err := realm.AsDownstream(exposure.Spec.McpBasePath)
+	downstream, err := realm.AsDownstream(exposure.Spec.BasePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create downstream")
 	}
@@ -68,7 +68,7 @@ func CreateMcpRoute(
 	// 5. Create or update the Route
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      MakeMcpRouteName(exposure.Spec.McpBasePath),
+			Name:      MakeMcpRouteName(exposure.Spec.BasePath),
 			Namespace: zone.Status.Namespace,
 		},
 	}
@@ -76,7 +76,7 @@ func CreateMcpRoute(
 	mutator := func() error {
 		route.Labels = map[string]string{
 			config.DomainLabelKey:         "agentic",
-			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.McpBasePath),
+			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 			config.BuildLabelKey("zone"):  zone.Name,
 			config.BuildLabelKey("realm"): realm.Name,
 			config.BuildLabelKey("type"):  "mcp",
