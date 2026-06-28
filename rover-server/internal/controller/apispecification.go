@@ -22,11 +22,11 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
-	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/in"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/out"
@@ -42,14 +42,14 @@ type ApiSpecificationController struct {
 	Store  store.ObjectStore[*roverv1.ApiSpecification]
 
 	// Linter handles OAS linting operations. If nil, linting is disabled.
-	Linter ApiLinter
+	Linter oaslint.Linter
 }
 
-func NewApiSpecificationController(stores *s.Stores, lintCfg config.OasLintingConfig) *ApiSpecificationController {
+func NewApiSpecificationController(stores *s.Stores, linter oaslint.Linter) *ApiSpecificationController {
 	return &ApiSpecificationController{
 		stores: stores,
 		Store:  stores.APISpecificationStore,
-		Linter: NewApiLinter(lintCfg),
+		Linter: linter,
 	}
 }
 
@@ -326,7 +326,7 @@ func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *rove
 			"The linting service could not be reached. Your API specification was not saved.",
 		)
 	}
-	if outcome == LintBlocked {
+	if outcome == oaslint.Blocked {
 		msg := "OAS linting did not pass"
 		if apiSpec.Spec.Lint != nil && apiSpec.Spec.Lint.Message != "" {
 			msg = fmt.Sprintf("%s: %s", msg, apiSpec.Spec.Lint.Message)
