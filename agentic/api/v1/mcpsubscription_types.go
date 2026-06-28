@@ -67,7 +67,7 @@ type McpSubscriptionStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.basePath",description="The MCP server base path"
 // +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone.name",description="The subscriber zone"
-// +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // McpSubscription is the Schema for the mcpsubscriptions API.
 // It represents a request by an application to consume an MCP server

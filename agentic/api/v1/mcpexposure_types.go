@@ -80,7 +80,7 @@ type McpExposureStatus struct {
 // +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.basePath",description="The MCP server base path"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this exposure is active"
 // +kubebuilder:printcolumn:name="Variant",type="string",JSONPath=".spec.variant",description="The exposure variant"
-// +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // McpExposure is the Schema for the mcpexposures API.
 // It represents a declaration that an application exposes an MCP server,
