@@ -9,8 +9,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -22,7 +20,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
 var _ handler.Handler[*agenticv1.McpExposure] = &McpExposureHandler{}
@@ -105,32 +102,23 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 		logger.V(1).Info("MCP proxy Route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
 	}
 
-	// 6. Create primary MCP route
+	// 6. Resolve platform consumer for auto-access (TeleMCP variant)
+	telecontextConsumer := ""
+	if obj.Spec.Variant.IsTelecontextVariant() {
+		if h.Config.TelecontextConsumerName == "" {
+			return errors.New("TELECONTEXTMCP variant requires telecontext consumer name to be configured")
+		}
+		telecontextConsumer = h.Config.TelecontextConsumerName
+	}
+
+	// 7. Create primary MCP route
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
-	route, err := util.CreateMcpRoute(ctx, obj, zone, isProxyTarget)
+	route, err := util.CreateMcpRoute(ctx, obj, zone, isProxyTarget, telecontextConsumer)
 	if err != nil {
 		return errors.Wrap(err, "failed to create MCP Route")
 	}
 	obj.Status.Route = ctypes.ObjectRefFromObject(route)
 	logger.V(1).Info("MCP Route created/updated", "route", route.Name)
-
-	// 7. Handle TELECONTEXTMCP variant - auto-create ConsumeRoute
-	obj.Status.TelecontextConsumeRoute = nil
-	if obj.Spec.Variant.IsTelecontextVariant() {
-		if h.Config.TelecontextConsumerName == "" {
-			return errors.New("TELECONTEXTMCP variant requires telecontext consumer name to be configured")
-		}
-
-		telecontextConfig := util.TelecontextConfig{
-			ConsumerName: h.Config.TelecontextConsumerName,
-		}
-		consumeRoute, crErr := util.CreateTelecontextConsumeRoute(ctx, route, zone, telecontextConfig)
-		if crErr != nil {
-			return errors.Wrap(crErr, "failed to create Telecontext ConsumeRoute")
-		}
-		obj.Status.TelecontextConsumeRoute = ctypes.ObjectRefFromObject(consumeRoute)
-		logger.V(1).Info("Telecontext ConsumeRoute created/updated", "consumeRoute", consumeRoute.Name)
-	}
 
 	// 8. Cleanup stale routes
 	deleted, err := util.CleanupOldMcpRoutes(ctx, obj.Spec.BasePath)
@@ -187,20 +175,6 @@ func (h *McpExposureHandler) Delete(ctx context.Context, obj *agenticv1.McpExpos
 			return errors.Wrapf(err, "failed to delete MCP proxy Route %q", ref.String())
 		}
 		logger.Info("Deleted MCP proxy Route", "route", ref.String())
-	}
-
-	if obj.Status.TelecontextConsumeRoute != nil {
-		c := cclient.ClientFromContextOrDie(ctx)
-		consumeRoute := &gatewayapi.ConsumeRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      obj.Status.TelecontextConsumeRoute.Name,
-				Namespace: obj.Status.TelecontextConsumeRoute.Namespace,
-			},
-		}
-		if err := c.Delete(ctx, consumeRoute); err != nil && !apierrors.IsNotFound(err) {
-			return errors.Wrapf(err, "failed to delete Telecontext ConsumeRoute %q", obj.Status.TelecontextConsumeRoute.String())
-		}
-		logger.Info("Deleted Telecontext ConsumeRoute", "consumeRoute", obj.Status.TelecontextConsumeRoute.String())
 	}
 
 	return nil

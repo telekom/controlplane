@@ -431,14 +431,11 @@ var _ = Describe("McpExposureHandler", func() {
 
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
-			realm := makeReadyAiGatewayRealm()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListMcpExposures([]agenticv1.McpExposure{})
 			mockGetZone(zone)
 			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
-			mockGetAiGwRealm(realm)
-			mockCreateOrUpdateRoute(controllerutil.OperationResultCreated, nil)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -446,7 +443,7 @@ var _ = Describe("McpExposureHandler", func() {
 			Expect(err.Error()).To(ContainSubstring("telecontext consumer name"))
 		})
 
-		It("should create Telecontext ConsumeRoute when variant is TELECONTEXTMCP", func() {
+		It("should add Telecontext consumer to Route DefaultConsumers when variant is TELECONTEXTMCP", func() {
 			obj.Spec.Variant = agenticv1.McpVariantTelecontextMCP
 			h.Config.TelecontextConsumerName = "telecontext-app"
 
@@ -459,13 +456,13 @@ var _ = Describe("McpExposureHandler", func() {
 			mockGetZone(zone)
 			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
 			mockGetAiGwRealm(realm)
-			mockCreateOrUpdateRoute(controllerutil.OperationResultCreated, nil)
 
-			// ConsumeRoute creation for Telecontext
+			var capturedRoute gatewayv1.Route
 			fakeClient.EXPECT().
-				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ConsumeRoute"), mock.Anything).
-				Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 					_ = mutate()
+					capturedRoute = *obj.(*gatewayv1.Route)
 				}).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 
@@ -475,7 +472,9 @@ var _ = Describe("McpExposureHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(obj.Status.TelecontextConsumeRoute).ToNot(BeNil())
+			Expect(capturedRoute.Spec.Security).ToNot(BeNil())
+			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(ContainElement("telecontext-app"))
+			Expect(obj.Status.Route).ToNot(BeNil())
 		})
 	})
 
@@ -522,33 +521,6 @@ var _ = Describe("McpExposureHandler", func() {
 			// Delete Route
 			fakeClient.EXPECT().
 				Delete(ctx, mock.AnythingOfType("*v1.Route")).
-				Return(nil).Once()
-
-			err := h.Delete(ctx, obj)
-
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should delete Telecontext ConsumeRoute on last exposure deletion", func() {
-			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
-			obj.Status.TelecontextConsumeRoute = &ctypes.ObjectRef{Name: "telecontext-consume-route", Namespace: "default"}
-
-			// No other exposures
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.McpExposureList"), mock.Anything).
-				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*agenticv1.McpExposureList) = agenticv1.McpExposureList{Items: []agenticv1.McpExposure{}}
-				}).
-				Return(nil).Once()
-
-			// Delete Route
-			fakeClient.EXPECT().
-				Delete(ctx, mock.AnythingOfType("*v1.Route")).
-				Return(nil).Once()
-
-			// Delete Telecontext ConsumeRoute
-			fakeClient.EXPECT().
-				Delete(ctx, mock.AnythingOfType("*v1.ConsumeRoute")).
 				Return(nil).Once()
 
 			err := h.Delete(ctx, obj)

@@ -73,10 +73,6 @@ type McpExposureStatus struct {
 	// +optional
 	ProxyRoutes []ctypes.ObjectRef `json:"proxyRoutes,omitempty"`
 
-	// TelecontextConsumeRoute references the auto-created ConsumeRoute for Telecontext.
-	// Only set when variant is TELECONTEXTMCP.
-	// +optional
-	TelecontextConsumeRoute *ctypes.ObjectRef `json:"telecontextConsumeRoute,omitempty"`
 }
 
 // +kubebuilder:object:root=true

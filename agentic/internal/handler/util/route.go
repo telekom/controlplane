@@ -32,6 +32,7 @@ func CreateMcpRoute(
 	exposure *agenticv1.McpExposure,
 	zone *adminv1.Zone,
 	isTargetOfProxy bool,
+	telecontextConsumer string,
 ) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -116,6 +117,14 @@ func CreateMcpRoute(
 				route.Spec.Security = &gatewayapi.Security{}
 			}
 			route.Spec.Security.DefaultConsumers = append(route.Spec.Security.DefaultConsumers, MeshClientName)
+		}
+
+		// If a platform consumer (e.g. Telecontext) should get automatic access, add it to DefaultConsumers
+		if telecontextConsumer != "" {
+			if route.Spec.Security == nil {
+				route.Spec.Security = &gatewayapi.Security{}
+			}
+			route.Spec.Security.DefaultConsumers = append(route.Spec.Security.DefaultConsumers, telecontextConsumer)
 		}
 
 		return nil
