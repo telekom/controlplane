@@ -205,16 +205,6 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, catErr
 	}
 
-	// Look up the specific ApiCategory for linting.
-	var apiCategory *apiv1.ApiCategory
-	if categoryList != nil {
-		cat, ok := categoryList.FindByLabelValue(apiSpec.Spec.Category)
-		if !ok {
-			return res, problems.BadRequest(fmt.Sprintf("Invalid ApiCategory %q", apiSpec.Spec.Category))
-		}
-		apiCategory = cat
-	}
-
 	// Early return: spec content unchanged.
 	_, same, hashErr := a.isHashEqual(ctx, id, specMarshaled)
 	if hashErr != nil {
@@ -225,7 +215,7 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	}
 
 	// Lint before uploading or storing; reject immediately on failure.
-	if err := a.lintSpec(ctx, apiSpec, apiCategory, specMarshaled); err != nil {
+	if err := a.checkAndLintSpec(ctx, apiSpec, categoryList, specMarshaled); err != nil {
 		return res, err
 	}
 
@@ -305,6 +295,22 @@ func (a *ApiSpecificationController) validateApiCategoryFromList(categoryList *a
 	}
 
 	return nil
+}
+
+// checkAndLintSpec resolves the matching ApiCategory from the list and runs OAS linting.
+// Linting is skipped when no ApiCategories exist in the cluster (categoryList is nil)
+// or when the spec's category is not found in the list.
+func (a *ApiSpecificationController) checkAndLintSpec(ctx context.Context, apiSpec *roverv1.ApiSpecification, categoryList *apiv1.ApiCategoryList, specMarshaled []byte) error {
+	if categoryList == nil || len(categoryList.Items) == 0 {
+		return nil
+	}
+
+	apiCategory, ok := categoryList.FindByLabelValue(apiSpec.Spec.Category)
+	if !ok {
+		return problems.BadRequest(fmt.Sprintf("Invalid ApiCategory %q", apiSpec.Spec.Category))
+	}
+
+	return a.lintSpec(ctx, apiSpec, apiCategory, specMarshaled)
 }
 
 // lintSpec performs OAS linting for the given spec before it is persisted.

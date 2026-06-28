@@ -179,4 +179,32 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 			Expect(problem.Error()).To(ContainSubstring("OAS linting did not pass"))
 		})
 	})
+
+	Context("when no ApiCategories exist in the cluster", func() {
+		It("should skip linting entirely", func() {
+			ml := &mockLinter{outcome: oaslint.Blocked, err: nil}
+			ctrl = &ApiSpecificationController{
+				Linter: ml,
+			}
+
+			apiSpec := &roverv1.ApiSpecification{
+				Spec: roverv1.ApiSpecificationSpec{
+					BasePath: "/test/api/v1",
+					Category: "test-cat",
+				},
+			}
+
+			// nil categoryList (store not configured)
+			err := ctrl.checkAndLintSpec(context.Background(), apiSpec, nil, []byte("openapi: 3.0.0"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ml.called).To(BeFalse(), "linter should not be called when categoryList is nil")
+
+			// empty categoryList (no CRs in cluster)
+			ml.called = false
+			emptyList := &apiv1.ApiCategoryList{Items: []apiv1.ApiCategory{}}
+			err = ctrl.checkAndLintSpec(context.Background(), apiSpec, emptyList, []byte("openapi: 3.0.0"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ml.called).To(BeFalse(), "linter should not be called when no ApiCategories exist")
+		})
+	})
 })
