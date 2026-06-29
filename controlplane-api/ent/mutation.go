@@ -12600,6 +12600,8 @@ type TeamMutation struct {
 	namespace           *string
 	name                *string
 	email               *string
+	displayName         *string
+	description         *string
 	category            *team.Category
 	team_token          *string
 	clearedFields       map[string]struct{}
@@ -13047,6 +13049,104 @@ func (m *TeamMutation) ResetEmail() {
 	m.email = nil
 }
 
+// SetDisplayName sets the "displayName" field.
+func (m *TeamMutation) SetDisplayName(s string) {
+	m.displayName = &s
+}
+
+// DisplayName returns the value of the "displayName" field in the mutation.
+func (m *TeamMutation) DisplayName() (r string, exists bool) {
+	v := m.displayName
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisplayName returns the old "displayName" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldDisplayName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisplayName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
+	}
+	return oldValue.DisplayName, nil
+}
+
+// ClearDisplayName clears the value of the "displayName" field.
+func (m *TeamMutation) ClearDisplayName() {
+	m.displayName = nil
+	m.clearedFields[team.FieldDisplayName] = struct{}{}
+}
+
+// DisplayNameCleared returns if the "displayName" field was cleared in this mutation.
+func (m *TeamMutation) DisplayNameCleared() bool {
+	_, ok := m.clearedFields[team.FieldDisplayName]
+	return ok
+}
+
+// ResetDisplayName resets all changes to the "displayName" field.
+func (m *TeamMutation) ResetDisplayName() {
+	m.displayName = nil
+	delete(m.clearedFields, team.FieldDisplayName)
+}
+
+// SetDescription sets the "description" field.
+func (m *TeamMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *TeamMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *TeamMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[team.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *TeamMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[team.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *TeamMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, team.FieldDescription)
+}
+
 // SetCategory sets the "category" field.
 func (m *TeamMutation) SetCategory(t team.Category) {
 	m.category = &t
@@ -13421,7 +13521,7 @@ func (m *TeamMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TeamMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, team.FieldCreatedAt)
 	}
@@ -13445,6 +13545,12 @@ func (m *TeamMutation) Fields() []string {
 	}
 	if m.email != nil {
 		fields = append(fields, team.FieldEmail)
+	}
+	if m.displayName != nil {
+		fields = append(fields, team.FieldDisplayName)
+	}
+	if m.description != nil {
+		fields = append(fields, team.FieldDescription)
 	}
 	if m.category != nil {
 		fields = append(fields, team.FieldCategory)
@@ -13476,6 +13582,10 @@ func (m *TeamMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case team.FieldEmail:
 		return m.Email()
+	case team.FieldDisplayName:
+		return m.DisplayName()
+	case team.FieldDescription:
+		return m.Description()
 	case team.FieldCategory:
 		return m.Category()
 	case team.FieldTeamToken:
@@ -13505,6 +13615,10 @@ func (m *TeamMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case team.FieldEmail:
 		return m.OldEmail(ctx)
+	case team.FieldDisplayName:
+		return m.OldDisplayName(ctx)
+	case team.FieldDescription:
+		return m.OldDescription(ctx)
 	case team.FieldCategory:
 		return m.OldCategory(ctx)
 	case team.FieldTeamToken:
@@ -13574,6 +13688,20 @@ func (m *TeamMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEmail(v)
 		return nil
+	case team.FieldDisplayName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisplayName(v)
+		return nil
+	case team.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
 	case team.FieldCategory:
 		v, ok := value.(team.Category)
 		if !ok {
@@ -13627,6 +13755,12 @@ func (m *TeamMutation) ClearedFields() []string {
 	if m.FieldCleared(team.FieldEnvironment) {
 		fields = append(fields, team.FieldEnvironment)
 	}
+	if m.FieldCleared(team.FieldDisplayName) {
+		fields = append(fields, team.FieldDisplayName)
+	}
+	if m.FieldCleared(team.FieldDescription) {
+		fields = append(fields, team.FieldDescription)
+	}
 	if m.FieldCleared(team.FieldTeamToken) {
 		fields = append(fields, team.FieldTeamToken)
 	}
@@ -13652,6 +13786,12 @@ func (m *TeamMutation) ClearField(name string) error {
 		return nil
 	case team.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case team.FieldDisplayName:
+		m.ClearDisplayName()
+		return nil
+	case team.FieldDescription:
+		m.ClearDescription()
 		return nil
 	case team.FieldTeamToken:
 		m.ClearTeamToken()
@@ -13687,6 +13827,12 @@ func (m *TeamMutation) ResetField(name string) error {
 		return nil
 	case team.FieldEmail:
 		m.ResetEmail()
+		return nil
+	case team.FieldDisplayName:
+		m.ResetDisplayName()
+		return nil
+	case team.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case team.FieldCategory:
 		m.ResetCategory()

@@ -504,6 +504,8 @@ type ComplexityRoot struct {
 		Applications   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
 		Category       func(childComplexity int) int
 		CreatedAt      func(childComplexity int) int
+		Description    func(childComplexity int) int
+		DisplayName    func(childComplexity int) int
 		Email          func(childComplexity int) int
 		Environment    func(childComplexity int) int
 		EventTypes     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
@@ -530,10 +532,12 @@ type ComplexityRoot struct {
 	}
 
 	TeamInfo struct {
-		Email     func(childComplexity int) int
-		GroupName func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Name      func(childComplexity int) int
+		Description func(childComplexity int) int
+		DisplayName func(childComplexity int) int
+		Email       func(childComplexity int) int
+		GroupName   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
 	}
 
 	UpdateTeamPayload struct {
@@ -2803,6 +2807,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.CreatedAt(childComplexity), true
 
+	case "Team.description":
+		if e.ComplexityRoot.Team.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.Description(childComplexity), true
+
+	case "Team.displayname":
+		if e.ComplexityRoot.Team.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.DisplayName(childComplexity), true
+
 	case "Team.email":
 		if e.ComplexityRoot.Team.Email == nil {
 			break
@@ -2926,6 +2944,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamEdge.Node(childComplexity), true
+
+	case "TeamInfo.description":
+		if e.ComplexityRoot.TeamInfo.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamInfo.Description(childComplexity), true
+
+	case "TeamInfo.displayName":
+		if e.ComplexityRoot.TeamInfo.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamInfo.DisplayName(childComplexity), true
 
 	case "TeamInfo.email":
 		if e.ComplexityRoot.TeamInfo.Email == nil {
@@ -6197,6 +6229,8 @@ type Team implements Node {
   namespace: String!
   name: String!
   email: String!
+  displayname: String @goField(name: "DisplayName", forceResolver: false)
+  description: String
   category: TeamCategory!
   teamToken: String
   group: Group
@@ -6496,6 +6530,42 @@ input TeamWhereInput {
   emailHasSuffix: String
   emailEqualFold: String
   emailContainsFold: String
+  """
+  displayName field predicates
+  """
+  displayname: String
+  displaynameNEQ: String
+  displaynameIn: [String!]
+  displaynameNotIn: [String!]
+  displaynameGT: String
+  displaynameGTE: String
+  displaynameLT: String
+  displaynameLTE: String
+  displaynameContains: String
+  displaynameHasPrefix: String
+  displaynameHasSuffix: String
+  displaynameIsNil: Boolean
+  displaynameNotNil: Boolean
+  displaynameEqualFold: String
+  displaynameContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
   """
   category field predicates
   """
@@ -6818,6 +6888,8 @@ type TeamInfo {
   "Group name for display"
   groupName: String!
   email: String
+  displayName: String
+  description: String
 }
 
 type Upstream {
@@ -7877,6 +7949,10 @@ func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.
 		return ec.fieldContext_Team_name(ctx, field)
 	case "email":
 		return ec.fieldContext_Team_email(ctx, field)
+	case "displayname":
+		return ec.fieldContext_Team_displayname(ctx, field)
+	case "description":
+		return ec.fieldContext_Team_description(ctx, field)
 	case "category":
 		return ec.fieldContext_Team_category(ctx, field)
 	case "teamToken":
@@ -7927,6 +8003,10 @@ func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field grap
 		return ec.fieldContext_TeamInfo_groupName(ctx, field)
 	case "email":
 		return ec.fieldContext_TeamInfo_email(ctx, field)
+	case "displayName":
+		return ec.fieldContext_TeamInfo_displayName(ctx, field)
+	case "description":
+		return ec.fieldContext_TeamInfo_description(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TeamInfo", field.Name)
 }

@@ -43,7 +43,7 @@ var _ = Describe("OwnerTeam resolver", func() {
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		team, err := client.Team.Create().
-			SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(group).Save(ctx)
+			SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(group).SetDisplayName("Team Alpha").SetDescription("Team With Alphacas").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
 			SetNamespace("default").SetName("app-alpha").SetClientID("client-alpha").
@@ -58,6 +58,8 @@ var _ = Describe("OwnerTeam resolver", func() {
 		Expect(info.Email).NotTo(BeNil())
 		Expect(*info.Email).To(Equal("alpha@test.dev"))
 		Expect(info.ID).To(Equal(team.ID))
+		Expect(*info.DisplayName).To(Equal("Team Alpha"))
+		Expect(*info.Description).To(Equal("Team With Alphacas"))
 	})
 
 	It("should return empty group name when team has no group", func() {
