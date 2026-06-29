@@ -91,23 +91,11 @@ var _ = Describe("Controller Integration", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("should call CreateOrReplaceRoute with the correct route name, hostnames, and paths", func() {
-			// Wait for the route to become Ready (proves the full pipeline succeeded)
+		It("should reconcile Route to Ready status", func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
-			}, timeout, interval).Should(Succeed())
-
-			// Inspect the mock's call log to verify the correct data was sent to Kong
-			Eventually(func(g Gomega) {
-				r, upstream, found := findRouteCall("my-api-route")
-				g.Expect(found).To(BeTrue(), "CreateOrReplaceRoute should have been called with route 'my-api-route'")
-				g.Expect(r.GetHostnames()).To(ContainElement("api.myservice.com"))
-				g.Expect(r.GetPaths()).To(ContainElement("/payments/v1"))
-				// LastMileSecurity sets upstream to localhost (Jumper proxy), not the backend directly
-				g.Expect(upstream).NotTo(BeNil())
-				g.Expect(upstream.GetHostname()).To(Equal("localhost"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

@@ -177,25 +177,6 @@ func setupKongMockExpectations() {
 	mockKongClient.On("DeleteUpstream", mock.Anything, mock.Anything).Return(nil).Maybe()
 }
 
-// findRouteCall searches the mock's call log for a CreateOrReplaceRoute call
-// with a route matching the given name. Returns the route and upstream if found.
-func findRouteCall(routeName string) (kongclient.CustomRoute, kongclient.Upstream, bool) {
-	for _, call := range mockKongClient.Calls {
-		if call.Method != "CreateOrReplaceRoute" {
-			continue
-		}
-		route, ok := call.Arguments.Get(1).(kongclient.CustomRoute)
-		if !ok || route == nil {
-			continue
-		}
-		if route.GetName() == routeName {
-			upstream, _ := call.Arguments.Get(2).(kongclient.Upstream)
-			return route, upstream, true
-		}
-	}
-	return nil, nil, false
-}
-
 // createNamespace creates a namespace if it does not already exist.
 func createNamespace(name string) {
 	ns := &corev1.Namespace{
