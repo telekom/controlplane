@@ -26,9 +26,8 @@ spec:
       jsonPath: .spec.zone.name
       name: Zone
       type: string
-    - description: Creation timestamp
-      jsonPath: .metadata.creationTimestamp
-      name: CreatedAt
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
       type: date
     name: v1
     schema:

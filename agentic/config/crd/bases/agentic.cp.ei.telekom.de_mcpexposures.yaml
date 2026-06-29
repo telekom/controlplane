@@ -30,9 +30,8 @@ spec:
       jsonPath: .spec.variant
       name: Variant
       type: string
-    - description: Creation timestamp
-      jsonPath: .metadata.creationTimestamp
-      name: CreatedAt
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
       type: date
     name: v1
     schema:
