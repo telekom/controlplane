@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package apiexposure
+package apisubscription
 
 import (
 	"testing"
@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestApiExposureHandler(t *testing.T) {
+func TestApiSubscriptionHandler(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ApiExposure Handler Suite")
+	RunSpecs(t, "ApiSubscription Handler Suite")
 }

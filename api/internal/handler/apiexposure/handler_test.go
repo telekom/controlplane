@@ -2,27 +2,39 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package apiexposure_test
+package apiexposure
 
 import (
 	"context"
 
 	"github.com/stretchr/testify/mock"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
-	"github.com/telekom/controlplane/api/internal/handler/apiexposure"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/util"
+	applicationapi "github.com/telekom/controlplane/application/api/v1"
+
+	"github.com/telekom/controlplane/common/pkg/config"
+	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -38,7 +50,7 @@ func makeReadyApi(basePath string) apiapi.Api {
 	api := apiapi.Api{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-api",
-			Namespace: "team-ns",
+			Namespace: "test-env--grp--team",
 			Labels:    map[string]string{apiapi.BasePathLabelKey: basePath},
 		},
 		Spec: apiapi.ApiSpec{
@@ -94,9 +106,12 @@ func newApiExposure(basePath string, zone ctypes.ObjectRef) *apiapi.ApiExposure 
 	return &apiapi.ApiExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-exposure",
-			Namespace: "team-ns",
+			Namespace: "test-env--grp--team",
 			UID:       "exp-uid",
-			Labels:    map[string]string{apiapi.BasePathLabelKey: basePath},
+			Labels: map[string]string{
+				apiapi.BasePathLabelKey:  basePath,
+				util.ApplicationLabelKey: "test-app",
+			},
 		},
 		Spec: apiapi.ApiExposureSpec{
 			ApiBasePath: basePath,
@@ -112,7 +127,7 @@ func makeSubscription(basePath string, zone ctypes.ObjectRef, failover bool) api
 	sub := apiapi.ApiSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "sub-" + zone.Name,
-			Namespace: "team-ns",
+			Namespace: "test-env--grp--team",
 			Labels:    map[string]string{apiapi.BasePathLabelKey: basePath},
 		},
 		Spec: apiapi.ApiSubscriptionSpec{
@@ -138,7 +153,7 @@ var _ = Describe("ApiExposureHandler", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
-		h          *apiexposure.ApiExposureHandler
+		h          *ApiExposureHandler
 	)
 
 	// Zone definitions reused across scenarios
@@ -207,7 +222,7 @@ var _ = Describe("ApiExposureHandler", func() {
 		ctx = contextutil.WithEnv(ctx, testEnv)
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
-		h = &apiexposure.ApiExposureHandler{}
+		h = &ApiExposureHandler{}
 	})
 
 	// ──────────────────────────────────────────────────────────────────────
@@ -289,6 +304,30 @@ var _ = Describe("ApiExposureHandler", func() {
 			Return(0, nil).Once()
 	}
 
+	// mockGetApplication mocks the Get call for GetApplicationFromLabel.
+	// Returns a ready Application so the handler proceeds past the application check.
+	mockGetApplication := func() {
+		fakeClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: "test-app", Namespace: "test-env--grp--team"}, mock.AnythingOfType("*v1.Application")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				app := out.(*applicationapi.Application)
+				app.Name = "test-app"
+				app.Namespace = "test-env--grp--team"
+				meta.SetStatusCondition(&app.Status.Conditions, metav1.Condition{
+					Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+				})
+			}).
+			Return(nil).Once()
+	}
+
+	// mockGetTeamNotFound mocks the Get call for FindTeamForObject, returning NotFound
+	// so that validateApiCategoryPolicy skips validation and returns true.
+	mockGetTeamNotFound := func() {
+		fakeClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: "grp--team", Namespace: "test-env"}, mock.AnythingOfType("*v1.Team")).
+			Return(apierrors.NewNotFound(schema.GroupResource{Group: "organization", Resource: "teams"}, "grp--team")).Once()
+	}
+
 	// ──────────────────────────────────────────────────────────────────────
 	// Scenarios
 	// ──────────────────────────────────────────────────────────────────────
@@ -305,6 +344,8 @@ var _ = Describe("ApiExposureHandler", func() {
 				// --- Preamble: Api + ApiExposure validation ---
 				mockListApis([]apiapi.Api{makeReadyApi(basePath)})
 				mockListApiExposures([]apiapi.ApiExposure{*obj}) // self → active=true
+				mockGetApplication()
+				mockGetTeamNotFound()
 
 				// --- Step 1: determineRoutingState ---
 				mockListSubscriptions([]apiapi.ApiSubscription{
@@ -372,6 +413,8 @@ var _ = Describe("ApiExposureHandler", func() {
 				// --- Preamble ---
 				mockListApis([]apiapi.Api{makeReadyApi(basePath)})
 				mockListApiExposures([]apiapi.ApiExposure{*obj})
+				mockGetApplication()
+				mockGetTeamNotFound()
 
 				// --- Step 1: determineRoutingState ---
 				mockListSubscriptions([]apiapi.ApiSubscription{
@@ -467,6 +510,8 @@ var _ = Describe("ApiExposureHandler", func() {
 				// --- Preamble ---
 				mockListApis([]apiapi.Api{makeReadyApi(basePath)})
 				mockListApiExposures([]apiapi.ApiExposure{*obj})
+				mockGetApplication()
+				mockGetTeamNotFound()
 
 				// --- Step 1: determineRoutingState ---
 				mockListSubscriptions([]apiapi.ApiSubscription{
@@ -528,3 +573,164 @@ var _ = Describe("ApiExposureHandler", func() {
 		})
 	})
 })
+var _ = Describe("ApiExposure Handler", func() {
+	Context("validateApiCategoryPolicy", func() {
+		const (
+			environment = "test"
+			group       = "alpha"
+			teamName    = "core"
+		)
+
+		baseApp := &applicationapi.Application{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "provider-app",
+				Namespace: environment + "--" + group + "--" + teamName,
+			},
+		}
+		baseAPI := &apiv1.Api{
+			Spec: apiv1.ApiSpec{
+				Category: "partner",
+			},
+		}
+
+		type testCase struct {
+			name           string
+			teamCategory   organizationapi.TeamCategory
+			apiCategories  []apiv1.ApiCategory
+			expectedResult bool
+			expectedReason string
+		}
+
+		tests := []testCase{
+			{
+				name:         "allowed category",
+				teamCategory: organizationapi.TeamCategoryCustomer,
+				apiCategories: []apiv1.ApiCategory{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
+						Spec: apiv1.ApiCategorySpec{
+							LabelValue: "partner",
+							Active:     true,
+							AllowTeams: &apiv1.AllowTeamsConfig{Categories: []string{"Customer"}},
+						},
+					},
+				},
+				expectedResult: true,
+			},
+			{
+				name:         "denied category",
+				teamCategory: organizationapi.TeamCategoryInfrastructure,
+				apiCategories: []apiv1.ApiCategory{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
+						Spec: apiv1.ApiCategorySpec{
+							LabelValue: "partner",
+							Active:     true,
+							AllowTeams: &apiv1.AllowTeamsConfig{Categories: []string{"Customer"}},
+						},
+					},
+				},
+				expectedResult: false,
+				expectedReason: util.ApiCategoryTeamCategoryNotAllowedReason,
+			},
+			{
+				name:           "no categories configured",
+				teamCategory:   organizationapi.TeamCategoryCustomer,
+				apiCategories:  nil,
+				expectedResult: true,
+			},
+			{
+				name:         "missing category",
+				teamCategory: organizationapi.TeamCategoryCustomer,
+				apiCategories: []apiv1.ApiCategory{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
+						Spec: apiv1.ApiCategorySpec{
+							LabelValue: "other",
+							Active:     true,
+						},
+					},
+				},
+				expectedResult: false,
+				expectedReason: util.ApiCategoryPolicyResolutionFailedReason,
+			},
+			{
+				name:         "inactive category",
+				teamCategory: organizationapi.TeamCategoryCustomer,
+				apiCategories: []apiv1.ApiCategory{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
+						Spec: apiv1.ApiCategorySpec{
+							LabelValue: "partner",
+							Active:     false,
+						},
+					},
+				},
+				expectedResult: false,
+				expectedReason: util.ApiCategoryPolicyResolutionFailedReason,
+			},
+		}
+
+		for _, tt := range tests {
+			It(tt.name, func() {
+				team := &organizationapi.Team{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      group + "--" + teamName,
+						Namespace: environment,
+						Labels: map[string]string{
+							config.EnvironmentLabelKey: environment,
+						},
+					},
+					Spec: organizationapi.TeamSpec{
+						Group:    group,
+						Name:     teamName,
+						Email:    "team@example.com",
+						Category: tt.teamCategory,
+					},
+				}
+
+				objects := []crclient.Object{team}
+				for i := range tt.apiCategories {
+					cat := tt.apiCategories[i]
+					objects = append(objects, &cat)
+				}
+
+				ctx := newClientContext(environment, objects...)
+				apiExp := &apiv1.ApiExposure{}
+
+				result := validateApiCategoryPolicy(ctx, baseAPI, baseApp, apiExp)
+				Expect(result).To(Equal(tt.expectedResult))
+
+				if tt.expectedReason == "" {
+					notReady := meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeReady)
+					Expect(notReady == nil || notReady.Status != metav1.ConditionFalse).To(BeTrue())
+					return
+				}
+
+				notReady := meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeReady)
+				Expect(notReady).NotTo(BeNil())
+				Expect(notReady.Reason).To(Equal(tt.expectedReason))
+			})
+		}
+	})
+})
+
+func newClientContext(environment string, objects ...crclient.Object) context.Context {
+	sch := runtime.NewScheme()
+	Expect(apiv1.AddToScheme(sch)).To(Succeed())
+	Expect(applicationapi.AddToScheme(sch)).To(Succeed())
+	Expect(organizationapi.AddToScheme(sch)).To(Succeed())
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(sch).
+		WithObjects(objects...).
+		WithIndex(&apiv1.ApiCategory{}, "spec.labelValue", func(obj crclient.Object) []string {
+			apiCategory, ok := obj.(*apiv1.ApiCategory)
+			if !ok || apiCategory.Spec.LabelValue == "" {
+				return nil
+			}
+			return []string{apiCategory.Spec.LabelValue}
+		}).
+		Build()
+	janitorClient := cclient.NewJanitorClient(cclient.NewScopedClient(fakeClient, environment))
+	return cclient.WithClient(context.Background(), janitorClient)
+}

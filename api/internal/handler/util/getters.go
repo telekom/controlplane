@@ -8,9 +8,11 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -29,6 +31,11 @@ import (
 const stringTrue = "true"
 
 var ApplicationLabelKey = config.BuildLabelKey("application")
+
+const (
+	ApiCategoryPolicyResolutionFailedReason = "ApiCategoryPolicyResolutionFailed"
+	ApiCategoryTeamCategoryNotAllowedReason = "ApiCategoryTeamCategoryNotAllowed"
+)
 
 // GetZone retrieves a Zone object based on the provided ObjectRef for a zone.
 func GetZone(ctx context.Context, scopedClient cclient.ScopedClient, ref client.ObjectKey) (*adminapi.Zone, error) {
@@ -152,6 +159,53 @@ func FindActiveAPI(ctx context.Context, apiBasePath string) (bool, *apiv1.Api, e
 	}
 
 	return true, relevantApi, nil
+}
+
+func ResolveActiveApiCategoryForApi(ctx context.Context, api *apiv1.Api) (*apiv1.ApiCategory, error) {
+	if api == nil {
+		return nil, errors.New("api is nil")
+	}
+	return ResolveActiveApiCategoryByLabelValue(ctx, api.Spec.Category)
+}
+
+func ResolveActiveApiCategoryByLabelValue(ctx context.Context, labelValue string) (*apiv1.ApiCategory, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	normalizedLabelValue := strings.TrimSpace(labelValue)
+	if normalizedLabelValue == "" {
+		return nil, ctrlerrors.BlockedErrorf("ApiCategory label value is empty")
+	}
+
+	apiCategoryList := &apiv1.ApiCategoryList{}
+	if err := scopedClient.List(ctx, apiCategoryList, client.MatchingFields{"spec.labelValue": normalizedLabelValue}); err != nil {
+		return nil, errors.Wrap(err, "failed to list ApiCategories by label value")
+	}
+	if len(apiCategoryList.Items) == 0 {
+		anyApiCategoryList := &apiv1.ApiCategoryList{}
+		if err := scopedClient.List(ctx, anyApiCategoryList, client.Limit(1)); err != nil {
+			return nil, errors.Wrap(err, "failed to verify whether ApiCategories exist")
+		}
+		if len(anyApiCategoryList.Items) == 0 {
+			return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "apicategories"}, normalizedLabelValue)
+		}
+		return nil, ctrlerrors.BlockedErrorf("ApiCategory %q not found", normalizedLabelValue)
+	}
+	apiCategory := &apiCategoryList.Items[0]
+	if !apiCategory.Spec.Active {
+		return nil, ctrlerrors.BlockedErrorf("ApiCategory %q is not active", normalizedLabelValue)
+	}
+	return apiCategory, nil
+}
+
+func BuildApiCategoryPolicyResolutionMessage(apiCategoryLabel string, err error) string {
+	return fmt.Sprintf("ApiCategory policy for category %q cannot be resolved: %v", apiCategoryLabel, err)
+}
+
+func BuildApiCategoryExposureDeniedMessage(teamCategory, apiCategoryLabel string) string {
+	return fmt.Sprintf("Team with category %q is not allowed to expose APIs of category %q", teamCategory, apiCategoryLabel)
+}
+
+func BuildApiCategorySubscriptionDeniedMessage(teamCategory, apiCategoryLabel string) string {
+	return fmt.Sprintf("Team with category %q is not allowed to subscribe to APIs of category %q", teamCategory, apiCategoryLabel)
 }
 
 // FindAPIExposure checks if there is an active ApiExposure corresponding to the given apiBasePath.

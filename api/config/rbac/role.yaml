@@ -112,3 +112,11 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - teams
+  verbs:
+  - get
+  - list
+  - watch
