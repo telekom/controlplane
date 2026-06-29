@@ -11,29 +11,24 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/util"
+	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
-	"github.com/telekom/controlplane/api/internal/handler/util"
-	applicationapi "github.com/telekom/controlplane/application/api/v1"
-
-	"github.com/telekom/controlplane/common/pkg/config"
 	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -573,6 +568,7 @@ var _ = Describe("ApiExposureHandler", func() {
 		})
 	})
 })
+
 var _ = Describe("ApiExposure Handler", func() {
 	Context("validateApiCategoryPolicy", func() {
 		const (
@@ -587,8 +583,8 @@ var _ = Describe("ApiExposure Handler", func() {
 				Namespace: environment + "--" + group + "--" + teamName,
 			},
 		}
-		baseAPI := &apiv1.Api{
-			Spec: apiv1.ApiSpec{
+		baseAPI := &apiapi.Api{
+			Spec: apiapi.ApiSpec{
 				Category: "partner",
 			},
 		}
@@ -596,7 +592,7 @@ var _ = Describe("ApiExposure Handler", func() {
 		type testCase struct {
 			name           string
 			teamCategory   organizationapi.TeamCategory
-			apiCategories  []apiv1.ApiCategory
+			apiCategories  []apiapi.ApiCategory
 			expectedResult bool
 			expectedReason string
 		}
@@ -605,13 +601,13 @@ var _ = Describe("ApiExposure Handler", func() {
 			{
 				name:         "allowed category",
 				teamCategory: organizationapi.TeamCategoryCustomer,
-				apiCategories: []apiv1.ApiCategory{
+				apiCategories: []apiapi.ApiCategory{
 					{
 						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
-						Spec: apiv1.ApiCategorySpec{
+						Spec: apiapi.ApiCategorySpec{
 							LabelValue: "partner",
 							Active:     true,
-							AllowTeams: &apiv1.AllowTeamsConfig{Categories: []string{"Customer"}},
+							AllowTeams: &apiapi.AllowTeamsConfig{Categories: []string{"Customer"}},
 						},
 					},
 				},
@@ -620,13 +616,13 @@ var _ = Describe("ApiExposure Handler", func() {
 			{
 				name:         "denied category",
 				teamCategory: organizationapi.TeamCategoryInfrastructure,
-				apiCategories: []apiv1.ApiCategory{
+				apiCategories: []apiapi.ApiCategory{
 					{
 						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
-						Spec: apiv1.ApiCategorySpec{
+						Spec: apiapi.ApiCategorySpec{
 							LabelValue: "partner",
 							Active:     true,
-							AllowTeams: &apiv1.AllowTeamsConfig{Categories: []string{"Customer"}},
+							AllowTeams: &apiapi.AllowTeamsConfig{Categories: []string{"Customer"}},
 						},
 					},
 				},
@@ -642,10 +638,10 @@ var _ = Describe("ApiExposure Handler", func() {
 			{
 				name:         "missing category",
 				teamCategory: organizationapi.TeamCategoryCustomer,
-				apiCategories: []apiv1.ApiCategory{
+				apiCategories: []apiapi.ApiCategory{
 					{
 						ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
-						Spec: apiv1.ApiCategorySpec{
+						Spec: apiapi.ApiCategorySpec{
 							LabelValue: "other",
 							Active:     true,
 						},
@@ -657,10 +653,10 @@ var _ = Describe("ApiExposure Handler", func() {
 			{
 				name:         "inactive category",
 				teamCategory: organizationapi.TeamCategoryCustomer,
-				apiCategories: []apiv1.ApiCategory{
+				apiCategories: []apiapi.ApiCategory{
 					{
 						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
-						Spec: apiv1.ApiCategorySpec{
+						Spec: apiapi.ApiCategorySpec{
 							LabelValue: "partner",
 							Active:     false,
 						},
@@ -689,14 +685,14 @@ var _ = Describe("ApiExposure Handler", func() {
 					},
 				}
 
-				objects := []crclient.Object{team}
+				objects := []client.Object{team}
 				for i := range tt.apiCategories {
 					cat := tt.apiCategories[i]
 					objects = append(objects, &cat)
 				}
 
 				ctx := newClientContext(environment, objects...)
-				apiExp := &apiv1.ApiExposure{}
+				apiExp := &apiapi.ApiExposure{}
 
 				result := validateApiCategoryPolicy(ctx, baseAPI, baseApp, apiExp)
 				Expect(result).To(Equal(tt.expectedResult))
@@ -715,16 +711,16 @@ var _ = Describe("ApiExposure Handler", func() {
 	})
 })
 
-func newClientContext(environment string, objects ...crclient.Object) context.Context {
+func newClientContext(environment string, objects ...client.Object) context.Context {
 	sch := runtime.NewScheme()
-	Expect(apiv1.AddToScheme(sch)).To(Succeed())
+	Expect(apiapi.AddToScheme(sch)).To(Succeed())
 	Expect(applicationapi.AddToScheme(sch)).To(Succeed())
 	Expect(organizationapi.AddToScheme(sch)).To(Succeed())
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(sch).
 		WithObjects(objects...).
-		WithIndex(&apiv1.ApiCategory{}, "spec.labelValue", func(obj crclient.Object) []string {
-			apiCategory, ok := obj.(*apiv1.ApiCategory)
+		WithIndex(&apiapi.ApiCategory{}, "spec.labelValue", func(obj client.Object) []string {
+			apiCategory, ok := obj.(*apiapi.ApiCategory)
 			if !ok || apiCategory.Spec.LabelValue == "" {
 				return nil
 			}
