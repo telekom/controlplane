@@ -48,6 +48,11 @@ var (
 	FeaturePermission    Feature = NewFeature("permission", false)    // Permission feature disabled by default
 	FeatureSecretManager Feature = NewFeature("secret_manager", true) // Secret Manager feature enabled by default
 	FeatureFileManager   Feature = NewFeature("file_manager", true)   // File Manager feature enabled by default
+	// TODO(DHEI-20905): File/DDS domain feature disabled by default. The rover-domain
+	// dispatch is in place, but the File domain (DHEI-20903) and SFTP/DDS domain
+	// (DHEI-20904) are not yet available. Enable this flag once those domains land so
+	// the rover operator can create file-domain resources instead of returning Blocked.
+	FeatureFile Feature = NewFeature("file", false)
 )
 
 // SetFeatureEnabled sets the enabled state for a feature. Intended for tests.

@@ -1739,6 +1739,40 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventScope'
+    FileExposure:
+      type: object
+      required:
+        - type
+        - fileType
+        - publicKeys
+      properties:
+        type:
+          type: string
+        fileType:
+          type: string
+        variant:
+          type: string
+          enum:
+            - dds
+          description: File-transfer backend. Optional; currently only "dds" is supported.
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        publicKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKey'
+    PublicKey:
+      type: object
+      required:
+        - label
+        - key
+      properties:
+        label:
+          type: string
+          description: Human-readable identifier for the key. Must be unique per fileType.
+        key:
+          type: string
+          description: SSH public key value. Must be unique per fileType.
     Exposure:
       type: object
       discriminator:
@@ -1746,9 +1780,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiExposure'
           event: '#/components/schemas/EventExposure'
+          file: '#/components/schemas/FileExposure'
       oneOf:
         - $ref: '#/components/schemas/ApiExposure'
         - $ref: '#/components/schemas/EventExposure'
+        - $ref: '#/components/schemas/FileExposure'
 
 
     ApiExposureInfo:
@@ -2409,6 +2445,26 @@ components:
           description: >
             If true, the health check will be performed with a GET request
             instead of a HEAD request
+    FileSubscription:
+      type: object
+      required:
+        - type
+        - fileType
+        - publicKeys
+      properties:
+        type:
+          type: string
+        fileType:
+          type: string
+        variant:
+          type: string
+          enum:
+            - dds
+          description: File-transfer backend. Optional; currently only "dds" is supported.
+        publicKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKey'
     Subscription:
       type: object
       discriminator:
@@ -2416,9 +2472,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiSubscription'
           event: '#/components/schemas/EventSubscription'
+          file: '#/components/schemas/FileSubscription'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscription'
         - $ref: '#/components/schemas/EventSubscription'
+        - $ref: '#/components/schemas/FileSubscription'
 
     ApiSubscriptionInfo:
       type: object
