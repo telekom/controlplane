@@ -29,7 +29,7 @@ func TestMapResponse(t *testing.T) {
 			Headers: apiv1.HeaderTransformation{Remove: []string{"x-internal"}},
 		},
 	}
-	in.Spec.Traffic.Failover = &apiv1.Failover{Zones: []ctypes.ObjectRef{{Name: "dataplane2"}}}
+	in.Spec.Traffic.Failover = &apiv1.ProviderFailover{Zones: []ctypes.ObjectRef{{Name: "dataplane2"}}}
 	in.Spec.Traffic.RateLimit = &apiv1.RateLimit{
 		Provider: &apiv1.RateLimitConfig{
 			Limits: apiv1.Limits{Second: 10, Minute: 100, Hour: 1000},
