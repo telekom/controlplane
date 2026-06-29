@@ -7,6 +7,7 @@ package approval
 import (
 	"context"
 	"strings"
+	"time"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -78,6 +79,11 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		targetNamespace = obj.Namespace
 	}
 
+	var expiresAt time.Time
+	if obj.Status.ExpiresAt != nil {
+		expiresAt = obj.Status.ExpiresAt.Time
+	}
+
 	return &ApprovalData{
 		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:           phase,
@@ -92,6 +98,7 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		TargetKind:            obj.Spec.Target.TypeMeta.Kind,
 		SubscriptionNamespace: targetNamespace,
 		SubscriptionName:      obj.Spec.Target.Name,
+		ExpiresAt:             expiresAt,
 	}, nil
 }
 

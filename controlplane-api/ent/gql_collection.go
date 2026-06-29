@@ -1138,6 +1138,11 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, approval.FieldName)
 				fieldSeen[approval.FieldName] = struct{}{}
 			}
+		case "expiresat":
+			if _, ok := fieldSeen[approval.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, approval.FieldExpiresAt)
+				fieldSeen[approval.FieldExpiresAt] = struct{}{}
+			}
 		case "state":
 			if _, ok := fieldSeen[approval.FieldState]; !ok {
 				selectedFields = append(selectedFields, approval.FieldState)

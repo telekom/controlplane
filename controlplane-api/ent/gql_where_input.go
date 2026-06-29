@@ -2855,6 +2855,18 @@ type ApprovalWhereInput struct {
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
+	// "expiresAt" field predicates.
+	ExpiresAt       *time.Time  `json:"expiresat,omitempty"`
+	ExpiresAtNEQ    *time.Time  `json:"expiresatNEQ,omitempty"`
+	ExpiresAtIn     []time.Time `json:"expiresatIn,omitempty"`
+	ExpiresAtNotIn  []time.Time `json:"expiresatNotIn,omitempty"`
+	ExpiresAtGT     *time.Time  `json:"expiresatGT,omitempty"`
+	ExpiresAtGTE    *time.Time  `json:"expiresatGTE,omitempty"`
+	ExpiresAtLT     *time.Time  `json:"expiresatLT,omitempty"`
+	ExpiresAtLTE    *time.Time  `json:"expiresatLTE,omitempty"`
+	ExpiresAtIsNil  bool        `json:"expiresatIsNil,omitempty"`
+	ExpiresAtNotNil bool        `json:"expiresatNotNil,omitempty"`
+
 	// "state" field predicates.
 	State      *approval.State  `json:"state,omitempty"`
 	StateNEQ   *approval.State  `json:"stateNEQ,omitempty"`
@@ -3288,6 +3300,36 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, approval.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.ExpiresAt != nil {
+		predicates = append(predicates, approval.ExpiresAtEQ(*i.ExpiresAt))
+	}
+	if i.ExpiresAtNEQ != nil {
+		predicates = append(predicates, approval.ExpiresAtNEQ(*i.ExpiresAtNEQ))
+	}
+	if len(i.ExpiresAtIn) > 0 {
+		predicates = append(predicates, approval.ExpiresAtIn(i.ExpiresAtIn...))
+	}
+	if len(i.ExpiresAtNotIn) > 0 {
+		predicates = append(predicates, approval.ExpiresAtNotIn(i.ExpiresAtNotIn...))
+	}
+	if i.ExpiresAtGT != nil {
+		predicates = append(predicates, approval.ExpiresAtGT(*i.ExpiresAtGT))
+	}
+	if i.ExpiresAtGTE != nil {
+		predicates = append(predicates, approval.ExpiresAtGTE(*i.ExpiresAtGTE))
+	}
+	if i.ExpiresAtLT != nil {
+		predicates = append(predicates, approval.ExpiresAtLT(*i.ExpiresAtLT))
+	}
+	if i.ExpiresAtLTE != nil {
+		predicates = append(predicates, approval.ExpiresAtLTE(*i.ExpiresAtLTE))
+	}
+	if i.ExpiresAtIsNil {
+		predicates = append(predicates, approval.ExpiresAtIsNil())
+	}
+	if i.ExpiresAtNotNil {
+		predicates = append(predicates, approval.ExpiresAtNotNil())
 	}
 	if i.State != nil {
 		predicates = append(predicates, approval.StateEQ(*i.State))

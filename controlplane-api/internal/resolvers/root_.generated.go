@@ -216,6 +216,7 @@ type ComplexityRoot struct {
 		DeciderTeamName      func(childComplexity int) int
 		Decisions            func(childComplexity int) int
 		Environment          func(childComplexity int) int
+		ExpiresAt            func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		LastModifiedAt       func(childComplexity int) int
 		Name                 func(childComplexity int) int
@@ -1394,6 +1395,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.Environment(childComplexity), true
+
+	case "Approval.expiresat":
+		if e.ComplexityRoot.Approval.ExpiresAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.ExpiresAt(childComplexity), true
 
 	case "Approval.id":
 		if e.ComplexityRoot.Approval.ID == nil {
@@ -4385,6 +4393,7 @@ type Approval implements Node {
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
   name: String!
+  expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
 }
 """
@@ -4891,6 +4900,19 @@ input ApprovalWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
+  """
+  expiresAt field predicates
+  """
+  expiresat: Time
+  expiresatNEQ: Time
+  expiresatIn: [Time!]
+  expiresatNotIn: [Time!]
+  expiresatGT: Time
+  expiresatGTE: Time
+  expiresatLT: Time
+  expiresatLTE: Time
+  expiresatIsNil: Boolean
+  expiresatNotNil: Boolean
   """
   state field predicates
   """
@@ -7439,6 +7461,8 @@ func (ec *executionContext) childFields_Approval(ctx context.Context, field grap
 		return ec.fieldContext_Approval_availableTransitions(ctx, field)
 	case "name":
 		return ec.fieldContext_Approval_name(ctx, field)
+	case "expiresat":
+		return ec.fieldContext_Approval_expiresat(ctx, field)
 	case "state":
 		return ec.fieldContext_Approval_state(ctx, field)
 	case "subscription":
