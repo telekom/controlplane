@@ -42,6 +42,7 @@ type ZoneServiceConfigStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="API Endpoint",type="string",JSONPath=".spec.api.endpoint"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // ZoneServiceConfig is the Schema for the zoneserviceconfigs API

@@ -35,7 +35,7 @@ func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instan
 
 	sftpService, err := h.serviceFor(ctx, obj.Spec.ZoneServiceConfigRef.K8s())
 	if err != nil {
-		return ctrlerrors.BlockedErrorf("ZoneServiceConfig %q not found", obj.Spec.ZoneServiceConfigRef.String())
+		return err
 	}
 
 	if obj.Generation != obj.Status.Generation {
@@ -159,22 +159,20 @@ func collectUniquePublicKeysFromUsers(log logr.Logger, sftpUserName string, user
 	fingerprints := map[string]*service.RoverPublicKeyModel{}
 	keys := make([]service.RoverPublicKeyModel, 0, len(users))
 	for i := range users {
-		conditionDone := condition.NewDoneProcessingCondition("SSH Public keys were processed")
-		conditionReady := condition.NewReadyCondition(sftpv1.ConditionReadyReasonSSHPublicKeyProvided, "SSH Public keys are ready")
 		user := &users[i]
+		hasInvalidSSHPublicKey := false
 		for index, sshpublickey := range user.Spec.SSHPublicKeys {
 			canonicalKey, err := sftpv1.CanonicalPublicKey(sshpublickey)
 			if err != nil {
+				hasInvalidSSHPublicKey = true
+				log.Error(err, fmt.Sprintf("Failed to get canonical key (index: %d)", index), "user", user.Namespace+"/"+user.Name)
 				continue
 			}
 
 			fingerprint, err := sftpv1.FingerprintForKey(canonicalKey)
 			if err != nil {
-				conditionDone = condition.NewDoneProcessingCondition(fmt.Sprintf("Failed to process public key: %v", err))
-				conditionReady = condition.NewReadyCondition(
-					sftpv1.ConditionReadyReasonSSHPublicKeyProvided,
-					fmt.Sprintf("Failed to process public key: %v", err))
-				log.Error(err, "Failed to process public key (index: %d)", index, "user", user.Name)
+				hasInvalidSSHPublicKey = true
+				log.Error(err, fmt.Sprintf("Failed to process public key (index: %d)", index), "user", user.Namespace+"/"+user.Name)
 				continue
 			}
 
@@ -194,9 +192,22 @@ func collectUniquePublicKeysFromUsers(log logr.Logger, sftpUserName string, user
 				fingerprints[fingerprint] = &keys[len(keys)-1]
 			}
 		}
-		user.SetCondition(conditionDone)
-		user.SetCondition(conditionReady)
+
+		setUserConditions(user, hasInvalidSSHPublicKey)
 	}
 
 	return keys
+}
+
+func setUserConditions(user *sftpv1.User, hasInvalidSSHPublicKey bool) {
+	done := condition.NewDoneProcessingCondition("SSH Public keys were processed")
+	ready := condition.NewReadyCondition(sftpv1.ConditionReadyReasonSSHPublicKeyProvided, "SSH Public keys are ready")
+	if hasInvalidSSHPublicKey {
+		done = condition.NewDoneProcessingCondition("failed to process public key")
+		ready = condition.NewNotReadyCondition(
+			sftpv1.ConditionReadyReasonSSHPublicKeyProvided,
+			"failed to process public key")
+	}
+	user.SetCondition(done)
+	user.SetCondition(ready)
 }
