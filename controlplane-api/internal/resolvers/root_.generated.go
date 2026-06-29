@@ -6783,11 +6783,15 @@ input CreateTeamInput {
   name: String!
   email: String!
   members: [MemberInput!]!
+  displayName: String
+  description: String
 }
 
 input UpdateTeamInput {
   teamId: ID!
   email: String
+  displayName: String
+  description: String
 }
 
 type CreateTeamPayload {
@@ -6852,7 +6856,7 @@ type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): CreateTeamPayload!
 
-  "Update team metadata (email). Does not manage members."
+  "Update team metadata (email, description, displayName). Does not manage members."
   updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
 
   "Add a member to a team. Takes effect immediately."
