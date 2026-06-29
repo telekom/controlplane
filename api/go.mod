@@ -15,6 +15,7 @@ require (
 	github.com/telekom/controlplane/cpapi/api v0.0.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/identity/api v0.0.0
+	github.com/telekom/controlplane/organization/api v0.0.0
 )
 
 replace (
@@ -26,6 +27,7 @@ replace (
 	github.com/telekom/controlplane/cpapi/api => ../cpapi/api
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
 	github.com/telekom/controlplane/identity/api => ../identity/api
+	github.com/telekom/controlplane/organization/api => ../organization/api
 )
 
 require (
