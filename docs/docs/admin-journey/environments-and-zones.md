@@ -52,7 +52,7 @@ When creating the Zone resource in the Control Plane, you provide the connection
 
 ### Creating a Zone
 
-A Zone references the gateway and identity provider to use, along with Redis configuration and visibility settings:
+A Zone references the gateway and identity provider to use, along with optional Redis configuration and visibility settings:
 
 ```yaml
 apiVersion: admin.cp.ei.telekom.de/v1
@@ -63,15 +63,17 @@ metadata:
 spec:
   visibility: World
   gateway:
-    url: https://gateway.example.com
-    circuitBreaker: true
     admin:
       url: https://gateway-admin.example.com
-      clientSecret: <your-gateway-admin-secret>
+    presets:
+      - name: default
+        default: true
+        urls:
+          - hostname: api.dataplane1.example.com
+            basePath: /
   identityProvider:
     url: https://idp.example.com
     admin:
-      url: https://idp-admin.example.com
       clientId: admin-client
       userName: admin
       password: <your-idp-admin-password>
@@ -101,8 +103,8 @@ Each managed route has a **type** that determines its behavior:
 
 | Type | Behavior |
 |------|----------|
-| **TeamAPI** | Authenticated route on the zone's team-api gateway realm. Requires token validation but does not enforce per-consumer ACLs. Used for team-facing platform APIs. |
-| **Proxy** | Fully passthrough route on the zone's default gateway realm. Acts as a pure reverse proxy without any authentication or authorization. |
+| **TeamAPI** | Authenticated route with token validation but no per-consumer ACLs. Used for team-facing platform APIs. |
+| **Proxy** | Fully passthrough route that acts as a pure reverse proxy without any authentication or authorization. |
 
 Example:
 
@@ -122,7 +124,7 @@ spec:
 
 ### Token Claims
 
-The Control Plane automatically injects the following claims into all tokens issued for clients in a zone's default identity realm:
+The Control Plane automatically injects the following claims into all tokens issued for clients in a zone's identity realm:
 
 | Claim | Type | Description |
 |-------|------|-------------|
@@ -194,10 +196,10 @@ spec:
   voyagerApiUrl: http://voyager.dev.svc.cluster.local
 ```
 
-That's it. Identity clients, secrets, realms, and mesh topology are configured automatically:
+That's it. Identity clients, secrets, and mesh topology are configured automatically:
 
 - **Admin client** — auto-created using the zone's internal identity realm.
-- **Mesh client** — auto-created using the zone's default identity realm.
+- **Mesh client** — auto-created using the zone's identity realm.
 - **Mesh topology** — defaults to full mesh (events distributed to all zones).
 - **Client secrets** — auto-generated and managed by the controller.
 

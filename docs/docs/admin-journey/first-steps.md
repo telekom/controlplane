@@ -61,10 +61,14 @@ spec:
   # Who can reach APIs in this zone: World (public) or Enterprise (internal)
   visibility: Enterprise
   gateway:
-    url: https://my-gateway.example.com/
     admin:
       url: https://my-gateway-admin.example.com/admin-api
-      clientSecret: someSecret
+    presets:
+      - name: default
+        default: true
+        urls:
+          - hostname: my-gateway.example.com
+            basePath: /
   identityProvider:
     url: https://my-idp.example.com/
     admin:

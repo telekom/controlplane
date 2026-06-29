@@ -14,9 +14,9 @@ This domain is typically managed by platform administrators, not application tea
 
 ## Domain Interactions
 
-- **Gateway domain** — Zones define which gateway instance is used. The Gateway operator reads the zone's gateway configuration when provisioning routes. Managed routes (TeamAPI and Proxy) are created directly by the zone handler on the appropriate gateway realm.
-- **Identity domain** — Zones define which identity provider is used. The Identity operator reads the zone's IDP configuration when provisioning clients and realms. The zone handler creates a default identity realm with token claims (`originZone`, `originStargate`, `clientId`) and a dedicated internal "rover" realm for admin-config clients.
-- **Organization domain** — Teams are created within environments. Zones determine where team resources are provisioned. If a zone has TeamAPI-type managed routes, a team-api identity realm and gateway realm are created for team-facing APIs.
+- **Gateway domain** — Zones define which gateway instance is used. The Gateway operator reads the zone's gateway configuration (presets, URLs, features) when provisioning routes. Managed routes (TeamAPI and Proxy) are created directly by the zone handler.
+- **Identity domain** — Zones define which identity provider is used. The Identity operator reads the zone's IDP configuration when provisioning clients and realms. The zone handler creates a default identity realm with token claims (`originZone`, `originStargate`, `clientId`) and a dedicated internal realm for admin-config clients.
+- **Organization domain** — Teams are created within environments. Zones determine where team resources are provisioned. If a zone has TeamAPI-type managed routes, a team-api identity realm is created for team-facing APIs.
 - **Event domain** — EventConfig resources reference zones for event routing and meshing.
 
 ## Related Pages
