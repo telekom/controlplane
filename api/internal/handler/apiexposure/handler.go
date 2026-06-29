@@ -154,7 +154,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
 
-	apiExp.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
+	apiExp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
 	logger.Info("✅ ApiExposure is processed")
@@ -230,7 +230,7 @@ func validateExposureScopes(ctx context.Context, api *apiapi.Api, apiExp *apiapi
 		return true
 	}
 	if len(api.Spec.Oauth2Scopes) == 0 {
-		apiExp.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Api does not define any Oauth2 scopes"))
 		apiExp.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
 		return false
 	}
@@ -240,7 +240,7 @@ func validateExposureScopes(ctx context.Context, api *apiapi.Api, apiExp *apiapi
 			strings.Join(api.Spec.Oauth2Scopes, ", "),
 			strings.Join(invalidScopes, ", "),
 		)
-		apiExp.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
+		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
 		apiExp.SetCondition(condition.NewBlockedCondition(message))
 		return false
 	}

@@ -23,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/api/internal/handler/apiexposure"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -150,12 +151,65 @@ func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context,
 	return reqs
 }
 
+// MapRouteToApiExposure enqueues ApiExposures when a Route they manage is externally modified.
+// Routes are created in zone namespaces, so we use the basepath label to find the owning exposures.
+//
+//nolint:dupl // controller map helpers intentionally mirror each other across exposure/subscription
 func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
+	logger := log.FromContext(ctx)
+	route, ok := obj.(*gatewayv1.Route)
+	if !ok {
+		return nil
+	}
+
+	basePathLabel := route.Labels[apiv1.BasePathLabelKey]
+	if basePathLabel == "" {
+		return nil
+	}
+
+	list := &apiv1.ApiExposureList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
+		apiv1.BasePathLabelKey:      basePathLabel,
+	})
+	if err != nil {
+		logger.Error(err, "failed to list API-Exposures for Route")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+	}
+	return reqs
 }
 
+// MapZoneToApiExposure enqueues ApiExposures that reference a changed Zone.
+// This ensures exposures react to zone readiness or namespace changes.
 func (r *ApiExposureReconciler) MapZoneToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
+	logger := log.FromContext(ctx)
+	zone, ok := obj.(*adminv1.Zone)
+	if !ok {
+		return nil
+	}
+
+	list := &apiv1.ApiExposureList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+	})
+	if err != nil {
+		logger.Error(err, "failed to list API-Exposures for Zone")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		if list.Items[i].Spec.Zone.Name == zone.Name {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+		}
+	}
+	return reqs
 }
 
 // MapApiSubscriptionToApiExposure triggers re-reconciliation of ApiExposures when ApiSubscriptions change.

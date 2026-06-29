@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -36,6 +37,12 @@ const (
 	// spacegatePathPrefix is the downstream path prefix added to all identity
 	// routes (issuer, certs, discovery) when a zone's visibility is World.
 	spacegatePathPrefix = "/spacegate"
+
+	claimOriginZone     = "originZone"
+	claimOriginStargate = "originStargate"
+	claimClientId       = "clientId"
+
+	EnablePassThrough = true
 )
 
 var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
@@ -89,21 +96,25 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	// Identity Realm
 	defaultClaims := []identityapi.ClaimConfig{
 		{
-			Name:  "originZone",
+			Name:  claimOriginZone,
 			Value: handlingContext.Zone.Name,
 			Type:  identityapi.ClaimTypeHardcodedClaim,
 		},
 		{
-			Name:  "originStargate",
+			Name:  claimOriginStargate,
 			Value: handlingContext.Zone.Spec.Gateway.Url,
 			Type:  identityapi.ClaimTypeHardcodedClaim,
 		},
 		{
-			Name: "clientId",
+			Name: claimClientId,
 			Type: identityapi.ClaimTypeSessionNote,
 		},
 	}
-	identityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForDefaultIdentityRealm(handlingContext.Environment), defaultClaims)
+	identityRealmCreateOpts := CreateIdentityRealmOptions{
+		Claims:         defaultClaims,
+		SecretRotation: obj.Spec.IdentityProvider.SecretRotation,
+	}
+	identityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForDefaultIdentityRealm(handlingContext.Environment), identityRealmCreateOpts)
 	if err != nil {
 		return err
 	}
@@ -114,7 +125,11 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	}
 
 	// Internal Identity Realm (rover) for admin-config clients
-	internalIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForInternalIdentityRealm(), nil)
+	internalRealmCreateOpts := CreateIdentityRealmOptions{
+		Claims:         defaultClaims,
+		SecretRotation: nil, // Internal realm MUST not have secret rotation enabled
+	}
+	internalIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForInternalIdentityRealm(), internalRealmCreateOpts)
 	if err != nil {
 		return err
 	}
@@ -155,21 +170,8 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	obj.Status.GatewayConsumer = types.ObjectRefFromObject(gatewayConsumer)
 
 	// Internal routes configuration
-	if obj.Spec.ManagedRoutes != nil {
-		if err := reconcileManagedRoutes(ctx, handlingContext, obj, identityProvider, gateway, gatewayRealm); err != nil {
-			return err
-		}
-	} else {
-		obj.Status.TeamApiIdentityRealm = nil
-		obj.Status.TeamApiGatewayRealm = nil
-		obj.Status.ManagedRoutes = nil
-		obj.Status.Links.TeamIssuer = ""
-	}
-
-	// Cleanup managed routes that were not created or updated during this reconciliation.
-	// Using OwnedByLabel because routes live in a different namespace than the Zone CR.
-	if _, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
-		return errors.Wrapf(err, "failed to cleanup stale managed routes for zone %s", obj.Name)
+	if err := reconcileInternalRoutes(ctx, handlingContext, obj, defaultClaims, identityProvider, gateway, gatewayRealm); err != nil {
+		return err
 	}
 
 	// Populate Permissions URL if configured and feature enabled
@@ -190,10 +192,68 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	return nil
 }
 
-func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway, defaultGatewayRealm *gatewayapi.Realm) error {
-	// Reset status to avoid stale/duplicate entries across reconciliations
-	zone.Status.ManagedRoutes = nil
+func reconcileInternalRoutes(ctx context.Context, handlingContext HandlingContext, obj *adminv1.Zone, defaultClaims []identityapi.ClaimConfig, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway, gatewayRealm *gatewayapi.Realm) error {
+	c := cclient.ClientFromContextOrDie(ctx)
 
+	// Reset status fields related to team API routes to avoid stale data if routes are removed from spec
+	obj.Status.TeamApiIdentityRealm = nil
+	obj.Status.TeamApiGatewayRealm = nil
+	obj.Status.ManagedRoutes = nil
+	obj.Status.Links.TeamIssuer = ""
+
+	if obj.Spec.ManagedRoutes != nil {
+		teamApisGatewayRealm, err := reconcileTeamApiRealms(ctx, handlingContext, obj, defaultClaims, identityProvider, gateway)
+		if err != nil {
+			return err
+		}
+
+		if err := reconcileManagedRoutes(ctx, handlingContext, obj, teamApisGatewayRealm, gatewayRealm); err != nil {
+			return err
+		}
+	}
+
+	// Cleanup managed routes that were not created or updated during this reconciliation.
+	// Using OwnedByLabel because routes live in a different namespace than the Zone CR.
+	if _, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrapf(err, "failed to cleanup stale managed routes for zone %s", obj.Name)
+	}
+
+	return nil
+}
+
+// reconcileTeamApiRealms creates the identity and gateway realms required by TeamAPI routes.
+// Returns nil if no team routes are configured.
+func reconcileTeamApiRealms(ctx context.Context, handlingContext HandlingContext, obj *adminv1.Zone, defaultClaims []identityapi.ClaimConfig, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway) (*gatewayapi.Realm, error) {
+	hasTeamRoutes := slices.ContainsFunc(obj.Spec.ManagedRoutes.Routes, func(route adminv1.ManagedRouteConfig) bool {
+		return route.Type == adminv1.ManagedRouteTypeTeamAPI
+	})
+	if !hasTeamRoutes {
+		return nil, nil
+	}
+
+	opts := CreateIdentityRealmOptions{
+		Claims:         defaultClaims,
+		SecretRotation: nil, // TeamAPIs do not support rotation
+	}
+	teamApiIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForTeamApiIdentityRealm(handlingContext.Environment), opts)
+	if err != nil {
+		return nil, err
+	}
+	obj.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
+
+	teamApisGatewayRealm, err := createGatewayRealm(ctx, handlingContext, gateway, naming.ForTeamApiGatewayRealm(handlingContext.Environment))
+	if err != nil {
+		return nil, err
+	}
+	obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
+	if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
+		obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
+	}
+
+	return teamApisGatewayRealm, nil
+}
+
+func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone, teamApisGatewayRealm, proxyGatewayRealm *gatewayapi.Realm) error {
 	// Partition routes by type
 	var teamAPIRoutes, proxyRoutes []adminv1.ManagedRouteConfig
 	for _, r := range zone.Spec.ManagedRoutes.Routes {
@@ -208,47 +268,23 @@ func reconcileManagedRoutes(ctx context.Context, handlingContext HandlingContext
 	}
 
 	// TeamAPI routes require a dedicated identity and gateway realm
-	if err := reconcileTeamAPIRoutes(ctx, handlingContext, zone, identityProvider, gateway, teamAPIRoutes); err != nil {
-		return err
+	if len(teamAPIRoutes) > 0 && teamApisGatewayRealm == nil {
+		return fmt.Errorf("team API routes require a gateway realm but none was created")
 	}
-
-	// Proxy routes use the default gateway realm with full passthrough
-	for _, routeConfig := range proxyRoutes {
-		route, err := createManagedRoute(ctx, handlingContext, routeConfig, defaultGatewayRealm, true)
+	for _, routeConfig := range teamAPIRoutes {
+		route, err := createManagedRoute(ctx, handlingContext, routeConfig, teamApisGatewayRealm, !EnablePassThrough)
 		if err != nil {
 			return err
 		}
 		zone.Status.ManagedRoutes = append(zone.Status.ManagedRoutes, *types.ObjectRefFromObject(route))
 	}
 
-	return nil
-}
-
-func reconcileTeamAPIRoutes(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway, routes []adminv1.ManagedRouteConfig) error {
-	if len(routes) == 0 {
-		zone.Status.TeamApiIdentityRealm = nil
-		zone.Status.TeamApiGatewayRealm = nil
-		zone.Status.Links.TeamIssuer = ""
-		return nil
+	// Proxy routes use the default gateway realm with full passthrough
+	if len(proxyRoutes) > 0 && proxyGatewayRealm == nil {
+		return fmt.Errorf("proxy routes require a gateway realm but none was created")
 	}
-
-	teamApiIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForTeamApiIdentityRealm(handlingContext.Environment), nil)
-	if err != nil {
-		return err
-	}
-	zone.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
-
-	teamApisGatewayRealm, err := createGatewayRealm(ctx, handlingContext, gateway, naming.ForTeamApiGatewayRealm(handlingContext.Environment))
-	if err != nil {
-		return err
-	}
-	zone.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
-	if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
-		zone.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
-	}
-
-	for _, routeConfig := range routes {
-		route, err := createManagedRoute(ctx, handlingContext, routeConfig, teamApisGatewayRealm, false)
+	for _, routeConfig := range proxyRoutes {
+		route, err := createManagedRoute(ctx, handlingContext, routeConfig, proxyGatewayRealm, EnablePassThrough)
 		if err != nil {
 			return err
 		}
@@ -501,7 +537,12 @@ func getIdentityClient(ctx context.Context, ref *types.ObjectRef) (*identityapi.
 	return identityClient, nil
 }
 
-func createIdentityRealm(ctx context.Context, handlingContext HandlingContext, identityProvider *identityapi.IdentityProvider, realmName string, claims []identityapi.ClaimConfig) (*identityapi.Realm, error) {
+type CreateIdentityRealmOptions struct {
+	Claims         []identityapi.ClaimConfig
+	SecretRotation *adminv1.SecretRotationConfig
+}
+
+func createIdentityRealm(ctx context.Context, handlingContext HandlingContext, identityProvider *identityapi.IdentityProvider, realmName string, opts CreateIdentityRealmOptions) (*identityapi.Realm, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	identityRealm := &identityapi.Realm{
@@ -522,10 +563,10 @@ func createIdentityRealm(ctx context.Context, handlingContext HandlingContext, i
 				Name:      identityProvider.Name,
 				Namespace: identityProvider.Namespace,
 			},
-			Claims: claims,
+			Claims: opts.Claims,
 		}
 
-		secretRotationConfig := handlingContext.Zone.Spec.IdentityProvider.SecretRotation
+		secretRotationConfig := opts.SecretRotation
 		if secretRotationConfig != nil && secretRotationConfig.Enabled {
 			identityRealm.Spec.SecretRotation = &identityapi.SecretRotationConfig{
 				GracePeriod:             secretRotationConfig.GracePeriod,

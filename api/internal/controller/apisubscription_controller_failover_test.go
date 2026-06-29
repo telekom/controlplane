@@ -223,7 +223,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(differentZoneSubscription), differentZoneSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
 				By("Checking the conditions")
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(differentZoneSubscription.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(differentZoneSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 				g.Expect(differentZoneSubscription.Status.Route).ToNot(BeNil())
 
 				By("Verifying route configuration")
@@ -1080,7 +1080,7 @@ var _ = Describe("ApiSubscription Controller - All Subscriptions Same Zone", Ord
 		Eventually(func(g Gomega) {
 			getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 			g.Expect(getErr).ToNot(HaveOccurred())
-			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 		}, timeout, interval).Should(Succeed())
 
 		By("Creating multiple subscriptions all in exposure zone")
@@ -1297,7 +1297,7 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 		Eventually(func(g Gomega) {
 			getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 			g.Expect(getErr).ToNot(HaveOccurred())
-			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 		}, timeout, interval).Should(Succeed())
 
 		By("Creating subscription in different zone with failover to provider failover zone")

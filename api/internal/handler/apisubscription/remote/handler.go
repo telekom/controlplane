@@ -99,7 +99,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	owner.Status.RemoteApiSubscription = types.ObjectRefFromObject(req)
 
 	owner.SetCondition(condition.NewProcessingCondition("RemoteApiSubscriptionPending", "RemoteApiSubscription created or updated"))
-	owner.SetCondition(condition.NewNotReadyCondition("NotReady", "RemoteApiSubscription is provisoned but not ready yet"))
+	owner.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "RemoteApiSubscription is provisoned but not ready yet"))
 
 	if res != controllerutil.OperationResultNone {
 		logger.Info("🔗 RemoteApiSubscription created or updated", "result", res)
@@ -111,7 +111,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	if approvalResult == ApprovalResultCleanup {
 		logger.Info("🧹 RemoteApiSubscription not granted. We need to cleanup")
 		owner.SetCondition(condition.NewBlockedCondition("RemoteApiSubscription not granted"))
-		owner.SetCondition(condition.NewNotReadyCondition("RemoteApiSubscriptionNotGranted", "RemoteApiSubscription not granted"))
+		owner.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "RemoteApiSubscription not granted"))
 
 		err = util.CleanupProxyRoute(ctx, owner.Status.Route)
 		if err != nil {
@@ -205,6 +205,6 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 
 	owner.Status.ConsumeRoute = types.ObjectRefFromObject(routeConsumer)
 	owner.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	owner.SetCondition(condition.NewReadyCondition("Provisioned", "ApiSubscription is ready"))
+	owner.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ApiSubscription is ready"))
 	return nil
 }

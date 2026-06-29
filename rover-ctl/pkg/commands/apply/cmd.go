@@ -85,6 +85,10 @@ func (c *Command) applyObject(obj types.Object) error {
 
 	status, err := handler.WaitForReady(c.Cmd.Context(), obj.GetName())
 	if err != nil {
+		if status != nil {
+			statusEval := common.NewStatusEval(obj, status)
+			_ = statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format"))
+		}
 		return c.HandleError(err, fmt.Sprintf("wait for %s to be ready", obj.GetKind()))
 	}
 
@@ -93,13 +97,14 @@ func (c *Command) applyObject(obj types.Object) error {
 		c.Logger().Info(fmt.Sprintf("✅ Successfully applied %s",
 			obj.GetKind()),
 			"name", obj.GetName())
-	} else {
-		if err := statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format")); err != nil {
-			if c.FailFast {
-				return errors.Wrap(err, "failed to print status")
-			}
+		return nil
+	}
+
+	if err := statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format")); err != nil {
+		if c.FailFast {
+			return errors.Wrap(err, "failed to print status")
 		}
 	}
 
-	return nil
+	return fmt.Errorf("apply %s/%s finished with status %q", obj.GetKind(), obj.GetName(), status.GetOverallStatus())
 }
