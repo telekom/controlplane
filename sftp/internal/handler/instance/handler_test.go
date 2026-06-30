@@ -54,16 +54,18 @@ var _ = Describe("InstanceHandler", func() {
 		Expect(err).To(MatchError(ContainSubstring("ZoneServiceConfig reference is required")))
 	})
 
-	It("blocks when the referenced ZoneServiceConfig service is unavailable", func() {
+	It("retries when the referenced ZoneServiceConfig service is unavailable", func() {
 		handler, instance, _ := newTestHandler()
-		handler.ServiceFactory = recordingFactory{err: errors.New("missing service")}
+		handler.ServiceFactory = recordingFactory{
+			err: ctrlerrors.RetryableErrorf("SFTP client for ZoneServiceConfig %q is not initialized", "test/test-zsc"),
+		}
 
 		err := handler.CreateOrUpdate(context.Background(), instance)
 
-		var blocked ctrlerrors.BlockedError
-		Expect(errors.As(err, &blocked)).To(BeTrue())
+		var retryable ctrlerrors.RetryableError
+		Expect(errors.As(err, &retryable)).To(BeTrue())
 		Expect(err).To(MatchError(ContainSubstring("ZoneServiceConfig")))
-		Expect(err).To(MatchError(ContainSubstring("not found")))
+		Expect(err).To(MatchError(ContainSubstring("not initialized")))
 	})
 
 	It("creates a service user with description and empty Horizon notification events", func() {
