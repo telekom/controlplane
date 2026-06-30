@@ -1805,15 +1805,26 @@ components:
               type: string
               enum:
                 - event
+    FileExposureInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FileExposure'
+        - properties:
+            type:
+              type: string
+              enum:
+                - file
     ExposureInfo:
       discriminator:
         propertyName: type
         mapping:
           api: '#/components/schemas/ApiExposureInfo'
           event: '#/components/schemas/EventExposureInfo'
+          file: '#/components/schemas/FileExposureInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiExposureInfo'
         - $ref: '#/components/schemas/EventExposureInfo'
+        - $ref: '#/components/schemas/FileExposureInfo'
 
     ApplicationInfo:
       type: object
@@ -2504,6 +2515,15 @@ components:
               type: string
             horizonSubscriptionUrl:
               type: string
+    FileSubscriptionInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FileSubscription'
+        - properties:
+            type:
+              type: string
+              enum:
+                - file
     SubscriptionInfo:
       readOnly: true
       discriminator:
@@ -2511,9 +2531,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiSubscriptionInfo'
           event: '#/components/schemas/EventSubscriptionInfo'
+          file: '#/components/schemas/FileSubscriptionInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscriptionInfo'
         - $ref: '#/components/schemas/EventSubscriptionInfo'
+        - $ref: '#/components/schemas/FileSubscriptionInfo'
 
     EventTrigger:
       type: object
