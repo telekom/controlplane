@@ -190,6 +190,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: sftp-operator
+    dir: sftp
+    main: cmd/sftp-operator/main.go
+    binary: sftp-operator
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
   - id: rover-ctl
     ids: [rover-ctl]
