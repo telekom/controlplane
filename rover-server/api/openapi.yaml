@@ -1753,8 +1753,8 @@ components:
         variant:
           type: string
           enum:
-            - dds
-          description: File-transfer backend. Optional; currently only "dds" is supported.
+            - sftp
+          description: File-transfer backend. Optional; currently only "sftp" is supported.
         visibility:
           $ref: '#/components/schemas/Visibility'
         publicKeys:
@@ -2470,8 +2470,8 @@ components:
         variant:
           type: string
           enum:
-            - dds
-          description: File-transfer backend. Optional; currently only "dds" is supported.
+            - sftp
+          description: File-transfer backend. Optional; currently only "sftp" is supported.
         publicKeys:
           type: array
           items:
