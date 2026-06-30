@@ -13,7 +13,9 @@ This page covers the admin-side setup. For user-facing configuration, see the [T
 
 ## Provider Failover
 
-Provider Failover works out of the box. When a provider declares a failover zone in their API exposure, the Control Plane creates the necessary secondary routes automatically. No additional zone configuration is required.
+Provider Failover works out of the box. When a provider declares a failover zone in their API exposure, the Control Plane creates the necessary **secondary routes** automatically. No additional zone configuration is required.
+
+A secondary route is a backup copy of the provider's API placed in the failover zone. While the provider's primary zone is healthy, traffic flows to it as normal; if a health check finds the primary zone unavailable, the gateway redirects to the secondary route instead. For the underlying route model, see [Gateway Domain: Route Types & Cross-Zone Meshing](../../architecture/gateway.mdx#route-types--cross-zone-meshing).
 
 ## Consumer Failover (DTC)
 

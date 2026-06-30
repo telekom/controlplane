@@ -25,10 +25,25 @@ Rover file applied
             └──▶ Gateway ConsumeRoute created (access granted)
 ```
 
+## Route Provisioning
+
+When an **ApiExposure** is reconciled, the API operator provisions the gateway routes that make the API reachable — including across zone boundaries. It decides which routes to create based on where the API's subscribers live:
+
+| Route created | When | Created from |
+|---------------|------|--------------|
+| **Primary** route | Always — one per exposure, in the provider's zone | `ApiExposure.Spec.Upstreams` |
+| **Proxy** route | For each zone that has a subscriber but is *not* the provider's zone | The subscriber's zone + the provider zone's gateway URL |
+| **Secondary** route | For each provider failover zone (`failover.zones`) | A copy of the provider's upstreams, placed in the backup zone |
+
+A matching **ConsumeRoute** is then created for each approved subscription to grant the consumer access to the correct route (primary or proxy, depending on the consumer's zone).
+
+For the meaning of each route type and how they forward traffic, see [Gateway Domain: Route Types & Cross-Zone Meshing](./gateway.mdx#route-types--cross-zone-meshing).
+
 ## Domain Interactions
 
 - **Rover domain** — Creates Api, ApiExposure, and ApiSubscription resources.
-- **Gateway domain** — The API operator creates Route and ConsumeRoute resources on the gateway.
+- **Gateway domain** — The API operator creates Route (primary, proxy, secondary) and ConsumeRoute resources on the gateway.
+- **Admin domain** — Zones provide the gateway URLs and identity issuers used to wire up cross-zone proxy and failover routes.
 - **Approval domain** — Subscriptions trigger approval workflows.
 - **File Manager** — OpenAPI specifications are stored and retrieved for API metadata.
 

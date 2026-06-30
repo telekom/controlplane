@@ -12,12 +12,43 @@ This domain is typically managed by platform administrators, not application tea
 
 <CRDReference domain="admin" />
 
+## Zone Provisioning
+
+When a Zone is reconciled, the Admin operator bootstraps everything the zone needs to operate — so administrators no longer have to create these building blocks by hand. This includes the identity realms and the gateway admin client described below.
+
+### Identity realms and the rover client
+
+Each zone gets two identity realms in its identity provider:
+
+- A **default identity realm** (named after the environment) — used for normal API consumers and providers. It carries the zone's token claims (`originZone`, `originStargate`, `clientId`).
+- An **internal `rover` realm** — used only for admin-config clients that the platform itself needs.
+
+Inside the internal realm, the operator creates the **`rover` client** — the OAuth2 client the Gateway operator uses to authenticate against the gateway's admin API (its issuer is `…/auth/realms/rover`).
+
+Both the realm and the client are created on **every** zone reconciliation — they are not optional and there is no flag to disable them. The only related input is `gateway.admin.clientSecret`: if you leave it empty the secret is generated for you (see [Secret onboarding](#secret-onboarding-defaulting-webhook)); if you supply one it becomes the `rover` client's secret.
+
+:::note Previously a manual step
+The `rover` realm and `rover` client used to be created by hand during zone setup. The Zone handler now provisions both automatically on every reconcile.
+:::
+
+### Secret onboarding (defaulting webhook)
+
+A Zone **defaulting webhook** processes a zone's sensitive fields before the resource is stored — the IDP admin password, the Redis password, and the gateway admin client secret.
+
+- **When Secret-Manager is enabled**, the webhook uploads each value to Secret-Manager under a `zones/<zone>/admin/...` path and replaces the clear-text value in the Zone with a secret **reference**.
+- **When Secret-Manager is disabled**, the same secrets are generated **inline** and kept on the resource.
+
+Either way, you can leave a secret field empty to have one generated for you, or set it to the `rotate` keyword to force a new value. On updates, omitting a secret preserves the existing one, so re-applying a Zone never regenerates secrets by accident.
+
+See [Secret Manager Domain](./secret-manager.mdx) for how references are stored and resolved, and [Admin Journey: Environments & Zones](../admin-journey/environments-and-zones.md#zone-secrets) for the operator-facing guide.
+
 ## Domain Interactions
 
 - **Gateway domain** — Zones define which gateway instance is used. The Gateway operator reads the zone's gateway configuration (presets, URLs, features) when provisioning routes. Managed routes (TeamAPI and Proxy) are created directly by the zone handler.
-- **Identity domain** — Zones define which identity provider is used. The Identity operator reads the zone's IDP configuration when provisioning clients and realms. The zone handler creates a default identity realm with token claims (`originZone`, `originStargate`, `clientId`) and a dedicated internal realm for admin-config clients.
+- **Identity domain** — Zones define which identity provider is used. The Identity operator reads the zone's IDP configuration when provisioning clients and realms. The zone handler creates a default identity realm with token claims (`originZone`, `originStargate`, `clientId`) and the internal `rover` realm (with the `rover` gateway admin client) for admin-config clients.
 - **Organization domain** — Teams are created within environments. Zones determine where team resources are provisioned. If a zone has TeamAPI-type managed routes, a team-api identity realm is created for team-facing APIs.
 - **Event domain** — EventConfig resources reference zones for event routing and meshing.
+- **Secret Manager domain** — The Zone defaulting webhook onboards zone secrets (IDP admin password, Redis password, gateway admin client secret) and stores references instead of clear-text values.
 
 ## Related Pages
 
