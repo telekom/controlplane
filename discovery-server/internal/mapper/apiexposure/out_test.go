@@ -29,7 +29,7 @@ func TestMapResponse(t *testing.T) {
 			Headers: apiv1.HeaderTransformation{Remove: []string{"x-internal"}},
 		},
 	}
-	in.Spec.Traffic.Failover = &apiv1.ProviderFailover{Zones: []ctypes.ObjectRef{{Name: "dataplane2"}}}
+	in.Spec.Traffic.Failover = &apiv1.ProviderFailover{Zones: []ctypes.ObjectRef{{Name: "dataplane2"}, {Name: "dataplane3"}}}
 	in.Spec.Traffic.RateLimit = &apiv1.RateLimit{
 		Provider: &apiv1.RateLimitConfig{
 			Limits: apiv1.Limits{Second: 10, Minute: 100, Hour: 1000},
@@ -61,7 +61,10 @@ func TestMapResponse(t *testing.T) {
 		t.Fatalf("unexpected removeHeaders mapping: %#v", resp.RemoveHeaders)
 	}
 	if resp.Failover.Zone != "dataplane2" {
-		t.Fatalf("unexpected failover zone: %#v", resp.Failover)
+		t.Fatalf("unexpected deprecated failover zone: %q, want %q", resp.Failover.Zone, "dataplane2")
+	}
+	if len(resp.Failover.Zones) != 2 || resp.Failover.Zones[0] != "dataplane2" || resp.Failover.Zones[1] != "dataplane3" {
+		t.Fatalf("unexpected failover zones: %#v", resp.Failover.Zones)
 	}
 	if resp.RateLimit.Second != 10 || resp.RateLimit.Minute != 100 || resp.RateLimit.Hour != 1000 {
 		t.Fatalf("unexpected rate limit mapping: %#v", resp.RateLimit)

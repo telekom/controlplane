@@ -31,7 +31,6 @@ type CircuitBreaker struct {
 type ProviderFailover struct {
 	// Zones defines the list of zones that are eligible for failover.
 	// If empty, the Provider failover feature is disabled.
-	// If set, it must be exactly 1 zone that is different from the exposure zone.
 	// +kubebuilder:validation:Optional
 	Zones []ctypes.ObjectRef `json:"zones,omitempty"`
 }

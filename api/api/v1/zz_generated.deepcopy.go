@@ -278,9 +278,12 @@ func (in *ApiExposureStatus) DeepCopyInto(out *ApiExposureStatus) {
 		in, out := &in.Route, &out.Route
 		*out = (*in).DeepCopy()
 	}
-	if in.FailoverRoute != nil {
-		in, out := &in.FailoverRoute, &out.FailoverRoute
-		*out = (*in).DeepCopy()
+	if in.FailoverRoutes != nil {
+		in, out := &in.FailoverRoutes, &out.FailoverRoutes
+		*out = make([]types.ObjectRef, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 	if in.ProxyRoutes != nil {
 		in, out := &in.ProxyRoutes, &out.ProxyRoutes

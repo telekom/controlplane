@@ -461,8 +461,12 @@ spec:
                         type: object
                       targetZoneName:
                         type: string
-                      upstreams:
+                      targets:
                         items:
+                          description: |-
+                            FailoverTarget pairs an upstream with the zone it belongs to.
+                            ZoneName is used by the gateway jumper to health-check the zone before routing.
+                            An empty ZoneName means unconditional fallback (last resort).
                           properties:
                             hostname:
                               type: string
@@ -476,6 +480,8 @@ spec:
                             weight:
                               format: int32
                               type: integer
+                            zoneName:
+                              type: string
                           required:
                           - hostname
                           - path
@@ -485,7 +491,7 @@ spec:
                         type: array
                     required:
                     - targetZoneName
-                    - upstreams
+                    - targets
                     type: object
                   rateLimit:
                     description: RateLimit defines rate limits for different time

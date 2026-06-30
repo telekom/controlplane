@@ -281,9 +281,9 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 			util.WithRealmName(state.realmName),
 		}
 
-		// Pass provider failover zone if configured (so the proxy route knows the secondary target)
+		// Pass provider failover zones if configured (so the proxy route knows the secondary targets)
 		if apiExp.HasFailover() {
-			options = append(options, util.WithFailoverZone(apiExp.Spec.Traffic.Failover.Zones[0]))
+			options = append(options, util.WithFailoverZones(apiExp.Spec.Traffic.Failover.Zones))
 		}
 
 		if apiExp.HasProviderRateLimit() {
@@ -308,19 +308,22 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 		logger.V(1).Info("Proxy route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
 	}
 
-	// --- Provider failover (secondary) route ---
+	// --- Provider failover (secondary) routes ---
+	apiExp.Status.FailoverRoutes = nil
 	if apiExp.HasFailover() {
-		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
-		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
-			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
-			util.WithFailoverSecurity(apiExp.Spec.Security),
-			util.WithTrustedIssuers(state.crossZoneLmsIssuers),
-			util.WithRealmName(state.realmName),
-		)
-		if err != nil {
-			return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
+		for _, failoverZone := range apiExp.Spec.Traffic.Failover.Zones {
+			failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
+				util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
+				util.WithFailoverSecurity(apiExp.Spec.Security),
+				util.WithTrustedIssuers(state.crossZoneLmsIssuers),
+				util.WithRealmName(state.realmName),
+			)
+			if err != nil {
+				return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in zone: %s", apiExp.Name, failoverZone.Name)
+			}
+			apiExp.Status.FailoverRoutes = append(apiExp.Status.FailoverRoutes, *types.ObjectRefFromObject(failoverRoute))
+			logger.V(1).Info("Failover secondary route created/updated", "zone", failoverZone.Name, "route", failoverRoute.Name)
 		}
-		apiExp.Status.FailoverRoute = types.ObjectRefFromObject(failoverRoute)
 	}
 
 	// Cleanup stale proxy routes that were not touched in this reconciliation
@@ -489,21 +492,23 @@ func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure
 		logger.Info("✅ Successfully deleted obsolete route")
 	}
 
-	if obj.Status.FailoverRoute != nil {
-		failoverRoute := &gatewayapi.Route{}
-		err := scopedClient.Get(ctx, obj.Status.FailoverRoute.K8s(), failoverRoute)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return nil
+	if len(obj.Status.FailoverRoutes) > 0 {
+		for _, failoverRouteRef := range obj.Status.FailoverRoutes {
+			failoverRoute := &gatewayapi.Route{}
+			err := scopedClient.Get(ctx, failoverRouteRef.K8s(), failoverRoute)
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					continue
+				}
+				return errors.Wrap(err, "failed to get failover route")
 			}
-			return errors.Wrap(err, "failed to get failover route")
+			logger.Info("Deleting failover proxy route of exposure", "route", failoverRouteRef.Name)
+			err = scopedClient.Delete(ctx, failoverRoute)
+			if err != nil {
+				return errors.Wrapf(err, "failed to delete failover route")
+			}
+			logger.Info("Successfully deleted obsolete failover route", "route", failoverRouteRef.Name)
 		}
-		logger.Info("🧹 Deleting failover proxy route of exposure")
-		err = scopedClient.Delete(ctx, failoverRoute)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete failover route")
-		}
-		logger.Info("✅ Successfully deleted obsolete failover route")
 	}
 
 	return nil

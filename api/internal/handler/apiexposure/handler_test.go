@@ -562,7 +562,7 @@ var _ = Describe("ApiExposureHandler", func() {
 
 				// Status
 				Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
-				Expect(obj.Status.FailoverRoute).ToNot(BeNil())
+				Expect(obj.Status.FailoverRoutes).ToNot(BeEmpty())
 				Expect(obj.Status.Route).ToNot(BeNil())
 			})
 		})

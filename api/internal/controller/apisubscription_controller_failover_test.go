@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -114,7 +113,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 			g.Expect(apiExposure.Status.Active).To(BeTrue())
 			g.Expect(apiExposure.Status.Route).ToNot(BeNil())
-			g.Expect(apiExposure.Status.FailoverRoute).ToNot(BeNil())
+			g.Expect(apiExposure.Status.FailoverRoutes).ToNot(BeEmpty())
 		}, timeout, interval).Should(Succeed())
 	})
 
@@ -167,7 +166,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				// Verify route has proper failover configuration pointing to provider API
 				g.Expect(route.Spec.Traffic.Failover).ToNot(BeNil())
 				g.Expect(route.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
-				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].Url()).To(Equal("http://my-provider-api:8080/api/v1"))
+				g.Expect(route.Spec.Traffic.Failover.Targets[0].Upstream.Url()).To(Equal("http://my-provider-api:8080/api/v1"))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -246,9 +245,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(route.Labels[config.BuildLabelKey("type")]).To(Equal("proxy"))
 				g.Expect(route.Spec.Traffic.Failover).ToNot(BeNil())
 				g.Expect(route.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
-				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].Url()).To(Equal("http://my-gateway.apisub-failover-zone:8080/apisub/failovertest/v1"))
-
-				g.Expect(route.Labels[config.BuildLabelKey("failover.zone")]).To(Equal(labelutil.NormalizeValue(failoverZone.Name)))
+				g.Expect(route.Spec.Traffic.Failover.Targets[0].Upstream.Url()).To(Equal("http://my-gateway.apisub-failover-zone:8080/apisub/failovertest/v1"))
 			}, timeout, interval).Should(Succeed())
 		})
 

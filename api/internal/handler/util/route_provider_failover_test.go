@@ -85,11 +85,11 @@ var _ = Describe("Route Provider Failover", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(proxyRoute.Spec.Traffic.Failover).ToNot(BeNil())
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams).To(HaveLen(1))
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams[0].Hostname).To(Equal("real-backend"))
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams[0].Port).To(Equal(int32(8080)))
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams[0].Path).To(Equal("/my/api/v1"))
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams[0].Scheme).To(Equal("http"))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets).To(HaveLen(1))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets[0].Upstream.Hostname).To(Equal("real-backend"))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets[0].Upstream.Port).To(Equal(int32(8080)))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets[0].Upstream.Path).To(Equal("/my/api/v1"))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets[0].Upstream.Scheme).To(Equal("http"))
 		})
 
 		It("should set the TargetZoneName to the upstream zone name", func() {
@@ -116,11 +116,11 @@ var _ = Describe("Route Provider Failover", func() {
 			err := configureAsFailoverTarget(ctx, proxyRoute, options, "provider-zone")
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams).To(HaveLen(2))
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams[0].Hostname).To(Equal("backend-a"))
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams[0].Weight).To(Equal(int32(60)))
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams[1].Hostname).To(Equal("backend-b"))
-			Expect(proxyRoute.Spec.Traffic.Failover.Upstreams[1].Weight).To(Equal(int32(40)))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets).To(HaveLen(2))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets[0].Upstream.Hostname).To(Equal("backend-a"))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets[0].Upstream.Weight).To(Equal(int32(60)))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets[1].Upstream.Hostname).To(Equal("backend-b"))
+			Expect(proxyRoute.Spec.Traffic.Failover.Targets[1].Upstream.Weight).To(Equal(int32(40)))
 		})
 
 		It("should append trusted issuers when provided", func() {
@@ -308,8 +308,8 @@ var _ = Describe("Route Provider Failover", func() {
 			// Verify failover traffic config
 			Expect(route.Spec.Traffic.Failover).ToNot(BeNil())
 			Expect(route.Spec.Traffic.Failover.TargetZoneName).To(Equal("provider-zone"))
-			Expect(route.Spec.Traffic.Failover.Upstreams).To(HaveLen(1))
-			Expect(route.Spec.Traffic.Failover.Upstreams[0].Url()).To(Equal("http://real-backend:8080/my/api/v1"))
+			Expect(route.Spec.Traffic.Failover.Targets).To(HaveLen(1))
+			Expect(route.Spec.Traffic.Failover.Targets[0].Upstream.Url()).To(Equal("http://real-backend:8080/my/api/v1"))
 
 			// Verify failover security
 			Expect(route.Spec.Traffic.Failover.Security.M2M).ToNot(BeNil())

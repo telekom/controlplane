@@ -57,9 +57,17 @@ type CircuitBreaker struct {
 }
 
 type Failover struct {
-	TargetZoneName string     `json:"targetZoneName"`
-	Upstreams      []Upstream `json:"upstreams"`
-	Security       Security   `json:"security,omitempty"`
+	TargetZoneName string           `json:"targetZoneName"`
+	Targets        []FailoverTarget `json:"targets"`
+	Security       Security         `json:"security,omitempty"`
+}
+
+// FailoverTarget pairs an upstream with the zone it belongs to.
+// ZoneName is used by the gateway jumper to health-check the zone before routing.
+// An empty ZoneName means unconditional fallback (last resort).
+type FailoverTarget struct {
+	ZoneName string `json:"zoneName,omitempty"`
+	Upstream `json:",inline"`
 }
 
 // RateLimit defines rate limits for different time windows

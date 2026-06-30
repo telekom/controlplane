@@ -189,7 +189,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	// Construct reference to the route using ApiExposure.Status
 	// The route reference depends on the subscription zone:
 	// - Same zone as exposure: use the real route from ApiExposure.Status.Route
-	// - Provider failover zone: use the failover route from ApiExposure.Status.FailoverRoute
+	// - Provider failover zone: use the failover route from ApiExposure.Status.FailoverRoutes
 	// - Cross-zone: find matching proxy route in ApiExposure.Status.ProxyRoutes
 
 	sameZoneAsExposure := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
@@ -317,9 +317,10 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 		}, nil
 
 	case inProviderFailoverZone:
-		providerFailoverZone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Traffic.Failover.Zones[0].K8s())
+		// subFailoverZone is the matching provider failover zone — resolve it directly
+		providerFailoverZone, err := util.GetZone(ctx, scopedClient, subFailoverZone.K8s())
 		if err != nil {
-			return types.ObjectRef{}, errors.Wrapf(err, "failed to get provider failover zone %s", apiExposure.Spec.Traffic.Failover.Zones[0].Name)
+			return types.ObjectRef{}, errors.Wrapf(err, "failed to get provider failover zone %s", subFailoverZone.Name)
 		}
 		logger.V(1).Info("Referencing provider failover route", "zone", subFailoverZone.Name)
 		return types.ObjectRef{
@@ -392,12 +393,19 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 		return apiExposure.Status.Route, nil
 
 	case inProviderFailoverZone:
-		if apiExposure.Status.FailoverRoute == nil {
-			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the failover route"))
-			return nil, nil
+		subscriptionZone, err := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get subscription zone %s", apiSub.Spec.Zone.Name)
 		}
-		logger.V(1).Info("Referencing provider failover route from ApiExposure", "route", apiExposure.Status.FailoverRoute.String())
-		return apiExposure.Status.FailoverRoute, nil
+		for i := range apiExposure.Status.FailoverRoutes {
+			failoverRoute := &apiExposure.Status.FailoverRoutes[i]
+			if failoverRoute.Namespace == subscriptionZone.Status.Namespace {
+				logger.V(1).Info("Referencing provider failover route from ApiExposure", "zone", apiSub.Spec.Zone.Name, "route", failoverRoute.String())
+				return failoverRoute, nil
+			}
+		}
+		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the failover route for this zone"))
+		return nil, nil
 
 	default:
 		subscriptionZone, err := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())

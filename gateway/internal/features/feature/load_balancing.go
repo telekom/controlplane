@@ -69,6 +69,16 @@ func mapToLoadBalancingServers(upstreams []gatewayv1.Upstream) *plugin.LoadBalan
 	}
 }
 
+func mapFailoverTargetsToLoadBalancingServers(targets []gatewayv1.FailoverTarget) *plugin.LoadBalancing {
+	servers := make([]plugin.LoadBalancingServer, 0, len(targets))
+	for _, target := range targets {
+		servers = append(servers, mapToLoadBalancingServer(target.Upstream))
+	}
+	return &plugin.LoadBalancing{
+		Servers: servers,
+	}
+}
+
 func mapToLoadBalancingServer(upstream gatewayv1.Upstream) plugin.LoadBalancingServer {
 	return plugin.LoadBalancingServer{
 		Upstream: upstream.Url(),

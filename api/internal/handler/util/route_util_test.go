@@ -56,15 +56,16 @@ var _ = Describe("Route Util", func() {
 			})
 		})
 
-		Describe("WithFailoverZone", func() {
-			It("should set failover zone on options", func() {
-				zone := types.ObjectRef{Name: "my-zone", Namespace: "my-ns"}
+		Describe("WithFailoverZones", func() {
+			It("should set failover zones on options", func() {
+				zones := []types.ObjectRef{{Name: "my-zone", Namespace: "my-ns"}}
 
 				opts := &CreateRouteOptions{}
-				WithFailoverZone(zone)(opts)
+				WithFailoverZones(zones)(opts)
 
-				Expect(opts.FailoverZone.Name).To(Equal("my-zone"))
-				Expect(opts.FailoverZone.Namespace).To(Equal("my-ns"))
+				Expect(opts.FailoverZones).To(HaveLen(1))
+				Expect(opts.FailoverZones[0].Name).To(Equal("my-zone"))
+				Expect(opts.FailoverZones[0].Namespace).To(Equal("my-ns"))
 			})
 		})
 
@@ -136,24 +137,22 @@ var _ = Describe("Route Util", func() {
 		})
 
 		Describe("HasFailover", func() {
-			It("should return true when failover zone is fully set", func() {
+			It("should return true when failover zones are set", func() {
 				opts := CreateRouteOptions{
-					FailoverZone: types.ObjectRef{Name: "zone", Namespace: "ns"},
+					FailoverZones: []types.ObjectRef{{Name: "zone", Namespace: "ns"}},
 				}
 				Expect(opts.HasFailover()).To(BeTrue())
 			})
 
-			It("should return false when failover zone name is empty", func() {
+			It("should return false when failover zones are empty", func() {
 				opts := CreateRouteOptions{
-					FailoverZone: types.ObjectRef{Namespace: "ns"},
+					FailoverZones: []types.ObjectRef{},
 				}
 				Expect(opts.HasFailover()).To(BeFalse())
 			})
 
-			It("should return false when failover zone namespace is empty", func() {
-				opts := CreateRouteOptions{
-					FailoverZone: types.ObjectRef{Name: "zone"},
-				}
+			It("should return false when failover zones are nil", func() {
+				opts := CreateRouteOptions{}
 				Expect(opts.HasFailover()).To(BeFalse())
 			})
 

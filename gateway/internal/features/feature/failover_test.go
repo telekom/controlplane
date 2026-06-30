@@ -47,15 +47,15 @@ var _ = Describe("FailoverFeature", func() {
 	})
 
 	Describe("IsUsed()", func() {
-		Context("when route has failover with upstreams", func() {
+		Context("when route has failover with targets", func() {
 			It("returns true", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
 						Traffic: gatewayv1.Traffic{
 							Failover: &gatewayv1.Failover{
 								TargetZoneName: "zone-a",
-								Upstreams: []gatewayv1.Upstream{
-									{Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/v1"},
+								Targets: []gatewayv1.FailoverTarget{
+									{Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/v1"}},
 								},
 							},
 						},
@@ -67,14 +67,14 @@ var _ = Describe("FailoverFeature", func() {
 			})
 		})
 
-		Context("when route has failover with empty upstreams", func() {
+		Context("when route has failover with empty targets", func() {
 			It("returns false", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
 						Traffic: gatewayv1.Traffic{
 							Failover: &gatewayv1.Failover{
 								TargetZoneName: "zone-a",
-								Upstreams:      []gatewayv1.Upstream{},
+								Targets:        []gatewayv1.FailoverTarget{},
 							},
 						},
 					},
@@ -126,8 +126,8 @@ var _ = Describe("FailoverFeature", func() {
 							Traffic: gatewayv1.Traffic{
 								Failover: &gatewayv1.Failover{
 									TargetZoneName: "zone-a",
-									Upstreams: []gatewayv1.Upstream{
-										{Scheme: "https", Hostname: "failover.example.com", Port: 8443, Path: "/v1"},
+									Targets: []gatewayv1.FailoverTarget{
+										{Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "failover.example.com", Port: 8443, Path: "/v1"}},
 									},
 								},
 							},
@@ -187,9 +187,9 @@ var _ = Describe("FailoverFeature", func() {
 							Traffic: gatewayv1.Traffic{
 								Failover: &gatewayv1.Failover{
 									TargetZoneName: "zone-a",
-									Upstreams: []gatewayv1.Upstream{
-										{Scheme: "https", Hostname: "failover-a.example.com", Port: 443, Path: "/v1", Weight: 70},
-										{Scheme: "https", Hostname: "failover-b.example.com", Port: 443, Path: "/v1", Weight: 30},
+									Targets: []gatewayv1.FailoverTarget{
+										{Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "failover-a.example.com", Port: 443, Path: "/v1", Weight: 70}},
+										{Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "failover-b.example.com", Port: 443, Path: "/v1", Weight: 30}},
 									},
 								},
 							},
@@ -242,8 +242,8 @@ var _ = Describe("FailoverFeature", func() {
 							Traffic: gatewayv1.Traffic{
 								Failover: &gatewayv1.Failover{
 									TargetZoneName: "zone-a",
-									Upstreams: []gatewayv1.Upstream{
-										{Scheme: "https", Hostname: "secondary.example.com", Port: 443, Path: "/v2"},
+									Targets: []gatewayv1.FailoverTarget{
+										{ZoneName: "zone-b", Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "secondary.example.com", Port: 443, Path: "/v2"}},
 									},
 								},
 							},
@@ -266,11 +266,11 @@ var _ = Describe("FailoverFeature", func() {
 
 					Expect(routingConfigs.Len()).To(Equal(2))
 
-					// Second routing config: failover upstream with empty TargetZoneName
+					// Second routing config: failover upstream with its ZoneName as TargetZoneName
 					failoverConfig := routingConfigs.Get(1)
 					Expect(failoverConfig.RemoteApiUrl).To(Equal("https://secondary.example.com:443/v2"))
 					Expect(failoverConfig.ApiBasePath).To(Equal("/v2"))
-					Expect(failoverConfig.TargetZoneName).To(BeEmpty())
+					Expect(failoverConfig.TargetZoneName).To(Equal("zone-b"))
 				})
 			})
 
@@ -291,8 +291,8 @@ var _ = Describe("FailoverFeature", func() {
 							Traffic: gatewayv1.Traffic{
 								Failover: &gatewayv1.Failover{
 									TargetZoneName: "zone-a",
-									Upstreams: []gatewayv1.Upstream{
-										{Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/v1"},
+									Targets: []gatewayv1.FailoverTarget{
+										{Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/v1"}},
 									},
 									Security: gatewayv1.Security{
 										M2M: &gatewayv1.Machine2MachineAuthentication{
@@ -333,22 +333,9 @@ var _ = Describe("FailoverFeature", func() {
 					Expect(rtpPlugin.Config.Append.Headers.Contains("token_endpoint")).To(BeFalse())
 				})
 			})
-		})
 
-		Context("error handling", func() {
-			Context("when no route in builder", func() {
-				It("returns ErrNoRoute", func() {
-					routingConfigs := &plugin.RoutingConfigs{}
-					builder.EXPECT().RoutingConfigs().Return(routingConfigs)
-					builder.EXPECT().GetRoute().Return(nil, false)
-
-					err := f.Apply(ctx, builder)
-					Expect(err).To(MatchError(features.ErrNoRoute))
-				})
-			})
-
-			Context("when proxy route (not secondary) with multiple upstreams", func() {
-				It("returns error about unsupported loadbalancing", func() {
+			Context("when proxy route (not secondary) with multiple failover targets", func() {
+				It("creates one routing config per target, each with its own zone", func() {
 					route := &gatewayv1.Route{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "proxy-lb-route",
@@ -364,9 +351,9 @@ var _ = Describe("FailoverFeature", func() {
 							Traffic: gatewayv1.Traffic{
 								Failover: &gatewayv1.Failover{
 									TargetZoneName: "zone-a",
-									Upstreams: []gatewayv1.Upstream{
-										{Scheme: "https", Hostname: "failover-a.example.com", Port: 443, Path: "/v1", Weight: 50},
-										{Scheme: "https", Hostname: "failover-b.example.com", Port: 443, Path: "/v1", Weight: 50},
+									Targets: []gatewayv1.FailoverTarget{
+										{ZoneName: "zone-b", Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "failover-a.example.com", Port: 443, Path: "/v1", Weight: 50}},
+										{ZoneName: "zone-c", Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "failover-b.example.com", Port: 443, Path: "/v1", Weight: 50}},
 									},
 								},
 							},
@@ -385,8 +372,45 @@ var _ = Describe("FailoverFeature", func() {
 					builder.EXPECT().JumperConfig().Return(jumperConfig)
 
 					err := f.Apply(ctx, builder)
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("loadbalancing is not supported for proxy routes that are not failover secondary routes"))
+					Expect(err).ToNot(HaveOccurred())
+
+					// One proxy config + one config per failover target
+					Expect(routingConfigs.Len()).To(Equal(3))
+
+					// index 0: proxy to primary upstream
+					proxyConfig := routingConfigs.Get(0)
+					Expect(proxyConfig.RemoteApiUrl).To(Equal("https://primary.example.com:443/api"))
+					Expect(proxyConfig.TargetZoneName).To(Equal("zone-a"))
+					Expect(proxyConfig.JumperConfig).To(BeNil())
+
+					// index 1: first failover target (zone-b)
+					target1 := routingConfigs.Get(1)
+					Expect(target1.RemoteApiUrl).To(Equal("https://failover-a.example.com:443/v1"))
+					Expect(target1.ApiBasePath).To(Equal("/v1"))
+					Expect(target1.TargetZoneName).To(Equal("zone-b"))
+					Expect(target1.JumperConfig).To(Equal(jumperConfig))
+					Expect(target1.LoadBalancing).To(BeNil())
+
+					// index 2: second failover target (zone-c)
+					target2 := routingConfigs.Get(2)
+					Expect(target2.RemoteApiUrl).To(Equal("https://failover-b.example.com:443/v1"))
+					Expect(target2.ApiBasePath).To(Equal("/v1"))
+					Expect(target2.TargetZoneName).To(Equal("zone-c"))
+					Expect(target2.JumperConfig).To(Equal(jumperConfig))
+					Expect(target2.LoadBalancing).To(BeNil())
+				})
+			})
+		})
+
+		Context("error handling", func() {
+			Context("when no route in builder", func() {
+				It("returns ErrNoRoute", func() {
+					routingConfigs := &plugin.RoutingConfigs{}
+					builder.EXPECT().RoutingConfigs().Return(routingConfigs)
+					builder.EXPECT().GetRoute().Return(nil, false)
+
+					err := f.Apply(ctx, builder)
+					Expect(err).To(MatchError(features.ErrNoRoute))
 				})
 			})
 		})
@@ -409,8 +433,8 @@ var _ = Describe("FailoverFeature", func() {
 							Traffic: gatewayv1.Traffic{
 								Failover: &gatewayv1.Failover{
 									TargetZoneName: "zone-west",
-									Upstreams: []gatewayv1.Upstream{
-										{Scheme: "https", Hostname: "failover.external.io", Port: 9443, Path: "/api/v2"},
+									Targets: []gatewayv1.FailoverTarget{
+										{Upstream: gatewayv1.Upstream{Scheme: "https", Hostname: "failover.external.io", Port: 9443, Path: "/api/v2"}},
 									},
 								},
 							},

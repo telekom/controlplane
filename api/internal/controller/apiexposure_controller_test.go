@@ -510,8 +510,8 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 		if err != nil && !apierrors.IsNotFound(err) {
 			Expect(err).ToNot(HaveOccurred(), "Failed to delete the route %s/%s", route.Namespace, route.Name)
 		}
-		route.Name = apiExposure.Status.FailoverRoute.Name
-		route.Namespace = apiExposure.Status.FailoverRoute.Namespace
+		route.Name = apiExposure.Status.FailoverRoutes[0].Name
+		route.Namespace = apiExposure.Status.FailoverRoutes[0].Namespace
 		err = k8sClient.Delete(ctx, route)
 		if err != nil && !apierrors.IsNotFound(err) {
 			Expect(err).ToNot(HaveOccurred(), "Failed to delete the failover route %s/%s", route.Namespace, route.Name)
@@ -557,7 +557,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 
 				g.Expect(apiExposure.Status.Active).To(BeTrue())
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
-				g.Expect(apiExposure.Status.FailoverRoute).ToNot(BeNil())
+				g.Expect(apiExposure.Status.FailoverRoutes).ToNot(BeEmpty())
 
 				realRoute := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), realRoute)
@@ -576,7 +576,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(realRoute.Spec.Traffic.Failover).To(BeNil())
 
 				failoverRoute := &gatewayapi.Route{}
-				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoute.K8s(), failoverRoute)
+				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoutes[0].K8s(), failoverRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
 				Expect(failoverRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-gateway.apiexp-failovertest"))
@@ -591,10 +591,10 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(failoverRoute.Spec.Security.DefaultConsumers).To(ContainElement(util.GatewayConsumerName),
 					"Failover secondary route should contain gateway consumer for cross-zone proxy access")
 
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Hostname).To(Equal("my-provider-api"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Port).To(Equal(int32(8080)))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Path).To(Equal("/api/v1"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Scheme).To(Equal("http"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Hostname).To(Equal("my-provider-api"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Port).To(Equal(int32(8080)))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Path).To(Equal("/api/v1"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Scheme).To(Equal("http"))
 				Expect(failoverRoute.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
 			}, timeout, interval).Should(Succeed())
 		})
@@ -650,7 +650,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				g.Expect(apiExposure.Status.Active).To(BeTrue())
 
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
-				g.Expect(apiExposure.Status.FailoverRoute).ToNot(BeNil())
+				g.Expect(apiExposure.Status.FailoverRoutes).ToNot(BeEmpty())
 
 				realRoute := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), realRoute)
@@ -667,7 +667,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(realRoute.Spec.Traffic.Failover).To(BeNil())
 
 				failoverRoute := &gatewayapi.Route{}
-				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoute.K8s(), failoverRoute)
+				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoutes[0].K8s(), failoverRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
 				Expect(failoverRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-gateway.apiexp-failovertest"))
@@ -676,10 +676,10 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 
 				Expect(failoverRoute.Spec.Traffic.Failover).ToNot(BeNil())
 
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Hostname).To(Equal("my-provider-api"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Port).To(Equal(int32(8080)))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Path).To(Equal("/api/v1"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Scheme).To(Equal("http"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Hostname).To(Equal("my-provider-api"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Port).To(Equal(int32(8080)))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Path).To(Equal("/api/v1"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Scheme).To(Equal("http"))
 				Expect(failoverRoute.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
 
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://my-issser.example.com/token"))
