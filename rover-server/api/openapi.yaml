@@ -1739,6 +1739,40 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventScope'
+    FileExposure:
+      type: object
+      required:
+        - type
+        - fileType
+        - publicKeys
+      properties:
+        type:
+          type: string
+        fileType:
+          type: string
+        variant:
+          type: string
+          enum:
+            - sftp
+          description: File-transfer backend. Optional; currently only "sftp" is supported.
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        publicKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKey'
+    PublicKey:
+      type: object
+      required:
+        - label
+        - key
+      properties:
+        label:
+          type: string
+          description: Human-readable identifier for the key. Must be unique per fileType.
+        key:
+          type: string
+          description: SSH public key value. Must be unique per fileType.
     Exposure:
       type: object
       discriminator:
@@ -1746,9 +1780,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiExposure'
           event: '#/components/schemas/EventExposure'
+          file: '#/components/schemas/FileExposure'
       oneOf:
         - $ref: '#/components/schemas/ApiExposure'
         - $ref: '#/components/schemas/EventExposure'
+        - $ref: '#/components/schemas/FileExposure'
 
 
     ApiExposureInfo:
@@ -1769,15 +1805,26 @@ components:
               type: string
               enum:
                 - event
+    FileExposureInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FileExposure'
+        - properties:
+            type:
+              type: string
+              enum:
+                - file
     ExposureInfo:
       discriminator:
         propertyName: type
         mapping:
           api: '#/components/schemas/ApiExposureInfo'
           event: '#/components/schemas/EventExposureInfo'
+          file: '#/components/schemas/FileExposureInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiExposureInfo'
         - $ref: '#/components/schemas/EventExposureInfo'
+        - $ref: '#/components/schemas/FileExposureInfo'
 
     ApplicationInfo:
       type: object
@@ -2409,6 +2456,26 @@ components:
           description: >
             If true, the health check will be performed with a GET request
             instead of a HEAD request
+    FileSubscription:
+      type: object
+      required:
+        - type
+        - fileType
+        - publicKeys
+      properties:
+        type:
+          type: string
+        fileType:
+          type: string
+        variant:
+          type: string
+          enum:
+            - sftp
+          description: File-transfer backend. Optional; currently only "sftp" is supported.
+        publicKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKey'
     Subscription:
       type: object
       discriminator:
@@ -2416,9 +2483,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiSubscription'
           event: '#/components/schemas/EventSubscription'
+          file: '#/components/schemas/FileSubscription'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscription'
         - $ref: '#/components/schemas/EventSubscription'
+        - $ref: '#/components/schemas/FileSubscription'
 
     ApiSubscriptionInfo:
       type: object
@@ -2446,6 +2515,15 @@ components:
               type: string
             horizonSubscriptionUrl:
               type: string
+    FileSubscriptionInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FileSubscription'
+        - properties:
+            type:
+              type: string
+              enum:
+                - file
     SubscriptionInfo:
       readOnly: true
       discriminator:
@@ -2453,9 +2531,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiSubscriptionInfo'
           event: '#/components/schemas/EventSubscriptionInfo'
+          file: '#/components/schemas/FileSubscriptionInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscriptionInfo'
         - $ref: '#/components/schemas/EventSubscriptionInfo'
+        - $ref: '#/components/schemas/FileSubscriptionInfo'
 
     EventTrigger:
       type: object
