@@ -5,7 +5,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.31.0
+ENVTEST_K8S_VERSION = 1.32.0
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -60,7 +60,8 @@ vet: ## Run go vet against code.
 
 # Packages to test and measure coverage for
 TEST_PACKAGES = ./internal/... ./pkg/kong/client/...
-COVER_PACKAGES = ./internal/...,./pkg/kong/client/...
+# Coverage scope: exclude generated mocks (internal/features/mock, pkg/kong/client/mock)
+COVER_PACKAGES = ./internal/controller/...,./internal/features,./internal/features/feature,./internal/features/feature/config,./internal/handler/...,./pkg/kong/client,./pkg/kong/client/plugin
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.

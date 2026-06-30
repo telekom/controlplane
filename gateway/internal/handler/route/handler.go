@@ -20,7 +20,6 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
-	"github.com/telekom/controlplane/gateway/internal/handler/realm"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -109,12 +108,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 
 func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error {
 
-	_, realm, err := realm.GetRealmByRef(ctx, route.Spec.Realm)
-	if err != nil {
-		return err
-	}
-
-	_, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
+	_, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
 		return err
 	}
@@ -133,20 +127,13 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 }
 
 func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, error) {
-	ready, realm, err := realm.GetRealmByRef(ctx, route.Spec.Realm)
-	if err != nil {
-		return nil, err
-	}
-	if !ready {
-		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", route.Spec.Realm.Name)
-	}
 
-	ready, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
+	ready, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
 		return nil, err
 	}
 	if !ready {
-		return nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", realm.Spec.Gateway.Name)
+		return nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
 	}
 
 	kc, err := kongutil.GetClientFor(gateway)
@@ -154,7 +141,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 		return nil, errors.Wrap(err, "failed to get kong client")
 	}
 
-	builder := features.NewFeatureBuilder(kc, route, nil, realm, gateway)
+	builder := features.NewFeatureBuilder(kc, route, nil, gateway)
 	builder.EnableFeature(feature.InstanceAccessControlFeature)
 	builder.EnableFeature(feature.InstancePassThroughFeature)
 	builder.EnableFeature(feature.InstanceLastMileSecurityFeature)

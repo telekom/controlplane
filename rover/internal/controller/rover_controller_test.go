@@ -552,7 +552,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 								Strategy: roverv1.ApprovalStrategyAuto,
 							},
 							Traffic: &roverv1.Traffic{
-								Failover: &roverv1.Failover{
+								Failover: &roverv1.ProviderFailover{
 									Zones: []string{testEnvironment},
 								},
 								RateLimit: &roverv1.RateLimit{

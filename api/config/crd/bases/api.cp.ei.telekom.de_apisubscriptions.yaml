@@ -144,31 +144,15 @@ spec:
                     description: Failover defines the failover configuration for the
                       API exposure.
                     properties:
-                      zone:
-                        description: Zone is the zone to which the traffic should
-                          be failed over in case of an error.
-                        items:
-                          description: |-
-                            ObjectRef is a reference to a Kubernetes object
-                            It is similar to types.NamespacedName but has the required json tags for serialization
-                          properties:
-                            name:
-                              type: string
-                            namespace:
-                              type: string
-                            uid:
-                              description: |-
-                                UID is a type that holds unique ID values, including UUIDs.  Because we
-                                don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                                intent and helps make sure that UIDs and names do not get conflated.
-                              type: string
-                          required:
-                          - name
-                          - namespace
-                          type: object
-                        type: array
+                      enabled:
+                        default: false
+                        description: |-
+                          Enabled flags if failover is enabled
+                          This automatically selects eligible zones for failover based on the owner zone
+                          and available zones in the cluster.
+                        type: boolean
                     required:
-                    - zone
+                    - enabled
                     type: object
                 type: object
               zone:
@@ -357,6 +341,17 @@ spec:
                   - namespace
                   type: object
                 type: array
+              gatewayUrl:
+                description: |-
+                  GatewayUrl is the url of the gateway used for the subscription
+                  This is used by the Consumer to send requests to the subscriber zone
+                type: string
+              idpIssuer:
+                description: |-
+                  IdpIssuer is the issuer of the identity provider used for authentication
+                  This is used by the Consumer to fetch a token from the identity provider
+                  and is checked by the Gateway on the subscriber zone
+                type: string
               remoteApiSubscription:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object

@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -150,23 +151,29 @@ var _ = Describe("PermissionSet Controller", func() {
 					IdentityProvider: adminv1.IdentityProviderConfig{
 						Url: "https://idp.example.com",
 						Admin: adminv1.IdentityProviderAdminConfig{
+							Url:      ptr.To("https://idp-admin.example.com"),
 							UserName: "admin",
 							Password: "password",
 							ClientId: "client-id",
 						},
 					},
 					Gateway: adminv1.GatewayConfig{
-						Url:            "https://gateway.example.com",
-						CircuitBreaker: false,
 						Admin: adminv1.GatewayAdminConfig{
-							ClientSecret: "secret",
+							Url: "https://gateway-admin.example.com",
 						},
-					},
-					Redis: adminv1.RedisConfig{
-						Host:      "redis.example.com",
-						Port:      6379,
-						Password:  "redis-password",
-						EnableTLS: true,
+						Presets: []adminv1.GatewayConfigPreset{
+							{
+								Name:    "test",
+								Default: true,
+								Urls: []adminv1.UrlConfig{
+									{
+										Hostname: "gateway.example.com",
+										Scheme:   "https",
+										BasePath: "/",
+									},
+								},
+							},
+						},
 					},
 				},
 			}

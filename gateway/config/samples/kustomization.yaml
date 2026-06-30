@@ -9,5 +9,4 @@ resources:
 - gateway_v1_routepermission.yaml
 - gateway_v1_consumeroute.yaml
 - gateway_v1_consumer.yaml
-- gateway_v1_realm.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

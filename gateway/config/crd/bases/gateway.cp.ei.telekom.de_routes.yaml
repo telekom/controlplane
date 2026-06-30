@@ -40,8 +40,42 @@ spec:
           metadata:
             type: object
           spec:
-            description: RouteSpec defines the desired state of Route
+            description: spec defines the desired state of Route
             properties:
+              backend:
+                description: Backend defines the backend for this route. Only one
+                  of Backend or Traffic can be set.
+                properties:
+                  upstreams:
+                    description: Upstreams defines the upstream targets for this route.
+                      If multiple targets are defined, they will be load balanced
+                      according to their weight.
+                    items:
+                      properties:
+                        hostname:
+                          type: string
+                        path:
+                          type: string
+                        port:
+                          format: int32
+                          type: integer
+                        scheme:
+                          type: string
+                        weight:
+                          format: int32
+                          type: integer
+                      required:
+                      - hostname
+                      - path
+                      - port
+                      - scheme
+                      type: object
+                    maxItems: 10
+                    minItems: 1
+                    type: array
+                required:
+                - upstreams
+                type: object
               buffering:
                 description: Buffering configures Kong request/response body buffering
                   for this route
@@ -61,33 +95,9 @@ spec:
                       without being buffered first. Useful for SSE or large downloads.
                     type: boolean
                 type: object
-              downstreams:
-                items:
-                  properties:
-                    host:
-                      type: string
-                    issuerUrl:
-                      type: string
-                    path:
-                      type: string
-                    port:
-                      type: integer
-                  required:
-                  - host
-                  - path
-                  - port
-                  type: object
-                minItems: 1
-                type: array
-              passThrough:
-                default: false
-                description: PassThrough is a flag to pass through the request to
-                  the upstream without authentication
-                type: boolean
-              realm:
-                description: |-
-                  ObjectRef is a reference to a Kubernetes object
-                  It is similar to types.NamespacedName but has the required json tags for serialization
+              gatewayRef:
+                description: GatewayRef is a reference to the Gateway this Route belongs
+                  to
                 properties:
                   name:
                     type: string
@@ -103,6 +113,33 @@ spec:
                 - name
                 - namespace
                 type: object
+              hostnames:
+                description: Hostnames defines the hostnames that are accepted for
+                  this route. If empty, all hostnames are accepted.
+                items:
+                  maxLength: 253
+                  type: string
+                maxItems: 20
+                minItems: 0
+                type: array
+                x-kubernetes-list-type: set
+                x-kubernetes-validations:
+                - message: each hostname must be a valid DNS-1123 subdomain
+                  rule: self.all(h, !format.dns1123Subdomain().validate(h).hasValue())
+              passThrough:
+                default: false
+                description: PassThrough is a flag to pass through the request to
+                  the upstream without authentication
+                type: boolean
+              paths:
+                description: Paths defines the paths that are accepted for this route.
+                  If empty, all paths are accepted.
+                items:
+                  type: string
+                maxItems: 10
+                minItems: 0
+                type: array
+                x-kubernetes-list-type: set
               security:
                 description: Security is the security configuration for the route
                 properties:
@@ -230,8 +267,24 @@ spec:
                         be provided
                       rule: self == null || has(self.externalIDP) || has(self.basic)
                         || has(self.scopes)
+                  realmName:
+                    description: RealmName defines the realm name for this route,
+                      which is used in the Jumper sidecar to determine the Last-Mile-Token
+                    type: string
+                  trustedIssuers:
+                    description: TrustedIssuers defines a list of trusted token issuers
+                      for this route. If empty, all issuers are trusted.
+                    items:
+                      format: uri
+                      type: string
+                    minItems: 0
+                    type: array
+                    x-kubernetes-list-type: set
+                required:
+                - realmName
                 type: object
               traffic:
+                description: Traffic defines the traffic configuration for this route.
                 properties:
                   circuitBreaker:
                     properties:
@@ -388,30 +441,49 @@ spec:
                                 must be provided
                               rule: self == null || has(self.externalIDP) || has(self.basic)
                                 || has(self.scopes)
+                          realmName:
+                            description: RealmName defines the realm name for this
+                              route, which is used in the Jumper sidecar to determine
+                              the Last-Mile-Token
+                            type: string
+                          trustedIssuers:
+                            description: TrustedIssuers defines a list of trusted
+                              token issuers for this route. If empty, all issuers
+                              are trusted.
+                            items:
+                              format: uri
+                              type: string
+                            minItems: 0
+                            type: array
+                            x-kubernetes-list-type: set
+                        required:
+                        - realmName
                         type: object
                       targetZoneName:
                         type: string
-                      upstreams:
+                      targets:
                         items:
+                          description: |-
+                            FailoverTarget pairs an upstream with the zone it belongs to.
+                            ZoneName is used by the gateway jumper to health-check the zone before routing.
+                            An empty ZoneName means unconditional fallback (last resort).
                           properties:
-                            clientId:
-                              type: string
-                            clientSecret:
-                              type: string
-                            host:
-                              type: string
-                            issuerUrl:
+                            hostname:
                               type: string
                             path:
                               type: string
                             port:
+                              format: int32
                               type: integer
                             scheme:
                               type: string
                             weight:
+                              format: int32
                               type: integer
+                            zoneName:
+                              type: string
                           required:
-                          - host
+                          - hostname
                           - path
                           - port
                           - scheme
@@ -419,7 +491,7 @@ spec:
                         type: array
                     required:
                     - targetZoneName
-                    - upstreams
+                    - targets
                     type: object
                   rateLimit:
                     description: RateLimit defines rate limits for different time
@@ -498,42 +570,24 @@ spec:
                         type: object
                     type: object
                 type: object
-              upstreams:
-                items:
-                  properties:
-                    clientId:
-                      type: string
-                    clientSecret:
-                      type: string
-                    host:
-                      type: string
-                    issuerUrl:
-                      type: string
-                    path:
-                      type: string
-                    port:
-                      type: integer
-                    scheme:
-                      type: string
-                    weight:
-                      type: integer
-                  required:
-                  - host
-                  - path
-                  - port
-                  - scheme
-                  type: object
-                minItems: 1
-                type: array
+              type:
+                default: primary
+                description: Type defines the type of the route. It can be either
+                  primary, secondary or proxy. The default is primary.
+                enum:
+                - primary
+                - secondary
+                - proxy
+                type: string
             required:
-            - downstreams
+            - backend
+            - gatewayRef
             - passThrough
-            - realm
             - traffic
-            - upstreams
+            - type
             type: object
           status:
-            description: RouteStatus defines the observed state of Route
+            description: status defines the observed state of Route
             properties:
               conditions:
                 items:
@@ -603,6 +657,8 @@ spec:
                   type: string
                 type: object
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
