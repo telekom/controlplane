@@ -203,10 +203,10 @@ func setUserConditions(user *sftpv1.User, hasInvalidSSHPublicKey bool) {
 	done := condition.NewDoneProcessingCondition("SSH Public keys were processed")
 	ready := condition.NewReadyCondition(sftpv1.ConditionReadyReasonSSHPublicKeyProvided, "SSH Public keys are ready")
 	if hasInvalidSSHPublicKey {
-		done = condition.NewDoneProcessingCondition("failed to process public key")
+		done = condition.NewDoneProcessingCondition("Failed to process public key")
 		ready = condition.NewNotReadyCondition(
 			sftpv1.ConditionReadyReasonSSHPublicKeyProvided,
-			"failed to process public key")
+			"Failed to process public key")
 	}
 	user.SetCondition(done)
 	user.SetCondition(ready)
