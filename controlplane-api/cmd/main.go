@@ -92,7 +92,7 @@ func main() {
 	}
 
 	secretResolver := secrets.NewResolver(secretsapi.NewSecrets())
-	srv := newGraphQLServer(client, services, secretResolver, cfg.Security.Enabled, cfg.FileManager.BaseURL)
+	srv := newGraphQLServer(client, services, secretResolver, cfg.Security.Mode != "disabled", cfg.FileManager.BaseURL)
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.EnableCors = true
@@ -104,7 +104,7 @@ func main() {
 	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
 	gqlCtrl.RegisterPlayground(s.App, "/graphql")
 	secOpts := security.SecurityOpts{
-		Enabled: cfg.Security.Enabled,
+		Enabled: cfg.Security.Mode != "disabled",
 		Log:     log.WithName("security"),
 	}
 	switch cfg.Security.Mode {

@@ -20,14 +20,6 @@ var _ = Describe("SecurityConfig", func() {
 			cfg := config.DefaultConfig()
 			Expect(cfg.Security.Mode).To(Equal("jwt"))
 		})
-
-		It("derives Enabled=true from jwt mode", func() {
-			cfg := config.DefaultConfig()
-			// DefaultConfig does not call resolveSecurityMode — Enabled is not set yet.
-			// Callers should call Validate() and resolve mode before checking Enabled.
-			// The important invariant is that Mode is "jwt".
-			Expect(cfg.Security.Mode).To(Equal("jwt"))
-		})
 	})
 
 	Describe("ReadConfig", func() {
@@ -37,7 +29,7 @@ var _ = Describe("SecurityConfig", func() {
 			return cfg
 		}
 
-		It("accepts jwt mode with trusted issuers and sets Enabled=true", func() {
+		It("accepts jwt mode with trusted issuers", func() {
 			cfg := readConfig(`
 security:
   mode: jwt
@@ -45,54 +37,31 @@ security:
     - https://idp.example.com/realms/controlplane
 `)
 			Expect(cfg.Security.Mode).To(Equal("jwt"))
-			Expect(cfg.Security.Enabled).To(BeTrue())
 			Expect(cfg.Security.TrustedIssuers).To(ConsistOf("https://idp.example.com/realms/controlplane"))
 		})
 
-		It("accepts mock mode and sets Enabled=true", func() {
+		It("accepts mock mode", func() {
 			cfg := readConfig(`
 security:
   mode: mock
 `)
 			Expect(cfg.Security.Mode).To(Equal("mock"))
-			Expect(cfg.Security.Enabled).To(BeTrue())
 		})
 
-		It("accepts disabled mode and sets Enabled=false", func() {
+		It("accepts disabled mode", func() {
 			cfg := readConfig(`
 security:
   mode: disabled
 `)
 			Expect(cfg.Security.Mode).To(Equal("disabled"))
-			Expect(cfg.Security.Enabled).To(BeFalse())
 		})
 
-		It("maps legacy enabled: false (no mode) to disabled mode", func() {
+		It("preserves jwt default when no security section is present", func() {
 			cfg := readConfig(`
-security:
-  enabled: false
+database:
+  url: postgres://localhost/test
 `)
-			Expect(cfg.Security.Mode).To(Equal("disabled"))
-			Expect(cfg.Security.Enabled).To(BeFalse())
-		})
-
-		It("maps legacy enabled: true (no mode) to mock mode", func() {
-			cfg := readConfig(`
-security:
-  enabled: true
-`)
-			Expect(cfg.Security.Mode).To(Equal("mock"))
-			Expect(cfg.Security.Enabled).To(BeTrue())
-		})
-
-		It("lets mode take precedence when both mode and enabled are specified", func() {
-			cfg := readConfig(`
-security:
-  mode: disabled
-  enabled: true
-`)
-			Expect(cfg.Security.Mode).To(Equal("disabled"))
-			Expect(cfg.Security.Enabled).To(BeFalse())
+			Expect(cfg.Security.Mode).To(Equal("jwt"))
 		})
 	})
 
