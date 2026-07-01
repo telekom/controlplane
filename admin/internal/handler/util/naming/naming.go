@@ -27,14 +27,6 @@ func ForTeamApiIdentityRealm(environment *adminv1.Environment) string {
 	return teamApiIdentityRealmPrefix + environment.GetRealmName()
 }
 
-func ForDefaultGatewayRealm(environment *adminv1.Environment) string {
-	return environment.GetRealmName()
-}
-
-func ForTeamApiGatewayRealm(environment *adminv1.Environment) string {
-	return teamApiIdentityRealmPrefix + environment.GetRealmName()
-}
-
 func ForIdentityProvider(zone *adminv1.Zone) string {
 	return zone.Name
 }
