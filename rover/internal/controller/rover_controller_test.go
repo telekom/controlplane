@@ -526,7 +526,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(apiExposure.Spec.Security.M2M.Scopes[0]).To(Equal("eIDP:scope"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal(apiapi.TokenRequestClientSecretBasic))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://idp.example.com/token"))
-				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal(apiapi.GrantTypeClientCredentials))
 			}, timeout, interval).Should(Succeed())
 
 		})
@@ -552,7 +552,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 								Strategy: roverv1.ApprovalStrategyAuto,
 							},
 							Traffic: &roverv1.Traffic{
-								Failover: &roverv1.Failover{
+								Failover: &roverv1.ProviderFailover{
 									Zones: []string{testEnvironment},
 								},
 								RateLimit: &roverv1.RateLimit{

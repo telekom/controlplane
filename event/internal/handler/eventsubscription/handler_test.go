@@ -147,7 +147,7 @@ func makeReadyEventConfig(zoneName string, fullMesh bool, meshZones []string) ev
 		},
 		Spec: eventv1.EventConfigSpec{
 			Zone: ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
-			Mesh: eventv1.MeshConfig{
+			Mesh: &eventv1.MeshConfig{
 				FullMesh:  fullMesh,
 				ZoneNames: meshZones,
 			},

@@ -94,7 +94,7 @@ func mapSecurity(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 		oauth2 := api.OAuth2{
 			TokenEndpoint: m2m.ExternalIDP.TokenEndpoint,
 			TokenRequest:  tokenRequestCRDToAPI(m2m.ExternalIDP.TokenRequest),
-			GrantType:     m2m.ExternalIDP.GrantType,
+			GrantType:     string(m2m.ExternalIDP.GrantType),
 		}
 
 		if m2m.ExternalIDP.Client != nil {
@@ -138,8 +138,13 @@ func mapTransformation(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 func mapTraffic(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 	// Failover
 	if in.Spec.Traffic.Failover != nil && len(in.Spec.Traffic.Failover.Zones) > 0 {
+		zones := make([]string, len(in.Spec.Traffic.Failover.Zones))
+		for i, z := range in.Spec.Traffic.Failover.Zones {
+			zones[i] = z.Name
+		}
 		out.Failover = api.ExposureFailover{
-			Zone: in.Spec.Traffic.Failover.Zones[0].Name,
+			Zone:  zones[0], // deprecated, kept for backward compatibility
+			Zones: zones,
 		}
 	}
 

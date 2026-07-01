@@ -93,6 +93,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 }
 
 func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedClient, app *application.Application) (*admin.Zone, []*admin.Zone, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	zone, err := GetZone(ctx, c, app.Spec.Zone)
 	if err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
@@ -101,20 +102,25 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 		return nil, nil, ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
 	}
 
-	failoverZones := make([]*admin.Zone, 0, len(app.Spec.FailoverZones))
-	if app.Spec.NeedsClient || app.Spec.NeedsConsumer {
-		for _, zoneRef := range app.Spec.FailoverZones {
-			foZone, err := GetZone(ctx, c, zoneRef)
-			if err != nil {
-				if apierrors.IsNotFound(errors.Cause(err)) {
-					return nil, nil, ctrlerrors.BlockedErrorf("Zone %s not found", zoneRef.Name)
-				}
-				return nil, nil, ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
+	// If failover is enabled, find all zones that support failover and are not the primary zone.
+	var failoverZones []*admin.Zone
+	if app.Spec.Failover.Enabled {
+		zoneList := &admin.ZoneList{}
+		if err := c.List(ctx, zoneList); err != nil {
+			return nil, nil, ctrlerrors.RetryableErrorf("failed to list Zones when creating application: %s", err.Error())
+		}
+
+		for i := range zoneList.Items {
+			if types.Equals(zone, &zoneList.Items[i]) {
+				continue
 			}
-			failoverZones = append(failoverZones, foZone)
+			if zoneList.Items[i].IsFeatureEnabled(admin.FeatureConsumerFailover) {
+				failoverZones = append(failoverZones, &zoneList.Items[i])
+			}
 		}
 	}
 
+	logger.Info("Resolved zones for application", "primary", zone.Name, "#failover", len(failoverZones))
 	return zone, failoverZones, nil
 }
 
@@ -358,12 +364,11 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
-	realmName := contextutil.EnvFromContextOrDie(ctx)
 
-	realmRef := types.ObjectRef{
-		Name:      realmName,
-		Namespace: zone.Status.Namespace,
+	if zone.Status.Gateway == nil {
+		return ctrlerrors.BlockedErrorf("zone %q does not contain a Gateway", zone.Name)
 	}
+	gatewayRef := *zone.Status.Gateway
 
 	consumer := &gateway.Consumer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -376,7 +381,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 		consumer.Labels = map[string]string{
 			config.BuildLabelKey("application"): owner.Name,
 			config.BuildLabelKey("team"):        owner.Spec.Team,
-			config.BuildLabelKey("realm"):       realmName,
+			config.BuildLabelKey("gateway"):     gatewayRef.Name,
 			config.BuildLabelKey("zone"):        zone.Name,
 		}
 		if options.Failover {
@@ -388,8 +393,8 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 			return errors.Wrapf(err, "failed to set controller reference for gateway consumer %s", resourceName)
 		}
 		consumer.Spec = gateway.ConsumerSpec{
-			Realm: realmRef,
-			Name:  clientId,
+			Gateway: gatewayRef,
+			Name:    clientId,
 		}
 
 		if owner.Spec.Security != nil && owner.Spec.Security.IpRestrictions != nil {

@@ -23,6 +23,7 @@ import (
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventexposure"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -77,10 +78,23 @@ func makeReadyZone() *adminv1.Zone {
 			Name:      "test-zone",
 			Namespace: "default",
 		},
+		Spec: adminv1.ZoneSpec{
+			Gateway: adminv1.GatewayConfig{
+				Presets: []adminv1.GatewayConfigPreset{{
+					Name:    "default",
+					Default: true,
+					Urls: []adminv1.UrlConfig{{
+						Hostname: "gateway.example.com",
+						Port:     443,
+						Scheme:   "https",
+					}},
+				}},
+			},
+		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			GatewayRealm: &ctypes.ObjectRef{
-				Name:      "gw-realm",
+			Gateway: &ctypes.ObjectRef{
+				Name:      "gw",
 				Namespace: "default",
 			},
 		},
@@ -166,31 +180,10 @@ func makeReadyApplication() *applicationv1.Application {
 	return app
 }
 
-func makeReadyGatewayRealm() *gatewayv1.Realm {
-	r := &gatewayv1.Realm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gw-realm",
-			Namespace: "default",
-		},
-		Spec: gatewayv1.RealmSpec{
-			Urls:             []string{"https://gateway.example.com:443"},
-			IssuerUrls:       []string{"https://issuer.example.com"},
-			DefaultConsumers: []string{},
-		},
-	}
-	meta.SetStatusCondition(&r.Status.Conditions, metav1.Condition{
-		Type:   condition.ConditionTypeReady,
-		Status: metav1.ConditionTrue,
-		Reason: "Ready",
-	})
-	return r
-}
-
 var (
 	zoneKey       = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
 	eventStoreKey = k8stypes.NamespacedName{Name: "test-eventstore", Namespace: "default"}
 	appKey        = k8stypes.NamespacedName{Name: "test-app", Namespace: "default"}
-	gwRealmKey    = k8stypes.NamespacedName{Name: "gw-realm", Namespace: "default"}
 )
 
 var _ = Describe("EventExposureHandler", func() {
@@ -203,6 +196,7 @@ var _ = Describe("EventExposureHandler", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
+		ctx = contextutil.WithEnv(ctx, "test-env")
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
 		h = &eventexposure.EventExposureHandler{}
@@ -334,22 +328,6 @@ var _ = Describe("EventExposureHandler", func() {
 			Return(err).Once()
 	}
 
-	// mockGetGatewayRealm sets up a mock for c.Get on the gateway Realm.
-	mockGetGatewayRealm := func(realm *gatewayv1.Realm) {
-		fakeClient.EXPECT().
-			Get(ctx, gwRealmKey, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayv1.Realm) = *realm
-			}).
-			Return(nil).Once()
-	}
-
-	mockGetGatewayRealmError := func(err error) {
-		fakeClient.EXPECT().
-			Get(ctx, gwRealmKey, mock.AnythingOfType("*v1.Realm")).
-			Return(err).Once()
-	}
-
 	// mockCreateOrUpdateRoute sets up a mock for c.CreateOrUpdate on a Route.
 	mockCreateOrUpdateRoute := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
@@ -375,7 +353,6 @@ var _ = Describe("EventExposureHandler", func() {
 		ec := makeReadyEventConfig()
 		es := makeReadyEventStore()
 		app := makeReadyApplication()
-		gwRealm := makeReadyGatewayRealm()
 
 		mockListEventTypes([]eventv1.EventType{et})
 		mockListEventExposures([]eventv1.EventExposure{})
@@ -385,7 +362,6 @@ var _ = Describe("EventExposureHandler", func() {
 		mockGetApplication(app)
 		mockCreateOrUpdatePublisher(controllerutil.OperationResultCreated, nil)
 		mockListEventSubscriptions([]eventv1.EventSubscription{}) // no cross-zone SSE
-		mockGetGatewayRealm(gwRealm)                              // for CreateSSERoute
 		mockCreateOrUpdateRoute(controllerutil.OperationResultCreated, nil)
 		mockCleanup(0, nil)
 	}
@@ -576,6 +552,7 @@ var _ = Describe("EventExposureHandler", func() {
 		It("should return error when CreateSSERoute fails", func() {
 			et := makeReadyEventType()
 			zone := makeReadyZone()
+			zone.Spec.Gateway.Presets = nil // no default preset → CreateSSERoute returns BlockedError
 			ec := makeReadyEventConfig()
 			es := makeReadyEventStore()
 			app := makeReadyApplication()
@@ -588,7 +565,6 @@ var _ = Describe("EventExposureHandler", func() {
 			mockGetApplication(app)
 			mockCreateOrUpdatePublisher(controllerutil.OperationResultCreated, nil)
 			mockListEventSubscriptions([]eventv1.EventSubscription{}) // no cross-zone
-			mockGetGatewayRealmError(fmt.Errorf("realm fetch failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
 

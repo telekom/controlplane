@@ -44,7 +44,6 @@ type EventExposureReconciler struct {
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventsubscriptions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients,verbs=get;list;watch
@@ -197,7 +196,7 @@ func (r *EventExposureReconciler) MapRouteToEventExposure(ctx context.Context, o
 }
 
 // MapZoneToEventExposure enqueues EventExposures referencing the changed Zone.
-// This ensures EventExposures react to zone status changes (e.g., GatewayRealm becoming available).
+// This ensures EventExposures react to zone status changes (e.g., Gateway preset becoming available).
 func (r *EventExposureReconciler) MapZoneToEventExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	zone, ok := obj.(*adminv1.Zone)
 	if !ok {

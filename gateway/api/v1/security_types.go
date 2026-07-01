@@ -13,6 +13,16 @@ const (
 	TokenRequestClientSecretPost  TokenRequestMethod = "client_secret_post"
 )
 
+// GrantType defines the OAuth2 grant type for external IDP token requests.
+// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+type GrantType string
+
+const (
+	GrantTypeClientCredentials GrantType = "client_credentials"
+	GrantTypeAuthorizationCode GrantType = "authorization_code"
+	GrantTypePassword          GrantType = "password"
+)
+
 type Security struct {
 	// DisableAccessControl disable the ACL mechanism for this route
 	// +kubebuilder:validation:Optional
@@ -22,6 +32,17 @@ type Security struct {
 	// DefaultConsumers defines a list of default consumers that are allowed to access this route without being explicitly added as a consumer
 	// +kubebuilder:validation:Optional
 	DefaultConsumers []string `json:"defaultConsumers,omitempty"`
+
+	// TrustedIssuers defines a list of trusted token issuers for this route. If empty, all issuers are trusted.
+	// +kubebuilder:validation:Optional
+	// +listType=set
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:items:Format=uri
+	TrustedIssuers []string `json:"trustedIssuers,omitempty"`
+
+	// RealmName defines the realm name for this route, which is used in the Jumper sidecar to determine the Last-Mile-Token
+	// +kubebuilder:validation:Required
+	RealmName string `json:"realmName"`
 
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
@@ -122,12 +143,11 @@ type ExternalIdentityProvider struct {
 	TokenEndpoint string `json:"tokenEndpoint"`
 
 	// TokenRequest configures the token endpoint authentication method (RFC 7591)
-	// +kubebuilder:validation:Optional
-	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
+	// +kubebuilder:validation:Required
+	TokenRequest TokenRequestMethod `json:"tokenRequest"`
 	// GrantType is the grant type for the external IDP authentication
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
-	GrantType string `json:"grantType,omitempty"`
+	// +kubebuilder:validation:Required
+	GrantType GrantType `json:"grantType"`
 
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`

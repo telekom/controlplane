@@ -113,10 +113,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 		owner.SetCondition(condition.NewBlockedCondition("RemoteApiSubscription not granted"))
 		owner.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "RemoteApiSubscription not granted"))
 
-		err = util.CleanupProxyRoute(ctx, owner.Status.Route)
-		if err != nil {
-			return errors.Wrapf(err, "failed to cleanup proxy route")
-		}
+		// Proxy route lifecycle is managed by ApiExposure; no route cleanup here.
 		return nil
 	}
 
@@ -157,9 +154,9 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	if !remoteOrg.Spec.Zone.Equals(subscriptionZone) {
 		logger.Info("RemoteApiSubscription is in a different zone")
 
-		route, createErr := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath, remoteOrg.Spec.Id)
-		if createErr != nil {
-			return errors.Wrapf(createErr, "failed to create proxy route")
+		route, routeErr := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath)
+		if routeErr != nil {
+			return errors.Wrapf(routeErr, "failed to create proxy route")
 		}
 
 		routeRef = types.ObjectRefFromObject(route)

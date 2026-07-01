@@ -241,10 +241,6 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		secondZone = CreateZone(secondZoneName)
 		CreateGatewayClient(secondZone)
 
-		By("Creating the Realms")
-		CreateRealm(testEnvironment, zone.Name)
-		CreateRealm(testEnvironment, secondZone.Name)
-
 		By("Creating the Application for ApiExposure")
 		apiExpApplication = CreateApplication(apiExpAppName)
 

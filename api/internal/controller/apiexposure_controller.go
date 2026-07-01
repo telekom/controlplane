@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"slices"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -44,8 +45,8 @@ type ApiExposureReconciler struct {
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apis/status,verbs=get
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
-// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=organization.cp.ei.telekom.de,resources=teams,verbs=get;list;watch
 
 func (r *ApiExposureReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &apiv1.ApiExposure{})
@@ -208,7 +209,7 @@ func (r *ApiExposureReconciler) MapZoneToApiExposure(ctx context.Context, obj cl
 			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
 		}
 	}
-	return reqs
+	return slices.Clip(reqs)
 }
 
 // MapApiSubscriptionToApiExposure triggers re-reconciliation of ApiExposures when ApiSubscriptions change.
@@ -233,8 +234,7 @@ func (r *ApiExposureReconciler) MapApiSubscriptionToApiExposure(ctx context.Cont
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
 	for i := range list.Items {
-		item := &list.Items[i]
-		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
 	}
 
 	return reqs

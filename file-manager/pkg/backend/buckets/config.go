@@ -18,11 +18,12 @@ const (
 
 // BucketConfig holds all configuration needed for bucket operations
 type BucketConfig struct {
-	Endpoint    string
-	BucketName  string
-	Client      *minio.Client
-	Logger      logr.Logger
-	Credentials *credentials.Credentials
+	Endpoint        string
+	BucketName      string
+	Client          *minio.Client
+	Logger          logr.Logger
+	Credentials     *credentials.Credentials
+	InsecureSkipTLS bool
 }
 
 // NewBucketConfig creates a new bucket configuration with the provided options
@@ -78,6 +79,12 @@ func WithLogger(logger logr.Logger) ConfigOption {
 	}
 }
 
+func WithInsecureSkipTLS(skip bool) ConfigOption {
+	return func(c *BucketConfig) {
+		c.InsecureSkipTLS = skip
+	}
+}
+
 // initClient initializes the Minio client with the current configuration
 func (c *BucketConfig) initClient() (*minio.Client, error) {
 	c.Logger.V(1).Info("Creating Minio client", "endpoint", c.Endpoint)
@@ -88,7 +95,7 @@ func (c *BucketConfig) initClient() (*minio.Client, error) {
 
 	client, err := minio.New(c.Endpoint, &minio.Options{
 		Creds:           c.Credentials,
-		Secure:          true,
+		Secure:          !c.InsecureSkipTLS,
 		TrailingHeaders: true,
 	})
 	if err != nil {

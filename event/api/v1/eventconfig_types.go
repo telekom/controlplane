@@ -21,7 +21,10 @@ type AdminConfig struct {
 	Url string `json:"url"`
 
 	// Client configures the identity client used for admin access to the configuration backend.
-	Client ClientConfig `json:"client"`
+	// If omitted, defaults are applied: clientId and clientSecret are auto-generated,
+	// and the realm is resolved from the Zone's internal identity realm.
+	// +optional
+	Client ClientConfig `json:"client,omitempty"`
 }
 
 type ClientConfig struct {
@@ -50,7 +53,10 @@ type MeshConfig struct {
 	ZoneNames []string `json:"zoneNames,omitempty"`
 
 	// Client configures the identity client used for mesh communication between zones.
-	Client ClientConfig `json:"client"`
+	// If omitted, defaults are applied: clientId and clientSecret are auto-generated,
+	// and the realm is resolved from the Zone's default identity realm.
+	// +optional
+	Client ClientConfig `json:"client,omitempty"`
 }
 
 // EventConfigSpec defines the desired state of EventConfig.
@@ -78,7 +84,9 @@ type EventConfigSpec struct {
 	VoyagerApiUrl string `json:"voyagerApiUrl,omitempty"`
 
 	// Mesh configures the mesh topology for event distribution.
-	Mesh MeshConfig `json:"mesh"`
+	// If omitted, defaults to full mesh with the realm resolved from the Zone's default identity realm.
+	// +optional
+	Mesh *MeshConfig `json:"mesh,omitempty"`
 }
 
 // EventConfigStatus defines the observed state of EventConfig.
@@ -191,7 +199,7 @@ func (r *EventConfig) SupportsZone(zoneName string) bool {
 	if r.Spec.Zone.Name == zoneName {
 		return true
 	}
-	if r.Spec.Mesh.FullMesh {
+	if r.Spec.Mesh == nil || r.Spec.Mesh.FullMesh {
 		return true
 	}
 	return slices.Contains(r.Spec.Mesh.ZoneNames, zoneName)

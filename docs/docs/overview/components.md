@@ -94,7 +94,7 @@ Domain operators are the core building blocks of the Control Plane. Each operato
 | [API](../architecture/api.mdx) | Manages the full API lifecycle — registering, exposing, and subscribing. Supports API categories and integrates with the Approval domain. |
 | [Approval](../architecture/approval.mdx) | Provides configurable approval workflows (Auto, Simple, FourEyes) for API and event subscriptions, including trusted-team bypass. |
 | [Notification](../architecture/notification.mdx) | Handles notification delivery via Email, MS Teams, and Webhooks. Uses admin-defined templates and is triggered by other domains during lifecycle events. |
-| [Gateway](../architecture/gateway.mdx) | Configures the API Gateway at runtime — routes, consumers, rate limiting, load balancing, and multi-tenant realms. |
+| [Gateway](../architecture/gateway.mdx) | Configures the API Gateway at runtime — routes, consumers, rate limiting, load balancing, and failover. |
 | [Identity](../architecture/identity.mdx) | Manages identity providers, realms, and service-account clients through Keycloak. Provides authentication and authorization for all platform interactions. |
 | [Event](../architecture/event.mdx) | Handles event publishing and subscribing, including cross-zone meshing. An optional feature that bridges user configuration (Rover) with the PubSub runtime. |
 | [PubSub](../architecture/pubsub.mdx) | The runtime configuration layer for publish/subscribe messaging via Horizon. Managed exclusively by the Event domain. |
