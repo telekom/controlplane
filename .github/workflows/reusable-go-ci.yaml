@@ -258,7 +258,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Run govulncheck
-        uses: golang/govulncheck-action@31f7c5463448f83528bd771c2d978d940080c9fd # unreleased, includes fix for golang/go#75908
+        uses: golang/govulncheck-action@3fa7bd9cee2cfdf3499a8803b226e43de7b7cdb4 # unreleased, includes fix for golang/go#75908
         with:
           go-package: ./...
           work-dir: ${{ inputs.module }}
