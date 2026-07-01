@@ -5,6 +5,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -43,6 +44,9 @@ type TLSConfig struct {
 }
 
 type SecurityConfig struct {
+	// Mode controls authentication behaviour: disabled, mock, or jwt.
+	// Deprecated: Enabled is derived from Mode and retained for backward compatibility.
+	Mode           string   `yaml:"mode"`
 	Enabled        bool     `yaml:"enabled"`
 	TrustedIssuers []string `yaml:"trustedIssuers"`
 }
@@ -61,6 +65,23 @@ type FileManagerConfig struct {
 	BaseURL string `yaml:"baseUrl"`
 }
 
+// Validate checks the security configuration for invalid or unsafe combinations.
+// It returns an error for unknown modes or for jwt mode without trusted issuers.
+// Call this at startup and panic on error to implement fail-closed behaviour.
+func (sec SecurityConfig) Validate() error {
+	switch sec.Mode {
+	case "jwt":
+		if len(sec.TrustedIssuers) == 0 {
+			return fmt.Errorf("security.mode=jwt requires at least one trustedIssuer — configure security.trustedIssuers or set security.mode=disabled for local development")
+		}
+	case "mock", "disabled":
+		// valid, no additional requirements
+	default:
+		return fmt.Errorf("invalid security.mode: %q (must be one of: disabled, mock, jwt)", sec.Mode)
+	}
+	return nil
+}
+
 func DefaultConfig() *ServerConfig {
 	return &ServerConfig{
 		Database: DatabaseConfig{
@@ -75,7 +96,7 @@ func DefaultConfig() *ServerConfig {
 			},
 		},
 		Security: SecurityConfig{
-			Enabled: false,
+			Mode: "jwt",
 		},
 		GraphQL: GraphQLConfig{
 			PlaygroundEnabled: true,
@@ -93,6 +114,25 @@ func DefaultConfig() *ServerConfig {
 	}
 }
 
+// resolveSecurityMode normalises SecurityConfig after unmarshalling.
+// rawMode and rawEnabled reflect what was explicitly written in the config file
+// (nil if the field was absent). Mode takes precedence when both are present.
+// If neither was set, the default from DefaultConfig() is preserved.
+func resolveSecurityMode(cfg *SecurityConfig, rawMode *string, rawEnabled *bool) {
+	if rawMode != nil {
+		cfg.Mode = *rawMode
+	} else if rawEnabled != nil {
+		// Backward compat: no mode field, legacy enabled flag present.
+		if !*rawEnabled {
+			cfg.Mode = "disabled"
+		} else {
+			cfg.Mode = "mock"
+		}
+	}
+	// else: neither mode nor enabled in config — keep the default (jwt).
+	cfg.Enabled = cfg.Mode != "disabled"
+}
+
 func ReadConfig(r io.Reader) (*ServerConfig, error) {
 	cfg := DefaultConfig()
 	content, err := io.ReadAll(r)
@@ -103,6 +143,16 @@ func ReadConfig(r io.Reader) (*ServerConfig, error) {
 	if err := yaml.Unmarshal([]byte(expanded), &cfg); err != nil {
 		return nil, err
 	}
+	// Re-parse only the security section with pointer types to detect which
+	// fields were explicitly present in the YAML (absent → nil).
+	var raw struct {
+		Security struct {
+			Mode    *string `yaml:"mode"`
+			Enabled *bool   `yaml:"enabled"`
+		} `yaml:"security"`
+	}
+	_ = yaml.Unmarshal([]byte(expanded), &raw)
+	resolveSecurityMode(&cfg.Security, raw.Security.Mode, raw.Security.Enabled)
 	return cfg, nil
 }
 
