@@ -126,7 +126,7 @@ func init() {
 	// apiexposure.DefaultUpstreams holds the default value on creation for the upstreams field.
 	apiexposure.DefaultUpstreams = apiexposureDescUpstreams.Default.([]model.Upstream)
 	// apiexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	apiexposureDescApprovalConfig := apiexposureFields[5].Descriptor()
+	apiexposureDescApprovalConfig := apiexposureFields[7].Descriptor()
 	// apiexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	apiexposure.DefaultApprovalConfig = apiexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	apisubscriptionMixin := schema.ApiSubscription{}.Mixin()

@@ -30,6 +30,8 @@ type ApiExposureInfoResolver interface {
 	Visibility(ctx context.Context, obj *model.ApiExposureInfo) (apiexposure.Visibility, error)
 
 	Features(ctx context.Context, obj *model.ApiExposureInfo) ([]model1.APIExposureFeature, error)
+
+	Traffic(ctx context.Context, obj *model.ApiExposureInfo) (*model.Traffic, error)
 }
 type ApiSubscriptionInfoResolver interface {
 	StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error)
@@ -41,6 +43,9 @@ type AvailableTransitionResolver interface {
 	Action(ctx context.Context, obj *model.AvailableTransition) (model1.ApprovalAction, error)
 	ToState(ctx context.Context, obj *model.AvailableTransition) (approval.State, error)
 }
+type BasicAuthCredentialsResolver interface {
+	Password(ctx context.Context, obj *model.BasicAuthCredentials) (string, error)
+}
 type DecisionResolver interface {
 	ResultingState(ctx context.Context, obj *model.Decision) (*approval.State, error)
 }
@@ -50,6 +55,16 @@ type EventExposureInfoResolver interface {
 type EventSubscriptionInfoResolver interface {
 	DeliveryType(ctx context.Context, obj *model.EventSubscriptionInfo) (eventsubscription.DeliveryType, error)
 	StatusPhase(ctx context.Context, obj *model.EventSubscriptionInfo) (*eventsubscription.StatusPhase, error)
+}
+type ExternalIdResolver interface {
+	Schema(ctx context.Context, obj *model.ExternalId) (string, error)
+}
+type ExternalIdentityProviderResolver interface {
+	TokenRequest(ctx context.Context, obj *model.ExternalIdentityProvider) (*model1.TokenRequestMethod, error)
+}
+type OAuth2ClientCredentialsResolver interface {
+	ClientSecret(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error)
+	ClientKey(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -257,6 +272,38 @@ func (ec *executionContext) fieldContext_ApiExposureInfo_approvalConfig(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiExposureInfo_traffic(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiExposureInfo_traffic(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.ApiExposureInfo().Traffic(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
+			return ec.marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiExposureInfo_traffic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiExposureInfo",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Traffic(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApiExposureInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -307,6 +354,38 @@ func (ec *executionContext) fieldContext_ApiExposureInfo_ownerTeam(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiExposureSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureSecurity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiExposureSecurity_m2m(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.M2M, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Machine2MachineAuthentication) graphql.Marshaler {
+			return ec.marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiExposureSecurity_m2m(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiExposureSecurity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Machine2MachineAuthentication(ctx, field)
 		},
 	}
 	return fc, nil
@@ -459,6 +538,38 @@ func (ec *executionContext) fieldContext_ApiSubscriptionInfo_ownerTeam(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiSubscriptionSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionSecurity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscriptionSecurity_m2m(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.M2M, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+			return ec.marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscriptionSecurity_m2m(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscriptionSecurity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SubscriberMachine2MachineAuthentication(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApprovalConfig_strategy(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -549,6 +660,52 @@ func (ec *executionContext) _AvailableTransition_toState(ctx context.Context, fi
 }
 func (ec *executionContext) fieldContext_AvailableTransition_toState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("AvailableTransition", field, true, true, errors.New("field of type ApprovalState does not have child fields"))
+}
+
+func (ec *executionContext) _BasicAuthCredentials_username(ctx context.Context, field graphql.CollectedField, obj *model.BasicAuthCredentials) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BasicAuthCredentials_username(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Username, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BasicAuthCredentials_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BasicAuthCredentials", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BasicAuthCredentials_password(ctx context.Context, field graphql.CollectedField, obj *model.BasicAuthCredentials) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BasicAuthCredentials_password(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.BasicAuthCredentials().Password(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BasicAuthCredentials_password(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BasicAuthCredentials", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _DeciderInfo_teamName(ctx context.Context, field graphql.CollectedField, obj *model.DeciderInfo) (ret graphql.Marshaler) {
@@ -1061,6 +1218,685 @@ func (ec *executionContext) fieldContext_EventSubscriptionInfo_ownerTeam(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _ExternalId_Id(ctx context.Context, field graphql.CollectedField, obj *model.ExternalId) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalId_Id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Id, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalId_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalId", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ExternalId_Schema(ctx context.Context, field graphql.CollectedField, obj *model.ExternalId) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalId_Schema(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.ExternalId().Schema(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalId_Schema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalId", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ExternalIdentityProvider_tokenEndpoint(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalIdentityProvider_tokenEndpoint(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TokenEndpoint, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalIdentityProvider_tokenEndpoint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalIdentityProvider", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ExternalIdentityProvider_tokenRequest(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalIdentityProvider_tokenRequest(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.ExternalIdentityProvider().TokenRequest(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TokenRequestMethod) graphql.Marshaler {
+			return ec.marshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTokenRequestMethod(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalIdentityProvider_tokenRequest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalIdentityProvider", field, true, true, errors.New("field of type TokenRequestMethod does not have child fields"))
+}
+
+func (ec *executionContext) _ExternalIdentityProvider_grantType(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalIdentityProvider_grantType(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GrantType, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalIdentityProvider_grantType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalIdentityProvider", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ExternalIdentityProvider_basic(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalIdentityProvider_basic(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Basic, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.BasicAuthCredentials) graphql.Marshaler {
+			return ec.marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalIdentityProvider_basic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalIdentityProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BasicAuthCredentials(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExternalIdentityProvider_client(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ExternalIdentityProvider_client(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Client, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.OAuth2ClientCredentials) graphql.Marshaler {
+			return ec.marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOAuth2ClientCredentials(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ExternalIdentityProvider_client(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExternalIdentityProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_OAuth2ClientCredentials(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IpRestrictions_Allow(ctx context.Context, field graphql.CollectedField, obj *model.IpRestrictions) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_IpRestrictions_Allow(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Allow, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_IpRestrictions_Allow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("IpRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _IpRestrictions_Deny(ctx context.Context, field graphql.CollectedField, obj *model.IpRestrictions) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_IpRestrictions_Deny(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Deny, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_IpRestrictions_Deny(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("IpRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Limits_second(ctx context.Context, field graphql.CollectedField, obj *model.Limits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Limits_second(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Second, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalOInt2int(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Limits_second(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Limits", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _Limits_minute(ctx context.Context, field graphql.CollectedField, obj *model.Limits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Limits_minute(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Minute, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalOInt2int(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Limits_minute(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Limits", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _Limits_hour(ctx context.Context, field graphql.CollectedField, obj *model.Limits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Limits_hour(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Hour, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalOInt2int(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Limits_hour(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Limits", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _Machine2MachineAuthentication_externalIDP(ctx context.Context, field graphql.CollectedField, obj *model.Machine2MachineAuthentication) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Machine2MachineAuthentication_externalIDP(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExternalIDP, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ExternalIdentityProvider) graphql.Marshaler {
+			return ec.marshalOExternalIdentityProvider2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdentityProvider(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Machine2MachineAuthentication_externalIDP(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Machine2MachineAuthentication",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ExternalIdentityProvider(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Machine2MachineAuthentication_basic(ctx context.Context, field graphql.CollectedField, obj *model.Machine2MachineAuthentication) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Machine2MachineAuthentication_basic(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Basic, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.BasicAuthCredentials) graphql.Marshaler {
+			return ec.marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Machine2MachineAuthentication_basic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Machine2MachineAuthentication",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BasicAuthCredentials(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Machine2MachineAuthentication_scopes(ctx context.Context, field graphql.CollectedField, obj *model.Machine2MachineAuthentication) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Machine2MachineAuthentication_scopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Scopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Machine2MachineAuthentication_scopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Machine2MachineAuthentication", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuth2ClientCredentials_clientId(ctx context.Context, field graphql.CollectedField, obj *model.OAuth2ClientCredentials) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuth2ClientCredentials_clientId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClientId, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuth2ClientCredentials_clientSecret(ctx context.Context, field graphql.CollectedField, obj *model.OAuth2ClientCredentials) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuth2ClientCredentials_clientSecret(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.OAuth2ClientCredentials().ClientSecret(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientSecret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuth2ClientCredentials_clientKey(ctx context.Context, field graphql.CollectedField, obj *model.OAuth2ClientCredentials) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuth2ClientCredentials_clientKey(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.OAuth2ClientCredentials().ClientKey(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _RateLimit_provider(ctx context.Context, field graphql.CollectedField, obj *model.RateLimit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RateLimit_provider(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Provider, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.RateLimitConfig) graphql.Marshaler {
+			return ec.marshalORateLimitConfig2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitConfig(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RateLimit_provider(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLimit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_RateLimitConfig(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLimit_subscriberRateLimit(ctx context.Context, field graphql.CollectedField, obj *model.RateLimit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RateLimit_subscriberRateLimit(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SubscriberRateLimit, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.SubscriberRateLimits) graphql.Marshaler {
+			return ec.marshalOSubscriberRateLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimits(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RateLimit_subscriberRateLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLimit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SubscriberRateLimits(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLimitConfig_limits(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitConfig) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RateLimitConfig_limits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Limits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.Limits) graphql.Marshaler {
+			return ec.marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RateLimitConfig_limits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLimitConfig",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Limits(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLimitConfig_options(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitConfig) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RateLimitConfig_options(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Options, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.RateLimitOptions) graphql.Marshaler {
+			return ec.marshalORateLimitOptions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOptions(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RateLimitConfig_options(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLimitConfig",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_RateLimitOptions(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RateLimitOptions_hideClientHeaders(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitOptions) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RateLimitOptions_hideClientHeaders(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.HideClientHeaders, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalOBoolean2bool(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RateLimitOptions_hideClientHeaders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RateLimitOptions", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _RateLimitOptions_faultTolerant(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitOptions) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RateLimitOptions_faultTolerant(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.FaultTolerant, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalOBoolean2bool(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RateLimitOptions_faultTolerant(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RateLimitOptions", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _RateLimitOverrides_subscriber(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitOverrides) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RateLimitOverrides_subscriber(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Subscriber, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RateLimitOverrides_subscriber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RateLimitOverrides", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _RateLimitOverrides_limits(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitOverrides) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RateLimitOverrides_limits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Limits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.Limits) graphql.Marshaler {
+			return ec.marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RateLimitOverrides_limits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RateLimitOverrides",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Limits(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RequesterInfo_teamName(ctx context.Context, field graphql.CollectedField, obj *model.RequesterInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1153,6 +1989,189 @@ func (ec *executionContext) fieldContext_RequesterInfo_applicationName(_ context
 	return graphql.NewScalarFieldContext("RequesterInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _SubscriberMachine2MachineAuthentication_client(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SubscriberMachine2MachineAuthentication_client(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Client, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.OAuth2ClientCredentials) graphql.Marshaler {
+			return ec.marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOAuth2ClientCredentials(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SubscriberMachine2MachineAuthentication_client(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriberMachine2MachineAuthentication",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_OAuth2ClientCredentials(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriberMachine2MachineAuthentication_basic(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SubscriberMachine2MachineAuthentication_basic(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Basic, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.BasicAuthCredentials) graphql.Marshaler {
+			return ec.marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SubscriberMachine2MachineAuthentication_basic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriberMachine2MachineAuthentication",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_BasicAuthCredentials(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriberMachine2MachineAuthentication_scopes(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SubscriberMachine2MachineAuthentication_scopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Scopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SubscriberMachine2MachineAuthentication_scopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SubscriberMachine2MachineAuthentication", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _SubscriberRateLimitDefaults_limits(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberRateLimitDefaults) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SubscriberRateLimitDefaults_limits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Limits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.Limits) graphql.Marshaler {
+			return ec.marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SubscriberRateLimitDefaults_limits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriberRateLimitDefaults",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Limits(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriberRateLimits_default(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberRateLimits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SubscriberRateLimits_default(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Default, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.SubscriberRateLimitDefaults) graphql.Marshaler {
+			return ec.marshalOSubscriberRateLimitDefaults2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimitDefaults(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SubscriberRateLimits_default(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriberRateLimits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SubscriberRateLimitDefaults(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriberRateLimits_overrides(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberRateLimits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SubscriberRateLimits_overrides(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Overrides, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.RateLimitOverrides) graphql.Marshaler {
+			return ec.marshalORateLimitOverrides2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverridesᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SubscriberRateLimits_overrides(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriberRateLimits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_RateLimitOverrides(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TeamInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1243,6 +2262,38 @@ func (ec *executionContext) _TeamInfo_email(ctx context.Context, field graphql.C
 }
 func (ec *executionContext) fieldContext_TeamInfo_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Traffic_rateLimit(ctx context.Context, field graphql.CollectedField, obj *model.Traffic) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Traffic_rateLimit(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RateLimit, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.RateLimit) graphql.Marshaler {
+			return ec.marshalORateLimit2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimit(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Traffic_rateLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Traffic",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_RateLimit(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Upstream_url(ctx context.Context, field graphql.CollectedField, obj *model.Upstream) (ret graphql.Marshaler) {
@@ -1471,6 +2522,39 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "traffic":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ApiExposureInfo_traffic(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "ownerApplicationName":
 			out.Values[i] = ec._ApiExposureInfo_ownerApplicationName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -1481,6 +2565,42 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var apiExposureSecurityImplementors = []string{"ApiExposureSecurity"}
+
+func (ec *executionContext) _ApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, obj *model.ApiExposureSecurity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, apiExposureSecurityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ApiExposureSecurity")
+		case "m2m":
+			out.Values[i] = ec._ApiExposureSecurity_m2m(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1570,6 +2690,42 @@ func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var apiSubscriptionSecurityImplementors = []string{"ApiSubscriptionSecurity"}
+
+func (ec *executionContext) _ApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, obj *model.ApiSubscriptionSecurity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionSecurityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ApiSubscriptionSecurity")
+		case "m2m":
+			out.Values[i] = ec._ApiSubscriptionSecurity_m2m(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1725,6 +2881,81 @@ func (ec *executionContext) _AvailableTransition(ctx context.Context, sel ast.Se
 					}
 				}()
 				res = ec._AvailableTransition_toState(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var basicAuthCredentialsImplementors = []string{"BasicAuthCredentials"}
+
+func (ec *executionContext) _BasicAuthCredentials(ctx context.Context, sel ast.SelectionSet, obj *model.BasicAuthCredentials) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, basicAuthCredentialsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BasicAuthCredentials")
+		case "username":
+			out.Values[i] = ec._BasicAuthCredentials_username(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "password":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._BasicAuthCredentials_password(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -2115,6 +3346,543 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 	return out
 }
 
+var externalIdImplementors = []string{"ExternalId"}
+
+func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSet, obj *model.ExternalId) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, externalIdImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ExternalId")
+		case "Id":
+			out.Values[i] = ec._ExternalId_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "Schema":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalId_Schema(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var externalIdentityProviderImplementors = []string{"ExternalIdentityProvider"}
+
+func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel ast.SelectionSet, obj *model.ExternalIdentityProvider) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, externalIdentityProviderImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ExternalIdentityProvider")
+		case "tokenEndpoint":
+			out.Values[i] = ec._ExternalIdentityProvider_tokenEndpoint(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "tokenRequest":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ExternalIdentityProvider_tokenRequest(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "grantType":
+			out.Values[i] = ec._ExternalIdentityProvider_grantType(ctx, field, obj)
+		case "basic":
+			out.Values[i] = ec._ExternalIdentityProvider_basic(ctx, field, obj)
+		case "client":
+			out.Values[i] = ec._ExternalIdentityProvider_client(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var ipRestrictionsImplementors = []string{"IpRestrictions"}
+
+func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.SelectionSet, obj *model.IpRestrictions) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, ipRestrictionsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IpRestrictions")
+		case "Allow":
+			out.Values[i] = ec._IpRestrictions_Allow(ctx, field, obj)
+		case "Deny":
+			out.Values[i] = ec._IpRestrictions_Deny(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var limitsImplementors = []string{"Limits"}
+
+func (ec *executionContext) _Limits(ctx context.Context, sel ast.SelectionSet, obj *model.Limits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, limitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Limits")
+		case "second":
+			out.Values[i] = ec._Limits_second(ctx, field, obj)
+		case "minute":
+			out.Values[i] = ec._Limits_minute(ctx, field, obj)
+		case "hour":
+			out.Values[i] = ec._Limits_hour(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var machine2MachineAuthenticationImplementors = []string{"Machine2MachineAuthentication"}
+
+func (ec *executionContext) _Machine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, obj *model.Machine2MachineAuthentication) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, machine2MachineAuthenticationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Machine2MachineAuthentication")
+		case "externalIDP":
+			out.Values[i] = ec._Machine2MachineAuthentication_externalIDP(ctx, field, obj)
+		case "basic":
+			out.Values[i] = ec._Machine2MachineAuthentication_basic(ctx, field, obj)
+		case "scopes":
+			out.Values[i] = ec._Machine2MachineAuthentication_scopes(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var oAuth2ClientCredentialsImplementors = []string{"OAuth2ClientCredentials"}
+
+func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel ast.SelectionSet, obj *model.OAuth2ClientCredentials) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, oAuth2ClientCredentialsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OAuth2ClientCredentials")
+		case "clientId":
+			out.Values[i] = ec._OAuth2ClientCredentials_clientId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "clientSecret":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OAuth2ClientCredentials_clientSecret(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "clientKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OAuth2ClientCredentials_clientKey(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rateLimitImplementors = []string{"RateLimit"}
+
+func (ec *executionContext) _RateLimit(ctx context.Context, sel ast.SelectionSet, obj *model.RateLimit) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RateLimit")
+		case "provider":
+			out.Values[i] = ec._RateLimit_provider(ctx, field, obj)
+		case "subscriberRateLimit":
+			out.Values[i] = ec._RateLimit_subscriberRateLimit(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rateLimitConfigImplementors = []string{"RateLimitConfig"}
+
+func (ec *executionContext) _RateLimitConfig(ctx context.Context, sel ast.SelectionSet, obj *model.RateLimitConfig) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitConfigImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RateLimitConfig")
+		case "limits":
+			out.Values[i] = ec._RateLimitConfig_limits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "options":
+			out.Values[i] = ec._RateLimitConfig_options(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rateLimitOptionsImplementors = []string{"RateLimitOptions"}
+
+func (ec *executionContext) _RateLimitOptions(ctx context.Context, sel ast.SelectionSet, obj *model.RateLimitOptions) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitOptionsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RateLimitOptions")
+		case "hideClientHeaders":
+			out.Values[i] = ec._RateLimitOptions_hideClientHeaders(ctx, field, obj)
+		case "faultTolerant":
+			out.Values[i] = ec._RateLimitOptions_faultTolerant(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rateLimitOverridesImplementors = []string{"RateLimitOverrides"}
+
+func (ec *executionContext) _RateLimitOverrides(ctx context.Context, sel ast.SelectionSet, obj *model.RateLimitOverrides) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitOverridesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RateLimitOverrides")
+		case "subscriber":
+			out.Values[i] = ec._RateLimitOverrides_subscriber(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "limits":
+			out.Values[i] = ec._RateLimitOverrides_limits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var requesterInfoImplementors = []string{"RequesterInfo"}
 
 func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.SelectionSet, obj *model.RequesterInfo) graphql.Marshaler {
@@ -2140,6 +3908,123 @@ func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._RequesterInfo_reason(ctx, field, obj)
 		case "applicationName":
 			out.Values[i] = ec._RequesterInfo_applicationName(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscriberMachine2MachineAuthenticationImplementors = []string{"SubscriberMachine2MachineAuthentication"}
+
+func (ec *executionContext) _SubscriberMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberMachine2MachineAuthenticationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriberMachine2MachineAuthentication")
+		case "client":
+			out.Values[i] = ec._SubscriberMachine2MachineAuthentication_client(ctx, field, obj)
+		case "basic":
+			out.Values[i] = ec._SubscriberMachine2MachineAuthentication_basic(ctx, field, obj)
+		case "scopes":
+			out.Values[i] = ec._SubscriberMachine2MachineAuthentication_scopes(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscriberRateLimitDefaultsImplementors = []string{"SubscriberRateLimitDefaults"}
+
+func (ec *executionContext) _SubscriberRateLimitDefaults(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriberRateLimitDefaults) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberRateLimitDefaultsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriberRateLimitDefaults")
+		case "limits":
+			out.Values[i] = ec._SubscriberRateLimitDefaults_limits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscriberRateLimitsImplementors = []string{"SubscriberRateLimits"}
+
+func (ec *executionContext) _SubscriberRateLimits(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriberRateLimits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberRateLimitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriberRateLimits")
+		case "default":
+			out.Values[i] = ec._SubscriberRateLimits_default(ctx, field, obj)
+		case "overrides":
+			out.Values[i] = ec._SubscriberRateLimits_overrides(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2191,6 +4076,42 @@ func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "email":
 			out.Values[i] = ec._TeamInfo_email(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var trafficImplementors = []string{"Traffic"}
+
+func (ec *executionContext) _Traffic(ctx context.Context, sel ast.SelectionSet, obj *model.Traffic) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, trafficImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Traffic")
+		case "rateLimit":
+			out.Values[i] = ec._Traffic_rateLimit(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2451,6 +4372,18 @@ func (ec *executionContext) marshalNEventSubscriptionInfo2ᚖgithubᚗcomᚋtele
 	return ec._EventSubscriptionInfo(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx context.Context, sel ast.SelectionSet, v model.ExternalId) graphql.Marshaler {
+	return ec._ExternalId(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model.Limits) graphql.Marshaler {
+	return ec._Limits(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRateLimitOverrides2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverrides(ctx context.Context, sel ast.SelectionSet, v model.RateLimitOverrides) graphql.Marshaler {
+	return ec._RateLimitOverrides(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNRequesterInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRequesterInfo(ctx context.Context, sel ast.SelectionSet, v model.RequesterInfo) graphql.Marshaler {
 	return ec._RequesterInfo(ctx, sel, &v)
 }
@@ -2506,6 +4439,10 @@ func (ec *executionContext) marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋ
 	return ec._ApiExposureInfo(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOApiExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model.ApiExposureSecurity) graphql.Marshaler {
+	return ec._ApiExposureSecurity(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -2525,11 +4462,147 @@ func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋteleko
 	return ret
 }
 
+func (ec *executionContext) marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx context.Context, sel ast.SelectionSet, v *model.BasicAuthCredentials) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._BasicAuthCredentials(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._EventExposureInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ExternalId) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOExternalIdentityProvider2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdentityProvider(ctx context.Context, sel ast.SelectionSet, v *model.ExternalIdentityProvider) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ExternalIdentityProvider(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx context.Context, sel ast.SelectionSet, v model.IpRestrictions) graphql.Marshaler {
+	return ec._IpRestrictions(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model.Machine2MachineAuthentication) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Machine2MachineAuthentication(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOAuth2ClientCredentials(ctx context.Context, sel ast.SelectionSet, v *model.OAuth2ClientCredentials) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._OAuth2ClientCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORateLimit2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimit(ctx context.Context, sel ast.SelectionSet, v *model.RateLimit) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RateLimit(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORateLimitConfig2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitConfig(ctx context.Context, sel ast.SelectionSet, v *model.RateLimitConfig) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RateLimitConfig(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORateLimitOptions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOptions(ctx context.Context, sel ast.SelectionSet, v model.RateLimitOptions) graphql.Marshaler {
+	return ec._RateLimitOptions(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalORateLimitOverrides2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverridesᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RateLimitOverrides) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNRateLimitOverrides2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverrides(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SubscriberMachine2MachineAuthentication(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOSubscriberRateLimitDefaults2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimitDefaults(ctx context.Context, sel ast.SelectionSet, v *model.SubscriberRateLimitDefaults) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SubscriberRateLimitDefaults(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOSubscriberRateLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimits(ctx context.Context, sel ast.SelectionSet, v *model.SubscriberRateLimits) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SubscriberRateLimits(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTokenRequestMethod(ctx context.Context, v any) (*model1.TokenRequestMethod, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model1.TokenRequestMethod)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTokenRequestMethod(ctx context.Context, sel ast.SelectionSet, v *model1.TokenRequestMethod) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v model.Traffic) graphql.Marshaler {
+	return ec._Traffic(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Traffic(ctx, sel, v)
 }
 
 // endregion ***************************** type.gotpl *****************************

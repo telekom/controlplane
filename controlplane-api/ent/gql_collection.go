@@ -265,6 +265,16 @@ func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, apiexposure.FieldUpstreams)
 				fieldSeen[apiexposure.FieldUpstreams] = struct{}{}
 			}
+		case "security":
+			if _, ok := fieldSeen[apiexposure.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldSecurity)
+				fieldSeen[apiexposure.FieldSecurity] = struct{}{}
+			}
+		case "traffic":
+			if _, ok := fieldSeen[apiexposure.FieldTraffic]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldTraffic)
+				fieldSeen[apiexposure.FieldTraffic] = struct{}{}
+			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[apiexposure.FieldApprovalConfig]; !ok {
 				selectedFields = append(selectedFields, apiexposure.FieldApprovalConfig)
@@ -977,6 +987,16 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 			if _, ok := fieldSeen[application.FieldSecretRotationMessage]; !ok {
 				selectedFields = append(selectedFields, application.FieldSecretRotationMessage)
 				fieldSeen[application.FieldSecretRotationMessage] = struct{}{}
+			}
+		case "externalIds":
+			if _, ok := fieldSeen[application.FieldExternalIds]; !ok {
+				selectedFields = append(selectedFields, application.FieldExternalIds)
+				fieldSeen[application.FieldExternalIds] = struct{}{}
+			}
+		case "ipRestrictions":
+			if _, ok := fieldSeen[application.FieldIPRestrictions]; !ok {
+				selectedFields = append(selectedFields, application.FieldIPRestrictions)
+				fieldSeen[application.FieldIPRestrictions] = struct{}{}
 			}
 		case "id":
 		case "__typename":
