@@ -204,6 +204,34 @@ var _ = Describe("Rover Handler", func() {
 				security := exposure["security"].(map[string]any)
 				Expect(security).To(HaveKeyWithValue("type", "basicAuth"))
 			})
+
+			It("should patch file exposures", func() {
+				obj := &types.UnstructuredObject{
+					Content: map[string]any{
+						"spec": map[string]any{
+							"exposures": []any{
+								map[string]any{
+									"fileType": "demo-sftp-spec-v1",
+									"variant":  "sftp",
+								},
+							},
+						},
+					},
+				}
+
+				err := v0.PatchRoverRequest(context.Background(), obj)
+
+				Expect(err).NotTo(HaveOccurred())
+
+				content := obj.GetContent()
+				Expect(content).To(HaveKey("exposures"))
+
+				exposures := content["exposures"].([]map[string]any)
+				Expect(exposures).To(HaveLen(1))
+
+				exposure := exposures[0]
+				Expect(exposure).To(HaveKeyWithValue("type", "file"))
+			})
 		})
 
 		Context("when processing invalid rover spec", func() {
@@ -305,6 +333,20 @@ var _ = Describe("Rover Handler", func() {
 				Expect(result).To(HaveLen(1))
 				Expect(result[0]).To(HaveKeyWithValue("type", "event"))
 				Expect(result[0]["security"]).To(HaveKeyWithValue("type", "basicAuth"))
+			})
+
+			It("should patch file subscriptions correctly", func() {
+				subscriptions := []any{
+					map[string]any{
+						"fileType": "demo-sftp-spec-v1",
+						"variant":  "sftp",
+					},
+				}
+
+				result := v0.PatchSubscriptions(subscriptions)
+
+				Expect(result).To(HaveLen(1))
+				Expect(result[0]).To(HaveKeyWithValue("type", "file"))
 			})
 
 			It("should handle nil subscriptions", func() {

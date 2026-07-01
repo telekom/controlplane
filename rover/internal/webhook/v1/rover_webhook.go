@@ -200,6 +200,20 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		}
 	}
 
+	subscribesToFiles := slices.ContainsFunc(rover.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
+		return sub.Type() == roverv1.TypeFile
+	})
+	exposesFiles := slices.ContainsFunc(rover.Spec.Exposures, func(exp roverv1.Exposure) bool {
+		return exp.Type() == roverv1.TypeFile
+	})
+	if (subscribesToFiles || exposesFiles) && !roverv1.IsFileTypeZoneSupported(rover.Spec.Zone) {
+		valErr.AddInvalidError(
+			field.NewPath("spec").Child("zone"),
+			rover.Spec.Zone,
+			fmt.Sprintf("zone '%s' does not support file types; only %s are supported", rover.Spec.Zone, strings.Join(roverv1.SupportedFileTypeZones, ", ")),
+		)
+	}
+
 	if err := MustNotHaveDuplicates(valErr, rover.Spec.Subscriptions, rover.Spec.Exposures); err != nil {
 		return nil, err
 	}
@@ -239,6 +253,8 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.V
 		return r.ValidateApiExposure(ctx, valErr, environment, exposure, zoneRef, idx)
 	case roverv1.TypeEvent:
 		return r.ValidateEventExposure(ctx, valErr, environment, exposure, zoneRef, idx)
+	case roverv1.TypeFile:
+		return r.ValidateFileExposure(valErr, exposure, idx)
 	default:
 		valErr.AddInvalidError(
 			field.NewPath("spec").Child("exposures").Index(idx).Child("type"),
@@ -393,6 +409,16 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 			}
 			existingSubs[sub.Event.EventType] = true
 		}
+
+		if sub.File != nil {
+			if _, exists := existingSubs[sub.File.FileType]; exists {
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("subscriptions").Index(idx).Child("file").Child("fileType"),
+					sub.File.FileType, fmt.Sprintf("duplicate subscription for file-type %s", sub.File.FileType),
+				)
+			}
+			existingSubs[sub.File.FileType] = true
+		}
 	}
 
 	existingExps := make(map[string]bool)
@@ -415,6 +441,16 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 				)
 			}
 			existingExps[exposure.Event.EventType] = true
+		}
+
+		if exposure.File != nil {
+			if _, exists := existingExps[exposure.File.FileType]; exists {
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("exposures").Index(idx).Child("file").Child("fileType"),
+					exposure.File.FileType, fmt.Sprintf("duplicate exposure for file-type %s", exposure.File.FileType),
+				)
+			}
+			existingExps[exposure.File.FileType] = true
 		}
 	}
 
@@ -577,7 +613,57 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerro
 	case roverv1.TypeEvent:
 		// There is no special validation needed at this time.
 		return nil
+
+	case roverv1.TypeFile:
+		return r.ValidateFileSubscription(valErr, sub, idx)
 	}
 
 	return nil
+}
+
+func (r *RoverValidator) ValidateFileExposure(valErr *cerrors.ValidationError, exposure roverv1.Exposure, idx int) error {
+	if exposure.File == nil {
+		return nil
+	}
+	validateFilePublicKeys(valErr, exposure.File.PublicKeys, field.NewPath("spec").Child("exposures").Index(idx).Child("file"))
+	return nil
+}
+
+func (r *RoverValidator) ValidateFileSubscription(valErr *cerrors.ValidationError, sub roverv1.Subscription, idx int) error {
+	if sub.File == nil {
+		return nil
+	}
+
+	validateFilePublicKeys(valErr, sub.File.PublicKeys, field.NewPath("spec").Child("subscriptions").Index(idx).Child("file"))
+	return nil
+}
+
+func validateFilePublicKeys(valErr *cerrors.ValidationError, keys []roverv1.PublicKey, filePath *field.Path) {
+	if len(keys) == 0 {
+		valErr.AddRequiredError(filePath.Child("publicKeys"), "at least one public key must be specified")
+		return
+	}
+
+	seenLabels := make(map[string]struct{}, len(keys))
+	seenKeys := make(map[string]struct{}, len(keys))
+	for i, key := range keys {
+		keyPath := filePath.Child("publicKeys").Index(i)
+		if _, exists := seenLabels[key.Label]; exists {
+			valErr.AddInvalidError(
+				keyPath.Child("label"),
+				key.Label,
+				fmt.Sprintf("duplicate public key label '%s'; labels must be unique per fileType", key.Label),
+			)
+		}
+		seenLabels[key.Label] = struct{}{}
+
+		if _, exists := seenKeys[key.Key]; exists {
+			valErr.AddInvalidError(
+				keyPath.Child("key"),
+				key.Label,
+				fmt.Sprintf("duplicate public key value for label '%s'; key values must be unique per fileType", key.Label),
+			)
+		}
+		seenKeys[key.Key] = struct{}{}
+	}
 }
