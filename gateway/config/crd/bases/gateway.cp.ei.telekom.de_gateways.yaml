@@ -78,6 +78,8 @@ spec:
                 - password
                 - port
                 type: object
+            required:
+            - admin
             type: object
           status:
             description: GatewayStatus defines the observed state of Gateway

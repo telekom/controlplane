@@ -16,7 +16,6 @@ import (
 
 var IndexFieldSpecRoute = "spec.route"
 var IndexFieldSpecRouteName = "spec.route.name"
-var IndexFieldSpecRealm = "spec.realm"
 
 func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	// Index the consumeRoute by the route it references
@@ -46,36 +45,6 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.ConsumeRoute{}, IndexFieldSpecRouteName, filterRouteNameOnConsumeRoute)
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create fieldIndex for ConsumeRoute", "FieldIndex", IndexFieldSpecRouteName)
-		os.Exit(1)
-	}
-
-	// Index the consumer by the realm it references
-	filterRealmOnConsumer := func(obj client.Object) []string {
-		consumer, ok := obj.(*gatewayv1.Consumer)
-		if !ok {
-			return nil
-		}
-		return []string{consumer.Spec.Realm.String()}
-	}
-
-	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.Consumer{}, IndexFieldSpecRealm, filterRealmOnConsumer)
-	if err != nil {
-		ctrl.Log.Error(err, "unable to create fieldIndex for Consumer", "FieldIndex", IndexFieldSpecRealm)
-		os.Exit(1)
-	}
-
-	// Index the route by the realm it references
-	filterRealmOnRoute := func(obj client.Object) []string {
-		route, ok := obj.(*gatewayv1.Route)
-		if !ok {
-			return nil
-		}
-		return []string{route.Spec.Realm.String()}
-	}
-
-	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.Route{}, IndexFieldSpecRealm, filterRealmOnRoute)
-	if err != nil {
-		ctrl.Log.Error(err, "unable to create fieldIndex for Route", "FieldIndex", IndexFieldSpecRealm)
 		os.Exit(1)
 	}
 

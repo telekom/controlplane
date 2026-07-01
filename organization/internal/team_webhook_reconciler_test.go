@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -93,6 +94,25 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
+				Gateway: adminv1.GatewayConfig{
+					Admin: adminv1.GatewayAdminConfig{
+						Url: "http://gateway-admin.test.local:8001",
+					},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{{
+							Hostname: "gateway.test.local",
+							BasePath: "/",
+						}},
+					}},
+				},
+				IdentityProvider: adminv1.IdentityProviderConfig{
+					Url: "http://idp.test.local:8080",
+					Admin: adminv1.IdentityProviderAdminConfig{
+						Url: ptr.To("http://idp-admin.test.local:8080"),
+					},
+				},
 			},
 		}
 
@@ -101,7 +121,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Name:      "team-api-identity-realm",
 				Namespace: testNamespace,
 			},
-			TeamApiGatewayRealm: &types.ObjectRef{
+			Gateway: &types.ObjectRef{
 				Name:      "team-api-gateway-realm",
 				Namespace: testNamespace,
 			},
@@ -128,7 +148,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			By("Checking if the zone is status is updated")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone.Status.TeamApiGatewayRealm).NotTo(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).NotTo(BeNil())
 		})
 

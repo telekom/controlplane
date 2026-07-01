@@ -83,7 +83,7 @@ func newValidEventConfig() *eventv1.EventConfig {
 					},
 				},
 			},
-			Mesh: eventv1.MeshConfig{
+			Mesh: &eventv1.MeshConfig{
 				FullMesh: true,
 				Client: eventv1.ClientConfig{
 					Realm: ctypes.ObjectRef{
@@ -133,72 +133,86 @@ var _ = Describe("EventConfig Webhook", func() {
 				Expect(warnings).To(BeNil())
 			})
 
-			It("should reject when admin realm is empty", func() {
+			It("should accept when admin realm is empty (auto-resolved at reconcile time)", func() {
 				obj := newValidEventConfig()
 				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
-
-				warnings, err := validator.ValidateCreate(ctx, obj)
-				Expect(err).To(HaveOccurred())
-				Expect(errors.IsInvalid(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring("realm must be specified for admin client"))
-				Expect(warnings).To(BeNil())
-			})
-
-			It("should reject when mesh realm is empty", func() {
-				obj := newValidEventConfig()
-				obj.Spec.Mesh.Client.Realm = ctypes.ObjectRef{}
-
-				warnings, err := validator.ValidateCreate(ctx, obj)
-				Expect(err).To(HaveOccurred())
-				Expect(errors.IsInvalid(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring("realm must be specified for mesh client"))
-				Expect(warnings).To(BeNil())
-			})
-
-			It("should reject when both realms are empty and report both errors", func() {
-				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
-				obj.Spec.Mesh.Client.Realm = ctypes.ObjectRef{}
-
-				warnings, err := validator.ValidateCreate(ctx, obj)
-				Expect(err).To(HaveOccurred())
-				Expect(errors.IsInvalid(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring("realm must be specified for admin client"))
-				Expect(err.Error()).To(ContainSubstring("realm must be specified for mesh client"))
-				Expect(warnings).To(BeNil())
-			})
-
-			It("should accept when realm has only Name set", func() {
-				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{Name: "admin-realm"}
-				obj.Spec.Mesh.Client.Realm = ctypes.ObjectRef{Name: "mesh-realm"}
 
 				warnings, err := validator.ValidateCreate(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(warnings).To(BeNil())
 			})
 
-			It("should accept when realm has only Namespace set", func() {
+			It("should accept when mesh realm is empty (auto-resolved at reconcile time)", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{Namespace: "default"}
+				obj.Spec.Mesh.Client.Realm = ctypes.ObjectRef{}
+
+				warnings, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warnings).To(BeNil())
+			})
+
+			It("should accept when both realms are empty (auto-resolved at reconcile time)", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
+				obj.Spec.Mesh.Client.Realm = ctypes.ObjectRef{}
+
+				warnings, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warnings).To(BeNil())
+			})
+
+			It("should accept when mesh is nil (defaults to full mesh at reconcile time)", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Mesh = nil
+
+				warnings, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warnings).To(BeNil())
+			})
+
+			It("should reject when admin realm has only Name set (partial realm)", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{Name: "admin-realm"}
+
+				warnings, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).To(HaveOccurred())
+				Expect(errors.IsInvalid(err)).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring("realm must have both name and namespace if specified"))
+				Expect(warnings).To(BeNil())
+			})
+
+			It("should reject when mesh realm has only Namespace set (partial realm)", func() {
+				obj := newValidEventConfig()
 				obj.Spec.Mesh.Client.Realm = ctypes.ObjectRef{Namespace: "default"}
 
 				warnings, err := validator.ValidateCreate(ctx, obj)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(err).To(HaveOccurred())
+				Expect(errors.IsInvalid(err)).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring("realm must have both name and namespace if specified"))
 				Expect(warnings).To(BeNil())
 			})
 		})
 
 		Context("ValidateUpdate", func() {
-			It("should apply the same validation as create", func() {
+			It("should reject partial realm on update", func() {
+				oldObj := newValidEventConfig()
+				newObj := newValidEventConfig()
+				newObj.Spec.Admin.Client.Realm = ctypes.ObjectRef{Name: "only-name"}
+
+				warnings, err := validator.ValidateUpdate(ctx, oldObj, newObj)
+				Expect(err).To(HaveOccurred())
+				Expect(errors.IsInvalid(err)).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring("realm must have both name and namespace if specified"))
+				Expect(warnings).To(BeNil())
+			})
+
+			It("should accept clearing realm on update (auto-resolved at reconcile time)", func() {
 				oldObj := newValidEventConfig()
 				newObj := newValidEventConfig()
 				newObj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
 
 				warnings, err := validator.ValidateUpdate(ctx, oldObj, newObj)
-				Expect(err).To(HaveOccurred())
-				Expect(errors.IsInvalid(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring("realm must be specified for admin client"))
+				Expect(err).NotTo(HaveOccurred())
 				Expect(warnings).To(BeNil())
 			})
 

@@ -114,7 +114,6 @@ API gateway instances, routes, and consumer management.
 | Kind | Description |
 | ---- | ----------- |
 | **Gateway** | Represents a gateway instance with admin API access and connection settings. |
-| **Realm** | Represents a gateway realm (token issuer scope) with URL and consumer configuration. |
 | **Route** | Defines a gateway route with upstreams, downstreams, traffic management, and security settings. |
 | **ConsumeRoute** | Binds a consumer to a gateway route with optional security and rate limit configuration. |
 | **Consumer** | Represents a gateway consumer identity with optional IP restrictions. |
