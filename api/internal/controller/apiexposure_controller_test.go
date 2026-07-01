@@ -10,6 +10,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
@@ -38,6 +39,34 @@ func CreateZone(name string) *adminapi.Zone {
 		},
 		Spec: adminapi.ZoneSpec{
 			Visibility: adminapi.ZoneVisibilityWorld,
+			Gateway: adminapi.GatewayConfig{
+				Admin: adminapi.GatewayAdminConfig{
+					Url: "http://gateway-admin.test.local:8001",
+				},
+				Presets: []adminapi.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminapi.UrlConfig{
+							{
+								Hostname: fmt.Sprintf("my-gateway.%s", name),
+								Scheme:   "http",
+								Port:     8080,
+								BasePath: "/",
+							},
+						},
+					},
+				},
+			},
+			IdentityProvider: adminapi.IdentityProviderConfig{
+				Url: "http://idp.test.local:8080",
+				Admin: adminapi.IdentityProviderAdminConfig{
+					Url: ptr.To("http://idp-admin.test.local:8080"),
+				},
+			},
+			Redis: &adminapi.RedisConfig{
+				Host: "redis://redis.test.local:6379",
+			},
 		},
 	}
 
@@ -45,6 +74,10 @@ func CreateZone(name string) *adminapi.Zone {
 	Expect(err).ToNot(HaveOccurred())
 
 	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.Gateway = &types.ObjectRef{
+		Name:      "test-gateway",
+		Namespace: testEnvironment + "--" + name,
+	}
 	zone.Status.Links = adminapi.Links{
 		Url:       fmt.Sprintf("http://test.%s.de", name),
 		Issuer:    fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", name),
@@ -57,39 +90,6 @@ func CreateZone(name string) *adminapi.Zone {
 
 	CreateNamespace(zone.Status.Namespace)
 	return zone
-}
-
-func CreateRealm(name, zoneName string) *gatewayapi.Realm {
-	realm := NewRealm(name, zoneName)
-	err := k8sClient.Create(ctx, realm)
-	Expect(err).ToNot(HaveOccurred())
-
-	realm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
-	err = k8sClient.Status().Update(ctx, realm)
-	Expect(err).ToNot(HaveOccurred())
-
-	return realm
-}
-
-func NewRealm(name, zoneName string) *gatewayapi.Realm {
-	realm := &gatewayapi.Realm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: testEnvironment + "--" + zoneName,
-			Labels: map[string]string{
-				config.EnvironmentLabelKey:   testEnvironment,
-				config.BuildLabelKey("zone"): zoneName,
-			},
-		},
-		Spec: gatewayapi.RealmSpec{
-			Urls:       []string{fmt.Sprintf("http://my-gateway.%s:8080", zoneName)},
-			IssuerUrls: []string{fmt.Sprintf("http://my-issuer.%s:8080/auth/realms/%s", zoneName, testEnvironment)},
-		},
-		Status: gatewayapi.RealmStatus{},
-	}
-
-	realm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
-	return realm
 }
 
 func NewApiExposure(apiBasePath, zoneName, appName string) *apiv1.ApiExposure {
@@ -184,7 +184,6 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 
 	var apiExposure *apiv1.ApiExposure
 	var api *apiv1.Api
-	var zone *adminapi.Zone
 
 	appName := "api-exposure-app-2"
 	var apiExpApplication *applicationapi.Application
@@ -198,10 +197,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 		apiExposure = NewApiExposure(apiBasePath, zoneName, appName)
 
 		By("Creating the Zone")
-		zone = CreateZone(zoneName)
-
-		By("Creating the Gateway")
-		CreateRealm(testEnvironment, zone.Name)
+		CreateZone(zoneName)
 	})
 
 	AfterAll(func() {
@@ -269,7 +265,6 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 
 				// Verify that the route has rate limit configuration
-				g.Expect(route.HasRateLimit()).To(BeTrue(), "Route should have rate limit configuration")
 				g.Expect(route.Spec.Traffic.RateLimit).ToNot(BeNil(), "Route should have rate limit in traffic spec")
 
 				// Verify that the provider rate limit values are correctly passed
@@ -421,7 +416,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(route.Spec.Upstreams).To(HaveLen(1))
+				g.Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("team"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
 				g.Expect(route.Spec.Security.M2M.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
@@ -488,16 +483,10 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 		By("Creating the Failover Zone")
 		failoverZone = CreateZone(failoverZoneName)
 
-		By("Creating the Gateway")
-		CreateRealm(testEnvironment, providerZone.Name)
-
 		By("Creating the Gateway Client")
 		// We need this gateway client because the failover-route is also a proxy routes (in non-failover scenarios)
 		// And a proxy-route needs the gateway client for meshing
 		CreateGatewayClient(providerZone)
-
-		By("Creating the Failover Gateway")
-		CreateRealm(testEnvironment, failoverZone.Name)
 
 		By("Initializing the API and APIExposure")
 		api = NewApi(apiBasePath)
@@ -523,8 +512,8 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 		if err != nil && !apierrors.IsNotFound(err) {
 			Expect(err).ToNot(HaveOccurred(), "Failed to delete the route %s/%s", route.Namespace, route.Name)
 		}
-		route.Name = apiExposure.Status.FailoverRoute.Name
-		route.Namespace = apiExposure.Status.FailoverRoute.Namespace
+		route.Name = apiExposure.Status.FailoverRoutes[0].Name
+		route.Namespace = apiExposure.Status.FailoverRoutes[0].Namespace
 		err = k8sClient.Delete(ctx, route)
 		if err != nil && !apierrors.IsNotFound(err) {
 			Expect(err).ToNot(HaveOccurred(), "Failed to delete the failover route %s/%s", route.Namespace, route.Name)
@@ -550,7 +539,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			By("Creating the resource")
 			apiExposure = NewApiExposure(apiBasePath, zoneName, appName)
 			apiExposure.Spec.Traffic = apiv1.Traffic{
-				Failover: &apiv1.Failover{
+				Failover: &apiv1.ProviderFailover{
 					Zones: []types.ObjectRef{
 						{
 							Name:      failoverZone.Name,
@@ -570,43 +559,44 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 
 				g.Expect(apiExposure.Status.Active).To(BeTrue())
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
-				g.Expect(apiExposure.Status.FailoverRoute).ToNot(BeNil())
+				g.Expect(apiExposure.Status.FailoverRoutes).ToNot(BeEmpty())
 
 				realRoute := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), realRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				Expect(realRoute.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.apiexp-failovertest:8080/apiexpctrl/failovertest/v1"))
-				Expect(realRoute.Spec.Downstreams[0].IssuerUrl).To(Equal("http://my-issuer.apiexp-failovertest:8080/auth/realms/test"))
+				Expect(realRoute.Spec.Hostnames).To(ContainElement("my-gateway.apiexp-failovertest"))
+				Expect(realRoute.Spec.Paths).To(ContainElement("/apiexpctrl/failovertest/v1"))
 
-				Expect(realRoute.Spec.Upstreams[0].Host).To(Equal("my-provider-api"))
-				Expect(realRoute.Spec.Upstreams[0].Port).To(Equal(8080))
-				Expect(realRoute.Spec.Upstreams[0].Path).To(Equal("/api/v1"))
-				Expect(realRoute.Spec.Upstreams[0].Scheme).To(Equal("http"))
+				Expect(realRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-provider-api"))
+				Expect(realRoute.Spec.Backend.Upstreams[0].Port).To(Equal(int32(8080)))
+				Expect(realRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/api/v1"))
+				Expect(realRoute.Spec.Backend.Upstreams[0].Scheme).To(Equal("http"))
 				Expect(realRoute.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("client-id"))
 				Expect(realRoute.Spec.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("******"))
 
 				Expect(realRoute.Spec.Traffic.Failover).To(BeNil())
 
 				failoverRoute := &gatewayapi.Route{}
-				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoute.K8s(), failoverRoute)
+				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoutes[0].K8s(), failoverRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				Expect(failoverRoute.Spec.Upstreams[0].Url()).To(Equal("http://my-gateway.apiexp-failovertest:8080/apiexpctrl/failovertest/v1"))
-				Expect(failoverRoute.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.apiexp-failovertest:8080/auth/realms/test"))
+				Expect(failoverRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-gateway.apiexp-failovertest"))
+				Expect(failoverRoute.Spec.Backend.Upstreams[0].Port).To(Equal(int32(8080)))
+				Expect(failoverRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/apiexpctrl/failovertest/v1"))
 
 				Expect(failoverRoute.Spec.Traffic.Failover).ToNot(BeNil())
 
 				// The failover secondary route is a proxy-target for cross-zone requests,
 				// so the gateway mesh-client must be allowed in its ACL.
-				Expect(failoverRoute.Spec.Security).ToNot(BeNil(), "Failover route should have security configured")
+				Expect(failoverRoute.Spec.Security).ToNot(BeZero(), "Failover route should have security configured")
 				Expect(failoverRoute.Spec.Security.DefaultConsumers).To(ContainElement(util.GatewayConsumerName),
 					"Failover secondary route should contain gateway consumer for cross-zone proxy access")
 
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Host).To(Equal("my-provider-api"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Port).To(Equal(8080))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Path).To(Equal("/api/v1"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Scheme).To(Equal("http"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Hostname).To(Equal("my-provider-api"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Port).To(Equal(int32(8080)))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Path).To(Equal("/api/v1"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Scheme).To(Equal("http"))
 				Expect(failoverRoute.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
 			}, timeout, interval).Should(Succeed())
 		})
@@ -631,7 +621,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			By("Creating the resource")
 			apiExposure = NewApiExposure(apiBasePath, zoneName, secondAppName)
 			apiExposure.Spec.Traffic = apiv1.Traffic{
-				Failover: &apiv1.Failover{
+				Failover: &apiv1.ProviderFailover{
 					Zones: []types.ObjectRef{
 						{
 							Name:      failoverZone.Name,
@@ -663,35 +653,36 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				g.Expect(apiExposure.Status.Active).To(BeTrue())
 
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
-				g.Expect(apiExposure.Status.FailoverRoute).ToNot(BeNil())
+				g.Expect(apiExposure.Status.FailoverRoutes).ToNot(BeEmpty())
 
 				realRoute := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), realRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				Expect(realRoute.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.apiexp-failovertest:8080/apiexpctrl/failovertest/v1"))
-				Expect(realRoute.Spec.Downstreams[0].IssuerUrl).To(Equal("http://my-issuer.apiexp-failovertest:8080/auth/realms/test"))
+				Expect(realRoute.Spec.Hostnames).To(ContainElement("my-gateway.apiexp-failovertest"))
+				Expect(realRoute.Spec.Paths).To(ContainElement("/apiexpctrl/failovertest/v1"))
 
-				Expect(realRoute.Spec.Upstreams[0].Host).To(Equal("my-provider-api"))
-				Expect(realRoute.Spec.Upstreams[0].Port).To(Equal(8080))
-				Expect(realRoute.Spec.Upstreams[0].Path).To(Equal("/api/v1"))
-				Expect(realRoute.Spec.Upstreams[0].Scheme).To(Equal("http"))
+				Expect(realRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-provider-api"))
+				Expect(realRoute.Spec.Backend.Upstreams[0].Port).To(Equal(int32(8080)))
+				Expect(realRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/api/v1"))
+				Expect(realRoute.Spec.Backend.Upstreams[0].Scheme).To(Equal("http"))
 
 				Expect(realRoute.Spec.Traffic.Failover).To(BeNil())
 
 				failoverRoute := &gatewayapi.Route{}
-				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoute.K8s(), failoverRoute)
+				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoutes[0].K8s(), failoverRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				Expect(failoverRoute.Spec.Upstreams[0].Url()).To(Equal("http://my-gateway.apiexp-failovertest:8080/apiexpctrl/failovertest/v1"))
-				Expect(failoverRoute.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.apiexp-failovertest:8080/auth/realms/test"))
+				Expect(failoverRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-gateway.apiexp-failovertest"))
+				Expect(failoverRoute.Spec.Backend.Upstreams[0].Port).To(Equal(int32(8080)))
+				Expect(failoverRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/apiexpctrl/failovertest/v1"))
 
 				Expect(failoverRoute.Spec.Traffic.Failover).ToNot(BeNil())
 
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Host).To(Equal("my-provider-api"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Port).To(Equal(8080))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Path).To(Equal("/api/v1"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Scheme).To(Equal("http"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Hostname).To(Equal("my-provider-api"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Port).To(Equal(int32(8080)))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Path).To(Equal("/api/v1"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Targets[0].Upstream.Scheme).To(Equal("http"))
 				Expect(failoverRoute.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
 
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://my-issser.example.com/token"))
@@ -723,8 +714,7 @@ var _ = Describe("ApiExposure Controller cross-zone proxy target ACL", Ordered, 
 		zone := CreateZone(zoneName)
 		CreateZone(otherZoneName)
 
-		By("Creating the Realms")
-		CreateRealm(testEnvironment, zone.Name)
+		_ = zone // zone is set up with presets in CreateZone
 
 		By("Creating the API")
 		api = NewApi(apiBasePath)
@@ -756,9 +746,7 @@ var _ = Describe("ApiExposure Controller cross-zone proxy target ACL", Ordered, 
 				g.Expect(err).ToNot(HaveOccurred())
 
 				By("Checking that DefaultConsumers does not contain gateway")
-				if route.Spec.Security != nil {
-					g.Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(util.GatewayConsumerName))
-				}
+				g.Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(util.GatewayConsumerName))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -795,7 +783,7 @@ var _ = Describe("ApiExposure Controller cross-zone proxy target ACL", Ordered, 
 				err := k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				if route.Spec.Security != nil {
+				if route.Spec.Security.DefaultConsumers != nil {
 					g.Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(util.GatewayConsumerName),
 						"Real route should NOT contain gateway consumer after cross-zone subscription is deleted")
 				}

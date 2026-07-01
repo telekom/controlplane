@@ -37,9 +37,9 @@ type ApplicationSpec struct {
 	// Zone is the primary zone for the application
 	// +kubebuilder:validation:Required
 	Zone types.ObjectRef `json:"zone"`
-	// FailoverZones are the zones which can be used by the application in case of a failure in the primary zone
-	// +kubebuilder:validation:Optional
-	FailoverZones []types.ObjectRef `json:"failoverZones,omitempty"`
+
+	// Failover defines the failover configuration for the application
+	Failover Failover `json:"failover"`
 
 	// NeedsClient is a flag to indicate if the application needs a Identity client
 	// +kubebuilder:default=true
@@ -81,6 +81,12 @@ type ExternalId struct {
 
 type Security struct {
 	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
+}
+
+type Failover struct {
+	// Enabled indicates whether failover is enabled for the application
+	// +kubebuilder:validation:Required
+	Enabled bool `json:"enabled"`
 }
 
 type IpRestrictions struct {

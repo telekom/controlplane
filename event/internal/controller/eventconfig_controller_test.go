@@ -53,7 +53,7 @@ var _ = Describe("EventConfig Controller", func() {
 						},
 						ServerSendEventUrl: "https://sse.example.com",
 						PublishEventUrl:    "https://publish.example.com",
-						Mesh: eventv1.MeshConfig{
+						Mesh: &eventv1.MeshConfig{
 							FullMesh: true,
 							Client: eventv1.ClientConfig{
 								Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},

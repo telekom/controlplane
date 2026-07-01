@@ -55,26 +55,20 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 	logger.V(1).Info("RemoteApiSubscription synced with remote CP but not updated")
 
 	if !meta.IsStatusConditionTrue(obj.GetConditions(), condition.ConditionTypeReady) {
-		logger.V(1).Info("🫷 RemoteApiSubscription not ready")
+		logger.V(1).Info("RemoteApiSubscription not ready")
 		return nil
 	}
 
-	zone, err := util.GetZone(ctx, c, remoteOrg.Spec.Zone.K8s())
+	// Resolve zone and default preset for hostnames/paths
+	preset, zone, err := util.GetDefaultPresetForZone(ctx, remoteOrg.Spec.Zone)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get zone %s", remoteOrg.Spec.Zone.Name)
+		return errors.Wrapf(err, "failed to get default preset for zone %s", remoteOrg.Spec.Zone.Name)
 	}
-
-	downstreamRealmRef := types.ObjectRef{
-		Name:      remoteOrg.Spec.Id,
-		Namespace: zone.Status.Namespace,
-	}
-	downstreamRealm, err := util.GetRealm(ctx, downstreamRealmRef.K8s())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get realm '%s'", downstreamRealmRef.String())
+	if zone.Status.Gateway == nil {
+		return errors.Errorf("zone %s has no gateway reference in status", remoteOrg.Spec.Zone.Name)
 	}
 
 	// Create real route
-
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      remoteOrg.Spec.Id + "--" + labelutil.NormalizeValue(obj.Spec.ApiBasePath),
@@ -84,35 +78,35 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			apiapi.BasePathLabelKey:       labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"):  labelutil.NormalizeValue(zone.Name),
-			config.BuildLabelKey("realm"): labelutil.NormalizeValue(downstreamRealm.Name),
-			config.BuildLabelKey("type"):  "real",
+			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
+			config.BuildLabelKey("zone"): labelutil.NormalizeValue(zone.Name),
+			config.BuildLabelKey("type"): "real",
 		}
 
-		parsedURL, parseErr := url.Parse(obj.Status.GatewayUrl)
+		u, parseErr := url.Parse(obj.Status.GatewayUrl)
 		if parseErr != nil {
 			return errors.Wrapf(parseErr, "failed to parse gateway url")
 		}
 
-		downstream, downstreamErr := downstreamRealm.AsDownstream(obj.Spec.ApiBasePath)
-		if downstreamErr != nil {
-			return errors.Wrap(downstreamErr, "failed to create downstream")
-		}
+		port := gatewayapi.GetPortOrDefaultFromScheme(u)
+
+		hostnames, paths := preset.ResolveHostnamesAndPaths(obj.Spec.ApiBasePath)
 
 		route.Spec = gatewayapi.RouteSpec{
-			Realm: downstreamRealmRef,
-			Upstreams: []gatewayapi.Upstream{
-				{
-					Scheme: parsedURL.Scheme,
-					Host:   parsedURL.Hostname(),
-					Port:   gatewayapi.GetPortOrDefaultFromScheme(parsedURL),
-					Path:   parsedURL.Path,
+			GatewayRef: *zone.Status.Gateway,
+			Type:       gatewayapi.RouteTypePrimary,
+			Backend: gatewayapi.Backend{
+				Upstreams: []gatewayapi.Upstream{
+					{
+						Scheme:   u.Scheme,
+						Hostname: u.Hostname(),
+						Port:     port,
+						Path:     u.Path,
+					},
 				},
 			},
-			Downstreams: []gatewayapi.Downstream{
-				downstream,
-			},
+			Hostnames: hostnames,
+			Paths:     paths,
 		}
 		return nil
 	}

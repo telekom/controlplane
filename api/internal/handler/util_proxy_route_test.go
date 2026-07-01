@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
@@ -17,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -35,6 +35,33 @@ func CreateZone(name string) *adminapi.Zone {
 		},
 		Spec: adminapi.ZoneSpec{
 			Visibility: adminapi.ZoneVisibilityWorld,
+			Gateway: adminapi.GatewayConfig{
+				Admin: adminapi.GatewayAdminConfig{
+					Url: "http://gateway-admin.test.local:8001",
+				},
+				Presets: []adminapi.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminapi.UrlConfig{
+							{
+								Hostname: fmt.Sprintf("test.%s.de", name),
+								Scheme:   "http",
+								BasePath: "/",
+							},
+						},
+					},
+				},
+			},
+			IdentityProvider: adminapi.IdentityProviderConfig{
+				Url: "http://idp.test.local:8080",
+				Admin: adminapi.IdentityProviderAdminConfig{
+					Url: ptr.To("http://idp-admin.test.local:8080"),
+				},
+			},
+			Redis: &adminapi.RedisConfig{
+				Host: "redis://redis.test.local:6379",
+			},
 		},
 		Status: adminapi.ZoneStatus{},
 	}
@@ -44,6 +71,10 @@ func CreateZone(name string) *adminapi.Zone {
 
 	zone.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.Gateway = &types.ObjectRef{
+		Name:      "test-gateway",
+		Namespace: testEnvironment + "--" + name,
+	}
 	zone.Status.Links = adminapi.Links{
 		Url:       fmt.Sprintf("http://test.%s.de", name),
 		Issuer:    fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", name),
@@ -54,33 +85,6 @@ func CreateZone(name string) *adminapi.Zone {
 
 	CreateNamespace(zone.Status.Namespace)
 	return zone
-}
-
-func CreateRealm(name, zoneName string) *gatewayapi.Realm {
-	realm := &gatewayapi.Realm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: testEnvironment + "--" + zoneName,
-			Labels: map[string]string{
-				config.EnvironmentLabelKey:   testEnvironment,
-				config.BuildLabelKey("zone"): zoneName,
-			},
-		},
-		Spec: gatewayapi.RealmSpec{
-			Urls:       []string{fmt.Sprintf("http://%s.%s.de:8080", name, zoneName)},
-			IssuerUrls: []string{fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", zoneName)},
-		},
-		Status: gatewayapi.RealmStatus{},
-	}
-
-	err := k8sClient.Create(ctx, realm)
-	Expect(err).ToNot(HaveOccurred())
-
-	realm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
-	err = k8sClient.Status().Update(ctx, realm)
-	Expect(err).ToNot(HaveOccurred())
-
-	return realm
 }
 
 func CreateGatewayClient(zone *adminapi.Zone) *identityapi.Client {
@@ -127,65 +131,31 @@ var _ = Describe("Util Tests", func() {
 
 			By("Creating the consumer Zone")
 			consumerZone = CreateZone("consumer")
-			CreateRealm(testEnvironment, "consumer")
 			CreateGatewayClient(consumerZone)
-			By("Creating a second Gateway for the consumer Zone")
-			CreateRealm("esp", "consumer")
 
 			By("Creating the provider Zone")
 			providerZone = CreateZone("provider")
-			CreateRealm(testEnvironment, "provider")
 			CreateGatewayClient(providerZone)
 		})
 
 		It("should create a normal Proxy-Route", func() {
 			By("Creating the Proxy-Route")
-			route, err := util.CreateProxyRoute(ctx, *types.ObjectRefFromObject(consumerZone), *types.ObjectRefFromObject(providerZone), "/api/test/v1", testEnvironment)
+			route, err := util.CreateProxyRoute(ctx, *types.ObjectRefFromObject(consumerZone), *types.ObjectRefFromObject(providerZone), "/api/test/v1")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(route).ToNot(BeNil())
 
-			Expect(route.Name).To(Equal(testEnvironment + "--api-test-v1"))
+			Expect(route.Name).To(Equal("api-test-v1"))
 			Expect(route.Namespace).To(Equal(consumerZone.Status.Namespace))
 
-			By("Checking the Route")
-			downstream := route.Spec.Downstreams[0]
-			Expect(downstream).ToNot(BeNil())
-			Expect(downstream.Host).To(Equal("test.consumer.de"))
-			Expect(downstream.Path).To(Equal("/api/test/v1"))
+			By("Checking the Route hostnames and paths")
+			Expect(route.Spec.Hostnames).To(ContainElement("test.consumer.de"))
+			Expect(route.Spec.Paths).To(ContainElement("/api/test/v1"))
 
-			upstream := route.Spec.Upstreams[0]
-			Expect(upstream).ToNot(BeNil())
-			Expect(upstream.Host).To(Equal("test.provider.de"))
+			By("Checking the upstream")
+			Expect(route.Spec.Backend.Upstreams).ToNot(BeEmpty())
+			upstream := route.Spec.Backend.Upstreams[0]
+			Expect(upstream.Hostname).To(Equal("test.provider.de"))
 			Expect(upstream.Path).To(Equal("/api/test/v1"))
-
-			Expect(upstream.IssuerUrl).To(Equal("http://issuer.provider.de:8080/auth/realms/test"))
-			Expect(upstream.ClientId).To(Equal("gateway"))
-			Expect(upstream.ClientSecret).To(Equal("topsecret"))
-		})
-
-		It("should create a Proxy-Route with the correct virtual-host as downstream", func() {
-			By("Creating the Proxy-Route")
-			route, err := util.CreateProxyRoute(ctx, *types.ObjectRefFromObject(consumerZone), *types.ObjectRefFromObject(consumerZone), "/api/test/v1", "esp")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(route).ToNot(BeNil())
-
-			Expect(route.Name).To(Equal("esp--api-test-v1"))
-			Expect(route.Namespace).To(Equal(consumerZone.Status.Namespace))
-
-			By("Checking the Route")
-			downstream := route.Spec.Downstreams[0]
-			Expect(downstream).ToNot(BeNil())
-			Expect(downstream.Host).To(Equal("esp.consumer.de"))
-			Expect(downstream.Path).To(Equal("/api/test/v1"))
-
-			upstream := route.Spec.Upstreams[0]
-			Expect(upstream).ToNot(BeNil())
-			Expect(upstream.Host).To(Equal("esp.consumer.de"))
-			Expect(upstream.Path).To(Equal("/api/test/v1"))
-
-			Expect(upstream.IssuerUrl).To(Equal("http://issuer.consumer.de:8080/auth/realms/test"))
-			Expect(upstream.ClientId).To(Equal("gateway"))
-			Expect(upstream.ClientSecret).To(Equal("topsecret"))
 		})
 	})
 })

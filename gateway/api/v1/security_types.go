@@ -33,6 +33,17 @@ type Security struct {
 	// +kubebuilder:validation:Optional
 	DefaultConsumers []string `json:"defaultConsumers,omitempty"`
 
+	// TrustedIssuers defines a list of trusted token issuers for this route. If empty, all issuers are trusted.
+	// +kubebuilder:validation:Optional
+	// +listType=set
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:items:Format=uri
+	TrustedIssuers []string `json:"trustedIssuers,omitempty"`
+
+	// RealmName defines the realm name for this route, which is used in the Jumper sidecar to determine the Last-Mile-Token
+	// +kubebuilder:validation:Required
+	RealmName string `json:"realmName"`
+
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`

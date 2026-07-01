@@ -41,7 +41,9 @@ func toApiBasic(basic *rover.BasicAuthCredentials) *apiapi.BasicAuthCredentials 
 	}
 }
 
-func getFailoverZones(env string, failoverCfg *rover.Failover) ([]types.ObjectRef, bool) {
+// mapProviderFailoverZones maps the failover configuration to their corresponding list of ObjectRefs
+// Its returns true if the failover configuration is not nil and has at least one zone, otherwise it returns false
+func mapProviderFailoverZones(env string, failoverCfg *rover.ProviderFailover) ([]types.ObjectRef, bool) {
 	if failoverCfg == nil || len(failoverCfg.Zones) == 0 {
 		return nil, false
 	}
