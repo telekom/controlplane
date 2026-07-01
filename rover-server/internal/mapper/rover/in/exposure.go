@@ -53,11 +53,44 @@ func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
 
 		out.Event = mapEventExposure(eventExp)
 
+	case "file":
+		fileExp, err := in.AsFileExposure()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to FileExposure")
+		}
+
+		out.File = mapFileExposure(fileExp)
+
 	default:
 		return errors.Errorf("unknown exposure type: %s", expType)
 	}
 
 	return nil
+}
+
+func mapFileExposure(in api.FileExposure) *roverv1.FileExposure {
+	out := &roverv1.FileExposure{
+		FileType:   in.FileType,
+		Variant:    roverv1.FileVariant(in.Variant),
+		Visibility: toRoverVisibility(in.Visibility),
+		PublicKeys: mapPublicKeys(in.PublicKeys),
+	}
+
+	return out
+}
+
+func mapPublicKeys(in []api.PublicKey) []roverv1.PublicKey {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]roverv1.PublicKey, len(in))
+	for i, key := range in {
+		out[i] = roverv1.PublicKey{
+			Label: key.Label,
+			Key:   key.Key,
+		}
+	}
+	return out
 }
 
 func mapApiExposure(in api.ApiExposure) *roverv1.ApiExposure {

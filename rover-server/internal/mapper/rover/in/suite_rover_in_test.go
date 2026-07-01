@@ -40,6 +40,25 @@ var (
 		EventType: "test-event",
 	}
 
+	fileExposure = api.FileExposure{
+		Type:       "file",
+		FileType:   "demo-sftp-spec-v1",
+		Variant:    "sftp",
+		Visibility: "World",
+		PublicKeys: []api.PublicKey{
+			{Label: "provider-key", Key: "ssh-ed25519 AAAA-provider"},
+		},
+	}
+
+	fileSubscription = api.FileSubscription{
+		Type:     "file",
+		FileType: "demo-sftp-spec-v1",
+		Variant:  "sftp",
+		PublicKeys: []api.PublicKey{
+			{Label: "consumer-key", Key: "ssh-ed25519 AAAA-consumer"},
+		},
+	}
+
 	resourceIdInfo = mapper.ResourceIdInfo{
 		Name:        "rover-local-sub",
 		Environment: "poc",
@@ -90,6 +109,20 @@ func GetEventExposure(eventExposure api.EventExposure) api.Exposure {
 func GetEventSubscription(eventSubscription api.EventSubscription) api.Subscription {
 	var sub api.Subscription
 	err := (&sub).FromEventSubscription(eventSubscription)
+	Expect(err).To(BeNil())
+	return sub
+}
+
+func GetFileExposure(fileExposure api.FileExposure) api.Exposure {
+	var exp api.Exposure
+	err := (&exp).FromFileExposure(fileExposure)
+	Expect(err).To(BeNil())
+	return exp
+}
+
+func GetFileSubscription(fileSubscription api.FileSubscription) api.Subscription {
+	var sub api.Subscription
+	err := (&sub).FromFileSubscription(fileSubscription)
 	Expect(err).To(BeNil())
 	return sub
 }

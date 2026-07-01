@@ -35,12 +35,28 @@ func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 
 		out.Event = mapEventSubscription(eventSub)
 
+	case "file":
+		fileSub, err := in.AsFileSubscription()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to FileSubscription")
+		}
+
+		out.File = mapFileSubscription(fileSub)
+
 	default:
 		return errors.Errorf("unknown subscription type: %s", subType)
 
 	}
 
 	return nil
+}
+
+func mapFileSubscription(in api.FileSubscription) *roverv1.FileSubscription {
+	return &roverv1.FileSubscription{
+		FileType:   in.FileType,
+		Variant:    roverv1.FileVariant(in.Variant),
+		PublicKeys: mapPublicKeys(in.PublicKeys),
+	}
 }
 
 func mapApiSubscription(in api.ApiSubscription) *roverv1.ApiSubscription {

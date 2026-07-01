@@ -55,6 +55,16 @@ var _ = Describe("Subscription Mapper", func() {
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 
+		It("must map a FileSubscription correctly", func() {
+			input := GetFileSubscription(fileSubscription)
+			output := &roverv1.Subscription{}
+
+			err := mapSubscription(&input, output)
+
+			Expect(err).To(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), output)
+		})
+
 		It("must return an error if Discriminator fails", func() {
 			input := &api.Subscription{}
 			output := &roverv1.Subscription{}
