@@ -220,7 +220,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 
 		subInfo := api.SubscriptionInfo{}
 		aiSubInfo := api.AiSubscriptionInfo{
-			BasePath: mcpSub.Spec.McpBasePath,
+			BasePath: mcpSub.Spec.BasePath,
 		}
 		if err := subInfo.FromAiSubscriptionInfo(aiSubInfo); err != nil {
 			return errors.Wrap(err, "failed to convert ai subscription info")
@@ -332,7 +332,7 @@ func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 
 		expInfo := api.ExposureInfo{}
 		aiExpInfo := api.AiExposureInfo{
-			BasePath:   mcpExp.Spec.McpBasePath,
+			BasePath:   mcpExp.Spec.BasePath,
 			Variant:    api.AiExposureInfoVariant(mcpExp.Spec.Variant),
 			Approval:   api.ApprovalStrategy(mcpExp.Spec.Approval.Strategy),
 			Visibility: api.Visibility(mcpExp.Spec.Visibility),
