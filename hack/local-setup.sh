@@ -454,7 +454,7 @@ main() {
         if [ -n "${ONLY_CONTROLLERS}" ]; then
             step_restart_deployments
         else
-            step_deploy
+            run_deploy
         fi
         step_summary
         return
@@ -474,9 +474,20 @@ main() {
     if [ -n "${ONLY_CONTROLLERS}" ]; then
         step_restart_deployments
     else
-        step_deploy
+        run_deploy
     fi
     step_summary
+}
+
+# Hook: allow external scripts to replace the deploy step.
+# Set CUSTOM_DEPLOY_SCRIPT to the path of your deploy script.
+run_deploy() {
+    if [ -n "${CUSTOM_DEPLOY_SCRIPT}" ] && [ -f "${CUSTOM_DEPLOY_SCRIPT}" ]; then
+        info "Using custom deploy: ${CUSTOM_DEPLOY_SCRIPT}"
+        bash "${CUSTOM_DEPLOY_SCRIPT}"
+    else
+        step_deploy
+    fi
 }
 
 main "$@"
