@@ -205,16 +205,22 @@ func mapDecisions(decisions []approvalv1.Decision) []model.Decision {
 
 // mapAvailableTransitions converts CR AvailableTransitions (from Status) to
 // model AvailableTransition DTOs. Note: CR field .To maps to DTO .ToState.
+//
+// Transitions targeting "Expired" are filtered out — Expired is currently an
+// internal state that must not be displayed to users via the query layer.
 func mapAvailableTransitions(transitions approvalv1.AvailableTransitions) []model.AvailableTransition {
 	if len(transitions) == 0 {
 		return []model.AvailableTransition{}
 	}
-	result := make([]model.AvailableTransition, len(transitions))
-	for i, at := range transitions {
-		result[i] = model.AvailableTransition{
+	result := make([]model.AvailableTransition, 0, len(transitions))
+	for _, at := range transitions {
+		if at.To == approvalv1.ApprovalStateExpired {
+			continue
+		}
+		result = append(result, model.AvailableTransition{
 			Action:  string(at.Action),
 			ToState: string(at.To),
-		}
+		})
 	}
 	return result
 }

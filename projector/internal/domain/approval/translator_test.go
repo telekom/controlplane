@@ -386,6 +386,67 @@ var _ = Describe("Approval Translator", func() {
 		})
 	})
 
+	Describe("AvailableTransitions filtering", func() {
+		newObj := func(transitions approvalv1.AvailableTransitions) *approvalv1.Approval {
+			return &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStateGranted,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+				Status: approvalv1.ApprovalStatus{
+					AvailableTransitions: transitions,
+				},
+			}
+		}
+
+		It("should filter out Expired transitions", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionSuspend, To: approvalv1.ApprovalStateSuspended},
+				{Action: approvalv1.ApprovalActionExpire, To: approvalv1.ApprovalStateExpired},
+				{Action: approvalv1.ApprovalActionDeny, To: approvalv1.ApprovalStateRejected},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(HaveLen(2))
+			Expect(data.AvailableTransitions).To(ConsistOf(
+				model.AvailableTransition{Action: "Suspend", ToState: "Suspended"},
+				model.AvailableTransition{Action: "Deny", ToState: "Rejected"},
+			))
+		})
+
+		It("should return empty slice when only Expired is available", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionExpire, To: approvalv1.ApprovalStateExpired},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(Equal([]model.AvailableTransition{}))
+		})
+
+		It("should pass through non-Expired transitions unchanged", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionSuspend, To: approvalv1.ApprovalStateSuspended},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(HaveLen(1))
+			Expect(data.AvailableTransitions[0]).To(Equal(
+				model.AvailableTransition{Action: "Suspend", ToState: "Suspended"},
+			))
+		})
+	})
+
 	Describe("KeyFromObject", func() {
 		It("should derive all key fields from the live object", func() {
 			obj := &approvalv1.Approval{
