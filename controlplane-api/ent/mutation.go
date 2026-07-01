@@ -9819,9 +9819,22 @@ func (m *EventSubscriptionMutation) OldTrigger(ctx context.Context) (v *model.Ev
 	return oldValue.Trigger, nil
 }
 
+// ClearTrigger clears the value of the "trigger" field.
+func (m *EventSubscriptionMutation) ClearTrigger() {
+	m.trigger = nil
+	m.clearedFields[eventsubscription.FieldTrigger] = struct{}{}
+}
+
+// TriggerCleared returns if the "trigger" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) TriggerCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldTrigger]
+	return ok
+}
+
 // ResetTrigger resets all changes to the "trigger" field.
 func (m *EventSubscriptionMutation) ResetTrigger() {
 	m.trigger = nil
+	delete(m.clearedFields, eventsubscription.FieldTrigger)
 }
 
 // SetDelivery sets the "delivery" field.
@@ -10427,6 +10440,9 @@ func (m *EventSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(eventsubscription.FieldEnvironment) {
 		fields = append(fields, eventsubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(eventsubscription.FieldTrigger) {
+		fields = append(fields, eventsubscription.FieldTrigger)
+	}
 	if m.FieldCleared(eventsubscription.FieldScopes) {
 		fields = append(fields, eventsubscription.FieldScopes)
 	}
@@ -10455,6 +10471,9 @@ func (m *EventSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case eventsubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case eventsubscription.FieldTrigger:
+		m.ClearTrigger()
 		return nil
 	case eventsubscription.FieldScopes:
 		m.ClearScopes()

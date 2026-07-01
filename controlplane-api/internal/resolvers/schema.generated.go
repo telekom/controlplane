@@ -3132,16 +3132,6 @@ func (ec *executionContext) marshalNEventTrigger2githubᚗcomᚋtelekomᚋcontro
 	return ec._EventTrigger(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx context.Context, sel ast.SelectionSet, v *model.EventTrigger) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._EventTrigger(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, v any) (model1.PayloadType, error) {
 	var res model1.PayloadType
 	err := res.UnmarshalGQL(v)
@@ -3248,6 +3238,13 @@ func (ec *executionContext) marshalOEventScope2ᚕgithubᚗcomᚋtelekomᚋcontr
 	})
 
 	return ret
+}
+
+func (ec *executionContext) marshalOEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx context.Context, sel ast.SelectionSet, v *model.EventTrigger) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._EventTrigger(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {

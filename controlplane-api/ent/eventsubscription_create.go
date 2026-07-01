@@ -347,9 +347,6 @@ func (_c *EventSubscriptionCreate) check() error {
 			return &ValidationError{Name: "delivery_type", err: fmt.Errorf(`ent: validator failed for field "EventSubscription.delivery_type": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Trigger(); !ok {
-		return &ValidationError{Name: "trigger", err: errors.New(`ent: missing required field "EventSubscription.trigger"`)}
-	}
 	if _, ok := _c.mutation.Delivery(); !ok {
 		return &ValidationError{Name: "delivery", err: errors.New(`ent: missing required field "EventSubscription.delivery"`)}
 	}
@@ -679,6 +676,12 @@ func (u *EventSubscriptionUpsert) UpdateTrigger() *EventSubscriptionUpsert {
 	return u
 }
 
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsert) ClearTrigger() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldTrigger)
+	return u
+}
+
 // SetDelivery sets the "delivery" field.
 func (u *EventSubscriptionUpsert) SetDelivery(v model.EventDelivery) *EventSubscriptionUpsert {
 	u.Set(eventsubscription.FieldDelivery, v)
@@ -916,6 +919,13 @@ func (u *EventSubscriptionUpsertOne) SetTrigger(v *model.EventTrigger) *EventSub
 func (u *EventSubscriptionUpsertOne) UpdateTrigger() *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.UpdateTrigger()
+	})
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsertOne) ClearTrigger() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearTrigger()
 	})
 }
 
@@ -1330,6 +1340,13 @@ func (u *EventSubscriptionUpsertBulk) SetTrigger(v *model.EventTrigger) *EventSu
 func (u *EventSubscriptionUpsertBulk) UpdateTrigger() *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.UpdateTrigger()
+	})
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsertBulk) ClearTrigger() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearTrigger()
 	})
 }
 

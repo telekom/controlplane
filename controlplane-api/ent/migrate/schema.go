@@ -342,7 +342,7 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "delivery_type", Type: field.TypeEnum, Enums: []string{"CALLBACK", "SERVER_SENT_EVENT"}, Default: "CALLBACK"},
-		{Name: "trigger", Type: field.TypeJSON},
+		{Name: "trigger", Type: field.TypeJSON, Nullable: true},
 		{Name: "delivery", Type: field.TypeJSON},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "callback_url", Type: field.TypeString, Nullable: true, Size: 2147483647},

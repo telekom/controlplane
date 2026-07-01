@@ -5286,7 +5286,7 @@ type EventSubscription implements Node {
   name: String!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
-  trigger: EventTrigger!
+  trigger: EventTrigger
   delivery: EventDelivery!
   scopes: [String!]
   callbackURL: String

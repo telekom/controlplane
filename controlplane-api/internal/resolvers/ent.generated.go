@@ -5378,10 +5378,10 @@ func (ec *executionContext) _EventSubscription_trigger(ctx context.Context, fiel
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.EventTrigger) graphql.Marshaler {
-			return ec.marshalNEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx, selections, v)
+			return ec.marshalOEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
 func (ec *executionContext) fieldContext_EventSubscription_trigger(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -21258,9 +21258,6 @@ func (ec *executionContext) _EventSubscription(ctx context.Context, sel ast.Sele
 			}
 		case "trigger":
 			out.Values[i] = ec._EventSubscription_trigger(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "delivery":
 			out.Values[i] = ec._EventSubscription_delivery(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -573,6 +573,16 @@ func DeliveryTypeNotIn(vs ...DeliveryType) predicate.EventSubscription {
 	return predicate.EventSubscription(sql.FieldNotIn(FieldDeliveryType, vs...))
 }
 
+// TriggerIsNil applies the IsNil predicate on the "trigger" field.
+func TriggerIsNil() predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldIsNull(FieldTrigger))
+}
+
+// TriggerNotNil applies the NotNil predicate on the "trigger" field.
+func TriggerNotNil() predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldNotNull(FieldTrigger))
+}
+
 // ScopesIsNil applies the IsNil predicate on the "scopes" field.
 func ScopesIsNil() predicate.EventSubscription {
 	return predicate.EventSubscription(sql.FieldIsNull(FieldScopes))

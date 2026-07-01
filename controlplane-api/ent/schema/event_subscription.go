@@ -43,6 +43,7 @@ func (EventSubscription) Fields() []ent.Field {
 			).
 			Default("CALLBACK"),
 		field.JSON("trigger", &model.EventTrigger{}).
+			Optional().
 			Default(&model.EventTrigger{}).
 			Annotations(entgql.Type("EventTrigger"), entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("delivery", model.EventDelivery{}).

@@ -165,6 +165,12 @@ func (_u *EventSubscriptionUpdate) SetTrigger(v *model.EventTrigger) *EventSubsc
 	return _u
 }
 
+// ClearTrigger clears the value of the "trigger" field.
+func (_u *EventSubscriptionUpdate) ClearTrigger() *EventSubscriptionUpdate {
+	_u.mutation.ClearTrigger()
+	return _u
+}
+
 // SetDelivery sets the "delivery" field.
 func (_u *EventSubscriptionUpdate) SetDelivery(v model.EventDelivery) *EventSubscriptionUpdate {
 	_u.mutation.SetDelivery(v)
@@ -447,6 +453,9 @@ func (_u *EventSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if value, ok := _u.mutation.Trigger(); ok {
 		_spec.SetField(eventsubscription.FieldTrigger, field.TypeJSON, value)
+	}
+	if _u.mutation.TriggerCleared() {
+		_spec.ClearField(eventsubscription.FieldTrigger, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Delivery(); ok {
 		_spec.SetField(eventsubscription.FieldDelivery, field.TypeJSON, value)
@@ -745,6 +754,12 @@ func (_u *EventSubscriptionUpdateOne) SetNillableDeliveryType(v *eventsubscripti
 // SetTrigger sets the "trigger" field.
 func (_u *EventSubscriptionUpdateOne) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpdateOne {
 	_u.mutation.SetTrigger(v)
+	return _u
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (_u *EventSubscriptionUpdateOne) ClearTrigger() *EventSubscriptionUpdateOne {
+	_u.mutation.ClearTrigger()
 	return _u
 }
 
@@ -1060,6 +1075,9 @@ func (_u *EventSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Event
 	}
 	if value, ok := _u.mutation.Trigger(); ok {
 		_spec.SetField(eventsubscription.FieldTrigger, field.TypeJSON, value)
+	}
+	if _u.mutation.TriggerCleared() {
+		_spec.ClearField(eventsubscription.FieldTrigger, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Delivery(); ok {
 		_spec.SetField(eventsubscription.FieldDelivery, field.TypeJSON, value)
