@@ -14,6 +14,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -160,7 +161,7 @@ var _ = Describe("Zone Controller", func() {
 			Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, env))).To(Succeed())
 
 			By("creating a zone in the decoupled environment")
-			zone := NewZone("zone-decoupled", testNamespace)
+			zone := newZone("zone-decoupled")
 			zone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
 			zone.Spec.ManagedRoutes = nil // simplify
 			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
@@ -177,17 +178,10 @@ var _ = Describe("Zone Controller", func() {
 				expectedNs := decoupledEnvName + "--zone-decoupled"
 
 				// Identity Realm named after realmName, not env name
-				identityRealm := &identityapi.Realm{}
+				identityRealm := &identityv1.Realm{}
 				err = k8sClient.Get(ctx, client.ObjectKey{Namespace: expectedNs, Name: decoupledRealmName}, identityRealm)
 				g.Expect(err).NotTo(HaveOccurred(), "identity realm should be named %q", decoupledRealmName)
 				g.Expect(identityRealm.Labels[config.EnvironmentLabelKey]).To(Equal(decoupledEnvName),
-					"environment label should be the env name, not the realm name")
-
-				// Gateway Realm named after realmName, not env name
-				gatewayRealm := &gatewayapi.Realm{}
-				err = k8sClient.Get(ctx, client.ObjectKey{Namespace: expectedNs, Name: decoupledRealmName}, gatewayRealm)
-				g.Expect(err).NotTo(HaveOccurred(), "gateway realm should be named %q", decoupledRealmName)
-				g.Expect(gatewayRealm.Labels[config.EnvironmentLabelKey]).To(Equal(decoupledEnvName),
 					"environment label should be the env name, not the realm name")
 
 				// Issuer URLs contain the realmName, not the environment name

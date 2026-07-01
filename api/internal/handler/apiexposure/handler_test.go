@@ -80,6 +80,7 @@ func makeReadyZone(name, namespace, issuer, lmsIssuer string, presets ...adminv1
 		Status: adminv1.ZoneStatus{
 			Namespace: namespace,
 			Gateway:   &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace},
+			RealmName: testEnv,
 			Links: adminv1.Links{
 				Issuer:    issuer,
 				LmsIssuer: lmsIssuer,

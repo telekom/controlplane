@@ -192,13 +192,6 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	// - Provider failover zone: use the failover route from ApiExposure.Status.FailoverRoutes
 	// - Cross-zone: find matching proxy route in ApiExposure.Status.ProxyRoutes
 
-	// Resolve realm name from the exposure zone status
-	exposureZone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Zone.K8s())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get exposure zone %s", apiExposure.Spec.Zone.Name)
-	}
-	realmName := exposureZone.Status.GatewayRealm.Name
-
 	sameZoneAsExposure := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
 	inProviderFailoverZone := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(apiSub.Spec.Zone)
 

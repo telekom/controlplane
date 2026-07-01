@@ -196,9 +196,7 @@ type routingState struct {
 // determineRoutingState fetches and pre-computes all data needed for route provisioning.
 // This avoids redundant API calls across the provisioning pipeline.
 func (h *ApiExposureHandler) determineRoutingState(ctx context.Context, apiExp *apiapi.ApiExposure) (*routingState, error) {
-	state := &routingState{
-		realmName: adminv1.RealmNameFromContext(ctx),
-	}
+	state := &routingState{}
 
 	// Fetch all non-deleted subscribers for this exposure.
 	subscribers, err := util.FindAllSubscribersForApiExposure(ctx, apiExp)
@@ -234,6 +232,7 @@ func (h *ApiExposureHandler) determineRoutingState(ctx context.Context, apiExp *
 	}
 
 	state.exposureZone = myZone
+	state.realmName = myZone.Status.RealmName
 
 	return state, nil
 }
@@ -258,14 +257,6 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 			return err
 		}
 	}
-
-	// Resolve realm name from the zone status
-	scopedClient := cclient.ClientFromContextOrDie(ctx)
-	exposureZone, err := util.GetZone(ctx, scopedClient, apiExp.Spec.Zone.K8s())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get zone %s for apiExposure: %s", apiExp.Spec.Zone.Name, apiExp.Name)
-	}
-	realmName := exposureZone.Status.GatewayRealm.Name
 
 	// --- Collect LMS issuers from all cross-zone proxy route zones ---
 	// Proxy gateways stamp an LMS token before forwarding traffic to the provider zone,
