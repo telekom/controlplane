@@ -3102,16 +3102,6 @@ func (ec *executionContext) marshalNEventExposureInfo2ᚖgithubᚗcomᚋtelekom�
 	return ec._EventExposureInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v []model.EventScope) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalOEventScope2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx, sel, v[i])
-	})
-
-	return ret
-}
-
 func (ec *executionContext) marshalNEventSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EventSubscriptionInfo) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -3245,6 +3235,19 @@ func (ec *executionContext) marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekom�
 
 func (ec *executionContext) marshalOEventScope2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v model.EventScope) graphql.Marshaler {
 	return ec._EventScope(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v []model.EventScope) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOEventScope2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx, sel, v[i])
+	})
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {

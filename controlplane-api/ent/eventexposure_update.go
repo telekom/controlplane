@@ -176,6 +176,12 @@ func (_u *EventExposureUpdate) AppendEventScopes(v []model.EventScope) *EventExp
 	return _u
 }
 
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (_u *EventExposureUpdate) ClearEventScopes() *EventExposureUpdate {
+	_u.mutation.ClearEventScopes()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *EventExposureUpdate) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpdate {
 	_u.mutation.SetApprovalConfig(v)
@@ -398,6 +404,9 @@ func (_u *EventExposureUpdate) sqlSave(ctx context.Context) (_node int, err erro
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, eventexposure.FieldEventScopes, value)
 		})
+	}
+	if _u.mutation.EventScopesCleared() {
+		_spec.ClearField(eventexposure.FieldEventScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -665,6 +674,12 @@ func (_u *EventExposureUpdateOne) AppendEventScopes(v []model.EventScope) *Event
 	return _u
 }
 
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (_u *EventExposureUpdateOne) ClearEventScopes() *EventExposureUpdateOne {
+	_u.mutation.ClearEventScopes()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *EventExposureUpdateOne) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpdateOne {
 	_u.mutation.SetApprovalConfig(v)
@@ -917,6 +932,9 @@ func (_u *EventExposureUpdateOne) sqlSave(ctx context.Context) (_node *EventExpo
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, eventexposure.FieldEventScopes, value)
 		})
+	}
+	if _u.mutation.EventScopesCleared() {
+		_spec.ClearField(eventexposure.FieldEventScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)

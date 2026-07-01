@@ -4846,10 +4846,10 @@ func (ec *executionContext) _EventExposure_eventScopes(ctx context.Context, fiel
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []model.EventScope) graphql.Marshaler {
-			return ec.marshalNEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx, selections, v)
+			return ec.marshalOEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
 func (ec *executionContext) fieldContext_EventExposure_eventScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20984,9 +20984,6 @@ func (ec *executionContext) _EventExposure(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._EventExposure_active(ctx, field, obj)
 		case "eventScopes":
 			out.Values[i] = ec._EventExposure_eventScopes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "approvalConfig":
 			out.Values[i] = ec._EventExposure_approvalConfig(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -311,9 +311,6 @@ func (_c *EventExposureCreate) check() error {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "EventExposure.visibility": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.EventScopes(); !ok {
-		return &ValidationError{Name: "event_scopes", err: errors.New(`ent: missing required field "EventExposure.event_scopes"`)}
-	}
 	if _, ok := _c.mutation.ApprovalConfig(); !ok {
 		return &ValidationError{Name: "approval_config", err: errors.New(`ent: missing required field "EventExposure.approval_config"`)}
 	}
@@ -625,6 +622,12 @@ func (u *EventExposureUpsert) UpdateEventScopes() *EventExposureUpsert {
 	return u
 }
 
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (u *EventExposureUpsert) ClearEventScopes() *EventExposureUpsert {
+	u.SetNull(eventexposure.FieldEventScopes)
+	return u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (u *EventExposureUpsert) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpsert {
 	u.Set(eventexposure.FieldApprovalConfig, v)
@@ -833,6 +836,13 @@ func (u *EventExposureUpsertOne) SetEventScopes(v []model.EventScope) *EventExpo
 func (u *EventExposureUpsertOne) UpdateEventScopes() *EventExposureUpsertOne {
 	return u.Update(func(s *EventExposureUpsert) {
 		s.UpdateEventScopes()
+	})
+}
+
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (u *EventExposureUpsertOne) ClearEventScopes() *EventExposureUpsertOne {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.ClearEventScopes()
 	})
 }
 
@@ -1212,6 +1222,13 @@ func (u *EventExposureUpsertBulk) SetEventScopes(v []model.EventScope) *EventExp
 func (u *EventExposureUpsertBulk) UpdateEventScopes() *EventExposureUpsertBulk {
 	return u.Update(func(s *EventExposureUpsert) {
 		s.UpdateEventScopes()
+	})
+}
+
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (u *EventExposureUpsertBulk) ClearEventScopes() *EventExposureUpsertBulk {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.ClearEventScopes()
 	})
 }
 

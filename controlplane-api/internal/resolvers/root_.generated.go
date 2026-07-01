@@ -5055,7 +5055,7 @@ type EventExposure implements Node {
   eventType: String!
   visibility: EventExposureVisibility!
   active: Boolean
-  eventScopes: [EventScope]!
+  eventScopes: [EventScope]
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType

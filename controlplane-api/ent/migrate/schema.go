@@ -298,7 +298,7 @@ var (
 		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
-		{Name: "event_scopes", Type: field.TypeJSON},
+		{Name: "event_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "application_exposed_events", Type: field.TypeInt},
 		{Name: "event_type_exposures", Type: field.TypeInt, Nullable: true},

@@ -8650,10 +8650,24 @@ func (m *EventExposureMutation) AppendedEventScopes() ([]model.EventScope, bool)
 	return m.appendevent_scopes, true
 }
 
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (m *EventExposureMutation) ClearEventScopes() {
+	m.event_scopes = nil
+	m.appendevent_scopes = nil
+	m.clearedFields[eventexposure.FieldEventScopes] = struct{}{}
+}
+
+// EventScopesCleared returns if the "event_scopes" field was cleared in this mutation.
+func (m *EventExposureMutation) EventScopesCleared() bool {
+	_, ok := m.clearedFields[eventexposure.FieldEventScopes]
+	return ok
+}
+
 // ResetEventScopes resets all changes to the "event_scopes" field.
 func (m *EventExposureMutation) ResetEventScopes() {
 	m.event_scopes = nil
 	m.appendevent_scopes = nil
+	delete(m.clearedFields, eventexposure.FieldEventScopes)
 }
 
 // SetApprovalConfig sets the "approval_config" field.
@@ -9081,6 +9095,9 @@ func (m *EventExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(eventexposure.FieldActive) {
 		fields = append(fields, eventexposure.FieldActive)
 	}
+	if m.FieldCleared(eventexposure.FieldEventScopes) {
+		fields = append(fields, eventexposure.FieldEventScopes)
+	}
 	return fields
 }
 
@@ -9106,6 +9123,9 @@ func (m *EventExposureMutation) ClearField(name string) error {
 		return nil
 	case eventexposure.FieldActive:
 		m.ClearActive()
+		return nil
+	case eventexposure.FieldEventScopes:
+		m.ClearEventScopes()
 		return nil
 	}
 	return fmt.Errorf("unknown EventExposure nullable field %s", name)
