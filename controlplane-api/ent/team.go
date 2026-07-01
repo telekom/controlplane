@@ -37,6 +37,10 @@ type Team struct {
 	Name string `json:"name,omitempty"`
 	// Email holds the value of the "email" field.
 	Email string `json:"email,omitempty"`
+	// DisplayName holds the value of the "displayName" field.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Description holds the value of the "description" field.
+	Description *string `json:"description,omitempty"`
 	// Category holds the value of the "category" field.
 	Category team.Category `json:"category,omitempty"`
 	// TeamToken holds the value of the "team_token" field.
@@ -126,7 +130,7 @@ func (*Team) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case team.FieldID:
 			values[i] = new(sql.NullInt64)
-		case team.FieldStatusPhase, team.FieldStatusMessage, team.FieldEnvironment, team.FieldNamespace, team.FieldName, team.FieldEmail, team.FieldCategory, team.FieldTeamToken:
+		case team.FieldStatusPhase, team.FieldStatusMessage, team.FieldEnvironment, team.FieldNamespace, team.FieldName, team.FieldEmail, team.FieldDisplayName, team.FieldDescription, team.FieldCategory, team.FieldTeamToken:
 			values[i] = new(sql.NullString)
 		case team.FieldCreatedAt, team.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -203,6 +207,20 @@ func (_m *Team) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field email", values[i])
 			} else if value.Valid {
 				_m.Email = value.String
+			}
+		case team.FieldDisplayName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field displayName", values[i])
+			} else if value.Valid {
+				_m.DisplayName = new(string)
+				*_m.DisplayName = value.String
+			}
+		case team.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				_m.Description = new(string)
+				*_m.Description = value.String
 			}
 		case team.FieldCategory:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -314,6 +332,16 @@ func (_m *Team) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("email=")
 	builder.WriteString(_m.Email)
+	builder.WriteString(", ")
+	if v := _m.DisplayName; v != nil {
+		builder.WriteString("displayName=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Description; v != nil {
+		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("category=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Category))

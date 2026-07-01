@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/privacy"
 	. "github.com/onsi/ginkgo/v2"
@@ -172,6 +173,7 @@ var _ = Describe("Approval Repository", func() {
 			TargetKind:            "ApiSubscription",
 			SubscriptionNamespace: "prod--platform--narvi",
 			SubscriptionName:      "my-sub",
+			ExpiresAt:             time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC),
 		}
 	}
 
@@ -195,6 +197,8 @@ var _ = Describe("Approval Repository", func() {
 			Expect(a.State.String()).To(Equal("GRANTED"))
 			Expect(a.StatusPhase.String()).To(Equal("READY"))
 			Expect(*a.StatusMessage).To(Equal("approval granted"))
+			Expect(a.ExpiresAt).NotTo(BeNil())
+			Expect(*a.ExpiresAt).To(BeTemporally("~", time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC), time.Second))
 
 			// Verify subscription FK is set.
 			Expect(a.Edges.APISubscription).NotTo(BeNil())
@@ -306,10 +310,11 @@ var _ = Describe("Approval Repository", func() {
 			data := baseData()
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			// Update state.
+			// Update state and ExpiresAt.
 			data.State = "REJECTED"
 			data.StatusPhase = "ERROR"
 			data.StatusMessage = "approval rejected"
+			data.ExpiresAt = time.Date(2026, 12, 31, 23, 59, 0, 0, time.UTC)
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			a, err := client.Approval.Query().
@@ -322,6 +327,8 @@ var _ = Describe("Approval Repository", func() {
 			Expect(a.State.String()).To(Equal("REJECTED"))
 			Expect(a.StatusPhase.String()).To(Equal("ERROR"))
 			Expect(*a.StatusMessage).To(Equal("approval rejected"))
+			Expect(a.ExpiresAt).NotTo(BeNil())
+			Expect(*a.ExpiresAt).To(BeTemporally("~", time.Date(2026, 12, 31, 23, 59, 0, 0, time.UTC), time.Second))
 		})
 
 		It("should maintain cache entry", func() {

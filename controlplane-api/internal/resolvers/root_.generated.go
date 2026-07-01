@@ -216,6 +216,7 @@ type ComplexityRoot struct {
 		DeciderTeamName      func(childComplexity int) int
 		Decisions            func(childComplexity int) int
 		Environment          func(childComplexity int) int
+		ExpiresAt            func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		LastModifiedAt       func(childComplexity int) int
 		Name                 func(childComplexity int) int
@@ -504,6 +505,8 @@ type ComplexityRoot struct {
 		Applications   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
 		Category       func(childComplexity int) int
 		CreatedAt      func(childComplexity int) int
+		Description    func(childComplexity int) int
+		DisplayName    func(childComplexity int) int
 		Email          func(childComplexity int) int
 		Environment    func(childComplexity int) int
 		EventTypes     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
@@ -530,10 +533,12 @@ type ComplexityRoot struct {
 	}
 
 	TeamInfo struct {
-		Email     func(childComplexity int) int
-		GroupName func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Name      func(childComplexity int) int
+		Description func(childComplexity int) int
+		DisplayName func(childComplexity int) int
+		Email       func(childComplexity int) int
+		GroupName   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
 	}
 
 	UpdateTeamPayload struct {
@@ -1390,6 +1395,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.Environment(childComplexity), true
+
+	case "Approval.expiresat":
+		if e.ComplexityRoot.Approval.ExpiresAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.ExpiresAt(childComplexity), true
 
 	case "Approval.id":
 		if e.ComplexityRoot.Approval.ID == nil {
@@ -2803,6 +2815,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.CreatedAt(childComplexity), true
 
+	case "Team.description":
+		if e.ComplexityRoot.Team.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.Description(childComplexity), true
+
+	case "Team.displayname":
+		if e.ComplexityRoot.Team.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.DisplayName(childComplexity), true
+
 	case "Team.email":
 		if e.ComplexityRoot.Team.Email == nil {
 			break
@@ -2926,6 +2952,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamEdge.Node(childComplexity), true
+
+	case "TeamInfo.description":
+		if e.ComplexityRoot.TeamInfo.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamInfo.Description(childComplexity), true
+
+	case "TeamInfo.displayName":
+		if e.ComplexityRoot.TeamInfo.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamInfo.DisplayName(childComplexity), true
 
 	case "TeamInfo.email":
 		if e.ComplexityRoot.TeamInfo.Email == nil {
@@ -4353,6 +4393,7 @@ type Approval implements Node {
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
   name: String!
+  expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
 }
 """
@@ -4859,6 +4900,19 @@ input ApprovalWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
+  """
+  expiresAt field predicates
+  """
+  expiresat: Time
+  expiresatNEQ: Time
+  expiresatIn: [Time!]
+  expiresatNotIn: [Time!]
+  expiresatGT: Time
+  expiresatGTE: Time
+  expiresatLT: Time
+  expiresatLTE: Time
+  expiresatIsNil: Boolean
+  expiresatNotNil: Boolean
   """
   state field predicates
   """
@@ -6197,6 +6251,8 @@ type Team implements Node {
   namespace: String!
   name: String!
   email: String!
+  displayname: String @goField(name: "DisplayName", forceResolver: false)
+  description: String
   category: TeamCategory!
   teamToken: String
   group: Group
@@ -6497,6 +6553,42 @@ input TeamWhereInput {
   emailEqualFold: String
   emailContainsFold: String
   """
+  displayName field predicates
+  """
+  displayname: String
+  displaynameNEQ: String
+  displaynameIn: [String!]
+  displaynameNotIn: [String!]
+  displaynameGT: String
+  displaynameGTE: String
+  displaynameLT: String
+  displaynameLTE: String
+  displaynameContains: String
+  displaynameHasPrefix: String
+  displaynameHasSuffix: String
+  displaynameIsNil: Boolean
+  displaynameNotNil: Boolean
+  displaynameEqualFold: String
+  displaynameContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
+  """
   category field predicates
   """
   category: TeamCategory
@@ -6713,11 +6805,15 @@ input CreateTeamInput {
   name: String!
   email: String!
   members: [MemberInput!]!
+  displayName: String
+  description: String
 }
 
 input UpdateTeamInput {
   teamId: ID!
   email: String
+  displayName: String
+  description: String
 }
 
 type CreateTeamPayload {
@@ -6782,7 +6878,7 @@ type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): CreateTeamPayload!
 
-  "Update team metadata (email). Does not manage members."
+  "Update team metadata (email, description, displayName). Does not manage members."
   updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
 
   "Add a member to a team. Takes effect immediately."
@@ -6818,6 +6914,8 @@ type TeamInfo {
   "Group name for display"
   groupName: String!
   email: String
+  displayName: String
+  description: String
 }
 
 type Upstream {
@@ -7363,6 +7461,8 @@ func (ec *executionContext) childFields_Approval(ctx context.Context, field grap
 		return ec.fieldContext_Approval_availableTransitions(ctx, field)
 	case "name":
 		return ec.fieldContext_Approval_name(ctx, field)
+	case "expiresat":
+		return ec.fieldContext_Approval_expiresat(ctx, field)
 	case "state":
 		return ec.fieldContext_Approval_state(ctx, field)
 	case "subscription":
@@ -7877,6 +7977,10 @@ func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.
 		return ec.fieldContext_Team_name(ctx, field)
 	case "email":
 		return ec.fieldContext_Team_email(ctx, field)
+	case "displayname":
+		return ec.fieldContext_Team_displayname(ctx, field)
+	case "description":
+		return ec.fieldContext_Team_description(ctx, field)
 	case "category":
 		return ec.fieldContext_Team_category(ctx, field)
 	case "teamToken":
@@ -7927,6 +8031,10 @@ func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field grap
 		return ec.fieldContext_TeamInfo_groupName(ctx, field)
 	case "email":
 		return ec.fieldContext_TeamInfo_email(ctx, field)
+	case "displayName":
+		return ec.fieldContext_TeamInfo_displayName(ctx, field)
+	case "description":
+		return ec.fieldContext_TeamInfo_description(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TeamInfo", field.Name)
 }
