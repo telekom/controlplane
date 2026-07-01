@@ -55,11 +55,10 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			},
 		}
 
-		failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
-		if hasFailover {
+		if sub.Traffic.Failover != nil {
 			apiSubscription.Spec.Traffic = apiapi.SubscriberTraffic{
-				Failover: &apiapi.Failover{
-					Zones: failoverZones,
+				Failover: &apiapi.SubscriberFailover{
+					Enabled: sub.Traffic.Failover.Enabled,
 				},
 			}
 		}

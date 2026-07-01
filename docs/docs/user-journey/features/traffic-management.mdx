@@ -126,13 +126,20 @@ You must use **either** `upstream` (single backend) **or** `loadBalancing` (mult
 
 ## Failover
 
-Failover provides disaster recovery by routing traffic to backup zones when the primary zone is unavailable. This is useful in multi-cloud or multi-zone deployments where you want to ensure high availability.
+Failover provides disaster recovery by routing traffic to backup zones when the primary zone is unavailable. This ensures high availability in multi-cloud or multi-zone deployments.
 
-**Applies to:** API Exposure, API Subscription
+There are two independent failover mechanisms:
 
-### Provider-Side Failover (API Exposure)
+| Mechanism | Configured on | How it works |
+| --------- | ------------- | ------------ |
+| **Provider Failover** | API Exposure | The gateway detects that the provider's zone is unhealthy and routes requests to a backup zone where the same API is deployed. |
+| **Consumer Failover (DTC)** | API Subscription | External DNS redirects the consumer to a different zone's gateway entirely. All zones are pre-configured to accept the consumer's traffic seamlessly. |
 
-As an API provider, you can define failover zones so that consumers are automatically redirected to your API in another zone if the primary zone goes down.
+### Provider Failover (API Exposure)
+
+As an API provider, you can designate a backup zone. When consumers send requests through any gateway, the gateway checks whether your primary zone is healthy. If it is not, the gateway automatically routes requests to the backup zone instead.
+
+**Applies to:** API Exposure
 
 ```yaml
 exposures:
@@ -143,32 +150,89 @@ exposures:
     visibility: ENTERPRISE
     failover:
       zones:
-        - dataplane2
-        - dataplane3
+        - aws-zone
 ```
 
-### Consumer-Side Failover (API Subscription)
+**How it works at runtime:**
 
-As an API consumer, you can define failover zones to try when your preferred provider zone is unavailable.
+1. Consumers send requests to the gateway as normal.
+2. The gateway's health-check service monitors the provider's primary zone.
+3. If the primary zone becomes unavailable, the gateway routes requests to the designated backup zone where a secondary route with your upstream is available.
+4. When the primary zone recovers, traffic automatically returns to the normal path.
+
+#### Provider Failover Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `failover.zones` | A list of zone names to use as backup destinations. Currently exactly **one** zone is supported. Maximum: 10 zones. |
+
+:::tip
+Your API must be reachable from the backup zone. The Control Plane creates a secondary route in the backup zone with your upstream configuration, so ensure network connectivity exists between the backup zone and your backend.
+:::
+
+---
+
+### Consumer Failover — DTC (API Subscription)
+
+Consumer Failover, also known as **Data Traffic Control (DTC)**, takes a different approach. Instead of the gateway switching upstreams, the entire consumer is redirected to a different zone at the DNS level.
+
+When you enable consumer failover on a subscription, the Control Plane automatically discovers all zones that support this feature and pre-configures them to accept your traffic. If your home zone goes down, external DNS redirects you to another zone's gateway — and because that gateway already knows about your subscription and trusts your identity token, the switch is transparent.
+
+**Applies to:** API Subscription
 
 ```yaml
 subscriptions:
   - type: api
     basePath: /checkout/v1
     failover:
-      zones:
-        - dataplane2
+      enabled: true
 ```
 
-### Failover Settings
+**How it works at runtime:**
+
+1. The Control Plane detects all zones with the ConsumerFailover feature enabled.
+2. For each eligible zone, it creates failover routes and access grants (ConsumeRoutes) so those zones can serve your requests.
+3. All affected routes are enriched with additional hostnames and trusted identity providers, so any zone's gateway accepts your token regardless of where it was issued.
+4. When external DNS switches your traffic to another zone, requests flow through seamlessly — no configuration change required on your side.
+
+#### Consumer Failover Settings
 
 | Field | Description |
 | ----- | ----------- |
-| `failover.zones` | A list of zone names to use as fallback destinations. The gateway tries each zone in order until one responds successfully. Maximum: 10 zones. |
+| `failover.enabled` | Set to `true` to opt into consumer failover. The system automatically discovers eligible zones. Default: not set (disabled). |
 
-:::info
-Provider-side and consumer-side failover work independently. The provider defines where their API is available, and the consumer defines which zones to try. Both can be configured at the same time for maximum resilience.
+:::info Prerequisites
+Consumer Failover requires platform-level setup. Your platform administrator must enable the `ConsumerFailover` feature on the zones that should participate. See the [Admin Guide: Failover](../../admin-journey/features/failover.md) for setup instructions.
 :::
+
+---
+
+### Combining Both Mechanisms
+
+Provider Failover and Consumer Failover work independently and can be used together for maximum resilience:
+
+- **Provider Failover** protects against the provider's zone going down — the gateway re-routes to a backup where the same API is deployed.
+- **Consumer Failover (DTC)** protects against the consumer's zone going down — DNS redirects the consumer to a healthy zone's gateway.
+
+When both are active, consumers benefit from two layers of protection: if their own zone fails, DTC moves them to another gateway; if the provider's zone fails, that gateway's failover routes requests to the backup zone.
+
+```yaml
+# Provider configures a backup zone
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    failover:
+      zones:
+        - aws-zone
+
+# Consumer opts into DTC
+subscriptions:
+  - type: api
+    basePath: /checkout/v1
+    failover:
+      enabled: true
+```
 
 ---
 

@@ -6,22 +6,19 @@ package util
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
 
 //nolint:dupl // parallel structure with CreateProxyVoyagerRoute; differs in naming, labels, and security
@@ -29,7 +26,6 @@ func CreateProxyCallbackRoute(
 	ctx context.Context,
 	sourceZone *adminv1.Zone,
 	targetZone *adminv1.Zone,
-	meshClient *identityv1.Client,
 	opts ...Option,
 ) (*gatewayapi.Route, error) {
 	options := &Options{}
@@ -39,28 +35,19 @@ func CreateProxyCallbackRoute(
 
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	downstreamRealm := &gatewayapi.Realm{}
-	err := c.Get(ctx, sourceZone.Status.GatewayRealm.K8s(), downstreamRealm)
+	// Resolve source zone's default preset for downstream hostnames/paths
+	sourcePreset, err := sourceZone.Spec.Gateway.GetDefaultPreset()
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, ctrlerrors.BlockedErrorf("realm %q not found", sourceZone.Status.GatewayRealm.String())
-		}
-		return nil, errors.Wrapf(err, "failed to get realm %q", sourceZone.Status.GatewayRealm.String())
+		return nil, ctrlerrors.BlockedErrorf("source zone %q has no default preset: %s", sourceZone.Name, err)
 	}
-	if err = condition.EnsureReady(downstreamRealm); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", downstreamRealm.Name)
+	if sourceZone.Status.Gateway == nil {
+		return nil, ctrlerrors.BlockedErrorf("source zone %q has no gateway reference in status", sourceZone.Name)
 	}
 
-	upstreamRealm := &gatewayapi.Realm{}
-	err = c.Get(ctx, targetZone.Status.GatewayRealm.K8s(), upstreamRealm)
+	// Resolve target zone's default preset for upstream URL
+	targetPreset, err := targetZone.Spec.Gateway.GetDefaultPreset()
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, ctrlerrors.BlockedErrorf("realm %q not found", targetZone.Status.GatewayRealm.String())
-		}
-		return nil, errors.Wrapf(err, "failed to get realm %q", targetZone.Status.GatewayRealm.String())
-	}
-	if err = condition.EnsureReady(upstreamRealm); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", upstreamRealm.Name)
+		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
 	}
 
 	route := &gatewayapi.Route{
@@ -70,18 +57,18 @@ func CreateProxyCallbackRoute(
 		},
 	}
 
-	downstream, err := downstreamRealm.AsDownstream(makeCallbackRoutePath(targetZone.Name))
+	// Build upstream: points at target zone's gateway URL for callback path
+	callbackPath := makeCallbackRoutePath(targetZone.Name)
+	upstreamUrl, err := url.JoinPath(targetPreset.Urls[0].GetFullUrl(), callbackPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create downstream for proxy callback Route")
+		return nil, errors.Wrap(err, "failed to build upstream URL for proxy callback Route")
 	}
-
-	upstream, err := upstreamRealm.AsUpstream(makeCallbackRoutePath(targetZone.Name))
+	upstream, err := parseUpstream(upstreamUrl)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create upstream for proxy callback Route")
 	}
-	upstream.ClientId = meshClient.Spec.ClientId
-	upstream.ClientSecret = meshClient.Spec.ClientSecret
-	upstream.IssuerUrl = meshClient.Status.IssuerUrl
+
+	hostnames, paths := sourcePreset.ResolveHostnamesAndPaths(callbackPath)
 
 	mutator := func() error {
 		if applyErr := options.apply(ctx, route); applyErr != nil {
@@ -89,24 +76,22 @@ func CreateProxyCallbackRoute(
 		}
 
 		route.Labels = map[string]string{
-			config.DomainLabelKey:         "event",
-			config.BuildLabelKey("zone"):  sourceZone.Name,
-			config.BuildLabelKey("realm"): downstreamRealm.Name,
-			config.BuildLabelKey("type"):  "callback-proxy",
+			config.DomainLabelKey:        "event",
+			config.BuildLabelKey("zone"): sourceZone.Name,
+			config.BuildLabelKey("type"): "callback-proxy",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			Realm: *ctypes.ObjectRefFromObject(downstreamRealm),
-			Upstreams: []gatewayapi.Upstream{
-				upstream,
-			},
-			Downstreams: []gatewayapi.Downstream{
-				downstream,
-			},
-			Security: &gatewayapi.Security{
+			GatewayRef: *sourceZone.Status.Gateway,
+			Type:       gatewayapi.RouteTypeProxy,
+			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
+			Hostnames:  hostnames,
+			Paths:      paths,
+			Security: gatewayapi.Security{
 				// The mesh-client is used to access this Route
 				DisableAccessControl: false,
 			},
 		}
+		options.applySecurity(route)
 		return nil
 	}
 
@@ -134,16 +119,13 @@ func CreateCallbackRoute(
 	c := cclient.ClientFromContextOrDie(ctx)
 	name := makeCallbackRouteName(zone.Name)
 
-	gatewayRealm := &gatewayapi.Realm{}
-	err := c.Get(ctx, zone.Status.GatewayRealm.K8s(), gatewayRealm)
+	// Resolve default preset for hostnames/paths
+	preset, err := zone.Spec.Gateway.GetDefaultPreset()
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, ctrlerrors.BlockedErrorf("realm %q not found", zone.Status.GatewayRealm.String())
-		}
-		return nil, errors.Wrapf(err, "failed to get realm %q", zone.Status.GatewayRealm.String())
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no default preset: %s", zone.Name, err)
 	}
-	if err = condition.EnsureReady(gatewayRealm); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", gatewayRealm.Name)
+	if zone.Status.Gateway == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status", zone.Name)
 	}
 
 	route := &gatewayapi.Route{
@@ -154,36 +136,31 @@ func CreateCallbackRoute(
 	}
 
 	upstream := gatewayapi.Upstream{
-		Scheme: "http",
-		Host:   "localhost",
-		Path:   "/proxy",
-		Port:   8080,
+		Scheme:   "http",
+		Hostname: "localhost",
+		Path:     "/proxy",
+		Port:     8080,
 	}
 
-	downstream, err := gatewayRealm.AsDownstream(makeCallbackRoutePath(zone.Name))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create downstream for callback Route")
-	}
+	hostnames, paths := preset.ResolveHostnamesAndPaths(makeCallbackRoutePath(zone.Name))
+
 	mutator := func() error {
 		if applyErr := options.apply(ctx, route); applyErr != nil {
 			return errors.Wrap(applyErr, "failed to apply options to callback Route")
 		}
 
 		route.Labels = map[string]string{
-			config.DomainLabelKey:         "event",
-			config.BuildLabelKey("zone"):  zone.Name,
-			config.BuildLabelKey("realm"): gatewayRealm.Name,
-			config.BuildLabelKey("type"):  "callback",
+			config.DomainLabelKey:        "event",
+			config.BuildLabelKey("zone"): zone.Name,
+			config.BuildLabelKey("type"): "callback",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			Realm: *ctypes.ObjectRefFromObject(gatewayRealm),
-			Upstreams: []gatewayapi.Upstream{
-				upstream,
-			},
-			Downstreams: []gatewayapi.Downstream{
-				downstream,
-			},
-			Security: &gatewayapi.Security{
+			GatewayRef: *zone.Status.Gateway,
+			Type:       gatewayapi.RouteTypePrimary,
+			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
+			Hostnames:  hostnames,
+			Paths:      paths,
+			Security: gatewayapi.Security{
 				// The mesh-client is used to access this Route
 				DisableAccessControl: false,
 			},
@@ -194,9 +171,10 @@ func CreateCallbackRoute(
 				},
 			},
 		}
+		options.applySecurity(route)
 		if options.IsProxyTarget {
 			// If this Route is used as target of a proxy Route,
-			// the proxy-route will is the mesh-client. We need to allow access to this Route.
+			// the proxy-route uses the mesh-client. We need to allow access to this Route.
 			route.Spec.Security.DefaultConsumers = append(route.Spec.Security.DefaultConsumers, MeshClientName)
 		}
 
@@ -227,7 +205,6 @@ func CreateCallbackProxyRoutes(
 	}
 
 	logger := log.FromContext(ctx)
-	c := cclient.ClientFromContextOrDie(ctx)
 
 	routes := map[string]*gatewayapi.Route{}
 	zones := collectZones(targetZones, meshConfig.FullMesh, meshConfig.ZoneNames)
@@ -239,21 +216,7 @@ func CreateCallbackProxyRoutes(
 			continue
 		}
 
-		// Get the mesh-client credentials for the target zone.
-
-		meshClient := &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      MeshClientName,
-				Namespace: targetZone.Status.Namespace,
-			},
-		}
-
-		err := c.Get(ctx, client.ObjectKeyFromObject(meshClient), meshClient)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get mesh client credentials for target zone %q", targetZone.Name)
-		}
-
-		route, err := CreateProxyCallbackRoute(ctx, sourceZone, targetZone, meshClient, opts...)
+		route, err := CreateProxyCallbackRoute(ctx, sourceZone, targetZone, opts...)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create proxy callback Route for target zone %q", targetZone.Name)
 		}

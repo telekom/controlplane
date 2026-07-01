@@ -1864,6 +1864,9 @@ components:
           description: Permission rules configured for this application
         secretInfo:
           $ref: '#/components/schemas/SecretInfo'
+        failoverEnabled:
+          type: boolean
+          description: Indicates if failover is enabled for this application
     SecretInfo:
       type: object
       properties:
@@ -2152,6 +2155,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuthorizationInfo'
+        failoverEnabled:
+          type: boolean
+          description: Configures the DTC failover for consumers
     RoverCreateRequest:
       required:
         - zone

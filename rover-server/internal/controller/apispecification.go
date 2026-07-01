@@ -268,6 +268,11 @@ func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *ap
 		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories", "error", err)
 		return nil
 	}
+	if len(categoryList.Items) == 0 {
+		logr.FromContextOrDiscard(ctx).Info("No ApiCategories found")
+		return nil
+	}
+
 	result := &apiv1.ApiCategoryList{Items: make([]apiv1.ApiCategory, 0, len(categoryList.Items))}
 	for _, item := range categoryList.Items {
 		result.Items = append(result.Items, *item)

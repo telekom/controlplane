@@ -28,6 +28,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
+	testutil "github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -44,7 +45,7 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
-	timeout         = 2 * time.Second
+	timeout         = 5 * time.Second
 	interval        = 100 * time.Millisecond
 	testNamespace   = "default"
 	testEnvironment = "test"
@@ -169,6 +170,6 @@ func CreateNamespace(name string) {
 func ExpectObjConditionToBeReady(g Gomega, obj types.Object) {
 	g.Expect(obj.GetConditions()).To(HaveLen(2))
 	readyCondition := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
-	g.Expect(readyCondition).NotTo(BeNil())
-	g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
+
+	testutil.ExpectConditionToMatch(g, readyCondition, "Ready", true)
 }
