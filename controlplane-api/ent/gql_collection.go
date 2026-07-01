@@ -1465,6 +1465,11 @@ func (_q *EventExposureQuery) collectField(ctx context.Context, oneNode bool, op
 				selectedFields = append(selectedFields, eventexposure.FieldActive)
 				fieldSeen[eventexposure.FieldActive] = struct{}{}
 			}
+		case "eventScopes":
+			if _, ok := fieldSeen[eventexposure.FieldEventScopes]; !ok {
+				selectedFields = append(selectedFields, eventexposure.FieldEventScopes)
+				fieldSeen[eventexposure.FieldEventScopes] = struct{}{}
+			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[eventexposure.FieldApprovalConfig]; !ok {
 				selectedFields = append(selectedFields, eventexposure.FieldApprovalConfig)
@@ -1633,6 +1638,21 @@ func (_q *EventSubscriptionQuery) collectField(ctx context.Context, oneNode bool
 			if _, ok := fieldSeen[eventsubscription.FieldDeliveryType]; !ok {
 				selectedFields = append(selectedFields, eventsubscription.FieldDeliveryType)
 				fieldSeen[eventsubscription.FieldDeliveryType] = struct{}{}
+			}
+		case "trigger":
+			if _, ok := fieldSeen[eventsubscription.FieldTrigger]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldTrigger)
+				fieldSeen[eventsubscription.FieldTrigger] = struct{}{}
+			}
+		case "delivery":
+			if _, ok := fieldSeen[eventsubscription.FieldDelivery]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldDelivery)
+				fieldSeen[eventsubscription.FieldDelivery] = struct{}{}
+			}
+		case "scopes":
+			if _, ok := fieldSeen[eventsubscription.FieldScopes]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldScopes)
+				fieldSeen[eventsubscription.FieldScopes] = struct{}{}
 			}
 		case "callbackURL":
 			if _, ok := fieldSeen[eventsubscription.FieldCallbackURL]; !ok {
