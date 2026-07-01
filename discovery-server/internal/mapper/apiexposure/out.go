@@ -94,7 +94,7 @@ func mapSecurity(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 		oauth2 := api.OAuth2{
 			TokenEndpoint: m2m.ExternalIDP.TokenEndpoint,
 			TokenRequest:  tokenRequestCRDToAPI(m2m.ExternalIDP.TokenRequest),
-			GrantType:     m2m.ExternalIDP.GrantType,
+			GrantType:     string(m2m.ExternalIDP.GrantType),
 		}
 
 		if m2m.ExternalIDP.Client != nil {

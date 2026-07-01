@@ -662,7 +662,7 @@ func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.Ex
 	idp := &gatewayapi.ExternalIdentityProvider{
 		TokenEndpoint: externalIDP.TokenEndpoint,
 		TokenRequest:  gatewayapi.TokenRequestMethod(externalIDP.TokenRequest),
-		GrantType:     externalIDP.GrantType,
+		GrantType:     gatewayapi.GrantType(externalIDP.GrantType),
 	}
 
 	if externalIDP.Basic != nil {
