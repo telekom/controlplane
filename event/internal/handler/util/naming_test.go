@@ -26,7 +26,7 @@ func TestNamingConstants(t *testing.T) {
 		{
 			name:     "AdminClientName",
 			got:      AdminClientName,
-			expected: "admin--controlplane-client",
+			expected: "horizon-quasar",
 		},
 		{
 			name:     "CallbackURLQueryParam",

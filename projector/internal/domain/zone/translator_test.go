@@ -54,7 +54,9 @@ var _ = Describe("Zone Translator", func() {
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
 						Gateway: adminv1.GatewayConfig{
-							Url: "https://gateway.example.com",
+							Presets: []adminv1.GatewayConfigPreset{
+								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}},
+							},
 						},
 					},
 				},
@@ -94,7 +96,9 @@ var _ = Describe("Zone Translator", func() {
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
 						Gateway: adminv1.GatewayConfig{
-							Url: "https://gw.test",
+							Presets: []adminv1.GatewayConfigPreset{
+								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}},
+							},
 						},
 					},
 				},
@@ -114,7 +118,9 @@ var _ = Describe("Zone Translator", func() {
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityEnterprise,
 						Gateway: adminv1.GatewayConfig{
-							Url: "",
+							Presets: []adminv1.GatewayConfigPreset{
+								{Name: "non-default", Default: false, Urls: []adminv1.UrlConfig{{Hostname: "unused.test"}}},
+							},
 						},
 					},
 				},
@@ -138,7 +144,9 @@ var _ = Describe("Zone Translator", func() {
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
 						Gateway: adminv1.GatewayConfig{
-							Url: "https://gateway.example.com",
+							Presets: []adminv1.GatewayConfigPreset{
+								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}},
+							},
 						},
 					},
 					Status: adminv1.ZoneStatus{
@@ -164,7 +172,9 @@ var _ = Describe("Zone Translator", func() {
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
 						Gateway: adminv1.GatewayConfig{
-							Url: "https://gw.test",
+							Presets: []adminv1.GatewayConfigPreset{
+								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}},
+							},
 						},
 					},
 					Status: adminv1.ZoneStatus{

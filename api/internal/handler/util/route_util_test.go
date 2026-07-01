@@ -20,12 +20,8 @@ var _ = Describe("Route Util", func() {
 	})
 
 	Describe("MakeRouteName", func() {
-		It("should omit realm prefix for default realm", func() {
-			Expect(MakeRouteName("/my/api/v1", "default")).To(Equal("my-api-v1"))
-		})
-
-		It("should include realm prefix for non-default realm", func() {
-			Expect(MakeRouteName("/my/api/v1", "test")).To(Equal("test--my-api-v1"))
+		It("should normalize the path to a valid route name", func() {
+			Expect(MakeRouteName("/my/api/v1")).To(Equal("my-api-v1"))
 		})
 	})
 
@@ -60,15 +56,16 @@ var _ = Describe("Route Util", func() {
 			})
 		})
 
-		Describe("WithFailoverZone", func() {
-			It("should set failover zone on options", func() {
-				zone := types.ObjectRef{Name: "my-zone", Namespace: "my-ns"}
+		Describe("WithFailoverZones", func() {
+			It("should set failover zones on options", func() {
+				zones := []types.ObjectRef{{Name: "my-zone", Namespace: "my-ns"}}
 
 				opts := &CreateRouteOptions{}
-				WithFailoverZone(zone)(opts)
+				WithFailoverZones(zones)(opts)
 
-				Expect(opts.FailoverZone.Name).To(Equal("my-zone"))
-				Expect(opts.FailoverZone.Namespace).To(Equal("my-ns"))
+				Expect(opts.FailoverZones).To(HaveLen(1))
+				Expect(opts.FailoverZones[0].Name).To(Equal("my-zone"))
+				Expect(opts.FailoverZones[0].Namespace).To(Equal("my-ns"))
 			})
 		})
 
@@ -140,24 +137,22 @@ var _ = Describe("Route Util", func() {
 		})
 
 		Describe("HasFailover", func() {
-			It("should return true when failover zone is fully set", func() {
+			It("should return true when failover zones are set", func() {
 				opts := CreateRouteOptions{
-					FailoverZone: types.ObjectRef{Name: "zone", Namespace: "ns"},
+					FailoverZones: []types.ObjectRef{{Name: "zone", Namespace: "ns"}},
 				}
 				Expect(opts.HasFailover()).To(BeTrue())
 			})
 
-			It("should return false when failover zone name is empty", func() {
+			It("should return false when failover zones are empty", func() {
 				opts := CreateRouteOptions{
-					FailoverZone: types.ObjectRef{Namespace: "ns"},
+					FailoverZones: []types.ObjectRef{},
 				}
 				Expect(opts.HasFailover()).To(BeFalse())
 			})
 
-			It("should return false when failover zone namespace is empty", func() {
-				opts := CreateRouteOptions{
-					FailoverZone: types.ObjectRef{Name: "zone"},
-				}
+			It("should return false when failover zones are nil", func() {
+				opts := CreateRouteOptions{}
 				Expect(opts.HasFailover()).To(BeFalse())
 			})
 
@@ -176,6 +171,60 @@ var _ = Describe("Route Util", func() {
 			It("should return false when service rate limit is nil", func() {
 				opts := CreateRouteOptions{}
 				Expect(opts.HasServiceRateLimit()).To(BeFalse())
+			})
+		})
+
+		Describe("WithAdditionalHostnames", func() {
+			It("should append hostnames", func() {
+				opts := &CreateRouteOptions{}
+				WithAdditionalHostnames("zone-b.gateway.com", "zone-c.gateway.com")(opts)
+
+				Expect(opts.AdditionalHostnames).To(ConsistOf("zone-b.gateway.com", "zone-c.gateway.com"))
+			})
+
+			It("should accumulate across multiple calls", func() {
+				opts := &CreateRouteOptions{}
+				WithAdditionalHostnames("zone-b.gateway.com")(opts)
+				WithAdditionalHostnames("zone-c.gateway.com")(opts)
+
+				Expect(opts.AdditionalHostnames).To(HaveLen(2))
+				Expect(opts.AdditionalHostnames).To(ContainElements("zone-b.gateway.com", "zone-c.gateway.com"))
+			})
+		})
+
+		Describe("WithAdditionalPaths", func() {
+			It("should append paths", func() {
+				opts := &CreateRouteOptions{}
+				WithAdditionalPaths("/api/v1", "/failover/api/v1")(opts)
+
+				Expect(opts.AdditionalPaths).To(ConsistOf("/api/v1", "/failover/api/v1"))
+			})
+
+			It("should accumulate across multiple calls", func() {
+				opts := &CreateRouteOptions{}
+				WithAdditionalPaths("/api/v1")(opts)
+				WithAdditionalPaths("/failover/api/v1")(opts)
+
+				Expect(opts.AdditionalPaths).To(HaveLen(2))
+				Expect(opts.AdditionalPaths).To(ContainElements("/api/v1", "/failover/api/v1"))
+			})
+		})
+
+		Describe("AddTrustedIssuers", func() {
+			It("should append issuers", func() {
+				opts := &CreateRouteOptions{}
+				AddTrustedIssuers("https://idp.zone-b.com", "https://idp.zone-c.com")(opts)
+
+				Expect(opts.TrustedIssuers).To(ConsistOf("https://idp.zone-b.com", "https://idp.zone-c.com"))
+			})
+
+			It("should accumulate across multiple calls", func() {
+				opts := &CreateRouteOptions{}
+				AddTrustedIssuers("https://idp.zone-b.com")(opts)
+				AddTrustedIssuers("https://idp.zone-c.com")(opts)
+
+				Expect(opts.TrustedIssuers).To(HaveLen(2))
+				Expect(opts.TrustedIssuers).To(ContainElements("https://idp.zone-b.com", "https://idp.zone-c.com"))
 			})
 		})
 	})

@@ -60,12 +60,8 @@ func newZone() *adminv1.Zone {
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "zone-ns",
-			IdentityRealm: &commontypes.ObjectRef{
-				Name:      "test-ns",
-				Namespace: "zone-ns",
-			},
-			GatewayRealm: &commontypes.ObjectRef{
-				Name:      "test-ns",
+			Gateway: &commontypes.ObjectRef{
+				Name:      "test-gateway",
 				Namespace: "zone-ns",
 			},
 		},

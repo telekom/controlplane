@@ -56,7 +56,7 @@ When creating the Zone resource in the Control Plane, you provide the connection
 
 ### Creating a Zone
 
-A Zone references the gateway and identity provider to use, along with Redis configuration and visibility settings:
+A Zone references the gateway and identity provider to use, along with optional Redis configuration and visibility settings:
 
 ```yaml
 apiVersion: admin.cp.ei.telekom.de/v1
@@ -67,15 +67,17 @@ metadata:
 spec:
   visibility: World
   gateway:
-    url: https://gateway.example.com
-    circuitBreaker: true
     admin:
       url: https://gateway-admin.example.com
-      clientSecret: <your-gateway-admin-secret>
+    presets:
+      - name: default
+        default: true
+        urls:
+          - hostname: api.dataplane1.example.com
+            basePath: /
   identityProvider:
     url: https://idp.example.com
     admin:
-      url: https://idp-admin.example.com
       clientId: admin-client
       userName: admin
       password: <your-idp-admin-password>
@@ -87,7 +89,52 @@ spec:
 ```
 
 :::caution
-Credential values (`clientSecret`, `password`, etc.) should not be committed to version control. In production, use a sealed-secrets solution or external secret management.
+Credential values (`clientSecret`, `password`, etc.) should not be committed to version control. See [Zone Secrets](#zone-secrets) below for how the Control Plane onboards these values automatically — in most cases you can leave them empty or use a secret reference instead of a clear-text value.
+:::
+
+### Gateway Admin Access
+
+To configure routes at runtime, the Control Plane needs to authenticate against your gateway's **admin API**. The `gateway.admin` block holds this connection:
+
+```yaml
+gateway:
+  admin:
+    url: https://gateway-admin.example.com
+    # clientSecret is optional — see below
+```
+
+You only need to provide the `url`. To handle authentication, the Control Plane automatically provisions a dedicated identity client (the `rover` client, described below) and generates its secret. If you want to set the client's secret yourself, provide `clientSecret`; otherwise it is generated for you.
+
+#### The `rover` realm and client
+
+On **every** zone reconciliation, the zone handler creates:
+
+- An internal identity realm named **`rover`**, dedicated to platform-internal admin clients.
+- A **`rover`** client inside that realm, used to authenticate against the gateway admin API. Its token issuer is `…/auth/realms/rover`.
+
+This is not an opt-in feature and cannot be disabled — every zone gets its own `rover` realm and client.
+
+:::note Previously a manual step
+Earlier versions required administrators to create this realm and client by hand before a zone could work. This is now done for you automatically whenever the Zone is reconciled — no manual setup is needed.
+:::
+
+### Zone Secrets
+
+A Zone references three sensitive values: the **identity provider admin password**, the **Redis password**, and the **gateway admin client secret**. You do not have to manage these as raw values in the Zone file.
+
+When you apply a Zone, a defaulting webhook processes these fields:
+
+| You provide | What happens |
+|-------------|--------------|
+| An empty value | A strong secret is generated for you. |
+| The keyword `rotate` | A new secret is generated, replacing the previous one. |
+| A clear-text value | The value is used as-is (and onboarded, see below). |
+| A secret reference | Used directly — nothing is generated. |
+
+If **Secret-Manager is enabled** in your installation, each generated or provided value is uploaded to Secret-Manager (under a `zones/<zone>/admin/...` path) and the Zone keeps only a reference. If it is **disabled**, the value is stored inline on the Zone instead.
+
+:::tip
+Re-applying a Zone never regenerates secrets by accident: when you omit a secret field on an update, the existing value is preserved. Use the `rotate` keyword when you explicitly want a fresh secret.
 :::
 
 ### Zone Visibility
@@ -105,8 +152,8 @@ Each managed route has a **type** that determines its behavior:
 
 | Type | Behavior |
 |------|----------|
-| **TeamAPI** | Authenticated route on the zone's team-api gateway realm. Requires token validation but does not enforce per-consumer ACLs. Used for team-facing platform APIs. |
-| **Proxy** | Fully passthrough route on the zone's default gateway realm. Acts as a pure reverse proxy without any authentication or authorization. |
+| **TeamAPI** | Authenticated route with token validation but no per-consumer ACLs. Used for team-facing platform APIs. |
+| **Proxy** | Fully passthrough route that acts as a pure reverse proxy without any authentication or authorization. |
 
 Example:
 
@@ -126,7 +173,7 @@ spec:
 
 ### Token Claims
 
-The Control Plane automatically injects the following claims into all tokens issued for clients in a zone's default identity realm:
+The Control Plane automatically injects the following claims into all tokens issued for clients in a zone's identity realm:
 
 | Claim | Type | Description |
 |-------|------|-------------|
@@ -193,25 +240,21 @@ spec:
     namespace: dev
   admin:
     url: https://config-backend.example.com
-    client:
-      clientId: event-admin
-      clientSecret: <your-event-admin-secret>
   serverSendEventUrl: http://event-backend.dev.svc.cluster.local/sse
   publishEventUrl: http://event-backend.dev.svc.cluster.local/publish
   voyagerApiUrl: http://voyager.dev.svc.cluster.local
-  mesh:
-    fullMesh: true
-    client:
-      clientId: event-mesh
-      clientSecret: <your-event-mesh-secret>
 ```
+
+That's it. Identity clients, secrets, and mesh topology are configured automatically:
+
+- **Admin client** — auto-created using the zone's internal identity realm.
+- **Mesh client** — auto-created using the zone's identity realm.
+- **Mesh topology** — defaults to full mesh (events distributed to all zones).
+- **Client secrets** — auto-generated and managed by the controller.
 
 ### Mesh configuration options
 
-- **`fullMesh: true`** — events can be distributed across all zones.
-- **`fullMesh: false` + `zoneNames`** — events are only distributed to selected zones.
-
-Example for partial mesh:
+By default, a full mesh topology is used. To restrict event distribution to specific zones, add an explicit `mesh` block:
 
 ```yaml
 mesh:
@@ -219,9 +262,27 @@ mesh:
   zoneNames:
     - dataplane2
     - dataplane3
+```
+
+### Overriding identity client defaults
+
+In most cases you do not need to specify identity clients. If your setup requires custom client IDs or specific realm references, you can provide them explicitly:
+
+```yaml
+admin:
+  url: https://config-backend.example.com
   client:
-    clientId: event-mesh
-    clientSecret: <your-event-mesh-secret>
+    clientId: my-custom-admin-client
+    realm:
+      name: my-realm
+      namespace: dev
+mesh:
+  fullMesh: true
+  client:
+    clientId: my-custom-mesh-client
+    realm:
+      name: my-realm
+      namespace: dev
 ```
 
 ### Verifying readiness
@@ -229,10 +290,6 @@ mesh:
 After creation, the resource status is populated with generated references and URLs (for example `publishUrl`, `callbackUrl`, and `eventStore`).
 
 If these fields appear and conditions are healthy, your zone is ready for event exposures and subscriptions.
-
-:::caution
-Do not commit secrets (for example `clientSecret`) to version control. Use your platform's secret management approach.
-:::
 
 ## Next Steps
 

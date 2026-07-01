@@ -9,6 +9,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -48,6 +49,32 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
+					Gateway: adminv1.GatewayConfig{
+						Admin: adminv1.GatewayAdminConfig{
+							Url: "http://gateway-admin.test.local:8001",
+						},
+						Presets: []adminv1.GatewayConfigPreset{
+							{
+								Name:    "default",
+								Default: true,
+								Urls: []adminv1.UrlConfig{
+									{
+										Hostname: "gateway.test.local",
+										BasePath: "/",
+									},
+								},
+							},
+						},
+					},
+					IdentityProvider: adminv1.IdentityProviderConfig{
+						Url: "http://idp.test.local:8080",
+						Admin: adminv1.IdentityProviderAdminConfig{
+							Url: ptr.To("http://idp-admin.test.local:8080"),
+						},
+					},
+					Redis: &adminv1.RedisConfig{
+						Host: "redis://redis.test.local:6379",
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, zoneA)).To(Succeed())
@@ -62,6 +89,21 @@ var _ = Describe("Application Controller", func() {
 			zoneA.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 			Expect(k8sClient.Status().Update(ctx, zoneA)).To(Succeed())
 
+			By("simulating Zone A status (normally set by admin controller)")
+			zoneA.Status = adminv1.ZoneStatus{
+				Namespace: testNamespace,
+				Gateway: &ctypes.ObjectRef{
+					Name:      "test-gateway-a",
+					Namespace: testNamespace,
+				},
+				Links: adminv1.Links{
+					Url:       "https://gateway.test.local",
+					Issuer:    "https://idp.test.local/realms/test-env",
+					LmsIssuer: "https://idp.test.local/realms/test-env-lms",
+				},
+			}
+			Expect(k8sClient.Status().Update(ctx, zoneA)).To(Succeed())
+
 			By("creating the Zone B")
 			zoneB = &adminv1.Zone{
 				ObjectMeta: metav1.ObjectMeta{
@@ -73,17 +115,50 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
+					Gateway: adminv1.GatewayConfig{
+						Admin: adminv1.GatewayAdminConfig{
+							Url: "http://gateway-admin.test.local:8001",
+						},
+						Presets: []adminv1.GatewayConfigPreset{
+							{
+								Name:    "default",
+								Default: true,
+								Urls: []adminv1.UrlConfig{
+									{
+										Hostname: "gateway-b.test.local",
+										BasePath: "/",
+									},
+								},
+							},
+						},
+					},
+					IdentityProvider: adminv1.IdentityProviderConfig{
+						Url: "http://idp.test.local:8080",
+						Admin: adminv1.IdentityProviderAdminConfig{
+							Url: ptr.To("http://idp-admin.test.local:8080"),
+						},
+					},
+					Redis: &adminv1.RedisConfig{
+						Host: "redis://redis.test.local:6379",
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, zoneB)).To(Succeed())
-			zoneB.Status.Namespace = testNamespace
-			zoneB.Status.IdentityRealm = &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace}
-			zoneB.Status.GatewayRealm = &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace}
-			zoneB.Status.Links = adminv1.Links{
-				Url:       "http://gateway.zone-b.test",
-				Issuer:    "http://issuer.zone-b.test/auth/realms/test-env",
-				LmsIssuer: "http://lms.zone-b.test/auth/realms/test-env",
+
+			By("simulating Zone B status (normally set by admin controller)")
+			zoneB.Status = adminv1.ZoneStatus{
+				Namespace: testNamespace,
+				Gateway: &ctypes.ObjectRef{
+					Name:      "test-gateway-b",
+					Namespace: testNamespace,
+				},
+				Links: adminv1.Links{
+					Url:       "https://gateway-b.test.local",
+					Issuer:    "https://idp.test.local/realms/test-env",
+					LmsIssuer: "https://idp.test.local/realms/test-env-lms",
+				},
 			}
+			zoneB.EnableFeature(adminv1.FeatureConsumerFailover)
 			zoneB.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 			Expect(k8sClient.Status().Update(ctx, zoneB)).To(Succeed())
 		})
@@ -164,8 +239,8 @@ var _ = Describe("Application Controller", func() {
 					NeedsClient:   true,
 					NeedsConsumer: true,
 					Zone:          *ctypes.ObjectRefFromObject(zoneA),
-					FailoverZones: []ctypes.ObjectRef{
-						*ctypes.ObjectRefFromObject(zoneB),
+					Failover: applicationv1.Failover{
+						Enabled: true,
 					},
 				},
 			}

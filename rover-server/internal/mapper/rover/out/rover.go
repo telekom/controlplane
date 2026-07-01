@@ -47,6 +47,12 @@ func MapRover(in *roverv1.Rover, out *api.Rover) error {
 	out.Psiid = scalars.Psiid
 	out.Icto = scalars.Icto
 	mapAuthentication(in, out)
+
+	// Consumer Failover
+	if in.HasFailoverEnabledOnAnySubscription() {
+		out.FailoverEnabled = true
+	}
+
 	return nil
 }
 

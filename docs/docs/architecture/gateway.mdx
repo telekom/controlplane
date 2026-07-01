@@ -14,6 +14,57 @@ The Gateway domain configures the API Gateway at runtime. It manages routes, con
 
 The Gateway operator uses a plugin-based feature system for configuring route behavior. Each feature is implemented as a separate plugin that can be enabled or disabled per route, allowing fine-grained control over how requests are processed.
 
+## Route Types & Cross-Zone Meshing
+
+Every gateway `Route` has a **type** that determines where it sends traffic. Together, these three types let consumers and providers live in different zones while still reaching each other — a pattern we call *meshing*.
+
+| Type | Lives in | Sends traffic to | Purpose |
+|------|----------|------------------|---------|
+| **Primary** | The provider's zone | The provider's backend upstreams directly | The single egress point for an API. Every other route ultimately targets it. |
+| **Proxy** | A subscriber's zone (when different from the provider's) | The provider zone's gateway (the primary route) | Forwards cross-zone requests. It never talks to the backend itself. |
+| **Secondary** | A provider *failover* zone | The provider's backend upstreams (as a backup) | Stand-in for the primary route when the provider's primary zone is unhealthy. |
+
+### Why proxy routes exist
+
+A consumer always sends its request to the gateway in **its own zone**. If the API it wants is exposed in a *different* zone, that local gateway has no backend to call — so the Control Plane creates a **proxy route** there. The proxy route accepts the consumer's request, validates its token, and forwards the call across the zone boundary to the provider zone's **primary route**, which finally reaches the backend.
+
+This keeps every consumer talking to a local gateway while the platform handles the cross-zone hop transparently.
+
+```mermaid
+graph LR
+    Consumer["<b>Consumer</b><br/><i>Zone B</i>"]
+    Proxy["<b>Proxy Route</b><br/><i>Zone B gateway</i>"]
+    Primary["<b>Primary Route</b><br/><i>Zone A gateway</i>"]
+    Backend["<b>Backend</b><br/><i>Provider upstream</i>"]
+
+    Consumer -->|"request + token"| Proxy
+    Proxy -->|"cross-zone hop"| Primary
+    Primary -->|"upstream call"| Backend
+```
+
+If the consumer lives in the **same zone** as the provider, no proxy route is needed — the consumer reaches the primary route directly.
+
+### Secondary routes and failover
+
+When a provider declares a **failover zone**, the Control Plane creates a **secondary route** there carrying a copy of the provider's upstreams. The proxy routes are configured with the failover zone as a fallback target. A health-check service watches the provider's primary zone; if it becomes unhealthy, proxy routes redirect to the **secondary route** instead of the primary one, and traffic is served from the backup zone.
+
+```mermaid
+graph LR
+    Proxy["<b>Proxy Route</b><br/><i>Zone B</i>"]
+    Primary["<b>Primary Route</b><br/><i>Zone A — primary</i>"]
+    Secondary["<b>Secondary Route</b><br/><i>Zone C — failover</i>"]
+    Backend["<b>Backend</b>"]
+
+    Proxy -->|"normal path"| Primary
+    Proxy -.->|"if Zone A unhealthy"| Secondary
+    Primary --> Backend
+    Secondary -.-> Backend
+```
+
+:::info
+Route types are created by the **API domain**, not configured by hand. See [API Domain: Route Provisioning](./api.mdx#route-provisioning) for which resource creates which route, and [Failover](../admin-journey/features/failover.md) for the operator-facing setup.
+:::
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which gateway instance to use.
