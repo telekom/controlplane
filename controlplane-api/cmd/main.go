@@ -64,6 +64,7 @@ func main() {
 	ctx = cserver.SignalHandler(ctx)
 
 	log.Info("loaded configuration", "configfile", configFile)
+	validateSecurityConfig(log, cfg.Security)
 
 	client, err := database.NewEntClient(ctx, cfg.Database.URL)
 	if err != nil {
@@ -106,10 +107,15 @@ func main() {
 		Enabled: cfg.Security.Enabled,
 		Log:     log.WithName("security"),
 	}
-	if len(cfg.Security.TrustedIssuers) > 0 {
+	switch cfg.Security.Mode {
+	case "jwt":
 		secOpts.JWTOpts = []security.Option[*security.JWTOpts]{
 			security.WithTrustedIssuers(cfg.Security.TrustedIssuers),
 		}
+	case "mock":
+		// Enabled=true, no JWTOpts → common-server selects mock JWT middleware.
+	case "disabled":
+		// Enabled=false → common-server skips all security middleware.
 	}
 	s.RegisterController(gqlCtrl, cserver.ControllerOpts{
 		Prefix:         "/graphql",
@@ -144,6 +150,20 @@ func main() {
 
 	if err := client.Close(); err != nil {
 		log.Error(err, "failed to close database client")
+	}
+}
+
+func validateSecurityConfig(log logr.Logger, sec config.SecurityConfig) {
+	if err := sec.Validate(); err != nil {
+		panic(err.Error())
+	}
+	switch sec.Mode {
+	case "jwt":
+		log.Info("🔒 Security mode: JWT validation enabled")
+	case "mock":
+		log.Info("⚠️  SECURITY MODE IS MOCK — JWT signatures NOT validated. DO NOT USE IN PRODUCTION.")
+	case "disabled":
+		log.Info("⚠️  Security disabled — all requests are granted admin access. DO NOT USE IN PRODUCTION.")
 	}
 }
 
