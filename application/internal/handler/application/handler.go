@@ -367,12 +367,6 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
 
-	// Resolve realm name from zone status (decoupled from environment name)
-	if zone.Status.GatewayRealm == nil {
-		return ctrlerrors.BlockedErrorf("zone %s has no GatewayRealm status set", zone.Name)
-	}
-	realmName := zone.Status.GatewayRealm.Name
-
 	if zone.Status.Gateway == nil {
 		return ctrlerrors.BlockedErrorf("zone %q does not contain a Gateway", zone.Name)
 	}
