@@ -411,6 +411,9 @@ type ZoneStatus struct {
 	ManagedRoutes        []types.ObjectRef `json:"managedRoutes,omitempty"`
 	Links                Links             `json:"links,omitempty"`
 
+	// RealmName as an abstraction layer and is retrieved from Env.Spec.RealmName
+	RealmName string `json:"realmName,omitempty"`
+
 	// Features is a list of features that are enabled or disabled for this zone.
 	// This can be used to control the availability of certain features in the zone
 	// +listType=map

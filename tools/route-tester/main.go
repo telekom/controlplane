@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -82,11 +83,28 @@ func main() {
 	}
 
 	zoneName := application.Spec.Zone.Name
+	zoneNamespace := application.Spec.Zone.Namespace
+
+	// Resolve realm name from zone status (decoupled from environment name)
+	zone := &adminv1.Zone{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      zoneName,
+			Namespace: zoneNamespace,
+		},
+	}
+	err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
+	if err != nil {
+		panic(errors.Wrapf(err, "failed to get Zone %s in namespace %s", zoneName, zoneNamespace))
+	}
+	if zone.Status.GatewayRealm == nil {
+		panic(fmt.Sprintf("Zone %s in namespace %s has no GatewayRealm status set", zoneName, environment))
+	}
+	realmName := zone.Status.GatewayRealm.Name
 
 	route := &gatewayv1.Route{
 		ObjectMeta: metav1.ObjectMeta{
+			Namespace: zone.Status.Namespace,
 			Name:      labelutil.NormalizeValue(basePath),
-			Namespace: environment + "--" + zoneName, // zone namespace
 		},
 	}
 
@@ -119,6 +137,10 @@ func newClient(cfg *rest.Config) (client.Client, error) {
 	err = applicationv1.AddToScheme(scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to add application scheme")
+	}
+	err = adminv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add admin scheme")
 	}
 
 	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme})

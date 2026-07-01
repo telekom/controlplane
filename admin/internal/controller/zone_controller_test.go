@@ -5,6 +5,7 @@
 package controller
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +14,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -93,7 +95,7 @@ var _ = Describe("Zone Controller", func() {
 						Namespace: testEnvironment,
 						Labels:    map[string]string{config.EnvironmentLabelKey: testEnvironment},
 					},
-					Spec: adminv1.EnvironmentSpec{},
+					Spec: adminv1.EnvironmentSpec{RealmName: testEnvironment},
 				}
 				Expect(k8sClient.Create(ctx, env)).To(Succeed())
 			}
@@ -129,6 +131,62 @@ var _ = Describe("Zone Controller", func() {
 				g.Expect(got.Status.Links.Url).NotTo(BeEmpty())
 				g.Expect(got.Status.Links.Issuer).NotTo(BeEmpty())
 				g.Expect(got.Status.Links.LmsIssuer).NotTo(BeEmpty())
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("When environment name differs from realmName (decoupling)", func() {
+		const (
+			decoupledEnvName   = "playground"
+			decoupledRealmName = "myrealm"
+		)
+
+		It("should create realm CRs with spec.realmName, not metadata.name", func() {
+			By("creating the decoupled environment namespace and resource")
+			envNs := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: decoupledEnvName}}
+			Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, envNs))).To(Succeed())
+
+			env := &adminv1.Environment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      decoupledEnvName,
+					Namespace: decoupledEnvName,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: decoupledEnvName,
+					},
+				},
+				Spec: adminv1.EnvironmentSpec{
+					RealmName: decoupledRealmName,
+				},
+			}
+			Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, env))).To(Succeed())
+
+			By("creating a zone in the decoupled environment")
+			zone := newZone("zone-decoupled")
+			zone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
+			zone.Spec.ManagedRoutes = nil // simplify
+			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				got := &adminv1.Zone{}
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(meta.IsStatusConditionTrue(got.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+				expectedNs := decoupledEnvName + "--zone-decoupled"
+
+				// Identity Realm named after realmName, not env name
+				identityRealm := &identityv1.Realm{}
+				err = k8sClient.Get(ctx, client.ObjectKey{Namespace: expectedNs, Name: decoupledRealmName}, identityRealm)
+				g.Expect(err).NotTo(HaveOccurred(), "identity realm should be named %q", decoupledRealmName)
+				g.Expect(identityRealm.Labels[config.EnvironmentLabelKey]).To(Equal(decoupledEnvName),
+					"environment label should be the env name, not the realm name")
+
+				// Issuer URLs contain the realmName, not the environment name
+				g.Expect(got.Status.Links.Issuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
+				g.Expect(got.Status.Links.LmsIssuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
 			}, timeout, interval).Should(Succeed())
 		})
 	})
