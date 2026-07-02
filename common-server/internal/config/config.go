@@ -51,7 +51,8 @@ type LMSConfig struct {
 }
 
 type SecurityConfig struct {
-	Enabled        bool `json:"enabled"`
+	// Mode controls authentication behaviour: "mock" or "jwt".
+	Mode           string `json:"mode" yaml:"mode"`
 	LMS            LMSConfig
 	TrustedIssuers []string `yaml:"trustedIssuers" json:"trustedIssuers"`
 	DefaultScope   string   `yaml:"defaultScope" json:"defaultScope"`
@@ -146,8 +147,8 @@ func ReadConfig(filepath string) (*ServerConfig, error) {
 
 func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.Interface, log logr.Logger) (*server.Server, error) {
 	securityOpts := security.SecurityOpts{
-		Enabled: c.Security.Enabled,
-		Log:     log.WithName("security"),
+		Mode: c.Security.Mode,
+		Log:  log.WithName("security"),
 		JWTOpts: []security.Option[*security.JWTOpts]{
 			security.WithLmsCheck(c.Security.LMS.BasePath),
 			security.WithTrustedIssuers(c.Security.TrustedIssuers),

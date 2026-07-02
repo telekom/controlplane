@@ -92,7 +92,7 @@ func main() {
 	}
 
 	secretResolver := secrets.NewResolver(secretsapi.NewSecrets())
-	srv := newGraphQLServer(client, services, secretResolver, cfg.Security.Mode != "disabled", cfg.FileManager.BaseURL)
+	srv := newGraphQLServer(client, services, secretResolver, cfg.FileManager.BaseURL)
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.EnableCors = true
@@ -104,18 +104,16 @@ func main() {
 	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
 	gqlCtrl.RegisterPlayground(s.App, "/graphql")
 	secOpts := security.SecurityOpts{
-		Enabled: cfg.Security.Mode != "disabled",
-		Log:     log.WithName("security"),
+		Log: log.WithName("security"),
 	}
 	switch cfg.Security.Mode {
-	case "jwt":
+	case security.ModeJWT:
+		secOpts.Mode = security.ModeJWT
 		secOpts.JWTOpts = []security.Option[*security.JWTOpts]{
 			security.WithTrustedIssuers(cfg.Security.TrustedIssuers),
 		}
-	case "mock":
-		// Enabled=true, no JWTOpts → common-server selects mock JWT middleware.
-	case "disabled":
-		// Enabled=false → common-server skips all security middleware.
+	case security.ModeMock:
+		secOpts.Mode = security.ModeMock
 	}
 	s.RegisterController(gqlCtrl, cserver.ControllerOpts{
 		Prefix:         "/graphql",
@@ -153,17 +151,16 @@ func main() {
 	}
 }
 
+// validateSecurityConfig logs the active security mode at startup.
+// Structural validation (jwt requires trusted issuers) is enforced by ConfigureSecurity.
 func validateSecurityConfig(log logr.Logger, sec config.SecurityConfig) {
-	if err := sec.Validate(); err != nil {
-		panic(err.Error())
-	}
 	switch sec.Mode {
-	case "jwt":
+	case security.ModeJWT:
 		log.Info("🔒 Security mode: JWT validation enabled")
-	case "mock":
+	case security.ModeMock:
 		log.Info("⚠️  SECURITY MODE IS MOCK — JWT signatures NOT validated. DO NOT USE IN PRODUCTION.")
-	case "disabled":
-		log.Info("⚠️  Security disabled — all requests are granted admin access. DO NOT USE IN PRODUCTION.")
+	default:
+		panic(fmt.Sprintf("invalid security.mode: %q (must be one of: mock, jwt)", sec.Mode))
 	}
 }
 
@@ -200,7 +197,7 @@ func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }
 
-func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, securityEnabled bool, fileManagerBaseURL string) *handler.Server {
+func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, fileManagerBaseURL string) *handler.Server {
 	srv := handler.New(resolvers.NewSchema(entClient, services, secretResolver, fileManagerBaseURL))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -213,7 +210,7 @@ func newGraphQLServer(entClient *ent.Client, services service.Services, secretRe
 	})
 	srv.SetErrorPresenter(gqlcontroller.ErrorPresenter)
 
-	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(entClient, securityEnabled))
+	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(entClient))
 	srv.AroundOperations(gqlcontroller.LogMutationUser())
 
 	return srv

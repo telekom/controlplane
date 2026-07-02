@@ -48,14 +48,6 @@ security:
 			Expect(cfg.Security.Mode).To(Equal("mock"))
 		})
 
-		It("accepts disabled mode", func() {
-			cfg := readConfig(`
-security:
-  mode: disabled
-`)
-			Expect(cfg.Security.Mode).To(Equal("disabled"))
-		})
-
 		It("preserves jwt default when no security section is present", func() {
 			cfg := readConfig(`
 database:
@@ -83,11 +75,6 @@ database:
 
 		It("returns nil for mock mode", func() {
 			sec := config.SecurityConfig{Mode: "mock"}
-			Expect(sec.Validate()).To(Succeed())
-		})
-
-		It("returns nil for disabled mode", func() {
-			sec := config.SecurityConfig{Mode: "disabled"}
 			Expect(sec.Validate()).To(Succeed())
 		})
 

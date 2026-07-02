@@ -10,6 +10,8 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
 type ServerConfig struct {
@@ -44,7 +46,7 @@ type TLSConfig struct {
 }
 
 type SecurityConfig struct {
-	// Mode controls authentication behaviour: disabled, mock, or jwt.
+	// Mode controls authentication behaviour: "mock" or "jwt".
 	Mode           string   `yaml:"mode"`
 	TrustedIssuers []string `yaml:"trustedIssuers"`
 }
@@ -68,14 +70,14 @@ type FileManagerConfig struct {
 // Call this at startup and panic on error to implement fail-closed behaviour.
 func (sec SecurityConfig) Validate() error {
 	switch sec.Mode {
-	case "jwt":
+	case security.ModeJWT:
 		if len(sec.TrustedIssuers) == 0 {
-			return fmt.Errorf("security.mode=jwt requires at least one trustedIssuer — configure security.trustedIssuers or set security.mode=disabled for local development")
+			return fmt.Errorf("security.mode=jwt requires at least one trustedIssuer — configure security.trustedIssuers or set security.mode=mock for local development")
 		}
-	case "mock", "disabled":
+	case security.ModeMock:
 		// valid, no additional requirements
 	default:
-		return fmt.Errorf("invalid security.mode: %q (must be one of: disabled, mock, jwt)", sec.Mode)
+		return fmt.Errorf("invalid security.mode: %q (must be one of: mock, jwt)", sec.Mode)
 	}
 	return nil
 }

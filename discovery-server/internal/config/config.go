@@ -18,7 +18,8 @@ type ServerConfig struct {
 }
 
 type SecurityConfig struct {
-	Enabled        bool `json:"enabled"`
+	// Mode controls authentication behaviour: "mock" or "jwt".
+	Mode           string `json:"mode" yaml:"mode"`
 	LMS            LMSConfig
 	TrustedIssuers []string `yaml:"trustedIssuers" json:"trustedIssuers"`
 	DefaultScope   string   `yaml:"defaultScope" json:"defaultScope"`
@@ -56,7 +57,7 @@ func setDefaults() {
 	viper.SetDefault("log.level", "info")
 
 	// Security
-	viper.SetDefault("security.enabled", true)
+	viper.SetDefault("security.mode", "jwt")
 	viper.SetDefault("security.trustedIssuers", []string{})
 	viper.SetDefault("security.defaultScope", "tardis:user:read")
 	viper.SetDefault("security.scopePrefix", "tardis:")
