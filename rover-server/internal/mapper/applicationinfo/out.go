@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -135,11 +136,20 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 	if app.Status.CurrentExpiresAt != nil {
 		appInfo.SecretInfo.CurrentExpiresAt = app.Status.CurrentExpiresAt.Time.UTC()
 	}
-	appInfo.IrisIssuerUrl = zone.Status.Links.Issuer
-	appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
 
+	appInfo.IrisIssuerUrl = zone.Status.Links.Issuer
 	appInfo.StargateIssuerUrl = zone.Status.Links.LmsIssuer
+	appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
 	appInfo.StargateUrl = zone.Status.Links.Url
+
+	if rover.HasFailoverEnabledOnAnySubscription() {
+		appInfo.FailoverEnabled = true
+		// If failover is active for this Application, we need to overwrite the StargateUrl with the new failover URL
+		preset, err := zone.SelectGatewayPreset(adminv1.FeatureConsumerFailover)
+		if err == nil {
+			appInfo.StargateUrl = preset.GetDefaultUrl()
+		}
+	}
 
 	appInfo.Status = status.GetOverallStatus(rover.Status.Conditions)
 	return nil

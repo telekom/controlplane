@@ -20,7 +20,6 @@ rules:
   - consumeroutes
   - consumers
   - gateways
-  - realms
   - routes
   verbs:
   - create
@@ -36,7 +35,6 @@ rules:
   - consumeroutes/finalizers
   - consumers/finalizers
   - gateways/finalizers
-  - realms/finalizers
   - routes/finalizers
   verbs:
   - update
@@ -46,7 +44,6 @@ rules:
   - consumeroutes/status
   - consumers/status
   - gateways/status
-  - realms/status
   - routes/status
   verbs:
   - get

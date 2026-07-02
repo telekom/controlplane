@@ -5,14 +5,18 @@
 package v1
 
 import (
+	"math"
 	"net/url"
 	"strconv"
 )
 
-func GetPortOrDefaultFromScheme(url *url.URL) int {
+// GetPortOrDefaultFromScheme returns the port number from the URL if specified.
+// If the URL does not specify a port or if the specified port is invalid, it returns the default port for the URL's scheme (80 for http, 443 for https).
+// If the URL has an invalid port (non-numeric or out of range), it falls back to the default port for the scheme.
+func GetPortOrDefaultFromScheme(url *url.URL) int32 {
 	port, err := strconv.Atoi(url.Port())
-	if err == nil {
-		return port
+	if err == nil && port > 0 && port <= math.MaxInt32 {
+		return int32(port)
 	}
 
 	switch url.Scheme {

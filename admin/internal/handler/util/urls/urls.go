@@ -4,14 +4,7 @@
 
 package urls
 
-import (
-	"net/url"
-	"strings"
-
-	"github.com/pkg/errors"
-
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-)
+import "strings"
 
 func ensureSuffix(rawURL string) string {
 	if !strings.HasSuffix(rawURL, "/") {
@@ -35,22 +28,4 @@ func ForGatewayAdminIssuerUrl(baseUrl string) string {
 	adminIssuerUrl := ensureSuffix(baseUrl)
 
 	return adminIssuerUrl + "auth/realms/rover"
-}
-
-func ForGatewayRealm(identityProviderBaseUrl, realmName string) string {
-	realmIssuerUrl := ensureSuffix(identityProviderBaseUrl)
-
-	return realmIssuerUrl + "auth/realms/" + realmName
-}
-
-func ForRouteDownstream(gatewayBaseUrl string, config adminv1.ManagedRouteConfig) (*url.URL, error) {
-	raw, err := url.JoinPath(gatewayBaseUrl, config.Path)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot combine gatewayBaseUrl %s with managed route path %s", gatewayBaseUrl, config.Path)
-	}
-	return url.Parse(raw)
-}
-
-func ForStargateLmsIssuer(gatewayBaseUrl, realmName string) string {
-	return strings.TrimSuffix(gatewayBaseUrl, "/") + ":443" + "/auth/realms/" + realmName
 }

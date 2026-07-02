@@ -144,7 +144,7 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 			security.M2M.ExternalIDP = &apiapi.ExternalIdentityProvider{
 				TokenEndpoint: roverSecurity.M2M.ExternalIDP.TokenEndpoint,
 				TokenRequest:  apiapi.TokenRequestMethod(roverSecurity.M2M.ExternalIDP.TokenRequest),
-				GrantType:     roverSecurity.M2M.ExternalIDP.GrantType,
+				GrantType:     apiapi.GrantType(roverSecurity.M2M.ExternalIDP.GrantType),
 				Client:        toApiClient(roverSecurity.M2M.ExternalIDP.Client),
 				Basic:         toApiBasic(roverSecurity.M2M.ExternalIDP.Basic),
 			}
@@ -183,9 +183,9 @@ func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traf
 	apiTraffic := apiapi.Traffic{}
 
 	// Handle failover
-	failoverZones, hasFailover := getFailoverZones(env, roverTraffic.Failover)
+	failoverZones, hasFailover := mapProviderFailoverZones(env, roverTraffic.Failover)
 	if hasFailover {
-		apiTraffic.Failover = &apiapi.Failover{
+		apiTraffic.Failover = &apiapi.ProviderFailover{
 			Zones: failoverZones,
 		}
 	}

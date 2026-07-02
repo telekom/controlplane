@@ -10,8 +10,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -19,6 +24,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	rover_handler "github.com/telekom/controlplane/rover/internal/handler/rover"
@@ -84,9 +90,41 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			Owns(&agenticv1.McpSubscription{})
 	}
 
+	b = b.Watches(&organizationv1.Team{},
+		handler.EnqueueRequestsFromMapFunc(r.MapTeamToRovers),
+		builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+	)
+
 	return b.WithOptions(controller.Options{
 		MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 		RateLimiter:             cc.NewRateLimiter(),
 	}).
 		Complete(r)
+}
+
+// MapTeamToRovers maps a Team to all Rovers in the team's namespace.
+// This enables re-reconciliation of Rovers when Team.Spec (e.g. Email) changes.
+func (r *RoverReconciler) MapTeamToRovers(ctx context.Context, obj client.Object) []reconcile.Request {
+
+	logger := log.FromContext(ctx)
+
+	team, ok := obj.(*organizationv1.Team)
+	if !ok || team.Status.Namespace == "" {
+		return nil
+	}
+
+	roverList := &rover.RoverList{}
+	if err := r.List(ctx, roverList, client.InNamespace(team.Status.Namespace)); err != nil {
+		logger.Error(err, "Failed to list Rovers", "namespace", team.Status.Namespace)
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(roverList.Items))
+	for i := range roverList.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&roverList.Items[i]),
+		})
+	}
+
+	return reqs
 }

@@ -41,21 +41,21 @@ func (d *DynamicUpstreamFeature) IsUsed(ctx context.Context, builder features.Fe
 		return false
 	}
 
-	if len(route.Spec.Upstreams) != 1 {
+	if len(route.Spec.Backend.Upstreams) != 1 {
 		// Must have exactly 1 upstream to be considered for dynamic upstream feature
 		return false
 	}
-	if route.Spec.Upstreams[0].IsProxy() {
+	if route.IsProxy() {
 		// Dynamic Upstream is only relevant for non-proxy routes (last-hop)
 		return false
 	}
-	if route.Spec.Upstreams[0].Host != "localhost" {
+	if route.Spec.Backend.Upstreams[0].Hostname != "localhost" {
 		// Dynamic Upstream is only relevant if the upstream host is set to "localhost"
 		// (indicating that it should be replaced with the actual target URL at runtime)
 		return false
 	}
 
-	return route.HasDynamicUpstream()
+	return HasDynamicUpstream(route)
 
 }
 

@@ -158,7 +158,7 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
 				TokenEndpoint: oauth2.TokenEndpoint,
 				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
-				GrantType:     strings.ToLower(string(oauth2.GrantType)),
+				GrantType:     roverv1.GrantType(strings.ToLower(string(oauth2.GrantType))),
 			}
 			if oauth2.ClientId != "" {
 				m2mSecurity.ExternalIDP.Client = &roverv1.OAuth2ClientCredentials{

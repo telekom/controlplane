@@ -82,11 +82,10 @@ func main() {
 	}
 
 	zoneName := application.Spec.Zone.Name
-	realmName := environment // per convention, the realm name is the same as the environment name
 
 	route := &gatewayv1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      realmName + "--" + labelutil.NormalizeValue(basePath),
+			Name:      labelutil.NormalizeValue(basePath),
 			Namespace: environment + "--" + zoneName, // zone namespace
 		},
 	}
@@ -98,8 +97,14 @@ func main() {
 
 	clientId := application.Status.ClientId
 	clientSecret := application.Status.ClientSecret
-	tokenUrl := route.Spec.Downstreams[0].IssuerUrl + "/protocol/openid-connect/token"
-	url := route.Spec.Downstreams[0].Url() + "/anything"
+
+	var tokenUrl string
+	if len(route.Spec.Security.TrustedIssuers) > 0 {
+		tokenUrl = route.Spec.Security.TrustedIssuers[0] + "/protocol/openid-connect/token"
+	} else {
+		panic("Route has no trusted issuers configured")
+	}
+	url := "https://" + route.Spec.Hostnames[0] + route.Spec.Paths[0] + "/anything"
 
 	makeRequest(ctx, url, tokenUrl, clientId, clientSecret)
 

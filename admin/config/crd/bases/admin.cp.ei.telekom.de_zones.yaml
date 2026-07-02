@@ -114,37 +114,151 @@ spec:
               gateway:
                 properties:
                   admin:
+                    description: |-
+                      GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
+                      Most of it can be optional if the Gateway was setup to support it, then only the URL is required.
                     properties:
+                      clientId:
+                        description: |-
+                          ClientId of the admin client.
+                          If empty, a managed client with the default name will be used.
+                        type: string
                       clientSecret:
+                        description: |-
+                          ClientSecret of the admin client
+                          If empty, a managed client secret will be generated.
                         type: string
                       url:
+                        description: URL of the gateway admin API.
+                        format: uri
                         type: string
                     required:
-                    - clientSecret
+                    - url
                     type: object
-                  circuitBreaker:
-                    description: CircuitBreaker flag that controls if circuit breaker
-                      should be enabled on this zone. the config of the CB itself
-                      comes from hardcoded values, not configurable
-                    type: boolean
-                  url:
-                    type: string
+                  presets:
+                    description: |-
+                      Presets defines a list of gateway configuration presets that can be applied to this zone. At least one preset is required.
+                      This allows to define different sets of features and URLs that can be selected for the zone based on the desired features.
+                    items:
+                      properties:
+                        default:
+                          default: false
+                          description: |-
+                            Default indicates whether this preset is the default preset for the zone.
+                            If true, this preset will be used if no other preset is explicitly selected.
+                            There must be at least one preset with Default=true in the gateway configuration, otherwise the operator will return an error.
+                          type: boolean
+                        features:
+                          description: |-
+                            Features is a list of features that are enabled on this Preset.
+                            This can be used to enable certain features on the zone when this preset is applied.
+                          items:
+                            properties:
+                              enabled:
+                                type: boolean
+                              name:
+                                type: string
+                            required:
+                            - enabled
+                            - name
+                            type: object
+                          type: array
+                          x-kubernetes-list-map-keys:
+                          - name
+                          x-kubernetes-list-type: map
+                        name:
+                          description: Name of the preset. This is used to reference
+                            the preset in the Zone spec.
+                          pattern: ^[aA-zZ0-9]+(-?[aA-zZ0-9]+)*$
+                          type: string
+                        urls:
+                          description: Urls defines a list of URLs (hostname + base
+                            path) that should be exposed by the gateway for this zone.
+                            At least one URL is required.
+                          items:
+                            description: UrlConfig defines the configuration for a
+                              single URL (hostname + base path) exposed by the gateway
+                              for this zone.
+                            properties:
+                              basePath:
+                                description: |-
+                                  BasePath is the base path part of the URL which will be the prefix of all routes exposed on this URL (e.g. "/v1").
+                                  It is appended to the hostname to construct the full URL (e.g. "https://api.example.com/v1").
+                                pattern: ^/.*$
+                                type: string
+                              hidden:
+                                description: |-
+                                  Hidden controls whether this URL should be hidden from the Links section in the Zone status.
+                                  This can be used to hide internal-only URLs that should not be exposed to API consumers.
+                                type: boolean
+                              hostname:
+                                description: Hostname is the hostname part of the
+                                  URL (e.g. "api.example.com").
+                                maxLength: 253
+                                type: string
+                                x-kubernetes-validations:
+                                - message: hostname must be a valid DNS-1123 subdomain
+                                  rule: '!format.dns1123Subdomain().validate(self).hasValue()'
+                              port:
+                                description: Port is the port number of the URL (e.g.
+                                  8000). If not set, the default port for the scheme
+                                  is used (443 for https, 80 for http).
+                                format: int32
+                                maximum: 65535
+                                minimum: 1
+                                type: integer
+                              scheme:
+                                default: https
+                                description: Scheme is the URL scheme (e.g. "http"
+                                  or "https"). Defaults to "https" if not set.
+                                enum:
+                                - http
+                                - https
+                                type: string
+                            required:
+                            - basePath
+                            - hidden
+                            - hostname
+                            type: object
+                          maxItems: 5
+                          minItems: 1
+                          type: array
+                      required:
+                      - default
+                      - name
+                      - urls
+                      type: object
+                    maxItems: 5
+                    minItems: 1
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                 required:
                 - admin
-                - circuitBreaker
-                - url
+                - presets
                 type: object
               identityProvider:
                 properties:
                   admin:
                     properties:
                       clientId:
+                        description: ClientId is the client ID to authenticate with
+                          the identity provider admin API.
                         type: string
                       password:
+                        description: Password is the password to authenticate with
+                          the identity provider admin API.
                         type: string
                       url:
+                        description: |-
+                          Url is the base URL of the identity provider admin API.
+                          If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
+                        format: uri
                         type: string
                       userName:
+                        description: UserName is the username to authenticate with
+                          the identity provider admin API.
                         type: string
                     required:
                     - clientId
@@ -208,6 +322,10 @@ spec:
                     - notificationThresholds
                     type: object
                   url:
+                    description: |-
+                      Url is the base URL of the identity provider.
+                      It is used to construct the issuer URLs for the gateway realms and to obtain tokens for the gateway admin API if TokenUrl is not set.
+                    format: uri
                     type: string
                 required:
                 - admin
@@ -274,18 +392,24 @@ spec:
               redis:
                 properties:
                   enableTLS:
+                    description: EnableTLS controls whether TLS is used for the Redis
+                      connection.
                     type: boolean
                   host:
+                    description: Host is the Redis server hostname (e.g. "redis-master.svc.cluster.local").
                     type: string
                   password:
+                    description: Password is a reference to the Redis password in
+                      the secret manager.
                     type: string
                   port:
+                    default: 6379
+                    description: Port is the Redis server port.
+                    maximum: 65535
+                    minimum: 1
                     type: integer
                 required:
-                - enableTLS
                 - host
-                - password
-                - port
                 type: object
               visibility:
                 description: Visibility controls what subscriptions are allowed from
@@ -297,7 +421,6 @@ spec:
             required:
             - gateway
             - identityProvider
-            - redis
             - visibility
             type: object
           status:
@@ -435,6 +558,25 @@ spec:
                 - name
                 - namespace
                 type: object
+              gatewayAdminClient:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               gatewayClient:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
@@ -455,25 +597,6 @@ spec:
                 - namespace
                 type: object
               gatewayConsumer:
-                description: |-
-                  ObjectRef is a reference to a Kubernetes object
-                  It is similar to types.NamespacedName but has the required json tags for serialization
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    description: |-
-                      UID is a type that holds unique ID values, including UUIDs.  Because we
-                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                      intent and helps make sure that UIDs and names do not get conflated.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
-              gatewayRealm:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
                   It is similar to types.NamespacedName but has the required json tags for serialization
@@ -605,25 +728,6 @@ spec:
                 type: array
               namespace:
                 type: string
-              teamApiGatewayRealm:
-                description: |-
-                  ObjectRef is a reference to a Kubernetes object
-                  It is similar to types.NamespacedName but has the required json tags for serialization
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    description: |-
-                      UID is a type that holds unique ID values, including UUIDs.  Because we
-                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                      intent and helps make sure that UIDs and names do not get conflated.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
               teamApiIdentityRealm:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object

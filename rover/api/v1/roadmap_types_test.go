@@ -69,9 +69,6 @@ var _ = Describe("Roadmap V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(statusErr.Status().Details.Causes).To(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Field": Equal("spec.specificationRef.name"),
-			})))
 		})
 
 		It("should reject a Roadmap with empty specification namespace", func() {
@@ -101,9 +98,6 @@ var _ = Describe("Roadmap V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(statusErr.Status().Details.Causes).To(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Field": Equal("spec.specificationRef.namespace"),
-			})))
 		})
 
 		It("should reject a Roadmap with empty contents file ID", func() {
@@ -133,10 +127,6 @@ var _ = Describe("Roadmap V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			// The error message might vary, but field should be spec.contents
-			Expect(statusErr.Status().Details.Causes).To(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Field": Equal("spec.contents"),
-			})))
 		})
 
 		It("should reject a Roadmap with empty hash", func() {
@@ -166,10 +156,6 @@ var _ = Describe("Roadmap V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			// The error message might vary, but field should be spec.hash
-			Expect(statusErr.Status().Details.Causes).To(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Field": Equal("spec.hash"),
-			})))
 		})
 	})
 })

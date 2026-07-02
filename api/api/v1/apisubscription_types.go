@@ -38,7 +38,7 @@ func (api *ApiSubscription) HasM2MClient() bool {
 }
 
 func (a *ApiSubscription) HasFailover() bool {
-	return a.Spec.Traffic.Failover != nil
+	return a.Spec.Traffic.Failover != nil && a.Spec.Traffic.Failover.Enabled
 }
 
 type Requestor struct {
@@ -63,6 +63,15 @@ type ApiSubscriptionStatus struct {
 	Approval              *ctypes.ObjectRef `json:"approval,omitempty"`
 	ApprovalRequest       *ctypes.ObjectRef `json:"approvalRequest,omitempty"`
 	RemoteApiSubscription *ctypes.ObjectRef `json:"remoteApiSubscription,omitempty"`
+
+	// TODO: evaluate if we really want this here, or if we just calculate it just in time when needed
+	// IdpIssuer is the issuer of the identity provider used for authentication
+	// This is used by the Consumer to fetch a token from the identity provider
+	// and is checked by the Gateway on the subscriber zone
+	IdpIssuer string `json:"idpIssuer,omitempty"`
+	// GatewayUrl is the url of the gateway used for the subscription
+	// This is used by the Consumer to send requests to the subscriber zone
+	GatewayUrl string `json:"gatewayUrl,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -147,7 +147,6 @@ func mapApiSubscription(in *roverv1.ApiSubscription) api.ApiSubscription {
 
 	mapSubscriptionSecurity(in, &apiSub)
 	mapSubscriptionTransformation(in, &apiSub)
-	mapSubscriptionTraffic(in, &apiSub)
 
 	return apiSub
 }
@@ -188,14 +187,4 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 
 func mapSubscriptionTransformation(in *roverv1.ApiSubscription, out *api.ApiSubscription) {
 	// No implementation in the 'in' side either
-}
-
-func mapSubscriptionTraffic(in *roverv1.ApiSubscription, out *api.ApiSubscription) {
-	if in.Traffic.Failover != nil {
-		out.Failover = api.Failover{
-			Zones: in.Traffic.Failover.Zones,
-		}
-	}
-
-	// todo: ratelimit (ignore for now until implementation is clear)
 }
