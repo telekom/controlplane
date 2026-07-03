@@ -438,7 +438,7 @@ func (h *BaseHandler) WaitForReady(ctx context.Context, name string) (types.Obje
 	h.logger.Info("Waiting for readiness", "name", name)
 	status, err := h.applyStatusPoller.Start(ctx, name)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to wait for readiness")
+		return status, errors.Wrap(err, "failed to wait for readiness")
 	}
 
 	return status, nil
@@ -448,7 +448,7 @@ func (h *BaseHandler) WaitForDeleted(ctx context.Context, name string) (types.Ob
 	h.logger.Info("Waiting for deletion", "name", name)
 	status, err := h.deleteStatusPoller.Start(ctx, name)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to wait for deletion")
+		return status, errors.Wrap(err, "failed to wait for deletion")
 	}
 
 	return status, nil

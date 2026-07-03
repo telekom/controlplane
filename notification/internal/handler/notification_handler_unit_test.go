@@ -76,7 +76,7 @@ func newReadyEmailChannel(recipients []string) *notificationv1.NotificationChann
 	}
 	ch.Status.Conditions = []metav1.Condition{{
 		Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue,
-		LastTransitionTime: metav1.Now(), Reason: "Provisioned", Message: "Ready",
+		LastTransitionTime: metav1.Now(), Reason: condition.ReasonProvisioned, Message: "Ready",
 	}}
 	return ch
 }
@@ -88,7 +88,7 @@ func newReadyChatChannel(name, namespace, webhookURL string) *notificationv1.Not
 	}
 	ch.Status.Conditions = []metav1.Condition{{
 		Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue,
-		LastTransitionTime: metav1.Now(), Reason: "Provisioned", Message: "Ready",
+		LastTransitionTime: metav1.Now(), Reason: condition.ReasonProvisioned, Message: "Ready",
 	}}
 	return ch
 }
@@ -114,7 +114,7 @@ func newReadyNotificationTemplate(name, namespace string) *notificationv1.Notifi
 		Status: notificationv1.NotificationTemplateStatus{
 			Conditions: []metav1.Condition{{
 				Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue,
-				LastTransitionTime: metav1.Now(), Reason: "Provisioned", Message: "Ready",
+				LastTransitionTime: metav1.Now(), Reason: condition.ReasonProvisioned, Message: "Ready",
 			}},
 		},
 	}

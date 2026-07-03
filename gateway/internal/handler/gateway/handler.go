@@ -19,7 +19,7 @@ type GatewayHandler struct{}
 func (h *GatewayHandler) CreateOrUpdate(ctx context.Context, gw *gatewayv1.Gateway) error {
 
 	gw.SetCondition(condition.NewDoneProcessingCondition("Created Gateway"))
-	gw.SetCondition(condition.NewReadyCondition("Ready", "Gateway is ready"))
+	gw.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Gateway is ready"))
 	return nil
 }
 
