@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -24,9 +26,10 @@ type ZoneServiceConfigHandler struct {
 
 func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.ZoneServiceConfig) error {
 	log := logr.FromContextOrDiscard(ctx)
-	serviceCached := h.ClientManager.IsServiceCached(client.ObjectKeyFromObject(obj))
+	isServiceCached := h.ClientManager.IsServiceCached(client.ObjectKeyFromObject(obj))
 
-	if serviceCached && obj.Status.Generation == obj.Generation {
+	conditionReady := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+	if isServiceCached && conditionReady != nil && conditionReady.ObservedGeneration == obj.Generation && conditionReady.Status == v1.ConditionTrue {
 		log.V(1).Info("ZoneServiceConfig already reconciled")
 		return nil
 	}
@@ -36,7 +39,6 @@ func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftp
 		return err
 	}
 
-	obj.Status.Generation = obj.Generation
 	obj.SetCondition(condition.NewReadyCondition("ZoneServiceConfigProvided", "ZoneServiceConfig has been provided"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("ZoneServiceConfig has been provided"))
 	return nil

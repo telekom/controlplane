@@ -30,8 +30,6 @@ type InstanceStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-	Generation int64 `json:"generation,omitempty"`
 }
 
 // +kubebuilder:object:root=true

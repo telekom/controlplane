@@ -10,6 +10,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -38,18 +40,14 @@ func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instan
 		return err
 	}
 
-	if obj.Generation != obj.Status.Generation {
+	conditionReady := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+	if conditionReady == nil || conditionReady.ObservedGeneration != obj.Generation || conditionReady.Status != v1.ConditionTrue {
 		log.Info("Instance spec has changed, provisioning SFTP user in external service")
 		obj.SetCondition(condition.NewProcessingCondition("Provisioning", "Instance is being provided"))
 
 		err = h.createOrUpdateServiceUser(ctx, sftpService, obj)
 		if err != nil {
 			return err
-		}
-		obj.Status.Generation = obj.Generation
-		err = h.Client.Status().Update(ctx, obj)
-		if err != nil {
-			return fmt.Errorf("updating status for Instance %q: %w", obj.Name, err)
 		}
 	}
 
