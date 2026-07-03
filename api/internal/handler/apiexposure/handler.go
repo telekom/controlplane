@@ -68,7 +68,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	apiExpApplication, err := util.GetApplicationFromLabel(ctx, apiExp)
 	if err != nil {
 		msg := fmt.Sprintf("Application for ApiExposure cannot be resolved: %v", err)
-		apiExp.SetCondition(condition.NewNotReadyCondition("ApplicationResolutionFailed", msg))
+		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 		apiExp.SetCondition(condition.NewBlockedCondition(msg))
 		return nil
 	}
@@ -101,7 +101,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return err
 	}
 
-	apiExp.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
+	apiExp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
 	logger.Info("✅ ApiExposure is processed")

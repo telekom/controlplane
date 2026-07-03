@@ -26,6 +26,9 @@ const (
 	ReasonProvisioned = "Provisioned"
 )
 
+// ReasonUnknown indicates the condition state could not be determined.
+const ReasonUnknown = "Unknown"
+
 // Ready condition reasons — Processing (transient, will resolve on its own).
 const (
 	// ReasonSubResourceNotReady indicates at least one child/sub-resource is not yet ready.
@@ -104,7 +107,7 @@ func NewNotReadyCondition(reason, message string) metav1.Condition {
 
 func SetToUnknown(cond metav1.Condition) metav1.Condition { //nolint:gocritic // hugeParam: intentional value copy for functional transformation
 	cond.Status = metav1.ConditionUnknown
-	cond.Reason = "Unknown"
+	cond.Reason = ReasonUnknown
 	cond.Message = ""
 	return cond
 }
