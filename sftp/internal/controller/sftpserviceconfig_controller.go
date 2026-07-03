@@ -16,39 +16,39 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
-	zoneserviceconfig_handler "github.com/telekom/controlplane/sftp/internal/handler/zoneserviceconfig"
+	sftpserviceconfig_handler "github.com/telekom/controlplane/sftp/internal/handler/sftpserviceconfig"
 	"github.com/telekom/controlplane/sftp/internal/service"
 )
 
-// ZoneServiceConfigReconciler reconciles a ZoneServiceConfig object
-type ZoneServiceConfigReconciler struct {
+// SFTPServiceConfigReconciler reconciles an SFTPServiceConfig object
+type SFTPServiceConfigReconciler struct {
 	client.Client
 	Scheme        *runtime.Scheme
 	Recorder      record.EventRecorder
 	ClientManager service.ClientManager
 
-	cc.Controller[*sftpv1.ZoneServiceConfig]
+	cc.Controller[*sftpv1.SFTPServiceConfig]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 
-// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=zoneserviceconfigs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=zoneserviceconfigs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=zoneserviceconfigs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=sftpserviceconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=sftpserviceconfigs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=sftpserviceconfigs/finalizers,verbs=update
 
-func (r *ZoneServiceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	return r.Controller.Reconcile(ctx, req, &sftpv1.ZoneServiceConfig{})
+func (r *SFTPServiceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	return r.Controller.Reconcile(ctx, req, &sftpv1.SFTPServiceConfig{})
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ZoneServiceConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.Recorder = mgr.GetEventRecorderFor("zoneserviceconfig-controller")
-	r.Controller = cc.NewController(&zoneserviceconfig_handler.ZoneServiceConfigHandler{
+func (r *SFTPServiceConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.Recorder = mgr.GetEventRecorderFor("sftpserviceconfig-controller")
+	r.Controller = cc.NewController(&sftpserviceconfig_handler.SFTPServiceConfigHandler{
 		ClientManager: r.ClientManager,
 	}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&sftpv1.ZoneServiceConfig{}).
+		For(&sftpv1.SFTPServiceConfig{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

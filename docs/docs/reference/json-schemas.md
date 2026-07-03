@@ -183,7 +183,7 @@ The following tables list all available schemas, grouped by domain. Click a sche
 | ---- | ------ |
 | **Instance** | [`instance_v1.json`](pathname:///schemas/sftp.cp.ei.telekom.de/instance_v1.json) |
 | **User** | [`user_v1.json`](pathname:///schemas/sftp.cp.ei.telekom.de/user_v1.json) |
-| **ZoneServiceConfig** | [`zoneserviceconfig_v1.json`](pathname:///schemas/sftp.cp.ei.telekom.de/zoneserviceconfig_v1.json) |
+| **SFTPServiceConfig** | [`sftpserviceconfig_v1.json`](pathname:///schemas/sftp.cp.ei.telekom.de/sftpserviceconfig_v1.json) |
 
 ---
 

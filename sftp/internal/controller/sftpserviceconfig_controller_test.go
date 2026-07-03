@@ -20,16 +20,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ZoneServiceConfig Controller", func() {
+var _ = Describe("SFTPServiceConfig Controller", func() {
 	Context("When reconciling a resource", func() {
 		ctx := context.Background()
-		const resourceName = "test-zoneserviceconfig"
+		const resourceName = "test-sftpserviceconfig"
 
 		typeNamespacedName := client.ObjectKey{
 			Name:      resourceName,
 			Namespace: testNamespace,
 		}
-		testZSC := &sftpv1.ZoneServiceConfig{
+		testSFTPServiceConfig := &sftpv1.SFTPServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      resourceName,
 				Namespace: testNamespace,
@@ -37,7 +37,7 @@ var _ = Describe("ZoneServiceConfig Controller", func() {
 					config.EnvironmentLabelKey: "test",
 				},
 			},
-			Spec: sftpv1.ZoneServiceConfigSpec{
+			Spec: sftpv1.SFTPServiceConfigSpec{
 				API: sftpv1.APIEndpoint{
 					ClientID:     "client-id",
 					ClientSecret: "secret-manager://path/to/secret",
@@ -48,41 +48,41 @@ var _ = Describe("ZoneServiceConfig Controller", func() {
 		}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind ZoneServiceConfig")
-			resource := &sftpv1.ZoneServiceConfig{}
+			By("creating the custom resource for the Kind SFTPServiceConfig")
+			resource := &sftpv1.SFTPServiceConfig{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			if err != nil && errors.IsNotFound(err) {
-				Expect(k8sClient.Create(ctx, testZSC)).To(Succeed())
+				Expect(k8sClient.Create(ctx, testSFTPServiceConfig)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			resource := &sftpv1.ZoneServiceConfig{}
+			resource := &sftpv1.SFTPServiceConfig{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance ZoneServiceConfig")
+			By("Cleanup the specific resource instance SFTPServiceConfig")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 
 		It("should successfully reconcile the resource", func() {
 			Eventually(func(g Gomega) {
-				VerifyZoneServiceConfig(ctx, g, typeNamespacedName)
+				VerifySFTPServiceConfig(ctx, g, typeNamespacedName)
 			}, timeout, interval).Should(Succeed())
 		})
 	})
 })
 
-func VerifyZoneServiceConfig(ctx context.Context, g Gomega, namespacedName client.ObjectKey) {
-	By("Checking if the ZoneServiceConfig is created and all conditions are set")
-	zsc := &sftpv1.ZoneServiceConfig{}
-	err := k8sClient.Get(ctx, namespacedName, zsc)
+func VerifySFTPServiceConfig(ctx context.Context, g Gomega, namespacedName client.ObjectKey) {
+	By("Checking if the SFTPServiceConfig is created and all conditions are set")
+	sftpServiceConfig := &sftpv1.SFTPServiceConfig{}
+	err := k8sClient.Get(ctx, namespacedName, sftpServiceConfig)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	ready := meta.FindStatusCondition(zsc.Status.Conditions, condition.ConditionTypeReady)
+	ready := meta.FindStatusCondition(sftpServiceConfig.Status.Conditions, condition.ConditionTypeReady)
 	g.Expect(ready).NotTo(BeNil())
-	g.Expect(ready.ObservedGeneration).To(Equal(zsc.Generation))
-	g.Expect(zsc.Status.Conditions).To(HaveLen(2))
-	g.Expect(meta.IsStatusConditionTrue(zsc.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
-	g.Expect(meta.IsStatusConditionTrue(zsc.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+	g.Expect(ready.ObservedGeneration).To(Equal(sftpServiceConfig.Generation))
+	g.Expect(sftpServiceConfig.Status.Conditions).To(HaveLen(2))
+	g.Expect(meta.IsStatusConditionTrue(sftpServiceConfig.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
+	g.Expect(meta.IsStatusConditionTrue(sftpServiceConfig.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 }

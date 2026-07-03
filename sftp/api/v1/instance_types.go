@@ -17,9 +17,9 @@ type InstanceSpec struct {
 	// +kubebuilder:validation:Optional
 	Description string `json:"description,omitempty"`
 
-	// ZoneServiceConfigRef references the ZoneServiceConfig used by this Instance.
+	// SFTPServiceConfigRef references the SFTPServiceConfig used by this Instance.
 	// +kubebuilder:validation:Required
-	ZoneServiceConfigRef types.ObjectRef `json:"zoneServiceConfigRef"`
+	SFTPServiceConfigRef types.ObjectRef `json:"sftpServiceConfigRef"`
 }
 
 // InstanceStatus defines the observed state of Instance.
@@ -34,7 +34,7 @@ type InstanceStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="ZoneServiceConfig",type="string",JSONPath=".spec.zoneServiceConfigRef.name"
+// +kubebuilder:printcolumn:name="SFTPServiceConfig",type="string",JSONPath=".spec.sftpServiceConfigRef.name"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 

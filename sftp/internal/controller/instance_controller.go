@@ -40,7 +40,7 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=instances,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=instances/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=instances/finalizers,verbs=update
-// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=zoneserviceconfigs,verbs=get;list;watch
+// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=sftpserviceconfigs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=users,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=users/finalizers,verbs=update
 
@@ -58,8 +58,8 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sftpv1.Instance{}).
-		Watches(&sftpv1.ZoneServiceConfig{},
-			handler.EnqueueRequestsFromMapFunc(r.MapZoneServiceConfigToInstance),
+		Watches(&sftpv1.SFTPServiceConfig{},
+			handler.EnqueueRequestsFromMapFunc(r.MapSFTPServiceConfigToInstance),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&sftpv1.User{},
@@ -73,8 +73,8 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *InstanceReconciler) MapZoneServiceConfigToInstance(ctx context.Context, obj client.Object) []reconcile.Request {
-	zoneServiceConfig, ok := obj.(*sftpv1.ZoneServiceConfig)
+func (r *InstanceReconciler) MapSFTPServiceConfigToInstance(ctx context.Context, obj client.Object) []reconcile.Request {
+	sftpServiceConfig, ok := obj.(*sftpv1.SFTPServiceConfig)
 	if !ok {
 		return nil
 	}
@@ -82,8 +82,8 @@ func (r *InstanceReconciler) MapZoneServiceConfigToInstance(ctx context.Context,
 	list := &sftpv1.InstanceList{}
 	if err := r.List(ctx, list, &client.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labels.Set{
-			sftpv1.ZoneServiceConfigNameKey:      zoneServiceConfig.Name,
-			sftpv1.ZoneServiceConfigNamespaceKey: zoneServiceConfig.Namespace,
+			sftpv1.SFTPServiceConfigNameKey:      sftpServiceConfig.Name,
+			sftpv1.SFTPServiceConfigNamespaceKey: sftpServiceConfig.Namespace,
 		}),
 	}); err != nil {
 		return nil

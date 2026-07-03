@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: sftp.cp.ei.telekom.de/v1
-kind: ZoneServiceConfig
+kind: SFTPServiceConfig
 metadata:
   labels:
     cp.ei.telekom.de/environment: poc

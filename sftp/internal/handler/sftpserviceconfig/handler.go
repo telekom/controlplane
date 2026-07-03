@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package zoneserviceconfig
+package sftpserviceconfig
 
 import (
 	"context"
@@ -18,19 +18,19 @@ import (
 	"github.com/telekom/controlplane/sftp/internal/service"
 )
 
-var _ handler.Handler[*sftpv1.ZoneServiceConfig] = &ZoneServiceConfigHandler{}
+var _ handler.Handler[*sftpv1.SFTPServiceConfig] = &SFTPServiceConfigHandler{}
 
-type ZoneServiceConfigHandler struct {
+type SFTPServiceConfigHandler struct {
 	ClientManager service.ClientManager
 }
 
-func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.ZoneServiceConfig) error {
+func (h *SFTPServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.SFTPServiceConfig) error {
 	log := logr.FromContextOrDiscard(ctx)
 	isServiceCached := h.ClientManager.IsServiceCached(client.ObjectKeyFromObject(obj))
 
 	conditionReady := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 	if isServiceCached && conditionReady != nil && conditionReady.ObservedGeneration == obj.Generation && conditionReady.Status == v1.ConditionTrue {
-		log.V(1).Info("ZoneServiceConfig already reconciled")
+		log.V(1).Info("SFTPServiceConfig already reconciled")
 		return nil
 	}
 
@@ -39,12 +39,12 @@ func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftp
 		return err
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("ZoneServiceConfigProvided", "ZoneServiceConfig has been provided"))
-	obj.SetCondition(condition.NewDoneProcessingCondition("ZoneServiceConfig has been provided"))
+	obj.SetCondition(condition.NewReadyCondition("SFTPServiceConfigProvided", "SFTPServiceConfig has been provided"))
+	obj.SetCondition(condition.NewDoneProcessingCondition("SFTPServiceConfig has been provided"))
 	return nil
 }
 
-func (h *ZoneServiceConfigHandler) Delete(ctx context.Context, obj *sftpv1.ZoneServiceConfig) error {
+func (h *SFTPServiceConfigHandler) Delete(ctx context.Context, obj *sftpv1.SFTPServiceConfig) error {
 	h.ClientManager.Delete(obj)
 
 	return nil

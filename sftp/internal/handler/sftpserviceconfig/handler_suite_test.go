@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package zoneserviceconfig
+package sftpserviceconfig
 
 import (
 	"testing"
@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestZoneServiceConfigHandler(t *testing.T) {
+func TestSFTPServiceConfigHandler(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ZoneServiceConfig Handler Suite")
+	RunSpecs(t, "SFTPServiceConfig Handler Suite")
 }

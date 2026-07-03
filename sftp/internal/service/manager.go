@@ -20,7 +20,7 @@ import (
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 )
 
-// HTTPServiceFactory manages HTTP services configured from ZoneServiceConfig resources.
+// HTTPServiceFactory manages HTTP services configured from SFTPServiceConfig resources.
 type HTTPServiceFactory struct {
 	mu       sync.RWMutex
 	services map[string]cachedService
@@ -37,21 +37,21 @@ func NewHTTPServiceFactory() *HTTPServiceFactory {
 	}
 }
 
-func (f *HTTPServiceFactory) ServiceFor(ctx context.Context, zsc client.ObjectKey) (Service, error) {
-	cacheKey := zoneServiceConfigCacheKey(zsc)
+func (f *HTTPServiceFactory) ServiceFor(ctx context.Context, sftpServiceConfig client.ObjectKey) (Service, error) {
+	cacheKey := sftpServiceConfigCacheKey(sftpServiceConfig)
 
 	f.mu.RLock()
 	cached, ok := f.services[cacheKey]
 	f.mu.RUnlock()
 	if !ok {
-		return nil, ctrlerrors.RetryableErrorf("SFTP client for ZoneServiceConfig %q is not initialized", cacheKey)
+		return nil, ctrlerrors.RetryableErrorf("SFTP client for SFTPServiceConfig %q is not initialized", cacheKey)
 	}
 
 	return cached.service, nil
 }
 
-func (f *HTTPServiceFactory) IsServiceCached(zsc client.ObjectKey) bool {
-	cacheKey := zoneServiceConfigCacheKey(zsc)
+func (f *HTTPServiceFactory) IsServiceCached(sftpServiceConfig client.ObjectKey) bool {
+	cacheKey := sftpServiceConfigCacheKey(sftpServiceConfig)
 
 	f.mu.RLock()
 	_, ok := f.services[cacheKey]
@@ -59,17 +59,17 @@ func (f *HTTPServiceFactory) IsServiceCached(zsc client.ObjectKey) bool {
 	return ok
 }
 
-func (f *HTTPServiceFactory) CreateOrUpdate(ctx context.Context, zsc *sftpv1.ZoneServiceConfig) error {
-	cacheKey := zoneServiceConfigCacheKey(client.ObjectKeyFromObject(zsc))
+func (f *HTTPServiceFactory) CreateOrUpdate(ctx context.Context, sftpServiceConfig *sftpv1.SFTPServiceConfig) error {
+	cacheKey := sftpServiceConfigCacheKey(client.ObjectKeyFromObject(sftpServiceConfig))
 
 	f.mu.RLock()
 	cached, ok := f.services[cacheKey]
 	f.mu.RUnlock()
-	if ok && cached.generation == zsc.Generation {
+	if ok && cached.generation == sftpServiceConfig.Generation {
 		return nil
 	}
 
-	cfg, err := f.ClientConfigFor(ctx, zsc)
+	cfg, err := f.ClientConfigFor(ctx, sftpServiceConfig)
 	if err != nil {
 		return err
 	}
@@ -91,24 +91,24 @@ func (f *HTTPServiceFactory) CreateOrUpdate(ctx context.Context, zsc *sftpv1.Zon
 	return nil
 }
 
-func (f *HTTPServiceFactory) ClientConfigFor(ctx context.Context, zsc *sftpv1.ZoneServiceConfig) (Config, error) {
-	return clientConfigFor(ctx, zsc)
+func (f *HTTPServiceFactory) ClientConfigFor(ctx context.Context, sftpServiceConfig *sftpv1.SFTPServiceConfig) (Config, error) {
+	return clientConfigFor(ctx, sftpServiceConfig)
 }
 
-func (f *HTTPServiceFactory) Delete(zsc *sftpv1.ZoneServiceConfig) {
-	cacheKey := zoneServiceConfigCacheKey(client.ObjectKeyFromObject(zsc))
+func (f *HTTPServiceFactory) Delete(sftpServiceConfig *sftpv1.SFTPServiceConfig) {
+	cacheKey := sftpServiceConfigCacheKey(client.ObjectKeyFromObject(sftpServiceConfig))
 
 	f.mu.Lock()
 	delete(f.services, cacheKey)
 	f.mu.Unlock()
 }
 
-func clientConfigFor(ctx context.Context, zsc *sftpv1.ZoneServiceConfig) (Config, error) {
-	if zsc == nil {
-		return Config{}, fmt.Errorf("zoneServiceConfig is nil")
+func clientConfigFor(ctx context.Context, sftpServiceConfig *sftpv1.SFTPServiceConfig) (Config, error) {
+	if sftpServiceConfig == nil {
+		return Config{}, fmt.Errorf("sftpServiceConfig is nil")
 	}
 
-	oauth2Config, err := clientCredentials(ctx, zsc.Spec.API)
+	oauth2Config, err := clientCredentials(ctx, sftpServiceConfig.Spec.API)
 	if err != nil {
 		return Config{}, err
 	}
@@ -120,7 +120,7 @@ func clientConfigFor(ctx context.Context, zsc *sftpv1.ZoneServiceConfig) (Config
 		return Config{}, fmt.Errorf("fetching SFTP Tardis access token: %w", err)
 	}
 
-	endpointURL, err := parseBaseURL(zsc.Spec.API.Endpoint)
+	endpointURL, err := parseBaseURL(sftpServiceConfig.Spec.API.Endpoint)
 	if err != nil {
 		return Config{}, err
 	}
@@ -128,7 +128,7 @@ func clientConfigFor(ctx context.Context, zsc *sftpv1.ZoneServiceConfig) (Config
 	cfg := Config{
 		Endpoint:   endpointURL,
 		HTTPClient: oauth2Config.Client(context.Background()),
-		Generation: zsc.Generation,
+		Generation: sftpServiceConfig.Generation,
 	}
 
 	cfg.HTTPClient.Timeout = 30 * time.Second
@@ -136,8 +136,8 @@ func clientConfigFor(ctx context.Context, zsc *sftpv1.ZoneServiceConfig) (Config
 	return cfg, nil
 }
 
-func zoneServiceConfigCacheKey(zsc client.ObjectKey) string {
-	return zsc.String()
+func sftpServiceConfigCacheKey(sftpServiceConfig client.ObjectKey) string {
+	return sftpServiceConfig.String()
 }
 
 func clientCredentials(ctx context.Context, api sftpv1.APIEndpoint) (*clientcredentials.Config, error) {

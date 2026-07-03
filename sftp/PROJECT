@@ -33,7 +33,7 @@ resources:
   controller: true
   domain: cp.ei.telekom.de
   group: sftp
-  kind: ZoneServiceConfig
+  kind: SFTPServiceConfig
   path: github.com/telekom/controlplane/sftp/api/v1
   version: v1
 version: "3"

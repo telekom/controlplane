@@ -15,5 +15,5 @@ resources:
 - instance_viewer_role.yaml
 - user_editor_role.yaml
 - user_viewer_role.yaml
-- zoneserviceconfig_editor_role.yaml
-- zoneserviceconfig_viewer_role.yaml
+- sftpserviceconfig_editor_role.yaml
+- sftpserviceconfig_viewer_role.yaml

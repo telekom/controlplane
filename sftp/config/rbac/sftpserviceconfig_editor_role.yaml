@@ -2,19 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# permissions for end users to edit zoneserviceconfigs.
+# permissions for end users to edit sftpserviceconfigs.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: sftp
     app.kubernetes.io/managed-by: kustomize
-  name: zoneserviceconfig-editor-role
+  name: sftpserviceconfig-editor-role
 rules:
 - apiGroups:
   - sftp.cp.ei.telekom.de
   resources:
-  - zoneserviceconfigs
+  - sftpserviceconfigs
   verbs:
   - create
   - delete
@@ -26,6 +26,6 @@ rules:
 - apiGroups:
   - sftp.cp.ei.telekom.de
   resources:
-  - zoneserviceconfigs/status
+  - sftpserviceconfigs/status
   verbs:
   - get

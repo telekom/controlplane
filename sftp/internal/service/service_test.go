@@ -164,7 +164,7 @@ var _ = Describe("HTTPService", func() {
 })
 
 var _ = Describe("HTTPServiceFactory", func() {
-	It("reuses a ZoneServiceConfig client with a valid OAuth2 token", func() {
+	It("reuses an SFTPServiceConfig client with a valid OAuth2 token", func() {
 		var tokenRequests int32
 		tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&tokenRequests, 1)
@@ -196,12 +196,12 @@ var _ = Describe("HTTPServiceFactory", func() {
 		apiBaseURL = apiBaseURL.JoinPath(testBasePath)
 		secretRef := secretsapi.ToRef("sftp/cetus/client-secret")
 
-		zsc := &sftpv1.ZoneServiceConfig{
+		sftpServiceConfig := &sftpv1.SFTPServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cetus",
 				Namespace: "controlplane-system",
 			},
-			Spec: sftpv1.ZoneServiceConfigSpec{
+			Spec: sftpv1.SFTPServiceConfigSpec{
 				API: sftpv1.APIEndpoint{
 					ClientID:     "zone-client",
 					ClientSecret: secretRef,
@@ -225,15 +225,15 @@ var _ = Describe("HTTPServiceFactory", func() {
 
 		factory := NewHTTPServiceFactory()
 
-		cached := factory.IsServiceCached(client.ObjectKeyFromObject(zsc))
+		cached := factory.IsServiceCached(client.ObjectKeyFromObject(sftpServiceConfig))
 		Expect(cached).To(BeFalse())
 
-		Expect(factory.CreateOrUpdate(ctx, zsc)).To(Succeed())
+		Expect(factory.CreateOrUpdate(ctx, sftpServiceConfig)).To(Succeed())
 
-		cached = factory.IsServiceCached(client.ObjectKeyFromObject(zsc))
+		cached = factory.IsServiceCached(client.ObjectKeyFromObject(sftpServiceConfig))
 		Expect(cached).To(BeTrue())
 
-		svc, err := factory.ServiceFor(ctx, client.ObjectKeyFromObject(zsc))
+		svc, err := factory.ServiceFor(ctx, client.ObjectKeyFromObject(sftpServiceConfig))
 		Expect(err).NotTo(HaveOccurred())
 
 		err = svc.CreateOrUpdateSFTPUser(ctx, RoverSftpUserModel{
@@ -241,9 +241,9 @@ var _ = Describe("HTTPServiceFactory", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(factory.CreateOrUpdate(ctx, zsc)).To(Succeed())
+		Expect(factory.CreateOrUpdate(ctx, sftpServiceConfig)).To(Succeed())
 
-		svc, err = factory.ServiceFor(ctx, client.ObjectKeyFromObject(zsc))
+		svc, err = factory.ServiceFor(ctx, client.ObjectKeyFromObject(sftpServiceConfig))
 		Expect(err).NotTo(HaveOccurred())
 
 		err = svc.CreateOrUpdateSFTPUser(ctx, RoverSftpUserModel{
@@ -252,9 +252,9 @@ var _ = Describe("HTTPServiceFactory", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(atomic.LoadInt32(&tokenRequests)).To(Equal(int32(2)))
 
-		factory.Delete(zsc)
+		factory.Delete(sftpServiceConfig)
 
-		cached = factory.IsServiceCached(client.ObjectKeyFromObject(zsc))
+		cached = factory.IsServiceCached(client.ObjectKeyFromObject(sftpServiceConfig))
 		Expect(cached).To(BeFalse())
 	})
 })

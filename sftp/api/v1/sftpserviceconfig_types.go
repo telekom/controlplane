@@ -11,8 +11,8 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 )
 
-// ZoneServiceConfigSpec defines the desired state of ZoneServiceConfig
-type ZoneServiceConfigSpec struct {
+// SFTPServiceConfigSpec defines the desired state of SFTPServiceConfig
+type SFTPServiceConfigSpec struct {
 	// API contains authentication configuration for API service access.
 	// +kubebuilder:validation:Required
 	API APIEndpoint `json:"api"`
@@ -42,8 +42,8 @@ type APIEndpoint struct {
 	ClientSecret string `json:"clientSecret"`
 }
 
-// ZoneServiceConfigStatus defines the observed state of ZoneServiceConfig
-type ZoneServiceConfigStatus struct {
+// SFTPServiceConfigStatus defines the observed state of SFTPServiceConfig
+type SFTPServiceConfigStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge
@@ -60,37 +60,37 @@ type ZoneServiceConfigStatus struct {
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// ZoneServiceConfig is the Schema for the zoneserviceconfigs API
-type ZoneServiceConfig struct {
+// SFTPServiceConfig is the Schema for the sftpserviceconfigs API
+type SFTPServiceConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ZoneServiceConfigSpec   `json:"spec,omitempty"`
-	Status ZoneServiceConfigStatus `json:"status,omitempty"`
+	Spec   SFTPServiceConfigSpec   `json:"spec,omitempty"`
+	Status SFTPServiceConfigStatus `json:"status,omitempty"`
 }
 
-var _ types.Object = &ZoneServiceConfig{}
+var _ types.Object = &SFTPServiceConfig{}
 
-func (z *ZoneServiceConfig) GetConditions() []metav1.Condition {
+func (z *SFTPServiceConfig) GetConditions() []metav1.Condition {
 	return z.Status.Conditions
 }
 
-func (z *ZoneServiceConfig) SetCondition(condition metav1.Condition) bool {
+func (z *SFTPServiceConfig) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&z.Status.Conditions, condition)
 }
 
 // +kubebuilder:object:root=true
 
-// ZoneServiceConfigList contains a list of ZoneServiceConfig
-type ZoneServiceConfigList struct {
+// SFTPServiceConfigList contains a list of SFTPServiceConfig
+type SFTPServiceConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ZoneServiceConfig `json:"items"`
+	Items           []SFTPServiceConfig `json:"items"`
 }
 
-var _ types.ObjectList = &ZoneServiceConfigList{}
+var _ types.ObjectList = &SFTPServiceConfigList{}
 
-func (zl *ZoneServiceConfigList) GetItems() []types.Object {
+func (zl *SFTPServiceConfigList) GetItems() []types.Object {
 	items := make([]types.Object, len(zl.Items))
 	for i := range zl.Items {
 		items[i] = &zl.Items[i]
@@ -99,5 +99,5 @@ func (zl *ZoneServiceConfigList) GetItems() []types.Object {
 }
 
 func init() {
-	SchemeBuilder.Register(&ZoneServiceConfig{}, &ZoneServiceConfigList{})
+	SchemeBuilder.Register(&SFTPServiceConfig{}, &SFTPServiceConfigList{})
 }
