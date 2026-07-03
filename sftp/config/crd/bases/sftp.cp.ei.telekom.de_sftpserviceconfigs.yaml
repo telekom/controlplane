@@ -7,14 +7,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.1
-  name: zoneserviceconfigs.sftp.cp.ei.telekom.de
+  name: sftpserviceconfigs.sftp.cp.ei.telekom.de
 spec:
   group: sftp.cp.ei.telekom.de
   names:
-    kind: ZoneServiceConfig
-    listKind: ZoneServiceConfigList
-    plural: zoneserviceconfigs
-    singular: zoneserviceconfig
+    kind: SFTPServiceConfig
+    listKind: SFTPServiceConfigList
+    plural: sftpserviceconfigs
+    singular: sftpserviceconfig
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -30,7 +30,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: ZoneServiceConfig is the Schema for the zoneserviceconfigs API
+        description: SFTPServiceConfig is the Schema for the sftpserviceconfigs API
         properties:
           apiVersion:
             description: |-
@@ -50,7 +50,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ZoneServiceConfigSpec defines the desired state of ZoneServiceConfig
+            description: SFTPServiceConfigSpec defines the desired state of SFTPServiceConfig
             properties:
               api:
                 description: API contains authentication configuration for API service
@@ -87,7 +87,7 @@ spec:
             - api
             type: object
           status:
-            description: ZoneServiceConfigStatus defines the observed state of ZoneServiceConfig
+            description: SFTPServiceConfigStatus defines the observed state of SFTPServiceConfig
             properties:
               conditions:
                 items:

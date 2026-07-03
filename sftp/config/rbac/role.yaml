@@ -18,7 +18,7 @@ rules:
   - sftp.cp.ei.telekom.de
   resources:
   - instances
-  - zoneserviceconfigs
+  - sftpserviceconfigs
   verbs:
   - create
   - delete
@@ -31,15 +31,15 @@ rules:
   - sftp.cp.ei.telekom.de
   resources:
   - instances/finalizers
+  - sftpserviceconfigs/finalizers
   - users/finalizers
-  - zoneserviceconfigs/finalizers
   verbs:
   - update
 - apiGroups:
   - sftp.cp.ei.telekom.de
   resources:
   - instances/status
-  - zoneserviceconfigs/status
+  - sftpserviceconfigs/status
   verbs:
   - get
   - patch

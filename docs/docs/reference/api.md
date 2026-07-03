@@ -198,8 +198,8 @@ SFTP service provisioning and SSH public key synchronization.
 
 | Kind | Description |
 | ---- | ----------- |
-| **ZoneServiceConfig** | Configures zone-specific SFTP Tardis API access and OAuth2 client credentials. |
-| **Instance** | Represents an SFTP service instance and provisions a corresponding SFTP service user through the configured ZoneServiceConfig. |
+| **SFTPServiceConfig** | Configures zone-specific SFTP Tardis API access and OAuth2 client credentials. |
+| **Instance** | Represents an SFTP service instance and provisions a corresponding SFTP service user through the configured SFTPServiceConfig. |
 | **User** | Declares SSH public keys for an SFTP user and attaches them to an Instance. |
 
 ---

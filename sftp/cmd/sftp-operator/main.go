@@ -101,12 +101,12 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Instance")
 		os.Exit(1)
 	}
-	if err = (&controller.ZoneServiceConfigReconciler{
+	if err = (&controller.SFTPServiceConfigReconciler{
 		Client:        mgr.GetClient(),
 		Scheme:        mgr.GetScheme(),
 		ClientManager: clientManager,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ZoneServiceConfig")
+		setupLog.Error(err, "unable to create controller", "controller", "SFTPServiceConfig")
 		os.Exit(1)
 	}
 

@@ -21,22 +21,22 @@ type Service interface {
 	DeleteSFTPUser(ctx context.Context, sftpUserName string) error
 }
 
-// Factory creates a Service for a ZoneServiceConfig.
+// Factory creates a Service for an SFTPServiceConfig.
 type Factory interface {
-	ServiceFor(ctx context.Context, zsc client.ObjectKey) (Service, error)
+	ServiceFor(ctx context.Context, sftpServiceConfig client.ObjectKey) (Service, error)
 }
 
-// ClientManager manages SFTP API clients configured by ZoneServiceConfig resources.
+// ClientManager manages SFTP API clients configured by SFTPServiceConfig resources.
 type ClientManager interface {
 	Factory
-	IsServiceCached(zsc client.ObjectKey) bool
-	CreateOrUpdate(ctx context.Context, zsc *sftpv1.ZoneServiceConfig) error
-	Delete(zsc *sftpv1.ZoneServiceConfig)
+	IsServiceCached(sftpServiceConfig client.ObjectKey) bool
+	CreateOrUpdate(ctx context.Context, sftpServiceConfig *sftpv1.SFTPServiceConfig) error
+	Delete(sftpServiceConfig *sftpv1.SFTPServiceConfig)
 }
 
 // FactoryFunc adapts a function to the Factory interface.
-type FactoryFunc func(ctx context.Context, zsc client.ObjectKey) (Service, error)
+type FactoryFunc func(ctx context.Context, sftpServiceConfig client.ObjectKey) (Service, error)
 
-func (f FactoryFunc) ServiceFor(ctx context.Context, zsc client.ObjectKey) (Service, error) {
-	return f(ctx, zsc)
+func (f FactoryFunc) ServiceFor(ctx context.Context, sftpServiceConfig client.ObjectKey) (Service, error) {
+	return f(ctx, sftpServiceConfig)
 }

@@ -11,6 +11,6 @@ metadata:
   name: example
 spec:
   description: dCP TEST
-  zoneServiceConfigRef:
+  sftpServiceConfigRef:
     name: example
     namespace: default

@@ -95,7 +95,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&ZoneServiceConfigReconciler{
+	err = (&SFTPServiceConfigReconciler{
 		Client:        k8sManager.GetClient(),
 		Scheme:        k8sManager.GetScheme(),
 		ClientManager: clientManager,

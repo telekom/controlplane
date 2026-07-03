@@ -8,5 +8,5 @@
 resources:
 - bases/sftp.cp.ei.telekom.de_instances.yaml
 - bases/sftp.cp.ei.telekom.de_users.yaml
-- bases/sftp.cp.ei.telekom.de_zoneserviceconfigs.yaml
+- bases/sftp.cp.ei.telekom.de_sftpserviceconfigs.yaml
 # +kubebuilder:scaffold:crdkustomizeresource

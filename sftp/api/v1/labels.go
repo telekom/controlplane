@@ -12,6 +12,6 @@ import (
 var (
 	InstanceNameKey               = config.BuildLabelKey("instance.name")
 	InstanceNamespaceKey          = config.BuildLabelKey("instance.namespace")
-	ZoneServiceConfigNameKey      = config.BuildLabelKey("zoneserviceconfig.name")
-	ZoneServiceConfigNamespaceKey = config.BuildLabelKey("zoneserviceconfig.namespace")
+	SFTPServiceConfigNameKey      = config.BuildLabelKey("sftpserviceconfig.name")
+	SFTPServiceConfigNamespaceKey = config.BuildLabelKey("sftpserviceconfig.namespace")
 )

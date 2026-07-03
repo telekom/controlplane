@@ -29,13 +29,13 @@ type InstanceHandler struct {
 }
 
 func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instance) error {
-	if obj.Spec.ZoneServiceConfigRef.IsEmpty() {
-		return ctrlerrors.BlockedErrorf("ZoneServiceConfig reference is required")
+	if obj.Spec.SFTPServiceConfigRef.IsEmpty() {
+		return ctrlerrors.BlockedErrorf("SFTPServiceConfig reference is required")
 	}
 
 	log := logr.FromContextOrDiscard(ctx)
 
-	sftpService, err := h.serviceFor(ctx, obj.Spec.ZoneServiceConfigRef.K8s())
+	sftpService, err := h.serviceFor(ctx, obj.Spec.SFTPServiceConfigRef.K8s())
 	if err != nil {
 		return err
 	}
@@ -78,11 +78,11 @@ func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instan
 }
 
 func (h *InstanceHandler) Delete(ctx context.Context, obj *sftpv1.Instance) error {
-	if obj.Spec.ZoneServiceConfigRef.IsEmpty() {
+	if obj.Spec.SFTPServiceConfigRef.IsEmpty() {
 		return nil
 	}
 
-	sftpService, err := h.serviceFor(ctx, obj.Spec.ZoneServiceConfigRef.K8s())
+	sftpService, err := h.serviceFor(ctx, obj.Spec.SFTPServiceConfigRef.K8s())
 	if err != nil {
 		return err
 	}
@@ -110,12 +110,12 @@ func (h *InstanceHandler) usersFor(ctx context.Context, instance *sftpv1.Instanc
 	return users, nil
 }
 
-func (h *InstanceHandler) serviceFor(ctx context.Context, zsc client.ObjectKey) (service.Service, error) {
+func (h *InstanceHandler) serviceFor(ctx context.Context, sftpServiceConfig client.ObjectKey) (service.Service, error) {
 	factory := h.ServiceFactory
 	if factory == nil {
 		factory = service.NewHTTPServiceFactory()
 	}
-	return factory.ServiceFor(ctx, zsc)
+	return factory.ServiceFor(ctx, sftpServiceConfig)
 }
 
 func (h *InstanceHandler) createOrUpdateServiceUser(ctx context.Context, sftpService service.Service, instance *sftpv1.Instance) error {

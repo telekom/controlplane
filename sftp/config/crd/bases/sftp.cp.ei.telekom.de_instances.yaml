@@ -18,8 +18,8 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.zoneServiceConfigRef.name
-      name: ZoneServiceConfig
+    - jsonPath: .spec.sftpServiceConfigRef.name
+      name: SFTPServiceConfig
       type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
@@ -55,8 +55,8 @@ spec:
               description:
                 description: Description is a human-readable description of this Instance.
                 type: string
-              zoneServiceConfigRef:
-                description: ZoneServiceConfigRef references the ZoneServiceConfig
+              sftpServiceConfigRef:
+                description: SFTPServiceConfigRef references the SFTPServiceConfig
                   used by this Instance.
                 properties:
                   name:
@@ -74,7 +74,7 @@ spec:
                 - namespace
                 type: object
             required:
-            - zoneServiceConfigRef
+            - sftpServiceConfigRef
             type: object
           status:
             description: InstanceStatus defines the observed state of Instance.

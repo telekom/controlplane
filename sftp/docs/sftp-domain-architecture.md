@@ -20,11 +20,11 @@ flowchart TB
     %% SFTP Domain
     subgraph sftp["SFTP Domain"]
         direction TB
-        ZoneServiceConfig["ZoneServiceConfig"]:::sftpCls
+        SFTPServiceConfig["SFTPServiceConfig"]:::sftpCls
         Instance["Instance"]:::sftpCls
         User["User"]:::sftpCls
 
-        ZoneServiceConfig -. "referenced by" .-> Instance
+        SFTPServiceConfig -. "referenced by" .-> Instance
         Instance -. "referenced by" .-> User
         User -. "triggers reconcile" .-> Instance
     end
@@ -37,10 +37,10 @@ flowchart TB
         SftpTardis["SFTP Tardis API"]:::serviceCls
     end
 
-    %% ZoneServiceConfig interactions
-    ZoneServiceConfig -. "resolves client secret" .-> SecretManager
-    ZoneServiceConfig -. "fetches access token" .-> TokenIssuer
-    ZoneServiceConfig -- "creates cached API client" --> SftpTardis
+    %% SFTPServiceConfig interactions
+    SFTPServiceConfig -. "resolves client secret" .-> SecretManager
+    SFTPServiceConfig -. "fetches access token" .-> TokenIssuer
+    SFTPServiceConfig -- "creates cached API client" --> SftpTardis
 
     %% Instance interactions
     Instance -- "creates/updates service user" --> SftpTardis
@@ -58,9 +58,9 @@ flowchart TB
 
 ## Interaction Details
 
-### ZoneServiceConfig Controller
+### SFTPServiceConfig Controller
 
-The zone service configuration controller prepares the HTTP client used to call the SFTP Tardis API. A `ZoneServiceConfig` contains the SFTP Tardis API endpoint, OAuth2 issuer URL, client ID, and client secret.
+The SFTP service configuration controller prepares the HTTP client used to call the SFTP Tardis API. A `SFTPServiceConfig` contains the SFTP Tardis API endpoint, OAuth2 issuer URL, client ID, and client secret.
 
 | Target | Relationship | Purpose |
 |---|---|---|
@@ -68,7 +68,7 @@ The zone service configuration controller prepares the HTTP client used to call 
 | **OAuth2 Token Issuer** | reads | Fetches a client credentials access token to validate the API configuration |
 | **SFTP Tardis API** | caches client for | Creates or refreshes the generated HTTP API client for the referenced endpoint |
 
-The controller stores the observed generation in status and marks the resource ready once the client has been created or refreshed. On deletion, it removes the cached client for that ZoneServiceConfig.
+The controller stores the observed generation in status and marks the resource ready once the client has been created or refreshed. On deletion, it removes the cached client for that SFTPServiceConfig.
 
 ### Instance Controller
 
@@ -76,7 +76,7 @@ The instance controller provisions and maintains the external SFTP service user 
 
 | Target | Relationship | Purpose |
 |---|---|---|
-| **ZoneServiceConfig** | watches/uses | Uses `spec.zoneServiceConfigRef` to resolve the cached SFTP Tardis client |
+| **SFTPServiceConfig** | watches/uses | Uses `spec.sftpServiceConfigRef` to resolve the cached SFTP Tardis client |
 | **User** | watches/reads | Lists Users in the Instance namespace and selects Users whose `spec.instanceRef` points to the Instance |
 | **SFTP Tardis API** | creates/updates/deletes | Creates or updates the SFTP service user, deletes it during finalization, and synchronizes its public keys |
 
@@ -94,6 +94,6 @@ The SFTP operator registers API types from **1 domain**:
 
 | Domain | API Group | Resources Used |
 |---|---|---|
-| **SFTP** | `sftp.cp.ei.telekom.de` | ZoneServiceConfig, Instance, User |
+| **SFTP** | `sftp.cp.ei.telekom.de` | SFTPServiceConfig, Instance, User |
 
 The operator also calls the Secret Manager API and the SFTP Tardis API as external services, but it does not register Kubernetes API types from those domains.

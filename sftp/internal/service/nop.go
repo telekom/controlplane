@@ -43,11 +43,11 @@ func (NopClientManager) IsServiceCached(client.ObjectKey) bool {
 	return true
 }
 
-func (NopClientManager) CreateOrUpdate(context.Context, *sftpv1.ZoneServiceConfig) error {
+func (NopClientManager) CreateOrUpdate(context.Context, *sftpv1.SFTPServiceConfig) error {
 	return nil
 }
 
-func (NopClientManager) Delete(*sftpv1.ZoneServiceConfig) {}
+func (NopClientManager) Delete(*sftpv1.SFTPServiceConfig) {}
 
 func NewNopClientManager() ClientManager {
 	return NopClientManager{}

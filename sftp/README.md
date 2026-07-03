@@ -16,9 +16,9 @@ Kubernetes operator for the **SFTP Service** — manages SSH key-based SFTP acce
 
 | Kind                | Description                                                                             |
 | ------------------- | --------------------------------------------------------------------------------------- |
-| `Instance`          | Represents an SFTP service instance backed by a zone service configuration.             |
+| `Instance`          | Represents an SFTP service instance backed by an SFTP service configuration.            |
 | `User`              | Represents an SFTP user and its SSH public keys. Name pattern: `<hub>--<team>--<name>`. |
-| `ZoneServiceConfig` | Namespaced configuration for SFTP Tardis API access in a zone.                          |
+| `SFTPServiceConfig` | Namespaced configuration for SFTP Tardis API access in a zone.                          |
 
 ## Architecture
 
@@ -38,10 +38,10 @@ The sftp-operator manages three main CRD types:
 ### Instance
 
 - Represents an SFTP instance used by one or more users
-- References its `ZoneServiceConfig` via `spec.zoneServiceConfigRef`
+- References its `SFTPServiceConfig` via `spec.sftpServiceConfigRef`
 - Carries the service-instance description and readiness conditions
 
-### ZoneServiceConfig
+### SFTPServiceConfig
 
 - Namespaced configuration resource
 - Provides zone-specific SFTP Tardis API endpoint and OAuth2 client credentials
@@ -50,9 +50,9 @@ The sftp-operator manages three main CRD types:
 ## Resource Relationships
 
 ```plain
-ZoneServiceConfig (configuration namespace)
+SFTPServiceConfig (configuration namespace)
        │
-       └── referenced by Instance.spec.zoneServiceConfigRef
+       └── referenced by Instance.spec.sftpServiceConfigRef
                     │
                     └── referenced by User.spec.instanceRef
 ```
@@ -78,4 +78,4 @@ See `config/samples/` for example resources:
 
 -   `sftp_v1_instance.yaml` — Example Instance resource
 -   `sftp_v1_user.yaml` — Example User resource
--   `sftp_v1_zoneserviceconfig.yaml` — Example ZoneServiceConfig resource
+-   `sftp_v1_sftpserviceconfig.yaml` — Example SFTPServiceConfig resource

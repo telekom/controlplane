@@ -26,14 +26,14 @@ import (
 )
 
 const (
-	instanceHandlerTestNamespace = "test"
-	instanceHandlerTestName      = "test-instance"
-	instanceHandlerTestZSCName   = "test-zsc"
-	instanceHandlerTestUserName  = "test-user"
+	instanceHandlerTestNamespace             = "test"
+	instanceHandlerTestName                  = "test-instance"
+	instanceHandlerTestSFTPServiceConfigName = "test-sftpServiceConfig"
+	instanceHandlerTestUserName              = "test-user"
 )
 
 var _ = Describe("InstanceHandler", func() {
-	It("marks an Instance ready when its ZoneServiceConfig exists", func() {
+	It("marks an Instance ready when its SFTPServiceConfig exists", func() {
 		handler, instance, _ := newTestHandler()
 
 		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
@@ -42,28 +42,28 @@ var _ = Describe("InstanceHandler", func() {
 		Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, sftpv1.ConditionTypePublicKeysUpdatedInService)).To(BeTrue())
 	})
 
-	It("blocks when ZoneServiceConfig reference is missing", func() {
+	It("blocks when SFTPServiceConfig reference is missing", func() {
 		handler, instance, _ := newTestHandler()
-		instance.Spec.ZoneServiceConfigRef = types.ObjectRef{}
+		instance.Spec.SFTPServiceConfigRef = types.ObjectRef{}
 
 		err := handler.CreateOrUpdate(context.Background(), instance)
 
 		var blocked ctrlerrors.BlockedError
 		Expect(errors.As(err, &blocked)).To(BeTrue())
-		Expect(err).To(MatchError(ContainSubstring("ZoneServiceConfig reference is required")))
+		Expect(err).To(MatchError(ContainSubstring("SFTPServiceConfig reference is required")))
 	})
 
-	It("retries when the referenced ZoneServiceConfig service is unavailable", func() {
+	It("retries when the referenced SFTPServiceConfig service is unavailable", func() {
 		handler, instance, _ := newTestHandler()
 		handler.ServiceFactory = recordingFactory{
-			err: ctrlerrors.RetryableErrorf("SFTP client for ZoneServiceConfig %q is not initialized", "test/test-zsc"),
+			err: ctrlerrors.RetryableErrorf("SFTP client for SFTPServiceConfig %q is not initialized", "test/test-sftpServiceConfig"),
 		}
 
 		err := handler.CreateOrUpdate(context.Background(), instance)
 
 		var retryable ctrlerrors.RetryableError
 		Expect(errors.As(err, &retryable)).To(BeTrue())
-		Expect(err).To(MatchError(ContainSubstring("ZoneServiceConfig")))
+		Expect(err).To(MatchError(ContainSubstring("SFTPServiceConfig")))
 		Expect(err).To(MatchError(ContainSubstring("not initialized")))
 	})
 
@@ -191,9 +191,9 @@ var _ = Describe("InstanceHandler", func() {
 		Expect(recorder.deletedUsers).To(ConsistOf(instanceHandlerTestName))
 	})
 
-	It("does not delete a service user when ZoneServiceConfig reference is missing", func() {
+	It("does not delete a service user when SFTPServiceConfig reference is missing", func() {
 		handler, instance, recorder := newTestHandler()
-		instance.Spec.ZoneServiceConfigRef = types.ObjectRef{}
+		instance.Spec.SFTPServiceConfigRef = types.ObjectRef{}
 
 		Expect(handler.Delete(context.Background(), instance)).To(Succeed())
 
@@ -273,20 +273,20 @@ func newTestHandler(objects ...client.Object) (*InstanceHandler, *sftpv1.Instanc
 	Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
 	Expect(sftpv1.AddToScheme(scheme)).To(Succeed())
 
-	zsc := &sftpv1.ZoneServiceConfig{
+	sftpServiceConfig := &sftpv1.SFTPServiceConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: sftpv1.GroupVersion.String(),
-			Kind:       "ZoneServiceConfig",
+			Kind:       "SFTPServiceConfig",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      instanceHandlerTestZSCName,
+			Name:      instanceHandlerTestSFTPServiceConfigName,
 			Namespace: instanceHandlerTestNamespace,
 		},
 	}
 	instance := testInstance()
 	recorder := &recordingService{}
 
-	allObjects := append([]client.Object{zsc, instance}, objects...)
+	allObjects := append([]client.Object{sftpServiceConfig, instance}, objects...)
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithStatusSubresource(&sftpv1.Instance{}, &sftpv1.User{}).
@@ -312,8 +312,8 @@ func testInstance() *sftpv1.Instance {
 			Generation: 1,
 		},
 		Spec: sftpv1.InstanceSpec{
-			ZoneServiceConfigRef: types.ObjectRef{
-				Name:      instanceHandlerTestZSCName,
+			SFTPServiceConfigRef: types.ObjectRef{
+				Name:      instanceHandlerTestSFTPServiceConfigName,
 				Namespace: instanceHandlerTestNamespace,
 			},
 		},

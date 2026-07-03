@@ -25,17 +25,17 @@ var _ = Describe("Instance Controller", func() {
 	Context("When reconciling a resource", func() {
 		ctx := context.Background()
 		const instanceName = "test-instance"
-		const zoneServiceConfigName = "test-zoneserviceconfig-for-instance"
+		const sftpServiceConfigName = "test-sftpserviceconfig-for-instance"
 
 		instanceKey := client.ObjectKey{Name: instanceName, Namespace: testNamespace}
-		zscKey := client.ObjectKey{Name: zoneServiceConfigName, Namespace: testNamespace}
+		sftpServiceConfigKey := client.ObjectKey{Name: sftpServiceConfigName, Namespace: testNamespace}
 
-		testZSC := &sftpv1.ZoneServiceConfig{
+		testSFTPServiceConfig := &sftpv1.SFTPServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: zoneServiceConfigName, Namespace: testNamespace,
+				Name: sftpServiceConfigName, Namespace: testNamespace,
 				Labels: map[string]string{config.EnvironmentLabelKey: "test"},
 			},
-			Spec: sftpv1.ZoneServiceConfigSpec{
+			Spec: sftpv1.SFTPServiceConfigSpec{
 				API: sftpv1.APIEndpoint{
 					ClientID:     "client-id",
 					ClientSecret: "secret-manager://path/to/secret",
@@ -52,19 +52,19 @@ var _ = Describe("Instance Controller", func() {
 			},
 			Spec: sftpv1.InstanceSpec{
 				Description: "Test instance for controller test",
-				ZoneServiceConfigRef: commontypes.ObjectRef{
-					Name:      zoneServiceConfigName,
+				SFTPServiceConfigRef: commontypes.ObjectRef{
+					Name:      sftpServiceConfigName,
 					Namespace: testNamespace,
 				},
 			},
 		}
 
 		BeforeEach(func() {
-			By("creating required ZoneServiceConfig")
-			resource := &sftpv1.ZoneServiceConfig{}
-			err := k8sClient.Get(ctx, zscKey, resource)
+			By("creating required SFTPServiceConfig")
+			resource := &sftpv1.SFTPServiceConfig{}
+			err := k8sClient.Get(ctx, sftpServiceConfigKey, resource)
 			if err != nil && errors.IsNotFound(err) {
-				Expect(k8sClient.Create(ctx, testZSC)).To(Succeed())
+				Expect(k8sClient.Create(ctx, testSFTPServiceConfig)).To(Succeed())
 			}
 
 			By("creating the custom resource for the Kind Instance")
@@ -82,11 +82,11 @@ var _ = Describe("Instance Controller", func() {
 			By("cleaning up the Instance resource")
 			Expect(k8sClient.Delete(ctx, instance)).To(Succeed())
 
-			zsc := &sftpv1.ZoneServiceConfig{}
-			err = k8sClient.Get(ctx, zscKey, zsc)
+			sftpServiceConfig := &sftpv1.SFTPServiceConfig{}
+			err = k8sClient.Get(ctx, sftpServiceConfigKey, sftpServiceConfig)
 			Expect(err).NotTo(HaveOccurred())
-			By("cleaning up the ZoneServiceConfig resource")
-			Expect(k8sClient.Delete(ctx, zsc)).To(Succeed())
+			By("cleaning up the SFTPServiceConfig resource")
+			Expect(k8sClient.Delete(ctx, sftpServiceConfig)).To(Succeed())
 		})
 
 		It("should successfully reconcile the resource", func() {

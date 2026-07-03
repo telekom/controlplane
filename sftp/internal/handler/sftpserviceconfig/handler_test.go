@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package zoneserviceconfig
+package sftpserviceconfig
 
 import (
 	"context"
@@ -19,20 +19,20 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ZoneServiceConfigHandler", func() {
+var _ = Describe("SFTPServiceConfigHandler", func() {
 	const (
-		testName      = "test-zsc"
+		testName      = "test-sftpServiceConfig"
 		testNamespace = "test"
 	)
 
 	var (
 		ctx context.Context
-		obj *sftpv1.ZoneServiceConfig
+		obj *sftpv1.SFTPServiceConfig
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		obj = &sftpv1.ZoneServiceConfig{
+		obj = &sftpv1.SFTPServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:       testName,
 				Namespace:  testNamespace,
@@ -43,7 +43,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 
 	It("recreates the service when the cache is empty", func() {
 		manager := &recordingClientManager{serviceCached: false}
-		handler := &ZoneServiceConfigHandler{ClientManager: manager}
+		handler := &SFTPServiceConfigHandler{ClientManager: manager}
 
 		Expect(handler.CreateOrUpdate(ctx, obj)).To(Succeed())
 
@@ -55,8 +55,8 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 
 	It("recreates the service when the Ready condition observed generation is stale", func() {
 		manager := &recordingClientManager{serviceCached: true}
-		handler := &ZoneServiceConfigHandler{ClientManager: manager}
-		ready := condition.NewReadyCondition("ZoneServiceConfigProvided", "ZoneServiceConfig has been provided")
+		handler := &SFTPServiceConfigHandler{ClientManager: manager}
+		ready := condition.NewReadyCondition("SFTPServiceConfigProvided", "SFTPServiceConfig has been provided")
 		ready.ObservedGeneration = obj.Generation - 1
 		obj.SetCondition(ready)
 
@@ -68,8 +68,8 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 
 	It("skips reconciliation when the Ready condition observed generation is current and the service is cached", func() {
 		manager := &recordingClientManager{serviceCached: true}
-		handler := &ZoneServiceConfigHandler{ClientManager: manager}
-		ready := condition.NewReadyCondition("ZoneServiceConfigProvided", "ZoneServiceConfig has been provided")
+		handler := &SFTPServiceConfigHandler{ClientManager: manager}
+		ready := condition.NewReadyCondition("SFTPServiceConfigProvided", "SFTPServiceConfig has been provided")
 		ready.ObservedGeneration = obj.Generation
 		obj.SetCondition(ready)
 
@@ -95,9 +95,9 @@ func (m *recordingClientManager) IsServiceCached(key client.ObjectKey) bool {
 	return m.serviceCached
 }
 
-func (m *recordingClientManager) CreateOrUpdate(context.Context, *sftpv1.ZoneServiceConfig) error {
+func (m *recordingClientManager) CreateOrUpdate(context.Context, *sftpv1.SFTPServiceConfig) error {
 	m.createOrUpdateCalls++
 	return nil
 }
 
-func (m *recordingClientManager) Delete(*sftpv1.ZoneServiceConfig) {}
+func (m *recordingClientManager) Delete(*sftpv1.SFTPServiceConfig) {}
