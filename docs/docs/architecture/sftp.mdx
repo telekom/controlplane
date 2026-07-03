@@ -30,7 +30,7 @@ graph TD
     Instance --> User
 ```
 
-- A **ZoneServiceConfig** defines the SFTP Tardis API endpoint and OAuth2 client credentials for a zone. Its webhook validates the API settings before reconciliation.
+- A **ZoneServiceConfig** defines the SFTP Tardis API endpoint and OAuth2 client credentials for a zone.
 - An **Instance** references a ZoneServiceConfig and represents one SFTP service user in the external service.
 - A **User** references an Instance and contributes one or more SSH public keys to that instance.
 

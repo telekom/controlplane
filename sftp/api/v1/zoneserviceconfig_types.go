@@ -20,11 +20,26 @@ type ZoneServiceConfigSpec struct {
 
 type APIEndpoint struct {
 	// Endpoint is the SFTP Tardis API base URL.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Format=uri
 	Endpoint string `json:"endpoint"`
+
 	// Issuer is the OAuth2 token endpoint used for client credentials authentication.
-	Issuer       string `json:"issuer"`
-	ClientID     string `json:"clientID,omitempty"`
-	ClientSecret string `json:"clientSecret,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Format=uri
+	Issuer string `json:"issuer"`
+
+	// ClientID is the OAuth2 client ID used for client credentials authentication.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	ClientID string `json:"clientID"`
+
+	// ClientSecret is the OAuth2 client secret used for client credentials authentication.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	ClientSecret string `json:"clientSecret"`
 }
 
 // ZoneServiceConfigStatus defines the observed state of ZoneServiceConfig

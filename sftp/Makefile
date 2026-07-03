@@ -46,8 +46,8 @@ help: ## Display this help.
 ##@ Development
 
 .PHONY: manifests
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role,headerFile="../hack/boilerplate.yaml.txt" crd:headerFile="../hack/boilerplate.yaml.txt" webhook:headerFile="../hack/boilerplate.yaml.txt" paths="./..." output:crd:artifacts:config=config/crd/bases
+manifests: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) rbac:roleName=manager-role,headerFile="../hack/boilerplate.yaml.txt" crd:headerFile="../hack/boilerplate.yaml.txt" paths="./..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
