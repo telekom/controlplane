@@ -15,7 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
@@ -26,6 +28,7 @@ import (
 )
 
 const (
+	instanceHandlerTestEnvironment           = "test"
 	instanceHandlerTestNamespace             = "test"
 	instanceHandlerTestName                  = "test-instance"
 	instanceHandlerTestSFTPServiceConfigName = "test-sftpServiceConfig"
@@ -34,19 +37,19 @@ const (
 
 var _ = Describe("InstanceHandler", func() {
 	It("marks an Instance ready when its SFTPServiceConfig exists", func() {
-		handler, instance, _ := newTestHandler()
+		handler, ctx, instance, _ := newTestHandler()
 
-		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
+		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 		Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		Expect(meta.IsStatusConditionFalse(instance.Status.Conditions, condition.ConditionTypeProcessing)).To(BeTrue())
 		Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, sftpv1.ConditionTypePublicKeysUpdatedInService)).To(BeTrue())
 	})
 
 	It("blocks when SFTPServiceConfig reference is missing", func() {
-		handler, instance, _ := newTestHandler()
+		handler, ctx, instance, _ := newTestHandler()
 		instance.Spec.SFTPServiceConfigRef = types.ObjectRef{}
 
-		err := handler.CreateOrUpdate(context.Background(), instance)
+		err := handler.CreateOrUpdate(ctx, instance)
 
 		var blocked ctrlerrors.BlockedError
 		Expect(errors.As(err, &blocked)).To(BeTrue())
@@ -54,12 +57,12 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("retries when the referenced SFTPServiceConfig service is unavailable", func() {
-		handler, instance, _ := newTestHandler()
+		handler, ctx, instance, _ := newTestHandler()
 		handler.ServiceFactory = recordingFactory{
 			err: ctrlerrors.RetryableErrorf("SFTP client for SFTPServiceConfig %q is not initialized", "test/test-sftpServiceConfig"),
 		}
 
-		err := handler.CreateOrUpdate(context.Background(), instance)
+		err := handler.CreateOrUpdate(ctx, instance)
 
 		var retryable ctrlerrors.RetryableError
 		Expect(errors.As(err, &retryable)).To(BeTrue())
@@ -68,10 +71,10 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("creates a service user with description and empty Horizon notification events", func() {
-		handler, instance, recorder := newTestHandler()
+		handler, ctx, instance, recorder := newTestHandler()
 		instance.Spec.Description = "Team transfer user"
 
-		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
+		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
 		Expect(recorder.createdModels).To(HaveLen(1))
 		Expect(recorder.createdModels[0].SftpUserName).To(Equal(instanceHandlerTestName))
@@ -82,34 +85,34 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("skips service user provisioning when the Ready condition observed generation is current", func() {
-		handler, instance, recorder := newTestHandler()
+		handler, ctx, instance, recorder := newTestHandler()
 		ready := condition.NewReadyCondition("InstanceProvided", "Instance has been provided")
 		ready.ObservedGeneration = instance.Generation
 		instance.SetCondition(ready)
 
-		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
+		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
 		Expect(recorder.createCalls).To(Equal(0))
 		Expect(recorder.updateCalls).To(Equal(1))
 	})
 
 	It("provisions the service user when the Ready condition observed generation is stale", func() {
-		handler, instance, recorder := newTestHandler()
+		handler, ctx, instance, recorder := newTestHandler()
 		ready := condition.NewReadyCondition("InstanceProvided", "Instance has been provided")
 		ready.ObservedGeneration = instance.Generation - 1
 		instance.SetCondition(ready)
 
-		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
+		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
 		Expect(recorder.createCalls).To(Equal(1))
 		Expect(recorder.updateCalls).To(Equal(1))
 	})
 
 	It("returns service user creation errors", func() {
-		handler, instance, recorder := newTestHandler()
+		handler, ctx, instance, recorder := newTestHandler()
 		recorder.createErr = errors.New("create failed")
 
-		err := handler.CreateOrUpdate(context.Background(), instance)
+		err := handler.CreateOrUpdate(ctx, instance)
 
 		Expect(err).To(MatchError(ContainSubstring("creating or updating SFTP user")))
 		Expect(err).To(MatchError(ContainSubstring("create failed")))
@@ -122,9 +125,9 @@ var _ = Describe("InstanceHandler", func() {
 		user := testUser()
 		user.Spec.SSHPublicKeys = []string{publicKey}
 
-		handler, instance, recorder := newTestHandler(user)
+		handler, ctx, instance, recorder := newTestHandler(user)
 
-		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
+		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
 		Expect(recorder.createCalls).To(Equal(1))
 		Expect(recorder.createdUsers).To(ConsistOf(instanceHandlerTestName))
@@ -150,9 +153,33 @@ var _ = Describe("InstanceHandler", func() {
 		unrelatedUser.Spec.InstanceRef.Name = "other-instance"
 		unrelatedUser.Spec.SSHPublicKeys = []string{unrelatedKey}
 
-		handler, instance, recorder := newTestHandler(user, unrelatedUser)
+		handler, ctx, instance, recorder := newTestHandler(user, unrelatedUser)
 
-		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
+		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
+
+		Expect(recorder.keys["items"]).To(ConsistOf(service.RoverPublicKeyModel{
+			PublicKey:    "ssh-rsa cHJvdmlkZXI=",
+			SftpUserName: instanceHandlerTestName,
+			Description:  ptrTo(instanceHandlerTestNamespace + "/" + instanceHandlerTestUserName),
+		}))
+	})
+
+	It("syncs keys only from users in the scoped environment", func() {
+		publicKey := "ssh-rsa cHJvdmlkZXI= provider@example.com"
+		otherEnvironmentKey := "ssh-rsa b3RoZXItZW52 other-env@example.com"
+
+		user := testUser()
+		user.Spec.SSHPublicKeys = []string{publicKey}
+
+		otherEnvironmentUser := testUserNamed("other-environment-user")
+		otherEnvironmentUser.Labels = map[string]string{
+			config.EnvironmentLabelKey: "other",
+		}
+		otherEnvironmentUser.Spec.SSHPublicKeys = []string{otherEnvironmentKey}
+
+		handler, ctx, instance, recorder := newTestHandler(user, otherEnvironmentUser)
+
+		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
 		Expect(recorder.keys["items"]).To(ConsistOf(service.RoverPublicKeyModel{
 			PublicKey:    "ssh-rsa cHJvdmlkZXI=",
@@ -162,9 +189,9 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("clears DDS keys when the user has no SSH public keys", func() {
-		handler, instance, recorder := newTestHandler(testUser())
+		handler, ctx, instance, recorder := newTestHandler(testUser())
 
-		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
+		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
 		Expect(recorder.updateCalls).To(Equal(1))
 		Expect(recorder.clientID).To(Equal(instanceHandlerTestName))
@@ -173,10 +200,10 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("marks public keys as not updated when service key synchronization fails", func() {
-		handler, instance, recorder := newTestHandler()
+		handler, ctx, instance, recorder := newTestHandler()
 		recorder.updateErr = errors.New("dds unavailable")
 
-		err := handler.CreateOrUpdate(context.Background(), instance)
+		err := handler.CreateOrUpdate(ctx, instance)
 
 		Expect(err).To(MatchError(ContainSubstring("updating public keys for SFTP user")))
 		Expect(err).To(MatchError(ContainSubstring("dds unavailable")))
@@ -184,36 +211,36 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("deletes the instance SFTP user", func() {
-		handler, instance, recorder := newTestHandler()
+		handler, ctx, instance, recorder := newTestHandler()
 
-		Expect(handler.Delete(context.Background(), instance)).To(Succeed())
+		Expect(handler.Delete(ctx, instance)).To(Succeed())
 
 		Expect(recorder.deletedUsers).To(ConsistOf(instanceHandlerTestName))
 	})
 
 	It("does not delete a service user when SFTPServiceConfig reference is missing", func() {
-		handler, instance, recorder := newTestHandler()
+		handler, ctx, instance, recorder := newTestHandler()
 		instance.Spec.SFTPServiceConfigRef = types.ObjectRef{}
 
-		Expect(handler.Delete(context.Background(), instance)).To(Succeed())
+		Expect(handler.Delete(ctx, instance)).To(Succeed())
 
 		Expect(recorder.deletedUsers).To(BeEmpty())
 	})
 
 	It("returns service lookup errors during deletion", func() {
-		handler, instance, _ := newTestHandler()
+		handler, ctx, instance, _ := newTestHandler()
 		handler.ServiceFactory = recordingFactory{err: errors.New("service unavailable")}
 
-		err := handler.Delete(context.Background(), instance)
+		err := handler.Delete(ctx, instance)
 
 		Expect(err).To(MatchError("service unavailable"))
 	})
 
 	It("wraps service user deletion errors", func() {
-		handler, instance, recorder := newTestHandler()
+		handler, ctx, instance, recorder := newTestHandler()
 		recorder.deleteErr = errors.New("delete failed")
 
-		err := handler.Delete(context.Background(), instance)
+		err := handler.Delete(ctx, instance)
 
 		Expect(err).To(MatchError(ContainSubstring("deleting SFTP user")))
 		Expect(err).To(MatchError(ContainSubstring("delete failed")))
@@ -259,7 +286,7 @@ var _ = Describe("InstanceHandler", func() {
 	It("returns joined errors when updating user status fails for one user", func() {
 		existingUser := testUser()
 		missingUser := testUserNamed("missing-user")
-		handler, _, _ := newTestHandler(existingUser)
+		handler, _, _, _ := newTestHandler(existingUser)
 
 		err := handler.updateUserStatus(context.Background(), []sftpv1.User{*existingUser, *missingUser})
 
@@ -268,7 +295,7 @@ var _ = Describe("InstanceHandler", func() {
 	})
 })
 
-func newTestHandler(objects ...client.Object) (*InstanceHandler, *sftpv1.Instance, *recordingService) {
+func newTestHandler(objects ...client.Object) (*InstanceHandler, context.Context, *sftpv1.Instance, *recordingService) {
 	scheme := runtime.NewScheme()
 	Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
 	Expect(sftpv1.AddToScheme(scheme)).To(Succeed())
@@ -281,6 +308,9 @@ func newTestHandler(objects ...client.Object) (*InstanceHandler, *sftpv1.Instanc
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instanceHandlerTestSFTPServiceConfigName,
 			Namespace: instanceHandlerTestNamespace,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: instanceHandlerTestEnvironment,
+			},
 		},
 	}
 	instance := testInstance()
@@ -297,7 +327,11 @@ func newTestHandler(objects ...client.Object) (*InstanceHandler, *sftpv1.Instanc
 		Client:         k8sClient,
 		ServiceFactory: recordingFactory{svc: recorder},
 	}
-	return handler, instance, recorder
+	ctx := cclient.WithClient(
+		context.Background(),
+		cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, instanceHandlerTestEnvironment)),
+	)
+	return handler, ctx, instance, recorder
 }
 
 func testInstance() *sftpv1.Instance {
@@ -310,6 +344,9 @@ func testInstance() *sftpv1.Instance {
 			Name:       instanceHandlerTestName,
 			Namespace:  instanceHandlerTestNamespace,
 			Generation: 1,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: instanceHandlerTestEnvironment,
+			},
 		},
 		Spec: sftpv1.InstanceSpec{
 			SFTPServiceConfigRef: types.ObjectRef{
@@ -334,6 +371,9 @@ func testUserNamed(name string) *sftpv1.User {
 			Name:       name,
 			Namespace:  instanceHandlerTestNamespace,
 			Generation: 1,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: instanceHandlerTestEnvironment,
+			},
 		},
 		Spec: sftpv1.UserSpec{
 			InstanceRef: types.ObjectRef{
