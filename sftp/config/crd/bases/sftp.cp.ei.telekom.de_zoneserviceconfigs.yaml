@@ -57,17 +57,29 @@ spec:
                   access.
                 properties:
                   clientID:
+                    description: ClientID is the OAuth2 client ID used for client
+                      credentials authentication.
+                    minLength: 1
                     type: string
                   clientSecret:
+                    description: ClientSecret is the OAuth2 client secret used for
+                      client credentials authentication.
+                    minLength: 1
                     type: string
                   endpoint:
                     description: Endpoint is the SFTP Tardis API base URL.
+                    format: uri
+                    minLength: 1
                     type: string
                   issuer:
                     description: Issuer is the OAuth2 token endpoint used for client
                       credentials authentication.
+                    format: uri
+                    minLength: 1
                     type: string
                 required:
+                - clientID
+                - clientSecret
                 - endpoint
                 - issuer
                 type: object
