@@ -38,13 +38,10 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 				Namespace:  testNamespace,
 				Generation: 2,
 			},
-			Status: sftpv1.ZoneServiceConfigStatus{
-				Generation: 2,
-			},
 		}
 	})
 
-	It("recreates the service when the status generation is current but the cache is empty", func() {
+	It("recreates the service when the cache is empty", func() {
 		manager := &recordingClientManager{serviceCached: false}
 		handler := &ZoneServiceConfigHandler{ClientManager: manager}
 
@@ -52,14 +49,29 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 
 		Expect(manager.cacheChecks).To(Equal([]client.ObjectKey{{Namespace: testNamespace, Name: testName}}))
 		Expect(manager.createOrUpdateCalls).To(Equal(1))
-		Expect(obj.Status.Generation).To(Equal(int64(2)))
 		Expect(meta.IsStatusConditionTrue(obj.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		Expect(meta.IsStatusConditionFalse(obj.Status.Conditions, condition.ConditionTypeProcessing)).To(BeTrue())
 	})
 
-	It("skips reconciliation when the status generation is current and the service is cached", func() {
+	It("recreates the service when the Ready condition observed generation is stale", func() {
 		manager := &recordingClientManager{serviceCached: true}
 		handler := &ZoneServiceConfigHandler{ClientManager: manager}
+		ready := condition.NewReadyCondition("ZoneServiceConfigProvided", "ZoneServiceConfig has been provided")
+		ready.ObservedGeneration = obj.Generation - 1
+		obj.SetCondition(ready)
+
+		Expect(handler.CreateOrUpdate(ctx, obj)).To(Succeed())
+
+		Expect(manager.cacheChecks).To(Equal([]client.ObjectKey{{Namespace: testNamespace, Name: testName}}))
+		Expect(manager.createOrUpdateCalls).To(Equal(1))
+	})
+
+	It("skips reconciliation when the Ready condition observed generation is current and the service is cached", func() {
+		manager := &recordingClientManager{serviceCached: true}
+		handler := &ZoneServiceConfigHandler{ClientManager: manager}
+		ready := condition.NewReadyCondition("ZoneServiceConfigProvided", "ZoneServiceConfig has been provided")
+		ready.ObservedGeneration = obj.Generation
+		obj.SetCondition(ready)
 
 		Expect(handler.CreateOrUpdate(ctx, obj)).To(Succeed())
 

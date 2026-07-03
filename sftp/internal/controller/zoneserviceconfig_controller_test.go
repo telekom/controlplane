@@ -79,7 +79,9 @@ func VerifyZoneServiceConfig(ctx context.Context, g Gomega, namespacedName clien
 	err := k8sClient.Get(ctx, namespacedName, zsc)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	g.Expect(zsc.Status.Generation).To(Equal(zsc.Generation))
+	ready := meta.FindStatusCondition(zsc.Status.Conditions, condition.ConditionTypeReady)
+	g.Expect(ready).NotTo(BeNil())
+	g.Expect(ready.ObservedGeneration).To(Equal(zsc.Generation))
 	g.Expect(zsc.Status.Conditions).To(HaveLen(2))
 	g.Expect(meta.IsStatusConditionTrue(zsc.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
 	g.Expect(meta.IsStatusConditionTrue(zsc.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())

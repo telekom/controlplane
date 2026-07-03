@@ -37,7 +37,6 @@ var _ = Describe("InstanceHandler", func() {
 		handler, instance, _ := newTestHandler()
 
 		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
-		Expect(instance.Status.Generation).To(Equal(int64(1)))
 		Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		Expect(meta.IsStatusConditionFalse(instance.Status.Conditions, condition.ConditionTypeProcessing)).To(BeTrue())
 		Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, sftpv1.ConditionTypePublicKeysUpdatedInService)).To(BeTrue())
@@ -82,13 +81,27 @@ var _ = Describe("InstanceHandler", func() {
 		Expect(*recorder.createdModels[0].HorizonNotificationEvents).To(BeEmpty())
 	})
 
-	It("skips service user provisioning when the observed generation is current", func() {
+	It("skips service user provisioning when the Ready condition observed generation is current", func() {
 		handler, instance, recorder := newTestHandler()
-		instance.Status.Generation = instance.Generation
+		ready := condition.NewReadyCondition("InstanceProvided", "Instance has been provided")
+		ready.ObservedGeneration = instance.Generation
+		instance.SetCondition(ready)
 
 		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
 
 		Expect(recorder.createCalls).To(Equal(0))
+		Expect(recorder.updateCalls).To(Equal(1))
+	})
+
+	It("provisions the service user when the Ready condition observed generation is stale", func() {
+		handler, instance, recorder := newTestHandler()
+		ready := condition.NewReadyCondition("InstanceProvided", "Instance has been provided")
+		ready.ObservedGeneration = instance.Generation - 1
+		instance.SetCondition(ready)
+
+		Expect(handler.CreateOrUpdate(context.Background(), instance)).To(Succeed())
+
+		Expect(recorder.createCalls).To(Equal(1))
 		Expect(recorder.updateCalls).To(Equal(1))
 	})
 

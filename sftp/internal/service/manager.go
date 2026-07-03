@@ -156,7 +156,7 @@ func clientCredentials(ctx context.Context, api sftpv1.APIEndpoint) (*clientcred
 		return nil, fmt.Errorf("SFTP Tardis client secret must not be empty")
 	}
 
-	if strings.HasPrefix(clientSecret, "$<") {
+	if secretsapi.IsRef(clientSecret) {
 		var err error
 		clientSecret, err = secretsapi.API().Get(ctx, clientSecret)
 		if err != nil {
