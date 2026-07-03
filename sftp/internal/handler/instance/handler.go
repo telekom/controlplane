@@ -14,6 +14,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -96,8 +97,9 @@ func (h *InstanceHandler) Delete(ctx context.Context, obj *sftpv1.Instance) erro
 }
 
 func (h *InstanceHandler) usersFor(ctx context.Context, instance *sftpv1.Instance) ([]sftpv1.User, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	list := &sftpv1.UserList{}
-	if err := h.Client.List(ctx, list, client.InNamespace(instance.Namespace)); err != nil {
+	if err := scopedClient.List(ctx, list, client.InNamespace(instance.Namespace)); err != nil {
 		return nil, fmt.Errorf("listing Users for Instance %q: %w", instance.Name, err)
 	}
 
