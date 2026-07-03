@@ -19,11 +19,13 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/event"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/file"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/permission"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
@@ -44,6 +46,10 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	if config.FeaturePermission.IsEnabled() {
 		c.AddKnownTypeToState(&permissionv1.PermissionSet{})
 	}
+	if config.FeatureFile.IsEnabled() {
+		c.AddKnownTypeToState(&filev1.FileExposure{})
+		c.AddKnownTypeToState(&filev1.FileSubscription{})
+	}
 
 	// Create Application from Rover
 	err := application.HandleApplication(ctx, c, roverObj)
@@ -54,6 +60,7 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	// Handle exposures
 	roverObj.Status.ApiExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	roverObj.Status.EventExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
+	roverObj.Status.FileExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	seenDescriminators := make(map[string]struct{})
 
 	for _, exp := range roverObj.Spec.Exposures {
@@ -82,6 +89,16 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 				return errors.Wrap(err, "failed to handle event exposure")
 			}
 
+		case roverv1.TypeFile:
+			// Duplicate file types are rejected by the Rover admission webhook
+			if !config.FeatureFile.IsEnabled() {
+				log.Info("file exposure skipped, feature has not been enabled")
+				continue
+			}
+			if err := file.HandleExposure(ctx, c, roverObj, exp.File); err != nil {
+				return errors.Wrap(err, "failed to handle file exposure")
+			}
+
 		default:
 			return errors.New("unknown exposure type: " + exp.Type().String())
 		}
@@ -90,6 +107,7 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	// Handle subscriptions
 	roverObj.Status.ApiSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 	roverObj.Status.EventSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
+	roverObj.Status.FileSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 	for _, sub := range roverObj.Spec.Subscriptions {
 		switch sub.Type() {
 		case roverv1.TypeApi:
@@ -106,6 +124,15 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 			err := event.HandleSubscription(ctx, c, roverObj, sub.Event)
 			if err != nil {
 				return errors.Wrap(err, "failed to handle event subscription")
+			}
+
+		case roverv1.TypeFile:
+			if !config.FeatureFile.IsEnabled() {
+				log.Info("file subscription skipped, feature has not been enabled")
+				continue
+			}
+			if err := file.HandleSubscription(ctx, c, roverObj, sub.File); err != nil {
+				return errors.Wrap(err, "failed to handle file subscription")
 			}
 
 		default:
