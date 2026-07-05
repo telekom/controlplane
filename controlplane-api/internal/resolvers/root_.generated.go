@@ -608,6 +608,7 @@ type ComplexityRoot struct {
 		EventExposures     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
 		EventSubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
 		EventTypes         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
+		Groups             func(childComplexity int, where *ent.GroupWhereInput) int
 		Node               func(childComplexity int, id int) int
 		Nodes              func(childComplexity int, ids []int) int
 		PermissionSets     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) int
@@ -3091,6 +3092,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
+
+	case "Query.groups":
+		if e.ComplexityRoot.Query.Groups == nil {
+			break
+		}
+
+		args, err := ec.field_Query_groups_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Groups(childComplexity, args["where"].(*ent.GroupWhereInput)), true
 
 	case "Query.node":
 		if e.ComplexityRoot.Query.Node == nil {
@@ -8148,6 +8161,9 @@ extend type EventType {
 extend type Query {
   "Returns all distinct API categories currently in use."
   apiCategories: [ApiCategory!]! @goField(forceResolver: true)
+
+  "Returns all groups visible to the current viewer."
+  groups(where: GroupWhereInput): [Group!]! @goField(forceResolver: true)
 }
 
 "A category that APIs can be classified under."

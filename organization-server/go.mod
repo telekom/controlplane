@@ -7,6 +7,7 @@ module github.com/telekom/controlplane/organization-server
 go 1.26.4
 
 require (
+	github.com/Khan/genqlient v0.8.1
 	github.com/bytedance/sonic v1.15.1
 	github.com/getkin/kin-openapi v0.135.0
 	github.com/go-logr/logr v1.4.3
@@ -45,9 +46,10 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
+	github.com/vektah/gqlparser/v2 v2.5.19 // indirect
 	github.com/woodsbury/decimal128 v1.4.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
