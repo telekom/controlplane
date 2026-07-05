@@ -33,5 +33,19 @@ var _ = Describe("Resources Controller", func() {
 			response, err := ExecuteRequest(req, teamNoResources)
 			ExpectStatusWithBody(response, err, http.StatusOK, "application/json")
 		})
+
+		It("should filter results when prefix query param is provided", func() {
+			req := httptest.NewRequest(http.MethodGet, "/resources?prefix=poc--eni--hyperion--", nil)
+
+			response, err := ExecuteRequest(req, groupToken)
+			ExpectStatusOk(response, err)
+		})
+
+		It("should return 403 when prefix is outside caller scope", func() {
+			req := httptest.NewRequest(http.MethodGet, "/resources?prefix=poc--other--team--", nil)
+
+			response, err := ExecuteRequest(req, teamToken)
+			ExpectStatus(response, err, http.StatusForbidden, "application/problem+json")
+		})
 	})
 })
