@@ -1492,6 +1492,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/ResourcePrefix'
       responses:
         '200':
           description: OK
@@ -1608,6 +1609,17 @@ components:
       schema:
           type: boolean
           default: false
+    ResourcePrefix:
+      name: prefix
+      in: query
+      description: >-
+        Optional prefix filter to narrow results to a specific team or group.
+        Must be encompassed by the caller's token prefix (e.g. an admin with
+        prefix "env--" can request "env--group--team--" but a team token cannot
+        request a different team's prefix). Format: environment--group--team--
+      required: false
+      schema:
+        type: string
   headers:
     XTotalCount:
       description: Total number of items matching criteria.
