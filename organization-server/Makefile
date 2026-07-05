@@ -9,6 +9,10 @@ GIT_COMMIT=$(shell git rev-parse HEAD)
 .PHONY: all
 all: build
 
+.PHONY: generate
+generate: ## Run code generation (oapi-codegen + genqlient).
+	go generate ./tools/...
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...

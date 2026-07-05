@@ -166,6 +166,7 @@ func TeamStatusToResourceStatus(phase *gql.TeamStatusPhase, message *string, cre
 
 	return resp
 }
+
 type PaginationParams struct {
 	Offset int
 	Limit  int

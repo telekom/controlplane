@@ -35,6 +35,7 @@ updates:
       - identity/api
       - organization
       - organization/api
+      - organization-server
       - pubsub
       - pubsub/api
       - rover
