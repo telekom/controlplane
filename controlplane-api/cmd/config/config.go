@@ -19,6 +19,7 @@ type ServerConfig struct {
 	Log         LogConfig         `yaml:"log"`
 	Kubernetes  KubernetesConfig  `yaml:"kubernetes"`
 	FileManager FileManagerConfig `yaml:"fileManager"`
+	RoverServer RoverServerConfig `yaml:"roverServer"`
 }
 
 type KubernetesConfig struct {
@@ -61,6 +62,12 @@ type FileManagerConfig struct {
 	BaseURL string `yaml:"baseUrl"`
 }
 
+// RoverServerConfig holds the configuration for the rover-server integration
+// used for team resource pre-deletion checks.
+type RoverServerConfig struct {
+	BaseURL string `yaml:"baseUrl"`
+}
+
 func DefaultConfig() *ServerConfig {
 	return &ServerConfig{
 		Database: DatabaseConfig{
@@ -89,6 +96,9 @@ func DefaultConfig() *ServerConfig {
 		},
 		FileManager: FileManagerConfig{
 			BaseURL: "file-manager.controlplane-system.svc",
+		},
+		RoverServer: RoverServerConfig{
+			BaseURL: "http://rover-server.controlplane-system.svc.cluster.local",
 		},
 	}
 }

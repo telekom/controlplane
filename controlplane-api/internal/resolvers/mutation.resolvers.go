@@ -283,7 +283,7 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, input model.DeleteGr
 		}, nil
 	}
 
-	_, ref, err := r.resolveGroupRef(ctx, input.GroupID)
+	g, ref, err := r.resolveGroupRef(ctx, input.GroupID)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return &model.DeleteGroupPayload{
@@ -291,6 +291,20 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, input model.DeleteGr
 			}, nil
 		}
 		return nil, fmt.Errorf("resolving group reference: %w", err)
+	}
+
+	// Pre-check: group must have no teams before deletion.
+	teamCount, err := g.QueryTeams().Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("counting group teams: %w", err)
+	}
+	if teamCount > 0 {
+		return &model.DeleteGroupPayload{
+			Errors: []model.MutationError{{
+				Code:    model.ErrorCodePreconditionFailed,
+				Message: fmt.Sprintf("cannot delete group: %d team(s) still exist — delete all teams first", teamCount),
+			}},
+		}, nil
 	}
 
 	payload, err := r.services.Group.DeleteGroup(ctx, ref)
