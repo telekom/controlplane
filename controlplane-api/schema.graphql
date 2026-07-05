@@ -199,6 +199,9 @@ extend type EventType {
 extend type Query {
   "Returns all distinct API categories currently in use."
   apiCategories: [ApiCategory!]! @goField(forceResolver: true)
+
+  "Returns all groups visible to the current viewer."
+  groups(where: GroupWhereInput): [Group!]! @goField(forceResolver: true)
 }
 
 "A category that APIs can be classified under."

@@ -5,6 +5,7 @@
 package handler
 
 import (
+	"github.com/Khan/genqlient/graphql"
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 
@@ -13,13 +14,13 @@ import (
 
 // Handler groups all endpoint handlers for the organization facade.
 type Handler struct {
-	cpapi *client.CPAPIClient
+	cpapi graphql.Client
 	rover *client.RoverClient
 	log   logr.Logger
 }
 
 // New creates a new Handler with the given upstream clients.
-func New(cpapi *client.CPAPIClient, rover *client.RoverClient, log logr.Logger) *Handler {
+func New(cpapi graphql.Client, rover *client.RoverClient, log logr.Logger) *Handler {
 	return &Handler{
 		cpapi: cpapi,
 		rover: rover,

@@ -1156,16 +1156,17 @@ components:
       type: object
       allOf:
         - $ref: '#/components/schemas/Team'
-      properties:
-        teamToken:
-          type: string
-          readOnly: true
-        clientId:
-          type: string
-          readOnly: true
-        clientSecret:
-          type: string
-          readOnly: true
+        - type: object
+          properties:
+            teamToken:
+              type: string
+              readOnly: true
+            clientId:
+              type: string
+              readOnly: true
+            clientSecret:
+              type: string
+              readOnly: true
     TeamListResponse:
       type: object
       readOnly: true

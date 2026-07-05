@@ -497,6 +497,19 @@ func (r *queryResolver) APICategories(ctx context.Context) ([]*gqlmodel.APICateg
 	return categories, nil
 }
 
+// Groups is the resolver for the groups field.
+func (r *queryResolver) Groups(ctx context.Context, where *ent.GroupWhereInput) ([]*ent.Group, error) {
+	query := r.client.Group.Query()
+	if where != nil {
+		p, err := where.P()
+		if err != nil {
+			return nil, fmt.Errorf("invalid filter: %w", err)
+		}
+		query = query.Where(p)
+	}
+	return query.All(ctx)
+}
+
 // TokenURL is the resolver for the tokenUrl field.
 func (r *zoneResolver) TokenURL(ctx context.Context, obj *ent.Zone) (*string, error) {
 	if obj.IssuerURL == nil {
