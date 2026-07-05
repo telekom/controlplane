@@ -120,6 +120,7 @@ var _ = BeforeSuite(func() {
 		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),
 		ApiChangelogs:       NewApiChangelogController(stores),
+		Resources:           NewResourcesController(stores),
 	}
 
 	// Install the mock-JWT security family on the app and register routes with

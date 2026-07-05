@@ -61,6 +61,7 @@ func main() {
 		EventSpecifications: controller.NewEventSpecificationController(stores),
 		ApiChangelogs:       controller.NewApiChangelogController(stores),
 		McpSpecifications:   controller.NewMcpSpecificationController(stores),
+		Resources:           controller.NewResourcesController(stores),
 	}
 
 	// jwtOpts injects rover's server-specific check-access templates into the

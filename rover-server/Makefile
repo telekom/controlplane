@@ -9,6 +9,11 @@ GIT_COMMIT=$(shell git rev-parse HEAD)
 .PHONY: all
 all: build
 
+.PHONY: generate
+generate: ## Run code generation (oapi-codegen + mockery).
+	go generate -tags=tools ./tools/...
+	@head -3 internal/api/server.gen.go | grep -q 'SPDX' || { { cat ../hack/boilerplate.go.txt; echo; cat internal/api/server.gen.go; } > internal/api/server.gen.go.tmp && mv internal/api/server.gen.go.tmp internal/api/server.gen.go; }
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
