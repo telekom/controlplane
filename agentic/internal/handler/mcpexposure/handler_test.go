@@ -80,15 +80,27 @@ func makeReadyZoneWithAiGateway() *adminv1.Zone {
 			Name:      "test-zone",
 			Namespace: "default",
 		},
+		Spec: adminv1.ZoneSpec{
+			AiGateway: &adminv1.AiGatewayConfig{
+				Presets: []adminv1.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{
+							{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
+						},
+					},
+				},
+			},
+		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			GatewayRealm: &ctypes.ObjectRef{
-				Name:      "gw-realm",
+			AiGateway: &ctypes.ObjectRef{
+				Name:      "ai-gateway",
 				Namespace: "default",
 			},
-			AiGatewayRealm: &ctypes.ObjectRef{
-				Name:      "ai-gw-realm",
-				Namespace: "default",
+			Links: adminv1.Links{
+				Issuer: "https://issuer.example.com",
 			},
 			Features: []adminv1.Feature{
 				{Name: adminv1.FeatureAiGateway, Enabled: true},
@@ -111,10 +123,6 @@ func makeZoneWithoutAiGateway() *adminv1.Zone {
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			GatewayRealm: &ctypes.ObjectRef{
-				Name:      "gw-realm",
-				Namespace: "default",
-			},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -125,28 +133,8 @@ func makeZoneWithoutAiGateway() *adminv1.Zone {
 	return z
 }
 
-func makeReadyAiGatewayRealm() *gatewayv1.Realm {
-	r := &gatewayv1.Realm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ai-gw-realm",
-			Namespace: "default",
-		},
-		Spec: gatewayv1.RealmSpec{
-			Urls:       []string{"https://ai-gateway.example.com:443"},
-			IssuerUrls: []string{"https://issuer.example.com"},
-		},
-	}
-	meta.SetStatusCondition(&r.Status.Conditions, metav1.Condition{
-		Type:   condition.ConditionTypeReady,
-		Status: metav1.ConditionTrue,
-		Reason: "Ready",
-	})
-	return r
-}
-
 var (
-	zoneKey      = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
-	aiGwRealmKey = k8stypes.NamespacedName{Name: "ai-gw-realm", Namespace: "default"}
+	zoneKey = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
 )
 
 var _ = Describe("McpExposureHandler", func() {
@@ -221,15 +209,6 @@ var _ = Describe("McpExposureHandler", func() {
 			Return(nil).Once()
 	}
 
-	mockGetAiGwRealm := func(realm *gatewayv1.Realm) {
-		fakeClient.EXPECT().
-			Get(ctx, aiGwRealmKey, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayv1.Realm) = *realm
-			}).
-			Return(nil).Once()
-	}
-
 	mockCreateOrUpdateRoute := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
@@ -249,13 +228,11 @@ var _ = Describe("McpExposureHandler", func() {
 	setupFullHappyPath := func() {
 		server := makeReadyMcpServer("/mcp/weather/v1")
 		zone := makeReadyZoneWithAiGateway()
-		realm := makeReadyAiGatewayRealm()
 
 		mockListMcpServers([]agenticv1.McpServer{server})
 		mockListMcpExposures([]agenticv1.McpExposure{})
 		mockGetZone(zone)
 		mockListMcpSubscriptions([]agenticv1.McpSubscription{}) // no cross-zone subs
-		mockGetAiGwRealm(realm)
 		mockCreateOrUpdateRoute(controllerutil.OperationResultCreated, nil)
 		mockCleanup(0, nil)
 	}
@@ -391,13 +368,11 @@ var _ = Describe("McpExposureHandler", func() {
 		It("should return error when CreateMcpRoute fails", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
-			realm := makeReadyAiGatewayRealm()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListMcpExposures([]agenticv1.McpExposure{})
 			mockGetZone(zone)
 			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
-			mockGetAiGwRealm(realm)
 			mockCreateOrUpdateRoute(controllerutil.OperationResultNone, fmt.Errorf("route creation failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -409,13 +384,11 @@ var _ = Describe("McpExposureHandler", func() {
 		It("should return error when Cleanup fails", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
-			realm := makeReadyAiGatewayRealm()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListMcpExposures([]agenticv1.McpExposure{})
 			mockGetZone(zone)
 			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
-			mockGetAiGwRealm(realm)
 			mockCreateOrUpdateRoute(controllerutil.OperationResultCreated, nil)
 			mockCleanup(0, fmt.Errorf("cleanup failed"))
 
@@ -449,13 +422,11 @@ var _ = Describe("McpExposureHandler", func() {
 
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
-			realm := makeReadyAiGatewayRealm()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListMcpExposures([]agenticv1.McpExposure{})
 			mockGetZone(zone)
 			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
-			mockGetAiGwRealm(realm)
 
 			var capturedRoute gatewayv1.Route
 			fakeClient.EXPECT().
@@ -472,7 +443,6 @@ var _ = Describe("McpExposureHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(capturedRoute.Spec.Security).ToNot(BeNil())
 			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(ContainElement("telecontext-app"))
 			Expect(obj.Status.Route).ToNot(BeNil())
 		})

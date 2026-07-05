@@ -222,7 +222,9 @@ spec:
                                       - client_secret_post
                                       type: string
                                   required:
+                                  - grantType
                                   - tokenEndpoint
+                                  - tokenRequest
                                   type: object
                                   x-kubernetes-validations:
                                   - message: Only one of basic or client credentials
@@ -1237,13 +1239,11 @@ spec:
                               description: Failover defines disaster recovery configuration
                                 for this API
                               properties:
-                                zones:
-                                  description: Zones is a list of zone names to use
-                                    for failover if the primary zone is unavailable
-                                  items:
-                                    type: string
-                                  maxItems: 10
-                                  type: array
+                                enabled:
+                                  description: |-
+                                    Enabled flags this Subscription to use the ConsumerFailover feature
+                                    This will automatically detect eligible zones and setup the access
+                                  type: boolean
                               type: object
                           type: object
                         transformation:

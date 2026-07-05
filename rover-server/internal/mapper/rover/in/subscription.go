@@ -187,8 +187,8 @@ func mapAiSubscription(in api.AiSubscription) *roverv1.AiSubscription {
 	mapAiSubscriptionSecurity(in, out)
 
 	if len(in.Failover.Zones) > 0 {
-		out.Traffic.Failover = &roverv1.Failover{
-			Zones: in.Failover.Zones,
+		out.Traffic.Failover = &roverv1.SubscriberFailover{
+			Enabled: true,
 		}
 	}
 

@@ -684,7 +684,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				ClientSecret: "topsecret",
 			}
 
-			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+			rover := createRover(&spec)
 
 			By("creating the Rover")
 			Expect(k8sClient.Create(ctx, rover)).To(Succeed())

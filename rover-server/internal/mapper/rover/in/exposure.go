@@ -373,7 +373,7 @@ func mapAiExposureSecurity(in api.AiExposure, out *roverv1.AiExposure) {
 			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
 				TokenEndpoint: oauth2.TokenEndpoint,
 				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
-				GrantType:     strings.ToLower(string(oauth2.GrantType)),
+				GrantType:     roverv1.GrantType(strings.ToLower(string(oauth2.GrantType))),
 			}
 			if oauth2.ClientId != "" {
 				m2mSecurity.ExternalIDP.Client = &roverv1.OAuth2ClientCredentials{
@@ -421,7 +421,7 @@ func mapAiExposureTraffic(in api.AiExposure, out *roverv1.AiExposure) {
 
 	// Failover
 	if len(in.Failover.Zones) > 0 {
-		out.Traffic.Failover = &roverv1.Failover{
+		out.Traffic.Failover = &roverv1.ProviderFailover{
 			Zones: in.Failover.Zones,
 		}
 	}

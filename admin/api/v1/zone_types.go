@@ -278,10 +278,36 @@ const (
 type AiGatewayConfig struct {
 	// Admin contains the admin credentials for the AI Gateway.
 	Admin GatewayAdminConfig `json:"admin"`
-	// Url is the public URL of the AI Gateway.
+	// Presets defines a list of gateway configuration presets for the AI Gateway.
+	// Same structure as the regular gateway presets, allowing feature-based preset selection.
+	// +listType=map
+	// +listMapKey=name
+	// +patchStrategy=merge
+	// +patchMergeKey=name
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Format=uri
-	Url string `json:"url"`
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=5
+	Presets []GatewayConfigPreset `json:"presets"`
+}
+
+// GetPresetByName returns the AI gateway preset with the specified name.
+func (g AiGatewayConfig) GetPresetByName(name string) (*GatewayConfigPreset, error) {
+	for _, preset := range g.Presets {
+		if preset.Name == name {
+			return &preset, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: %s", ErrNoPresetFound, name)
+}
+
+// GetDefaultPreset returns the default preset for this AI gateway configuration.
+func (g AiGatewayConfig) GetDefaultPreset() (*GatewayConfigPreset, error) {
+	for _, preset := range g.Presets {
+		if preset.Default {
+			return &preset, nil
+		}
+	}
+	return nil, fmt.Errorf("no default AI gateway preset found: %w", ErrNoPresetFound)
 }
 
 type ManagedRouteConfig struct {
@@ -428,9 +454,6 @@ type ZoneStatus struct {
 	// AiGateway references the AI Gateway CR created for this zone.
 	// +optional
 	AiGateway *types.ObjectRef `json:"aiGateway,omitempty"`
-	// AiGatewayRealm references the AI Gateway Realm CR created for this zone.
-	// +optional
-	AiGatewayRealm *types.ObjectRef `json:"aiGatewayRealm,omitempty"`
 
 	TeamApiIdentityRealm *types.ObjectRef  `json:"teamApiIdentityRealm,omitempty"`
 	ManagedRoutes        []types.ObjectRef `json:"managedRoutes,omitempty"`

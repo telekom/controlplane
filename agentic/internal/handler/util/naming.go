@@ -10,8 +10,9 @@ const (
 	// AiGatewayRoutePrefix is prepended to MCP route names for namespace isolation.
 	AiGatewayRoutePrefix = "ai-gateway"
 
-	// MeshClientName is the consumer name for cross-zone proxy access.
-	MeshClientName = "mesh-client"
+	// GatewayConsumerName is the consumer name for cross-zone proxy access.
+	// Must match the API domain's GatewayConsumerName constant.
+	GatewayConsumerName = "gateway"
 )
 
 // MakeMcpRouteName creates the route name for an MCP exposure.

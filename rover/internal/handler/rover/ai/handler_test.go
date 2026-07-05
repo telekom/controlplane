@@ -224,7 +224,7 @@ var _ = Describe("HandleExposure", func() {
 						},
 					},
 				},
-				Failover: &roverv1.Failover{
+				Failover: &roverv1.ProviderFailover{
 					Zones: []string{"zone2", "zone3"},
 				},
 			},
@@ -519,8 +519,8 @@ var _ = Describe("HandleSubscription", func() {
 		subscription := &roverv1.AiSubscription{
 			BasePath: "/mcp/failover/v1",
 			Traffic: roverv1.SubscriberTraffic{
-				Failover: &roverv1.Failover{
-					Zones: []string{"zone2"},
+				Failover: &roverv1.SubscriberFailover{
+					Enabled: true,
 				},
 			},
 		}
@@ -540,9 +540,7 @@ var _ = Describe("HandleSubscription", func() {
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub.Spec.Traffic.Failover).ToNot(BeNil())
-		Expect(capturedSub.Spec.Traffic.Failover.Zones).To(HaveLen(1))
-		Expect(capturedSub.Spec.Traffic.Failover.Zones[0].Name).To(Equal("zone2"))
-		Expect(capturedSub.Spec.Traffic.Failover.Zones[0].Namespace).To(Equal(testEnvironment))
+		Expect(capturedSub.Spec.Traffic.Failover.Enabled).To(BeTrue())
 	})
 
 	It("should append to owner status AiSubscriptions", func() {

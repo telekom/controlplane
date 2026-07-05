@@ -239,9 +239,10 @@ spec:
                     description: Failover defines the failover configuration for the
                       API exposure.
                     properties:
-                      zone:
-                        description: Zone is the zone to which the traffic should
-                          be failed over in case of an error.
+                      zones:
+                        description: |-
+                          Zones defines the list of zones that are eligible for failover.
+                          If empty, the Provider failover feature is disabled.
                         items:
                           description: |-
                             ObjectRef is a reference to a Kubernetes object
@@ -262,8 +263,6 @@ spec:
                           - namespace
                           type: object
                         type: array
-                    required:
-                    - zone
                     type: object
                   rateLimit:
                     description: RateLimit defines request rate limiting for this

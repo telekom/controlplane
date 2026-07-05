@@ -163,7 +163,7 @@ func mapM2MToAgenticM2M(m2m *rover.Machine2MachineAuthentication) *agenticv1.Mac
 		result.ExternalIDP = &agenticv1.ExternalIdentityProvider{
 			TokenEndpoint: m2m.ExternalIDP.TokenEndpoint,
 			TokenRequest:  agenticv1.TokenRequestMethod(m2m.ExternalIDP.TokenRequest),
-			GrantType:     m2m.ExternalIDP.GrantType,
+			GrantType:     string(m2m.ExternalIDP.GrantType),
 		}
 		if m2m.ExternalIDP.Client != nil {
 			result.ExternalIDP.Client = &agenticv1.OAuth2ClientCredentials{
@@ -236,7 +236,7 @@ func mapTrafficToAgenticTraffic(env string, roverTraffic *rover.Traffic) agentic
 				Namespace: env,
 			})
 		}
-		traffic.Failover = &agenticv1.Failover{
+		traffic.Failover = &agenticv1.ProviderFailover{
 			Zones: failoverZones,
 		}
 	}

@@ -80,9 +80,9 @@ func mapAiSubscription(in *roverv1.AiSubscription) api.AiSubscription {
 		BasePath: in.BasePath,
 	}
 
-	if in.Traffic.Failover != nil {
+	if in.Traffic.Failover != nil && in.Traffic.Failover.Enabled {
 		out.Failover = api.Failover{
-			Zones: in.Traffic.Failover.Zones,
+			Zones: []string{},
 		}
 	}
 

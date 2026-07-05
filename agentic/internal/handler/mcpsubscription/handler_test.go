@@ -125,15 +125,27 @@ func makeReadyZoneWithAiGateway(name string) *adminv1.Zone {
 			Name:      name,
 			Namespace: "default",
 		},
+		Spec: adminv1.ZoneSpec{
+			AiGateway: &adminv1.AiGatewayConfig{
+				Presets: []adminv1.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{
+							{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
+						},
+					},
+				},
+			},
+		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			GatewayRealm: &ctypes.ObjectRef{
-				Name:      "gw-realm",
+			AiGateway: &ctypes.ObjectRef{
+				Name:      "ai-gateway",
 				Namespace: "default",
 			},
-			AiGatewayRealm: &ctypes.ObjectRef{
-				Name:      "ai-gw-realm",
-				Namespace: "default",
+			Links: adminv1.Links{
+				Issuer: "https://issuer.example.com",
 			},
 			Features: []adminv1.Feature{
 				{Name: adminv1.FeatureAiGateway, Enabled: true},

@@ -80,7 +80,6 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		}
 	} else {
 		obj.Status.AiGateway = nil
-		obj.Status.AiGatewayRealm = nil
 		obj.ManageFeature(adminv1.FeatureAiGateway, false)
 	}
 
@@ -101,12 +100,6 @@ func reconcileAiGateway(ctx context.Context, hc *HandlingContext, zone *adminv1.
 		return err
 	}
 	zone.Status.AiGateway = types.ObjectRefFromObject(aiGateway)
-
-	aiGatewayRealm, err := createAiGatewayRealm(ctx, hc, aiGateway)
-	if err != nil {
-		return err
-	}
-	zone.Status.AiGatewayRealm = types.ObjectRefFromObject(aiGatewayRealm)
 
 	zone.EnableFeature(adminv1.FeatureAiGateway)
 	return nil
@@ -166,40 +159,6 @@ func createAiGateway(ctx context.Context, hc *HandlingContext) (*gatewayapi.Gate
 		return nil, errors.Wrapf(err, "failed to create or update AI Gateway in zone %s", hc.Zone.Name)
 	}
 	return gateway, nil
-}
-
-func createAiGatewayRealm(ctx context.Context, hc *HandlingContext, gateway *gatewayapi.Gateway) (*gatewayapi.Realm, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-
-	realmName := naming.ForAiGatewayRealm(hc.Environment)
-	gatewayRealm := &gatewayapi.Realm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      realmName,
-			Namespace: hc.Namespace.Name,
-		},
-	}
-
-	mutator := func() error {
-		if gatewayRealm.Labels == nil {
-			gatewayRealm.Labels = make(map[string]string)
-		}
-		gatewayRealm.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
-		gatewayRealm.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
-
-		gatewayRealm.Spec = gatewayapi.RealmSpec{
-			Gateway:          types.ObjectRefFromObject(gateway),
-			Urls:             []string{hc.Zone.Spec.AiGateway.Url},
-			IssuerUrls:       []string{urls.ForGatewayRealm(hc.Zone.Spec.IdentityProvider.Url, realmName)},
-			DefaultConsumers: []string{},
-		}
-		return nil
-	}
-
-	_, err := c.CreateOrUpdate(ctx, gatewayRealm, mutator)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create or update AI Gateway Realm in zone %s", hc.Zone.Name)
-	}
-	return gatewayRealm, nil
 }
 
 func (h *ZoneHandler) Delete(ctx context.Context, obj *adminv1.Zone) error {

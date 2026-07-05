@@ -114,16 +114,9 @@ func mapSubscriberSecurityToAgenticSecurity(roverSecurity *rover.SubscriberSecur
 func mapSubscriberTrafficToAgenticTraffic(env string, traffic rover.SubscriberTraffic) agenticv1.SubscriberTraffic {
 	agenticTraffic := agenticv1.SubscriberTraffic{}
 
-	if traffic.Failover != nil && len(traffic.Failover.Zones) > 0 {
-		failoverZones := make([]types.ObjectRef, 0, len(traffic.Failover.Zones))
-		for _, zone := range traffic.Failover.Zones {
-			failoverZones = append(failoverZones, types.ObjectRef{
-				Name:      zone,
-				Namespace: env,
-			})
-		}
-		agenticTraffic.Failover = &agenticv1.Failover{
-			Zones: failoverZones,
+	if traffic.Failover != nil && traffic.Failover.Enabled {
+		agenticTraffic.Failover = &agenticv1.SubscriberFailover{
+			Enabled: true,
 		}
 	}
 
