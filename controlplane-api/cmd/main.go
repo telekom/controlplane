@@ -90,7 +90,7 @@ func main() {
 
 		services = service.Services{
 			Team:        service.NewTeamK8sService(scopedClient, resourceChecker),
-			Group:       service.NewGroupK8sService(scopedClient),
+			Group:       service.NewGroupK8sService(scopedClient, service.NewEntTeamChecker(client)),
 			Application: service.NewApplicationK8sService(scopedClient),
 			Approval:    service.NewApprovalK8sService(scopedClient),
 		}

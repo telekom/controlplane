@@ -303,12 +303,13 @@ func toK8sMembers(members []model.MemberInput) []organizationv1.Member {
 // ----- Group -----
 
 type groupK8sService struct {
-	client cc.ScopedClient
+	client      cc.ScopedClient
+	teamChecker TeamChecker
 }
 
 // NewGroupK8sService creates a GroupService backed by Kubernetes.
-func NewGroupK8sService(c cc.ScopedClient) GroupService {
-	return &groupK8sService{client: c}
+func NewGroupK8sService(c cc.ScopedClient, teamChecker TeamChecker) GroupService {
+	return &groupK8sService{client: c, teamChecker: teamChecker}
 }
 
 func (s *groupK8sService) CreateGroup(ctx context.Context, input model.CreateGroupInput) (*model.CreateGroupPayload, error) {
@@ -401,6 +402,27 @@ func (s *groupK8sService) DeleteGroup(ctx context.Context, ref ResourceRef) (*mo
 		log.V(1).Info("Authorization denied", "reason", err.Error())
 		return &model.DeleteGroupPayload{
 			Errors: []model.MutationError{forbiddenError(err.Error())},
+		}, nil
+	}
+
+	// Pre-check: group must have no teams before deletion.
+	hasTeams, err := s.teamChecker.HasTeams(ctx, ref.Name)
+	if err != nil {
+		log.Error(err, "Failed to check group teams")
+		return &model.DeleteGroupPayload{
+			Errors: []model.MutationError{{
+				Code:    model.ErrorCodePreconditionFailed,
+				Message: "unable to verify group teams, please try again",
+			}},
+		}, nil
+	}
+	if hasTeams {
+		log.V(1).Info("Group still has teams, refusing deletion")
+		return &model.DeleteGroupPayload{
+			Errors: []model.MutationError{{
+				Code:    model.ErrorCodePreconditionFailed,
+				Message: "cannot delete group: group still has teams — delete all teams first",
+			}},
 		}, nil
 	}
 
