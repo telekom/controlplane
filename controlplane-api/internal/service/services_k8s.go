@@ -234,6 +234,38 @@ func (s *teamK8sService) RotateTeamToken(ctx context.Context, ref ResourceRef) (
 	}, nil
 }
 
+func (s *teamK8sService) DeleteTeam(ctx context.Context, ref ResourceRef) (*model.DeleteTeamPayload, error) {
+	log := logr.FromContextOrDiscard(ctx).WithValues("operation", "DeleteTeam", "resourceName", ref.Name, "namespace", ref.Namespace)
+
+	if err := authorizeDeleteTeam(ctx, ref.Group); err != nil {
+		log.V(1).Info("Authorization denied", "reason", err.Error())
+		return &model.DeleteTeamPayload{
+			Errors: []model.MutationError{forbiddenError(err.Error())},
+		}, nil
+	}
+
+	team := &organizationv1.Team{}
+	if err := s.client.Get(ctx, k8stypes.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, team); err != nil {
+		log.V(1).Info("Failed to get team resource", "error", err)
+		return &model.DeleteTeamPayload{
+			Errors: []model.MutationError{k8sToMutationError(err)},
+		}, nil
+	}
+
+	if err := s.client.Delete(ctx, team); err != nil {
+		log.Error(err, "Failed to delete team resource")
+		return &model.DeleteTeamPayload{
+			Errors: []model.MutationError{k8sToMutationError(err)},
+		}, nil
+	}
+
+	log.V(0).Info("Deleted team")
+	return &model.DeleteTeamPayload{
+		Accepted: true,
+		Errors:   []model.MutationError{},
+	}, nil
+}
+
 func toK8sMembers(members []model.MemberInput) []organizationv1.Member {
 	result := make([]organizationv1.Member, len(members))
 	for i, m := range members {
@@ -243,6 +275,132 @@ func toK8sMembers(members []model.MemberInput) []organizationv1.Member {
 		}
 	}
 	return result
+}
+
+// ----- Group -----
+
+type groupK8sService struct {
+	client cc.ScopedClient
+}
+
+// NewGroupK8sService creates a GroupService backed by Kubernetes.
+func NewGroupK8sService(c cc.ScopedClient) GroupService {
+	return &groupK8sService{client: c}
+}
+
+func (s *groupK8sService) CreateGroup(ctx context.Context, input model.CreateGroupInput) (*model.CreateGroupPayload, error) {
+	log := logr.FromContextOrDiscard(ctx).WithValues("operation", "CreateGroup", "name", input.Name)
+
+	if err := authorizeCreateGroup(ctx); err != nil {
+		log.V(1).Info("Authorization denied", "reason", err.Error())
+		return &model.CreateGroupPayload{
+			Errors: []model.MutationError{forbiddenError(err.Error())},
+		}, nil
+	}
+
+	namespace := input.Environment
+
+	group := &organizationv1.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      input.Name,
+			Namespace: namespace,
+		},
+	}
+
+	_, err := s.client.CreateOrUpdate(ctx, group, func() error {
+		group.Spec = organizationv1.GroupSpec{
+			DisplayName: input.DisplayName,
+		}
+		if input.Description != nil {
+			group.Spec.Description = *input.Description
+		}
+		return nil
+	})
+	if err != nil {
+		log.Error(err, "Failed to create or update group resource", "namespace", namespace)
+		return &model.CreateGroupPayload{
+			Errors: []model.MutationError{k8sToMutationError(err)},
+		}, nil
+	}
+
+	log.V(0).Info("Created group", "namespace", namespace)
+	return &model.CreateGroupPayload{
+		Accepted: true,
+		Errors:   []model.MutationError{},
+	}, nil
+}
+
+func (s *groupK8sService) UpdateGroup(ctx context.Context, ref ResourceRef, input model.UpdateGroupInput) (*model.UpdateGroupPayload, error) {
+	log := logr.FromContextOrDiscard(ctx).WithValues("operation", "UpdateGroup", "resourceName", ref.Name, "namespace", ref.Namespace)
+
+	if err := authorizeUpdateGroup(ctx, ref.Name); err != nil {
+		log.V(1).Info("Authorization denied", "reason", err.Error())
+		return &model.UpdateGroupPayload{
+			Errors: []model.MutationError{forbiddenError(err.Error())},
+		}, nil
+	}
+
+	group := &organizationv1.Group{}
+	if err := s.client.Get(ctx, k8stypes.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, group); err != nil {
+		log.V(1).Info("Failed to get group resource", "error", err)
+		return &model.UpdateGroupPayload{
+			Errors: []model.MutationError{k8sToMutationError(err)},
+		}, nil
+	}
+
+	_, err := s.client.CreateOrUpdate(ctx, group, func() error {
+		if input.DisplayName != nil {
+			group.Spec.DisplayName = *input.DisplayName
+		}
+		if input.Description != nil {
+			group.Spec.Description = *input.Description
+		}
+		return nil
+	})
+	if err != nil {
+		log.Error(err, "Failed to update group resource")
+		return &model.UpdateGroupPayload{
+			Errors: []model.MutationError{k8sToMutationError(err)},
+		}, nil
+	}
+
+	log.V(0).Info("Updated group")
+	return &model.UpdateGroupPayload{
+		Accepted: true,
+		Errors:   []model.MutationError{},
+	}, nil
+}
+
+func (s *groupK8sService) DeleteGroup(ctx context.Context, ref ResourceRef) (*model.DeleteGroupPayload, error) {
+	log := logr.FromContextOrDiscard(ctx).WithValues("operation", "DeleteGroup", "resourceName", ref.Name, "namespace", ref.Namespace)
+
+	if err := authorizeDeleteGroup(ctx); err != nil {
+		log.V(1).Info("Authorization denied", "reason", err.Error())
+		return &model.DeleteGroupPayload{
+			Errors: []model.MutationError{forbiddenError(err.Error())},
+		}, nil
+	}
+
+	group := &organizationv1.Group{}
+	if err := s.client.Get(ctx, k8stypes.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, group); err != nil {
+		log.V(1).Info("Failed to get group resource", "error", err)
+		return &model.DeleteGroupPayload{
+			Errors: []model.MutationError{k8sToMutationError(err)},
+		}, nil
+	}
+
+	if err := s.client.Delete(ctx, group); err != nil {
+		log.Error(err, "Failed to delete group resource")
+		return &model.DeleteGroupPayload{
+			Errors: []model.MutationError{k8sToMutationError(err)},
+		}, nil
+	}
+
+	log.V(0).Info("Deleted group")
+	return &model.DeleteGroupPayload{
+		Accepted: true,
+		Errors:   []model.MutationError{},
+	}, nil
 }
 
 // ----- Application -----
