@@ -1,0 +1,1286 @@
+openapi: 3.0.3
+info:
+  title: Organization Api
+  description: >-
+    API of the TARDIS control plane. With this API, you can manage your Hubs and Teams.
+  contact:
+    name: TARDIS
+    url: https://developer.telekom.de/docs/src/tardis_customer_handbook/support/
+    email: FMB_TARDIS_Support@telekom.de
+  version: 1.0.0
+  x-api-category: Infrastructure
+servers:
+  - url: https://api.telekom.de/organization/v1
+security:
+  - OAuth2:
+      - tardis:admin:all
+tags:
+  - name: Hub
+    description: Manage Hubs
+  - name: Team
+    description: Manage Teams
+  - name: Resources
+    description: Overview of a Teams resources
+  - name: Observer
+    description: Manage the TeamObservers
+paths:
+  /hubs:
+    get:
+      tags:
+        - Hub
+      summary: Find all Hubs
+      description: Find all Hubs
+      operationId: getAllHubs
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              $ref: '#/components/headers/XTotalCount'
+            X-Result-Count:
+              $ref: '#/components/headers/XResultCount'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HubListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:obfuscated
+            - tardis:admin:read
+            - tardis:admin:all
+            - tardis:hub:obfuscated
+            - tardis:hub:read
+            - tardis:hub:all
+    post:
+      tags:
+        - Hub
+      summary: Create a Hub
+      description: >-
+        Create a new and empty Hub with the specified name, displayName (this will be used in MissionControl),
+        email and description.
+      operationId: createHub
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HubCreateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HubResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+  /hubs/{hubName}:
+    get:
+      tags:
+        - Hub
+      summary: Find an existing Hub
+      description: Find an existing Hub
+      operationId: getHub
+      parameters:
+        - name: hubName
+          description: The unique name of this resource (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HubResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:obfuscated
+            - tardis:admin:read
+            - tardis:admin:all
+            - tardis:hub:obfuscated
+            - tardis:hub:read
+            - tardis:hub:all
+    put:
+      tags:
+        - Hub
+      summary: Update an existing Hub
+      description: Update an existing Hub.
+      operationId: updateHub
+      parameters:
+        - name: hubName
+          description: The unique name of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HubUpdateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HubResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+    delete:
+      tags:
+        - Hub
+      summary: Delete a Hub
+      description: Delete Hub - all teams needs to be deleted before a Hub can be deleted.
+      operationId: deleteHub
+      parameters:
+        - name: hubName
+          description: The unique name of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: DELETED
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+  /hubs/{hubName}/teams:
+    get:
+      tags:
+        - Team
+      summary: Find all Teams
+      description: Find all Teams in the specified Hub
+      operationId: getAllTeams
+      parameters:
+        - name: hubName
+          description: The unique name of this resource (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              $ref: '#/components/headers/XTotalCount'
+            X-Result-Count:
+              $ref: '#/components/headers/XResultCount'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:obfuscated
+            - tardis:admin:read
+            - tardis:admin:all
+            - tardis:hub:obfuscated
+            - tardis:hub:read
+            - tardis:hub:all
+            - tardis:team:read
+            - tardis:team:all
+    post:
+      tags:
+        - Team
+      summary: Create a Team
+      description: >-
+        Create a new and Team with the specified name, displayName (this will be used in MissionControl),
+        email and description. Also adds all specified team members
+      operationId: createTeam
+      parameters:
+        - name: hubName
+          description: The unique name of this resource (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamCreateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /hubs/{hubName}/teams/{teamName}:
+    get:
+      tags:
+        - Team
+      summary: Find an existing Team
+      description: Find an existing Team
+      operationId: getTeam
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:obfuscated
+            - tardis:admin:read
+            - tardis:admin:all
+            - tardis:hub:obfuscated
+            - tardis:hub:read
+            - tardis:hub:all
+            - tardis:team:read
+            - tardis:team:all
+    put:
+      tags:
+        - Team
+      summary: Update an existing Team
+      description: Update an existing Team.
+      operationId: updateTeam
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamUpdateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+    delete:
+      tags:
+        - Team
+      summary: Delete a Team
+      description: >-
+        Delete Team - all Team resources need to be deleted before a Team can be deleted.
+        You can use the /hubs/{hubName}/teams/{teamName}/resources endpoint to see the names
+        of the Rover resources registered with this team.
+        
+        
+        **WARNING !!!** - this operation cannot be reversed. Please use this endpoint only if you are 
+        absolutely sure this team can be deleted.
+      operationId: deleteTeam
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: DELETED
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+
+  /hubs/{hubName}/teams/{teamName}/observer:
+    get:
+      tags:
+        - Observer
+      summary: Get the currently configured observer for this team
+      description: >-
+        If this team has a observer configured, return it. An observer is defined
+        in the Raccoon domain and is used to provision a Grafana instance of this team.
+      operationId: getTeamObserver
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamObserverResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:obfuscated
+            - tardis:admin:read
+            - tardis:admin:all
+            - tardis:hub:obfuscated
+            - tardis:hub:read
+            - tardis:hub:all
+            - tardis:team:read
+            - tardis:team:all
+    put:
+      tags:
+        - Observer
+      summary: Create or update the observer for this team
+      description: >-
+        Create or update the observer for this team. This will create a new resource
+        in the Raccoon domain and is used to provision a Grafana instance of this team.
+      operationId: updateTeamObserver
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamObserverResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+    delete:
+      tags:
+        - Observer
+      summary: Delete the observer for this team
+      description: >-
+        Delete the observer for this team.
+      operationId: deleteTeamObserver
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: DELETED
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /hubs/{hubName}/teams/{teamName}/resources:
+    get:
+      tags:
+        - Resources
+      summary: Find all Resources that belong to this Team
+      description: >-
+        Find all Resources that belong to the specified Team in the specified Hub. The response includes references to 
+        Rovers, ApiSpecifications, EventSpecifications and FileSpecifications. This is useful as an
+        overview of what resources this Team has registered in the system. To get more details about
+        individual resources, please use the Rover API.
+      operationId: getAllTeamResources
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              $ref: '#/components/headers/XTotalCount'
+            X-Result-Count:
+              $ref: '#/components/headers/XResultCount'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceRefListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:obfuscated
+            - tardis:admin:read
+            - tardis:admin:all
+            - tardis:hub:obfuscated
+            - tardis:hub:read
+            - tardis:hub:all
+            - tardis:team:read
+            - tardis:team:all
+  /hubs/{hubName}/teams/{teamName}/teamtoken:
+    patch:
+      tags:
+        - TeamToken
+      summary: Reset the team token for this Team
+      description: >-
+        Reset the team token for this Team
+      operationId: resetTeamToken
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /hubs/{hubName}/status:
+    get:
+      tags:
+        - Hub
+      summary: Find an existing Hub and return its status
+      description: Find an existing Hub and return its status
+      operationId: getHubStatus
+      parameters:
+        - name: hubName
+          description: The unique name of this resource (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:obfuscated
+            - tardis:admin:read
+            - tardis:admin:all
+            - tardis:hub:obfuscated
+            - tardis:hub:read
+            - tardis:hub:all
+  /hubs/{hubName}/teams/{teamName}/status:
+    get:
+      tags:
+        - Team
+      summary: Find an existing Team and return its status
+      description: Find an existing Team and return its status
+      operationId: getTeamStatus
+      parameters:
+        - name: hubName
+          description: The unique name of the Hub (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          description: The unique name of the Team (serves as the id)
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:obfuscated
+            - tardis:admin:read
+            - tardis:admin:all
+            - tardis:hub:obfuscated
+            - tardis:hub:read
+            - tardis:hub:all
+            - tardis:team:read
+            - tardis:team:all
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: OAuth2 client_credentials flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://example.com/auth/realms/realm//protocol/openid-connect/token
+          scopes:
+            tardis:admin:obfuscated: all resources are accessible, but sensitive information are omitted
+            tardis:admin:read: all resources are accessible, sensitive information are visible
+            tardis:admin:all: full rights to all endpoints and operations
+            tardis:hub:obfuscated: all hub related resources are accessible, but sensitive information are omitted
+            tardis:hub:read: all hub related resources are accessible, sensitive information are visible
+            tardis:hub:all: full rights to all hub related endpoints and operations
+            tardis:team:obfuscated: all team related resources are accessible, but sensitive information are omitted
+            tardis:team:read: all team related resources are accessible, sensitive information are visible
+            tardis:team:all: full rights to all team related endpoints and operations
+  parameters:
+    Offset:
+      name: offset
+      in: query
+      description: 0-based number of the first returned object in the found list
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+    Limit:
+      name: limit
+      description: >-
+        page size requested by the consumer; must not be larger than the maximal
+        page size
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 20
+        default: 20
+    Sort:
+      name: sort
+      in: query
+      description: list of fields to be used for sorting. Default is name
+      required: false
+      schema:
+        type: string
+        enum:
+          - name
+  headers:
+    XTotalCount:
+      description: Total number of items matching criteria.
+      schema:
+        type: integer
+        minimum: 0
+    XResultCount:
+      description: Actual number of items returned in the response body for this page.
+      schema:
+        type: integer
+        minimum: 0
+  responses:
+    PreconditionFailed:
+      description: PRECONDITION_FAILED
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: BAD_REQUEST
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: UNAUTHORIZED
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: FORBIDDEN
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: NOT_FOUND
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnsupportedMediaType:
+      description: UNSUPPORTED_MEDIATYPE
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: SERVER_ERROR
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      description: RFC-7807 conform object sent on any error
+      type: object
+      required:
+        - type
+        - title
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: number
+        detail:
+          type: string
+        instance:
+          type: string
+        errorCode:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldProblem'
+    FieldProblem:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+        path:
+          type: string
+    Paging:
+      description: Pagination information
+      type: object
+      properties:
+        total:
+          description: total number of result objects matching the search parameters
+          type: integer
+          minimum: 0
+        page:
+          description: number of the current page, based on the requested limit value
+          type: integer
+          minimum: 1
+        last_page:
+          description: number of the last page, based on the requested limit value
+          type: integer
+          minimum: 1
+      required:
+        - total
+        - page
+        - last_page
+    Links:
+      description: HATEOAS links for pagination
+      type: object
+      required:
+        - first
+        - self
+        - last
+      properties:
+        first:
+          type: string
+          format: uri
+          description: the URI of the first page for requested pagination
+        self:
+          type: string
+          format: uri
+          description: the URI for the current page for requested pagination
+        last:
+          type: string
+          format: uri
+          description: >-
+            the URI for the last page for requested pagination, based on the
+            requested limit value
+        prev:
+          type: string
+          format: uri
+          description: >-
+            the URI for the previous page for requested pagination, based on the
+            requested limit value
+        next:
+          type: string
+          format: uri
+          description: >-
+            the URI for the next page for requested pagination, based on the
+            requested limit value
+    Problem:
+      type: object
+      properties:
+        resource:
+          $ref: '#/components/schemas/ResourceRef'
+        context:
+          type: string
+        message:
+          type: string
+        cause:
+          type: string
+        details:
+          type: string
+    ResourceRef:
+      type: object
+      readOnly: true
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        name:
+          type: string
+        path:
+          type: string
+    ResourceRefResponse:
+      type: object
+      readOnly: true
+      allOf:
+        - $ref: '#/components/schemas/ResourceRef'
+    ResourceRefListResponse:
+      type: object
+      readOnly: true
+      properties:
+        paging:
+          $ref: '#/components/schemas/Paging'
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRefResponse'
+    Hub:
+      type: object
+      required:
+        - name
+        - displayName
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        name:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        description:
+          type: string
+    HubResponse:
+      readOnly: true
+      allOf:
+        - $ref: '#/components/schemas/Hub'
+    HubCreateRequest:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Hub'
+    HubUpdateRequest:
+      type: object
+      required:
+        - displayName
+        - email
+        - description
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+        description:
+          type: string
+    HubListResponse:
+      type: object
+      readOnly: true
+      properties:
+        paging:
+          $ref: '#/components/schemas/Paging'
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HubResponse'
+    TeamMember:
+      type: object
+      required:
+        - name
+        - email
+      allOf:
+        - type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+    TeamMemberResponse:
+      type: object
+      readOnly: true
+      allOf:
+        - $ref: '#/components/schemas/TeamMember'
+    Team:
+      type: object
+      required:
+        - name
+        - displayName
+        - email
+        - description
+        - members
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        name:
+          type: string
+          readOnly: true
+          minLength: 1
+        displayName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        description:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+        teamToken:
+          type: string
+          readOnly: true
+    TeamCreateRequest:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Team'
+      required:
+        - name
+        - displayName
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: "^([a-z0-9]+-?)+[a-z0-9]$"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+    TeamUpdateRequest:
+      type: object
+      required:
+        - displayName
+        - email
+        - description
+        - members
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+        description:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+    TeamResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Team'
+      properties:
+        teamToken:
+          type: string
+          readOnly: true
+        clientId:
+          type: string
+          readOnly: true
+        clientSecret:
+          type: string
+          readOnly: true
+    TeamListResponse:
+      type: object
+      readOnly: true
+      properties:
+        paging:
+          $ref: '#/components/schemas/Paging'
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamResponse'
+
+    Status:
+      type: object
+      readOnly: true
+      properties:
+        processingState:
+          type: string
+        state:
+          type: string
+        time:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/StateInfo'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/StateInfo'
+        infos:
+          type: array
+          items:
+            $ref: '#/components/schemas/StateInfo'
+    StateInfo:
+      type: object
+      readOnly: true
+      properties:
+        message:
+          type: string
+        cause:
+          type: string
+    ResourceStatusResponse:
+      description: >-
+        Response resource which contains information about the status of the
+        resource and all its relevant sub-resources
+      readOnly: true
+      required:
+        - state
+        - processingState
+        - overallStatus
+      allOf:
+        - $ref: '#/components/schemas/StatusTimestamps'
+        - properties:
+            state:
+              $ref: '#/components/schemas/State'
+            processingState:
+              $ref: '#/components/schemas/ProcessingState'
+            overallStatus:
+              description: Status of this resource and all its relevant sub-resources
+              type: string
+              example: blocked
+            errors:
+              description: List of errors that resulted while processing this resource
+              type: array
+              items:
+                $ref: '#/components/schemas/Problem'
+            warnings:
+              description: List of warnings that resulted while processing this resource
+              type: array
+              items:
+                $ref: '#/components/schemas/Problem'
+            infos:
+              description: List of infos that resulted while processing this resource
+              type: array
+              items:
+                $ref: '#/components/schemas/Problem'
+    StatusTimestamps:
+      type: object
+      properties:
+        createdAt:
+          description: Timestamp when this resource was created.
+          type: string
+          format: date-time
+        processedAt:
+          description: Timestamp when this resource was last processed.
+          type: string
+          format: date-time
+    State:
+      enum:
+        - none
+        - invalid
+        - blocked
+        - complete
+      type: string
+    ProcessingState:
+      enum:
+        - none
+        - pending
+        - processing
+        - failed
+        - done
+      type: string
+    TeamObserverResponse:
+      type: object
+      readOnly: true
+      required:
+        - state
+        - processingState
+        - overallStatus
+        - grafanaUrl
+      allOf:
+        - $ref: '#/components/schemas/ResourceStatusResponse'
+        - properties:
+            grafanaUrl:
+              type: string
+              description: The generated Grafana organization URL for this TeamObserver
