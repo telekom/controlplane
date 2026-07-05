@@ -72,7 +72,7 @@ var _ = Describe("TeamK8sService", func() {
 
 	BeforeEach(func() {
 		k8sClient = newFakeClient()
-		svc = service.NewTeamK8sService(cc.NewScopedClient(k8sClient, "poc"))
+		svc = service.NewTeamK8sService(cc.NewScopedClient(k8sClient, "poc"), service.NewNoopResourceChecker())
 	})
 
 	Describe("CreateTeam", func() {

@@ -29,12 +29,13 @@ const rotateKeyword = "rotate"
 // ----- Team -----
 
 type teamK8sService struct {
-	client cc.ScopedClient
+	client          cc.ScopedClient
+	resourceChecker ResourceChecker
 }
 
 // NewTeamK8sService creates a TeamService backed by Kubernetes.
-func NewTeamK8sService(c cc.ScopedClient) TeamService {
-	return &teamK8sService{client: c}
+func NewTeamK8sService(c cc.ScopedClient, rc ResourceChecker) TeamService {
+	return &teamK8sService{client: c, resourceChecker: rc}
 }
 
 func (s *teamK8sService) CreateTeam(ctx context.Context, input model.CreateTeamInput) (*model.CreateTeamPayload, error) {
@@ -241,6 +242,28 @@ func (s *teamK8sService) DeleteTeam(ctx context.Context, ref ResourceRef) (*mode
 		log.V(1).Info("Authorization denied", "reason", err.Error())
 		return &model.DeleteTeamPayload{
 			Errors: []model.MutationError{forbiddenError(err.Error())},
+		}, nil
+	}
+
+	// Pre-check: team must have no resources before deletion.
+	prefix := fmt.Sprintf("%s--%s--%s--", ref.Namespace, ref.Group, ref.TeamName)
+	hasResources, err := s.resourceChecker.HasResources(ctx, prefix)
+	if err != nil {
+		log.Error(err, "Failed to check team resources")
+		return &model.DeleteTeamPayload{
+			Errors: []model.MutationError{{
+				Code:    model.ErrorCodePreconditionFailed,
+				Message: "unable to verify team resources, please try again",
+			}},
+		}, nil
+	}
+	if hasResources {
+		log.V(1).Info("Team still has resources, refusing deletion")
+		return &model.DeleteTeamPayload{
+			Errors: []model.MutationError{{
+				Code:    model.ErrorCodePreconditionFailed,
+				Message: "cannot delete team: team still has resources — delete all resources first",
+			}},
 		}, nil
 	}
 

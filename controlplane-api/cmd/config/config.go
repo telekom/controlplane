@@ -18,6 +18,7 @@ type ServerConfig struct {
 	GraphQL                 GraphQLConfig     `mapstructure:"graphql"`
 	Kubernetes              KubernetesConfig  `mapstructure:"kubernetes"`
 	FileManager             FileManagerConfig `mapstructure:"fileManager"`
+	RoverServer             RoverServerConfig `mapstructure:"roverServer"`
 }
 
 type KubernetesConfig struct {
@@ -37,6 +38,12 @@ type GraphQLConfig struct {
 // FileManagerConfig holds the configuration for constructing specification
 // download URLs. The BaseURL is the root URL of the file-manager service.
 type FileManagerConfig struct {
+	BaseURL string `mapstructure:"baseUrl"`
+}
+
+// RoverServerConfig holds the configuration for the rover-server integration
+// used for team resource pre-deletion checks.
+type RoverServerConfig struct {
 	BaseURL string `mapstructure:"baseUrl"`
 }
 
@@ -83,6 +90,9 @@ func DefaultConfig() *ServerConfig {
 		},
 		FileManager: FileManagerConfig{
 			BaseURL: "file-manager.controlplane-system.svc",
+		},
+		RoverServer: RoverServerConfig{
+			BaseURL: "http://rover-server.controlplane-system.svc.cluster.local",
 		},
 	}
 }
