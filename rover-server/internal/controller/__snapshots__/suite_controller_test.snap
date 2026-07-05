@@ -1575,3 +1575,13 @@
  "items": null
 }
 ---
+
+[Resources Controller GetAll resources should filter results when prefix query param is provided - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/resources?cursor="
+ },
+ "items": null
+}
+---
