@@ -281,6 +281,12 @@ type ComplexityRoot struct {
 		ToState func(childComplexity int) int
 	}
 
+	CreateGroupPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+		Group    func(childComplexity int) int
+	}
+
 	CreateTeamPayload struct {
 		Accepted func(childComplexity int) int
 		Errors   func(childComplexity int) int
@@ -310,6 +316,16 @@ type ComplexityRoot struct {
 		Name           func(childComplexity int) int
 		ResultingState func(childComplexity int) int
 		Timestamp      func(childComplexity int) int
+	}
+
+	DeleteGroupPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+	}
+
+	DeleteTeamPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
 	}
 
 	EventExposure struct {
@@ -436,12 +452,16 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddTeamMember           func(childComplexity int, teamID int, member model.MemberInput) int
+		CreateGroup             func(childComplexity int, input model.CreateGroupInput) int
 		CreateTeam              func(childComplexity int, input model.CreateTeamInput) int
 		DecideApproval          func(childComplexity int, approvalID int, input model.DecisionInput) int
 		DecideApprovalRequest   func(childComplexity int, approvalRequestID int, input model.DecisionInput) int
+		DeleteGroup             func(childComplexity int, input model.DeleteGroupInput) int
+		DeleteTeam              func(childComplexity int, input model.DeleteTeamInput) int
 		RemoveTeamMember        func(childComplexity int, teamID int, memberEmail string) int
 		RotateApplicationSecret func(childComplexity int, applicationID int) int
 		RotateTeamToken         func(childComplexity int, teamID int) int
+		UpdateGroup             func(childComplexity int, input model.UpdateGroupInput) int
 		UpdateTeam              func(childComplexity int, input model.UpdateTeamInput) int
 	}
 
@@ -534,6 +554,12 @@ type ComplexityRoot struct {
 		GroupName func(childComplexity int) int
 		ID        func(childComplexity int) int
 		Name      func(childComplexity int) int
+	}
+
+	UpdateGroupPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+		Group    func(childComplexity int) int
 	}
 
 	UpdateTeamPayload struct {
@@ -1685,6 +1711,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AvailableTransition.ToState(childComplexity), true
 
+	case "CreateGroupPayload.accepted":
+		if e.ComplexityRoot.CreateGroupPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateGroupPayload.Accepted(childComplexity), true
+
+	case "CreateGroupPayload.errors":
+		if e.ComplexityRoot.CreateGroupPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateGroupPayload.Errors(childComplexity), true
+
+	case "CreateGroupPayload.group":
+		if e.ComplexityRoot.CreateGroupPayload.Group == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateGroupPayload.Group(childComplexity), true
+
 	case "CreateTeamPayload.accepted":
 		if e.ComplexityRoot.CreateTeamPayload.Accepted == nil {
 			break
@@ -1796,6 +1843,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Decision.Timestamp(childComplexity), true
+
+	case "DeleteGroupPayload.accepted":
+		if e.ComplexityRoot.DeleteGroupPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteGroupPayload.Accepted(childComplexity), true
+
+	case "DeleteGroupPayload.errors":
+		if e.ComplexityRoot.DeleteGroupPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteGroupPayload.Errors(childComplexity), true
+
+	case "DeleteTeamPayload.accepted":
+		if e.ComplexityRoot.DeleteTeamPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteTeamPayload.Accepted(childComplexity), true
+
+	case "DeleteTeamPayload.errors":
+		if e.ComplexityRoot.DeleteTeamPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteTeamPayload.Errors(childComplexity), true
 
 	case "EventExposure.active":
 		if e.ComplexityRoot.EventExposure.Active == nil {
@@ -2390,6 +2465,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.AddTeamMember(childComplexity, args["teamId"].(int), args["member"].(model.MemberInput)), true
 
+	case "Mutation.createGroup":
+		if e.ComplexityRoot.Mutation.CreateGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateGroup(childComplexity, args["input"].(model.CreateGroupInput)), true
+
 	case "Mutation.createTeam":
 		if e.ComplexityRoot.Mutation.CreateTeam == nil {
 			break
@@ -2426,6 +2513,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.DecideApprovalRequest(childComplexity, args["approvalRequestId"].(int), args["input"].(model.DecisionInput)), true
 
+	case "Mutation.deleteGroup":
+		if e.ComplexityRoot.Mutation.DeleteGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteGroup(childComplexity, args["input"].(model.DeleteGroupInput)), true
+
+	case "Mutation.deleteTeam":
+		if e.ComplexityRoot.Mutation.DeleteTeam == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteTeam_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteTeam(childComplexity, args["input"].(model.DeleteTeamInput)), true
+
 	case "Mutation.removeTeamMember":
 		if e.ComplexityRoot.Mutation.RemoveTeamMember == nil {
 			break
@@ -2461,6 +2572,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RotateTeamToken(childComplexity, args["teamId"].(int)), true
+
+	case "Mutation.updateGroup":
+		if e.ComplexityRoot.Mutation.UpdateGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateGroup(childComplexity, args["input"].(model.UpdateGroupInput)), true
 
 	case "Mutation.updateTeam":
 		if e.ComplexityRoot.Mutation.UpdateTeam == nil {
@@ -2955,6 +3078,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TeamInfo.Name(childComplexity), true
 
+	case "UpdateGroupPayload.accepted":
+		if e.ComplexityRoot.UpdateGroupPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpdateGroupPayload.Accepted(childComplexity), true
+
+	case "UpdateGroupPayload.errors":
+		if e.ComplexityRoot.UpdateGroupPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpdateGroupPayload.Errors(childComplexity), true
+
+	case "UpdateGroupPayload.group":
+		if e.ComplexityRoot.UpdateGroupPayload.Group == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpdateGroupPayload.Group(childComplexity), true
+
 	case "UpdateTeamPayload.accepted":
 		if e.ComplexityRoot.UpdateTeamPayload.Accepted == nil {
 			break
@@ -3066,8 +3210,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApprovalRequestOrder,
 		ec.unmarshalInputApprovalRequestWhereInput,
 		ec.unmarshalInputApprovalWhereInput,
+		ec.unmarshalInputCreateGroupInput,
 		ec.unmarshalInputCreateTeamInput,
 		ec.unmarshalInputDecisionInput,
+		ec.unmarshalInputDeleteGroupInput,
+		ec.unmarshalInputDeleteTeamInput,
 		ec.unmarshalInputEventExposureOrder,
 		ec.unmarshalInputEventExposureWhereInput,
 		ec.unmarshalInputEventSubscriptionOrder,
@@ -3079,6 +3226,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputMemberWhereInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
+		ec.unmarshalInputUpdateGroupInput,
 		ec.unmarshalInputUpdateTeamInput,
 		ec.unmarshalInputZoneWhereInput,
 	)
@@ -6720,6 +6868,10 @@ input UpdateTeamInput {
   email: String
 }
 
+input DeleteTeamInput {
+  teamId: ID!
+}
+
 type CreateTeamPayload {
   team: Team
   accepted: Boolean!
@@ -6728,6 +6880,11 @@ type CreateTeamPayload {
 
 type UpdateTeamPayload {
   team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DeleteTeamPayload {
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -6744,6 +6901,44 @@ type RemoveTeamMemberPayload {
 
 type RotateTeamTokenPayload {
   team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Group mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+input CreateGroupInput {
+  environment: String!
+  name: String!
+  displayName: String!
+  description: String
+}
+
+input UpdateGroupInput {
+  groupId: ID!
+  displayName: String
+  description: String
+}
+
+input DeleteGroupInput {
+  groupId: ID!
+}
+
+type CreateGroupPayload {
+  group: Group
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type UpdateGroupPayload {
+  group: Group
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DeleteGroupPayload {
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -6785,6 +6980,9 @@ type Mutation {
   "Update team metadata (email). Does not manage members."
   updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
 
+  "Delete a Team. Fails if the team still has resources (Rovers, ApiSpecs, etc.)."
+  deleteTeam(input: DeleteTeamInput!): DeleteTeamPayload!
+
   "Add a member to a team. Takes effect immediately."
   addTeamMember(teamId: ID!, member: MemberInput!): AddTeamMemberPayload!
 
@@ -6796,6 +6994,15 @@ type Mutation {
 
   "Rotate the client secret for an application. Triggers async secret regeneration."
   rotateApplicationSecret(applicationId: ID!): RotateApplicationSecretPayload!
+
+  "Create a new Group in Kubernetes"
+  createGroup(input: CreateGroupInput!): CreateGroupPayload!
+
+  "Update group metadata (displayName, description)."
+  updateGroup(input: UpdateGroupInput!): UpdateGroupPayload!
+
+  "Delete a Group. Fails if the group still has teams."
+  deleteGroup(input: DeleteGroupInput!): DeleteGroupPayload!
 
   "Decide on an ApprovalRequest (approve or deny initial access)."
   decideApprovalRequest(approvalRequestId: ID!, input: DecisionInput!): DecideApprovalRequestPayload!
@@ -7477,6 +7684,18 @@ func (ec *executionContext) childFields_AvailableTransition(ctx context.Context,
 	return nil, fmt.Errorf("no field named %q was found under type AvailableTransition", field.Name)
 }
 
+func (ec *executionContext) childFields_CreateGroupPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "group":
+		return ec.fieldContext_CreateGroupPayload_group(ctx, field)
+	case "accepted":
+		return ec.fieldContext_CreateGroupPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_CreateGroupPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CreateGroupPayload", field.Name)
+}
+
 func (ec *executionContext) childFields_CreateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "team":
@@ -7537,6 +7756,26 @@ func (ec *executionContext) childFields_Decision(ctx context.Context, field grap
 		return ec.fieldContext_Decision_resultingState(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Decision", field.Name)
+}
+
+func (ec *executionContext) childFields_DeleteGroupPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "accepted":
+		return ec.fieldContext_DeleteGroupPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_DeleteGroupPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DeleteGroupPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_DeleteTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "accepted":
+		return ec.fieldContext_DeleteTeamPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_DeleteTeamPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DeleteTeamPayload", field.Name)
 }
 
 func (ec *executionContext) childFields_EventExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -7929,6 +8168,18 @@ func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field grap
 		return ec.fieldContext_TeamInfo_email(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TeamInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_UpdateGroupPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "group":
+		return ec.fieldContext_UpdateGroupPayload_group(ctx, field)
+	case "accepted":
+		return ec.fieldContext_UpdateGroupPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_UpdateGroupPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type UpdateGroupPayload", field.Name)
 }
 
 func (ec *executionContext) childFields_UpdateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

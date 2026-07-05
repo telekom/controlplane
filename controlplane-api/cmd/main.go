@@ -82,6 +82,7 @@ func main() {
 		scopedClient := cc.NewScopedClient(k8sClient, cfg.Kubernetes.Environment)
 		services = service.Services{
 			Team:        service.NewTeamK8sService(scopedClient),
+			Group:       service.NewGroupK8sService(scopedClient),
 			Application: service.NewApplicationK8sService(scopedClient),
 			Approval:    service.NewApprovalK8sService(scopedClient),
 		}
