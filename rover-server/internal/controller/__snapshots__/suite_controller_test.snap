@@ -1473,3 +1473,105 @@
  "type": "Forbidden"
 }
 ---
+
+[Resources Controller GetAll resources should return aggregated resources for a group token - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/resources?cursor="
+ },
+ "items": [
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "Rover",
+   "name": "rover-local-sub",
+   "namespace": "poc--eni--hyperion",
+   "path": "/rovers/rover-local-sub"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "ApiSpecification",
+   "name": "eni-distr-v1",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apispecifications/eni-distr-v1"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "EventSpecification",
+   "name": "tardis-horizon-demo-cetus-v1",
+   "namespace": "poc--eni--hyperion",
+   "path": "/eventspecifications/tardis-horizon-demo-cetus-v1"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "Roadmap",
+   "name": "eni-test-api",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apiroadmaps/eni-test-api"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "ApiChangelog",
+   "name": "eni-test-api",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apichangelogs/eni-test-api"
+  }
+ ]
+}
+---
+
+[Resources Controller GetAll resources should return aggregated resources for a team token - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/resources?cursor="
+ },
+ "items": [
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "Rover",
+   "name": "rover-local-sub",
+   "namespace": "poc--eni--hyperion",
+   "path": "/rovers/rover-local-sub"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "ApiSpecification",
+   "name": "eni-distr-v1",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apispecifications/eni-distr-v1"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "EventSpecification",
+   "name": "tardis-horizon-demo-cetus-v1",
+   "namespace": "poc--eni--hyperion",
+   "path": "/eventspecifications/tardis-horizon-demo-cetus-v1"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "Roadmap",
+   "name": "eni-test-api",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apiroadmaps/eni-test-api"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "ApiChangelog",
+   "name": "eni-test-api",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apichangelogs/eni-test-api"
+  }
+ ]
+}
+---
+
+[Resources Controller GetAll resources should return an empty list for a team with no resources - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/resources?cursor="
+ },
+ "items": null
+}
+---
