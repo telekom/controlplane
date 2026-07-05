@@ -69,7 +69,7 @@ func main() {
 	})
 
 	// API routes under /organization/v1 — requires consumer token.
-	api := app.Group("/organization/v1", mw.TokenDecode(log))
+	api := app.Group("/organization/v1", mw.TokenDecode(log), mw.Obfuscate())
 
 	// Register all endpoint handlers.
 	h := handler.New(cpapiClient, roverClient, log)
