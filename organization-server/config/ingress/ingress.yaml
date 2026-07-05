@@ -1,0 +1,22 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: organization-server-ingress
+  namespace: system
+  annotations:
+spec:
+  rules:
+  - host: organization-server.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: organization-server-service
+            port:
+              number: 8080
