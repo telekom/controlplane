@@ -105,6 +105,8 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 		// This is a proxy route. Each failover target is a secondary zone's gateway.
 		// The jumper iterates the list and picks the first one whose zone is healthy.
 		jumperCfg := builder.JumperConfig()
+		// In failover-scenario, this is also a proxy-route so we need to set mesh=true to allow the jumper to route to other zones.
+		jumperCfg.Mesh = true
 		for _, target := range failover.Targets {
 			routingCfg := &plugin.RoutingConfig{
 				JumperConfig:   jumperCfg,
