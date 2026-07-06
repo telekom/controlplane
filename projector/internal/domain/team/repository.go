@@ -106,6 +106,9 @@ func (r *Repository) Upsert(ctx context.Context, data *TeamData) error {
 				} else {
 					u.ClearTeamToken()
 				}
+				if groupID > 0 {
+					u.Set(team.GroupColumn, groupID)
+				}
 			}).
 			ID(ctx)
 		if upsertErr != nil {
