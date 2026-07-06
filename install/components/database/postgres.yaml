@@ -64,6 +64,15 @@ spec:
       containers:
         - name: postgres
           image: postgres:16-alpine
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsGroup: 999
+            runAsNonRoot: true
+            runAsUser: 999
           env:
             - name: POSTGRES_DB
               value: controlplane
