@@ -25,6 +25,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
@@ -80,6 +81,11 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	if cconfig.FeaturePermission.IsEnabled() {
 		b = b.Owns(&permissionv1.PermissionSet{})
+	}
+
+	if cconfig.FeatureFile.IsEnabled() {
+		b = b.Owns(&filev1.FileExposure{}).
+			Owns(&filev1.FileSubscription{})
 	}
 
 	b = b.Watches(&organizationv1.Team{},

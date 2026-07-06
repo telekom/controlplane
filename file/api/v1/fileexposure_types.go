@@ -11,31 +11,29 @@ import (
 )
 
 // FileExposureSpec defines the desired state of FileExposure.
-// It is created in the file domain from a rover-domain Rover exposure (1:1). The
-// derived logical Application is created without an Identity client.
 type FileExposureSpec struct {
 	// Approval configures how subscriptions to this file type are approved.
-	// +kubebuilder:default=Simple
-	Approval ApprovalStrategy `json:"approval,omitempty"`
+	Approval Approval `json:"approval"`
 
 	// Visibility defines who can see and subscribe to this file type.
 	// +kubebuilder:default=Enterprise
 	Visibility Visibility `json:"visibility,omitempty"`
 
-	// FileTypeRef references the file-domain FileType this exposure belongs to.
-	// It must live in the same namespace as this FileExposure.
+	// FileType is the file type identifier this exposure belongs to.
+	// References the FileType CR via MakeFileTypeName() conversion.
 	// +kubebuilder:validation:Required
-	FileTypeRef ctypes.ObjectRef `json:"fileTypeRef"`
+	// +kubebuilder:validation:MinLength=1
+	FileType string `json:"fileType"`
 
 	// PublicKeys are the SSH public keys registered for the provider's SFTP user.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	PublicKeys []PublicKey `json:"publicKeys"`
 
-	// ZoneServiceConfigRef references the zone-scoped service configuration
-	// (provided by the SFTP/DDS domain) used to reach the backend for this exposure.
-	// +optional
-	ZoneServiceConfigRef *ctypes.ObjectRef `json:"zoneServiceConfigRef,omitempty"`
+	// Zone references the Zone CR where this file type is exposed.
+	// On this layer only the Zone ref is passed; the file domain resolves it to
+	// the zone-scoped service configuration for the backend.
+	Zone ctypes.ObjectRef `json:"zone"`
 }
 
 // FileExposureStatus defines the observed state of FileExposure.
@@ -57,6 +55,7 @@ type FileExposureStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="FileType",type="string",JSONPath=".spec.fileType",description="The file type identifier"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this exposure is provisioned"
 // +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
 

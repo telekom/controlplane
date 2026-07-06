@@ -168,7 +168,7 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(len(statusErr.Status().Details.Causes)).To(Equal(2))
 			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
 				Type:    metav1.CauseTypeFieldValueInvalid,
-				Message: "Invalid value: \"object\": Only one of api or event can be specified (XOR relationship)",
+				Message: "Invalid value: \"object\": Only one of api, event or file can be specified (XOR relationship)",
 				Field:   "spec.exposures[0]",
 			}))
 
@@ -388,6 +388,130 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			}))
 
 			Expect(len(statusErr.Status().Details.Causes)).To(Equal(2))
+		})
+	})
+
+	Context("File Types (SFTP)", func() {
+		It("should report the exposure and subscription type as file", func() {
+			exp := v1.Exposure{File: &v1.FileExposure{FileType: "demo-sftp-spec-v1"}}
+			Expect(exp.Type()).To(Equal(v1.TypeFile))
+
+			sub := v1.Subscription{File: &v1.FileSubscription{FileType: "demo-sftp-spec-v1"}}
+			Expect(sub.Type()).To(Equal(v1.TypeFile))
+		})
+
+		It("should only support file types on the cetus and canis zones", func() {
+			Expect(v1.IsFileTypeZoneSupported("cetus")).To(BeTrue())
+			Expect(v1.IsFileTypeZoneSupported("canis")).To(BeTrue())
+			Expect(v1.IsFileTypeZoneSupported("aws")).To(BeFalse())
+			Expect(v1.IsFileTypeZoneSupported("gaia")).To(BeFalse())
+			Expect(v1.IsFileTypeZoneSupported("")).To(BeFalse())
+		})
+
+		It("should accept a Rover with a file type exposure and subscription", func() {
+			rover := new(v1.Rover)
+			rover.Name = "file-rover"
+			rover.Namespace = "default"
+			rover.Spec = v1.RoverSpec{
+				Zone:         "cetus",
+				ClientSecret: "topsecret",
+				Exposures: []v1.Exposure{
+					{
+						File: &v1.FileExposure{
+							FileType:   "demo-sftp-spec-v1",
+							Variant:    v1.FileVariantSFTP,
+							Visibility: v1.VisibilityWorld,
+							PublicKeys: []v1.PublicKey{
+								{Label: "demo-provider-key", Key: "ssh-ed25519 AAAAprovider"},
+							},
+						},
+					},
+				},
+				Subscriptions: []v1.Subscription{
+					{
+						File: &v1.FileSubscription{
+							FileType: "demo-sftp-spec-v1",
+							PublicKeys: []v1.PublicKey{
+								{Label: "demo-consumer-key", Key: "ssh-ed25519 AAAAconsumer"},
+							},
+						},
+					},
+				},
+			}
+			rover.Status = v1.RoverStatus{}
+
+			err := k8sClient.Create(ctx, rover)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = k8sClient.Delete(ctx, rover)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should reject a file type exposure without any public keys", func() {
+			rover := new(v1.Rover)
+			rover.Name = "invalid-file-rover"
+			rover.Namespace = "default"
+			rover.Spec = v1.RoverSpec{
+				Zone:         "cetus",
+				ClientSecret: "topsecret",
+				Exposures: []v1.Exposure{
+					{
+						File: &v1.FileExposure{
+							FileType:   "demo-sftp-spec-v1",
+							Visibility: v1.VisibilityWorld,
+							PublicKeys: []v1.PublicKey{},
+						},
+					},
+				},
+			}
+			rover.Status = v1.RoverStatus{}
+
+			err := k8sClient.Create(ctx, rover)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+		})
+
+		It("should reject a file type exposure combined with an api exposure in the same entry", func() {
+			rover := new(v1.Rover)
+			rover.Name = "invalid-file-rover"
+			rover.Namespace = "default"
+			rover.Spec = v1.RoverSpec{
+				Zone:         "cetus",
+				ClientSecret: "topsecret",
+				Exposures: []v1.Exposure{
+					{
+						Api: &v1.ApiExposure{
+							BasePath: "/api",
+							Upstreams: []v1.Upstream{
+								{URL: "http://example.com"},
+							},
+							Visibility: v1.VisibilityEnterprise,
+							Approval: v1.Approval{
+								Strategy: v1.ApprovalStrategyAuto,
+							},
+						},
+						File: &v1.FileExposure{
+							FileType:   "demo-sftp-spec-v1",
+							Visibility: v1.VisibilityWorld,
+							PublicKeys: []v1.PublicKey{
+								{Label: "demo-provider-key", Key: "ssh-ed25519 AAAAprovider"},
+							},
+						},
+					},
+				},
+			}
+			rover.Status = v1.RoverStatus{}
+
+			err := k8sClient.Create(ctx, rover)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			statusErr, ok := err.(apierrors.APIStatus)
+			Expect(ok).To(BeTrue())
+			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
+				Type:    metav1.CauseTypeFieldValueInvalid,
+				Message: "Invalid value: \"object\": Only one of api, event or file can be specified (XOR relationship)",
+				Field:   "spec.exposures[0]",
+			}))
 		})
 	})
 })

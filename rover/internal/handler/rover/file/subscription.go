@@ -33,11 +33,6 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		},
 	}
 
-	fileTypeRef := types.ObjectRef{
-		Name:      filev1.MakeFileTypeName(sub.FileType),
-		Namespace: owner.Namespace,
-	}
-
 	mutator := func() error {
 		if err := controllerutil.SetControllerReference(owner, fileSubscription, c.Scheme()); err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
@@ -50,8 +45,8 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		}
 
 		fileSubscription.Spec = filev1.FileSubscriptionSpec{
-			FileTypeRef: fileTypeRef,
-			PublicKeys:  mapPublicKeys(sub.PublicKeys),
+			FileType:   sub.FileType,
+			PublicKeys: mapPublicKeys(sub.PublicKeys),
 		}
 		return nil
 	}

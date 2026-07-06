@@ -18,10 +18,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Whether this subscription is provisioned
-      jsonPath: .status.active
-      name: Active
-      type: boolean
+    - description: The file type identifier
+      jsonPath: .spec.fileType
+      name: FileType
+      type: string
     - description: Creation timestamp
       jsonPath: .metadata.creationTimestamp
       name: CreatedAt
@@ -42,20 +42,12 @@ spec:
           spec:
             description: FileSubscriptionSpec defines the desired state of FileSubscription.
             properties:
-              fileTypeRef:
-                description: FileTypeRef references the file-domain FileType this subscription
-                  belongs to.
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
+              fileType:
+                description: |-
+                  FileType is the file type identifier this subscription belongs to.
+                  References the FileType CR via MakeFileTypeName() conversion.
+                minLength: 1
+                type: string
               publicKeys:
                 description: PublicKeys are the SSH public keys registered for the
                   consumer's SFTP user.
@@ -80,15 +72,12 @@ spec:
                 minItems: 1
                 type: array
             required:
-            - fileTypeRef
+            - fileType
             - publicKeys
             type: object
           status:
             description: FileSubscriptionStatus defines the observed state of FileSubscription.
             properties:
-              active:
-                description: Active indicates whether this subscription has been provisioned.
-                type: boolean
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current

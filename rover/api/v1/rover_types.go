@@ -5,6 +5,8 @@
 package v1
 
 import (
+	"slices"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +32,18 @@ type RoverStatus struct {
 	EventExposures []types.ObjectRef `json:"eventExposures,omitempty"`
 	// EventSubscriptions are references to EventSubscription resources created by this Rover
 	EventSubscriptions []types.ObjectRef `json:"eventSubscriptions,omitempty"`
+	// FileExposures are references to FileExposure resources created by this Rover in the file domain.
+	//
+	// TODO(DHEI-20903): today RoverHandler.CreateOrUpdate only initialises this slice
+	// (make(..., 0)); it is populated (append of the created file-domain resource refs)
+	// by the file handler dispatch once the file domain module is available.
+	// Populated from: rover/internal/handler/rover/handler.go, case roverv1.TypeFile.
+	FileExposures []types.ObjectRef `json:"fileExposures,omitempty"`
+	// FileSubscriptions are references to FileSubscription resources created by this Rover in the file domain.
+	//
+	// TODO(DHEI-20903): see FileExposures — populated by the file handler dispatch
+	// (rover/internal/handler/rover/handler.go, case roverv1.TypeFile) once delivered.
+	FileSubscriptions []types.ObjectRef `json:"fileSubscriptions,omitempty"`
 	// PermissionSets are references to PermissionSet resources created by this Rover
 	PermissionSets []types.ObjectRef `json:"permissionSets,omitempty"`
 }
@@ -175,7 +189,38 @@ const (
 	TypeApi Type = "api"
 	// TypeEvent represents an Event type resource
 	TypeEvent Type = "event"
+	// TypeFile represents a File type resource (SFTP integration)
+	TypeFile Type = "file"
 )
+
+// FileVariant selects the file-transfer backend used for a file type exposure or
+// subscription. Currently only SFTP is supported, as CloudWalker has been retired.
+type FileVariant string
+
+// String returns the raw string value of the FileVariant.
+//
+// TODO(DHEI-20903): currently unused in production code (only asserted in tests).
+// It will be called by the file-domain handler
+// (rover/internal/handler/rover/file, added in DHEI-20903) when logging/serialising
+// the selected variant while creating the file-domain CRD.
+func (v FileVariant) String() string {
+	return string(v)
+}
+
+const (
+	// FileVariantSFTP indicates that the file type is handled via the SFTP backend.
+	FileVariantSFTP FileVariant = "sftp"
+)
+
+// SupportedFileTypeZones lists the zones on which file type (SFTP) exposures and
+// subscriptions are currently supported. CloudWalker has been retired, so SFTP file
+// types are limited to the external zones cetus and canis.
+var SupportedFileTypeZones = []string{"cetus", "canis"}
+
+// IsFileTypeZoneSupported reports whether the given zone supports file types (SFTP).
+func IsFileTypeZoneSupported(zone string) bool {
+	return slices.Contains(SupportedFileTypeZones, zone)
+}
 
 // ApprovalStrategy defines the approval workflow for API exposure
 type ApprovalStrategy string
@@ -224,8 +269,8 @@ type RoverM2MAuthentication struct {
 }
 
 // Exposure defines a service that is exposed by this Rover
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event)", message="At least one of api or event must be specified"
-// +kubebuilder:validation:XValidation:rule="self == null || (!has(self.api) && has(self.event)) || (has(self.api) && !has(self.event))", message="Only one of api or event can be specified (XOR relationship)"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event) || has(self.file)", message="At least one of api, event or file must be specified"
+// +kubebuilder:validation:XValidation:rule="self == null || [has(self.api), has(self.event), has(self.file)].filter(x, x).size() == 1", message="Only one of api, event or file can be specified (XOR relationship)"
 type Exposure struct {
 	// Api defines an API-based service exposure configuration
 	// +kubebuilder:validation:Optional
@@ -233,6 +278,9 @@ type Exposure struct {
 	// Event defines an Event-based service exposure configuration
 	// +kubebuilder:validation:Optional
 	Event *EventExposure `json:"event,omitempty"`
+	// File defines a File-based (SFTP) service exposure configuration
+	// +kubebuilder:validation:Optional
+	File *FileExposure `json:"file,omitempty"`
 }
 
 func (e *Exposure) Type() Type {
@@ -242,12 +290,15 @@ func (e *Exposure) Type() Type {
 	if e.Event != nil {
 		return TypeEvent
 	}
+	if e.File != nil {
+		return TypeFile
+	}
 	return ""
 }
 
 // Subscription defines a service that this Rover consumes
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event)", message="At least one of api or event must be specified"
-// +kubebuilder:validation:XValidation:rule="(has(self.api) && !has(self.event)) || (!has(self.api) && has(self.event))", message="Only one of api or event can be specified (XOR relationship)"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event) || has(self.file)", message="At least one of api, event or file must be specified"
+// +kubebuilder:validation:XValidation:rule="self == null || [has(self.api), has(self.event), has(self.file)].filter(x, x).size() == 1", message="Only one of api, event or file can be specified (XOR relationship)"
 type Subscription struct {
 	// Api defines an API-based service subscription configuration
 	// +kubebuilder:validation:Optional
@@ -255,6 +306,9 @@ type Subscription struct {
 	// Event defines an Event-based service subscription configuration
 	// +kubebuilder:validation:Optional
 	Event *EventSubscription `json:"event,omitempty"`
+	// File defines a File-based (SFTP) service subscription configuration
+	// +kubebuilder:validation:Optional
+	File *FileSubscription `json:"file,omitempty"`
 }
 
 func (s *Subscription) Type() Type {
@@ -263,6 +317,9 @@ func (s *Subscription) Type() Type {
 	}
 	if s.Event != nil {
 		return TypeEvent
+	}
+	if s.File != nil {
+		return TypeFile
 	}
 	return ""
 }
@@ -388,6 +445,70 @@ type EventSubscription struct {
 	// Must match scope names defined on the corresponding EventExposure
 	// +kubebuilder:validation:Optional
 	Scopes []string `json:"scopes,omitempty"`
+}
+
+// FileExposure defines a file type that is exposed by this Rover via SFTP.
+// Applying it registers the provider's SSH public keys on the corresponding
+// SFTP user (shared space) created from the matching FileSpecification.
+type FileExposure struct {
+	// FileType identifies the file type that is exposed. It must match the
+	// name (and spec.type) of an applied FileSpecification.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	FileType string `json:"fileType"`
+
+	// Variant selects the file-transfer backend. Currently only "sftp" is
+	// supported. The field is optional since CloudWalker has been retired.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=sftp
+	Variant FileVariant `json:"variant,omitempty"`
+
+	// Visibility defines who can see and subscribe to this file type
+	// +kubebuilder:validation:Enum=World;Zone;Enterprise
+	// +kubebuilder:default=Enterprise
+	Visibility Visibility `json:"visibility"`
+
+	// PublicKeys are the SSH public keys registered for the producer's SFTP user.
+	// At least one key is required. Both label and key value must be unique per fileType.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	PublicKeys []PublicKey `json:"publicKeys"`
+}
+
+// FileSubscription defines a file type that this Rover consumes via SFTP.
+// Applying it registers the consumer's SSH public keys on the corresponding
+// SFTP user (shared space) created from the matching FileSpecification.
+type FileSubscription struct {
+	// FileType identifies the file type to consume. It must match the
+	// name of an applied FileSpecification.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	FileType string `json:"fileType"`
+
+	// Variant selects the file-transfer backend. Currently only "sftp" is
+	// supported. The field is optional since CloudWalker has been retired.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=sftp
+	Variant FileVariant `json:"variant,omitempty"`
+
+	// PublicKeys are the SSH public keys registered for the consumer's SFTP user.
+	// At least one key is required. Both label and key value must be unique per fileType.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	PublicKeys []PublicKey `json:"publicKeys"`
+}
+
+// PublicKey is a labelled SSH public key registered on a SFTP user.
+type PublicKey struct {
+	// Label is a human-readable identifier for the key. It must be unique per fileType.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Label string `json:"label"`
+
+	// Key is the SSH public key value. It must be unique per fileType.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Key string `json:"key"`
 }
 
 // Approval defines the approval workflow for API exposure

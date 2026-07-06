@@ -11,6 +11,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -33,11 +34,10 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 		},
 	}
 
-	// The FileType is created from the FileSpecification in the same namespace
-	// as the Rover exposure, with its name derived from the file type identifier.
-	fileTypeRef := types.ObjectRef{
-		Name:      filev1.MakeFileTypeName(exp.FileType),
-		Namespace: owner.Namespace,
+	environment := contextutil.EnvFromContextOrDie(ctx)
+	zoneRef := types.ObjectRef{
+		Name:      owner.Spec.Zone,
+		Namespace: environment,
 	}
 
 	mutator := func() error {
@@ -47,15 +47,16 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 
 		fileExposure.Labels = map[string]string{
 			filev1.FileTypeLabelKey:             labelutil.NormalizeLabelValue(exp.FileType),
-			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(owner.Spec.Zone),
+			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}
 
 		fileExposure.Spec = filev1.FileExposureSpec{
-			Approval:    filev1.ApprovalStrategySimple,
-			Visibility:  filev1.Visibility(exp.Visibility.String()),
-			FileTypeRef: fileTypeRef,
-			PublicKeys:  mapPublicKeys(exp.PublicKeys),
+			Approval:   filev1.Approval{Strategy: filev1.ApprovalStrategySimple},
+			Visibility: filev1.Visibility(exp.Visibility.String()),
+			FileType:   exp.FileType,
+			PublicKeys: mapPublicKeys(exp.PublicKeys),
+			Zone:       zoneRef,
 		}
 		return nil
 	}

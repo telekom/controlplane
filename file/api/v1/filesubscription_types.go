@@ -13,9 +13,11 @@ import (
 // FileSubscriptionSpec defines the desired state of FileSubscription.
 // It is created in the file domain from a rover-domain Rover subscription (1:1).
 type FileSubscriptionSpec struct {
-	// FileTypeRef references the file-domain FileType this subscription belongs to.
+	// FileType is the file type identifier this subscription belongs to.
+	// References the FileType CR via MakeFileTypeName() conversion.
 	// +kubebuilder:validation:Required
-	FileTypeRef ctypes.ObjectRef `json:"fileTypeRef"`
+	// +kubebuilder:validation:MinLength=1
+	FileType string `json:"fileType"`
 
 	// PublicKeys are the SSH public keys registered for the consumer's SFTP user.
 	// +kubebuilder:validation:Required
@@ -31,14 +33,11 @@ type FileSubscriptionStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-	// Active indicates whether this subscription has been provisioned.
-	Active bool `json:"active,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this subscription is provisioned"
+// +kubebuilder:printcolumn:name="FileType",type="string",JSONPath=".spec.fileType",description="The file type identifier"
 // +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
 
 // FileSubscription is the Schema for the filesubscriptions API.

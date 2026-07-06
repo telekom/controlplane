@@ -608,13 +608,68 @@ spec:
                       - eventType
                       - visibility
                       type: object
+                    file:
+                      description: File defines a File-based (SFTP) service exposure
+                        configuration
+                      properties:
+                        fileType:
+                          description: |-
+                            FileType identifies the file type that is exposed. It must match the
+                            name (and spec.type) of an applied FileSpecification.
+                          minLength: 1
+                          type: string
+                        publicKeys:
+                          description: |-
+                            PublicKeys are the SSH public keys registered for the producer's SFTP user.
+                            At least one key is required. Both label and key value must be unique per fileType.
+                          items:
+                            description: PublicKey is a labelled SSH public key registered
+                              on a SFTP user.
+                            properties:
+                              key:
+                                description: Key is the SSH public key value. It must
+                                  be unique per fileType.
+                                minLength: 1
+                                type: string
+                              label:
+                                description: Label is a human-readable identifier for
+                                  the key. It must be unique per fileType.
+                                minLength: 1
+                                type: string
+                            required:
+                            - key
+                            - label
+                            type: object
+                          minItems: 1
+                          type: array
+                        variant:
+                          description: |-
+                            Variant selects the file-transfer backend. Currently only "sftp" is
+                            supported.
+                          enum:
+                          - sftp
+                          type: string
+                        visibility:
+                          default: Enterprise
+                          description: Visibility defines who can see and subscribe
+                            to this file type
+                          enum:
+                          - World
+                          - Zone
+                          - Enterprise
+                          type: string
+                      required:
+                      - fileType
+                      - publicKeys
+                      - visibility
+                      type: object
                   type: object
                   x-kubernetes-validations:
-                  - message: At least one of api or event must be specified
-                    rule: self == null || has(self.api) || has(self.event)
-                  - message: Only one of api or event can be specified (XOR relationship)
-                    rule: self == null || (!has(self.api) && has(self.event)) || (has(self.api)
-                      && !has(self.event))
+                  - message: At least one of api, event or file must be specified
+                    rule: self == null || has(self.api) || has(self.event) || has(self.file)
+                  - message: Only one of api, event or file can be specified (XOR relationship)
+                    rule: self == null || [has(self.api), has(self.event), has(self.file)].filter(x,
+                      x).size() == 1
                 type: array
               externalIds:
                 description: |-
@@ -1002,13 +1057,58 @@ spec:
                       - delivery
                       - eventType
                       type: object
+                    file:
+                      description: File defines a File-based (SFTP) service subscription
+                        configuration
+                      properties:
+                        fileType:
+                          description: |-
+                            FileType identifies the file type to consume. It must match the
+                            name (and spec.type) of an applied FileSpecification.
+                          minLength: 1
+                          type: string
+                        publicKeys:
+                          description: |-
+                            PublicKeys are the SSH public keys registered for the consumer's SFTP user.
+                            At least one key is required. Both label and key value must be unique per fileType.
+                          items:
+                            description: PublicKey is a labelled SSH public key registered
+                              on a SFTP user.
+                            properties:
+                              key:
+                                description: Key is the SSH public key value. It must
+                                  be unique per fileType.
+                                minLength: 1
+                                type: string
+                              label:
+                                description: Label is a human-readable identifier for
+                                  the key. It must be unique per fileType.
+                                minLength: 1
+                                type: string
+                            required:
+                            - key
+                            - label
+                            type: object
+                          minItems: 1
+                          type: array
+                        variant:
+                          description: |-
+                            Variant selects the file-transfer backend. Currently only "sftp" is
+                            supported.
+                          enum:
+                          - sftp
+                          type: string
+                      required:
+                      - fileType
+                      - publicKeys
+                      type: object
                   type: object
                   x-kubernetes-validations:
-                  - message: At least one of api or event must be specified
-                    rule: self == null || has(self.api) || has(self.event)
-                  - message: Only one of api or event can be specified (XOR relationship)
-                    rule: (has(self.api) && !has(self.event)) || (!has(self.api) &&
-                      has(self.event))
+                  - message: At least one of api, event or file must be specified
+                    rule: self == null || has(self.api) || has(self.event) || has(self.file)
+                  - message: Only one of api, event or file can be specified (XOR relationship)
+                    rule: self == null || [has(self.api), has(self.event), has(self.file)].filter(x,
+                      x).size() == 1
                 type: array
               zone:
                 description: Zone identifies the deployment zone for this Rover resource
@@ -1171,6 +1271,52 @@ spec:
               eventSubscriptions:
                 description: EventSubscriptions are references to EventSubscription
                   resources created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              fileExposures:
+                description: FileExposures are references to FileExposure resources
+                  created by this Rover in the file domain
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              fileSubscriptions:
+                description: FileSubscriptions are references to FileSubscription resources
+                  created by this Rover in the file domain
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object

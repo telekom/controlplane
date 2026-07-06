@@ -20,7 +20,11 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Whether this file spec is provisioned
+    - description: The file type identifier
+      jsonPath: .spec.type
+      name: Type
+      type: string
+    - description: Indicates if this FileType is the active singleton
       jsonPath: .status.active
       name: Active
       type: boolean
@@ -49,42 +53,30 @@ spec:
                 description: Description provides a human-readable summary of this
                   file type.
                 type: string
-              exposureRef:
-                description: ExposureRef references the file-domain FileExposure created
-                  for this file type (1:1).
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
-              subscriptionRefs:
-                description: SubscriptionRefs references the file-domain FileSubscriptions
-                  created for this file type (1:n).
-                items:
-                  properties:
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                    uid:
-                      type: string
-                  required:
-                  - name
-                  - namespace
-                  type: object
-                type: array
+              specification:
+                description: |-
+                  Specification contains the file ID reference from the file manager for the
+                  optional document that describes this file type.
+                type: string
+              type:
+                description: |-
+                  Type is the dot-separated file type identifier (e.g. "de.telekom.eni.invoices.v1").
+                  Used to generate the resource name via MakeFileTypeName() conversion.
+                maxLength: 253
+                minLength: 1
+                pattern: ^[a-z0-9]+(\.[a-z0-9]+)*$
+                type: string
+            required:
+            - type
             type: object
           status:
             description: FileTypeStatus defines the observed state of FileType.
             properties:
               active:
-                description: Active indicates whether this FileType has been provisioned.
+                description: |-
+                  Active indicates whether this FileType is the active singleton for its file
+                  type identifier. When multiple FileTypes exist for the same identifier, only
+                  the oldest non-deleted one is active.
                 type: boolean
               conditions:
                 items:

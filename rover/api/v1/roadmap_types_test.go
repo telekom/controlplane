@@ -7,6 +7,7 @@ package v1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	"github.com/telekom/controlplane/common/pkg/types"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

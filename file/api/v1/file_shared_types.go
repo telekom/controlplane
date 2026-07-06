@@ -44,3 +44,18 @@ const (
 func (a ApprovalStrategy) String() string {
 	return string(a)
 }
+
+// Approval configures how subscriptions to a file type exposure are approved.
+type Approval struct {
+	// Strategy defines the approval mode for subscriptions to this file type.
+	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes
+	// +kubebuilder:default=Simple
+	Strategy ApprovalStrategy `json:"strategy"`
+
+	// TrustedTeams identifies teams that are trusted for approving subscriptions
+	// to this file type. Per default your own team is trusted.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=10
+	TrustedTeams []string `json:"trustedTeams,omitempty"`
+}

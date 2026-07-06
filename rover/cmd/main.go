@@ -9,6 +9,7 @@ import (
 	"flag"
 	"os"
 
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -63,6 +64,9 @@ func init() {
 	}
 	if cconfig.FeaturePermission.IsEnabled() {
 		utilruntime.Must(permissionv1.AddToScheme(scheme))
+	}
+	if cconfig.FeatureFile.IsEnabled() {
+		utilruntime.Must(filev1.AddToScheme(scheme))
 	}
 	//+kubebuilder:scaffold:scheme
 }
@@ -205,6 +209,16 @@ func main() {
 			Scheme: mgr.GetScheme(),
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "EventSpecification")
+			os.Exit(1)
+		}
+	}
+
+	if cconfig.FeatureFile.IsEnabled() {
+		if err = (&controller.FileSpecificationReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "FileSpecification")
 			os.Exit(1)
 		}
 	}

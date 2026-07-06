@@ -25,6 +25,7 @@ require (
 	github.com/onsi/gomega v1.40.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
+	github.com/telekom/controlplane/file/api v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.36.0
 	k8s.io/apimachinery v0.36.0
 	k8s.io/client-go v0.36.0
@@ -38,6 +39,7 @@ replace (
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/event/api => ../event/api
+	github.com/telekom/controlplane/file/api => ../file/api
 	github.com/telekom/controlplane/organization/api => ../organization/api
 	github.com/telekom/controlplane/permission/api => ../permission/api
 	github.com/telekom/controlplane/rover/api => ./api

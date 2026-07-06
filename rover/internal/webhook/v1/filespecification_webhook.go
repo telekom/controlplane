@@ -56,12 +56,15 @@ func (v *FileSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Co
 
 	valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("FileSpecification").GroupKind(), filespecification)
 
-	// metadata.name must be equal to spec.type
-	if filespecification.GetName() != filespecification.Spec.Type {
+	// storageType, when set, must be a supported backend (currently only "sftp").
+	// The file type identifier lives in metadata.name (no spec.type field in the
+	// internal CRD, per spec_dcp); the client-side name==type rule is enforced by
+	// rover-server / roverctl.
+	if st := filespecification.Spec.StorageType; st != "" && st != roverv1.FileStorageTypeSFTP {
 		valErr.AddInvalidError(
-			field.NewPath("spec").Child("type"),
-			filespecification.Spec.Type,
-			fmt.Sprintf("spec.type must be equal to metadata.name %q", filespecification.GetName()),
+			field.NewPath("spec").Child("storageType"),
+			string(st),
+			fmt.Sprintf("spec.storageType must be %q", roverv1.FileStorageTypeSFTP),
 		)
 	}
 

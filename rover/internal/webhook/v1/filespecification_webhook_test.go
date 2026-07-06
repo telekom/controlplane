@@ -92,6 +92,49 @@ var _ = Describe("File Type (SFTP) Validation", func() {
 		})
 	})
 
+	Context("file type zone restriction (Rover webhook)", func() {
+		var validator RoverValidator
+
+		BeforeEach(func() {
+			validator = RoverValidator{client: k8sClient}
+		})
+
+		fileExposure := func() roverv1.Exposure {
+			return roverv1.Exposure{File: &roverv1.FileExposure{
+				FileType:   "demo-sftp-spec-v1",
+				PublicKeys: []roverv1.PublicKey{{Label: "provider-key", Key: "ssh-ed25519 AAAA"}},
+			}}
+		}
+
+		It("should reject a file exposure on an unsupported zone", func() {
+			// testZone is named "test" and is not in {cetus, canis}.
+			rover := NewRover(testZone)
+			rover.Spec.Exposures = []roverv1.Exposure{fileExposure()}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			assertValidationFailedWith(warnings, err, "does not support file types")
+		})
+
+		It("should reject a file subscription on an unsupported zone", func() {
+			rover := NewRover(testZone)
+			rover.Spec.Subscriptions = []roverv1.Subscription{{File: &roverv1.FileSubscription{
+				FileType:   "demo-sftp-spec-v1",
+				PublicKeys: []roverv1.PublicKey{{Label: "consumer-key", Key: "ssh-ed25519 BBBB"}},
+			}}}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			assertValidationFailedWith(warnings, err, "does not support file types")
+		})
+
+		It("should accept a file exposure on a supported zone (cetus)", func() {
+			cetus := NewZone("cetus", testZone.Namespace)
+			CreateZone(ctx, cetus)
+			rover := NewRover(cetus)
+			rover.Spec.Exposures = []roverv1.Exposure{fileExposure()}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
 	Context("FileSpecificationCustomValidator", func() {
 		var validator *FileSpecificationCustomValidator
 
@@ -99,23 +142,29 @@ var _ = Describe("File Type (SFTP) Validation", func() {
 			validator = &FileSpecificationCustomValidator{client: k8sClient}
 		})
 
-		newFileSpec := func(name, specType string) *roverv1.FileSpecification {
+		newFileSpec := func(name string, storageType roverv1.FileStorageType) *roverv1.FileSpecification {
 			return &roverv1.FileSpecification{
 				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-				Spec:       roverv1.FileSpecificationSpec{Type: specType, Version: "1.0.0"},
+				Spec:       roverv1.FileSpecificationSpec{Description: "demo", StorageType: storageType},
 			}
 		}
 
-		It("should accept a FileSpecification whose name equals spec.type", func() {
-			warnings, err := validator.ValidateCreate(ctx, newFileSpec("demo-sftp-spec-v1", "demo-sftp-spec-v1"))
+		It("should accept a FileSpecification with the sftp storageType", func() {
+			warnings, err := validator.ValidateCreate(ctx, newFileSpec("demo-sftp-spec-v1", roverv1.FileStorageTypeSFTP))
 			Expect(warnings).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should reject a FileSpecification whose name differs from spec.type", func() {
-			_, err := validator.ValidateCreate(ctx, newFileSpec("demo-sftp-spec-v1", "other-type"))
+		It("should accept a FileSpecification with an empty storageType (defaulted by CRD)", func() {
+			warnings, err := validator.ValidateCreate(ctx, newFileSpec("demo-sftp-spec-v1", ""))
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should reject a FileSpecification with an unsupported storageType", func() {
+			_, err := validator.ValidateCreate(ctx, newFileSpec("demo-sftp-spec-v1", "s3"))
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("spec.type must be equal to metadata.name"))
+			Expect(err.Error()).To(ContainSubstring("spec.storageType must be"))
 		})
 	})
 })
