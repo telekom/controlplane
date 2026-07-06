@@ -57,6 +57,14 @@ spec:
             requests:
               cpu: 10m
               memory: 64Mi
+          volumeMounts:
+            - name: cpapi-trust-bundle
+              mountPath: /var/run/secrets/trust-bundle
+              readOnly: true
+      volumes:
+        - name: cpapi-trust-bundle
+          configMap:
+            name: controlplane-api-trust-bundle
       serviceAccountName: organization-server
       terminationGracePeriodSeconds: 10
 ---
