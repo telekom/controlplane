@@ -118,7 +118,7 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 			notification.SetCondition(condition.NewProcessingCondition("Retrying", "Retrying failed notifications"))
 			notification.SetCondition(condition.NewNotReadyCondition("Retrying", "Some notifications were not sent"))
 		} else {
-			notification.SetCondition(condition.NewReadyCondition("Provisioned", "Notification is provisioned"))
+			notification.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Notification is provisioned"))
 			notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
 		}
 	}

@@ -13,6 +13,16 @@ const (
 	TokenRequestClientSecretPost  TokenRequestMethod = "client_secret_post"
 )
 
+// GrantType defines the OAuth2 grant type for external IDP token requests.
+// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+type GrantType string
+
+const (
+	GrantTypeClientCredentials GrantType = "client_credentials"
+	GrantTypeAuthorizationCode GrantType = "authorization_code"
+	GrantTypePassword          GrantType = "password"
+)
+
 type Security struct {
 	// DisableAccessControl disable the ACL mechanism for this route
 	// +kubebuilder:validation:Optional
@@ -133,12 +143,11 @@ type ExternalIdentityProvider struct {
 	TokenEndpoint string `json:"tokenEndpoint"`
 
 	// TokenRequest configures the token endpoint authentication method (RFC 7591)
-	// +kubebuilder:validation:Optional
-	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
+	// +kubebuilder:validation:Required
+	TokenRequest TokenRequestMethod `json:"tokenRequest"`
 	// GrantType is the grant type for the external IDP authentication
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
-	GrantType string `json:"grantType,omitempty"`
+	// +kubebuilder:validation:Required
+	GrantType GrantType `json:"grantType"`
 
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`

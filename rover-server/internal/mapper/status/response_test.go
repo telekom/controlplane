@@ -45,7 +45,7 @@ func completeConditions(gen int64) []metav1.Condition {
 	}
 }
 
-// blockedConditions returns Processing=Done + Ready=False (not-complete) conditions.
+// blockedConditions returns Processing=Done + Ready=False (blocked) conditions.
 func blockedConditions(gen int64) []metav1.Condition {
 	return []metav1.Condition{
 		{
@@ -59,8 +59,8 @@ func blockedConditions(gen int64) []metav1.Condition {
 		{
 			Type:               condition.ConditionTypeReady,
 			Status:             metav1.ConditionFalse,
-			Reason:             "SubResourceNotReady",
-			Message:            "At least one sub-resource is being processed",
+			Reason:             "ApprovalPending",
+			Message:            "Waiting for approval",
 			ObservedGeneration: gen,
 		},
 	}
@@ -312,7 +312,7 @@ var _ = Describe("Response Mapper", func() {
 			Expect(resp.Errors[0].Cause).To(Equal("Blocked"))
 		})
 
-		It("sets OverallStatus to failed when parent is Complete but sub-resource is failed", func() {
+		It("sets OverallStatus to blocked when parent is Complete but sub-resource has provisioning error", func() {
 			apiSpec := &v1.ApiSpecification{
 				TypeMeta: metav1.TypeMeta{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "ApiSpecification"},
 				ObjectMeta: metav1.ObjectMeta{
@@ -326,7 +326,7 @@ var _ = Describe("Response Mapper", func() {
 				},
 			}
 
-			// Sub-resource has a failed processing state
+			// Sub-resource has a provisioning error
 			apiMock := new(MockObjectStore[*apiv1.Api])
 			failedAPI := &apiv1.Api{
 				TypeMeta:   metav1.TypeMeta{APIVersion: "api.cp.ei.telekom.de/v1", Kind: "Api"},
@@ -346,9 +346,9 @@ var _ = Describe("Response Mapper", func() {
 			resp, err := MapAPISpecificationResponse(ctx, apiSpec, s)
 
 			Expect(err).NotTo(HaveOccurred())
-			// Parent is Complete/Done, but sub-resource is Failed → OverallStatus must be "failed"
+			// Parent is Complete/Done, but sub-resource is Blocked → OverallStatus must be "blocked"
 			Expect(resp.State).To(Equal(api.Complete))
-			Expect(resp.OverallStatus).To(Equal(api.OverallStatusFailed))
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusBlocked))
 			Expect(resp.Errors).To(HaveLen(1))
 		})
 	})
@@ -561,7 +561,7 @@ var _ = Describe("Response Mapper", func() {
 			Expect(resp.Errors[0].Cause).To(Equal("Blocked"))
 		})
 
-		It("sets OverallStatus to failed when parent is Complete but sub-resource is failed", func() {
+		It("sets OverallStatus to blocked when parent is Complete but sub-resource has provisioning error", func() {
 			eventSpec := &v1.EventSpecification{
 				TypeMeta: metav1.TypeMeta{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "EventSpecification"},
 				ObjectMeta: metav1.ObjectMeta{
@@ -594,9 +594,9 @@ var _ = Describe("Response Mapper", func() {
 			resp, err := MapEventSpecificationResponse(ctx, eventSpec, s)
 
 			Expect(err).NotTo(HaveOccurred())
-			// Parent is Complete/Done, but sub-resource is Failed → OverallStatus must be "failed"
+			// Parent is Complete/Done, but sub-resource is Blocked → OverallStatus must be "blocked"
 			Expect(resp.State).To(Equal(api.Complete))
-			Expect(resp.OverallStatus).To(Equal(api.OverallStatusFailed))
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusBlocked))
 			Expect(resp.Errors).To(HaveLen(1))
 		})
 	})

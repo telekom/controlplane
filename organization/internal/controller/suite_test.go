@@ -171,5 +171,5 @@ func ExpectObjConditionToBeReady(g Gomega, obj types.Object) {
 	g.Expect(obj.GetConditions()).To(HaveLen(2))
 	readyCondition := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 
-	testutil.ExpectConditionToMatch(g, readyCondition, "Ready", true)
+	testutil.ExpectConditionToMatch(g, readyCondition, condition.ReasonProvisioned, true)
 }

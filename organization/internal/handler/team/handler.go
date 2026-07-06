@@ -77,7 +77,7 @@ func (h *TeamHandler) CreateOrUpdate(ctx context.Context, teamObj *organizationv
 		}
 	}
 	teamObj.SetCondition(condition.NewDoneProcessingCondition("Created Team"))
-	teamObj.SetCondition(condition.NewReadyCondition("Ready", "Team is ready"))
+	teamObj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Team is ready"))
 	return nil
 }
 
