@@ -25,6 +25,7 @@ import (
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -49,10 +50,8 @@ type ApiSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvals,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
-// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumeroutes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients,verbs=get;list;watch
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch
 // +kubebuilder:rbac:groups=organization.cp.ei.telekom.de,resources=teams,verbs=get;list;watch
 
@@ -85,10 +84,6 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Watches(&gatewayapi.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiSubscription),
-			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
-		).
-		Watches(&gatewayapi.ConsumeRoute{},
-			handler.EnqueueRequestsFromMapFunc(r.MapConsumeRouteToApiSubscription),
 			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
 		).
 		Watches(&adminv1.Zone{},
@@ -134,7 +129,6 @@ func (r *ApiSubscriptionReconciler) MapApiToApiSubscription(ctx context.Context,
 	return reqs
 }
 
-//nolint:dupl // controller map helpers intentionally mirror each other
 func (r *ApiSubscriptionReconciler) MapApiExposureToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 
@@ -157,7 +151,7 @@ func (r *ApiSubscriptionReconciler) MapApiExposureToApiSubscription(ctx context.
 	reqs := make([]reconcile.Request, 0, len(list.Items))
 	for i := range list.Items {
 		item := &list.Items[i]
-		if apiExposure.UID == item.UID {
+		if apiExposure.Spec.ApiBasePath != item.Spec.ApiBasePath {
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
@@ -178,7 +172,7 @@ func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.
 	list := &apiapi.ApiSubscriptionList{}
 	err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
-		cconfig.BuildLabelKey("application"): application.Labels[cconfig.BuildLabelKey("application")],
+		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
 	}, client.InNamespace(application.Namespace))
 	if err != nil {
 		logger.Error(err, "failed to list API-Subscriptions")
@@ -194,14 +188,63 @@ func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.
 	return reqs
 }
 
+// MapRouteToApiSubscription enqueues ApiSubscriptions when a Route they reference is deleted.
+// Routes live in zone namespaces; we use basepath + environment labels to find affected subscriptions.
+//
+//nolint:dupl // controller map helpers intentionally mirror each other across exposure/subscription
 func (r *ApiSubscriptionReconciler) MapRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
+	logger := log.FromContext(ctx)
+	route, ok := obj.(*gatewayapi.Route)
+	if !ok {
+		return nil
+	}
+
+	basePathLabel := route.Labels[apiapi.BasePathLabelKey]
+	if basePathLabel == "" {
+		return nil
+	}
+
+	list := &apiapi.ApiSubscriptionList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     basePathLabel,
+	})
+	if err != nil {
+		logger.Error(err, "failed to list API-Subscriptions for Route")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+	}
+	return reqs
 }
 
-func (r *ApiSubscriptionReconciler) MapConsumeRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
-}
-
+// MapZoneToApiSubscription enqueues ApiSubscriptions that reference a changed Zone.
+// This ensures subscriptions react to zone readiness or visibility changes.
 func (r *ApiSubscriptionReconciler) MapZoneToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
+	logger := log.FromContext(ctx)
+	zone, ok := obj.(*adminv1.Zone)
+	if !ok {
+		return nil
+	}
+
+	list := &apiapi.ApiSubscriptionList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+	})
+	if err != nil {
+		logger.Error(err, "failed to list API-Subscriptions for Zone")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		if list.Items[i].Spec.Zone.Name == zone.Name {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+		}
+	}
+	return reqs
 }

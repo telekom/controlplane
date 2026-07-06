@@ -63,7 +63,6 @@ rules:
   resources:
   - consumers
   - gateways
-  - realms
   - routes
   verbs:
   - create

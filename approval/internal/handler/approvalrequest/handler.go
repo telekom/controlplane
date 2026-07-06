@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/api/v1/builder"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -78,7 +79,7 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 	case approvalv1.ApprovalStatePending:
 		logger.Info("ApprovalRequest is still pending")
 		approvalReq.SetCondition(approval_condition.NewPendingCondition())
-		approvalReq.SetCondition(condition.NewProcessingCondition("ApprovalPending", "Request is pending"))
+		approvalReq.SetCondition(condition.NewProcessingCondition(builder.ReasonApprovalPending, "Request is pending"))
 		approvalReq.SetCondition(condition.NewNotReadyCondition("Pending", "Request is pending"))
 
 	default:

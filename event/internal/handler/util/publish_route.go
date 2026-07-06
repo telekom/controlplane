@@ -6,16 +6,13 @@ package util
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
@@ -30,20 +27,23 @@ func CreatePublishRoute(
 	ctx context.Context,
 	zone *adminv1.Zone,
 	eventConfig *eventv1.EventConfig,
+	opts ...Option,
 ) (*gatewayv1.Route, error) {
+	options := &Options{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	c := cclient.ClientFromContextOrDie(ctx)
 	name := makePublishRouteName(eventConfig)
 
-	gatewayRealm := &gatewayv1.Realm{}
-	err := c.Get(ctx, zone.Status.GatewayRealm.K8s(), gatewayRealm)
+	// Resolve default preset for hostnames/paths
+	preset, err := zone.Spec.Gateway.GetDefaultPreset()
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, ctrlerrors.BlockedErrorf("realm %q not found", zone.Status.GatewayRealm.String())
-		}
-		return nil, errors.Wrapf(err, "failed to get realm %q", zone.Status.GatewayRealm.String())
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no default preset: %s", zone.Name, err)
 	}
-	if err = condition.EnsureReady(gatewayRealm); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", gatewayRealm.Name)
+	if zone.Status.Gateway == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status", zone.Name)
 	}
 
 	route := &gatewayv1.Route{
@@ -53,46 +53,35 @@ func CreatePublishRoute(
 		},
 	}
 
-	publishUrl, err := url.Parse(eventConfig.Spec.PublishEventUrl)
+	upstream, err := parseUpstream(eventConfig.Spec.PublishEventUrl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse publishEventUrl %q", eventConfig.Spec.PublishEventUrl)
 	}
 
-	upstream := gatewayv1.Upstream{
-		Scheme: publishUrl.Scheme,
-		Host:   publishUrl.Hostname(),
-		Path:   publishUrl.Path,
-		Port:   gatewayv1.GetPortOrDefaultFromScheme(publishUrl),
-	}
+	hostnames, paths := preset.ResolveHostnamesAndPaths(makePublishRoutePath(zone.Name))
 
-	downstream, err := gatewayRealm.AsDownstream(makePublishRoutePath(zone.Name))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create downstream for publish Route")
-	}
 	mutator := func() error {
 		if refErr := controllerutil.SetControllerReference(eventConfig, route, c.Scheme()); refErr != nil {
 			return errors.Wrap(refErr, "failed to set controller reference to EventConfig")
 		}
 
 		route.Labels = map[string]string{
-			config.DomainLabelKey:         "event",
-			config.BuildLabelKey("zone"):  zone.Name,
-			config.BuildLabelKey("realm"): gatewayRealm.Name,
-			config.BuildLabelKey("type"):  "publish",
+			config.DomainLabelKey:        "event",
+			config.BuildLabelKey("zone"): zone.Name,
+			config.BuildLabelKey("type"): "publish",
 		}
 
 		route.Spec = gatewayv1.RouteSpec{
-			Upstreams: []gatewayv1.Upstream{
-				upstream,
-			},
-			Downstreams: []gatewayv1.Downstream{
-				downstream,
-			},
-			Realm: *ctypes.ObjectRefFromObject(gatewayRealm),
-			Security: &gatewayv1.Security{
+			GatewayRef: *zone.Status.Gateway,
+			Type:       gatewayv1.RouteTypePrimary,
+			Backend:    gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{upstream}},
+			Hostnames:  hostnames,
+			Paths:      paths,
+			Security: gatewayv1.Security{
 				DisableAccessControl: true,
 			},
 		}
+		options.applySecurity(route)
 
 		return nil
 	}

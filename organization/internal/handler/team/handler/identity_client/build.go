@@ -17,7 +17,7 @@ func buildIdentityClientObj(owner *organisationv1.Team) *identityv1.Client {
 	return &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      MakeClientId(owner),
-			Namespace: owner.Status.Namespace,
+			Namespace: owner.GetNamespace(),
 		},
 	}
 }

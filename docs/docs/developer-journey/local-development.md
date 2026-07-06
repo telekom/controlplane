@@ -127,7 +127,7 @@ Running the operator locally with `make run` starts the controller on your machi
 make test
 ```
 
-Uses [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) with Kubernetes 1.31.0 assets. Output is formatted with [gotestfmt](https://github.com/gotesttools/gotestfmt).
+Uses [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) with Kubernetes 1.32.0 assets. Output is formatted with [gotestfmt](https://github.com/gotesttools/gotestfmt).
 
 ### Linting and Formatting
 
@@ -174,7 +174,7 @@ The project pins the following tool versions to ensure reproducible builds:
 | controller-gen | v0.20.1 |
 | setup-envtest | release-0.19 |
 | golangci-lint | v2.11.2 |
-| envtest K8s version | 1.31.0 |
+| envtest K8s version | 1.32.0 |
 
 ## Next Steps
 
