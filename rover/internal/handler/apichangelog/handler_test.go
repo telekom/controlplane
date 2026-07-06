@@ -65,7 +65,7 @@ var _ = Describe("ApiChangelog Handler", func() {
 			readyCond := meta.FindStatusCondition(changelogObj.Status.Conditions, condition.ConditionTypeReady)
 			Expect(readyCond).NotTo(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(readyCond.Reason).To(Equal("Ready"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 
 			By("Verify Processing condition is set to false")
 			processingCond := meta.FindStatusCondition(changelogObj.Status.Conditions, condition.ConditionTypeProcessing)

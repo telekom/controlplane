@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/internal/config"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	"github.com/telekom/controlplane/rover-server/pkg/log"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
@@ -113,7 +114,7 @@ var _ = BeforeSuite(func() {
 	s := server.Server{
 		Config:              &config.ServerConfig{},
 		Log:                 log.Log,
-		ApiSpecifications:   NewApiSpecificationController(stores, config.OasLintingConfig{}),
+		ApiSpecifications:   NewApiSpecificationController(stores, oaslint.NewLinter(config.OasLintingConfig{})),
 		Rovers:              NewRoverController(stores),
 		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),

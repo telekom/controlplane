@@ -9,10 +9,8 @@ import (
 	"fmt"
 
 	mock "github.com/stretchr/testify/mock"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -24,7 +22,6 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -45,7 +42,7 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
 
-		zone = makeZone("zone-a", "zone-a-ns", "gw-realm-a")
+		zone = makeZone("zone-a", "zone-a-ns")
 		eventConfig = &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ec-zone-a",
@@ -58,59 +55,29 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		}
 	})
 
-	It("should return BlockedError when realm is not found", func() {
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Return(apierrors.NewNotFound(schema.GroupResource{Group: "gateway.cp.ei.telekom.de", Resource: "realms"}, "gw-realm-a"))
+	It("should return BlockedError when zone has no default preset", func() {
+		zoneNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
-		route, err := util.CreateVoyagerRoute(ctx, zone, eventConfig)
+		route, err := util.CreateVoyagerRoute(ctx, zoneNoPreset, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not found"))
+		Expect(err.Error()).To(ContainSubstring("has no default preset"))
 	})
 
-	It("should return error when realm Get fails", func() {
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Return(fmt.Errorf("connection refused"))
+	It("should return BlockedError when zone has no gateway reference in status", func() {
+		zoneNoGw := makeZoneNoGateway("zone-a", "zone-a-ns")
 
-		route, err := util.CreateVoyagerRoute(ctx, zone, eventConfig)
-		Expect(err).To(HaveOccurred())
-		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to get realm"))
-		Expect(err.Error()).To(ContainSubstring("connection refused"))
-	})
-
-	It("should return BlockedError when realm is not ready", func() {
-		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *notReadyRealm
-			}).
-			Return(nil)
-
-		route, err := util.CreateVoyagerRoute(ctx, zone, eventConfig)
+		route, err := util.CreateVoyagerRoute(ctx, zoneNoGw, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not ready"))
+		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 
 	It("should return error when voyagerApiUrl is invalid", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
-
 		badConfig := &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-bad", Namespace: "default"},
 			Spec: eventv1.EventConfigSpec{
@@ -125,15 +92,6 @@ var _ = Describe("CreateVoyagerRoute", func() {
 	})
 
 	It("should create voyager route successfully", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
-
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
@@ -152,48 +110,32 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		// Verify labels
 		Expect(route.Labels).To(HaveKeyWithValue(config.DomainLabelKey, "event"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone-a"))
-		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("realm"), "gw-realm-a"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "voyager"))
 
 		// Verify upstream: from voyagerApiUrl
-		Expect(route.Spec.Upstreams).To(HaveLen(1))
-		Expect(route.Spec.Upstreams[0].Scheme).To(Equal("http"))
-		Expect(route.Spec.Upstreams[0].Host).To(Equal("voyager-service"))
-		Expect(route.Spec.Upstreams[0].Port).To(Equal(8080))
-		Expect(route.Spec.Upstreams[0].Path).To(Equal("/voyager"))
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("http"))
+		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("voyager-service"))
+		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(8080)))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/voyager"))
 
-		// Verify downstream: from realm
-		Expect(route.Spec.Downstreams).To(HaveLen(2))
-		Expect(route.Spec.Downstreams[0].Host).To(Equal("gateway.example.com"))
-		Expect(route.Spec.Downstreams[0].Port).To(Equal(443))
-		Expect(route.Spec.Downstreams[0].Path).To(Equal("/zone-a/voyager/v1"))
-		Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("https://issuer.example.com"))
-
-		Expect(route.Spec.Downstreams[1].Host).To(Equal("gateway.example.com"))
-		Expect(route.Spec.Downstreams[1].Port).To(Equal(443))
-		Expect(route.Spec.Downstreams[1].Path).To(Equal("/voyager/v1"))
-		Expect(route.Spec.Downstreams[1].IssuerUrl).To(Equal("https://issuer.example.com"))
+		// Verify hostnames and paths from preset (voyager has 2 paths: mesh + local)
+		Expect(route.Spec.Hostnames).To(HaveLen(1))
+		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
+		Expect(route.Spec.Paths).To(HaveLen(2))
+		Expect(route.Spec.Paths[0]).To(Equal("/zone-a/voyager/v1"))
+		Expect(route.Spec.Paths[1]).To(Equal("/voyager/v1"))
 
 		// Verify Security
-		Expect(route.Spec.Security).ToNot(BeNil())
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
 		Expect(route.Spec.Security.DefaultConsumers).To(BeEmpty())
 
-		// Verify realm ref
-		Expect(route.Spec.Realm.Name).To(Equal("gw-realm-a"))
-		Expect(route.Spec.Realm.Namespace).To(Equal("default"))
+		// Verify GatewayRef
+		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
+		Expect(route.Spec.GatewayRef.Namespace).To(Equal("default"))
 	})
 
 	It("should add MeshClientName to DefaultConsumers when IsProxyTarget", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
-
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
@@ -204,20 +146,10 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		route, err := util.CreateVoyagerRoute(ctx, zone, eventConfig, util.WithProxyTarget(true))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
-		Expect(route.Spec.Security).ToNot(BeNil())
 		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement("eventstore"))
 	})
 
 	It("should set owner reference when WithOwner is provided", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
-
 		s := runtime.NewScheme()
 		Expect(eventv1.AddToScheme(s)).To(Succeed())
 		Expect(gatewayapi.AddToScheme(s)).To(Succeed())
@@ -241,15 +173,6 @@ var _ = Describe("CreateVoyagerRoute", func() {
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
-
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("create failed"))
@@ -270,136 +193,50 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		fakeClient *fakeclient.MockJanitorClient
 		sourceZone *adminv1.Zone
 		targetZone *adminv1.Zone
-		meshClient *identityv1.Client
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
-		sourceZone = makeZone("zone-a", "zone-a-ns", "gw-realm-a")
-		targetZone = makeZone("zone-b", "zone-b-ns", "gw-realm-b")
-		meshClient = &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: util.MeshClientName, Namespace: "zone-b-ns"},
-			Spec: identityv1.ClientSpec{
-				ClientId:     "mesh-client-id",
-				ClientSecret: "mesh-client-secret",
-			},
-			Status: identityv1.ClientStatus{
-				IssuerUrl: "https://issuer.target.example.com",
-			},
-		}
+		sourceZone = makeZone("zone-a", "zone-a-ns")
+		targetZone = makeZone("zone-b", "zone-b-ns")
 	})
 
-	It("should return BlockedError when downstream realm is not found", func() {
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Return(apierrors.NewNotFound(schema.GroupResource{Group: "gateway.cp.ei.telekom.de", Resource: "realms"}, "gw-realm-a"))
+	It("should return BlockedError when source zone has no default preset", func() {
+		sourceNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
-		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone, meshClient)
+		route, err := util.CreateProxyVoyagerRoute(ctx, sourceNoPreset, targetZone)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not found"))
+		Expect(err.Error()).To(ContainSubstring("has no default preset"))
 	})
 
-	It("should return error when downstream realm Get fails", func() {
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Return(fmt.Errorf("connection refused"))
+	It("should return BlockedError when source zone has no gateway reference", func() {
+		sourceNoGw := makeZoneNoGateway("zone-a", "zone-a-ns")
 
-		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone, meshClient)
-		Expect(err).To(HaveOccurred())
-		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to get realm"))
-		Expect(err.Error()).To(ContainSubstring("connection refused"))
-	})
-
-	It("should return BlockedError when downstream realm is not ready", func() {
-		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *notReadyRealm
-			}).
-			Return(nil)
-
-		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone, meshClient)
+		route, err := util.CreateProxyVoyagerRoute(ctx, sourceNoGw, targetZone)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not ready"))
+		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 
-	It("should return BlockedError when upstream realm is not found", func() {
-		readySourceRealm := makeReadyGatewayRealm("gw-realm-a")
+	It("should return BlockedError when target zone has no default preset", func() {
+		targetNoPreset := makeZoneNoPreset("zone-b", "zone-b-ns")
 
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readySourceRealm
-			}).
-			Return(nil)
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-b", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Return(apierrors.NewNotFound(schema.GroupResource{Group: "gateway.cp.ei.telekom.de", Resource: "realms"}, "gw-realm-b"))
-
-		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone, meshClient)
+		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetNoPreset)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not found"))
-	})
-
-	It("should return BlockedError when upstream realm is not ready", func() {
-		readySourceRealm := makeReadyGatewayRealm("gw-realm-a")
-		notReadyTargetRealm := makeNotReadyGatewayRealm("gw-realm-b")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readySourceRealm
-			}).
-			Return(nil)
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-b", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *notReadyTargetRealm
-			}).
-			Return(nil)
-
-		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone, meshClient)
-		Expect(err).To(HaveOccurred())
-		Expect(route).To(BeNil())
-		rootCause := unwrapAll(err)
-		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not ready"))
+		Expect(err.Error()).To(ContainSubstring("has no default preset"))
 	})
 
 	It("should create proxy voyager route successfully", func() {
-		readySourceRealm := makeReadyGatewayRealm("gw-realm-a")
-		readyTargetRealm := makeReadyGatewayRealm("gw-realm-b")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readySourceRealm
-			}).
-			Return(nil)
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-b", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyTargetRealm
-			}).
-			Return(nil)
-
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
@@ -407,7 +244,7 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 				return controllerutil.OperationResultCreated, err
 			})
 
-		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone, meshClient)
+		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
 
@@ -418,58 +255,38 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		// Verify labels reference source zone
 		Expect(route.Labels).To(HaveKeyWithValue(config.DomainLabelKey, "event"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone-a"))
-		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("realm"), "gw-realm-a"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "voyager-proxy"))
 
-		// Verify upstream: from target realm with mesh client credentials
-		Expect(route.Spec.Upstreams).To(HaveLen(1))
-		Expect(route.Spec.Upstreams[0].Scheme).To(Equal("https"))
-		Expect(route.Spec.Upstreams[0].Host).To(Equal("gateway.example.com"))
-		Expect(route.Spec.Upstreams[0].Port).To(Equal(443))
-		Expect(route.Spec.Upstreams[0].Path).To(Equal("/zone-b/voyager/v1"))
-		Expect(route.Spec.Upstreams[0].ClientId).To(Equal("mesh-client-id"))
-		Expect(route.Spec.Upstreams[0].ClientSecret).To(Equal("mesh-client-secret"))
-		Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("https://issuer.target.example.com"))
+		// Verify upstream: from target zone's preset URL + voyager path
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
+		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("gateway.example.com"))
+		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(443)))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/zone-b/voyager/v1"))
 
-		// Verify downstream: from source realm
-		Expect(route.Spec.Downstreams).To(HaveLen(1))
-		Expect(route.Spec.Downstreams[0].Host).To(Equal("gateway.example.com"))
-		Expect(route.Spec.Downstreams[0].Port).To(Equal(443))
-		Expect(route.Spec.Downstreams[0].Path).To(Equal("/zone-b/voyager/v1"))
-		Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("https://issuer.example.com"))
+		// Verify hostnames and paths from source zone's preset
+		Expect(route.Spec.Hostnames).To(HaveLen(1))
+		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
+		Expect(route.Spec.Paths).To(HaveLen(1))
+		Expect(route.Spec.Paths[0]).To(Equal("/zone-b/voyager/v1"))
 
 		// Verify Security
-		Expect(route.Spec.Security).ToNot(BeNil())
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
 
-		// Verify realm ref points to downstream (source) realm
-		Expect(route.Spec.Realm.Name).To(Equal("gw-realm-a"))
-		Expect(route.Spec.Realm.Namespace).To(Equal("default"))
+		// Verify GatewayRef points to source zone's gateway
+		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
+		Expect(route.Spec.GatewayRef.Namespace).To(Equal("default"))
+
+		// Verify route type is proxy
+		Expect(route.Spec.Type).To(Equal(gatewayapi.RouteTypeProxy))
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
-		readySourceRealm := makeReadyGatewayRealm("gw-realm-a")
-		readyTargetRealm := makeReadyGatewayRealm("gw-realm-b")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readySourceRealm
-			}).
-			Return(nil)
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-b", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyTargetRealm
-			}).
-			Return(nil)
-
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("create failed"))
 
-		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone, meshClient)
+		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("failed to create or update proxy voyager Route"))
@@ -490,7 +307,7 @@ var _ = Describe("CreateVoyagerProxyRoutes", func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
-		sourceZone = makeZone("zone-a", "zone-a-ns", "gw-realm-a")
+		sourceZone = makeZone("zone-a", "zone-a-ns")
 	})
 
 	It("should return empty map when no target zones after filtering", func() {
@@ -499,7 +316,7 @@ var _ = Describe("CreateVoyagerProxyRoutes", func() {
 			ZoneNames: []string{},
 		}
 		targetZones := []*adminv1.Zone{
-			makeZone("zone-b", "zone-b-ns", "gw-realm-b"),
+			makeZone("zone-b", "zone-b-ns"),
 		}
 
 		routes, err := util.CreateVoyagerProxyRoutes(ctx, &meshConfig, sourceZone, targetZones)
@@ -509,46 +326,9 @@ var _ = Describe("CreateVoyagerProxyRoutes", func() {
 
 	It("should skip source zone in full mesh", func() {
 		meshConfig := eventv1.MeshConfig{FullMesh: true}
-		targetZoneB := makeZone("zone-b", "zone-b-ns", "gw-realm-b")
+		targetZoneB := makeZone("zone-b", "zone-b-ns")
 		// Include source zone in targets to test skipping
 		targetZones := []*adminv1.Zone{sourceZone, targetZoneB}
-
-		meshClientObj := &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: util.MeshClientName, Namespace: "zone-b-ns"},
-			Spec: identityv1.ClientSpec{
-				ClientId:     "mesh-client-id",
-				ClientSecret: "mesh-client-secret",
-			},
-			Status: identityv1.ClientStatus{
-				IssuerUrl: "https://issuer.target.example.com",
-			},
-		}
-
-		// Get mesh client for zone-b
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: util.MeshClientName, Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*identityv1.Client) = *meshClientObj
-			}).
-			Return(nil)
-
-		// Get source realm (downstream) for proxy route creation
-		readySourceRealm := makeReadyGatewayRealm("gw-realm-a")
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readySourceRealm
-			}).
-			Return(nil)
-
-		// Get target realm (upstream)
-		readyTargetRealm := makeReadyGatewayRealm("gw-realm-b")
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-b", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyTargetRealm
-			}).
-			Return(nil)
 
 		// CreateOrUpdate for proxy route
 		fakeClient.EXPECT().
@@ -564,74 +344,11 @@ var _ = Describe("CreateVoyagerProxyRoutes", func() {
 		Expect(routes).To(HaveKey("zone-b"))
 	})
 
-	It("should return error when mesh client Get fails", func() {
-		meshConfig := eventv1.MeshConfig{FullMesh: true}
-		targetZoneB := makeZone("zone-b", "zone-b-ns", "gw-realm-b")
-		targetZones := []*adminv1.Zone{targetZoneB}
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: util.MeshClientName, Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
-			Return(fmt.Errorf("client not found"))
-
-		routes, err := util.CreateVoyagerProxyRoutes(ctx, &meshConfig, sourceZone, targetZones)
-		Expect(err).To(HaveOccurred())
-		Expect(routes).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to get mesh client credentials"))
-		Expect(err.Error()).To(ContainSubstring("client not found"))
-	})
-
 	It("should create routes for multiple target zones", func() {
 		meshConfig := eventv1.MeshConfig{FullMesh: true}
-		targetZoneB := makeZone("zone-b", "zone-b-ns", "gw-realm-b")
-		targetZoneC := makeZone("zone-c", "zone-c-ns", "gw-realm-c")
+		targetZoneB := makeZone("zone-b", "zone-b-ns")
+		targetZoneC := makeZone("zone-c", "zone-c-ns")
 		targetZones := []*adminv1.Zone{targetZoneB, targetZoneC}
-
-		meshClientB := &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: util.MeshClientName, Namespace: "zone-b-ns"},
-			Spec: identityv1.ClientSpec{
-				ClientId:     "mesh-client-b-id",
-				ClientSecret: "mesh-client-b-secret",
-			},
-			Status: identityv1.ClientStatus{
-				IssuerUrl: "https://issuer.b.example.com",
-			},
-		}
-		meshClientC := &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: util.MeshClientName, Namespace: "zone-c-ns"},
-			Spec: identityv1.ClientSpec{
-				ClientId:     "mesh-client-c-id",
-				ClientSecret: "mesh-client-c-secret",
-			},
-			Status: identityv1.ClientStatus{
-				IssuerUrl: "https://issuer.c.example.com",
-			},
-		}
-
-		// Get mesh client for zone-b
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: util.MeshClientName, Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*identityv1.Client) = *meshClientB
-			}).
-			Return(nil).Once()
-
-		// Get source realm for zone-b proxy route
-		readySourceRealm := makeReadyGatewayRealm("gw-realm-a")
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readySourceRealm
-			}).
-			Return(nil).Times(2) // called for both zone-b and zone-c
-
-		// Get target realm for zone-b proxy route
-		readyRealmB := makeReadyGatewayRealm("gw-realm-b")
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-b", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealmB
-			}).
-			Return(nil).Once()
 
 		// CreateOrUpdate for zone-b proxy route
 		fakeClient.EXPECT().
@@ -640,23 +357,6 @@ var _ = Describe("CreateVoyagerProxyRoutes", func() {
 				_ = mutate()
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
-
-		// Get mesh client for zone-c
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: util.MeshClientName, Namespace: "zone-c-ns"}, mock.AnythingOfType("*v1.Client")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*identityv1.Client) = *meshClientC
-			}).
-			Return(nil).Once()
-
-		// Get target realm for zone-c proxy route
-		readyRealmC := makeReadyGatewayRealm("gw-realm-c")
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-c", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealmC
-			}).
-			Return(nil).Once()
 
 		// CreateOrUpdate for zone-c proxy route
 		fakeClient.EXPECT().

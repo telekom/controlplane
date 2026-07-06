@@ -6,6 +6,7 @@ package resolvers_test
 
 import (
 	"context"
+	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
@@ -43,7 +44,7 @@ var _ = Describe("OwnerTeam resolver", func() {
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		team, err := client.Team.Create().
-			SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(group).Save(ctx)
+			SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(group).SetDisplayName("Team Alpha").SetDescription("Team With Alphacas").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
 			SetNamespace("default").SetName("app-alpha").SetClientID("client-alpha").
@@ -58,6 +59,8 @@ var _ = Describe("OwnerTeam resolver", func() {
 		Expect(info.Email).NotTo(BeNil())
 		Expect(*info.Email).To(Equal("alpha@test.dev"))
 		Expect(info.ID).To(Equal(team.ID))
+		Expect(*info.DisplayName).To(Equal("Team Alpha"))
+		Expect(*info.Description).To(Equal("Team With Alphacas"))
 	})
 
 	It("should return empty group name when team has no group", func() {
@@ -312,5 +315,86 @@ var _ = Describe("Decision.ResultingState resolver", func() {
 		state, err := r.Decision().ResultingState(context.Background(), &model.Decision{ResultingState: nil})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(state).To(BeNil())
+	})
+})
+
+var _ = Describe("Approval ExpiresAt", func() {
+	var client *ent.Client
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should persist and retrieve ExpiresAt", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		sub, err := client.ApiSubscription.Create().
+			SetBasePath("/api/v1").SetNamespace("default").SetName("sub-1").
+			SetOwner(app).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		expiresAt := time.Date(2026, 8, 15, 10, 30, 0, 0, time.UTC)
+		a, err := client.Approval.Create().
+			SetNamespace("default").
+			SetName("test-approval").
+			SetAction("subscribe").
+			SetEnvironment("prod").
+			SetDeciderTeamName("team-alpha").
+			SetRequester(model.RequesterInfo{TeamName: "narvi"}).
+			SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
+			SetExpiresAt(expiresAt).
+			SetAPISubscription(sub).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.Approval.Get(ctx, a.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.ExpiresAt).NotTo(BeNil())
+		Expect(*fetched.ExpiresAt).To(BeTemporally("~", expiresAt, time.Second))
+	})
+
+	It("should allow nil ExpiresAt", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		sub, err := client.ApiSubscription.Create().
+			SetBasePath("/api/v1").SetNamespace("default").SetName("sub-1").
+			SetOwner(app).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		a, err := client.Approval.Create().
+			SetNamespace("default").
+			SetName("test-approval-no-expiry").
+			SetAction("subscribe").
+			SetEnvironment("prod").
+			SetDeciderTeamName("team-alpha").
+			SetRequester(model.RequesterInfo{TeamName: "narvi"}).
+			SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
+			SetAPISubscription(sub).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.Approval.Get(ctx, a.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.ExpiresAt).To(BeNil())
 	})
 })

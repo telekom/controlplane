@@ -8,10 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -51,7 +51,7 @@ func verifyApprovalStrategy(subscription *apiapi.ApiSubscription, expectedStrate
 		// Get the latest subscription status
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
 		g.Expect(err).ToNot(HaveOccurred())
-		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), "ApprovalPending")
+		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), approvalbuilder.ReasonApprovalPending)
 
 		g.Expect(subscription.Status.ApprovalRequest).ToNot(BeNil())
 
@@ -71,7 +71,6 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 
 	var apiExposure *apiapi.ApiExposure
 	var api *apiapi.Api
-	var zone *adminapi.Zone
 	var team1, team2, team3 types.ObjectRef
 
 	apiExpAppName := "api-exposure-app"
@@ -79,10 +78,7 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 
 	BeforeAll(func() {
 		By("Creating the Zone")
-		zone = CreateZone(zoneName)
-
-		By("Creating the Gateway")
-		CreateRealm(testEnvironment, zone.Name)
+		CreateZone(zoneName)
 
 		By("Creating Teams")
 		team1 = createTeam("team1", "group1", testEnvironment)

@@ -59,7 +59,7 @@ func (r *ConsumeRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *ConsumeRouteReconciler) mapRouteToConsumeRoute(ctx context.Context, obj client.Object) []reconcile.Request {
-	// ensure its actually a Realm
+	// ensure it's actually a Route
 	route, ok := obj.(*gatewayv1.Route)
 	if !ok {
 		return nil

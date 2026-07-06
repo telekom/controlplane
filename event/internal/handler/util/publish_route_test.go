@@ -9,19 +9,15 @@ import (
 	"fmt"
 
 	mock "github.com/stretchr/testify/mock"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/config"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
@@ -36,7 +32,6 @@ var _ = Describe("CreatePublishRoute", func() {
 	var (
 		ctx         context.Context
 		fakeClient  *fakeclient.MockJanitorClient
-		zone        *adminv1.Zone
 		eventConfig *eventv1.EventConfig
 	)
 
@@ -45,7 +40,6 @@ var _ = Describe("CreatePublishRoute", func() {
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
 
-		zone = makeZone("zone-a", "zone-a-ns", "gw-realm-a")
 		eventConfig = &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ec-zone-a",
@@ -58,58 +52,30 @@ var _ = Describe("CreatePublishRoute", func() {
 		}
 	})
 
-	It("should return BlockedError when realm is not found", func() {
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Return(apierrors.NewNotFound(schema.GroupResource{Group: "gateway.cp.ei.telekom.de", Resource: "realms"}, "gw-realm-a"))
+	It("should return BlockedError when zone has no default preset", func() {
+		zoneNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
-		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
+		route, err := util.CreatePublishRoute(ctx, zoneNoPreset, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not found"))
+		Expect(err.Error()).To(ContainSubstring("has no default preset"))
 	})
 
-	It("should return error when realm Get fails", func() {
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Return(fmt.Errorf("connection refused"))
+	It("should return BlockedError when zone has no gateway reference in status", func() {
+		zoneNoGw := makeZoneNoGateway("zone-a", "zone-a-ns")
 
-		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
-		Expect(err).To(HaveOccurred())
-		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to get realm"))
-		Expect(err.Error()).To(ContainSubstring("connection refused"))
-	})
-
-	It("should return BlockedError when realm is not ready", func() {
-		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *notReadyRealm
-			}).
-			Return(nil)
-
-		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
+		route, err := util.CreatePublishRoute(ctx, zoneNoGw, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not ready"))
+		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 
 	It("should return error when publishEventUrl is invalid", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
+		zone := makeZone("zone-a", "zone-a-ns")
 
 		badConfig := &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-bad", Namespace: "default"},
@@ -125,14 +91,7 @@ var _ = Describe("CreatePublishRoute", func() {
 	})
 
 	It("should create publish route successfully", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
+		zone := makeZone("zone-a", "zone-a-ns")
 
 		// SetControllerReference requires a scheme that knows both EventConfig and Route
 		s := runtime.NewScheme()
@@ -158,30 +117,27 @@ var _ = Describe("CreatePublishRoute", func() {
 		// Verify labels
 		Expect(route.Labels).To(HaveKeyWithValue(config.DomainLabelKey, "event"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone-a"))
-		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("realm"), "gw-realm-a"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "publish"))
 
 		// Verify upstream: from publishEventUrl
-		Expect(route.Spec.Upstreams).To(HaveLen(1))
-		Expect(route.Spec.Upstreams[0].Scheme).To(Equal("http"))
-		Expect(route.Spec.Upstreams[0].Host).To(Equal("publish-service"))
-		Expect(route.Spec.Upstreams[0].Port).To(Equal(8080))
-		Expect(route.Spec.Upstreams[0].Path).To(Equal("/events"))
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("http"))
+		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("publish-service"))
+		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(8080)))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/events"))
 
-		// Verify downstream: from realm URL
-		Expect(route.Spec.Downstreams).To(HaveLen(1))
-		Expect(route.Spec.Downstreams[0].Host).To(Equal("gateway.example.com"))
-		Expect(route.Spec.Downstreams[0].Port).To(Equal(443))
-		Expect(route.Spec.Downstreams[0].Path).To(Equal("/zone-a/publish/v1"))
-		Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("https://issuer.example.com"))
+		// Verify hostnames and paths from preset
+		Expect(route.Spec.Hostnames).To(HaveLen(1))
+		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
+		Expect(route.Spec.Paths).To(HaveLen(1))
+		Expect(route.Spec.Paths[0]).To(Equal("/zone-a/publish/v1"))
 
 		// Verify Security
-		Expect(route.Spec.Security).ToNot(BeNil())
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
 
-		// Verify realm ref
-		Expect(route.Spec.Realm.Name).To(Equal("gw-realm-a"))
-		Expect(route.Spec.Realm.Namespace).To(Equal("default"))
+		// Verify GatewayRef
+		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
+		Expect(route.Spec.GatewayRef.Namespace).To(Equal("default"))
 
 		// Verify owner reference was set (via SetControllerReference)
 		Expect(route.GetOwnerReferences()).To(HaveLen(1))
@@ -190,14 +146,7 @@ var _ = Describe("CreatePublishRoute", func() {
 	})
 
 	It("should create publish route with HTTPS upstream URL", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
+		zone := makeZone("zone-a", "zone-a-ns")
 
 		s := runtime.NewScheme()
 		Expect(eventv1.AddToScheme(s)).To(Succeed())
@@ -227,22 +176,15 @@ var _ = Describe("CreatePublishRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Verify upstream with explicit HTTPS port
-		Expect(route.Spec.Upstreams).To(HaveLen(1))
-		Expect(route.Spec.Upstreams[0].Scheme).To(Equal("https"))
-		Expect(route.Spec.Upstreams[0].Host).To(Equal("publish-service.internal"))
-		Expect(route.Spec.Upstreams[0].Port).To(Equal(9443))
-		Expect(route.Spec.Upstreams[0].Path).To(Equal("/api/publish"))
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
+		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("publish-service.internal"))
+		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(9443)))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/api/publish"))
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
+		zone := makeZone("zone-a", "zone-a-ns")
 
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
@@ -253,36 +195,5 @@ var _ = Describe("CreatePublishRoute", func() {
 		Expect(route).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("failed to create or update publish Route"))
 		Expect(err.Error()).To(ContainSubstring("create failed"))
-	})
-
-	It("should use correct ObjectRef for realm in route spec", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
-
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayapi.Realm) = *readyRealm
-			}).
-			Return(nil)
-
-		s := runtime.NewScheme()
-		Expect(eventv1.AddToScheme(s)).To(Succeed())
-		Expect(gatewayapi.AddToScheme(s)).To(Succeed())
-		fakeClient.EXPECT().Scheme().Return(s).Maybe()
-
-		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
-			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
-				err := mutate()
-				return controllerutil.OperationResultCreated, err
-			})
-
-		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(route).ToNot(BeNil())
-
-		// Verify realm ObjectRef
-		expectedRealmRef := *ctypes.ObjectRefFromObject(readyRealm)
-		Expect(route.Spec.Realm).To(Equal(expectedRealmRef))
 	})
 })

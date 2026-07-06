@@ -34,7 +34,7 @@ func (f *PassThroughFeature) IsUsed(ctx context.Context, builder features.Featur
 	if !ok {
 		return false
 	}
-	return len(route.Spec.Upstreams) > 0 && route.Spec.PassThrough
+	return len(route.Spec.Backend.Upstreams) > 0 && route.Spec.PassThrough
 }
 
 func (f *PassThroughFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
@@ -42,7 +42,7 @@ func (f *PassThroughFeature) Apply(ctx context.Context, builder features.Feature
 	if !ok {
 		return features.ErrNoRoute
 	}
-	builder.SetUpstream(route.Spec.Upstreams[0])
+	builder.SetUpstream(route.Spec.Backend.Upstreams[0])
 
 	return nil
 }

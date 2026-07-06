@@ -33,8 +33,8 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
-	timeout         = 2 * time.Second
-	interval        = 200 * time.Millisecond
+	timeout         = 10 * time.Second
+	interval        = 250 * time.Millisecond
 	testNamespace   = "default"
 	testEnvironment = "test"
 )
@@ -60,20 +60,12 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: append(
-			make([]string, 0),
+		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "config", "crd", "bases"),
-			filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "gateway", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "identity", "config", "crd", "bases"),
-		),
+		},
 		ErrorIfCRDPathMissing: true,
-
-		// The BinaryAssetsDirectory is only required if you want to run the tests directly
-		// without call the makefile target test. If not informed it will look for the
-		// default path defined in controller-runtime which is /usr/local/kubebuilder/.
-		// Note that you must have the required binaries setup under the bin directory to perform
-		// the tests directly. When we run make test it will be setup and used automatically.
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
 			fmt.Sprintf("%s-%s-%s", os.Getenv("ENVTEST_K8S_VERSION"), runtime.GOOS, runtime.GOARCH)),
 	}

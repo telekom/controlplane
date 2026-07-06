@@ -118,6 +118,34 @@ func (_c *TeamCreate) SetEmail(v string) *TeamCreate {
 	return _c
 }
 
+// SetDisplayName sets the "displayName" field.
+func (_c *TeamCreate) SetDisplayName(v string) *TeamCreate {
+	_c.mutation.SetDisplayName(v)
+	return _c
+}
+
+// SetNillableDisplayName sets the "displayName" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableDisplayName(v *string) *TeamCreate {
+	if v != nil {
+		_c.SetDisplayName(*v)
+	}
+	return _c
+}
+
+// SetDescription sets the "description" field.
+func (_c *TeamCreate) SetDescription(v string) *TeamCreate {
+	_c.mutation.SetDescription(v)
+	return _c
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableDescription(v *string) *TeamCreate {
+	if v != nil {
+		_c.SetDescription(*v)
+	}
+	return _c
+}
+
 // SetCategory sets the "category" field.
 func (_c *TeamCreate) SetCategory(v team.Category) *TeamCreate {
 	_c.mutation.SetCategory(v)
@@ -387,6 +415,14 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 		_spec.SetField(team.FieldEmail, field.TypeString, value)
 		_node.Email = value
 	}
+	if value, ok := _c.mutation.DisplayName(); ok {
+		_spec.SetField(team.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = &value
+	}
+	if value, ok := _c.mutation.Description(); ok {
+		_spec.SetField(team.FieldDescription, field.TypeString, value)
+		_node.Description = &value
+	}
 	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
 		_node.Category = value
@@ -630,6 +666,42 @@ func (u *TeamUpsert) UpdateEmail() *TeamUpsert {
 	return u
 }
 
+// SetDisplayName sets the "displayName" field.
+func (u *TeamUpsert) SetDisplayName(v string) *TeamUpsert {
+	u.Set(team.FieldDisplayName, v)
+	return u
+}
+
+// UpdateDisplayName sets the "displayName" field to the value that was provided on create.
+func (u *TeamUpsert) UpdateDisplayName() *TeamUpsert {
+	u.SetExcluded(team.FieldDisplayName)
+	return u
+}
+
+// ClearDisplayName clears the value of the "displayName" field.
+func (u *TeamUpsert) ClearDisplayName() *TeamUpsert {
+	u.SetNull(team.FieldDisplayName)
+	return u
+}
+
+// SetDescription sets the "description" field.
+func (u *TeamUpsert) SetDescription(v string) *TeamUpsert {
+	u.Set(team.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *TeamUpsert) UpdateDescription() *TeamUpsert {
+	u.SetExcluded(team.FieldDescription)
+	return u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *TeamUpsert) ClearDescription() *TeamUpsert {
+	u.SetNull(team.FieldDescription)
+	return u
+}
+
 // SetCategory sets the "category" field.
 func (u *TeamUpsert) SetCategory(v team.Category) *TeamUpsert {
 	u.Set(team.FieldCategory, v)
@@ -821,6 +893,48 @@ func (u *TeamUpsertOne) SetEmail(v string) *TeamUpsertOne {
 func (u *TeamUpsertOne) UpdateEmail() *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateEmail()
+	})
+}
+
+// SetDisplayName sets the "displayName" field.
+func (u *TeamUpsertOne) SetDisplayName(v string) *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "displayName" field to the value that was provided on create.
+func (u *TeamUpsertOne) UpdateDisplayName() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateDisplayName()
+	})
+}
+
+// ClearDisplayName clears the value of the "displayName" field.
+func (u *TeamUpsertOne) ClearDisplayName() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearDisplayName()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *TeamUpsertOne) SetDescription(v string) *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *TeamUpsertOne) UpdateDescription() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *TeamUpsertOne) ClearDescription() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearDescription()
 	})
 }
 
@@ -1186,6 +1300,48 @@ func (u *TeamUpsertBulk) SetEmail(v string) *TeamUpsertBulk {
 func (u *TeamUpsertBulk) UpdateEmail() *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateEmail()
+	})
+}
+
+// SetDisplayName sets the "displayName" field.
+func (u *TeamUpsertBulk) SetDisplayName(v string) *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "displayName" field to the value that was provided on create.
+func (u *TeamUpsertBulk) UpdateDisplayName() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateDisplayName()
+	})
+}
+
+// ClearDisplayName clears the value of the "displayName" field.
+func (u *TeamUpsertBulk) ClearDisplayName() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearDisplayName()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *TeamUpsertBulk) SetDescription(v string) *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *TeamUpsertBulk) UpdateDescription() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *TeamUpsertBulk) ClearDescription() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearDescription()
 	})
 }
 

@@ -2855,6 +2855,18 @@ type ApprovalWhereInput struct {
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
+	// "expiresAt" field predicates.
+	ExpiresAt       *time.Time  `json:"expiresat,omitempty"`
+	ExpiresAtNEQ    *time.Time  `json:"expiresatNEQ,omitempty"`
+	ExpiresAtIn     []time.Time `json:"expiresatIn,omitempty"`
+	ExpiresAtNotIn  []time.Time `json:"expiresatNotIn,omitempty"`
+	ExpiresAtGT     *time.Time  `json:"expiresatGT,omitempty"`
+	ExpiresAtGTE    *time.Time  `json:"expiresatGTE,omitempty"`
+	ExpiresAtLT     *time.Time  `json:"expiresatLT,omitempty"`
+	ExpiresAtLTE    *time.Time  `json:"expiresatLTE,omitempty"`
+	ExpiresAtIsNil  bool        `json:"expiresatIsNil,omitempty"`
+	ExpiresAtNotNil bool        `json:"expiresatNotNil,omitempty"`
+
 	// "state" field predicates.
 	State      *approval.State  `json:"state,omitempty"`
 	StateNEQ   *approval.State  `json:"stateNEQ,omitempty"`
@@ -3288,6 +3300,36 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, approval.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.ExpiresAt != nil {
+		predicates = append(predicates, approval.ExpiresAtEQ(*i.ExpiresAt))
+	}
+	if i.ExpiresAtNEQ != nil {
+		predicates = append(predicates, approval.ExpiresAtNEQ(*i.ExpiresAtNEQ))
+	}
+	if len(i.ExpiresAtIn) > 0 {
+		predicates = append(predicates, approval.ExpiresAtIn(i.ExpiresAtIn...))
+	}
+	if len(i.ExpiresAtNotIn) > 0 {
+		predicates = append(predicates, approval.ExpiresAtNotIn(i.ExpiresAtNotIn...))
+	}
+	if i.ExpiresAtGT != nil {
+		predicates = append(predicates, approval.ExpiresAtGT(*i.ExpiresAtGT))
+	}
+	if i.ExpiresAtGTE != nil {
+		predicates = append(predicates, approval.ExpiresAtGTE(*i.ExpiresAtGTE))
+	}
+	if i.ExpiresAtLT != nil {
+		predicates = append(predicates, approval.ExpiresAtLT(*i.ExpiresAtLT))
+	}
+	if i.ExpiresAtLTE != nil {
+		predicates = append(predicates, approval.ExpiresAtLTE(*i.ExpiresAtLTE))
+	}
+	if i.ExpiresAtIsNil {
+		predicates = append(predicates, approval.ExpiresAtIsNil())
+	}
+	if i.ExpiresAtNotNil {
+		predicates = append(predicates, approval.ExpiresAtNotNil())
 	}
 	if i.State != nil {
 		predicates = append(predicates, approval.StateEQ(*i.State))
@@ -6694,6 +6736,40 @@ type TeamWhereInput struct {
 	EmailEqualFold    *string  `json:"emailEqualFold,omitempty"`
 	EmailContainsFold *string  `json:"emailContainsFold,omitempty"`
 
+	// "displayName" field predicates.
+	DisplayName             *string  `json:"displayname,omitempty"`
+	DisplayNameNEQ          *string  `json:"displaynameNEQ,omitempty"`
+	DisplayNameIn           []string `json:"displaynameIn,omitempty"`
+	DisplayNameNotIn        []string `json:"displaynameNotIn,omitempty"`
+	DisplayNameGT           *string  `json:"displaynameGT,omitempty"`
+	DisplayNameGTE          *string  `json:"displaynameGTE,omitempty"`
+	DisplayNameLT           *string  `json:"displaynameLT,omitempty"`
+	DisplayNameLTE          *string  `json:"displaynameLTE,omitempty"`
+	DisplayNameContains     *string  `json:"displaynameContains,omitempty"`
+	DisplayNameHasPrefix    *string  `json:"displaynameHasPrefix,omitempty"`
+	DisplayNameHasSuffix    *string  `json:"displaynameHasSuffix,omitempty"`
+	DisplayNameIsNil        bool     `json:"displaynameIsNil,omitempty"`
+	DisplayNameNotNil       bool     `json:"displaynameNotNil,omitempty"`
+	DisplayNameEqualFold    *string  `json:"displaynameEqualFold,omitempty"`
+	DisplayNameContainsFold *string  `json:"displaynameContainsFold,omitempty"`
+
+	// "description" field predicates.
+	Description             *string  `json:"description,omitempty"`
+	DescriptionNEQ          *string  `json:"descriptionNEQ,omitempty"`
+	DescriptionIn           []string `json:"descriptionIn,omitempty"`
+	DescriptionNotIn        []string `json:"descriptionNotIn,omitempty"`
+	DescriptionGT           *string  `json:"descriptionGT,omitempty"`
+	DescriptionGTE          *string  `json:"descriptionGTE,omitempty"`
+	DescriptionLT           *string  `json:"descriptionLT,omitempty"`
+	DescriptionLTE          *string  `json:"descriptionLTE,omitempty"`
+	DescriptionContains     *string  `json:"descriptionContains,omitempty"`
+	DescriptionHasPrefix    *string  `json:"descriptionHasPrefix,omitempty"`
+	DescriptionHasSuffix    *string  `json:"descriptionHasSuffix,omitempty"`
+	DescriptionIsNil        bool     `json:"descriptionIsNil,omitempty"`
+	DescriptionNotNil       bool     `json:"descriptionNotNil,omitempty"`
+	DescriptionEqualFold    *string  `json:"descriptionEqualFold,omitempty"`
+	DescriptionContainsFold *string  `json:"descriptionContainsFold,omitempty"`
+
 	// "category" field predicates.
 	Category      *team.Category  `json:"category,omitempty"`
 	CategoryNEQ   *team.Category  `json:"categoryNEQ,omitempty"`
@@ -7105,6 +7181,96 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	}
 	if i.EmailContainsFold != nil {
 		predicates = append(predicates, team.EmailContainsFold(*i.EmailContainsFold))
+	}
+	if i.DisplayName != nil {
+		predicates = append(predicates, team.DisplayNameEQ(*i.DisplayName))
+	}
+	if i.DisplayNameNEQ != nil {
+		predicates = append(predicates, team.DisplayNameNEQ(*i.DisplayNameNEQ))
+	}
+	if len(i.DisplayNameIn) > 0 {
+		predicates = append(predicates, team.DisplayNameIn(i.DisplayNameIn...))
+	}
+	if len(i.DisplayNameNotIn) > 0 {
+		predicates = append(predicates, team.DisplayNameNotIn(i.DisplayNameNotIn...))
+	}
+	if i.DisplayNameGT != nil {
+		predicates = append(predicates, team.DisplayNameGT(*i.DisplayNameGT))
+	}
+	if i.DisplayNameGTE != nil {
+		predicates = append(predicates, team.DisplayNameGTE(*i.DisplayNameGTE))
+	}
+	if i.DisplayNameLT != nil {
+		predicates = append(predicates, team.DisplayNameLT(*i.DisplayNameLT))
+	}
+	if i.DisplayNameLTE != nil {
+		predicates = append(predicates, team.DisplayNameLTE(*i.DisplayNameLTE))
+	}
+	if i.DisplayNameContains != nil {
+		predicates = append(predicates, team.DisplayNameContains(*i.DisplayNameContains))
+	}
+	if i.DisplayNameHasPrefix != nil {
+		predicates = append(predicates, team.DisplayNameHasPrefix(*i.DisplayNameHasPrefix))
+	}
+	if i.DisplayNameHasSuffix != nil {
+		predicates = append(predicates, team.DisplayNameHasSuffix(*i.DisplayNameHasSuffix))
+	}
+	if i.DisplayNameIsNil {
+		predicates = append(predicates, team.DisplayNameIsNil())
+	}
+	if i.DisplayNameNotNil {
+		predicates = append(predicates, team.DisplayNameNotNil())
+	}
+	if i.DisplayNameEqualFold != nil {
+		predicates = append(predicates, team.DisplayNameEqualFold(*i.DisplayNameEqualFold))
+	}
+	if i.DisplayNameContainsFold != nil {
+		predicates = append(predicates, team.DisplayNameContainsFold(*i.DisplayNameContainsFold))
+	}
+	if i.Description != nil {
+		predicates = append(predicates, team.DescriptionEQ(*i.Description))
+	}
+	if i.DescriptionNEQ != nil {
+		predicates = append(predicates, team.DescriptionNEQ(*i.DescriptionNEQ))
+	}
+	if len(i.DescriptionIn) > 0 {
+		predicates = append(predicates, team.DescriptionIn(i.DescriptionIn...))
+	}
+	if len(i.DescriptionNotIn) > 0 {
+		predicates = append(predicates, team.DescriptionNotIn(i.DescriptionNotIn...))
+	}
+	if i.DescriptionGT != nil {
+		predicates = append(predicates, team.DescriptionGT(*i.DescriptionGT))
+	}
+	if i.DescriptionGTE != nil {
+		predicates = append(predicates, team.DescriptionGTE(*i.DescriptionGTE))
+	}
+	if i.DescriptionLT != nil {
+		predicates = append(predicates, team.DescriptionLT(*i.DescriptionLT))
+	}
+	if i.DescriptionLTE != nil {
+		predicates = append(predicates, team.DescriptionLTE(*i.DescriptionLTE))
+	}
+	if i.DescriptionContains != nil {
+		predicates = append(predicates, team.DescriptionContains(*i.DescriptionContains))
+	}
+	if i.DescriptionHasPrefix != nil {
+		predicates = append(predicates, team.DescriptionHasPrefix(*i.DescriptionHasPrefix))
+	}
+	if i.DescriptionHasSuffix != nil {
+		predicates = append(predicates, team.DescriptionHasSuffix(*i.DescriptionHasSuffix))
+	}
+	if i.DescriptionIsNil {
+		predicates = append(predicates, team.DescriptionIsNil())
+	}
+	if i.DescriptionNotNil {
+		predicates = append(predicates, team.DescriptionNotNil())
+	}
+	if i.DescriptionEqualFold != nil {
+		predicates = append(predicates, team.DescriptionEqualFold(*i.DescriptionEqualFold))
+	}
+	if i.DescriptionContainsFold != nil {
+		predicates = append(predicates, team.DescriptionContainsFold(*i.DescriptionContainsFold))
 	}
 	if i.Category != nil {
 		predicates = append(predicates, team.CategoryEQ(*i.Category))

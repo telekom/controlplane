@@ -22,7 +22,7 @@ type RoadmapHandler struct{}
 func (h *RoadmapHandler) CreateOrUpdate(ctx context.Context, roadmap *roverv1.Roadmap) error {
 	// Set conditions to indicate the roadmap is ready
 	roadmap.SetCondition(condition.NewDoneProcessingCondition("Roadmap processed"))
-	roadmap.SetCondition(condition.NewReadyCondition("Ready", "Roadmap is ready"))
+	roadmap.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Roadmap is ready"))
 
 	return nil
 }

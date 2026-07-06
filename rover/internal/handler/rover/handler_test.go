@@ -80,7 +80,7 @@ var _ = Describe("Rover Handler", func() {
 			rootCause := errors.Cause(err)
 			Expect(rootCause).To(Equal(httpErr))
 
-			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady), "DeletionFailed")
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady), condition.ReasonError)
 		})
 	})
 })
