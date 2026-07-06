@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -49,11 +50,13 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	instanceHandler, err := instance_handler.New(r.ServiceFactory)
+	if err != nil {
+		return fmt.Errorf("creating instance handler: %w", err)
+	}
 	r.Recorder = mgr.GetEventRecorderFor("instance-controller")
-	r.Controller = cc.NewController(&instance_handler.InstanceHandler{
-		Client:         r.Client,
-		ServiceFactory: r.ServiceFactory,
-	}, r.Client, r.Recorder)
+
+	r.Controller = cc.NewController(instanceHandler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sftpv1.Instance{}).

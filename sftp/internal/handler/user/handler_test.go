@@ -145,7 +145,7 @@ func newTestHandler(objects ...client.Object) (*UserHandler, context.Context) {
 		context.Background(),
 		cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, userHandlerTestEnvironment)),
 	)
-	return &UserHandler{}, ctx
+	return New(), ctx
 }
 
 func testInstance() *sftpv1.Instance {

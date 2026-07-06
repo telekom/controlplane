@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -42,10 +43,12 @@ func (r *SFTPServiceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SFTPServiceConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	sftpserviceconfigHandler, err := sftpserviceconfig_handler.New(r.ClientManager)
+	if err != nil {
+		return fmt.Errorf("creating SFTPServiceConfig handler: %w", err)
+	}
 	r.Recorder = mgr.GetEventRecorderFor("sftpserviceconfig-controller")
-	r.Controller = cc.NewController(&sftpserviceconfig_handler.SFTPServiceConfigHandler{
-		ClientManager: r.ClientManager,
-	}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(sftpserviceconfigHandler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sftpv1.SFTPServiceConfig{}).

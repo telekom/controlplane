@@ -41,9 +41,16 @@ var _ = Describe("SFTPServiceConfigHandler", func() {
 		}
 	})
 
+	It("requires a client manager", func() {
+		handler, err := New(nil)
+
+		Expect(err).To(MatchError("client manager is required"))
+		Expect(handler).To(BeNil())
+	})
+
 	It("recreates the service when the cache is empty", func() {
 		manager := &recordingClientManager{serviceCached: false}
-		handler := &SFTPServiceConfigHandler{ClientManager: manager}
+		handler := newTestHandler(manager)
 
 		Expect(handler.CreateOrUpdate(ctx, obj)).To(Succeed())
 
@@ -55,7 +62,7 @@ var _ = Describe("SFTPServiceConfigHandler", func() {
 
 	It("recreates the service when the Ready condition observed generation is stale", func() {
 		manager := &recordingClientManager{serviceCached: true}
-		handler := &SFTPServiceConfigHandler{ClientManager: manager}
+		handler := newTestHandler(manager)
 		ready := condition.NewReadyCondition("SFTPServiceConfigProvided", "SFTPServiceConfig has been provided")
 		ready.ObservedGeneration = obj.Generation - 1
 		obj.SetCondition(ready)
@@ -68,7 +75,7 @@ var _ = Describe("SFTPServiceConfigHandler", func() {
 
 	It("skips reconciliation when the Ready condition observed generation is current and the service is cached", func() {
 		manager := &recordingClientManager{serviceCached: true}
-		handler := &SFTPServiceConfigHandler{ClientManager: manager}
+		handler := newTestHandler(manager)
 		ready := condition.NewReadyCondition("SFTPServiceConfigProvided", "SFTPServiceConfig has been provided")
 		ready.ObservedGeneration = obj.Generation
 		obj.SetCondition(ready)
@@ -79,6 +86,12 @@ var _ = Describe("SFTPServiceConfigHandler", func() {
 		Expect(manager.createOrUpdateCalls).To(Equal(0))
 	})
 })
+
+func newTestHandler(manager service.ClientManager) *SFTPServiceConfigHandler {
+	handler, err := New(manager)
+	Expect(err).NotTo(HaveOccurred())
+	return handler
+}
 
 type recordingClientManager struct {
 	serviceCached       bool

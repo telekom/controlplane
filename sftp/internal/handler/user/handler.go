@@ -22,6 +22,10 @@ var _ handler.Handler[*sftpv1.User] = &UserHandler{}
 
 type UserHandler struct{}
 
+func New() *UserHandler {
+	return &UserHandler{}
+}
+
 func (h *UserHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.User) error {
 	if obj.Spec.InstanceRef.IsEmpty() {
 		return ctrlerrors.BlockedErrorf("Instance reference is required")

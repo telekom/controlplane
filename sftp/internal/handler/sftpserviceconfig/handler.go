@@ -6,6 +6,7 @@ package sftpserviceconfig
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -21,12 +22,22 @@ import (
 var _ handler.Handler[*sftpv1.SFTPServiceConfig] = &SFTPServiceConfigHandler{}
 
 type SFTPServiceConfigHandler struct {
-	ClientManager service.ClientManager
+	clientManager service.ClientManager
+}
+
+func New(clientManager service.ClientManager) (*SFTPServiceConfigHandler, error) {
+	if clientManager == nil {
+		return nil, errors.New("client manager is required")
+	}
+
+	return &SFTPServiceConfigHandler{
+		clientManager: clientManager,
+	}, nil
 }
 
 func (h *SFTPServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.SFTPServiceConfig) error {
 	log := logr.FromContextOrDiscard(ctx)
-	isServiceCached := h.ClientManager.IsServiceCached(client.ObjectKeyFromObject(obj))
+	isServiceCached := h.clientManager.IsServiceCached(client.ObjectKeyFromObject(obj))
 
 	conditionReady := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 	if isServiceCached && conditionReady != nil && conditionReady.ObservedGeneration == obj.Generation && conditionReady.Status == v1.ConditionTrue {
@@ -34,7 +45,7 @@ func (h *SFTPServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftp
 		return nil
 	}
 
-	err := h.ClientManager.CreateOrUpdate(ctx, obj)
+	err := h.clientManager.CreateOrUpdate(ctx, obj)
 	if err != nil {
 		return err
 	}
@@ -45,7 +56,7 @@ func (h *SFTPServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftp
 }
 
 func (h *SFTPServiceConfigHandler) Delete(ctx context.Context, obj *sftpv1.SFTPServiceConfig) error {
-	h.ClientManager.Delete(obj)
+	h.clientManager.Delete(obj)
 
 	return nil
 }
