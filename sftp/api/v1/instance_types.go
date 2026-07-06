@@ -11,6 +11,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 )
 
+// IndexFieldSpecSFTPServiceConfigRef is the field index key for Instances by spec.sftpServiceConfigRef.
+const IndexFieldSpecSFTPServiceConfigRef = "spec.sftpServiceConfigRef"
+
 // InstanceSpec defines the desired state of Instance.
 type InstanceSpec struct {
 	// Description is a human-readable description of this Instance.

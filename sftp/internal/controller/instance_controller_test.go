@@ -10,7 +10,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	config "github.com/telekom/controlplane/common/pkg/config"
@@ -93,6 +96,69 @@ var _ = Describe("Instance Controller", func() {
 			Eventually(func(g Gomega) {
 				VerifyInstance(ctx, g, instanceKey)
 			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("When mapping SFTPServiceConfig changes", func() {
+		It("uses the SFTPServiceConfig reference field index to find Instances", func() {
+			scheme := runtime.NewScheme()
+			Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
+			Expect(sftpv1.AddToScheme(scheme)).To(Succeed())
+
+			const (
+				sftpServiceConfigName = "indexed-sftpserviceconfig"
+				matchingInstanceName  = "matching-instance"
+				otherInstanceName     = "other-instance"
+			)
+
+			sftpServiceConfig := &sftpv1.SFTPServiceConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      sftpServiceConfigName,
+					Namespace: testNamespace,
+				},
+			}
+			matchingInstance := &sftpv1.Instance{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      matchingInstanceName,
+					Namespace: testNamespace,
+				},
+				Spec: sftpv1.InstanceSpec{
+					SFTPServiceConfigRef: commontypes.ObjectRef{
+						Name:      sftpServiceConfigName,
+						Namespace: testNamespace,
+					},
+				},
+			}
+			otherInstance := &sftpv1.Instance{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      otherInstanceName,
+					Namespace: testNamespace,
+				},
+				Spec: sftpv1.InstanceSpec{
+					SFTPServiceConfigRef: commontypes.ObjectRef{
+						Name:      "other-sftpserviceconfig",
+						Namespace: testNamespace,
+					},
+				},
+			}
+
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(matchingInstance, otherInstance).
+				WithIndex(&sftpv1.Instance{}, sftpv1.IndexFieldSpecSFTPServiceConfigRef, func(obj client.Object) []string {
+					instance, ok := obj.(*sftpv1.Instance)
+					if !ok || instance.Spec.SFTPServiceConfigRef.IsEmpty() {
+						return nil
+					}
+					return []string{instance.Spec.SFTPServiceConfigRef.String()}
+				}).
+				Build()
+			reconciler := &InstanceReconciler{Client: k8sClient}
+
+			reqs := reconciler.MapSFTPServiceConfigToInstance(context.Background(), sftpServiceConfig)
+
+			Expect(reqs).To(HaveLen(1))
+			Expect(reqs[0].NamespacedName).To(Equal(client.ObjectKeyFromObject(matchingInstance)))
 		})
 	})
 })
