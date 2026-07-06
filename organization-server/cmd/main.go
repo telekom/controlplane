@@ -45,7 +45,7 @@ func main() {
 	}
 
 	// Upstream clients.
-	cpapiClient := client.NewCPAPIClient(cfg.CPAPIEndpoint, tokenSource)
+	cpapiClient := client.NewCPAPIClient(cfg.CPAPIEndpoint, tokenSource, cfg.CPAPIInsecure)
 	roverClient := client.NewRoverClient(cfg.RoverEndpoint)
 
 	// Fiber app.

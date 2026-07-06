@@ -81,7 +81,7 @@ func main() {
 
 		var resourceChecker service.ResourceChecker
 		if cfg.RoverServer.BaseURL != "" {
-			resourceChecker = service.NewRoverResourceChecker(cfg.RoverServer.BaseURL)
+			resourceChecker = service.NewRoverResourceChecker(cfg.RoverServer.BaseURL, cfg.Kubernetes.Environment, cfg.RoverServer.ScopePrefix)
 		} else {
 			resourceChecker = service.NewNoopResourceChecker()
 		}

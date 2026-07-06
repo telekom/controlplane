@@ -246,7 +246,7 @@ func (s *teamK8sService) DeleteTeam(ctx context.Context, ref ResourceRef) (*mode
 	}
 
 	// Pre-check: team must have no resources before deletion.
-	prefix := fmt.Sprintf("%s--%s--%s--", ref.Namespace, ref.Group, ref.TeamName)
+	prefix := fmt.Sprintf("%s--%s/", ref.Namespace, ref.TeamName)
 	hasResources, err := s.resourceChecker.HasResources(ctx, prefix)
 	if err != nil {
 		log.Error(err, "Failed to check team resources")

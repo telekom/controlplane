@@ -119,8 +119,9 @@ func (h *Handler) resolveGroupID(ctx context.Context, name string) (string, erro
 
 // resolveTeamID looks up a team by hub name + team name and returns its ent ID.
 func (h *Handler) resolveTeamID(ctx context.Context, hubName, teamName string) (string, error) {
+	fullTeamName := hubName + "--" + teamName
 	resp, err := gql.GetTeam(ctx, h.cpapi, &gql.TeamWhereInput{
-		Name:         &teamName,
+		Name:         &fullTeamName,
 		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {

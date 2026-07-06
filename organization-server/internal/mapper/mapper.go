@@ -35,11 +35,6 @@ func GroupDetailToHubResponse(g *gql.GetGroupGroupsGroup) api.HubResponse {
 
 // TeamToTeamResponse maps a genqlient Team node to the legacy TeamResponse.
 func TeamToTeamResponse(t *gql.ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam) api.TeamResponse {
-	groupName := ""
-	if t.Group != nil {
-		groupName = t.Group.Name
-	}
-
 	members := make([]api.TeamMember, 0, len(t.Members))
 	for _, m := range t.Members {
 		members = append(members, api.TeamMember{
@@ -48,7 +43,7 @@ func TeamToTeamResponse(t *gql.ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam
 		})
 	}
 
-	clientID := fmt.Sprintf("%s--%s--team-user", groupName, t.Name)
+	clientID := fmt.Sprintf("%s--team-user", t.Name)
 
 	resp := api.TeamResponse{
 		Name:     t.Name,
@@ -66,11 +61,6 @@ func TeamToTeamResponse(t *gql.ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam
 
 // GetTeamToTeamResponse maps a team from GetTeam query.
 func GetTeamToTeamResponse(t *gql.GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam) api.TeamResponse {
-	groupName := ""
-	if t.Group != nil {
-		groupName = t.Group.Name
-	}
-
 	members := make([]api.TeamMember, 0, len(t.Members))
 	for _, m := range t.Members {
 		members = append(members, api.TeamMember{
@@ -79,7 +69,7 @@ func GetTeamToTeamResponse(t *gql.GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTea
 		})
 	}
 
-	clientID := fmt.Sprintf("%s--%s--team-user", groupName, t.Name)
+	clientID := fmt.Sprintf("%s--team-user", t.Name)
 
 	resp := api.TeamResponse{
 		Name:     t.Name,
