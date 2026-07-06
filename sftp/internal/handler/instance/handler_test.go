@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/stretchr/testify/mock"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -22,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 	"github.com/telekom/controlplane/sftp/internal/service"
+	sftpmocks "github.com/telekom/controlplane/sftp/test/mocks"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,7 +39,9 @@ const (
 
 var _ = Describe("InstanceHandler", func() {
 	It("marks an Instance ready when its SFTPServiceConfig exists", func() {
-		handler, ctx, instance, _ := newTestHandler()
+		handler, ctx, instance, mockService := newTestHandler()
+		expectCreateOrUpdateSFTPUser(mockService, nil, nil)
+		expectUpdatePublicKeysForSFTPUser(mockService, nil, nil)
 
 		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 		Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
@@ -71,52 +75,50 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("creates a service user with description and empty Horizon notification events", func() {
-		handler, ctx, instance, recorder := newTestHandler()
+		handler, ctx, instance, mockService := newTestHandler()
 		instance.Spec.Description = "Team transfer user"
+		createdModel := service.RoverSftpUserModel{}
+		expectCreateOrUpdateSFTPUser(mockService, &createdModel, nil)
+		expectUpdatePublicKeysForSFTPUser(mockService, nil, nil)
 
 		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
-		Expect(recorder.createdModels).To(HaveLen(1))
-		Expect(recorder.createdModels[0].SftpUserName).To(Equal(instanceHandlerTestName))
-		Expect(recorder.createdModels[0].Description).NotTo(BeNil())
-		Expect(*recorder.createdModels[0].Description).To(Equal("Team transfer user"))
-		Expect(recorder.createdModels[0].HorizonNotificationEvents).NotTo(BeNil())
-		Expect(*recorder.createdModels[0].HorizonNotificationEvents).To(BeEmpty())
+		Expect(createdModel.SftpUserName).To(Equal(instanceHandlerTestName))
+		Expect(createdModel.Description).NotTo(BeNil())
+		Expect(*createdModel.Description).To(Equal("Team transfer user"))
+		Expect(createdModel.HorizonNotificationEvents).NotTo(BeNil())
+		Expect(*createdModel.HorizonNotificationEvents).To(BeEmpty())
 	})
 
 	It("skips service user provisioning when the Ready condition observed generation is current", func() {
-		handler, ctx, instance, recorder := newTestHandler()
+		handler, ctx, instance, mockService := newTestHandler()
 		ready := condition.NewReadyCondition("InstanceProvided", "Instance has been provided")
 		ready.ObservedGeneration = instance.Generation
 		instance.SetCondition(ready)
+		expectUpdatePublicKeysForSFTPUser(mockService, nil, nil)
 
 		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
-
-		Expect(recorder.createCalls).To(Equal(0))
-		Expect(recorder.updateCalls).To(Equal(1))
 	})
 
 	It("provisions the service user when the Ready condition observed generation is stale", func() {
-		handler, ctx, instance, recorder := newTestHandler()
+		handler, ctx, instance, mockService := newTestHandler()
 		ready := condition.NewReadyCondition("InstanceProvided", "Instance has been provided")
 		ready.ObservedGeneration = instance.Generation - 1
 		instance.SetCondition(ready)
+		expectCreateOrUpdateSFTPUser(mockService, nil, nil)
+		expectUpdatePublicKeysForSFTPUser(mockService, nil, nil)
 
 		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
-
-		Expect(recorder.createCalls).To(Equal(1))
-		Expect(recorder.updateCalls).To(Equal(1))
 	})
 
 	It("returns service user creation errors", func() {
-		handler, ctx, instance, recorder := newTestHandler()
-		recorder.createErr = errors.New("create failed")
+		handler, ctx, instance, mockService := newTestHandler()
+		expectCreateOrUpdateSFTPUser(mockService, nil, errors.New("create failed"))
 
 		err := handler.CreateOrUpdate(ctx, instance)
 
 		Expect(err).To(MatchError(ContainSubstring("creating or updating SFTP user")))
 		Expect(err).To(MatchError(ContainSubstring("create failed")))
-		Expect(recorder.updateCalls).To(Equal(0))
 	})
 
 	It("syncs user SSH public keys to DDS grouped by instance name", func() {
@@ -125,21 +127,28 @@ var _ = Describe("InstanceHandler", func() {
 		user := testUser()
 		user.Spec.SSHPublicKeys = []string{publicKey}
 
-		handler, ctx, instance, recorder := newTestHandler(user)
+		handler, ctx, instance, mockService := newTestHandler(user)
+		var keys service.ClientPublicKeyMap
+		expectCreateOrUpdateSFTPUser(mockService, nil, nil)
+		expectUpdatePublicKeysForSFTPUser(mockService, &keys, nil)
 
 		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
-		Expect(recorder.createCalls).To(Equal(1))
-		Expect(recorder.createdUsers).To(ConsistOf(instanceHandlerTestName))
-		Expect(recorder.updateCalls).To(Equal(1))
-		Expect(recorder.sftpUserName).To(Equal(instanceHandlerTestName))
-		Expect(recorder.clientID).To(Equal(instanceHandlerTestName))
-		Expect(recorder.keys).To(HaveKey("items"))
-		Expect(recorder.keys["items"]).To(ConsistOf(service.RoverPublicKeyModel{
+		Expect(keys).To(HaveKey("items"))
+		Expect(keys["items"]).To(ConsistOf(service.RoverPublicKeyModel{
 			PublicKey:    "ssh-rsa cHJvdmlkZXI=",
 			SftpUserName: instanceHandlerTestName,
 			Description:  ptrTo(instanceHandlerTestNamespace + "/" + instanceHandlerTestUserName),
 		}))
+		Expect(instance.Status.Users).To(HaveLen(1))
+		userStatus := instance.Status.Users[0]
+		Expect(userStatus.Namespace).To(Equal(instanceHandlerTestNamespace))
+		Expect(userStatus.Name).To(Equal(instanceHandlerTestUserName))
+		Expect(userStatus.ProcessingCondition.Type).To(Equal(condition.ConditionTypeProcessing))
+		Expect(userStatus.ProcessingCondition.Status).To(Equal(metav1.ConditionFalse))
+		Expect(userStatus.ProcessingCondition.Reason).To(Equal("Done"))
+		Expect(userStatus.ProcessingCondition.ObservedGeneration).To(Equal(user.Generation))
+		Expect(userStatus.ProcessingCondition.LastTransitionTime.IsZero()).To(BeFalse())
 	})
 
 	It("syncs keys only from users referencing the Instance", func() {
@@ -153,11 +162,14 @@ var _ = Describe("InstanceHandler", func() {
 		unrelatedUser.Spec.InstanceRef.Name = "other-instance"
 		unrelatedUser.Spec.SSHPublicKeys = []string{unrelatedKey}
 
-		handler, ctx, instance, recorder := newTestHandler(user, unrelatedUser)
+		handler, ctx, instance, mockService := newTestHandler(user, unrelatedUser)
+		var keys service.ClientPublicKeyMap
+		expectCreateOrUpdateSFTPUser(mockService, nil, nil)
+		expectUpdatePublicKeysForSFTPUser(mockService, &keys, nil)
 
 		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
-		Expect(recorder.keys["items"]).To(ConsistOf(service.RoverPublicKeyModel{
+		Expect(keys["items"]).To(ConsistOf(service.RoverPublicKeyModel{
 			PublicKey:    "ssh-rsa cHJvdmlkZXI=",
 			SftpUserName: instanceHandlerTestName,
 			Description:  ptrTo(instanceHandlerTestNamespace + "/" + instanceHandlerTestUserName),
@@ -177,11 +189,14 @@ var _ = Describe("InstanceHandler", func() {
 		}
 		otherEnvironmentUser.Spec.SSHPublicKeys = []string{otherEnvironmentKey}
 
-		handler, ctx, instance, recorder := newTestHandler(user, otherEnvironmentUser)
+		handler, ctx, instance, mockService := newTestHandler(user, otherEnvironmentUser)
+		var keys service.ClientPublicKeyMap
+		expectCreateOrUpdateSFTPUser(mockService, nil, nil)
+		expectUpdatePublicKeysForSFTPUser(mockService, &keys, nil)
 
 		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
-		Expect(recorder.keys["items"]).To(ConsistOf(service.RoverPublicKeyModel{
+		Expect(keys["items"]).To(ConsistOf(service.RoverPublicKeyModel{
 			PublicKey:    "ssh-rsa cHJvdmlkZXI=",
 			SftpUserName: instanceHandlerTestName,
 			Description:  ptrTo(instanceHandlerTestNamespace + "/" + instanceHandlerTestUserName),
@@ -189,42 +204,42 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("clears DDS keys when the user has no SSH public keys", func() {
-		handler, ctx, instance, recorder := newTestHandler(testUser())
+		handler, ctx, instance, mockService := newTestHandler(testUser())
+		var keys service.ClientPublicKeyMap
+		expectCreateOrUpdateSFTPUser(mockService, nil, nil)
+		expectUpdatePublicKeysForSFTPUser(mockService, &keys, nil)
 
 		Expect(handler.CreateOrUpdate(ctx, instance)).To(Succeed())
 
-		Expect(recorder.updateCalls).To(Equal(1))
-		Expect(recorder.clientID).To(Equal(instanceHandlerTestName))
-		Expect(recorder.keys).To(HaveKey("items"))
-		Expect(recorder.keys["items"]).To(BeEmpty())
+		Expect(keys).To(HaveKey("items"))
+		Expect(keys["items"]).To(BeEmpty())
 	})
 
 	It("marks public keys as not updated when service key synchronization fails", func() {
-		handler, ctx, instance, recorder := newTestHandler()
-		recorder.updateErr = errors.New("dds unavailable")
+		handler, ctx, instance, mockService := newTestHandler(testUser())
+		expectCreateOrUpdateSFTPUser(mockService, nil, nil)
+		expectUpdatePublicKeysForSFTPUser(mockService, nil, errors.New("dds unavailable"))
 
 		err := handler.CreateOrUpdate(ctx, instance)
 
 		Expect(err).To(MatchError(ContainSubstring("updating public keys for SFTP user")))
 		Expect(err).To(MatchError(ContainSubstring("dds unavailable")))
 		Expect(meta.IsStatusConditionFalse(instance.Status.Conditions, sftpv1.ConditionTypePublicKeysUpdatedInService)).To(BeTrue())
+		Expect(instance.Status.Users).To(BeEmpty())
 	})
 
 	It("deletes the instance SFTP user", func() {
-		handler, ctx, instance, recorder := newTestHandler()
+		handler, ctx, instance, mockService := newTestHandler()
+		expectDeleteSFTPUser(mockService, nil)
 
 		Expect(handler.Delete(ctx, instance)).To(Succeed())
-
-		Expect(recorder.deletedUsers).To(ConsistOf(instanceHandlerTestName))
 	})
 
 	It("does not delete a service user when SFTPServiceConfig reference is missing", func() {
-		handler, ctx, instance, recorder := newTestHandler()
+		handler, ctx, instance, _ := newTestHandler()
 		instance.Spec.SFTPServiceConfigRef = types.ObjectRef{}
 
 		Expect(handler.Delete(ctx, instance)).To(Succeed())
-
-		Expect(recorder.deletedUsers).To(BeEmpty())
 	})
 
 	It("returns service lookup errors during deletion", func() {
@@ -237,8 +252,8 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("wraps service user deletion errors", func() {
-		handler, ctx, instance, recorder := newTestHandler()
-		recorder.deleteErr = errors.New("delete failed")
+		handler, ctx, instance, mockService := newTestHandler()
+		expectDeleteSFTPUser(mockService, errors.New("delete failed"))
 
 		err := handler.Delete(ctx, instance)
 
@@ -257,15 +272,16 @@ var _ = Describe("InstanceHandler", func() {
 			users[i].Spec.SSHPublicKeys = []string{publicKey}
 		}
 
-		keys := collectUniquePublicKeysFromUsers(GinkgoLogr, instanceHandlerTestName, users)
+		keys, userStatuses := collectUniquePublicKeysFromUsers(GinkgoLogr, instanceHandlerTestName, users)
 
 		Expect(keys).To(ConsistOf(service.RoverPublicKeyModel{
 			PublicKey:    "ssh-rsa cHJvdmlkZXI=",
 			SftpUserName: instanceHandlerTestName,
 			Description:  ptrTo(instanceHandlerTestNamespace + "/z-user"),
 		}))
-		Expect(meta.IsStatusConditionFalse(users[0].Status.Conditions, condition.ConditionTypeProcessing)).To(BeTrue())
-		Expect(meta.IsStatusConditionTrue(users[0].Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+		Expect(userStatuses).To(HaveLen(3))
+		Expect(userStatuses[0].ProcessingCondition.Status).To(Equal(metav1.ConditionFalse))
+		Expect(userStatuses[0].ProcessingCondition.Reason).To(Equal("Done"))
 	})
 
 	It("ignores invalid public keys while collecting service payload", func() {
@@ -275,27 +291,18 @@ var _ = Describe("InstanceHandler", func() {
 			"ssh-rsa not-base64",
 		}
 
-		keys := collectUniquePublicKeysFromUsers(GinkgoLogr, instanceHandlerTestName, users)
+		keys, userStatuses := collectUniquePublicKeysFromUsers(GinkgoLogr, instanceHandlerTestName, users)
 
 		Expect(keys).To(BeEmpty())
-		ready := meta.FindStatusCondition(users[0].Status.Conditions, condition.ConditionTypeReady)
-		Expect(ready).NotTo(BeNil())
-		Expect(ready.Message).To(ContainSubstring("Failed to process public key"))
-	})
-
-	It("returns joined errors when updating user status fails for one user", func() {
-		existingUser := testUser()
-		missingUser := testUserNamed("missing-user")
-		handler, _, _, _ := newTestHandler(existingUser)
-
-		err := handler.updateUserStatus(context.Background(), []sftpv1.User{*existingUser, *missingUser})
-
-		Expect(err).To(MatchError(ContainSubstring("updating status for User")))
-		Expect(err).To(MatchError(ContainSubstring("missing-user")))
+		Expect(userStatuses).To(HaveLen(1))
+		Expect(userStatuses[0].ProcessingCondition.Status).To(Equal(metav1.ConditionFalse))
+		Expect(userStatuses[0].ProcessingCondition.Reason).To(Equal("Blocked"))
+		Expect(userStatuses[0].ProcessingCondition.Message).To(ContainSubstring("Failed to process public key"))
+		Expect(userStatuses[0].ProcessingCondition.LastTransitionTime.IsZero()).To(BeFalse())
 	})
 })
 
-func newTestHandler(objects ...client.Object) (*InstanceHandler, context.Context, *sftpv1.Instance, *recordingService) {
+func newTestHandler(objects ...client.Object) (*InstanceHandler, context.Context, *sftpv1.Instance, *sftpmocks.MockService) {
 	scheme := runtime.NewScheme()
 	Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
 	Expect(sftpv1.AddToScheme(scheme)).To(Succeed())
@@ -314,24 +321,31 @@ func newTestHandler(objects ...client.Object) (*InstanceHandler, context.Context
 		},
 	}
 	instance := testInstance()
-	recorder := &recordingService{}
+	mockService := sftpmocks.NewMockService(GinkgoT())
 
 	allObjects := append([]client.Object{sftpServiceConfig, instance}, objects...)
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithStatusSubresource(&sftpv1.Instance{}, &sftpv1.User{}).
 		WithObjects(allObjects...).
+		WithIndex(&sftpv1.User{}, sftpv1.IndexFieldSpecInstanceRef, func(obj client.Object) []string {
+			user, ok := obj.(*sftpv1.User)
+			if !ok || user.Spec.InstanceRef.IsEmpty() {
+				return nil
+			}
+			return []string{user.Spec.InstanceRef.String()}
+		}).
 		Build()
 
 	handler := &InstanceHandler{
 		Client:         k8sClient,
-		ServiceFactory: recordingFactory{svc: recorder},
+		ServiceFactory: recordingFactory{svc: mockService},
 	}
 	ctx := cclient.WithClient(
 		context.Background(),
 		cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, instanceHandlerTestEnvironment)),
 	)
-	return handler, ctx, instance, recorder
+	return handler, ctx, instance, mockService
 }
 
 func testInstance() *sftpv1.Instance {
@@ -388,6 +402,30 @@ func ptrTo[T any](value T) *T {
 	return &value
 }
 
+func expectCreateOrUpdateSFTPUser(mockService *sftpmocks.MockService, createdModel *service.RoverSftpUserModel, err error) {
+	call := mockService.EXPECT().CreateOrUpdateSFTPUser(mock.Anything, mock.Anything)
+	if createdModel != nil {
+		call.Run(func(_ context.Context, user service.RoverSftpUserModel) {
+			*createdModel = user
+		})
+	}
+	call.Return(err).Once()
+}
+
+func expectUpdatePublicKeysForSFTPUser(mockService *sftpmocks.MockService, capturedKeys *service.ClientPublicKeyMap, err error) {
+	call := mockService.EXPECT().UpdatePublicKeysForSFTPUser(mock.Anything, instanceHandlerTestName, instanceHandlerTestName, mock.Anything)
+	if capturedKeys != nil {
+		call.Run(func(_ context.Context, _ string, _ string, keys service.ClientPublicKeyMap) {
+			*capturedKeys = keys
+		})
+	}
+	call.Return(err).Once()
+}
+
+func expectDeleteSFTPUser(mockService *sftpmocks.MockService, err error) {
+	mockService.EXPECT().DeleteSFTPUser(mock.Anything, instanceHandlerTestName).Return(err).Once()
+}
+
 type recordingFactory struct {
 	svc service.Service
 	err error
@@ -395,38 +433,4 @@ type recordingFactory struct {
 
 func (f recordingFactory) ServiceFor(context.Context, client.ObjectKey) (service.Service, error) {
 	return f.svc, f.err
-}
-
-type recordingService struct {
-	createCalls   int
-	updateCalls   int
-	createdUsers  []string
-	createdModels []service.RoverSftpUserModel
-	sftpUserName  string
-	clientID      string
-	keys          service.ClientPublicKeyMap
-	deletedUsers  []string
-	createErr     error
-	updateErr     error
-	deleteErr     error
-}
-
-func (s *recordingService) CreateOrUpdateSFTPUser(_ context.Context, user service.RoverSftpUserModel) error {
-	s.createCalls++
-	s.createdUsers = append(s.createdUsers, user.SftpUserName)
-	s.createdModels = append(s.createdModels, user)
-	return s.createErr
-}
-
-func (s *recordingService) UpdatePublicKeysForSFTPUser(_ context.Context, sftpUserName, clientID string, keys service.ClientPublicKeyMap) error {
-	s.updateCalls++
-	s.sftpUserName = sftpUserName
-	s.clientID = clientID
-	s.keys = keys
-	return s.updateErr
-}
-
-func (s *recordingService) DeleteSFTPUser(_ context.Context, sftpUserName string) error {
-	s.deletedUsers = append(s.deletedUsers, sftpUserName)
-	return s.deleteErr
 }

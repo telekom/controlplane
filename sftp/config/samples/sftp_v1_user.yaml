@@ -12,7 +12,6 @@ metadata:
   namespace: default
   name: example
 spec:
-  description: dCP TEST
   instanceRef:
     name: example
     namespace: default

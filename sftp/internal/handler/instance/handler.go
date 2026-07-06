@@ -6,7 +6,6 @@ package instance
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -18,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 	"github.com/telekom/controlplane/sftp/internal/service"
 )
@@ -57,8 +57,9 @@ func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instan
 		return err
 	}
 
+	publicKeys, userStatuses := collectUniquePublicKeysFromUsers(log, obj.Name, users)
 	sshPublicKeys := service.ClientPublicKeyMap{
-		"items": collectUniquePublicKeysFromUsers(log, obj.Name, users),
+		"items": publicKeys,
 	}
 
 	err = sftpService.UpdatePublicKeysForSFTPUser(ctx, obj.Name, obj.Name, sshPublicKeys)
@@ -67,11 +68,8 @@ func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instan
 		return fmt.Errorf("updating public keys for SFTP user %q: %w", obj.Name, err)
 	}
 
-	err = h.updateUserStatus(ctx, users)
-	if err != nil {
-		return fmt.Errorf("updating status for Users of Instance %q: %w", obj.Name, err)
-	}
-
+	preserveUserStatusesForSameGeneration(obj.Status.Users, userStatuses)
+	obj.Status.Users = userStatuses
 	obj.SetCondition(sftpv1.NewPublicKeysUpdatedInServiceCondition())
 	obj.SetCondition(condition.NewReadyCondition("InstanceProvided", "Instance has been provided"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("Instance has been provided"))
@@ -99,17 +97,12 @@ func (h *InstanceHandler) Delete(ctx context.Context, obj *sftpv1.Instance) erro
 func (h *InstanceHandler) usersFor(ctx context.Context, instance *sftpv1.Instance) ([]sftpv1.User, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	list := &sftpv1.UserList{}
-	if err := scopedClient.List(ctx, list, client.InNamespace(instance.Namespace)); err != nil {
+	err := scopedClient.List(ctx, list, client.MatchingFields{sftpv1.IndexFieldSpecInstanceRef: commontypes.ObjectRefFromObject(instance).String()})
+	if err != nil {
 		return nil, fmt.Errorf("listing Users for Instance %q: %w", instance.Name, err)
 	}
 
-	users := make([]sftpv1.User, 0, len(list.Items))
-	for i := range list.Items {
-		if list.Items[i].Spec.InstanceRef.Equals(instance) {
-			users = append(users, list.Items[i])
-		}
-	}
-	return users, nil
+	return list.Items, nil
 }
 
 func (h *InstanceHandler) serviceFor(ctx context.Context, sftpServiceConfig client.ObjectKey) (service.Service, error) {
@@ -140,24 +133,15 @@ func (h *InstanceHandler) createOrUpdateServiceUser(ctx context.Context, sftpSer
 	return nil
 }
 
-func (h *InstanceHandler) updateUserStatus(ctx context.Context, users []sftpv1.User) error {
-	var updateErrs error
-	for i := range users {
-		user := &users[i]
-		if err := h.Client.Status().Update(ctx, user); err != nil {
-			updateErrs = errors.Join(updateErrs, fmt.Errorf("updating status for User %q: %w", user.Name, err))
-		}
-	}
-	return updateErrs
-}
-
-func collectUniquePublicKeysFromUsers(log logr.Logger, sftpUserName string, users []sftpv1.User) []service.RoverPublicKeyModel {
+func collectUniquePublicKeysFromUsers(log logr.Logger, sftpUserName string, users []sftpv1.User) ([]service.RoverPublicKeyModel, []sftpv1.InstanceUserStatus) {
 	if len(users) == 0 {
-		return []service.RoverPublicKeyModel{}
+		return []service.RoverPublicKeyModel{}, nil
 	}
 
 	fingerprints := map[string]*service.RoverPublicKeyModel{}
 	keys := make([]service.RoverPublicKeyModel, 0, len(users))
+	userStatuses := make([]sftpv1.InstanceUserStatus, 0, len(users))
+	processingTime := v1.Now()
 	for i := range users {
 		user := &users[i]
 		hasInvalidSSHPublicKey := false
@@ -192,22 +176,44 @@ func collectUniquePublicKeysFromUsers(log logr.Logger, sftpUserName string, user
 				fingerprints[fingerprint] = &keys[len(keys)-1]
 			}
 		}
-
-		setUserConditions(user, hasInvalidSSHPublicKey)
+		userStatuses = append(userStatuses, newInstanceUserStatus(user, processingTime, hasInvalidSSHPublicKey))
 	}
 
-	return keys
+	return keys, userStatuses
 }
 
-func setUserConditions(user *sftpv1.User, hasInvalidSSHPublicKey bool) {
-	done := condition.NewDoneProcessingCondition("SSH Public keys were processed")
-	ready := condition.NewReadyCondition(sftpv1.ConditionReadyReasonSSHPublicKeyProvided, "SSH Public keys are ready")
+func newInstanceUserStatus(user *sftpv1.User, processingTime v1.Time, hasInvalidSSHPublicKey bool) sftpv1.InstanceUserStatus {
+	processing := condition.NewDoneProcessingCondition("SSH public keys were processed")
 	if hasInvalidSSHPublicKey {
-		done = condition.NewDoneProcessingCondition("Failed to process public key")
-		ready = condition.NewNotReadyCondition(
-			sftpv1.ConditionReadyReasonSSHPublicKeyProvided,
-			"Failed to process public key")
+		processing = condition.NewBlockedCondition("Failed to process public key")
 	}
-	user.SetCondition(done)
-	user.SetCondition(ready)
+	processing.ObservedGeneration = user.Generation
+	processing.LastTransitionTime = processingTime
+	return sftpv1.InstanceUserStatus{
+		Namespace:           user.Namespace,
+		Name:                user.Name,
+		ProcessingCondition: processing,
+	}
+}
+
+// preserveUserStatusesForSameGeneration keeps existing per-user status entries
+// when the User generation has not changed, avoiding LastTransitionTime churn
+// and unnecessary follow-up reconciliations.
+func preserveUserStatusesForSameGeneration(current []sftpv1.InstanceUserStatus, next []sftpv1.InstanceUserStatus) {
+	mapper := make(map[string]*sftpv1.InstanceUserStatus, len(current))
+	for index := range current {
+		mapper[current[index].Namespace+"/"+current[index].Name] = &current[index]
+	}
+
+	for index := range next {
+		statusNew := &next[index]
+		statusCurrent, ok := mapper[statusNew.Namespace+"/"+statusNew.Name]
+		if !ok {
+			continue
+		}
+
+		if statusNew.ProcessingCondition.ObservedGeneration == statusCurrent.ProcessingCondition.ObservedGeneration {
+			statusCurrent.DeepCopyInto(statusNew)
+		}
+	}
 }

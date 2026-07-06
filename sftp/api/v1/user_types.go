@@ -11,6 +11,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 )
 
+// IndexFieldSpecInstanceRef is the field index key for Users by spec.instanceRef.
+const IndexFieldSpecInstanceRef = "spec.instanceRef"
+
 // UserSpec defines the desired state of User
 type UserSpec struct {
 	// InstanceRef references the SFTP Instance used by this User.
