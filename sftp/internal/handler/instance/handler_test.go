@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/stretchr/testify/mock"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -415,7 +415,7 @@ func expectCreateOrUpdateSFTPUser(mockService *sftpmocks.MockService, createdMod
 func expectUpdatePublicKeysForSFTPUser(mockService *sftpmocks.MockService, capturedKeys *service.ClientPublicKeyMap, err error) {
 	call := mockService.EXPECT().UpdatePublicKeysForSFTPUser(mock.Anything, instanceHandlerTestName, instanceHandlerTestName, mock.Anything)
 	if capturedKeys != nil {
-		call.Run(func(_ context.Context, _ string, _ string, keys service.ClientPublicKeyMap) {
+		call.Run(func(_ context.Context, _, _ string, keys service.ClientPublicKeyMap) {
 			*capturedKeys = keys
 		})
 	}
