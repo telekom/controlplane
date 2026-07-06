@@ -65,7 +65,7 @@ func (h *Handler) CreateTeam(c *fiber.Ctx) error {
 	teamResp := api.TeamResponse{
 		Name:     t.Name,
 		Email:    t.Email,
-		ClientId: fmt.Sprintf("%s--%s--team-user", hubName, t.Name),
+		ClientId: fmt.Sprintf("%s--team-user", t.Name),
 		Status: api.Status{
 			ProcessingState: "pending",
 			State:           "none",
@@ -130,10 +130,11 @@ func (h *Handler) ListTeams(c *fiber.Ctx) error {
 func (h *Handler) GetTeam(c *fiber.Ctx) error {
 	hubName := c.Params("hub")
 	teamName := c.Params("team")
+	fullTeamName := hubName + "--" + teamName
 
 	ctx := h.contextWithIdentity(c)
 	resp, err := gql.GetTeam(ctx, h.cpapi, &gql.TeamWhereInput{
-		Name:         &teamName,
+		Name:         &fullTeamName,
 		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {
@@ -211,7 +212,7 @@ func (h *Handler) UpdateTeam(c *fiber.Ctx) error {
 	teamResp := api.TeamResponse{
 		Name:     t.Name,
 		Email:    t.Email,
-		ClientId: fmt.Sprintf("%s--%s--team-user", hubName, t.Name),
+		ClientId: fmt.Sprintf("%s--team-user", t.Name),
 		Status: api.Status{
 			ProcessingState: "pending",
 			State:           "none",
@@ -275,10 +276,11 @@ func (h *Handler) DeleteTeam(c *fiber.Ctx) error {
 func (h *Handler) GetTeamStatus(c *fiber.Ctx) error {
 	hubName := c.Params("hub")
 	teamName := c.Params("team")
+	fullTeamName := hubName + "--" + teamName
 
 	ctx := h.contextWithIdentity(c)
 	resp, err := gql.GetTeam(ctx, h.cpapi, &gql.TeamWhereInput{
-		Name:         &teamName,
+		Name:         &fullTeamName,
 		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {

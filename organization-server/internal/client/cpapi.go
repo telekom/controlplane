@@ -6,6 +6,7 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"time"
 
@@ -38,10 +39,16 @@ func identityFromContext(ctx context.Context) *ConsumerIdentity {
 // NewCPAPIClient creates a genqlient GraphQL client that authenticates to
 // CP API as admin (via TokenSource) and forwards consumer identity via
 // X-Forwarded-* headers (extracted from context).
-func NewCPAPIClient(endpoint string, tokenSource *TokenSource) graphql.Client {
+func NewCPAPIClient(endpoint string, tokenSource *TokenSource, insecure bool) graphql.Client {
+	transport := &cpAPITransport{tokenSource: tokenSource}
+	if insecure {
+		transport.base = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // local dev only
+		}
+	}
 	httpClient := &http.Client{
 		Timeout:   15 * time.Second,
-		Transport: &cpAPITransport{tokenSource: tokenSource},
+		Transport: transport,
 	}
 	return graphql.NewClient(endpoint, httpClient)
 }
@@ -51,6 +58,7 @@ func NewCPAPIClient(endpoint string, tokenSource *TokenSource) graphql.Client {
 // 2. X-Forwarded-* headers from context (consumer identity)
 type cpAPITransport struct {
 	tokenSource *TokenSource
+	base        http.RoundTripper
 }
 
 func (t *cpAPITransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -76,5 +84,9 @@ func (t *cpAPITransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 	}
 
-	return http.DefaultTransport.RoundTrip(req)
+	base := t.base
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return base.RoundTrip(req)
 }
