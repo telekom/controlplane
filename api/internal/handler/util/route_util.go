@@ -153,7 +153,7 @@ func WithProxyTarget(isProxyTarget bool) CreateRouteOption {
 // These issuers are used by the gateway's JWT plugin to validate incoming tokens.
 func WithTrustedIssuers(issuers []string) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
-		opts.TrustedIssuers = issuers
+		opts.TrustedIssuers = slices.Clone(issuers)
 	}
 }
 
@@ -270,10 +270,11 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 			Traffic:    gatewayapi.Traffic{},
 		}
 		proxyRoute.Spec.Hostnames = slices.Concat(hostnames, options.AdditionalHostnames)
-		proxyRoute.Spec.Paths = slices.Concat(paths, options.AdditionalPaths)
 		slices.Sort(proxyRoute.Spec.Hostnames)
-		slices.Sort(proxyRoute.Spec.Paths)
 		proxyRoute.Spec.Hostnames = slices.Compact(slices.Clip(proxyRoute.Spec.Hostnames))
+
+		proxyRoute.Spec.Paths = slices.Concat(paths, options.AdditionalPaths)
+		slices.Sort(proxyRoute.Spec.Paths)
 		proxyRoute.Spec.Paths = slices.Compact(slices.Clip(proxyRoute.Spec.Paths))
 
 		// Set trusted issuers for consumer token validation on the proxy route.
