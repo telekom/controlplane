@@ -199,7 +199,7 @@ func newInstanceUserStatus(user *sftpv1.User, processingTime v1.Time, hasInvalid
 // preserveUserStatusesForSameGeneration keeps existing per-user status entries
 // when the User generation has not changed, avoiding LastTransitionTime churn
 // and unnecessary follow-up reconciliations.
-func preserveUserStatusesForSameGeneration(current []sftpv1.InstanceUserStatus, next []sftpv1.InstanceUserStatus) {
+func preserveUserStatusesForSameGeneration(current, next []sftpv1.InstanceUserStatus) {
 	mapper := make(map[string]*sftpv1.InstanceUserStatus, len(current))
 	for index := range current {
 		mapper[current[index].Namespace+"/"+current[index].Name] = &current[index]
