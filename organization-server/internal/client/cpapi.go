@@ -6,11 +6,11 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
 	"net/http"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 )
 
 // contextKey for storing consumer identity in context.
@@ -39,18 +39,21 @@ func identityFromContext(ctx context.Context) *ConsumerIdentity {
 // NewCPAPIClient creates a genqlient GraphQL client that authenticates to
 // CP API as admin (via TokenSource) and forwards consumer identity via
 // X-Forwarded-* headers (extracted from context).
-func NewCPAPIClient(endpoint string, tokenSource *TokenSource, insecure bool) graphql.Client {
-	transport := &cpAPITransport{tokenSource: tokenSource}
-	if insecure {
-		transport.base = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // local dev only
-		}
+// caFilePath is the path to the CA bundle for TLS verification (e.g.
+// "/var/run/secrets/trust-bundle/trust-bundle.pem"). If empty, system CAs are used.
+func NewCPAPIClient(endpoint string, tokenSource *TokenSource, caFilePath string) graphql.Client {
+	baseClient := commonclient.NewBaseHttpClient(
+		commonclient.WithCaFilepath(caFilePath),
+		commonclient.WithClientName("cpapi"),
+		commonclient.WithClientTimeout(15*time.Second),
+	)
+
+	transport := &cpAPITransport{
+		tokenSource: tokenSource,
+		base:        baseClient.Transport,
 	}
-	httpClient := &http.Client{
-		Timeout:   15 * time.Second,
-		Transport: transport,
-	}
-	return graphql.NewClient(endpoint, httpClient)
+	baseClient.Transport = transport
+	return graphql.NewClient(endpoint, baseClient)
 }
 
 // cpAPITransport is an http.RoundTripper that injects:

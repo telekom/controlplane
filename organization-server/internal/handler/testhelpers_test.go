@@ -68,7 +68,7 @@ func newTestApp(graphqlURL, roverURL string) *fiber.App {
 		JSONDecoder: sonic.Unmarshal,
 	})
 
-	cpapiClient := client.NewCPAPIClient(graphqlURL, nil, false)
+	cpapiClient := client.NewCPAPIClient(graphqlURL, nil, "")
 	roverClient := client.NewRoverClient(roverURL)
 	h := handler.New(cpapiClient, roverClient, logr.Discard())
 

@@ -14,8 +14,9 @@ type Config struct {
 	// CPAPIEndpoint is the GraphQL endpoint of controlplane-api.
 	CPAPIEndpoint string
 
-	// CPAPIInsecure skips TLS certificate verification for CP API calls (local dev only).
-	CPAPIInsecure bool
+	// CPAPICaFilePath is the path to the CA bundle for verifying CP API's TLS cert.
+	// If empty, system default CAs are used (works when cert is publicly trusted).
+	CPAPICaFilePath string
 
 	// RoverEndpoint is the base URL of rover-server.
 	RoverEndpoint string
@@ -37,8 +38,8 @@ type Config struct {
 func Load() *Config {
 	return &Config{
 		Port:              envOrDefault("PORT", "8080"),
-		CPAPIEndpoint:     envOrDefault("CPAPI_ENDPOINT", "http://controlplane-api.controlplane-system.svc.cluster.local/graphql/query"),
-		CPAPIInsecure:     os.Getenv("CPAPI_INSECURE") == "true",
+		CPAPIEndpoint:     envOrDefault("CPAPI_ENDPOINT", "https://controlplane-api.controlplane-system.svc.cluster.local/graphql/query"),
+		CPAPICaFilePath:   envOrDefault("CPAPI_CA_FILE", "/var/run/secrets/trust-bundle/trust-bundle.pem"),
 		RoverEndpoint:     envOrDefault("ROVER_ENDPOINT", "http://rover-server.controlplane-system.svc.cluster.local"),
 		OAuthTokenURL:     os.Getenv("OAUTH_TOKEN_URL"),
 		OAuthClientID:     os.Getenv("OAUTH_CLIENT_ID"),
