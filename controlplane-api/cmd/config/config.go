@@ -5,7 +5,6 @@
 package config
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -63,23 +62,6 @@ type LogConfig struct {
 // download URLs. The BaseURL is the root URL of the file-manager service.
 type FileManagerConfig struct {
 	BaseURL string `yaml:"baseUrl"`
-}
-
-// Validate checks the security configuration for invalid or unsafe combinations.
-// It returns an error for unknown modes or for jwt mode without trusted issuers.
-// Call this at startup and panic on error to implement fail-closed behaviour.
-func (sec SecurityConfig) Validate() error {
-	switch sec.Mode {
-	case security.ModeJWT:
-		if len(sec.TrustedIssuers) == 0 {
-			return fmt.Errorf("security.mode=jwt requires at least one trustedIssuer — configure security.trustedIssuers or set security.mode=mock for local development")
-		}
-	case security.ModeMock:
-		// valid, no additional requirements
-	default:
-		return fmt.Errorf("invalid security.mode: %q (must be one of: mock, jwt)", sec.Mode)
-	}
-	return nil
 }
 
 func DefaultConfig() *ServerConfig {

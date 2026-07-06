@@ -64,7 +64,6 @@ func main() {
 	ctx = cserver.SignalHandler(ctx)
 
 	log.Info("loaded configuration", "configfile", configFile)
-	validateSecurityConfig(log, cfg.Security)
 
 	client, err := database.NewEntClient(ctx, cfg.Database.URL)
 	if err != nil {
@@ -104,16 +103,11 @@ func main() {
 	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
 	gqlCtrl.RegisterPlayground(s.App, "/graphql")
 	secOpts := security.SecurityOpts{
-		Log: log.WithName("security"),
-	}
-	switch cfg.Security.Mode {
-	case security.ModeJWT:
-		secOpts.Mode = security.ModeJWT
-		secOpts.JWTOpts = []security.Option[*security.JWTOpts]{
+		Mode: cfg.Security.Mode,
+		Log:  log.WithName("security"),
+		JWTOpts: []security.Option[*security.JWTOpts]{
 			security.WithTrustedIssuers(cfg.Security.TrustedIssuers),
-		}
-	case security.ModeMock:
-		secOpts.Mode = security.ModeMock
+		},
 	}
 	s.RegisterController(gqlCtrl, cserver.ControllerOpts{
 		Prefix:         "/graphql",
@@ -148,19 +142,6 @@ func main() {
 
 	if err := client.Close(); err != nil {
 		log.Error(err, "failed to close database client")
-	}
-}
-
-// validateSecurityConfig logs the active security mode at startup.
-// Structural validation (jwt requires trusted issuers) is enforced by ConfigureSecurity.
-func validateSecurityConfig(log logr.Logger, sec config.SecurityConfig) {
-	switch sec.Mode {
-	case security.ModeJWT:
-		log.Info("🔒 Security mode: JWT validation enabled")
-	case security.ModeMock:
-		log.Info("⚠️  SECURITY MODE IS MOCK — JWT signatures NOT validated. DO NOT USE IN PRODUCTION.")
-	default:
-		panic(fmt.Sprintf("invalid security.mode: %q (must be one of: mock, jwt)", sec.Mode))
 	}
 }
 

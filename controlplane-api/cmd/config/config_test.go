@@ -57,31 +57,4 @@ database:
 			Expect(cfg.Security.Mode).To(Equal(security.ModeJWT))
 		})
 	})
-
-	Describe("Validate", func() {
-		It("returns nil for jwt mode with trusted issuers", func() {
-			sec := config.SecurityConfig{
-				Mode:           "jwt",
-				TrustedIssuers: []string{"https://idp.example.com/realms/controlplane"},
-			}
-			Expect(sec.Validate()).To(Succeed())
-		})
-
-		It("returns an error for jwt mode with no trusted issuers", func() {
-			sec := config.SecurityConfig{
-				Mode: "jwt",
-			}
-			Expect(sec.Validate()).To(MatchError(ContainSubstring("trustedIssuer")))
-		})
-
-		It("returns nil for mock mode", func() {
-			sec := config.SecurityConfig{Mode: "mock"}
-			Expect(sec.Validate()).To(Succeed())
-		})
-
-		It("returns an error for an unknown mode", func() {
-			sec := config.SecurityConfig{Mode: "legacy"}
-			Expect(sec.Validate()).To(MatchError(ContainSubstring("invalid security.mode")))
-		})
-	})
 })
