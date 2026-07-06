@@ -17,6 +17,7 @@ import (
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/telekom/controlplane/rover-server/internal/config"
@@ -48,10 +49,12 @@ func main() {
 		filesapi.WithSkipTLSVerify(cfg.FileManager.SkipTLS),
 	)
 
+	linter := oaslint.NewLinter(cfg.OasLinting)
+
 	s := server.Server{
 		Config:              cfg,
 		Log:                 log.Log,
-		ApiSpecifications:   controller.NewApiSpecificationController(stores, cfg.OasLinting),
+		ApiSpecifications:   controller.NewApiSpecificationController(stores, linter),
 		Rovers:              controller.NewRoverController(stores),
 		Roadmaps:            controller.NewRoadmapController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),

@@ -22,10 +22,12 @@ func mapTeamInfo(team *ent.Team, group *ent.Group) *model.TeamInfo {
 		email = &team.Email
 	}
 	return &model.TeamInfo{
-		ID:        team.ID,
-		Name:      team.Name,
-		GroupName: groupName,
-		Email:     email,
+		ID:          team.ID,
+		Name:        team.Name,
+		GroupName:   groupName,
+		Email:       email,
+		DisplayName: team.DisplayName,
+		Description: team.Description,
 	}
 }
 

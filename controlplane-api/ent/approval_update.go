@@ -229,6 +229,26 @@ func (_u *ApprovalUpdate) SetNillableName(v *string) *ApprovalUpdate {
 	return _u
 }
 
+// SetExpiresAt sets the "expiresAt" field.
+func (_u *ApprovalUpdate) SetExpiresAt(v time.Time) *ApprovalUpdate {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expiresAt" field if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableExpiresAt(v *time.Time) *ApprovalUpdate {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (_u *ApprovalUpdate) ClearExpiresAt() *ApprovalUpdate {
+	_u.mutation.ClearExpiresAt()
+	return _u
+}
+
 // SetState sets the "state" field.
 func (_u *ApprovalUpdate) SetState(v approval.State) *ApprovalUpdate {
 	_u.mutation.SetState(v)
@@ -452,6 +472,12 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(approval.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.ExpiresAtCleared() {
+		_spec.ClearField(approval.FieldExpiresAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)
@@ -728,6 +754,26 @@ func (_u *ApprovalUpdateOne) SetNillableName(v *string) *ApprovalUpdateOne {
 	return _u
 }
 
+// SetExpiresAt sets the "expiresAt" field.
+func (_u *ApprovalUpdateOne) SetExpiresAt(v time.Time) *ApprovalUpdateOne {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expiresAt" field if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableExpiresAt(v *time.Time) *ApprovalUpdateOne {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (_u *ApprovalUpdateOne) ClearExpiresAt() *ApprovalUpdateOne {
+	_u.mutation.ClearExpiresAt()
+	return _u
+}
+
 // SetState sets the "state" field.
 func (_u *ApprovalUpdateOne) SetState(v approval.State) *ApprovalUpdateOne {
 	_u.mutation.SetState(v)
@@ -981,6 +1027,12 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(approval.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.ExpiresAtCleared() {
+		_spec.ClearField(approval.FieldExpiresAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)

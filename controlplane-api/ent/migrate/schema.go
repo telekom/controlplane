@@ -207,6 +207,7 @@ var (
 		{Name: "decisions", Type: field.TypeJSON},
 		{Name: "available_transitions", Type: field.TypeJSON, Nullable: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
 		{Name: "api_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "event_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
@@ -219,13 +220,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approvals_api_subscriptions_approval",
-				Columns:    []*schema.Column{ApprovalsColumns[16]},
+				Columns:    []*schema.Column{ApprovalsColumns[17]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "approvals_event_subscriptions_approval",
-				Columns:    []*schema.Column{ApprovalsColumns[17]},
+				Columns:    []*schema.Column{ApprovalsColumns[18]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -473,6 +474,8 @@ var (
 		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "email", Type: field.TypeString, Size: 2147483647},
+		{Name: "display_name", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "category", Type: field.TypeEnum, Enums: []string{"CUSTOMER", "INFRASTRUCTURE"}, Default: "CUSTOMER"},
 		{Name: "team_token", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "group_teams", Type: field.TypeInt, Nullable: true},
@@ -485,7 +488,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "teams_groups_teams",
-				Columns:    []*schema.Column{TeamsColumns[11]},
+				Columns:    []*schema.Column{TeamsColumns[13]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

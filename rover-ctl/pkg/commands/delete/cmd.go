@@ -9,8 +9,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
@@ -87,6 +89,10 @@ func (c *Command) deleteObject(obj types.Object) error {
 
 	status, err := handler.WaitForDeleted(c.Cmd.Context(), obj.GetName())
 	if err != nil {
+		if status != nil {
+			statusEval := common.NewStatusEval(obj, status)
+			_ = statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format"))
+		}
 		return c.HandleError(err, fmt.Sprintf("wait for %s to be deleted", obj.GetKind()))
 	}
 
