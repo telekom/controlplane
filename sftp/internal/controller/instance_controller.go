@@ -7,7 +7,6 @@ package controller
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,6 +19,7 @@ import (
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 	instance_handler "github.com/telekom/controlplane/sftp/internal/handler/instance"
 	"github.com/telekom/controlplane/sftp/internal/service"
@@ -79,12 +79,10 @@ func (r *InstanceReconciler) MapSFTPServiceConfigToInstance(ctx context.Context,
 	}
 
 	list := &sftpv1.InstanceList{}
-	if err := r.List(ctx, list, &client.ListOptions{
-		LabelSelector: labels.SelectorFromSet(labels.Set{
-			sftpv1.SFTPServiceConfigNameKey:      sftpServiceConfig.Name,
-			sftpv1.SFTPServiceConfigNamespaceKey: sftpServiceConfig.Namespace,
-		}),
-	}); err != nil {
+	err := r.List(ctx, list, client.MatchingFields{
+		sftpv1.IndexFieldSpecSFTPServiceConfigRef: commontypes.ObjectRefFromObject(sftpServiceConfig).String(),
+	})
+	if err != nil {
 		return nil
 	}
 
