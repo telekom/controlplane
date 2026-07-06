@@ -63,6 +63,7 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 		Environment:    envName,
 		TargetZoneName: failover.TargetZoneName, // The zone where the API is exposed on
 		JumperConfig:   nil,                     // JumperConfig is not needed for the proxy routing config
+		Mesh:           true,                    // proxy to upstream
 	}
 	routingConfigs.Add(proxyRoutingCfg)
 
@@ -78,11 +79,14 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 
 	if isFailoverSecondary {
 		// This route is a failover secondary route. Its failover targets are the real backend upstreams.
+		// We need to copy the jumperConfig so that we have the same configuration as the primary route.
 		jumperCfg := builder.JumperConfig()
+		jumperCfg.Mesh = false // In failover-secondary routes, the jumper should not route to other zones.
 		routingCfg := &plugin.RoutingConfig{
 			JumperConfig: jumperCfg,
 			Realm:        failoverRealm,
 			Environment:  envName,
+			Mesh:         false,
 		}
 		routingConfigs.Add(routingCfg)
 
@@ -104,17 +108,15 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 	} else {
 		// This is a proxy route. Each failover target is a secondary zone's gateway.
 		// The jumper iterates the list and picks the first one whose zone is healthy.
-		jumperCfg := builder.JumperConfig()
-		// In failover-scenario, this is also a proxy-route so we need to set mesh=true to allow the jumper to route to other zones.
-		jumperCfg.Mesh = true
 		for _, target := range failover.Targets {
 			routingCfg := &plugin.RoutingConfig{
-				JumperConfig:   jumperCfg,
 				Realm:          failoverRealm,
 				Environment:    envName,
 				RemoteApiUrl:   target.Upstream.Url(),
 				ApiBasePath:    target.Upstream.Path,
 				TargetZoneName: target.ZoneName,
+				JumperConfig:   nil,  // JumperConfig is not needed for the failover target routing config
+				Mesh:           true, // proxy to upstream
 			}
 			routingConfigs.Add(routingCfg)
 		}
