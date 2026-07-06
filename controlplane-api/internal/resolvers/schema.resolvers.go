@@ -333,7 +333,7 @@ func (r *availableTransitionResolver) ToState(ctx context.Context, obj *model.Av
 
 // Password is the resolver for the password field.
 func (r *basicAuthCredentialsResolver) Password(ctx context.Context, obj *model.BasicAuthCredentials) (string, error) {
-	panic(fmt.Errorf("not implemented: Password - password"))
+	return obj.Password, nil
 }
 
 // ResultingState is the resolver for the resultingState field.
@@ -486,22 +486,29 @@ func (r *eventTypeResolver) Owner(ctx context.Context, obj *ent.EventType) (*mod
 
 // Schema is the resolver for the Schema field.
 func (r *externalIdResolver) Schema(ctx context.Context, obj *model.ExternalId) (string, error) {
-	panic(fmt.Errorf("not implemented: Schema - Schema"))
+	return obj.Scheme, nil
 }
 
 // TokenRequest is the resolver for the tokenRequest field.
 func (r *externalIdentityProviderResolver) TokenRequest(ctx context.Context, obj *model.ExternalIdentityProvider) (*gqlmodel.TokenRequestMethod, error) {
-	panic(fmt.Errorf("not implemented: TokenRequest - tokenRequest"))
+	if obj.TokenRequest == nil {
+		return nil, nil
+	}
+	m := gqlmodel.TokenRequestMethod(*obj.TokenRequest)
+	if !m.IsValid() {
+		return nil, nil
+	}
+	return &m, nil
 }
 
 // ClientSecret is the resolver for the clientSecret field.
 func (r *oAuth2ClientCredentialsResolver) ClientSecret(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error) {
-	panic(fmt.Errorf("not implemented: ClientSecret - clientSecret"))
+	return obj.ClientSecret, nil
 }
 
 // ClientKey is the resolver for the clientKey field.
 func (r *oAuth2ClientCredentialsResolver) ClientKey(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error) {
-	panic(fmt.Errorf("not implemented: ClientKey - clientKey"))
+	return obj.ClientKey, nil
 }
 
 // APICategories is the resolver for the apiCategories field.
