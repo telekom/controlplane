@@ -38,6 +38,13 @@ const (
 )
 
 var _ = Describe("InstanceHandler", func() {
+	It("requires a service factory", func() {
+		handler, err := New(nil)
+
+		Expect(err).To(MatchError("service factory is required"))
+		Expect(handler).To(BeNil())
+	})
+
 	It("marks an Instance ready when its SFTPServiceConfig exists", func() {
 		handler, ctx, instance, mockService := newTestHandler()
 		expectCreateOrUpdateSFTPUser(mockService, nil, nil)
@@ -61,10 +68,9 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("retries when the referenced SFTPServiceConfig service is unavailable", func() {
-		handler, ctx, instance, _ := newTestHandler()
-		handler.ServiceFactory = recordingFactory{
+		handler, ctx, instance, _ := newTestHandlerWithFactory(recordingFactory{
 			err: ctrlerrors.RetryableErrorf("SFTP client for SFTPServiceConfig %q is not initialized", "test/test-sftpServiceConfig"),
-		}
+		})
 
 		err := handler.CreateOrUpdate(ctx, instance)
 
@@ -243,8 +249,7 @@ var _ = Describe("InstanceHandler", func() {
 	})
 
 	It("returns service lookup errors during deletion", func() {
-		handler, ctx, instance, _ := newTestHandler()
-		handler.ServiceFactory = recordingFactory{err: errors.New("service unavailable")}
+		handler, ctx, instance, _ := newTestHandlerWithFactory(recordingFactory{err: errors.New("service unavailable")})
 
 		err := handler.Delete(ctx, instance)
 
@@ -303,6 +308,10 @@ var _ = Describe("InstanceHandler", func() {
 })
 
 func newTestHandler(objects ...client.Object) (*InstanceHandler, context.Context, *sftpv1.Instance, *sftpmocks.MockService) {
+	return newTestHandlerWithFactory(nil, objects...)
+}
+
+func newTestHandlerWithFactory(factory service.Factory, objects ...client.Object) (*InstanceHandler, context.Context, *sftpv1.Instance, *sftpmocks.MockService) {
 	scheme := runtime.NewScheme()
 	Expect(clientgoscheme.AddToScheme(scheme)).To(Succeed())
 	Expect(sftpv1.AddToScheme(scheme)).To(Succeed())
@@ -337,10 +346,11 @@ func newTestHandler(objects ...client.Object) (*InstanceHandler, context.Context
 		}).
 		Build()
 
-	handler := &InstanceHandler{
-		Client:         k8sClient,
-		ServiceFactory: recordingFactory{svc: mockService},
+	if factory == nil {
+		factory = recordingFactory{svc: mockService}
 	}
+	handler, err := New(factory)
+	Expect(err).NotTo(HaveOccurred())
 	ctx := cclient.WithClient(
 		context.Background(),
 		cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, instanceHandlerTestEnvironment)),

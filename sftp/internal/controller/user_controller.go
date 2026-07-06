@@ -47,7 +47,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 // SetupWithManager sets up the controller with the Manager.
 func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("user-controller")
-	r.Controller = cc.NewController(&user_handler.UserHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(user_handler.New(), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sftpv1.User{}).

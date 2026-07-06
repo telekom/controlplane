@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,8 +26,17 @@ import (
 var _ handler.Handler[*sftpv1.Instance] = &InstanceHandler{}
 
 type InstanceHandler struct {
-	Client         client.Client
-	ServiceFactory service.Factory
+	serviceFactory service.Factory
+}
+
+func New(serviceFactory service.Factory) (*InstanceHandler, error) {
+	if serviceFactory == nil {
+		return nil, errors.New("service factory is required")
+	}
+
+	return &InstanceHandler{
+		serviceFactory: serviceFactory,
+	}, nil
 }
 
 func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instance) error {
@@ -36,7 +46,7 @@ func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instan
 
 	log := logr.FromContextOrDiscard(ctx)
 
-	sftpService, err := h.serviceFor(ctx, obj.Spec.SFTPServiceConfigRef.K8s())
+	sftpService, err := h.serviceFactory.ServiceFor(ctx, obj.Spec.SFTPServiceConfigRef.K8s())
 	if err != nil {
 		return err
 	}
@@ -81,7 +91,7 @@ func (h *InstanceHandler) Delete(ctx context.Context, obj *sftpv1.Instance) erro
 		return nil
 	}
 
-	sftpService, err := h.serviceFor(ctx, obj.Spec.SFTPServiceConfigRef.K8s())
+	sftpService, err := h.serviceFactory.ServiceFor(ctx, obj.Spec.SFTPServiceConfigRef.K8s())
 	if err != nil {
 		return err
 	}
@@ -103,14 +113,6 @@ func (h *InstanceHandler) usersFor(ctx context.Context, instance *sftpv1.Instanc
 	}
 
 	return list.Items, nil
-}
-
-func (h *InstanceHandler) serviceFor(ctx context.Context, sftpServiceConfig client.ObjectKey) (service.Service, error) {
-	factory := h.ServiceFactory
-	if factory == nil {
-		factory = service.NewHTTPServiceFactory()
-	}
-	return factory.ServiceFor(ctx, sftpServiceConfig)
 }
 
 func (h *InstanceHandler) createOrUpdateServiceUser(ctx context.Context, sftpService service.Service, instance *sftpv1.Instance) error {
