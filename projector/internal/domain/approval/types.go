@@ -52,5 +52,5 @@ type ApprovalData struct {
 	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string
-	ExpiresAt             time.Time
+	ExpiresAt             *time.Time
 }

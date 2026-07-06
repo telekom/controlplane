@@ -150,6 +150,7 @@ var _ = Describe("Approval Repository", func() {
 	})
 
 	baseData := func() *approval.ApprovalData {
+		expiresAt := time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC)
 		return &approval.ApprovalData{
 			Meta: shared.Metadata{
 				Namespace:   "prod--platform--narvi",
@@ -173,7 +174,7 @@ var _ = Describe("Approval Repository", func() {
 			TargetKind:            "ApiSubscription",
 			SubscriptionNamespace: "prod--platform--narvi",
 			SubscriptionName:      "my-sub",
-			ExpiresAt:             time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC),
+			ExpiresAt:             &expiresAt,
 		}
 	}
 
@@ -314,7 +315,8 @@ var _ = Describe("Approval Repository", func() {
 			data.State = "REJECTED"
 			data.StatusPhase = "ERROR"
 			data.StatusMessage = "approval rejected"
-			data.ExpiresAt = time.Date(2026, 12, 31, 23, 59, 0, 0, time.UTC)
+			updatedExpiresAt := time.Date(2026, 12, 31, 23, 59, 0, 0, time.UTC)
+			data.ExpiresAt = &updatedExpiresAt
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			a, err := client.Approval.Query().

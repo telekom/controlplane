@@ -322,10 +322,11 @@ var _ = Describe("Approval Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.ExpiresAt).To(Equal(expiresTime))
+			Expect(data.ExpiresAt).NotTo(BeNil())
+			Expect(*data.ExpiresAt).To(Equal(expiresTime))
 		})
 
-		It("should return empty ExpiresAt when status.expiresAt is nil", func() {
+		It("should return nil ExpiresAt when status.expiresAt is nil", func() {
 			obj := &approvalv1.Approval{
 				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
 				Spec: approvalv1.ApprovalSpec{
@@ -343,7 +344,7 @@ var _ = Describe("Approval Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.ExpiresAt).To(BeZero())
+			Expect(data.ExpiresAt).To(BeNil())
 		})
 	})
 

@@ -79,9 +79,10 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		targetNamespace = obj.Namespace
 	}
 
-	var expiresAt time.Time
+	var expiresAt *time.Time
 	if obj.Status.ExpiresAt != nil {
-		expiresAt = obj.Status.ExpiresAt.Time
+		t := obj.Status.ExpiresAt.Time
+		expiresAt = &t
 	}
 
 	return &ApprovalData{
