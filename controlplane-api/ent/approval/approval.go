@@ -50,6 +50,8 @@ const (
 	FieldAvailableTransitions = "available_transitions"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldExpiresAt holds the string denoting the expiresat field in the database.
+	FieldExpiresAt = "expires_at"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
 	// EdgeAPISubscription holds the string denoting the api_subscription edge name in mutations.
@@ -91,6 +93,7 @@ var Columns = []string{
 	FieldDecisions,
 	FieldAvailableTransitions,
 	FieldName,
+	FieldExpiresAt,
 	FieldState,
 }
 
@@ -280,6 +283,11 @@ func ByDeciderTeamName(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByExpiresAt orders the results by the expiresAt field.
+func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
 }
 
 // ByState orders the results by the state field.
