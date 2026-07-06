@@ -41,8 +41,7 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=instances/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=instances/finalizers,verbs=update
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=sftpserviceconfigs,verbs=get;list;watch
-// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=users,verbs=get;list;watch;update;patch
-// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=users/finalizers,verbs=update
+// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=users,verbs=get;list;watch
 
 func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &sftpv1.Instance{})

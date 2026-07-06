@@ -60,7 +60,8 @@ flowchart TB
 
 ### SFTPServiceConfig Controller
 
-The SFTP service configuration controller prepares the HTTP client used to call the SFTP Tardis API. A `SFTPServiceConfig` contains the SFTP Tardis API endpoint, OAuth2 issuer URL, client ID, and client secret.
+The SFTP service configuration controller prepares the HTTP client used to call the SFTP Tardis API.
+A `SFTPServiceConfig` contains the SFTP Tardis API endpoint, OAuth2 issuer URL, client ID, and client secret.
 
 | Target | Relationship | Purpose |
 |---|---|---|
@@ -80,11 +81,16 @@ The instance controller provisions and maintains the external SFTP service user 
 | **User** | watches/reads | Lists Users in the Instance namespace and selects Users whose `spec.instanceRef` points to the Instance |
 | **SFTP Tardis API** | creates/updates/deletes | Creates or updates the SFTP service user, deletes it during finalization, and synchronizes its public keys |
 
-When an Instance spec changes, the controller creates or updates the SFTP user in the external service. On every reconciliation, it collects SSH public keys from all matching Users, canonicalizes them, deduplicates them by fingerprint, and sends the resulting key list to the SFTP Tardis API.
+When an Instance spec changes, the controller creates or updates the SFTP user in the external service.
+On every reconciliation, it collects SSH public keys from all matching Users, canonicalizes them, deduplicates them by fingerprint, and sends the resulting key list to the SFTP Tardis API.
+
+After a successful public key sync, the controller stores one `Processing` condition per matching User in `Instance.status.users`.
+This keeps the key-processing result next to the external sync result that produced it.
 
 ### User Resource
 
-The SFTP domain does not run a standalone User reconciler. User resources are watched by the Instance controller. A User contributes SSH public keys to the Instance referenced by `spec.instanceRef`.
+The User controller watches User resources and Instance status changes.
+A User contributes SSH public keys to the Instance referenced by `spec.instanceRef`, while its status is projected from the per-User processing condition stored on the referenced Instance.
 
 Invalid SSH public keys are skipped during payload generation. Valid keys are sent with the target SFTP user name set to the Instance name and a description based on the User namespace/name.
 

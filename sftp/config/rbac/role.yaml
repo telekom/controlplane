@@ -40,6 +40,7 @@ rules:
   resources:
   - instances/status
   - sftpserviceconfigs/status
+  - users/status
   verbs:
   - get
   - patch

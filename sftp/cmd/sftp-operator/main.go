@@ -91,6 +91,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := ctrl.SetupSignalHandler()
+	controller.RegisterIndexesOrDie(ctx, mgr)
+
 	clientManager := service.NewHTTPServiceFactory()
 
 	if err = (&controller.InstanceReconciler{
@@ -99,6 +102,13 @@ func main() {
 		ServiceFactory: clientManager,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Instance")
+		os.Exit(1)
+	}
+	if err = (&controller.UserReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "User")
 		os.Exit(1)
 	}
 	if err = (&controller.SFTPServiceConfigReconciler{
@@ -120,7 +130,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

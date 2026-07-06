@@ -86,12 +86,20 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	RegisterIndexesOrDie(ctx, k8sManager)
+
 	clientManager := service.NewNopClientManager()
 
 	err = (&InstanceReconciler{
 		Client:         k8sManager.GetClient(),
 		Scheme:         k8sManager.GetScheme(),
 		ServiceFactory: clientManager,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&UserReconciler{
+		Client: k8sManager.GetClient(),
+		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

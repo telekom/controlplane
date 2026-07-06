@@ -39,6 +39,7 @@ graph TD
 The SFTPServiceConfig controller validates the configured API credentials by creating or refreshing an SFTP service client. The Instance controller then uses that client to create or update the SFTP service user in the external service.
 
 When User resources change, the Instance controller collects all Users that reference the Instance, canonicalizes their SSH public keys, deduplicates them by fingerprint, and updates the public key set for the SFTP service user.
+After a successful key sync, the Instance status records the observed per-User `Processing` condition. The User controller watches those Instance status changes, mirrors the relevant `Processing` condition onto each User, and derives the User `Ready` condition from it.
 
 ## Domain Interactions
 

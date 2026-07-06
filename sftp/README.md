@@ -34,12 +34,13 @@ The sftp-operator manages three main CRD types:
 - References its SFTP instance via `spec.instanceRef`
 - Manages SSH public keys under `spec.sshPublicKeys[]`
 - Public keys are canonicalized and deduplicated by fingerprint during Instance reconciliation
+- Status is projected from the referenced Instance after public key synchronization
 
 ### Instance
 
 - Represents an SFTP instance used by one or more users
 - References its `SFTPServiceConfig` via `spec.sftpServiceConfigRef`
-- Carries the service-instance description and readiness conditions
+- Carries the service-instance description, readiness conditions, and per-User processing status
 
 ### SFTPServiceConfig
 
