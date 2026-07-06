@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
 type ServerConfig struct {
@@ -18,8 +19,8 @@ type ServerConfig struct {
 }
 
 type SecurityConfig struct {
-	// Mode controls authentication behaviour: "mock" or "jwt".
-	Mode           string `json:"mode" yaml:"mode"`
+	// Mode controls authentication behaviour: use security.ModeJWT or security.ModeMock.
+	Mode           security.Mode `json:"mode" yaml:"mode"`
 	LMS            LMSConfig
 	TrustedIssuers []string `yaml:"trustedIssuers" json:"trustedIssuers"`
 	DefaultScope   string   `yaml:"defaultScope" json:"defaultScope"`

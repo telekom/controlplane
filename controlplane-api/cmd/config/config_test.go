@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/controlplane-api/cmd/config"
 )
 
@@ -18,7 +19,7 @@ var _ = Describe("SecurityConfig", func() {
 	Describe("DefaultConfig", func() {
 		It("defaults to jwt mode (secure by default)", func() {
 			cfg := config.DefaultConfig()
-			Expect(cfg.Security.Mode).To(Equal("jwt"))
+			Expect(cfg.Security.Mode).To(Equal(security.ModeJWT))
 		})
 	})
 
@@ -36,7 +37,7 @@ security:
   trustedIssuers:
     - https://idp.example.com/realms/controlplane
 `)
-			Expect(cfg.Security.Mode).To(Equal("jwt"))
+			Expect(cfg.Security.Mode).To(Equal(security.ModeJWT))
 			Expect(cfg.Security.TrustedIssuers).To(ConsistOf("https://idp.example.com/realms/controlplane"))
 		})
 
@@ -45,7 +46,7 @@ security:
 security:
   mode: mock
 `)
-			Expect(cfg.Security.Mode).To(Equal("mock"))
+			Expect(cfg.Security.Mode).To(Equal(security.ModeMock))
 		})
 
 		It("preserves jwt default when no security section is present", func() {
@@ -53,7 +54,7 @@ security:
 database:
   url: postgres://localhost/test
 `)
-			Expect(cfg.Security.Mode).To(Equal("jwt"))
+			Expect(cfg.Security.Mode).To(Equal(security.ModeJWT))
 		})
 	})
 

@@ -46,9 +46,9 @@ type TLSConfig struct {
 }
 
 type SecurityConfig struct {
-	// Mode controls authentication behaviour: "mock" or "jwt".
-	Mode           string   `yaml:"mode"`
-	TrustedIssuers []string `yaml:"trustedIssuers"`
+	// Mode controls authentication behaviour: use security.ModeJWT or security.ModeMock.
+	Mode           security.Mode `yaml:"mode"`
+	TrustedIssuers []string      `yaml:"trustedIssuers"`
 }
 
 type GraphQLConfig struct {
@@ -96,7 +96,7 @@ func DefaultConfig() *ServerConfig {
 			},
 		},
 		Security: SecurityConfig{
-			Mode: "jwt",
+			Mode: security.ModeJWT,
 		},
 		GraphQL: GraphQLConfig{
 			PlaygroundEnabled: true,

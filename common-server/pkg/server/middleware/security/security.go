@@ -21,18 +21,21 @@ const (
 
 type Option[T any] func(T)
 
+// Mode controls the authentication behaviour of the security middleware.
+type Mode string
+
 // ModeJWT enables full JWT validation against trusted issuers.
 // Requires at least one TrustedIssuer to be configured.
-const ModeJWT = "jwt"
+const ModeJWT Mode = "jwt"
 
 // ModeMock enables JWT parsing without signature validation.
 // For integration testing with controlled tokens only — never use in production.
-const ModeMock = "mock"
+const ModeMock Mode = "mock"
 
 type SecurityOpts struct {
 	// Mode controls the authentication behaviour.
 	// Use the ModeJWT or ModeMock constants.
-	Mode string
+	Mode Mode
 	Log  logr.Logger
 
 	JWTOpts             []Option[*JWTOpts]

@@ -51,8 +51,8 @@ type LMSConfig struct {
 }
 
 type SecurityConfig struct {
-	// Mode controls authentication behaviour: "mock" or "jwt".
-	Mode           string `json:"mode" yaml:"mode"`
+	// Mode controls authentication behaviour: use security.ModeJWT or security.ModeMock.
+	Mode           security.Mode `json:"mode" yaml:"mode"`
 	LMS            LMSConfig
 	TrustedIssuers []string `yaml:"trustedIssuers" json:"trustedIssuers"`
 	DefaultScope   string   `yaml:"defaultScope" json:"defaultScope"`
