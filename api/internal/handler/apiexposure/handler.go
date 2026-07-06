@@ -82,7 +82,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return nil
 	}
 
-	if !validateFailover(ctx, apiExp) {
+	if !validateFailover(apiExp) {
 		return nil
 	}
 
@@ -249,45 +249,8 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 	}
 
 	// --- Provider failover (secondary) routes ---
-	apiExp.Status.FailoverRoutes = nil
-	if apiExp.HasFailover() {
-		for _, failoverZone := range apiExp.Spec.Traffic.Failover.Zones {
-			providerFailoverZone, err := util.GetZone(ctx, scopedClient, failoverZone.K8s())
-			if err != nil {
-				if !apierrors.IsNotFound(err) {
-					return errors.Wrapf(err, "failed to get provider failover zone %q for apiExposure", failoverZone.Name)
-				}
-				return ctrlerrors.BlockedErrorf("Provider failover zone %q does not exist", failoverZone.Name)
-			}
-
-			options := []util.CreateRouteOption{
-				util.WithRealmName(state.realmName),
-			}
-
-			// If the provider failover zone has the ConsumerFailover feature enabled, enrich the failover route with all consumer failover hostnames, paths, and issuers.
-			// This is necessary because we skipped the route creation in the previous loop.
-			// We need to check this explicitly as consumer-failover-zones and provider-failover-zones could be disjoint sets.
-			if state.hasConsumerFailover && providerFailoverZone.IsFeatureEnabled(adminv1.FeatureConsumerFailover) {
-				options = append(options,
-					util.WithAdditionalHostnames(state.consumerFailoverHosts...),
-					util.WithAdditionalPaths(state.consumerFailoverPaths...),
-					util.WithTrustedIssuers(state.consumerFailoverIssuers),
-				)
-			}
-
-			options = append(options,
-				util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
-				util.WithFailoverSecurity(apiExp.Spec.Security),
-				util.AddTrustedIssuers(state.CrossZoneLmsIssuers(failoverZone)...),
-			)
-
-			failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath, options...)
-			if err != nil {
-				return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in zone: %s", apiExp.Name, failoverZone.Name)
-			}
-			apiExp.Status.FailoverRoutes = append(apiExp.Status.FailoverRoutes, *types.ObjectRefFromObject(failoverRoute))
-			logger.V(1).Info("Failover secondary route created/updated", "zone", failoverZone.Name, "route", failoverRoute.Name)
-		}
+	if err := h.createFailoverRoutes(ctx, apiExp, state); err != nil {
+		return err
 	}
 
 	// Cleanup stale proxy routes that were not touched in this reconciliation
@@ -299,6 +262,57 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 		logger.V(1).Info("Cleaned up stale proxy routes", "deleted", deleted)
 	}
 
+	return nil
+}
+
+// createFailoverRoutes creates the provider failover (secondary) routes for each
+// configured failover zone, enriching them with consumer failover data where applicable.
+func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *apiapi.ApiExposure, state *routingState) error {
+	logger := log.FromContext(ctx)
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	apiExp.Status.FailoverRoutes = nil
+	if !apiExp.HasFailover() {
+		return nil
+	}
+
+	for _, failoverZone := range apiExp.Spec.Traffic.Failover.Zones {
+		providerFailoverZone, err := util.GetZone(ctx, scopedClient, failoverZone.K8s())
+		if err != nil {
+			if !apierrors.IsNotFound(err) {
+				return errors.Wrapf(err, "failed to get provider failover zone %q for apiExposure", failoverZone.Name)
+			}
+			return ctrlerrors.BlockedErrorf("Provider failover zone %q does not exist", failoverZone.Name)
+		}
+
+		options := []util.CreateRouteOption{
+			util.WithRealmName(state.realmName),
+		}
+
+		// If the provider failover zone has the ConsumerFailover feature enabled, enrich the failover route with all consumer failover hostnames, paths, and issuers.
+		// This is necessary because we skipped the route creation in the previous loop.
+		// We need to check this explicitly as consumer-failover-zones and provider-failover-zones could be disjoint sets.
+		if state.hasConsumerFailover && providerFailoverZone.IsFeatureEnabled(adminv1.FeatureConsumerFailover) {
+			options = append(options,
+				util.WithAdditionalHostnames(state.consumerFailoverHosts...),
+				util.WithAdditionalPaths(state.consumerFailoverPaths...),
+				util.WithTrustedIssuers(state.consumerFailoverIssuers),
+			)
+		}
+
+		options = append(options,
+			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
+			util.WithFailoverSecurity(apiExp.Spec.Security),
+			util.AddTrustedIssuers(state.CrossZoneLmsIssuers(failoverZone)...),
+		)
+
+		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath, options...)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in zone: %s", apiExp.Name, failoverZone.Name)
+		}
+		apiExp.Status.FailoverRoutes = append(apiExp.Status.FailoverRoutes, *types.ObjectRefFromObject(failoverRoute))
+		logger.V(1).Info("Failover secondary route created/updated", "zone", failoverZone.Name, "route", failoverRoute.Name)
+	}
 	return nil
 }
 
@@ -547,7 +561,7 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 	return false
 }
 
-func validateFailover(ctx context.Context, apiExp *apiapi.ApiExposure) bool {
+func validateFailover(apiExp *apiapi.ApiExposure) bool {
 	if !apiExp.HasFailover() {
 		return true
 	}
