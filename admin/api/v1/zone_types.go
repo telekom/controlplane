@@ -5,7 +5,6 @@
 package v1
 
 import (
-	"context"
 	"fmt"
 	"path"
 	"slices"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -534,12 +532,4 @@ func (z *Zone) ManageFeature(featureName FeatureName, enabled bool) {
 		}
 	}
 	z.Status.Features = append(z.Status.Features, Feature{Name: featureName, Enabled: enabled})
-}
-
-// RealmNameFromContext returns the identity realm name for the current environment.
-// By convention, the default identity realm name equals the environment name.
-// This is used to populate Security.RealmName on gateway Routes, which tells the
-// Jumper sidecar which realm to use for Last-Mile-Security token issuance.
-func RealmNameFromContext(ctx context.Context) string {
-	return contextutil.EnvFromContextOrDie(ctx)
 }
