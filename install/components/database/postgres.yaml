@@ -54,6 +54,7 @@ spec:
         app.kubernetes.io/name: controlplane-postgres
         app.kubernetes.io/component: database
     spec:
+      automountServiceAccountToken: false
       securityContext:
         fsGroup: 999
         runAsGroup: 999
