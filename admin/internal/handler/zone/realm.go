@@ -6,7 +6,7 @@ package zone
 
 import "context"
 
-func populateRealmName(ctx context.Context, hc *HandlingContext) error {
-	hc.Zone.Status.RealmName = hc.Environment.Spec.RealmName
+func populateRealmName(_ context.Context, hc *HandlingContext) error {
+	hc.Zone.Status.RealmName = hc.Environment.GetRealmName()
 	return nil
 }
