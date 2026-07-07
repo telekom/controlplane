@@ -27,8 +27,14 @@ func makePublishRouteName(eventConfig *eventv1.EventConfig) string {
 	return "publish"
 }
 
-func makePublishRoutePath(zoneName string) string {
-	return fmt.Sprintf("/%s/publish/v1", zoneName)
+// makePublishEventsRoutePath returns the main downstream path of the publish route.
+func makePublishEventsRoutePath() string {
+	return "/horizon/events/v1"
+}
+
+// makePublishRoutePath returns the secondary downstream path of the publish route.
+func makePublishRoutePath() string {
+	return "/horizon/publish/v1"
 }
 
 // makeSSERouteName returns the deterministic Route name for an SSE event type.

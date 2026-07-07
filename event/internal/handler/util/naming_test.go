@@ -75,35 +75,11 @@ func TestNamingMakePublishRouteName(t *testing.T) {
 }
 
 func TestNamingMakePublishRoutePath(t *testing.T) {
-	tests := []struct {
-		name     string
-		zoneName string
-		expected string
-	}{
-		{
-			name:     "standard zone name",
-			zoneName: "zone-a",
-			expected: "/zone-a/publish/v1",
-		},
-		{
-			name:     "zone name with multiple segments",
-			zoneName: "eu-west-1",
-			expected: "/eu-west-1/publish/v1",
-		},
-		{
-			name:     "empty zone name",
-			zoneName: "",
-			expected: "//publish/v1",
-		},
+	if got := makePublishEventsRoutePath(); got != "/horizon/events/v1" {
+		t.Errorf("makePublishEventsRoutePath() = %q, want %q", got, "/horizon/events/v1")
 	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := makePublishRoutePath(tc.zoneName)
-			if got != tc.expected {
-				t.Errorf("makePublishRoutePath(%q) = %q, want %q", tc.zoneName, got, tc.expected)
-			}
-		})
+	if got := makePublishRoutePath(); got != "/horizon/publish/v1" {
+		t.Errorf("makePublishRoutePath() = %q, want %q", got, "/horizon/publish/v1")
 	}
 }
 

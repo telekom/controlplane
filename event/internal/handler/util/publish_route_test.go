@@ -129,8 +129,9 @@ var _ = Describe("CreatePublishRoute", func() {
 		// Verify hostnames and paths from preset
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
-		Expect(route.Spec.Paths).To(HaveLen(1))
-		Expect(route.Spec.Paths[0]).To(Equal("/zone-a/publish/v1"))
+		Expect(route.Spec.Paths).To(HaveLen(2))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/events/v1"))
+		Expect(route.Spec.Paths[1]).To(Equal("/horizon/publish/v1"))
 
 		// Verify Security
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())

@@ -6,6 +6,7 @@ package util
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +59,10 @@ func CreatePublishRoute(
 		return nil, errors.Wrapf(err, "failed to parse publishEventUrl %q", eventConfig.Spec.PublishEventUrl)
 	}
 
-	hostnames, paths := preset.ResolveHostnamesAndPaths(makePublishRoutePath(zone.Name))
+	// The publish route serves two downstream paths; the events path is first so it becomes the main path.
+	hostnames, eventsPaths := preset.ResolveHostnamesAndPaths(makePublishEventsRoutePath())
+	_, publishPaths := preset.ResolveHostnamesAndPaths(makePublishRoutePath())
+	paths := slices.Concat(eventsPaths, publishPaths)
 
 	mutator := func() error {
 		if refErr := controllerutil.SetControllerReference(eventConfig, route, c.Scheme()); refErr != nil {
