@@ -19,7 +19,7 @@
         Finalizers:                 nil,
         ManagedFields:              nil,
     },
-    Spec:   v1.EventSpecificationSpec{Type:"tardis.horizon.demo.cetus.v1", Version:"1.0.0", Description:"Horizon demo provider", Specification:"test-file-id"},
+    Spec:   v1.EventSpecificationSpec{Type:"tardis.horizon.demo.cetus.v1", Version:"1.0.0", Description:"Horizon demo provider", Category:"SYSTEM", Specification:"test-file-id"},
     Status: v1.EventSpecificationStatus{},
 }
 ---

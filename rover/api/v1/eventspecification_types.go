@@ -37,6 +37,11 @@ type EventSpecificationSpec struct {
 	// +optional
 	Description string `json:"description,omitempty"`
 
+	// Category of the event, defaults to "other" if not specified.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:=other
+	Category string `json:"category"`
+
 	// Specification contains the file ID reference from the file manager for
 	// the optional JSON schema that describes the event payload.
 	// +optional

@@ -58,6 +58,10 @@ spec:
           spec:
             description: EventTypeSpec defines the desired state of EventType.
             properties:
+              category:
+                default: other
+                description: Category of the event, defaults to "other" if not specified.
+                type: string
               description:
                 description: Description provides a human-readable summary of this
                   event type.
@@ -83,6 +87,7 @@ spec:
                 pattern: ^\d+.*$
                 type: string
             required:
+            - category
             - type
             - version
             type: object
