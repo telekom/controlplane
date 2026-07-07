@@ -8,5 +8,9 @@ import "context"
 
 func populateRealmName(ctx context.Context, hc *HandlingContext) error {
 	hc.Zone.Status.RealmName = hc.Environment.Spec.RealmName
+
+	if hc.Environment.Spec.RealmName == "" {
+		hc.Zone.Status.RealmName = hc.Environment.GetName()
+	}
 	return nil
 }
