@@ -196,9 +196,7 @@ type routingState struct {
 // determineRoutingState fetches and pre-computes all data needed for route provisioning.
 // This avoids redundant API calls across the provisioning pipeline.
 func (h *ApiExposureHandler) determineRoutingState(ctx context.Context, apiExp *apiapi.ApiExposure) (*routingState, error) {
-	state := &routingState{
-		realmName: adminv1.RealmNameFromContext(ctx),
-	}
+	state := &routingState{}
 
 	// Fetch all non-deleted subscribers for this exposure.
 	subscribers, err := util.FindAllSubscribersForApiExposure(ctx, apiExp)
@@ -234,6 +232,7 @@ func (h *ApiExposureHandler) determineRoutingState(ctx context.Context, apiExp *
 	}
 
 	state.exposureZone = myZone
+	state.realmName = myZone.Status.RealmName
 
 	return state, nil
 }
