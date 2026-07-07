@@ -333,7 +333,14 @@ func (r *availableTransitionResolver) ToState(ctx context.Context, obj *model.Av
 
 // Password is the resolver for the password field.
 func (r *basicAuthCredentialsResolver) Password(ctx context.Context, obj *model.BasicAuthCredentials) (string, error) {
-	return obj.Password, nil
+	resolved, err := r.secrets.Resolve(ctx, &obj.Password, "password")
+	if err != nil {
+		return "", err
+	}
+	if resolved == nil {
+		return "", nil
+	}
+	return *resolved, nil
 }
 
 // ResultingState is the resolver for the resultingState field.
@@ -503,12 +510,12 @@ func (r *externalIdentityProviderResolver) TokenRequest(ctx context.Context, obj
 
 // ClientSecret is the resolver for the clientSecret field.
 func (r *oAuth2ClientCredentialsResolver) ClientSecret(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error) {
-	return obj.ClientSecret, nil
+	return r.secrets.Resolve(ctx, obj.ClientSecret, "clientSecret")
 }
 
 // ClientKey is the resolver for the clientKey field.
 func (r *oAuth2ClientCredentialsResolver) ClientKey(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error) {
-	return obj.ClientKey, nil
+	return r.secrets.Resolve(ctx, obj.ClientKey, "clientKey")
 }
 
 // APICategories is the resolver for the apiCategories field.
