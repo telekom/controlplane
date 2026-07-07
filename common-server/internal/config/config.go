@@ -281,7 +281,7 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 		}()
 	}
 
-	s.RegisterController(config.NewConfigController(log, storesToStoreInfos(stores)...), server.ControllerOpts{Prefix: c.BasePath})
+	s.RegisterController(config.NewConfigController(log, storesToStoreInfos(stores)...), server.ControllerOpts{Prefix: c.BasePath, Security: securityOpts})
 
 	s.RegisterController(openapi.NewOpenAPIController(openapiBuilder.Build()), server.ControllerOpts{Prefix: c.BasePath})
 	log.Info("Registered openapi controller", "prefix", c.BasePath)
