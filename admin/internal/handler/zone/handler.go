@@ -50,6 +50,7 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		createIdentityRoutes,
 		cleanupStaleRoutes,
 		populateLinks,
+		populateRealmName,
 	}
 
 	for _, step := range steps {

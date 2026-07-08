@@ -7,6 +7,7 @@ module github.com/telekom/controlplane/tools/route-tester
 go 1.26.4
 
 require (
+	github.com/telekom/controlplane/admin/api v0.0.0
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
@@ -23,6 +24,7 @@ require (
 )
 
 replace (
+	github.com/telekom/controlplane/admin/api => ../../admin/api
 	github.com/telekom/controlplane/application/api => ../../application/api
 	github.com/telekom/controlplane/common => ../../common
 	github.com/telekom/controlplane/common-server => ../../common-server
