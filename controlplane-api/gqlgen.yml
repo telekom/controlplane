@@ -181,4 +181,19 @@ models:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.SubscriberRateLimitDefaults
   RateLimitOverrides:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitOverrides
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitOverrides  # EventScope Types
+  EventScope:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.EventScope
+  EventTrigger:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.EventTrigger
+  ResponseFilter:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.ResponseFilter
+  SelectionFilter:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.SelectionFilter
+  EventDelivery:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.EventDelivery

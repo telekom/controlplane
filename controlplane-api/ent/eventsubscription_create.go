@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // EventSubscriptionCreate is the builder for creating a EventSubscription entity.
@@ -128,6 +129,32 @@ func (_c *EventSubscriptionCreate) SetNillableDeliveryType(v *eventsubscription.
 	if v != nil {
 		_c.SetDeliveryType(*v)
 	}
+	return _c
+}
+
+// SetTrigger sets the "trigger" field.
+func (_c *EventSubscriptionCreate) SetTrigger(v *model.EventTrigger) *EventSubscriptionCreate {
+	_c.mutation.SetTrigger(v)
+	return _c
+}
+
+// SetDelivery sets the "delivery" field.
+func (_c *EventSubscriptionCreate) SetDelivery(v model.EventDelivery) *EventSubscriptionCreate {
+	_c.mutation.SetDelivery(v)
+	return _c
+}
+
+// SetNillableDelivery sets the "delivery" field if the given value is not nil.
+func (_c *EventSubscriptionCreate) SetNillableDelivery(v *model.EventDelivery) *EventSubscriptionCreate {
+	if v != nil {
+		_c.SetDelivery(*v)
+	}
+	return _c
+}
+
+// SetScopes sets the "scopes" field.
+func (_c *EventSubscriptionCreate) SetScopes(v []string) *EventSubscriptionCreate {
+	_c.mutation.SetScopes(v)
 	return _c
 }
 
@@ -264,6 +291,14 @@ func (_c *EventSubscriptionCreate) defaults() error {
 		v := eventsubscription.DefaultDeliveryType
 		_c.mutation.SetDeliveryType(v)
 	}
+	if _, ok := _c.mutation.Trigger(); !ok {
+		v := eventsubscription.DefaultTrigger
+		_c.mutation.SetTrigger(v)
+	}
+	if _, ok := _c.mutation.Delivery(); !ok {
+		v := eventsubscription.DefaultDelivery
+		_c.mutation.SetDelivery(v)
+	}
 	return nil
 }
 
@@ -311,6 +346,9 @@ func (_c *EventSubscriptionCreate) check() error {
 		if err := eventsubscription.DeliveryTypeValidator(v); err != nil {
 			return &ValidationError{Name: "delivery_type", err: fmt.Errorf(`ent: validator failed for field "EventSubscription.delivery_type": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.Delivery(); !ok {
+		return &ValidationError{Name: "delivery", err: errors.New(`ent: missing required field "EventSubscription.delivery"`)}
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
 		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "EventSubscription.owner"`)}
@@ -377,6 +415,18 @@ func (_c *EventSubscriptionCreate) createSpec() (*EventSubscription, *sqlgraph.C
 	if value, ok := _c.mutation.DeliveryType(); ok {
 		_spec.SetField(eventsubscription.FieldDeliveryType, field.TypeEnum, value)
 		_node.DeliveryType = value
+	}
+	if value, ok := _c.mutation.Trigger(); ok {
+		_spec.SetField(eventsubscription.FieldTrigger, field.TypeJSON, value)
+		_node.Trigger = value
+	}
+	if value, ok := _c.mutation.Delivery(); ok {
+		_spec.SetField(eventsubscription.FieldDelivery, field.TypeJSON, value)
+		_node.Delivery = value
+	}
+	if value, ok := _c.mutation.Scopes(); ok {
+		_spec.SetField(eventsubscription.FieldScopes, field.TypeJSON, value)
+		_node.Scopes = value
 	}
 	if value, ok := _c.mutation.CallbackURL(); ok {
 		_spec.SetField(eventsubscription.FieldCallbackURL, field.TypeString, value)
@@ -614,6 +664,54 @@ func (u *EventSubscriptionUpsert) UpdateDeliveryType() *EventSubscriptionUpsert 
 	return u
 }
 
+// SetTrigger sets the "trigger" field.
+func (u *EventSubscriptionUpsert) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldTrigger, v)
+	return u
+}
+
+// UpdateTrigger sets the "trigger" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateTrigger() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldTrigger)
+	return u
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsert) ClearTrigger() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldTrigger)
+	return u
+}
+
+// SetDelivery sets the "delivery" field.
+func (u *EventSubscriptionUpsert) SetDelivery(v model.EventDelivery) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldDelivery, v)
+	return u
+}
+
+// UpdateDelivery sets the "delivery" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateDelivery() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldDelivery)
+	return u
+}
+
+// SetScopes sets the "scopes" field.
+func (u *EventSubscriptionUpsert) SetScopes(v []string) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldScopes, v)
+	return u
+}
+
+// UpdateScopes sets the "scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateScopes() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldScopes)
+	return u
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (u *EventSubscriptionUpsert) ClearScopes() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldScopes)
+	return u
+}
+
 // SetCallbackURL sets the "callback_url" field.
 func (u *EventSubscriptionUpsert) SetCallbackURL(v string) *EventSubscriptionUpsert {
 	u.Set(eventsubscription.FieldCallbackURL, v)
@@ -807,6 +905,62 @@ func (u *EventSubscriptionUpsertOne) SetDeliveryType(v eventsubscription.Deliver
 func (u *EventSubscriptionUpsertOne) UpdateDeliveryType() *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.UpdateDeliveryType()
+	})
+}
+
+// SetTrigger sets the "trigger" field.
+func (u *EventSubscriptionUpsertOne) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetTrigger(v)
+	})
+}
+
+// UpdateTrigger sets the "trigger" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateTrigger() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateTrigger()
+	})
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsertOne) ClearTrigger() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearTrigger()
+	})
+}
+
+// SetDelivery sets the "delivery" field.
+func (u *EventSubscriptionUpsertOne) SetDelivery(v model.EventDelivery) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetDelivery(v)
+	})
+}
+
+// UpdateDelivery sets the "delivery" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateDelivery() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateDelivery()
+	})
+}
+
+// SetScopes sets the "scopes" field.
+func (u *EventSubscriptionUpsertOne) SetScopes(v []string) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetScopes(v)
+	})
+}
+
+// UpdateScopes sets the "scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateScopes() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateScopes()
+	})
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (u *EventSubscriptionUpsertOne) ClearScopes() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearScopes()
 	})
 }
 
@@ -1172,6 +1326,62 @@ func (u *EventSubscriptionUpsertBulk) SetDeliveryType(v eventsubscription.Delive
 func (u *EventSubscriptionUpsertBulk) UpdateDeliveryType() *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.UpdateDeliveryType()
+	})
+}
+
+// SetTrigger sets the "trigger" field.
+func (u *EventSubscriptionUpsertBulk) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetTrigger(v)
+	})
+}
+
+// UpdateTrigger sets the "trigger" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateTrigger() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateTrigger()
+	})
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsertBulk) ClearTrigger() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearTrigger()
+	})
+}
+
+// SetDelivery sets the "delivery" field.
+func (u *EventSubscriptionUpsertBulk) SetDelivery(v model.EventDelivery) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetDelivery(v)
+	})
+}
+
+// UpdateDelivery sets the "delivery" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateDelivery() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateDelivery()
+	})
+}
+
+// SetScopes sets the "scopes" field.
+func (u *EventSubscriptionUpsertBulk) SetScopes(v []string) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetScopes(v)
+	})
+}
+
+// UpdateScopes sets the "scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateScopes() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateScopes()
+	})
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (u *EventSubscriptionUpsertBulk) ClearScopes() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearScopes()
 	})
 }
 

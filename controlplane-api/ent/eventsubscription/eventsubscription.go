@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 const (
@@ -39,6 +40,12 @@ const (
 	FieldEventType = "event_type"
 	// FieldDeliveryType holds the string denoting the delivery_type field in the database.
 	FieldDeliveryType = "delivery_type"
+	// FieldTrigger holds the string denoting the trigger field in the database.
+	FieldTrigger = "trigger"
+	// FieldDelivery holds the string denoting the delivery field in the database.
+	FieldDelivery = "delivery"
+	// FieldScopes holds the string denoting the scopes field in the database.
+	FieldScopes = "scopes"
 	// FieldCallbackURL holds the string denoting the callback_url field in the database.
 	FieldCallbackURL = "callback_url"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -93,6 +100,9 @@ var Columns = []string{
 	FieldName,
 	FieldEventType,
 	FieldDeliveryType,
+	FieldTrigger,
+	FieldDelivery,
+	FieldScopes,
 	FieldCallbackURL,
 }
 
@@ -138,6 +148,10 @@ var (
 	NameValidator func(string) error
 	// EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
 	EventTypeValidator func(string) error
+	// DefaultTrigger holds the default value on creation for the "trigger" field.
+	DefaultTrigger *model.EventTrigger
+	// DefaultDelivery holds the default value on creation for the "delivery" field.
+	DefaultDelivery model.EventDelivery
 )
 
 // StatusPhase defines the type for the "status_phase" enum field.

@@ -1756,6 +1756,7 @@ type EventExposure implements Node {
   eventType: String!
   visibility: EventExposureVisibility!
   active: Boolean
+  eventScopes: [EventScope]
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -1986,6 +1987,9 @@ type EventSubscription implements Node {
   name: String!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
+  trigger: EventTrigger
+  delivery: EventDelivery!
+  scopes: [String!]
   callbackURL: String
   owner: Application!
   approval: Approval

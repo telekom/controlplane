@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
@@ -20,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // EventSubscriptionUpdate is the builder for updating EventSubscription entities.
@@ -154,6 +156,50 @@ func (_u *EventSubscriptionUpdate) SetNillableDeliveryType(v *eventsubscription.
 	if v != nil {
 		_u.SetDeliveryType(*v)
 	}
+	return _u
+}
+
+// SetTrigger sets the "trigger" field.
+func (_u *EventSubscriptionUpdate) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpdate {
+	_u.mutation.SetTrigger(v)
+	return _u
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (_u *EventSubscriptionUpdate) ClearTrigger() *EventSubscriptionUpdate {
+	_u.mutation.ClearTrigger()
+	return _u
+}
+
+// SetDelivery sets the "delivery" field.
+func (_u *EventSubscriptionUpdate) SetDelivery(v model.EventDelivery) *EventSubscriptionUpdate {
+	_u.mutation.SetDelivery(v)
+	return _u
+}
+
+// SetNillableDelivery sets the "delivery" field if the given value is not nil.
+func (_u *EventSubscriptionUpdate) SetNillableDelivery(v *model.EventDelivery) *EventSubscriptionUpdate {
+	if v != nil {
+		_u.SetDelivery(*v)
+	}
+	return _u
+}
+
+// SetScopes sets the "scopes" field.
+func (_u *EventSubscriptionUpdate) SetScopes(v []string) *EventSubscriptionUpdate {
+	_u.mutation.SetScopes(v)
+	return _u
+}
+
+// AppendScopes appends value to the "scopes" field.
+func (_u *EventSubscriptionUpdate) AppendScopes(v []string) *EventSubscriptionUpdate {
+	_u.mutation.AppendScopes(v)
+	return _u
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (_u *EventSubscriptionUpdate) ClearScopes() *EventSubscriptionUpdate {
+	_u.mutation.ClearScopes()
 	return _u
 }
 
@@ -404,6 +450,26 @@ func (_u *EventSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if value, ok := _u.mutation.DeliveryType(); ok {
 		_spec.SetField(eventsubscription.FieldDeliveryType, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Trigger(); ok {
+		_spec.SetField(eventsubscription.FieldTrigger, field.TypeJSON, value)
+	}
+	if _u.mutation.TriggerCleared() {
+		_spec.ClearField(eventsubscription.FieldTrigger, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Delivery(); ok {
+		_spec.SetField(eventsubscription.FieldDelivery, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.Scopes(); ok {
+		_spec.SetField(eventsubscription.FieldScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, eventsubscription.FieldScopes, value)
+		})
+	}
+	if _u.mutation.ScopesCleared() {
+		_spec.ClearField(eventsubscription.FieldScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.CallbackURL(); ok {
 		_spec.SetField(eventsubscription.FieldCallbackURL, field.TypeString, value)
@@ -685,6 +751,50 @@ func (_u *EventSubscriptionUpdateOne) SetNillableDeliveryType(v *eventsubscripti
 	return _u
 }
 
+// SetTrigger sets the "trigger" field.
+func (_u *EventSubscriptionUpdateOne) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpdateOne {
+	_u.mutation.SetTrigger(v)
+	return _u
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (_u *EventSubscriptionUpdateOne) ClearTrigger() *EventSubscriptionUpdateOne {
+	_u.mutation.ClearTrigger()
+	return _u
+}
+
+// SetDelivery sets the "delivery" field.
+func (_u *EventSubscriptionUpdateOne) SetDelivery(v model.EventDelivery) *EventSubscriptionUpdateOne {
+	_u.mutation.SetDelivery(v)
+	return _u
+}
+
+// SetNillableDelivery sets the "delivery" field if the given value is not nil.
+func (_u *EventSubscriptionUpdateOne) SetNillableDelivery(v *model.EventDelivery) *EventSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetDelivery(*v)
+	}
+	return _u
+}
+
+// SetScopes sets the "scopes" field.
+func (_u *EventSubscriptionUpdateOne) SetScopes(v []string) *EventSubscriptionUpdateOne {
+	_u.mutation.SetScopes(v)
+	return _u
+}
+
+// AppendScopes appends value to the "scopes" field.
+func (_u *EventSubscriptionUpdateOne) AppendScopes(v []string) *EventSubscriptionUpdateOne {
+	_u.mutation.AppendScopes(v)
+	return _u
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (_u *EventSubscriptionUpdateOne) ClearScopes() *EventSubscriptionUpdateOne {
+	_u.mutation.ClearScopes()
+	return _u
+}
+
 // SetCallbackURL sets the "callback_url" field.
 func (_u *EventSubscriptionUpdateOne) SetCallbackURL(v string) *EventSubscriptionUpdateOne {
 	_u.mutation.SetCallbackURL(v)
@@ -962,6 +1072,26 @@ func (_u *EventSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Event
 	}
 	if value, ok := _u.mutation.DeliveryType(); ok {
 		_spec.SetField(eventsubscription.FieldDeliveryType, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Trigger(); ok {
+		_spec.SetField(eventsubscription.FieldTrigger, field.TypeJSON, value)
+	}
+	if _u.mutation.TriggerCleared() {
+		_spec.ClearField(eventsubscription.FieldTrigger, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Delivery(); ok {
+		_spec.SetField(eventsubscription.FieldDelivery, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.Scopes(); ok {
+		_spec.SetField(eventsubscription.FieldScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, eventsubscription.FieldScopes, value)
+		})
+	}
+	if _u.mutation.ScopesCleared() {
+		_spec.ClearField(eventsubscription.FieldScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.CallbackURL(); ok {
 		_spec.SetField(eventsubscription.FieldCallbackURL, field.TypeString, value)

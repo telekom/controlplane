@@ -117,6 +117,21 @@ var _ = Describe("EventExposure Repository", func() {
 					Strategy:     "AUTO",
 					TrustedTeams: []string{"team-a"},
 				},
+				Scopes: []model.EventScope{
+					{
+						Name: "my-scope",
+						Trigger: model.EventTrigger{
+							ResponseFilter: &model.ResponseFilter{
+								Paths: []string{"$.data.id", "$.data.name"},
+								Mode:  "Include",
+							},
+							SelectionFilter: &model.SelectionFilter{
+								Attributes: map[string]string{"type": "de.telekom.eni.quickstart.v1"},
+								Expression: `{"op":"eq","path":"$.source","value":"my-app"}`,
+							},
+						},
+					},
+				},
 				AppName:  "my-app",
 				TeamName: "platform--narvi",
 			}
@@ -135,6 +150,15 @@ var _ = Describe("EventExposure Repository", func() {
 			owner, err := exp.QueryOwner().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(owner.ID).To(Equal(appID))
+
+			Expect(exp.EventScopes).To(HaveLen(1))
+			Expect(exp.EventScopes[0].Name).To(Equal("my-scope"))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter).NotTo(BeNil())
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.id", "$.data.name"}))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter.Mode).To(Equal("Include"))
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter).NotTo(BeNil())
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Attributes).To(Equal(map[string]string{"type": "de.telekom.eni.quickstart.v1"}))
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.source","value":"my-app"}`))
 		})
 
 		It("should return ErrDependencyMissing when application is missing", func() {
@@ -215,6 +239,71 @@ var _ = Describe("EventExposure Repository", func() {
 			Expect(found).To(BeTrue())
 			Expect(id).To(BeNumerically(">", 0))
 		})
+
+		It("should replace response filter with selection filter on update", func() {
+			data := &eventexposure.EventExposureData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "replace-exp", nil),
+				StatusPhase: "READY",
+				EventType:   "de.telekom.replace.v1",
+				Visibility:  "WORLD",
+				Active:      true,
+				ApprovalConfig: model.ApprovalConfig{
+					Strategy: "AUTO",
+				},
+				Scopes: []model.EventScope{
+					{
+						Name: "filter-scope",
+						Trigger: model.EventTrigger{
+							ResponseFilter: &model.ResponseFilter{
+								Paths: []string{"$.data.secret"},
+								Mode:  "Exclude",
+							},
+						},
+					},
+				},
+				AppName:  "my-app",
+				TeamName: "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Verify initial state has response filter
+			exp, err := client.EventExposure.Query().
+				Where(enteventexposure.EventTypeEQ("de.telekom.replace.v1")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.EventScopes).To(HaveLen(1))
+			Expect(exp.EventScopes[0].Name).To(Equal("filter-scope"))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter).NotTo(BeNil())
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.secret"}))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter.Mode).To(Equal("Exclude"))
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter).To(BeNil())
+
+			// Update: replace response filter with selection filter
+			data.Scopes = []model.EventScope{
+				{
+					Name: "filter-scope",
+					Trigger: model.EventTrigger{
+						SelectionFilter: &model.SelectionFilter{
+							Attributes: map[string]string{"source": "my-service"},
+							Expression: `{"op":"eq","path":"$.type","value":"order.created"}`,
+						},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.EventExposure.Query().
+				Where(enteventexposure.EventTypeEQ("de.telekom.replace.v1")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.EventScopes).To(HaveLen(1))
+			Expect(exp.EventScopes[0].Name).To(Equal("filter-scope"))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter).To(BeNil())
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter).NotTo(BeNil())
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Attributes).To(Equal(map[string]string{"source": "my-service"}))
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.type","value":"order.created"}`))
+		})
+
 	})
 
 	Describe("Delete", func() {
