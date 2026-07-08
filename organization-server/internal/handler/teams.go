@@ -12,7 +12,6 @@ import (
 	"github.com/telekom/controlplane/organization-server/internal/api"
 	gql "github.com/telekom/controlplane/organization-server/internal/graphql"
 	"github.com/telekom/controlplane/organization-server/internal/mapper"
-	mw "github.com/telekom/controlplane/organization-server/internal/middleware"
 )
 
 // CreateTeam handles POST /hubs/:hub/teams.
@@ -41,7 +40,7 @@ func (h *Handler) CreateTeam(c *fiber.Ctx) error {
 
 	ctx := h.contextWithIdentity(c)
 	resp, err := gql.CreateTeam(ctx, h.cpapi, gql.CreateTeamInput{
-		Environment: h.environment(c),
+		Environment: h.environment,
 		Group:       hubName,
 		Name:        req.Name,
 		Email:       req.Email,
@@ -351,11 +350,12 @@ func (h *Handler) PatchTeamToken(c *fiber.Ctx) error {
 }
 
 // GetTeamResources handles GET /hubs/:hub/teams/:team/resources.
-// This proxies directly to rover-server using the consumer's token.
+// Calls rover-server with a service token to retrieve resources for the team.
 func (h *Handler) GetTeamResources(c *fiber.Ctx) error {
-	token := mw.RawTokenFromContext(c)
+	hub := c.Params("hub")
+	team := c.Params("team")
 
-	resources, err := h.rover.GetResources(c.UserContext(), token, "")
+	resources, err := h.rover.GetResources(c.UserContext(), hub, team)
 	if err != nil {
 		h.log.Error(err, "Failed to get team resources from rover-server")
 		return c.Status(fiber.StatusBadGateway).JSON(api.Error{

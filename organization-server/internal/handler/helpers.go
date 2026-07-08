@@ -23,7 +23,7 @@ func (h *Handler) contextWithIdentity(c *fiber.Ctx) context.Context {
 	ctx := c.UserContext()
 	if id != nil {
 		ctx = client.WithIdentity(ctx, &client.ConsumerIdentity{
-			Environment: id.Environment,
+			Environment: h.environment,
 			Group:       id.Group,
 			Team:        id.Team,
 		})
@@ -131,13 +131,4 @@ func (h *Handler) resolveTeamID(ctx context.Context, hubName, teamName string) (
 		return "", nil
 	}
 	return resp.Teams.Edges[0].Node.Id, nil
-}
-
-// environment returns the environment name from the consumer identity.
-func (h *Handler) environment(c *fiber.Ctx) string {
-	id := mw.ConsumerIdentityFromContext(c)
-	if id != nil {
-		return id.Environment
-	}
-	return ""
 }

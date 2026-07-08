@@ -14,42 +14,45 @@ import (
 
 // Handler groups all endpoint handlers for the organization facade.
 type Handler struct {
-	cpapi graphql.Client
-	rover *client.RoverClient
-	log   logr.Logger
+	cpapi       graphql.Client
+	rover       *client.RoverClient
+	environment string
+	log         logr.Logger
 }
 
 // New creates a new Handler with the given upstream clients.
-func New(cpapi graphql.Client, rover *client.RoverClient, log logr.Logger) *Handler {
+func New(cpapi graphql.Client, rover *client.RoverClient, environment string, log logr.Logger) *Handler {
 	return &Handler{
-		cpapi: cpapi,
-		rover: rover,
-		log:   log,
+		cpapi:       cpapi,
+		rover:       rover,
+		environment: environment,
+		log:         log,
 	}
 }
 
 // RegisterRoutes registers all REST endpoints on the given Fiber router group.
 // The router group is expected to be mounted at /organization/v1.
-func (h *Handler) RegisterRoutes(api fiber.Router) {
-	// Hub (Group) CRUD
+// teamAuth is applied to routes that access hub/team-scoped resources.
+func (h *Handler) RegisterRoutes(api fiber.Router, teamAuth fiber.Handler) {
+	// Hub (Group) CRUD — hub-level auth
 	api.Post("/hubs", h.CreateHub)
 	api.Get("/hubs", h.ListHubs)
-	api.Get("/hubs/:hub", h.GetHub)
-	api.Put("/hubs/:hub", h.UpdateHub)
-	api.Delete("/hubs/:hub", h.DeleteHub)
-	api.Get("/hubs/:hub/status", h.GetHubStatus)
+	api.Get("/hubs/:hub", teamAuth, h.GetHub)
+	api.Put("/hubs/:hub", teamAuth, h.UpdateHub)
+	api.Delete("/hubs/:hub", teamAuth, h.DeleteHub)
+	api.Get("/hubs/:hub/status", teamAuth, h.GetHubStatus)
 
-	// Team CRUD
-	api.Post("/hubs/:hub/teams", h.CreateTeam)
-	api.Get("/hubs/:hub/teams", h.ListTeams)
-	api.Get("/hubs/:hub/teams/:team", h.GetTeam)
-	api.Put("/hubs/:hub/teams/:team", h.UpdateTeam)
-	api.Delete("/hubs/:hub/teams/:team", h.DeleteTeam)
-	api.Get("/hubs/:hub/teams/:team/status", h.GetTeamStatus)
+	// Team CRUD — hub+team level auth
+	api.Post("/hubs/:hub/teams", teamAuth, h.CreateTeam)
+	api.Get("/hubs/:hub/teams", teamAuth, h.ListTeams)
+	api.Get("/hubs/:hub/teams/:team", teamAuth, h.GetTeam)
+	api.Put("/hubs/:hub/teams/:team", teamAuth, h.UpdateTeam)
+	api.Delete("/hubs/:hub/teams/:team", teamAuth, h.DeleteTeam)
+	api.Get("/hubs/:hub/teams/:team/status", teamAuth, h.GetTeamStatus)
 
 	// Team token
-	api.Patch("/hubs/:hub/teams/:team/teamToken", h.PatchTeamToken)
+	api.Patch("/hubs/:hub/teams/:team/teamToken", teamAuth, h.PatchTeamToken)
 
 	// Team resources (proxied to rover-server)
-	api.Get("/hubs/:hub/teams/:team/resources", h.GetTeamResources)
+	api.Get("/hubs/:hub/teams/:team/resources", teamAuth, h.GetTeamResources)
 }

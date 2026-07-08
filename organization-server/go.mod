@@ -12,7 +12,9 @@ require (
 	github.com/getkin/kin-openapi v0.135.0
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
+	github.com/gofiber/contrib/jwt v1.1.2
 	github.com/gofiber/fiber/v2 v2.52.13
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/onsi/ginkgo/v2 v2.28.3
 	github.com/onsi/gomega v1.40.0
 	go.uber.org/zap v1.28.0
@@ -20,6 +22,7 @@ require (
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
+	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect

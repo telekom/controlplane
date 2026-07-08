@@ -27,7 +27,7 @@ func (h *Handler) CreateHub(c *fiber.Ctx) error {
 	ctx := h.contextWithIdentity(c)
 	desc := req.Description
 	resp, err := gql.CreateGroup(ctx, h.cpapi, gql.CreateGroupInput{
-		Environment: h.environment(c),
+		Environment: h.environment,
 		Name:        req.Name,
 		DisplayName: req.DisplayName,
 		Description: &desc,
