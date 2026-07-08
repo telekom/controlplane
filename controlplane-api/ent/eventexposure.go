@@ -42,6 +42,8 @@ type EventExposure struct {
 	Visibility eventexposure.Visibility `json:"visibility,omitempty"`
 	// Active holds the value of the "active" field.
 	Active *bool `json:"active,omitempty"`
+	// EventScopes holds the value of the "event_scopes" field.
+	EventScopes []model.EventScope `json:"event_scopes,omitempty"`
 	// GatewayProviderURL holds the value of the "gateway_provider_url" field.
 	GatewayProviderURL *string `json:"gateway_provider_url,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
@@ -107,7 +109,7 @@ func (*EventExposure) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case eventexposure.FieldApprovalConfig:
+		case eventexposure.FieldEventScopes, eventexposure.FieldApprovalConfig:
 			values[i] = new([]byte)
 		case eventexposure.FieldActive:
 			values[i] = new(sql.NullBool)
@@ -199,6 +201,14 @@ func (_m *EventExposure) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Active = new(bool)
 				*_m.Active = value.Bool
+			}
+		case eventexposure.FieldEventScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field event_scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.EventScopes); err != nil {
+					return fmt.Errorf("unmarshal field event_scopes: %w", err)
+				}
 			}
 		case eventexposure.FieldGatewayProviderURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -314,6 +324,9 @@ func (_m *EventExposure) String() string {
 		builder.WriteString("active=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("event_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.EventScopes))
 	builder.WriteString(", ")
 	if v := _m.GatewayProviderURL; v != nil {
 		builder.WriteString("gateway_provider_url=")

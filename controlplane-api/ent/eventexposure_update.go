@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
@@ -160,6 +161,24 @@ func (_u *EventExposureUpdate) SetNillableActive(v *bool) *EventExposureUpdate {
 // ClearActive clears the value of the "active" field.
 func (_u *EventExposureUpdate) ClearActive() *EventExposureUpdate {
 	_u.mutation.ClearActive()
+	return _u
+}
+
+// SetEventScopes sets the "event_scopes" field.
+func (_u *EventExposureUpdate) SetEventScopes(v []model.EventScope) *EventExposureUpdate {
+	_u.mutation.SetEventScopes(v)
+	return _u
+}
+
+// AppendEventScopes appends value to the "event_scopes" field.
+func (_u *EventExposureUpdate) AppendEventScopes(v []model.EventScope) *EventExposureUpdate {
+	_u.mutation.AppendEventScopes(v)
+	return _u
+}
+
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (_u *EventExposureUpdate) ClearEventScopes() *EventExposureUpdate {
+	_u.mutation.ClearEventScopes()
 	return _u
 }
 
@@ -397,6 +416,17 @@ func (_u *EventExposureUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.ActiveCleared() {
 		_spec.ClearField(eventexposure.FieldActive, field.TypeBool)
+	}
+	if value, ok := _u.mutation.EventScopes(); ok {
+		_spec.SetField(eventexposure.FieldEventScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedEventScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, eventexposure.FieldEventScopes, value)
+		})
+	}
+	if _u.mutation.EventScopesCleared() {
+		_spec.ClearField(eventexposure.FieldEventScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.GatewayProviderURL(); ok {
 		_spec.SetField(eventexposure.FieldGatewayProviderURL, field.TypeString, value)
@@ -655,6 +685,24 @@ func (_u *EventExposureUpdateOne) SetNillableActive(v *bool) *EventExposureUpdat
 // ClearActive clears the value of the "active" field.
 func (_u *EventExposureUpdateOne) ClearActive() *EventExposureUpdateOne {
 	_u.mutation.ClearActive()
+	return _u
+}
+
+// SetEventScopes sets the "event_scopes" field.
+func (_u *EventExposureUpdateOne) SetEventScopes(v []model.EventScope) *EventExposureUpdateOne {
+	_u.mutation.SetEventScopes(v)
+	return _u
+}
+
+// AppendEventScopes appends value to the "event_scopes" field.
+func (_u *EventExposureUpdateOne) AppendEventScopes(v []model.EventScope) *EventExposureUpdateOne {
+	_u.mutation.AppendEventScopes(v)
+	return _u
+}
+
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (_u *EventExposureUpdateOne) ClearEventScopes() *EventExposureUpdateOne {
+	_u.mutation.ClearEventScopes()
 	return _u
 }
 
@@ -922,6 +970,17 @@ func (_u *EventExposureUpdateOne) sqlSave(ctx context.Context) (_node *EventExpo
 	}
 	if _u.mutation.ActiveCleared() {
 		_spec.ClearField(eventexposure.FieldActive, field.TypeBool)
+	}
+	if value, ok := _u.mutation.EventScopes(); ok {
+		_spec.SetField(eventexposure.FieldEventScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedEventScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, eventexposure.FieldEventScopes, value)
+		})
+	}
+	if _u.mutation.EventScopesCleared() {
+		_spec.ClearField(eventexposure.FieldEventScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.GatewayProviderURL(); ok {
 		_spec.SetField(eventexposure.FieldGatewayProviderURL, field.TypeString, value)

@@ -46,6 +46,10 @@ func (EventExposure) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Default(false),
+		field.JSON("event_scopes", []model.EventScope{}).
+			Optional().
+			Default([]model.EventScope{}).
+			Annotations(entgql.Type("[EventScope]"), entgql.Skip(entgql.SkipWhereInput)),
 		field.Text("gateway_provider_url").
 			Optional().
 			Nillable(),

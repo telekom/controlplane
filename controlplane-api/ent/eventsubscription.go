@@ -6,6 +6,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // EventSubscription is the model entity for the EventSubscription schema.
@@ -41,6 +43,12 @@ type EventSubscription struct {
 	EventType string `json:"event_type,omitempty"`
 	// DeliveryType holds the value of the "delivery_type" field.
 	DeliveryType eventsubscription.DeliveryType `json:"delivery_type,omitempty"`
+	// Trigger holds the value of the "trigger" field.
+	Trigger *model.EventTrigger `json:"trigger,omitempty"`
+	// Delivery holds the value of the "delivery" field.
+	Delivery model.EventDelivery `json:"delivery,omitempty"`
+	// Scopes holds the value of the "scopes" field.
+	Scopes []string `json:"scopes,omitempty"`
 	// CallbackURL holds the value of the "callback_url" field.
 	CallbackURL *string `json:"callback_url,omitempty"`
 	// GatewayConsumerURL holds the value of the "gateway_consumer_url" field.
@@ -119,6 +127,8 @@ func (*EventSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case eventsubscription.FieldTrigger, eventsubscription.FieldDelivery, eventsubscription.FieldScopes:
+			values[i] = new([]byte)
 		case eventsubscription.FieldID:
 			values[i] = new(sql.NullInt64)
 		case eventsubscription.FieldStatusPhase, eventsubscription.FieldStatusMessage, eventsubscription.FieldEnvironment, eventsubscription.FieldNamespace, eventsubscription.FieldName, eventsubscription.FieldEventType, eventsubscription.FieldDeliveryType, eventsubscription.FieldCallbackURL, eventsubscription.FieldGatewayConsumerURL:
@@ -206,6 +216,30 @@ func (_m *EventSubscription) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field delivery_type", values[i])
 			} else if value.Valid {
 				_m.DeliveryType = eventsubscription.DeliveryType(value.String)
+			}
+		case eventsubscription.FieldTrigger:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field trigger", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Trigger); err != nil {
+					return fmt.Errorf("unmarshal field trigger: %w", err)
+				}
+			}
+		case eventsubscription.FieldDelivery:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field delivery", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Delivery); err != nil {
+					return fmt.Errorf("unmarshal field delivery: %w", err)
+				}
+			}
+		case eventsubscription.FieldScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Scopes); err != nil {
+					return fmt.Errorf("unmarshal field scopes: %w", err)
+				}
 			}
 		case eventsubscription.FieldCallbackURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -323,6 +357,15 @@ func (_m *EventSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("delivery_type=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DeliveryType))
+	builder.WriteString(", ")
+	builder.WriteString("trigger=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Trigger))
+	builder.WriteString(", ")
+	builder.WriteString("delivery=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Delivery))
+	builder.WriteString(", ")
+	builder.WriteString("scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))
 	builder.WriteString(", ")
 	if v := _m.CallbackURL; v != nil {
 		builder.WriteString("callback_url=")

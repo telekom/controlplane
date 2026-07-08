@@ -8,9 +8,11 @@ import (
 	"context"
 	"strings"
 
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+	"github.com/telekom/controlplane/projector/internal/util"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -44,18 +46,40 @@ func (t *Translator) Translate(_ context.Context, obj *eventv1.EventSubscription
 		callbackURL = &s
 	}
 
+	var trigger *model.EventTrigger
+	if obj.Spec.Trigger != nil {
+		t := util.MapEventTrigger(*obj.Spec.Trigger.DeepCopy())
+		trigger = &t
+	}
+
 	return &EventSubscriptionData{
 		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:           phase,
 		StatusMessage:         message,
 		EventType:             obj.Spec.EventType,
 		DeliveryType:          mapDeliveryType(string(obj.Spec.Delivery.Type)),
+		Trigger:               trigger,
+		Delivery:              mapDelivery(obj.Spec.Delivery),
+		Scopes:                obj.Spec.Scopes,
 		CallbackURL:           callbackURL,
 		GatewayConsumerSseUrl: obj.Status.URL,
 		OwnerAppName:          obj.Spec.Requestor.Name,
 		OwnerTeamName:         shared.TeamNameFromNamespace(obj.Namespace),
 		TargetEventType:       obj.Spec.EventType,
 	}, nil
+}
+
+func mapDelivery(obj eventv1.Delivery) *model.EventDelivery {
+	delivery := &model.EventDelivery{
+		Payload:               obj.Payload.String(),
+		EventRetentionTime:    obj.EventRetentionTime,
+		CircuitBreakerOptOut:  obj.CircuitBreakerOptOut,
+		RetryableStatusCodes:  obj.RetryableStatusCodes,
+		RedeliveriesPerSecond: obj.RedeliveriesPerSecond,
+		EnforceGetHttpRequestMethodForHealthCheck: obj.EnforceGetHttpRequestMethodForHealthCheck,
+	}
+
+	return delivery
 }
 
 // KeyFromObject derives the composite identity key from a live EventSubscription.

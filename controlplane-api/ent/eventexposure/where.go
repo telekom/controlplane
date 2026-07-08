@@ -528,6 +528,16 @@ func ActiveNotNil() predicate.EventExposure {
 	return predicate.EventExposure(sql.FieldNotNull(FieldActive))
 }
 
+// EventScopesIsNil applies the IsNil predicate on the "event_scopes" field.
+func EventScopesIsNil() predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldIsNull(FieldEventScopes))
+}
+
+// EventScopesNotNil applies the NotNil predicate on the "event_scopes" field.
+func EventScopesNotNil() predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldNotNull(FieldEventScopes))
+}
+
 // GatewayProviderURLEQ applies the EQ predicate on the "gateway_provider_url" field.
 func GatewayProviderURLEQ(v string) predicate.EventExposure {
 	return predicate.EventExposure(sql.FieldEQ(FieldGatewayProviderURL, v))

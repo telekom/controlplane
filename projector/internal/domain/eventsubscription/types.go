@@ -8,7 +8,10 @@
 // EventExposure (target).
 package eventsubscription
 
-import "github.com/telekom/controlplane/projector/internal/domain/shared"
+import (
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
+)
 
 // EventSubscriptionKey is the composite identity key for EventSubscription
 // entities. It contains the fields needed for both the primary DB operation
@@ -31,7 +34,10 @@ type EventSubscriptionData struct {
 	DeliveryType          string  // "CALLBACK", "SERVER_SENT_EVENT"
 	GatewayConsumerSseUrl string  // sse url
 	CallbackURL           *string // set when delivery type is Callback
-	OwnerAppName          string  // resolved to owner Application FK (required)
-	OwnerTeamName         string  // used to resolve owner Application FK
-	TargetEventType       string  // used to resolve optional target EventExposure FK
+	Delivery              *model.EventDelivery
+	Trigger               *model.EventTrigger
+	Scopes                []string
+	OwnerAppName          string // resolved to owner Application FK (required)
+	OwnerTeamName         string // used to resolve owner Application FK
+	TargetEventType       string // used to resolve optional target EventExposure FK
 }

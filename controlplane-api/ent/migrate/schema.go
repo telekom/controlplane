@@ -300,6 +300,7 @@ var (
 		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
+		{Name: "event_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "gateway_provider_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "application_exposed_events", Type: field.TypeInt},
@@ -344,6 +345,9 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "delivery_type", Type: field.TypeEnum, Enums: []string{"CALLBACK", "SERVER_SENT_EVENT"}, Default: "CALLBACK"},
+		{Name: "trigger", Type: field.TypeJSON, Nullable: true},
+		{Name: "delivery", Type: field.TypeJSON},
+		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "callback_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "gateway_consumer_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "application_subscribed_events", Type: field.TypeInt},
@@ -357,13 +361,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "event_subscriptions_applications_subscribed_events",
-				Columns:    []*schema.Column{EventSubscriptionsColumns[12]},
+				Columns:    []*schema.Column{EventSubscriptionsColumns[14]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "event_subscriptions_event_exposures_target",
-				Columns:    []*schema.Column{EventSubscriptionsColumns[13]},
+				Columns:    []*schema.Column{EventSubscriptionsColumns[15]},
 				RefColumns: []*schema.Column{EventExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -377,7 +381,7 @@ var (
 			{
 				Name:    "eventsubscription_event_type_application_subscribed_events",
 				Unique:  true,
-				Columns: []*schema.Column{EventSubscriptionsColumns[8], EventSubscriptionsColumns[12]},
+				Columns: []*schema.Column{EventSubscriptionsColumns[8], EventSubscriptionsColumns[14]},
 			},
 		},
 	}

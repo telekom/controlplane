@@ -40,6 +40,8 @@ const (
 	FieldVisibility = "visibility"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
+	// FieldEventScopes holds the string denoting the event_scopes field in the database.
+	FieldEventScopes = "event_scopes"
 	// FieldGatewayProviderURL holds the string denoting the gateway_provider_url field in the database.
 	FieldGatewayProviderURL = "gateway_provider_url"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
@@ -87,6 +89,7 @@ var Columns = []string{
 	FieldEventType,
 	FieldVisibility,
 	FieldActive,
+	FieldEventScopes,
 	FieldGatewayProviderURL,
 	FieldApprovalConfig,
 }
@@ -133,6 +136,8 @@ var (
 	EventTypeValidator func(string) error
 	// DefaultActive holds the default value on creation for the "active" field.
 	DefaultActive bool
+	// DefaultEventScopes holds the default value on creation for the "event_scopes" field.
+	DefaultEventScopes []model.EventScope
 	// DefaultApprovalConfig holds the default value on creation for the "approval_config" field.
 	DefaultApprovalConfig model.ApprovalConfig
 )
