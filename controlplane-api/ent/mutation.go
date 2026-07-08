@@ -9068,8 +9068,7 @@ func (m *EventExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventExposureMutation) Fields() []string {
-	fields := make([]string, 0, 11)
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, eventexposure.FieldCreatedAt)
 	}
@@ -10462,8 +10461,7 @@ func (m *EventSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 13)
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 14)
 	if m.created_at != nil {
 		fields = append(fields, eventsubscription.FieldCreatedAt)
 	}

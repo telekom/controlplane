@@ -314,13 +314,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "event_exposures_applications_exposed_events",
-				Columns:    []*schema.Column{EventExposuresColumns[12]},
+				Columns:    []*schema.Column{EventExposuresColumns[13]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "event_exposures_event_types_exposures",
-				Columns:    []*schema.Column{EventExposuresColumns[13]},
+				Columns:    []*schema.Column{EventExposuresColumns[14]},
 				RefColumns: []*schema.Column{EventTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -329,7 +329,7 @@ var (
 			{
 				Name:    "eventexposure_event_type_application_exposed_events",
 				Unique:  true,
-				Columns: []*schema.Column{EventExposuresColumns[7], EventExposuresColumns[12]},
+				Columns: []*schema.Column{EventExposuresColumns[7], EventExposuresColumns[13]},
 			},
 		},
 	}
@@ -361,13 +361,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "event_subscriptions_applications_subscribed_events",
-				Columns:    []*schema.Column{EventSubscriptionsColumns[14]},
+				Columns:    []*schema.Column{EventSubscriptionsColumns[15]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "event_subscriptions_event_exposures_target",
-				Columns:    []*schema.Column{EventSubscriptionsColumns[15]},
+				Columns:    []*schema.Column{EventSubscriptionsColumns[16]},
 				RefColumns: []*schema.Column{EventExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -381,7 +381,7 @@ var (
 			{
 				Name:    "eventsubscription_event_type_application_subscribed_events",
 				Unique:  true,
-				Columns: []*schema.Column{EventSubscriptionsColumns[8], EventSubscriptionsColumns[14]},
+				Columns: []*schema.Column{EventSubscriptionsColumns[8], EventSubscriptionsColumns[15]},
 			},
 		},
 	}

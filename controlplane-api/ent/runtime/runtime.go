@@ -356,7 +356,7 @@ func init() {
 	// eventexposure.DefaultEventScopes holds the default value on creation for the event_scopes field.
 	eventexposure.DefaultEventScopes = eventexposureDescEventScopes.Default.([]model.EventScope)
 	// eventexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	eventexposureDescApprovalConfig := eventexposureFields[4].Descriptor()
+	eventexposureDescApprovalConfig := eventexposureFields[5].Descriptor()
 	// eventexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	eventexposure.DefaultApprovalConfig = eventexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	eventsubscriptionMixin := schema.EventSubscription{}.Mixin()
