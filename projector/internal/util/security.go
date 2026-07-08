@@ -26,10 +26,11 @@ func MapCrOAuthToCpApi(oauth *apiv1.OAuth2ClientCredentials) *model.OAuth2Client
 
 func MapCrExternalIdpToCpApi(externalIdp *apiv1.ExternalIdentityProvider) *model.ExternalIdentityProvider {
 	tokenRequest := string(externalIdp.TokenRequest)
+	grantType := string(externalIdp.GrantType)
 	return &model.ExternalIdentityProvider{
 		TokenEndpoint: externalIdp.TokenEndpoint,
 		TokenRequest:  &tokenRequest,
-		GrantType:     &externalIdp.GrantType,
+		GrantType:     &grantType,
 		Basic:         MapCrBasicAuthToCpApi(externalIdp.Basic),
 		Client:        MapCrOAuthToCpApi(externalIdp.Client),
 	}

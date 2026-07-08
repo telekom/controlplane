@@ -52,7 +52,7 @@ var _ = Describe("ApiExposure Translator", func() {
 						TrustedTeams: []string{"team-a"},
 					},
 					Traffic: apiv1.Traffic{
-						Failover: &apiv1.Failover{
+						Failover: &apiv1.ProviderFailover{
 							Zones: []ctypes.ObjectRef{
 								{
 									Name:      "zoneA",
