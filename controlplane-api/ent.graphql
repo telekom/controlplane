@@ -60,6 +60,8 @@ type ApiExposure implements Node {
   active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
+  security: ApiExposureSecurity
+  traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
@@ -768,6 +770,8 @@ type Application implements Node {
   currentExpiresAt: Time
   secretRotationPhase: ApplicationSecretRotationPhase!
   secretRotationMessage: String
+  externalIds: [ExternalId!]
+  ipRestrictions: IpRestrictions
   zone: Zone!
   exposedApis(
     """

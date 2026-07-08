@@ -29,37 +29,29 @@ const (
 	APIExposureFeatureBasicAuth            APIExposureFeature = "BASIC_AUTH"
 	APIExposureFeatureCircuitBreaker       APIExposureFeature = "CIRCUIT_BREAKER"
 	APIExposureFeatureCustomScopes         APIExposureFeature = "CUSTOM_SCOPES"
-	APIExposureFeatureDynamicUpstream      APIExposureFeature = "DYNAMIC_UPSTREAM"
 	APIExposureFeatureExternalIDP          APIExposureFeature = "EXTERNAL_IDP"
 	APIExposureFeatureFailover             APIExposureFeature = "FAILOVER"
 	APIExposureFeatureHeaderTransformation APIExposureFeature = "HEADER_TRANSFORMATION"
-	APIExposureFeatureIPRestriction        APIExposureFeature = "IP_RESTRICTION"
 	APIExposureFeatureLastMileSecurity     APIExposureFeature = "LAST_MILE_SECURITY"
 	APIExposureFeatureLoadBalancing        APIExposureFeature = "LOAD_BALANCING"
-	APIExposureFeaturePassthrough          APIExposureFeature = "PASSTHROUGH"
 	APIExposureFeatureRateLimit            APIExposureFeature = "RATE_LIMIT"
-	APIExposureFeatureAccessControl        APIExposureFeature = "ACCESS_CONTROL"
 )
 
 var AllAPIExposureFeature = []APIExposureFeature{
 	APIExposureFeatureBasicAuth,
 	APIExposureFeatureCircuitBreaker,
 	APIExposureFeatureCustomScopes,
-	APIExposureFeatureDynamicUpstream,
 	APIExposureFeatureExternalIDP,
 	APIExposureFeatureFailover,
 	APIExposureFeatureHeaderTransformation,
-	APIExposureFeatureIPRestriction,
 	APIExposureFeatureLastMileSecurity,
 	APIExposureFeatureLoadBalancing,
-	APIExposureFeaturePassthrough,
 	APIExposureFeatureRateLimit,
-	APIExposureFeatureAccessControl,
 }
 
 func (e APIExposureFeature) IsValid() bool {
 	switch e {
-	case APIExposureFeatureBasicAuth, APIExposureFeatureCircuitBreaker, APIExposureFeatureCustomScopes, APIExposureFeatureDynamicUpstream, APIExposureFeatureExternalIDP, APIExposureFeatureFailover, APIExposureFeatureHeaderTransformation, APIExposureFeatureIPRestriction, APIExposureFeatureLastMileSecurity, APIExposureFeatureLoadBalancing, APIExposureFeaturePassthrough, APIExposureFeatureRateLimit, APIExposureFeatureAccessControl:
+	case APIExposureFeatureBasicAuth, APIExposureFeatureCircuitBreaker, APIExposureFeatureCustomScopes, APIExposureFeatureExternalIDP, APIExposureFeatureFailover, APIExposureFeatureHeaderTransformation, APIExposureFeatureLastMileSecurity, APIExposureFeatureLoadBalancing, APIExposureFeatureRateLimit:
 		return true
 	}
 	return false
@@ -325,6 +317,61 @@ func (e *ResponseFilterMode) UnmarshalJSON(b []byte) error {
 }
 
 func (e ResponseFilterMode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TokenRequestMethod string
+
+const (
+	TokenRequestMethodClientSecretBasic TokenRequestMethod = "client_secret_basic"
+	TokenRequestMethodClientSecretPost  TokenRequestMethod = "client_secret_post"
+)
+
+var AllTokenRequestMethod = []TokenRequestMethod{
+	TokenRequestMethodClientSecretBasic,
+	TokenRequestMethodClientSecretPost,
+}
+
+func (e TokenRequestMethod) IsValid() bool {
+	switch e {
+	case TokenRequestMethodClientSecretBasic, TokenRequestMethodClientSecretPost:
+		return true
+	}
+	return false
+}
+
+func (e TokenRequestMethod) String() string {
+	return string(e)
+}
+
+func (e *TokenRequestMethod) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TokenRequestMethod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TokenRequestMethod", str)
+	}
+	return nil
+}
+
+func (e TokenRequestMethod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TokenRequestMethod) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TokenRequestMethod) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
