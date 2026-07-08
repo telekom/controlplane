@@ -43,6 +43,8 @@ type EventSubscription struct {
 	DeliveryType eventsubscription.DeliveryType `json:"delivery_type,omitempty"`
 	// CallbackURL holds the value of the "callback_url" field.
 	CallbackURL *string `json:"callback_url,omitempty"`
+	// GatewayConsumerURL holds the value of the "gateway_consumer_url" field.
+	GatewayConsumerURL *string `json:"gateway_consumer_url,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EventSubscriptionQuery when eager-loading is set.
 	Edges                         EventSubscriptionEdges `json:"edges"`
@@ -119,7 +121,7 @@ func (*EventSubscription) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case eventsubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case eventsubscription.FieldStatusPhase, eventsubscription.FieldStatusMessage, eventsubscription.FieldEnvironment, eventsubscription.FieldNamespace, eventsubscription.FieldName, eventsubscription.FieldEventType, eventsubscription.FieldDeliveryType, eventsubscription.FieldCallbackURL:
+		case eventsubscription.FieldStatusPhase, eventsubscription.FieldStatusMessage, eventsubscription.FieldEnvironment, eventsubscription.FieldNamespace, eventsubscription.FieldName, eventsubscription.FieldEventType, eventsubscription.FieldDeliveryType, eventsubscription.FieldCallbackURL, eventsubscription.FieldGatewayConsumerURL:
 			values[i] = new(sql.NullString)
 		case eventsubscription.FieldCreatedAt, eventsubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -211,6 +213,13 @@ func (_m *EventSubscription) assignValues(columns []string, values []any) error 
 			} else if value.Valid {
 				_m.CallbackURL = new(string)
 				*_m.CallbackURL = value.String
+			}
+		case eventsubscription.FieldGatewayConsumerURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field gateway_consumer_url", values[i])
+			} else if value.Valid {
+				_m.GatewayConsumerURL = new(string)
+				*_m.GatewayConsumerURL = value.String
 			}
 		case eventsubscription.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -317,6 +326,11 @@ func (_m *EventSubscription) String() string {
 	builder.WriteString(", ")
 	if v := _m.CallbackURL; v != nil {
 		builder.WriteString("callback_url=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.GatewayConsumerURL; v != nil {
+		builder.WriteString("gateway_consumer_url=")
 		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')

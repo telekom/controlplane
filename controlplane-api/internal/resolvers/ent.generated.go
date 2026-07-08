@@ -48,7 +48,6 @@ type ApiExposureResolver interface {
 }
 type ApiSubscriptionResolver interface {
 	Target(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiExposureInfo, error)
-	GatewayURL(ctx context.Context, obj *ent.ApiSubscription) (*string, error)
 }
 type ApplicationResolver interface {
 	ClientSecret(ctx context.Context, obj *ent.Application) (*string, error)
@@ -65,11 +64,9 @@ type ApprovalRequestResolver interface {
 }
 type EventExposureResolver interface {
 	Subscriptions(ctx context.Context, obj *ent.EventExposure) ([]*model.EventSubscriptionInfo, error)
-	GatewayProviderURL(ctx context.Context, obj *ent.EventExposure) (*string, error)
 }
 type EventSubscriptionResolver interface {
 	Target(ctx context.Context, obj *ent.EventSubscription) (*model.EventExposureInfo, error)
-	GatewayConsumerSseURL(ctx context.Context, obj *ent.EventSubscription) (*string, error)
 }
 type EventTypeResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.EventType) (*string, error)
@@ -2384,6 +2381,29 @@ func (ec *executionContext) fieldContext_ApiSubscription_m2mAuthMethod(_ context
 	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type ApiSubscriptionM2mAuthMethod does not have child fields"))
 }
 
+func (ec *executionContext) _ApiSubscription_gatewayURL(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GatewayURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscription_gatewayURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _ApiSubscription_approvedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2565,29 +2585,6 @@ func (ec *executionContext) fieldContext_ApiSubscription_target(_ context.Contex
 		},
 	}
 	return fc, nil
-}
-
-func (ec *executionContext) _ApiSubscription_gatewayURL(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.ApiSubscription().GatewayURL(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscription_gatewayURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiSubscription", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ApiSubscriptionConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscriptionConnection) (ret graphql.Marshaler) {
@@ -4882,6 +4879,29 @@ func (ec *executionContext) fieldContext_EventExposure_active(_ context.Context,
 	return graphql.NewScalarFieldContext("EventExposure", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
+func (ec *executionContext) _EventExposure_gatewayProviderURL(ctx context.Context, field graphql.CollectedField, obj *ent.EventExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventExposure_gatewayProviderURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GatewayProviderURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventExposure_gatewayProviderURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventExposure", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _EventExposure_approvalConfig(ctx context.Context, field graphql.CollectedField, obj *ent.EventExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5008,29 +5028,6 @@ func (ec *executionContext) fieldContext_EventExposure_subscriptions(_ context.C
 		},
 	}
 	return fc, nil
-}
-
-func (ec *executionContext) _EventExposure_gatewayProviderURL(ctx context.Context, field graphql.CollectedField, obj *ent.EventExposure) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_EventExposure_gatewayProviderURL(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.EventExposure().GatewayProviderURL(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_EventExposure_gatewayProviderURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("EventExposure", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _EventExposureConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.EventExposureConnection) (ret graphql.Marshaler) {
@@ -5428,6 +5425,29 @@ func (ec *executionContext) fieldContext_EventSubscription_callbackURL(_ context
 	return graphql.NewScalarFieldContext("EventSubscription", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _EventSubscription_gatewayConsumerURL(ctx context.Context, field graphql.CollectedField, obj *ent.EventSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventSubscription_gatewayConsumerURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GatewayConsumerURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventSubscription_gatewayConsumerURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _EventSubscription_owner(ctx context.Context, field graphql.CollectedField, obj *ent.EventSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5554,29 +5574,6 @@ func (ec *executionContext) fieldContext_EventSubscription_target(_ context.Cont
 		},
 	}
 	return fc, nil
-}
-
-func (ec *executionContext) _EventSubscription_gatewayConsumerSseURL(ctx context.Context, field graphql.CollectedField, obj *ent.EventSubscription) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_EventSubscription_gatewayConsumerSseURL(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.EventSubscription().GatewayConsumerSseURL(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_EventSubscription_gatewayConsumerSseURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("EventSubscription", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _EventSubscriptionConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.EventSubscriptionConnection) (ret graphql.Marshaler) {
@@ -9051,7 +9048,7 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "gatewayURL", "gatewayURLNEQ", "gatewayURLIn", "gatewayURLNotIn", "gatewayURLGT", "gatewayURLGTE", "gatewayURLLT", "gatewayURLLTE", "gatewayURLContains", "gatewayURLHasPrefix", "gatewayURLHasSuffix", "gatewayURLIsNil", "gatewayURLNotNil", "gatewayURLEqualFold", "gatewayURLContainsFold", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9800,6 +9797,111 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 				return it, err
 			}
 			it.M2mAuthMethodNotIn = data
+		case "gatewayURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURL = data
+		case "gatewayURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLNEQ = data
+		case "gatewayURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLIn = data
+		case "gatewayURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLNotIn = data
+		case "gatewayURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLGT = data
+		case "gatewayURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLGTE = data
+		case "gatewayURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLLT = data
+		case "gatewayURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLLTE = data
+		case "gatewayURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLContains = data
+		case "gatewayURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLHasPrefix = data
+		case "gatewayURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLHasSuffix = data
+		case "gatewayURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLIsNil = data
+		case "gatewayURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLNotNil = data
+		case "gatewayURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLEqualFold = data
+		case "gatewayURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayURLContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -13950,7 +14052,7 @@ func (ec *executionContext) unmarshalInputEventExposureWhereInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "eventType", "eventTypeNEQ", "eventTypeIn", "eventTypeNotIn", "eventTypeGT", "eventTypeGTE", "eventTypeLT", "eventTypeLTE", "eventTypeContains", "eventTypeHasPrefix", "eventTypeHasSuffix", "eventTypeEqualFold", "eventTypeContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "hasOwner", "hasOwnerWith", "hasEventTypeDef", "hasEventTypeDefWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "eventType", "eventTypeNEQ", "eventTypeIn", "eventTypeNotIn", "eventTypeGT", "eventTypeGTE", "eventTypeLT", "eventTypeLTE", "eventTypeContains", "eventTypeHasPrefix", "eventTypeHasSuffix", "eventTypeEqualFold", "eventTypeContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "gatewayProviderURL", "gatewayProviderURLNEQ", "gatewayProviderURLIn", "gatewayProviderURLNotIn", "gatewayProviderURLGT", "gatewayProviderURLGTE", "gatewayProviderURLLT", "gatewayProviderURLLTE", "gatewayProviderURLContains", "gatewayProviderURLHasPrefix", "gatewayProviderURLHasSuffix", "gatewayProviderURLIsNil", "gatewayProviderURLNotNil", "gatewayProviderURLEqualFold", "gatewayProviderURLContainsFold", "hasOwner", "hasOwnerWith", "hasEventTypeDef", "hasEventTypeDefWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14636,6 +14738,111 @@ func (ec *executionContext) unmarshalInputEventExposureWhereInput(ctx context.Co
 				return it, err
 			}
 			it.ActiveNotNil = data
+		case "gatewayProviderURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURL = data
+		case "gatewayProviderURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLNEQ = data
+		case "gatewayProviderURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLIn = data
+		case "gatewayProviderURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLNotIn = data
+		case "gatewayProviderURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLGT = data
+		case "gatewayProviderURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLGTE = data
+		case "gatewayProviderURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLLT = data
+		case "gatewayProviderURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLLTE = data
+		case "gatewayProviderURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLContains = data
+		case "gatewayProviderURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLHasPrefix = data
+		case "gatewayProviderURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLHasSuffix = data
+		case "gatewayProviderURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLIsNil = data
+		case "gatewayProviderURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLNotNil = data
+		case "gatewayProviderURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLEqualFold = data
+		case "gatewayProviderURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayProviderURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayProviderURLContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -14735,7 +14942,7 @@ func (ec *executionContext) unmarshalInputEventSubscriptionWhereInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "eventType", "eventTypeNEQ", "eventTypeIn", "eventTypeNotIn", "eventTypeGT", "eventTypeGTE", "eventTypeLT", "eventTypeLTE", "eventTypeContains", "eventTypeHasPrefix", "eventTypeHasSuffix", "eventTypeEqualFold", "eventTypeContainsFold", "deliveryType", "deliveryTypeNEQ", "deliveryTypeIn", "deliveryTypeNotIn", "callbackURL", "callbackURLNEQ", "callbackURLIn", "callbackURLNotIn", "callbackURLGT", "callbackURLGTE", "callbackURLLT", "callbackURLLTE", "callbackURLContains", "callbackURLHasPrefix", "callbackURLHasSuffix", "callbackURLIsNil", "callbackURLNotNil", "callbackURLEqualFold", "callbackURLContainsFold", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "eventType", "eventTypeNEQ", "eventTypeIn", "eventTypeNotIn", "eventTypeGT", "eventTypeGTE", "eventTypeLT", "eventTypeLTE", "eventTypeContains", "eventTypeHasPrefix", "eventTypeHasSuffix", "eventTypeEqualFold", "eventTypeContainsFold", "deliveryType", "deliveryTypeNEQ", "deliveryTypeIn", "deliveryTypeNotIn", "callbackURL", "callbackURLNEQ", "callbackURLIn", "callbackURLNotIn", "callbackURLGT", "callbackURLGTE", "callbackURLLT", "callbackURLLTE", "callbackURLContains", "callbackURLHasPrefix", "callbackURLHasSuffix", "callbackURLIsNil", "callbackURLNotNil", "callbackURLEqualFold", "callbackURLContainsFold", "gatewayConsumerURL", "gatewayConsumerURLNEQ", "gatewayConsumerURLIn", "gatewayConsumerURLNotIn", "gatewayConsumerURLGT", "gatewayConsumerURLGTE", "gatewayConsumerURLLT", "gatewayConsumerURLLTE", "gatewayConsumerURLContains", "gatewayConsumerURLHasPrefix", "gatewayConsumerURLHasSuffix", "gatewayConsumerURLIsNil", "gatewayConsumerURLNotNil", "gatewayConsumerURLEqualFold", "gatewayConsumerURLContainsFold", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15589,6 +15796,111 @@ func (ec *executionContext) unmarshalInputEventSubscriptionWhereInput(ctx contex
 				return it, err
 			}
 			it.CallbackURLContainsFold = data
+		case "gatewayConsumerURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURL = data
+		case "gatewayConsumerURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLNEQ = data
+		case "gatewayConsumerURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLIn = data
+		case "gatewayConsumerURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLNotIn = data
+		case "gatewayConsumerURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLGT = data
+		case "gatewayConsumerURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLGTE = data
+		case "gatewayConsumerURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLLT = data
+		case "gatewayConsumerURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLLTE = data
+		case "gatewayConsumerURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLContains = data
+		case "gatewayConsumerURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLHasPrefix = data
+		case "gatewayConsumerURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLHasSuffix = data
+		case "gatewayConsumerURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLIsNil = data
+		case "gatewayConsumerURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLNotNil = data
+		case "gatewayConsumerURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLEqualFold = data
+		case "gatewayConsumerURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gatewayConsumerURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GatewayConsumerURLContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -20019,6 +20331,8 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "gatewayURL":
+			out.Values[i] = ec._ApiSubscription_gatewayURL(ctx, field, obj)
 		case "approvedScopes":
 			out.Values[i] = ec._ApiSubscription_approvedScopes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -20172,39 +20486,6 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "gatewayURL":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ApiSubscription_gatewayURL(ctx, field, obj)
 				return res
 			}
 
@@ -21319,6 +21600,8 @@ func (ec *executionContext) _EventExposure(ctx context.Context, sel ast.Selectio
 			}
 		case "active":
 			out.Values[i] = ec._EventExposure_active(ctx, field, obj)
+		case "gatewayProviderURL":
+			out.Values[i] = ec._EventExposure_gatewayProviderURL(ctx, field, obj)
 		case "approvalConfig":
 			out.Values[i] = ec._EventExposure_approvalConfig(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -21406,39 +21689,6 @@ func (ec *executionContext) _EventExposure(ctx context.Context, sel ast.Selectio
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "gatewayProviderURL":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._EventExposure_gatewayProviderURL(ctx, field, obj)
 				return res
 			}
 
@@ -21626,6 +21876,8 @@ func (ec *executionContext) _EventSubscription(ctx context.Context, sel ast.Sele
 			}
 		case "callbackURL":
 			out.Values[i] = ec._EventSubscription_callbackURL(ctx, field, obj)
+		case "gatewayConsumerURL":
+			out.Values[i] = ec._EventSubscription_gatewayConsumerURL(ctx, field, obj)
 		case "owner":
 			field := field
 
@@ -21741,39 +21993,6 @@ func (ec *executionContext) _EventSubscription(ctx context.Context, sel ast.Sele
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "gatewayConsumerSseURL":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._EventSubscription_gatewayConsumerSseURL(ctx, field, obj)
 				return res
 			}
 

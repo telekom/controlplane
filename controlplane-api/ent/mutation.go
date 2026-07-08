@@ -2572,6 +2572,7 @@ type ApiSubscriptionMutation struct {
 	name                     *string
 	base_path                *string
 	m2m_auth_method          *apisubscription.M2mAuthMethod
+	gateway_url              *string
 	approved_scopes          *[]string
 	appendapproved_scopes    []string
 	clearedFields            map[string]struct{}
@@ -3053,6 +3054,55 @@ func (m *ApiSubscriptionMutation) ResetM2mAuthMethod() {
 	m.m2m_auth_method = nil
 }
 
+// SetGatewayURL sets the "gateway_url" field.
+func (m *ApiSubscriptionMutation) SetGatewayURL(s string) {
+	m.gateway_url = &s
+}
+
+// GatewayURL returns the value of the "gateway_url" field in the mutation.
+func (m *ApiSubscriptionMutation) GatewayURL() (r string, exists bool) {
+	v := m.gateway_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGatewayURL returns the old "gateway_url" field's value of the ApiSubscription entity.
+// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiSubscriptionMutation) OldGatewayURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGatewayURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGatewayURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGatewayURL: %w", err)
+	}
+	return oldValue.GatewayURL, nil
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (m *ApiSubscriptionMutation) ClearGatewayURL() {
+	m.gateway_url = nil
+	m.clearedFields[apisubscription.FieldGatewayURL] = struct{}{}
+}
+
+// GatewayURLCleared returns if the "gateway_url" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) GatewayURLCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldGatewayURL]
+	return ok
+}
+
+// ResetGatewayURL resets all changes to the "gateway_url" field.
+func (m *ApiSubscriptionMutation) ResetGatewayURL() {
+	m.gateway_url = nil
+	delete(m.clearedFields, apisubscription.FieldGatewayURL)
+}
+
 // SetApprovedScopes sets the "approved_scopes" field.
 func (m *ApiSubscriptionMutation) SetApprovedScopes(s []string) {
 	m.approved_scopes = &s
@@ -3363,7 +3413,7 @@ func (m *ApiSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, apisubscription.FieldCreatedAt)
 	}
@@ -3390,6 +3440,9 @@ func (m *ApiSubscriptionMutation) Fields() []string {
 	}
 	if m.m2m_auth_method != nil {
 		fields = append(fields, apisubscription.FieldM2mAuthMethod)
+	}
+	if m.gateway_url != nil {
+		fields = append(fields, apisubscription.FieldGatewayURL)
 	}
 	if m.approved_scopes != nil {
 		fields = append(fields, apisubscription.FieldApprovedScopes)
@@ -3420,6 +3473,8 @@ func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.BasePath()
 	case apisubscription.FieldM2mAuthMethod:
 		return m.M2mAuthMethod()
+	case apisubscription.FieldGatewayURL:
+		return m.GatewayURL()
 	case apisubscription.FieldApprovedScopes:
 		return m.ApprovedScopes()
 	}
@@ -3449,6 +3504,8 @@ func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldBasePath(ctx)
 	case apisubscription.FieldM2mAuthMethod:
 		return m.OldM2mAuthMethod(ctx)
+	case apisubscription.FieldGatewayURL:
+		return m.OldGatewayURL(ctx)
 	case apisubscription.FieldApprovedScopes:
 		return m.OldApprovedScopes(ctx)
 	}
@@ -3523,6 +3580,13 @@ func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetM2mAuthMethod(v)
 		return nil
+	case apisubscription.FieldGatewayURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGatewayURL(v)
+		return nil
 	case apisubscription.FieldApprovedScopes:
 		v, ok := value.([]string)
 		if !ok {
@@ -3569,6 +3633,9 @@ func (m *ApiSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(apisubscription.FieldEnvironment) {
 		fields = append(fields, apisubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(apisubscription.FieldGatewayURL) {
+		fields = append(fields, apisubscription.FieldGatewayURL)
+	}
 	return fields
 }
 
@@ -3591,6 +3658,9 @@ func (m *ApiSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case apisubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case apisubscription.FieldGatewayURL:
+		m.ClearGatewayURL()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription nullable field %s", name)
@@ -3626,6 +3696,9 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case apisubscription.FieldM2mAuthMethod:
 		m.ResetM2mAuthMethod()
+		return nil
+	case apisubscription.FieldGatewayURL:
+		m.ResetGatewayURL()
 		return nil
 	case apisubscription.FieldApprovedScopes:
 		m.ResetApprovedScopes()
@@ -8188,6 +8261,7 @@ type EventExposureMutation struct {
 	event_type            *string
 	visibility            *eventexposure.Visibility
 	active                *bool
+	gateway_provider_url  *string
 	approval_config       *model.ApprovalConfig
 	clearedFields         map[string]struct{}
 	owner                 *int
@@ -8676,6 +8750,55 @@ func (m *EventExposureMutation) ResetActive() {
 	delete(m.clearedFields, eventexposure.FieldActive)
 }
 
+// SetGatewayProviderURL sets the "gateway_provider_url" field.
+func (m *EventExposureMutation) SetGatewayProviderURL(s string) {
+	m.gateway_provider_url = &s
+}
+
+// GatewayProviderURL returns the value of the "gateway_provider_url" field in the mutation.
+func (m *EventExposureMutation) GatewayProviderURL() (r string, exists bool) {
+	v := m.gateway_provider_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGatewayProviderURL returns the old "gateway_provider_url" field's value of the EventExposure entity.
+// If the EventExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventExposureMutation) OldGatewayProviderURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGatewayProviderURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGatewayProviderURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGatewayProviderURL: %w", err)
+	}
+	return oldValue.GatewayProviderURL, nil
+}
+
+// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
+func (m *EventExposureMutation) ClearGatewayProviderURL() {
+	m.gateway_provider_url = nil
+	m.clearedFields[eventexposure.FieldGatewayProviderURL] = struct{}{}
+}
+
+// GatewayProviderURLCleared returns if the "gateway_provider_url" field was cleared in this mutation.
+func (m *EventExposureMutation) GatewayProviderURLCleared() bool {
+	_, ok := m.clearedFields[eventexposure.FieldGatewayProviderURL]
+	return ok
+}
+
+// ResetGatewayProviderURL resets all changes to the "gateway_provider_url" field.
+func (m *EventExposureMutation) ResetGatewayProviderURL() {
+	m.gateway_provider_url = nil
+	delete(m.clearedFields, eventexposure.FieldGatewayProviderURL)
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (m *EventExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
 	m.approval_config = &mc
@@ -8878,7 +9001,7 @@ func (m *EventExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventExposureMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, eventexposure.FieldCreatedAt)
 	}
@@ -8905,6 +9028,9 @@ func (m *EventExposureMutation) Fields() []string {
 	}
 	if m.active != nil {
 		fields = append(fields, eventexposure.FieldActive)
+	}
+	if m.gateway_provider_url != nil {
+		fields = append(fields, eventexposure.FieldGatewayProviderURL)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, eventexposure.FieldApprovalConfig)
@@ -8935,6 +9061,8 @@ func (m *EventExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Visibility()
 	case eventexposure.FieldActive:
 		return m.Active()
+	case eventexposure.FieldGatewayProviderURL:
+		return m.GatewayProviderURL()
 	case eventexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	}
@@ -8964,6 +9092,8 @@ func (m *EventExposureMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldVisibility(ctx)
 	case eventexposure.FieldActive:
 		return m.OldActive(ctx)
+	case eventexposure.FieldGatewayProviderURL:
+		return m.OldGatewayProviderURL(ctx)
 	case eventexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	}
@@ -9038,6 +9168,13 @@ func (m *EventExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetActive(v)
 		return nil
+	case eventexposure.FieldGatewayProviderURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGatewayProviderURL(v)
+		return nil
 	case eventexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
 		if !ok {
@@ -9087,6 +9224,9 @@ func (m *EventExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(eventexposure.FieldActive) {
 		fields = append(fields, eventexposure.FieldActive)
 	}
+	if m.FieldCleared(eventexposure.FieldGatewayProviderURL) {
+		fields = append(fields, eventexposure.FieldGatewayProviderURL)
+	}
 	return fields
 }
 
@@ -9112,6 +9252,9 @@ func (m *EventExposureMutation) ClearField(name string) error {
 		return nil
 	case eventexposure.FieldActive:
 		m.ClearActive()
+		return nil
+	case eventexposure.FieldGatewayProviderURL:
+		m.ClearGatewayProviderURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventExposure nullable field %s", name)
@@ -9147,6 +9290,9 @@ func (m *EventExposureMutation) ResetField(name string) error {
 		return nil
 	case eventexposure.FieldActive:
 		m.ResetActive()
+		return nil
+	case eventexposure.FieldGatewayProviderURL:
+		m.ResetGatewayProviderURL()
 		return nil
 	case eventexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()
@@ -9291,6 +9437,7 @@ type EventSubscriptionMutation struct {
 	event_type               *string
 	delivery_type            *eventsubscription.DeliveryType
 	callback_url             *string
+	gateway_consumer_url     *string
 	clearedFields            map[string]struct{}
 	owner                    *int
 	clearedowner             bool
@@ -9816,6 +9963,55 @@ func (m *EventSubscriptionMutation) ResetCallbackURL() {
 	delete(m.clearedFields, eventsubscription.FieldCallbackURL)
 }
 
+// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
+func (m *EventSubscriptionMutation) SetGatewayConsumerURL(s string) {
+	m.gateway_consumer_url = &s
+}
+
+// GatewayConsumerURL returns the value of the "gateway_consumer_url" field in the mutation.
+func (m *EventSubscriptionMutation) GatewayConsumerURL() (r string, exists bool) {
+	v := m.gateway_consumer_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGatewayConsumerURL returns the old "gateway_consumer_url" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldGatewayConsumerURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGatewayConsumerURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGatewayConsumerURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGatewayConsumerURL: %w", err)
+	}
+	return oldValue.GatewayConsumerURL, nil
+}
+
+// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
+func (m *EventSubscriptionMutation) ClearGatewayConsumerURL() {
+	m.gateway_consumer_url = nil
+	m.clearedFields[eventsubscription.FieldGatewayConsumerURL] = struct{}{}
+}
+
+// GatewayConsumerURLCleared returns if the "gateway_consumer_url" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) GatewayConsumerURLCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldGatewayConsumerURL]
+	return ok
+}
+
+// ResetGatewayConsumerURL resets all changes to the "gateway_consumer_url" field.
+func (m *EventSubscriptionMutation) ResetGatewayConsumerURL() {
+	m.gateway_consumer_url = nil
+	delete(m.clearedFields, eventsubscription.FieldGatewayConsumerURL)
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by id.
 func (m *EventSubscriptionMutation) SetOwnerID(id int) {
 	m.owner = &id
@@ -10021,7 +10217,7 @@ func (m *EventSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, eventsubscription.FieldCreatedAt)
 	}
@@ -10052,6 +10248,9 @@ func (m *EventSubscriptionMutation) Fields() []string {
 	if m.callback_url != nil {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
 	}
+	if m.gateway_consumer_url != nil {
+		fields = append(fields, eventsubscription.FieldGatewayConsumerURL)
+	}
 	return fields
 }
 
@@ -10080,6 +10279,8 @@ func (m *EventSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.DeliveryType()
 	case eventsubscription.FieldCallbackURL:
 		return m.CallbackURL()
+	case eventsubscription.FieldGatewayConsumerURL:
+		return m.GatewayConsumerURL()
 	}
 	return nil, false
 }
@@ -10109,6 +10310,8 @@ func (m *EventSubscriptionMutation) OldField(ctx context.Context, name string) (
 		return m.OldDeliveryType(ctx)
 	case eventsubscription.FieldCallbackURL:
 		return m.OldCallbackURL(ctx)
+	case eventsubscription.FieldGatewayConsumerURL:
+		return m.OldGatewayConsumerURL(ctx)
 	}
 	return nil, fmt.Errorf("unknown EventSubscription field %s", name)
 }
@@ -10188,6 +10391,13 @@ func (m *EventSubscriptionMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetCallbackURL(v)
 		return nil
+	case eventsubscription.FieldGatewayConsumerURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGatewayConsumerURL(v)
+		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription field %s", name)
 }
@@ -10230,6 +10440,9 @@ func (m *EventSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(eventsubscription.FieldCallbackURL) {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
 	}
+	if m.FieldCleared(eventsubscription.FieldGatewayConsumerURL) {
+		fields = append(fields, eventsubscription.FieldGatewayConsumerURL)
+	}
 	return fields
 }
 
@@ -10255,6 +10468,9 @@ func (m *EventSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case eventsubscription.FieldCallbackURL:
 		m.ClearCallbackURL()
+		return nil
+	case eventsubscription.FieldGatewayConsumerURL:
+		m.ClearGatewayConsumerURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription nullable field %s", name)
@@ -10293,6 +10509,9 @@ func (m *EventSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case eventsubscription.FieldCallbackURL:
 		m.ResetCallbackURL()
+		return nil
+	case eventsubscription.FieldGatewayConsumerURL:
+		m.ResetGatewayConsumerURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription field %s", name)

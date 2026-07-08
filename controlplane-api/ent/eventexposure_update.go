@@ -163,6 +163,26 @@ func (_u *EventExposureUpdate) ClearActive() *EventExposureUpdate {
 	return _u
 }
 
+// SetGatewayProviderURL sets the "gateway_provider_url" field.
+func (_u *EventExposureUpdate) SetGatewayProviderURL(v string) *EventExposureUpdate {
+	_u.mutation.SetGatewayProviderURL(v)
+	return _u
+}
+
+// SetNillableGatewayProviderURL sets the "gateway_provider_url" field if the given value is not nil.
+func (_u *EventExposureUpdate) SetNillableGatewayProviderURL(v *string) *EventExposureUpdate {
+	if v != nil {
+		_u.SetGatewayProviderURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
+func (_u *EventExposureUpdate) ClearGatewayProviderURL() *EventExposureUpdate {
+	_u.mutation.ClearGatewayProviderURL()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *EventExposureUpdate) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpdate {
 	_u.mutation.SetApprovalConfig(v)
@@ -377,6 +397,12 @@ func (_u *EventExposureUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.ActiveCleared() {
 		_spec.ClearField(eventexposure.FieldActive, field.TypeBool)
+	}
+	if value, ok := _u.mutation.GatewayProviderURL(); ok {
+		_spec.SetField(eventexposure.FieldGatewayProviderURL, field.TypeString, value)
+	}
+	if _u.mutation.GatewayProviderURLCleared() {
+		_spec.ClearField(eventexposure.FieldGatewayProviderURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -632,6 +658,26 @@ func (_u *EventExposureUpdateOne) ClearActive() *EventExposureUpdateOne {
 	return _u
 }
 
+// SetGatewayProviderURL sets the "gateway_provider_url" field.
+func (_u *EventExposureUpdateOne) SetGatewayProviderURL(v string) *EventExposureUpdateOne {
+	_u.mutation.SetGatewayProviderURL(v)
+	return _u
+}
+
+// SetNillableGatewayProviderURL sets the "gateway_provider_url" field if the given value is not nil.
+func (_u *EventExposureUpdateOne) SetNillableGatewayProviderURL(v *string) *EventExposureUpdateOne {
+	if v != nil {
+		_u.SetGatewayProviderURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
+func (_u *EventExposureUpdateOne) ClearGatewayProviderURL() *EventExposureUpdateOne {
+	_u.mutation.ClearGatewayProviderURL()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *EventExposureUpdateOne) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpdateOne {
 	_u.mutation.SetApprovalConfig(v)
@@ -876,6 +922,12 @@ func (_u *EventExposureUpdateOne) sqlSave(ctx context.Context) (_node *EventExpo
 	}
 	if _u.mutation.ActiveCleared() {
 		_spec.ClearField(eventexposure.FieldActive, field.TypeBool)
+	}
+	if value, ok := _u.mutation.GatewayProviderURL(); ok {
+		_spec.SetField(eventexposure.FieldGatewayProviderURL, field.TypeString, value)
+	}
+	if _u.mutation.GatewayProviderURLCleared() {
+		_spec.ClearField(eventexposure.FieldGatewayProviderURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)

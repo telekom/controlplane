@@ -42,6 +42,8 @@ type EventExposure struct {
 	Visibility eventexposure.Visibility `json:"visibility,omitempty"`
 	// Active holds the value of the "active" field.
 	Active *bool `json:"active,omitempty"`
+	// GatewayProviderURL holds the value of the "gateway_provider_url" field.
+	GatewayProviderURL *string `json:"gateway_provider_url,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
 	ApprovalConfig model.ApprovalConfig `json:"approval_config,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -111,7 +113,7 @@ func (*EventExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case eventexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case eventexposure.FieldStatusPhase, eventexposure.FieldStatusMessage, eventexposure.FieldEnvironment, eventexposure.FieldNamespace, eventexposure.FieldEventType, eventexposure.FieldVisibility:
+		case eventexposure.FieldStatusPhase, eventexposure.FieldStatusMessage, eventexposure.FieldEnvironment, eventexposure.FieldNamespace, eventexposure.FieldEventType, eventexposure.FieldVisibility, eventexposure.FieldGatewayProviderURL:
 			values[i] = new(sql.NullString)
 		case eventexposure.FieldCreatedAt, eventexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -197,6 +199,13 @@ func (_m *EventExposure) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Active = new(bool)
 				*_m.Active = value.Bool
+			}
+		case eventexposure.FieldGatewayProviderURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field gateway_provider_url", values[i])
+			} else if value.Valid {
+				_m.GatewayProviderURL = new(string)
+				*_m.GatewayProviderURL = value.String
 			}
 		case eventexposure.FieldApprovalConfig:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -304,6 +313,11 @@ func (_m *EventExposure) String() string {
 	if v := _m.Active; v != nil {
 		builder.WriteString("active=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.GatewayProviderURL; v != nil {
+		builder.WriteString("gateway_provider_url=")
+		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
 	builder.WriteString("approval_config=")

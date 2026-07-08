@@ -45,15 +45,16 @@ func (t *Translator) Translate(_ context.Context, obj *eventv1.EventSubscription
 	}
 
 	return &EventSubscriptionData{
-		Meta:            shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		StatusPhase:     phase,
-		StatusMessage:   message,
-		EventType:       obj.Spec.EventType,
-		DeliveryType:    mapDeliveryType(string(obj.Spec.Delivery.Type)),
-		CallbackURL:     callbackURL,
-		OwnerAppName:    obj.Spec.Requestor.Name,
-		OwnerTeamName:   shared.TeamNameFromNamespace(obj.Namespace),
-		TargetEventType: obj.Spec.EventType,
+		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		StatusPhase:           phase,
+		StatusMessage:         message,
+		EventType:             obj.Spec.EventType,
+		DeliveryType:          mapDeliveryType(string(obj.Spec.Delivery.Type)),
+		CallbackURL:           callbackURL,
+		GatewayConsumerSseUrl: obj.Status.URL,
+		OwnerAppName:          obj.Spec.Requestor.Name,
+		OwnerTeamName:         shared.TeamNameFromNamespace(obj.Namespace),
+		TargetEventType:       obj.Spec.EventType,
 	}, nil
 }
 

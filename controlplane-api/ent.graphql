@@ -338,6 +338,7 @@ type ApiSubscription implements Node {
   name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
+  gatewayURL: String
   approvedScopes: [String!]!
   owner: Application!
   failoverZones: [Zone!]
@@ -553,6 +554,24 @@ input ApiSubscriptionWhereInput {
   m2mAuthMethodNEQ: ApiSubscriptionM2mAuthMethod
   m2mAuthMethodIn: [ApiSubscriptionM2mAuthMethod!]
   m2mAuthMethodNotIn: [ApiSubscriptionM2mAuthMethod!]
+  """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
   """
   owner edge predicates
   """
@@ -1752,6 +1771,7 @@ type EventExposure implements Node {
   eventType: String!
   visibility: EventExposureVisibility!
   active: Boolean
+  gatewayProviderURL: String
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -1956,6 +1976,24 @@ input EventExposureWhereInput {
   activeIsNil: Boolean
   activeNotNil: Boolean
   """
+  gateway_provider_url field predicates
+  """
+  gatewayProviderURL: String
+  gatewayProviderURLNEQ: String
+  gatewayProviderURLIn: [String!]
+  gatewayProviderURLNotIn: [String!]
+  gatewayProviderURLGT: String
+  gatewayProviderURLGTE: String
+  gatewayProviderURLLT: String
+  gatewayProviderURLLTE: String
+  gatewayProviderURLContains: String
+  gatewayProviderURLHasPrefix: String
+  gatewayProviderURLHasSuffix: String
+  gatewayProviderURLIsNil: Boolean
+  gatewayProviderURLNotNil: Boolean
+  gatewayProviderURLEqualFold: String
+  gatewayProviderURLContainsFold: String
+  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -1983,6 +2021,7 @@ type EventSubscription implements Node {
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   callbackURL: String
+  gatewayConsumerURL: String
   owner: Application!
   approval: Approval
   approvalRequests: [ApprovalRequest!]
@@ -2212,6 +2251,24 @@ input EventSubscriptionWhereInput {
   callbackURLNotNil: Boolean
   callbackURLEqualFold: String
   callbackURLContainsFold: String
+  """
+  gateway_consumer_url field predicates
+  """
+  gatewayConsumerURL: String
+  gatewayConsumerURLNEQ: String
+  gatewayConsumerURLIn: [String!]
+  gatewayConsumerURLNotIn: [String!]
+  gatewayConsumerURLGT: String
+  gatewayConsumerURLGTE: String
+  gatewayConsumerURLLT: String
+  gatewayConsumerURLLTE: String
+  gatewayConsumerURLContains: String
+  gatewayConsumerURLHasPrefix: String
+  gatewayConsumerURLHasSuffix: String
+  gatewayConsumerURLIsNil: Boolean
+  gatewayConsumerURLNotNil: Boolean
+  gatewayConsumerURLEqualFold: String
+  gatewayConsumerURLContainsFold: String
   """
   owner edge predicates
   """

@@ -145,6 +145,20 @@ func (_c *EventSubscriptionCreate) SetNillableCallbackURL(v *string) *EventSubsc
 	return _c
 }
 
+// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
+func (_c *EventSubscriptionCreate) SetGatewayConsumerURL(v string) *EventSubscriptionCreate {
+	_c.mutation.SetGatewayConsumerURL(v)
+	return _c
+}
+
+// SetNillableGatewayConsumerURL sets the "gateway_consumer_url" field if the given value is not nil.
+func (_c *EventSubscriptionCreate) SetNillableGatewayConsumerURL(v *string) *EventSubscriptionCreate {
+	if v != nil {
+		_c.SetGatewayConsumerURL(*v)
+	}
+	return _c
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_c *EventSubscriptionCreate) SetOwnerID(id int) *EventSubscriptionCreate {
 	_c.mutation.SetOwnerID(id)
@@ -381,6 +395,10 @@ func (_c *EventSubscriptionCreate) createSpec() (*EventSubscription, *sqlgraph.C
 	if value, ok := _c.mutation.CallbackURL(); ok {
 		_spec.SetField(eventsubscription.FieldCallbackURL, field.TypeString, value)
 		_node.CallbackURL = &value
+	}
+	if value, ok := _c.mutation.GatewayConsumerURL(); ok {
+		_spec.SetField(eventsubscription.FieldGatewayConsumerURL, field.TypeString, value)
+		_node.GatewayConsumerURL = &value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -632,6 +650,24 @@ func (u *EventSubscriptionUpsert) ClearCallbackURL() *EventSubscriptionUpsert {
 	return u
 }
 
+// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
+func (u *EventSubscriptionUpsert) SetGatewayConsumerURL(v string) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldGatewayConsumerURL, v)
+	return u
+}
+
+// UpdateGatewayConsumerURL sets the "gateway_consumer_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateGatewayConsumerURL() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldGatewayConsumerURL)
+	return u
+}
+
+// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
+func (u *EventSubscriptionUpsert) ClearGatewayConsumerURL() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldGatewayConsumerURL)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -828,6 +864,27 @@ func (u *EventSubscriptionUpsertOne) UpdateCallbackURL() *EventSubscriptionUpser
 func (u *EventSubscriptionUpsertOne) ClearCallbackURL() *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.ClearCallbackURL()
+	})
+}
+
+// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
+func (u *EventSubscriptionUpsertOne) SetGatewayConsumerURL(v string) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetGatewayConsumerURL(v)
+	})
+}
+
+// UpdateGatewayConsumerURL sets the "gateway_consumer_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateGatewayConsumerURL() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateGatewayConsumerURL()
+	})
+}
+
+// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
+func (u *EventSubscriptionUpsertOne) ClearGatewayConsumerURL() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearGatewayConsumerURL()
 	})
 }
 
@@ -1193,6 +1250,27 @@ func (u *EventSubscriptionUpsertBulk) UpdateCallbackURL() *EventSubscriptionUpse
 func (u *EventSubscriptionUpsertBulk) ClearCallbackURL() *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.ClearCallbackURL()
+	})
+}
+
+// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
+func (u *EventSubscriptionUpsertBulk) SetGatewayConsumerURL(v string) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetGatewayConsumerURL(v)
+	})
+}
+
+// UpdateGatewayConsumerURL sets the "gateway_consumer_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateGatewayConsumerURL() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateGatewayConsumerURL()
+	})
+}
+
+// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
+func (u *EventSubscriptionUpsertBulk) ClearGatewayConsumerURL() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearGatewayConsumerURL()
 	})
 }
 

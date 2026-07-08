@@ -452,6 +452,11 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, apisubscription.FieldM2mAuthMethod)
 				fieldSeen[apisubscription.FieldM2mAuthMethod] = struct{}{}
 			}
+		case "gatewayURL":
+			if _, ok := fieldSeen[apisubscription.FieldGatewayURL]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldGatewayURL)
+				fieldSeen[apisubscription.FieldGatewayURL] = struct{}{}
+			}
 		case "approvedScopes":
 			if _, ok := fieldSeen[apisubscription.FieldApprovedScopes]; !ok {
 				selectedFields = append(selectedFields, apisubscription.FieldApprovedScopes)
@@ -1470,6 +1475,11 @@ func (_q *EventExposureQuery) collectField(ctx context.Context, oneNode bool, op
 				selectedFields = append(selectedFields, eventexposure.FieldActive)
 				fieldSeen[eventexposure.FieldActive] = struct{}{}
 			}
+		case "gatewayProviderURL":
+			if _, ok := fieldSeen[eventexposure.FieldGatewayProviderURL]; !ok {
+				selectedFields = append(selectedFields, eventexposure.FieldGatewayProviderURL)
+				fieldSeen[eventexposure.FieldGatewayProviderURL] = struct{}{}
+			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[eventexposure.FieldApprovalConfig]; !ok {
 				selectedFields = append(selectedFields, eventexposure.FieldApprovalConfig)
@@ -1643,6 +1653,11 @@ func (_q *EventSubscriptionQuery) collectField(ctx context.Context, oneNode bool
 			if _, ok := fieldSeen[eventsubscription.FieldCallbackURL]; !ok {
 				selectedFields = append(selectedFields, eventsubscription.FieldCallbackURL)
 				fieldSeen[eventsubscription.FieldCallbackURL] = struct{}{}
+			}
+		case "gatewayConsumerURL":
+			if _, ok := fieldSeen[eventsubscription.FieldGatewayConsumerURL]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldGatewayConsumerURL)
+				fieldSeen[eventsubscription.FieldGatewayConsumerURL] = struct{}{}
 			}
 		case "id":
 		case "__typename":

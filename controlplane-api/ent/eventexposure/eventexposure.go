@@ -40,6 +40,8 @@ const (
 	FieldVisibility = "visibility"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
+	// FieldGatewayProviderURL holds the string denoting the gateway_provider_url field in the database.
+	FieldGatewayProviderURL = "gateway_provider_url"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
 	FieldApprovalConfig = "approval_config"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -85,6 +87,7 @@ var Columns = []string{
 	FieldEventType,
 	FieldVisibility,
 	FieldActive,
+	FieldGatewayProviderURL,
 	FieldApprovalConfig,
 }
 
@@ -237,6 +240,11 @@ func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
 // ByActive orders the results by the active field.
 func ByActive(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActive, opts...).ToFunc()
+}
+
+// ByGatewayProviderURL orders the results by the gateway_provider_url field.
+func ByGatewayProviderURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGatewayProviderURL, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

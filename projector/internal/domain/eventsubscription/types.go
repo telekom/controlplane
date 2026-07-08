@@ -24,13 +24,14 @@ type EventSubscriptionKey struct {
 
 // EventSubscriptionData carries the transformed data for an EventSubscription entity.
 type EventSubscriptionData struct {
-	Meta            shared.Metadata
-	StatusPhase     string // "READY", "PENDING", "ERROR", "UNKNOWN"
-	StatusMessage   string
-	EventType       string
-	DeliveryType    string  // "CALLBACK", "SERVER_SENT_EVENT"
-	CallbackURL     *string // set when delivery type is Callback
-	OwnerAppName    string  // resolved to owner Application FK (required)
-	OwnerTeamName   string  // used to resolve owner Application FK
-	TargetEventType string  // used to resolve optional target EventExposure FK
+	Meta                  shared.Metadata
+	StatusPhase           string // "READY", "PENDING", "ERROR", "UNKNOWN"
+	StatusMessage         string
+	EventType             string
+	DeliveryType          string  // "CALLBACK", "SERVER_SENT_EVENT"
+	GatewayConsumerSseUrl string  // sse url
+	CallbackURL           *string // set when delivery type is Callback
+	OwnerAppName          string  // resolved to owner Application FK (required)
+	OwnerTeamName         string  // used to resolve owner Application FK
+	TargetEventType       string  // used to resolve optional target EventExposure FK
 }

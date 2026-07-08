@@ -44,6 +44,9 @@ func (EventSubscription) Fields() []ent.Field {
 		field.Text("callback_url").
 			Optional().
 			Nillable(),
+		field.Text("gateway_consumer_url").
+			Optional().
+			Nillable(),
 	}
 }
 

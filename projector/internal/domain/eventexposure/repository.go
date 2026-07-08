@@ -88,6 +88,7 @@ func (r *Repository) Upsert(ctx context.Context, data *EventExposureData) error 
 		SetOwnerID(appID).
 		SetApprovalConfig(data.ApprovalConfig).
 		SetNillableEventTypeDefID(eventTypeDefID).
+		SetGatewayProviderURL(data.GatewayProviderUrl).
 		OnConflictColumns(eventexposure.FieldEventType, eventexposure.OwnerColumn).
 		UpdateNewValues().
 		ID(ctx)

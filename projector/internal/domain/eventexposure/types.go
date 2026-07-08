@@ -23,13 +23,14 @@ type EventExposureKey struct {
 
 // EventExposureData carries the transformed data for an EventExposure entity.
 type EventExposureData struct {
-	Meta           shared.Metadata
-	StatusPhase    string // "READY", "PENDING", "ERROR", "UNKNOWN"
-	StatusMessage  string
-	EventType      string
-	Visibility     string // "WORLD", "ZONE", "ENTERPRISE" (upper-cased)
-	Active         bool
-	ApprovalConfig model.ApprovalConfig
-	AppName        string // resolved to owner Application FK
-	TeamName       string // used to resolve owner Application FK
+	Meta               shared.Metadata
+	StatusPhase        string // "READY", "PENDING", "ERROR", "UNKNOWN"
+	StatusMessage      string
+	EventType          string
+	Visibility         string // "WORLD", "ZONE", "ENTERPRISE" (upper-cased)
+	Active             bool
+	ApprovalConfig     model.ApprovalConfig
+	GatewayProviderUrl string
+	AppName            string // resolved to owner Application FK
+	TeamName           string // used to resolve owner Application FK
 }

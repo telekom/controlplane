@@ -354,22 +354,22 @@ type ComplexityRoot struct {
 	}
 
 	EventSubscription struct {
-		Approval              func(childComplexity int) int
-		ApprovalRequests      func(childComplexity int) int
-		CallbackURL           func(childComplexity int) int
-		CreatedAt             func(childComplexity int) int
-		DeliveryType          func(childComplexity int) int
-		Environment           func(childComplexity int) int
-		EventType             func(childComplexity int) int
-		GatewayConsumerSseURL func(childComplexity int) int
-		ID                    func(childComplexity int) int
-		LastModifiedAt        func(childComplexity int) int
-		Name                  func(childComplexity int) int
-		Namespace             func(childComplexity int) int
-		Owner                 func(childComplexity int) int
-		StatusMessage         func(childComplexity int) int
-		StatusPhase           func(childComplexity int) int
-		Target                func(childComplexity int) int
+		Approval           func(childComplexity int) int
+		ApprovalRequests   func(childComplexity int) int
+		CallbackURL        func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		DeliveryType       func(childComplexity int) int
+		Environment        func(childComplexity int) int
+		EventType          func(childComplexity int) int
+		GatewayConsumerURL func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		LastModifiedAt     func(childComplexity int) int
+		Name               func(childComplexity int) int
+		Namespace          func(childComplexity int) int
+		Owner              func(childComplexity int) int
+		StatusMessage      func(childComplexity int) int
+		StatusPhase        func(childComplexity int) int
+		Target             func(childComplexity int) int
 	}
 
 	EventSubscriptionConnection struct {
@@ -2057,12 +2057,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventSubscription.EventType(childComplexity), true
 
-	case "EventSubscription.gatewayConsumerSseURL":
-		if e.ComplexityRoot.EventSubscription.GatewayConsumerSseURL == nil {
+	case "EventSubscription.gatewayConsumerURL":
+		if e.ComplexityRoot.EventSubscription.GatewayConsumerURL == nil {
 			break
 		}
 
-		return e.ComplexityRoot.EventSubscription.GatewayConsumerSseURL(childComplexity), true
+		return e.ComplexityRoot.EventSubscription.GatewayConsumerURL(childComplexity), true
 
 	case "EventSubscription.id":
 		if e.ComplexityRoot.EventSubscription.ID == nil {
@@ -3557,6 +3557,7 @@ type ApiSubscription implements Node {
   name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
+  gatewayURL: String
   approvedScopes: [String!]!
   owner: Application!
   failoverZones: [Zone!]
@@ -3772,6 +3773,24 @@ input ApiSubscriptionWhereInput {
   m2mAuthMethodNEQ: ApiSubscriptionM2mAuthMethod
   m2mAuthMethodIn: [ApiSubscriptionM2mAuthMethod!]
   m2mAuthMethodNotIn: [ApiSubscriptionM2mAuthMethod!]
+  """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
   """
   owner edge predicates
   """
@@ -4971,6 +4990,7 @@ type EventExposure implements Node {
   eventType: String!
   visibility: EventExposureVisibility!
   active: Boolean
+  gatewayProviderURL: String
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -5175,6 +5195,24 @@ input EventExposureWhereInput {
   activeIsNil: Boolean
   activeNotNil: Boolean
   """
+  gateway_provider_url field predicates
+  """
+  gatewayProviderURL: String
+  gatewayProviderURLNEQ: String
+  gatewayProviderURLIn: [String!]
+  gatewayProviderURLNotIn: [String!]
+  gatewayProviderURLGT: String
+  gatewayProviderURLGTE: String
+  gatewayProviderURLLT: String
+  gatewayProviderURLLTE: String
+  gatewayProviderURLContains: String
+  gatewayProviderURLHasPrefix: String
+  gatewayProviderURLHasSuffix: String
+  gatewayProviderURLIsNil: Boolean
+  gatewayProviderURLNotNil: Boolean
+  gatewayProviderURLEqualFold: String
+  gatewayProviderURLContainsFold: String
+  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -5202,6 +5240,7 @@ type EventSubscription implements Node {
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   callbackURL: String
+  gatewayConsumerURL: String
   owner: Application!
   approval: Approval
   approvalRequests: [ApprovalRequest!]
@@ -5431,6 +5470,24 @@ input EventSubscriptionWhereInput {
   callbackURLNotNil: Boolean
   callbackURLEqualFold: String
   callbackURLContainsFold: String
+  """
+  gateway_consumer_url field predicates
+  """
+  gatewayConsumerURL: String
+  gatewayConsumerURLNEQ: String
+  gatewayConsumerURLIn: [String!]
+  gatewayConsumerURLNotIn: [String!]
+  gatewayConsumerURLGT: String
+  gatewayConsumerURLGTE: String
+  gatewayConsumerURLLT: String
+  gatewayConsumerURLLTE: String
+  gatewayConsumerURLContains: String
+  gatewayConsumerURLHasPrefix: String
+  gatewayConsumerURLHasSuffix: String
+  gatewayConsumerURLIsNil: Boolean
+  gatewayConsumerURLNotNil: Boolean
+  gatewayConsumerURLEqualFold: String
+  gatewayConsumerURLContainsFold: String
   """
   owner edge predicates
   """
@@ -7072,8 +7129,6 @@ extend type Zone {
 extend type ApiSubscription {
   "Target exposure (reduced view — cross-tenant boundary)"
   target: ApiExposureInfo! @goField(forceResolver: true)
-  "Full gateway URL for this subscription (Zone.gatewayURL + basePath). Returns null if zone has no gateway URL."
-  gatewayURL: String @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
@@ -7084,15 +7139,11 @@ extend type ApiExposure {
 extend type EventSubscription {
   "Target exposure (reduced view — cross-tenant boundary)"
   target: EventExposureInfo! @goField(forceResolver: true)
-  "SSE URL for this subscription. Returns null if zone has no gateway URL or delivery type is not SSE."
-  gatewayConsumerSseURL: String @goField(forceResolver: true)
 }
 
 extend type EventExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
-  "Gateway provider URL for this event exposure. Returns null if zone has no gateway URL."
-  gatewayProviderURL: String @goField(forceResolver: true)
 }
 
 "A subscription related to an approval — either an API or event subscription."
@@ -7333,6 +7384,8 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 	case "m2mAuthMethod":
 		return ec.fieldContext_ApiSubscription_m2mAuthMethod(ctx, field)
+	case "gatewayURL":
+		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
 	case "approvedScopes":
 		return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
 	case "owner":
@@ -7345,8 +7398,6 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_approvalRequests(ctx, field)
 	case "target":
 		return ec.fieldContext_ApiSubscription_target(ctx, field)
-	case "gatewayURL":
-		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscription", field.Name)
 }
@@ -7693,6 +7744,8 @@ func (ec *executionContext) childFields_EventExposure(ctx context.Context, field
 		return ec.fieldContext_EventExposure_visibility(ctx, field)
 	case "active":
 		return ec.fieldContext_EventExposure_active(ctx, field)
+	case "gatewayProviderURL":
+		return ec.fieldContext_EventExposure_gatewayProviderURL(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_EventExposure_approvalConfig(ctx, field)
 	case "owner":
@@ -7701,8 +7754,6 @@ func (ec *executionContext) childFields_EventExposure(ctx context.Context, field
 		return ec.fieldContext_EventExposure_eventTypeDef(ctx, field)
 	case "subscriptions":
 		return ec.fieldContext_EventExposure_subscriptions(ctx, field)
-	case "gatewayProviderURL":
-		return ec.fieldContext_EventExposure_gatewayProviderURL(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventExposure", field.Name)
 }
@@ -7773,6 +7824,8 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_deliveryType(ctx, field)
 	case "callbackURL":
 		return ec.fieldContext_EventSubscription_callbackURL(ctx, field)
+	case "gatewayConsumerURL":
+		return ec.fieldContext_EventSubscription_gatewayConsumerURL(ctx, field)
 	case "owner":
 		return ec.fieldContext_EventSubscription_owner(ctx, field)
 	case "approval":
@@ -7781,8 +7834,6 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_approvalRequests(ctx, field)
 	case "target":
 		return ec.fieldContext_EventSubscription_target(ctx, field)
-	case "gatewayConsumerSseURL":
-		return ec.fieldContext_EventSubscription_gatewayConsumerSseURL(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventSubscription", field.Name)
 }

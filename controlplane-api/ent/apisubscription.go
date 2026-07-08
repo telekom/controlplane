@@ -42,6 +42,8 @@ type ApiSubscription struct {
 	BasePath string `json:"base_path,omitempty"`
 	// M2mAuthMethod holds the value of the "m2m_auth_method" field.
 	M2mAuthMethod apisubscription.M2mAuthMethod `json:"m2m_auth_method,omitempty"`
+	// GatewayURL holds the value of the "gateway_url" field.
+	GatewayURL *string `json:"gateway_url,omitempty"`
 	// ApprovedScopes holds the value of the "approved_scopes" field.
 	ApprovedScopes []string `json:"approved_scopes,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -134,7 +136,7 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case apisubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldName, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod:
+		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldName, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod, apisubscription.FieldGatewayURL:
 			values[i] = new(sql.NullString)
 		case apisubscription.FieldCreatedAt, apisubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -219,6 +221,13 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field m2m_auth_method", values[i])
 			} else if value.Valid {
 				_m.M2mAuthMethod = apisubscription.M2mAuthMethod(value.String)
+			}
+		case apisubscription.FieldGatewayURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field gateway_url", values[i])
+			} else if value.Valid {
+				_m.GatewayURL = new(string)
+				*_m.GatewayURL = value.String
 			}
 		case apisubscription.FieldApprovedScopes:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -335,6 +344,11 @@ func (_m *ApiSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("m2m_auth_method=")
 	builder.WriteString(fmt.Sprintf("%v", _m.M2mAuthMethod))
+	builder.WriteString(", ")
+	if v := _m.GatewayURL; v != nil {
+		builder.WriteString("gateway_url=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("approved_scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ApprovedScopes))

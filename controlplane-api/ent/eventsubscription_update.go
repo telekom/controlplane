@@ -177,6 +177,26 @@ func (_u *EventSubscriptionUpdate) ClearCallbackURL() *EventSubscriptionUpdate {
 	return _u
 }
 
+// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
+func (_u *EventSubscriptionUpdate) SetGatewayConsumerURL(v string) *EventSubscriptionUpdate {
+	_u.mutation.SetGatewayConsumerURL(v)
+	return _u
+}
+
+// SetNillableGatewayConsumerURL sets the "gateway_consumer_url" field if the given value is not nil.
+func (_u *EventSubscriptionUpdate) SetNillableGatewayConsumerURL(v *string) *EventSubscriptionUpdate {
+	if v != nil {
+		_u.SetGatewayConsumerURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
+func (_u *EventSubscriptionUpdate) ClearGatewayConsumerURL() *EventSubscriptionUpdate {
+	_u.mutation.ClearGatewayConsumerURL()
+	return _u
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_u *EventSubscriptionUpdate) SetOwnerID(id int) *EventSubscriptionUpdate {
 	_u.mutation.SetOwnerID(id)
@@ -410,6 +430,12 @@ func (_u *EventSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if _u.mutation.CallbackURLCleared() {
 		_spec.ClearField(eventsubscription.FieldCallbackURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.GatewayConsumerURL(); ok {
+		_spec.SetField(eventsubscription.FieldGatewayConsumerURL, field.TypeString, value)
+	}
+	if _u.mutation.GatewayConsumerURLCleared() {
+		_spec.ClearField(eventsubscription.FieldGatewayConsumerURL, field.TypeString)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -705,6 +731,26 @@ func (_u *EventSubscriptionUpdateOne) ClearCallbackURL() *EventSubscriptionUpdat
 	return _u
 }
 
+// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
+func (_u *EventSubscriptionUpdateOne) SetGatewayConsumerURL(v string) *EventSubscriptionUpdateOne {
+	_u.mutation.SetGatewayConsumerURL(v)
+	return _u
+}
+
+// SetNillableGatewayConsumerURL sets the "gateway_consumer_url" field if the given value is not nil.
+func (_u *EventSubscriptionUpdateOne) SetNillableGatewayConsumerURL(v *string) *EventSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetGatewayConsumerURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
+func (_u *EventSubscriptionUpdateOne) ClearGatewayConsumerURL() *EventSubscriptionUpdateOne {
+	_u.mutation.ClearGatewayConsumerURL()
+	return _u
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_u *EventSubscriptionUpdateOne) SetOwnerID(id int) *EventSubscriptionUpdateOne {
 	_u.mutation.SetOwnerID(id)
@@ -968,6 +1014,12 @@ func (_u *EventSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Event
 	}
 	if _u.mutation.CallbackURLCleared() {
 		_spec.ClearField(eventsubscription.FieldCallbackURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.GatewayConsumerURL(); ok {
+		_spec.SetField(eventsubscription.FieldGatewayConsumerURL, field.TypeString, value)
+	}
+	if _u.mutation.GatewayConsumerURLCleared() {
+		_spec.ClearField(eventsubscription.FieldGatewayConsumerURL, field.TypeString)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

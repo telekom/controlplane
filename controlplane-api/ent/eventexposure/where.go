@@ -93,6 +93,11 @@ func Active(v bool) predicate.EventExposure {
 	return predicate.EventExposure(sql.FieldEQ(FieldActive, v))
 }
 
+// GatewayProviderURL applies equality check predicate on the "gateway_provider_url" field. It's identical to GatewayProviderURLEQ.
+func GatewayProviderURL(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldEQ(FieldGatewayProviderURL, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.EventExposure {
 	return predicate.EventExposure(sql.FieldEQ(FieldCreatedAt, v))
@@ -521,6 +526,81 @@ func ActiveIsNil() predicate.EventExposure {
 // ActiveNotNil applies the NotNil predicate on the "active" field.
 func ActiveNotNil() predicate.EventExposure {
 	return predicate.EventExposure(sql.FieldNotNull(FieldActive))
+}
+
+// GatewayProviderURLEQ applies the EQ predicate on the "gateway_provider_url" field.
+func GatewayProviderURLEQ(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldEQ(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLNEQ applies the NEQ predicate on the "gateway_provider_url" field.
+func GatewayProviderURLNEQ(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldNEQ(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLIn applies the In predicate on the "gateway_provider_url" field.
+func GatewayProviderURLIn(vs ...string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldIn(FieldGatewayProviderURL, vs...))
+}
+
+// GatewayProviderURLNotIn applies the NotIn predicate on the "gateway_provider_url" field.
+func GatewayProviderURLNotIn(vs ...string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldNotIn(FieldGatewayProviderURL, vs...))
+}
+
+// GatewayProviderURLGT applies the GT predicate on the "gateway_provider_url" field.
+func GatewayProviderURLGT(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldGT(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLGTE applies the GTE predicate on the "gateway_provider_url" field.
+func GatewayProviderURLGTE(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldGTE(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLLT applies the LT predicate on the "gateway_provider_url" field.
+func GatewayProviderURLLT(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldLT(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLLTE applies the LTE predicate on the "gateway_provider_url" field.
+func GatewayProviderURLLTE(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldLTE(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLContains applies the Contains predicate on the "gateway_provider_url" field.
+func GatewayProviderURLContains(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldContains(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLHasPrefix applies the HasPrefix predicate on the "gateway_provider_url" field.
+func GatewayProviderURLHasPrefix(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldHasPrefix(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLHasSuffix applies the HasSuffix predicate on the "gateway_provider_url" field.
+func GatewayProviderURLHasSuffix(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldHasSuffix(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLIsNil applies the IsNil predicate on the "gateway_provider_url" field.
+func GatewayProviderURLIsNil() predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldIsNull(FieldGatewayProviderURL))
+}
+
+// GatewayProviderURLNotNil applies the NotNil predicate on the "gateway_provider_url" field.
+func GatewayProviderURLNotNil() predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldNotNull(FieldGatewayProviderURL))
+}
+
+// GatewayProviderURLEqualFold applies the EqualFold predicate on the "gateway_provider_url" field.
+func GatewayProviderURLEqualFold(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldEqualFold(FieldGatewayProviderURL, v))
+}
+
+// GatewayProviderURLContainsFold applies the ContainsFold predicate on the "gateway_provider_url" field.
+func GatewayProviderURLContainsFold(v string) predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldContainsFold(FieldGatewayProviderURL, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

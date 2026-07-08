@@ -1400,6 +1400,23 @@ type ApiSubscriptionWhereInput struct {
 	M2mAuthMethodIn    []apisubscription.M2mAuthMethod `json:"m2mAuthMethodIn,omitempty"`
 	M2mAuthMethodNotIn []apisubscription.M2mAuthMethod `json:"m2mAuthMethodNotIn,omitempty"`
 
+	// "gateway_url" field predicates.
+	GatewayURL             *string  `json:"gatewayURL,omitempty"`
+	GatewayURLNEQ          *string  `json:"gatewayURLNEQ,omitempty"`
+	GatewayURLIn           []string `json:"gatewayURLIn,omitempty"`
+	GatewayURLNotIn        []string `json:"gatewayURLNotIn,omitempty"`
+	GatewayURLGT           *string  `json:"gatewayURLGT,omitempty"`
+	GatewayURLGTE          *string  `json:"gatewayURLGTE,omitempty"`
+	GatewayURLLT           *string  `json:"gatewayURLLT,omitempty"`
+	GatewayURLLTE          *string  `json:"gatewayURLLTE,omitempty"`
+	GatewayURLContains     *string  `json:"gatewayURLContains,omitempty"`
+	GatewayURLHasPrefix    *string  `json:"gatewayURLHasPrefix,omitempty"`
+	GatewayURLHasSuffix    *string  `json:"gatewayURLHasSuffix,omitempty"`
+	GatewayURLIsNil        bool     `json:"gatewayURLIsNil,omitempty"`
+	GatewayURLNotNil       bool     `json:"gatewayURLNotNil,omitempty"`
+	GatewayURLEqualFold    *string  `json:"gatewayURLEqualFold,omitempty"`
+	GatewayURLContainsFold *string  `json:"gatewayURLContainsFold,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -1800,6 +1817,51 @@ func (i *ApiSubscriptionWhereInput) P() (predicate.ApiSubscription, error) {
 	}
 	if len(i.M2mAuthMethodNotIn) > 0 {
 		predicates = append(predicates, apisubscription.M2mAuthMethodNotIn(i.M2mAuthMethodNotIn...))
+	}
+	if i.GatewayURL != nil {
+		predicates = append(predicates, apisubscription.GatewayURLEQ(*i.GatewayURL))
+	}
+	if i.GatewayURLNEQ != nil {
+		predicates = append(predicates, apisubscription.GatewayURLNEQ(*i.GatewayURLNEQ))
+	}
+	if len(i.GatewayURLIn) > 0 {
+		predicates = append(predicates, apisubscription.GatewayURLIn(i.GatewayURLIn...))
+	}
+	if len(i.GatewayURLNotIn) > 0 {
+		predicates = append(predicates, apisubscription.GatewayURLNotIn(i.GatewayURLNotIn...))
+	}
+	if i.GatewayURLGT != nil {
+		predicates = append(predicates, apisubscription.GatewayURLGT(*i.GatewayURLGT))
+	}
+	if i.GatewayURLGTE != nil {
+		predicates = append(predicates, apisubscription.GatewayURLGTE(*i.GatewayURLGTE))
+	}
+	if i.GatewayURLLT != nil {
+		predicates = append(predicates, apisubscription.GatewayURLLT(*i.GatewayURLLT))
+	}
+	if i.GatewayURLLTE != nil {
+		predicates = append(predicates, apisubscription.GatewayURLLTE(*i.GatewayURLLTE))
+	}
+	if i.GatewayURLContains != nil {
+		predicates = append(predicates, apisubscription.GatewayURLContains(*i.GatewayURLContains))
+	}
+	if i.GatewayURLHasPrefix != nil {
+		predicates = append(predicates, apisubscription.GatewayURLHasPrefix(*i.GatewayURLHasPrefix))
+	}
+	if i.GatewayURLHasSuffix != nil {
+		predicates = append(predicates, apisubscription.GatewayURLHasSuffix(*i.GatewayURLHasSuffix))
+	}
+	if i.GatewayURLIsNil {
+		predicates = append(predicates, apisubscription.GatewayURLIsNil())
+	}
+	if i.GatewayURLNotNil {
+		predicates = append(predicates, apisubscription.GatewayURLNotNil())
+	}
+	if i.GatewayURLEqualFold != nil {
+		predicates = append(predicates, apisubscription.GatewayURLEqualFold(*i.GatewayURLEqualFold))
+	}
+	if i.GatewayURLContainsFold != nil {
+		predicates = append(predicates, apisubscription.GatewayURLContainsFold(*i.GatewayURLContainsFold))
 	}
 
 	if i.HasOwner != nil {
@@ -4149,6 +4211,23 @@ type EventExposureWhereInput struct {
 	ActiveIsNil  bool  `json:"activeIsNil,omitempty"`
 	ActiveNotNil bool  `json:"activeNotNil,omitempty"`
 
+	// "gateway_provider_url" field predicates.
+	GatewayProviderURL             *string  `json:"gatewayProviderURL,omitempty"`
+	GatewayProviderURLNEQ          *string  `json:"gatewayProviderURLNEQ,omitempty"`
+	GatewayProviderURLIn           []string `json:"gatewayProviderURLIn,omitempty"`
+	GatewayProviderURLNotIn        []string `json:"gatewayProviderURLNotIn,omitempty"`
+	GatewayProviderURLGT           *string  `json:"gatewayProviderURLGT,omitempty"`
+	GatewayProviderURLGTE          *string  `json:"gatewayProviderURLGTE,omitempty"`
+	GatewayProviderURLLT           *string  `json:"gatewayProviderURLLT,omitempty"`
+	GatewayProviderURLLTE          *string  `json:"gatewayProviderURLLTE,omitempty"`
+	GatewayProviderURLContains     *string  `json:"gatewayProviderURLContains,omitempty"`
+	GatewayProviderURLHasPrefix    *string  `json:"gatewayProviderURLHasPrefix,omitempty"`
+	GatewayProviderURLHasSuffix    *string  `json:"gatewayProviderURLHasSuffix,omitempty"`
+	GatewayProviderURLIsNil        bool     `json:"gatewayProviderURLIsNil,omitempty"`
+	GatewayProviderURLNotNil       bool     `json:"gatewayProviderURLNotNil,omitempty"`
+	GatewayProviderURLEqualFold    *string  `json:"gatewayProviderURLEqualFold,omitempty"`
+	GatewayProviderURLContainsFold *string  `json:"gatewayProviderURLContainsFold,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -4515,6 +4594,51 @@ func (i *EventExposureWhereInput) P() (predicate.EventExposure, error) {
 	if i.ActiveNotNil {
 		predicates = append(predicates, eventexposure.ActiveNotNil())
 	}
+	if i.GatewayProviderURL != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLEQ(*i.GatewayProviderURL))
+	}
+	if i.GatewayProviderURLNEQ != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLNEQ(*i.GatewayProviderURLNEQ))
+	}
+	if len(i.GatewayProviderURLIn) > 0 {
+		predicates = append(predicates, eventexposure.GatewayProviderURLIn(i.GatewayProviderURLIn...))
+	}
+	if len(i.GatewayProviderURLNotIn) > 0 {
+		predicates = append(predicates, eventexposure.GatewayProviderURLNotIn(i.GatewayProviderURLNotIn...))
+	}
+	if i.GatewayProviderURLGT != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLGT(*i.GatewayProviderURLGT))
+	}
+	if i.GatewayProviderURLGTE != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLGTE(*i.GatewayProviderURLGTE))
+	}
+	if i.GatewayProviderURLLT != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLLT(*i.GatewayProviderURLLT))
+	}
+	if i.GatewayProviderURLLTE != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLLTE(*i.GatewayProviderURLLTE))
+	}
+	if i.GatewayProviderURLContains != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLContains(*i.GatewayProviderURLContains))
+	}
+	if i.GatewayProviderURLHasPrefix != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLHasPrefix(*i.GatewayProviderURLHasPrefix))
+	}
+	if i.GatewayProviderURLHasSuffix != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLHasSuffix(*i.GatewayProviderURLHasSuffix))
+	}
+	if i.GatewayProviderURLIsNil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLIsNil())
+	}
+	if i.GatewayProviderURLNotNil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLNotNil())
+	}
+	if i.GatewayProviderURLEqualFold != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLEqualFold(*i.GatewayProviderURLEqualFold))
+	}
+	if i.GatewayProviderURLContainsFold != nil {
+		predicates = append(predicates, eventexposure.GatewayProviderURLContainsFold(*i.GatewayProviderURLContainsFold))
+	}
 
 	if i.HasOwner != nil {
 		p := eventexposure.HasOwner()
@@ -4726,6 +4850,23 @@ type EventSubscriptionWhereInput struct {
 	CallbackURLNotNil       bool     `json:"callbackURLNotNil,omitempty"`
 	CallbackURLEqualFold    *string  `json:"callbackURLEqualFold,omitempty"`
 	CallbackURLContainsFold *string  `json:"callbackURLContainsFold,omitempty"`
+
+	// "gateway_consumer_url" field predicates.
+	GatewayConsumerURL             *string  `json:"gatewayConsumerURL,omitempty"`
+	GatewayConsumerURLNEQ          *string  `json:"gatewayConsumerURLNEQ,omitempty"`
+	GatewayConsumerURLIn           []string `json:"gatewayConsumerURLIn,omitempty"`
+	GatewayConsumerURLNotIn        []string `json:"gatewayConsumerURLNotIn,omitempty"`
+	GatewayConsumerURLGT           *string  `json:"gatewayConsumerURLGT,omitempty"`
+	GatewayConsumerURLGTE          *string  `json:"gatewayConsumerURLGTE,omitempty"`
+	GatewayConsumerURLLT           *string  `json:"gatewayConsumerURLLT,omitempty"`
+	GatewayConsumerURLLTE          *string  `json:"gatewayConsumerURLLTE,omitempty"`
+	GatewayConsumerURLContains     *string  `json:"gatewayConsumerURLContains,omitempty"`
+	GatewayConsumerURLHasPrefix    *string  `json:"gatewayConsumerURLHasPrefix,omitempty"`
+	GatewayConsumerURLHasSuffix    *string  `json:"gatewayConsumerURLHasSuffix,omitempty"`
+	GatewayConsumerURLIsNil        bool     `json:"gatewayConsumerURLIsNil,omitempty"`
+	GatewayConsumerURLNotNil       bool     `json:"gatewayConsumerURLNotNil,omitempty"`
+	GatewayConsumerURLEqualFold    *string  `json:"gatewayConsumerURLEqualFold,omitempty"`
+	GatewayConsumerURLContainsFold *string  `json:"gatewayConsumerURLContainsFold,omitempty"`
 
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
@@ -5168,6 +5309,51 @@ func (i *EventSubscriptionWhereInput) P() (predicate.EventSubscription, error) {
 	}
 	if i.CallbackURLContainsFold != nil {
 		predicates = append(predicates, eventsubscription.CallbackURLContainsFold(*i.CallbackURLContainsFold))
+	}
+	if i.GatewayConsumerURL != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLEQ(*i.GatewayConsumerURL))
+	}
+	if i.GatewayConsumerURLNEQ != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLNEQ(*i.GatewayConsumerURLNEQ))
+	}
+	if len(i.GatewayConsumerURLIn) > 0 {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLIn(i.GatewayConsumerURLIn...))
+	}
+	if len(i.GatewayConsumerURLNotIn) > 0 {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLNotIn(i.GatewayConsumerURLNotIn...))
+	}
+	if i.GatewayConsumerURLGT != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLGT(*i.GatewayConsumerURLGT))
+	}
+	if i.GatewayConsumerURLGTE != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLGTE(*i.GatewayConsumerURLGTE))
+	}
+	if i.GatewayConsumerURLLT != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLLT(*i.GatewayConsumerURLLT))
+	}
+	if i.GatewayConsumerURLLTE != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLLTE(*i.GatewayConsumerURLLTE))
+	}
+	if i.GatewayConsumerURLContains != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLContains(*i.GatewayConsumerURLContains))
+	}
+	if i.GatewayConsumerURLHasPrefix != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLHasPrefix(*i.GatewayConsumerURLHasPrefix))
+	}
+	if i.GatewayConsumerURLHasSuffix != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLHasSuffix(*i.GatewayConsumerURLHasSuffix))
+	}
+	if i.GatewayConsumerURLIsNil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLIsNil())
+	}
+	if i.GatewayConsumerURLNotNil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLNotNil())
+	}
+	if i.GatewayConsumerURLEqualFold != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLEqualFold(*i.GatewayConsumerURLEqualFold))
+	}
+	if i.GatewayConsumerURLContainsFold != nil {
+		predicates = append(predicates, eventsubscription.GatewayConsumerURLContainsFold(*i.GatewayConsumerURLContainsFold))
 	}
 
 	if i.HasOwner != nil {

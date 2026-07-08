@@ -46,12 +46,13 @@ func (t *Translator) Translate(_ context.Context, obj *eventv1.EventExposure) (*
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
 	return &EventExposureData{
-		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		StatusPhase:   phase,
-		StatusMessage: message,
-		EventType:     obj.Spec.EventType,
-		Visibility:    strings.ToUpper(string(obj.Spec.Visibility)),
-		Active:        obj.Status.Active,
+		Meta:               shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		StatusPhase:        phase,
+		StatusMessage:      message,
+		EventType:          obj.Spec.EventType,
+		GatewayProviderUrl: obj.Status.ProviderURL,
+		Visibility:         strings.ToUpper(string(obj.Spec.Visibility)),
+		Active:             obj.Status.Active,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     mapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
 			TrustedTeams: obj.Spec.Approval.TrustedTeams,

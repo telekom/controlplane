@@ -139,6 +139,20 @@ func (_c *EventExposureCreate) SetNillableActive(v *bool) *EventExposureCreate {
 	return _c
 }
 
+// SetGatewayProviderURL sets the "gateway_provider_url" field.
+func (_c *EventExposureCreate) SetGatewayProviderURL(v string) *EventExposureCreate {
+	_c.mutation.SetGatewayProviderURL(v)
+	return _c
+}
+
+// SetNillableGatewayProviderURL sets the "gateway_provider_url" field if the given value is not nil.
+func (_c *EventExposureCreate) SetNillableGatewayProviderURL(v *string) *EventExposureCreate {
+	if v != nil {
+		_c.SetGatewayProviderURL(*v)
+	}
+	return _c
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_c *EventExposureCreate) SetApprovalConfig(v model.ApprovalConfig) *EventExposureCreate {
 	_c.mutation.SetApprovalConfig(v)
@@ -370,6 +384,10 @@ func (_c *EventExposureCreate) createSpec() (*EventExposure, *sqlgraph.CreateSpe
 		_spec.SetField(eventexposure.FieldActive, field.TypeBool, value)
 		_node.Active = &value
 	}
+	if value, ok := _c.mutation.GatewayProviderURL(); ok {
+		_spec.SetField(eventexposure.FieldGatewayProviderURL, field.TypeString, value)
+		_node.GatewayProviderURL = &value
+	}
 	if value, ok := _c.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)
 		_node.ApprovalConfig = value
@@ -596,6 +614,24 @@ func (u *EventExposureUpsert) ClearActive() *EventExposureUpsert {
 	return u
 }
 
+// SetGatewayProviderURL sets the "gateway_provider_url" field.
+func (u *EventExposureUpsert) SetGatewayProviderURL(v string) *EventExposureUpsert {
+	u.Set(eventexposure.FieldGatewayProviderURL, v)
+	return u
+}
+
+// UpdateGatewayProviderURL sets the "gateway_provider_url" field to the value that was provided on create.
+func (u *EventExposureUpsert) UpdateGatewayProviderURL() *EventExposureUpsert {
+	u.SetExcluded(eventexposure.FieldGatewayProviderURL)
+	return u
+}
+
+// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
+func (u *EventExposureUpsert) ClearGatewayProviderURL() *EventExposureUpsert {
+	u.SetNull(eventexposure.FieldGatewayProviderURL)
+	return u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (u *EventExposureUpsert) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpsert {
 	u.Set(eventexposure.FieldApprovalConfig, v)
@@ -790,6 +826,27 @@ func (u *EventExposureUpsertOne) UpdateActive() *EventExposureUpsertOne {
 func (u *EventExposureUpsertOne) ClearActive() *EventExposureUpsertOne {
 	return u.Update(func(s *EventExposureUpsert) {
 		s.ClearActive()
+	})
+}
+
+// SetGatewayProviderURL sets the "gateway_provider_url" field.
+func (u *EventExposureUpsertOne) SetGatewayProviderURL(v string) *EventExposureUpsertOne {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.SetGatewayProviderURL(v)
+	})
+}
+
+// UpdateGatewayProviderURL sets the "gateway_provider_url" field to the value that was provided on create.
+func (u *EventExposureUpsertOne) UpdateGatewayProviderURL() *EventExposureUpsertOne {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.UpdateGatewayProviderURL()
+	})
+}
+
+// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
+func (u *EventExposureUpsertOne) ClearGatewayProviderURL() *EventExposureUpsertOne {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.ClearGatewayProviderURL()
 	})
 }
 
@@ -1155,6 +1212,27 @@ func (u *EventExposureUpsertBulk) UpdateActive() *EventExposureUpsertBulk {
 func (u *EventExposureUpsertBulk) ClearActive() *EventExposureUpsertBulk {
 	return u.Update(func(s *EventExposureUpsert) {
 		s.ClearActive()
+	})
+}
+
+// SetGatewayProviderURL sets the "gateway_provider_url" field.
+func (u *EventExposureUpsertBulk) SetGatewayProviderURL(v string) *EventExposureUpsertBulk {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.SetGatewayProviderURL(v)
+	})
+}
+
+// UpdateGatewayProviderURL sets the "gateway_provider_url" field to the value that was provided on create.
+func (u *EventExposureUpsertBulk) UpdateGatewayProviderURL() *EventExposureUpsertBulk {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.UpdateGatewayProviderURL()
+	})
+}
+
+// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
+func (u *EventExposureUpsertBulk) ClearGatewayProviderURL() *EventExposureUpsertBulk {
+	return u.Update(func(s *EventExposureUpsert) {
+		s.ClearGatewayProviderURL()
 	})
 }
 

@@ -85,40 +85,6 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 	})
 })
 
-var _ = Describe("Gateway resolver (cross-tenant)", func() {
-	var (
-		client *ent.Client
-		r      *resolvers.Resolver
-		s      *testutil.SeedData
-	)
-
-	BeforeEach(func() {
-		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, service.Services{}, nil, "")
-		s = testutil.SeedStandard(client)
-	})
-
-	AfterEach(func() {
-		client.Close()
-	})
-
-	It("should return GatewayUrl for a subscription's gatewayUrl()", func() {
-		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-beta"}})
-		gatewayUrl, err := r.ApiSubscription().GatewayURL(ctx, s.Subscription)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(gatewayUrl).NotTo(BeNil())
-		Expect(*gatewayUrl).To(Equal("https://zone-eu.example.com/alpha"))
-	})
-
-	It("should return GatewayUrl for a eventExposure's GatewayProviderURL()", func() {
-		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-beta"}})
-		gatewayUrl, err := r.EventExposure().GatewayProviderURL(ctx, s.EventExposureAlpha)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(gatewayUrl).NotTo(BeNil())
-		Expect(*gatewayUrl).To(Equal("https://zone-eu.example.com/zone-eu/publish/v1"))
-	})
-})
-
 var _ = Describe("Approval.APISubscription resolver (cross-tenant)", func() {
 	var (
 		client *ent.Client
