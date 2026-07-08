@@ -47,7 +47,6 @@ type EventConfigReconciler struct {
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 
 func (r *EventConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &eventv1.EventConfig{})
@@ -65,7 +64,7 @@ func (r *EventConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&identityv1.Client{}, builder.WithPredicates(LabelPredicate)).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventConfig),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&eventv1.EventConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventConfigToEventConfig),

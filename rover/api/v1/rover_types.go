@@ -5,6 +5,8 @@
 package v1
 
 import (
+	"slices"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,6 +63,34 @@ func (r *Rover) GetConditions() []metav1.Condition {
 
 func (r *Rover) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
+}
+
+// HasFailoverEnabledOnAnySubscription checks if any of the Rover's subscriptions have failover enabled
+func (r *Rover) HasFailoverEnabledOnAnySubscription() bool {
+	return slices.ContainsFunc(r.Spec.Subscriptions, func(sub Subscription) bool {
+		switch sub.Type() {
+		case TypeApi:
+			return sub.Api != nil && sub.Api.Traffic.Failover != nil && sub.Api.Traffic.Failover.Enabled
+		default:
+			return false
+		}
+	})
+}
+
+// EnableFailoverOnAllSubscriptions enables failover on all API subscriptions of the Rover
+func (r *Rover) EnableFailoverOnAllSubscriptions() {
+	for i := range r.Spec.Subscriptions {
+		sub := &r.Spec.Subscriptions[i]
+		switch sub.Type() {
+		case TypeApi:
+			if sub.Api != nil {
+				if sub.Api.Traffic.Failover == nil {
+					sub.Api.Traffic.Failover = &SubscriberFailover{}
+				}
+				sub.Api.Traffic.Failover.Enabled = true
+			}
+		}
+	}
 }
 
 //+kubebuilder:object:root=true

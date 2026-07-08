@@ -10,16 +10,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -44,7 +41,7 @@ func setAlreadyExposedConditions(existing, candidate *apiv1.ApiExposure) {
 
 	msg := sb.String()
 
-	candidate.SetCondition(condition.NewNotReadyCondition("ApiExposureNotActive", msg))
+	candidate.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 	candidate.SetCondition(condition.NewBlockedCondition(msg))
 }
 
@@ -95,7 +92,7 @@ func ApiMustExist(ctx context.Context, apiExp *apiv1.ApiExposure) (*apiv1.Api, e
 				"failed to cleanup owned routes for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 		}
 
-		apiExp.SetCondition(condition.NewNotReadyCondition("NoApi",
+		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("API %q is not registered. Cannot provision ApiExposure", apiExp.Spec.ApiBasePath)),
 		)
 		msg := fmt.Sprintf("API %q is not registered. ApiExposure will be automatically processed, when the API is registered", apiExp.Spec.ApiBasePath)
@@ -114,41 +111,8 @@ func ApiMustExist(ctx context.Context, apiExp *apiv1.ApiExposure) (*apiv1.Api, e
 	msg := fmt.Sprintf("API is registered but the case does not match (got=%q, found=%q). "+
 		"Please resolve the conflict by changing the BasePath of either the Api or the ApiExposure.",
 		apiExp.Spec.ApiBasePath, api.Spec.BasePath)
-	apiExp.SetCondition(condition.NewNotReadyCondition("ApiCaseConflict", msg))
+	apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 	apiExp.SetCondition(condition.NewBlockedCondition(msg))
 
 	return nil, nil
-}
-
-// HasCrossZoneSubscribers checks if there are any ApiSubscriptions for the given basepath
-// where the subscription zone differs from the exposure zone.
-// This indicates that a cross-zone proxy exists, meaning the real route needs to allow
-// the gateway mesh-client in its ACL.
-func HasCrossZoneSubscribers(ctx context.Context, apiExp *apiv1.ApiExposure) (bool, error) {
-	scopedClient := cclient.ClientFromContextOrDie(ctx)
-
-	apiSubscriptions := &apiv1.ApiSubscriptionList{}
-	err := scopedClient.List(ctx, apiSubscriptions,
-		client.MatchingLabels{
-			apiv1.BasePathLabelKey: labelutil.NormalizeLabelValue(apiExp.Spec.ApiBasePath),
-		},
-	)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to list ApiSubscriptions for basepath %q", apiExp.Spec.ApiBasePath)
-	}
-
-	for i := range apiSubscriptions.Items {
-		sub := &apiSubscriptions.Items[i]
-
-		// Skip subscriptions that are being deleted; their finalizer may still
-		// be running, but they should no longer influence the route's ACL.
-		if controller.IsBeingDeleted(sub) {
-			continue
-		}
-		if !sub.Spec.Zone.Equals(&apiExp.Spec.Zone) {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }

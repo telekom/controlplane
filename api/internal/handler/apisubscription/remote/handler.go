@@ -99,7 +99,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	owner.Status.RemoteApiSubscription = types.ObjectRefFromObject(req)
 
 	owner.SetCondition(condition.NewProcessingCondition("RemoteApiSubscriptionPending", "RemoteApiSubscription created or updated"))
-	owner.SetCondition(condition.NewNotReadyCondition("NotReady", "RemoteApiSubscription is provisoned but not ready yet"))
+	owner.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "RemoteApiSubscription is provisoned but not ready yet"))
 
 	if res != controllerutil.OperationResultNone {
 		logger.Info("🔗 RemoteApiSubscription created or updated", "result", res)
@@ -111,12 +111,9 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	if approvalResult == ApprovalResultCleanup {
 		logger.Info("🧹 RemoteApiSubscription not granted. We need to cleanup")
 		owner.SetCondition(condition.NewBlockedCondition("RemoteApiSubscription not granted"))
-		owner.SetCondition(condition.NewNotReadyCondition("RemoteApiSubscriptionNotGranted", "RemoteApiSubscription not granted"))
+		owner.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "RemoteApiSubscription not granted"))
 
-		err = util.CleanupProxyRoute(ctx, owner.Status.Route)
-		if err != nil {
-			return errors.Wrapf(err, "failed to cleanup proxy route")
-		}
+		// Proxy route lifecycle is managed by ApiExposure; no route cleanup here.
 		return nil
 	}
 
@@ -157,9 +154,9 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	if !remoteOrg.Spec.Zone.Equals(subscriptionZone) {
 		logger.Info("RemoteApiSubscription is in a different zone")
 
-		route, createErr := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath, remoteOrg.Spec.Id)
-		if createErr != nil {
-			return errors.Wrapf(createErr, "failed to create proxy route")
+		route, routeErr := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath)
+		if routeErr != nil {
+			return errors.Wrapf(routeErr, "failed to create proxy route")
 		}
 
 		routeRef = types.ObjectRefFromObject(route)
@@ -205,6 +202,6 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 
 	owner.Status.ConsumeRoute = types.ObjectRefFromObject(routeConsumer)
 	owner.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	owner.SetCondition(condition.NewReadyCondition("Provisioned", "ApiSubscription is ready"))
+	owner.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ApiSubscription is ready"))
 	return nil
 }

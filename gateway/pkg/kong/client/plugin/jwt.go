@@ -10,7 +10,11 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 )
 
-var ConsumerMatchClaim = "clientId"
+// ConsumerMatchClaim is the claim used to match the consumer in Kong.
+// The value of this either matches the real consumer (inbound requests)
+// Or the "gateway" consumer (mesh scenario).
+// For outbound requests, the claims is set to "stargate"
+var ConsumerMatchClaim = "azp"
 
 var _ client.CustomPlugin = &JwtPlugin{}
 
@@ -67,8 +71,8 @@ func JwtPluginFromRoute(route *gatewayv1.Route) *JwtPlugin {
 		ConsumerMatch:               true,
 		ConsumerMatchClaim:          &ConsumerMatchClaim,
 	}
-	for _, downstream := range route.Spec.Downstreams {
-		cfg.AllowedIss.Add(downstream.IssuerUrl)
+	for _, issuer := range route.Spec.Security.TrustedIssuers {
+		cfg.AllowedIss.Add(issuer)
 	}
 
 	return &JwtPlugin{

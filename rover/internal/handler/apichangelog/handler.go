@@ -18,7 +18,7 @@ type ApiChangelogHandler struct{}
 
 func (h *ApiChangelogHandler) CreateOrUpdate(ctx context.Context, changelog *roverv1.ApiChangelog) error {
 	changelog.SetCondition(condition.NewDoneProcessingCondition("ApiChangelog created"))
-	changelog.SetCondition(condition.NewReadyCondition("Ready", "ApiChangelog is ready"))
+	changelog.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ApiChangelog is ready"))
 	return nil
 }
 

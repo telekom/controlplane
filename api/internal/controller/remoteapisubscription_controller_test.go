@@ -15,6 +15,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -136,17 +137,19 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 
 		By("Creating the normal Zone")
 		zone = CreateZone(zoneName)
-		CreateRealm(testEnvironment, zone.Name)
 		CreateGatewayClient(zone)
 
-		By("Creating the remote Zone")
+		By("Creating the remote Zone with custom gateway URL")
 		remoteZone = CreateZone(remoteOrgId + "-" + zoneName)
-		remoteRealm := NewRealm(testEnvironment, remoteZone.Name)
-		remoteRealm.Spec.Urls = []string{"https://ger.gateway.es"}
-		err := k8sClient.Create(ctx, remoteRealm)
-		Expect(err).ToNot(HaveOccurred())
-		remoteRealm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
-		err = k8sClient.Status().Update(ctx, remoteRealm)
+		// Update the zone's preset to use the expected gateway URL
+		remoteZone.Spec.Gateway.Presets[0].Urls = []adminapi.UrlConfig{
+			{
+				Hostname: "ger.gateway.es",
+				Scheme:   "https",
+				BasePath: "/",
+			},
+		}
+		err := k8sClient.Update(ctx, remoteZone)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Creating the RemoteOrganization")
@@ -173,7 +176,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), "NoApi")
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonPreconditionNotMet)
 			}, timeout, interval).Should(Succeed())
 
 			By("Progressing the application")
@@ -192,7 +195,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				apiRes := &apiapi.Api{}
 				getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(api), apiRes)
 				g.Expect(getErr).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiRes.GetConditions(), condition.ConditionTypeReady), "ApiActive")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiRes.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 			}, timeout, interval).Should(Succeed())
 
 			By("Creating the APIExposure resource")
@@ -205,14 +208,14 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				apiExp := &apiapi.ApiExposure{}
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExp)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 				g.Expect(apiExp.Status.Active).To(BeTrue())
 				g.Expect(apiExp.GetLabels()[apiapi.BasePathLabelKey]).To(Equal(labelutil.NormalizeLabelValue(apiBasePath)))
 
 				By("Checking the conditions on RemoteApiSubscription")
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), "ApprovalPending")
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(remoteApiSubscription.GetConditions(), condition.ConditionTypeReady), approvalbuilder.ReasonApprovalPending)
 			}, timeout, interval).Should(Succeed())
 
 			// TODO: test if syncClient was called
@@ -254,7 +257,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 				readyCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Reason).To(Equal("ApprovalPending"))
+				g.Expect(readyCondition.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -285,7 +288,6 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 	appName := "my-remote-test-cons-app"
 	remoteOrgId := "pol"
 
-	var zone *adminapi.Zone
 	var remoteOrg *adminapi.RemoteOrganization
 
 	var remoteApiSubscription *apiapi.RemoteApiSubscription
@@ -296,10 +298,7 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 		remoteApiSubscription.Spec.TargetOrganization = remoteOrgId
 
 		By("Creating the Zone")
-		zone = CreateZone(zoneName)
-
-		By("Creating the Realm")
-		CreateRealm(remoteOrgId, zone.Name)
+		CreateZone(zoneName)
 
 		By("Creating the RemoteOrganization")
 		remoteOrg = CreateRemoteOrganisation(remoteOrgId, zoneName)

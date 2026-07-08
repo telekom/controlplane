@@ -37,7 +37,7 @@ func (f *LoadBalancingFeature) IsUsed(ctx context.Context, builder features.Feat
 	if !ok {
 		return false
 	}
-	return len(route.Spec.Upstreams) > 1
+	return len(route.Spec.Backend.Upstreams) > 1
 }
 
 func (f *LoadBalancingFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
@@ -45,14 +45,13 @@ func (f *LoadBalancingFeature) Apply(ctx context.Context, builder features.Featu
 	if !ok {
 		return features.ErrNoRoute
 	}
-	upstreams := route.Spec.Upstreams
 
 	// Upstream URL is always set to jumper proxy URL (localhost for sidecar proxy)
 	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
 
 	// Load Balancing is added to JumperConfig
 	jumperConfig := builder.JumperConfig()
-	jumperConfig.LoadBalancing = mapToLoadBalancingServers(upstreams)
+	jumperConfig.LoadBalancing = mapToLoadBalancingServers(route.Spec.Backend.Upstreams)
 
 	// Check if the remote API URL header should be removed when using Last Mile Security
 	RemoveRemoteApiUrlHeaderIfNeeded(route, builder.RequestTransformerPlugin())
@@ -64,6 +63,16 @@ func mapToLoadBalancingServers(upstreams []gatewayv1.Upstream) *plugin.LoadBalan
 	servers := make([]plugin.LoadBalancingServer, 0, len(upstreams))
 	for _, upstream := range upstreams {
 		servers = append(servers, mapToLoadBalancingServer(upstream))
+	}
+	return &plugin.LoadBalancing{
+		Servers: servers,
+	}
+}
+
+func mapFailoverTargetsToLoadBalancingServers(targets []gatewayv1.FailoverTarget) *plugin.LoadBalancing {
+	servers := make([]plugin.LoadBalancingServer, 0, len(targets))
+	for _, target := range targets {
+		servers = append(servers, mapToLoadBalancingServer(target.Upstream))
 	}
 	return &plugin.LoadBalancing{
 		Servers: servers,

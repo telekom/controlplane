@@ -50,7 +50,6 @@ func mapApiSubscription(in api.ApiSubscription) *roverv1.ApiSubscription {
 
 	mapSubscriptionSecurity(in, out)
 	mapSubscriptionTransformation(in, out)
-	mapSubscriptionTraffic(in, out)
 
 	return out
 }
@@ -103,14 +102,6 @@ func mapSubscriptionSecurity(in api.ApiSubscription, out *roverv1.ApiSubscriptio
 }
 
 func mapSubscriptionTransformation(in api.ApiSubscription, out *roverv1.ApiSubscription) {}
-
-func mapSubscriptionTraffic(in api.ApiSubscription, out *roverv1.ApiSubscription) {
-	if len(in.Failover.Zones) > 0 {
-		out.Traffic.Failover = &roverv1.Failover{
-			Zones: in.Failover.Zones,
-		}
-	}
-}
 
 func mapEventSubscription(in api.EventSubscription) *roverv1.EventSubscription {
 	out := &roverv1.EventSubscription{

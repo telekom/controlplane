@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
@@ -54,7 +55,7 @@ var _ = Describe("GetSecretRotationStatus", func() {
 		return metav1.Condition{
 			Type:               "Ready",
 			Status:             metav1.ConditionTrue,
-			Reason:             "SubResourceProvisioned",
+			Reason:             condition.ReasonProvisioned,
 			Message:            "All sub-resources are up to date",
 			ObservedGeneration: observedGen,
 		}
@@ -64,7 +65,7 @@ var _ = Describe("GetSecretRotationStatus", func() {
 		return metav1.Condition{
 			Type:               "Ready",
 			Status:             metav1.ConditionFalse,
-			Reason:             "SubResourceProvisioning",
+			Reason:             condition.ReasonSubResourceNotReady,
 			Message:            "At least one sub-resource has been created or updated",
 			ObservedGeneration: observedGen,
 		}

@@ -61,10 +61,14 @@ spec:
   # Who can reach APIs in this zone: World (public) or Enterprise (internal)
   visibility: Enterprise
   gateway:
-    url: https://my-gateway.example.com/
     admin:
       url: https://my-gateway-admin.example.com/admin-api
-      clientSecret: someSecret
+    presets:
+      - name: default
+        default: true
+        urls:
+          - hostname: my-gateway.example.com
+            basePath: /
   identityProvider:
     url: https://my-idp.example.com/
     admin:
@@ -79,6 +83,10 @@ spec:
 
 :::caution
 The zone files in the sample overlay (`install/overlays/local/resources/admin/zones/`) are provided as `.example.yaml` templates. Copy them, fill in your real credentials, and never commit secrets to version control.
+:::
+
+:::tip Secrets are handled for you
+You can leave secret fields (gateway admin client secret, IDP admin password, Redis password) empty — the Control Plane generates them and, when Secret-Manager is enabled, onboards them automatically. The gateway admin client and its internal `rover` realm are also provisioned for you. See [Zone Secrets](./environments-and-zones.md#zone-secrets) and [Gateway Admin Access](./environments-and-zones.md#gateway-admin-access).
 :::
 
 :::info Architecture Reference

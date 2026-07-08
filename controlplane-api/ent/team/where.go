@@ -93,6 +93,16 @@ func Email(v string) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldEmail, v))
 }
 
+// DisplayName applies equality check predicate on the "displayName" field. It's identical to DisplayNameEQ.
+func DisplayName(v string) predicate.Team {
+	return predicate.Team(sql.FieldEQ(FieldDisplayName, v))
+}
+
+// Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
+func Description(v string) predicate.Team {
+	return predicate.Team(sql.FieldEQ(FieldDescription, v))
+}
+
 // TeamToken applies equality check predicate on the "team_token" field. It's identical to TeamTokenEQ.
 func TeamToken(v string) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldTeamToken, v))
@@ -551,6 +561,156 @@ func EmailEqualFold(v string) predicate.Team {
 // EmailContainsFold applies the ContainsFold predicate on the "email" field.
 func EmailContainsFold(v string) predicate.Team {
 	return predicate.Team(sql.FieldContainsFold(FieldEmail, v))
+}
+
+// DisplayNameEQ applies the EQ predicate on the "displayName" field.
+func DisplayNameEQ(v string) predicate.Team {
+	return predicate.Team(sql.FieldEQ(FieldDisplayName, v))
+}
+
+// DisplayNameNEQ applies the NEQ predicate on the "displayName" field.
+func DisplayNameNEQ(v string) predicate.Team {
+	return predicate.Team(sql.FieldNEQ(FieldDisplayName, v))
+}
+
+// DisplayNameIn applies the In predicate on the "displayName" field.
+func DisplayNameIn(vs ...string) predicate.Team {
+	return predicate.Team(sql.FieldIn(FieldDisplayName, vs...))
+}
+
+// DisplayNameNotIn applies the NotIn predicate on the "displayName" field.
+func DisplayNameNotIn(vs ...string) predicate.Team {
+	return predicate.Team(sql.FieldNotIn(FieldDisplayName, vs...))
+}
+
+// DisplayNameGT applies the GT predicate on the "displayName" field.
+func DisplayNameGT(v string) predicate.Team {
+	return predicate.Team(sql.FieldGT(FieldDisplayName, v))
+}
+
+// DisplayNameGTE applies the GTE predicate on the "displayName" field.
+func DisplayNameGTE(v string) predicate.Team {
+	return predicate.Team(sql.FieldGTE(FieldDisplayName, v))
+}
+
+// DisplayNameLT applies the LT predicate on the "displayName" field.
+func DisplayNameLT(v string) predicate.Team {
+	return predicate.Team(sql.FieldLT(FieldDisplayName, v))
+}
+
+// DisplayNameLTE applies the LTE predicate on the "displayName" field.
+func DisplayNameLTE(v string) predicate.Team {
+	return predicate.Team(sql.FieldLTE(FieldDisplayName, v))
+}
+
+// DisplayNameContains applies the Contains predicate on the "displayName" field.
+func DisplayNameContains(v string) predicate.Team {
+	return predicate.Team(sql.FieldContains(FieldDisplayName, v))
+}
+
+// DisplayNameHasPrefix applies the HasPrefix predicate on the "displayName" field.
+func DisplayNameHasPrefix(v string) predicate.Team {
+	return predicate.Team(sql.FieldHasPrefix(FieldDisplayName, v))
+}
+
+// DisplayNameHasSuffix applies the HasSuffix predicate on the "displayName" field.
+func DisplayNameHasSuffix(v string) predicate.Team {
+	return predicate.Team(sql.FieldHasSuffix(FieldDisplayName, v))
+}
+
+// DisplayNameIsNil applies the IsNil predicate on the "displayName" field.
+func DisplayNameIsNil() predicate.Team {
+	return predicate.Team(sql.FieldIsNull(FieldDisplayName))
+}
+
+// DisplayNameNotNil applies the NotNil predicate on the "displayName" field.
+func DisplayNameNotNil() predicate.Team {
+	return predicate.Team(sql.FieldNotNull(FieldDisplayName))
+}
+
+// DisplayNameEqualFold applies the EqualFold predicate on the "displayName" field.
+func DisplayNameEqualFold(v string) predicate.Team {
+	return predicate.Team(sql.FieldEqualFold(FieldDisplayName, v))
+}
+
+// DisplayNameContainsFold applies the ContainsFold predicate on the "displayName" field.
+func DisplayNameContainsFold(v string) predicate.Team {
+	return predicate.Team(sql.FieldContainsFold(FieldDisplayName, v))
+}
+
+// DescriptionEQ applies the EQ predicate on the "description" field.
+func DescriptionEQ(v string) predicate.Team {
+	return predicate.Team(sql.FieldEQ(FieldDescription, v))
+}
+
+// DescriptionNEQ applies the NEQ predicate on the "description" field.
+func DescriptionNEQ(v string) predicate.Team {
+	return predicate.Team(sql.FieldNEQ(FieldDescription, v))
+}
+
+// DescriptionIn applies the In predicate on the "description" field.
+func DescriptionIn(vs ...string) predicate.Team {
+	return predicate.Team(sql.FieldIn(FieldDescription, vs...))
+}
+
+// DescriptionNotIn applies the NotIn predicate on the "description" field.
+func DescriptionNotIn(vs ...string) predicate.Team {
+	return predicate.Team(sql.FieldNotIn(FieldDescription, vs...))
+}
+
+// DescriptionGT applies the GT predicate on the "description" field.
+func DescriptionGT(v string) predicate.Team {
+	return predicate.Team(sql.FieldGT(FieldDescription, v))
+}
+
+// DescriptionGTE applies the GTE predicate on the "description" field.
+func DescriptionGTE(v string) predicate.Team {
+	return predicate.Team(sql.FieldGTE(FieldDescription, v))
+}
+
+// DescriptionLT applies the LT predicate on the "description" field.
+func DescriptionLT(v string) predicate.Team {
+	return predicate.Team(sql.FieldLT(FieldDescription, v))
+}
+
+// DescriptionLTE applies the LTE predicate on the "description" field.
+func DescriptionLTE(v string) predicate.Team {
+	return predicate.Team(sql.FieldLTE(FieldDescription, v))
+}
+
+// DescriptionContains applies the Contains predicate on the "description" field.
+func DescriptionContains(v string) predicate.Team {
+	return predicate.Team(sql.FieldContains(FieldDescription, v))
+}
+
+// DescriptionHasPrefix applies the HasPrefix predicate on the "description" field.
+func DescriptionHasPrefix(v string) predicate.Team {
+	return predicate.Team(sql.FieldHasPrefix(FieldDescription, v))
+}
+
+// DescriptionHasSuffix applies the HasSuffix predicate on the "description" field.
+func DescriptionHasSuffix(v string) predicate.Team {
+	return predicate.Team(sql.FieldHasSuffix(FieldDescription, v))
+}
+
+// DescriptionIsNil applies the IsNil predicate on the "description" field.
+func DescriptionIsNil() predicate.Team {
+	return predicate.Team(sql.FieldIsNull(FieldDescription))
+}
+
+// DescriptionNotNil applies the NotNil predicate on the "description" field.
+func DescriptionNotNil() predicate.Team {
+	return predicate.Team(sql.FieldNotNull(FieldDescription))
+}
+
+// DescriptionEqualFold applies the EqualFold predicate on the "description" field.
+func DescriptionEqualFold(v string) predicate.Team {
+	return predicate.Team(sql.FieldEqualFold(FieldDescription, v))
+}
+
+// DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
+func DescriptionContainsFold(v string) predicate.Team {
+	return predicate.Team(sql.FieldContainsFold(FieldDescription, v))
 }
 
 // CategoryEQ applies the EQ predicate on the "category" field.
