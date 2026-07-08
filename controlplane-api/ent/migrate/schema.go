@@ -63,6 +63,8 @@ var (
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "features", Type: field.TypeJSON},
 		{Name: "upstreams", Type: field.TypeJSON},
+		{Name: "security", Type: field.TypeJSON, Nullable: true},
+		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "api_exposures", Type: field.TypeInt, Nullable: true},
@@ -76,13 +78,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_exposures_apis_exposures",
-				Columns:    []*schema.Column{APIExposuresColumns[14]},
+				Columns:    []*schema.Column{APIExposuresColumns[16]},
 				RefColumns: []*schema.Column{ApisColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_exposures_applications_exposed_apis",
-				Columns:    []*schema.Column{APIExposuresColumns[15]},
+				Columns:    []*schema.Column{APIExposuresColumns[17]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -91,7 +93,7 @@ var (
 			{
 				Name:    "apiexposure_base_path_application_exposed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[15]},
+				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[17]},
 			},
 		},
 	}
@@ -161,6 +163,8 @@ var (
 		{Name: "current_expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "secret_rotation_phase", Type: field.TypeEnum, Enums: []string{"DONE", "ROTATING", "GRACE_PERIOD_ACTIVE", "GRACE_PERIOD_EXPIRING", "FAILED"}, Default: "DONE"},
 		{Name: "secret_rotation_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "external_ids", Type: field.TypeJSON, Nullable: true},
+		{Name: "ip_restrictions", Type: field.TypeJSON, Nullable: true},
 		{Name: "team_applications", Type: field.TypeInt},
 		{Name: "zone_applications", Type: field.TypeInt},
 	}
@@ -172,13 +176,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "applications_teams_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[15]},
+				Columns:    []*schema.Column{ApplicationsColumns[17]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "applications_zones_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[16]},
+				Columns:    []*schema.Column{ApplicationsColumns[18]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -187,7 +191,7 @@ var (
 			{
 				Name:    "application_name_team_applications",
 				Unique:  true,
-				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[15]},
+				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[17]},
 			},
 		},
 	}

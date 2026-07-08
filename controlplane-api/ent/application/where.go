@@ -928,6 +928,26 @@ func SecretRotationMessageContainsFold(v string) predicate.Application {
 	return predicate.Application(sql.FieldContainsFold(FieldSecretRotationMessage, v))
 }
 
+// ExternalIdsIsNil applies the IsNil predicate on the "external_ids" field.
+func ExternalIdsIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldExternalIds))
+}
+
+// ExternalIdsNotNil applies the NotNil predicate on the "external_ids" field.
+func ExternalIdsNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldExternalIds))
+}
+
+// IPRestrictionsIsNil applies the IsNil predicate on the "ip_restrictions" field.
+func IPRestrictionsIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldIPRestrictions))
+}
+
+// IPRestrictionsNotNil applies the NotNil predicate on the "ip_restrictions" field.
+func IPRestrictionsNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldIPRestrictions))
+}
+
 // HasZone applies the HasEdge predicate on the "zone" edge.
 func HasZone() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {

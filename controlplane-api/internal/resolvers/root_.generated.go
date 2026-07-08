@@ -37,6 +37,7 @@ type ResolverRoot interface {
 	ApprovalConfig() ApprovalConfigResolver
 	ApprovalRequest() ApprovalRequestResolver
 	AvailableTransition() AvailableTransitionResolver
+	BasicAuthCredentials() BasicAuthCredentialsResolver
 	Decision() DecisionResolver
 	EventDelivery() EventDeliveryResolver
 	EventExposure() EventExposureResolver
@@ -44,7 +45,10 @@ type ResolverRoot interface {
 	EventSubscription() EventSubscriptionResolver
 	EventSubscriptionInfo() EventSubscriptionInfoResolver
 	EventType() EventTypeResolver
+	ExternalId() ExternalIdResolver
+	ExternalIdentityProvider() ExternalIdentityProviderResolver
 	Mutation() MutationResolver
+	OAuth2ClientCredentials() OAuth2ClientCredentialsResolver
 	Query() QueryResolver
 	ResponseFilter() ResponseFilterResolver
 	SelectionFilter() SelectionFilterResolver
@@ -107,9 +111,11 @@ type ComplexityRoot struct {
 		LastModifiedAt func(childComplexity int) int
 		Namespace      func(childComplexity int) int
 		Owner          func(childComplexity int) int
+		Security       func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
 		Subscriptions  func(childComplexity int) int
+		Traffic        func(childComplexity int) int
 		Upstreams      func(childComplexity int) int
 		Visibility     func(childComplexity int) int
 	}
@@ -134,7 +140,12 @@ type ComplexityRoot struct {
 		ID                   func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
+		Traffic              func(childComplexity int) int
 		Visibility           func(childComplexity int) int
+	}
+
+	ApiExposureSecurity struct {
+		M2M func(childComplexity int) int
 	}
 
 	ApiSubscription struct {
@@ -177,6 +188,10 @@ type ComplexityRoot struct {
 		StatusPhase          func(childComplexity int) int
 	}
 
+	ApiSubscriptionSecurity struct {
+		M2M func(childComplexity int) int
+	}
+
 	Application struct {
 		ClientID              func(childComplexity int) int
 		ClientSecret          func(childComplexity int) int
@@ -185,7 +200,9 @@ type ComplexityRoot struct {
 		Environment           func(childComplexity int) int
 		ExposedApis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
 		ExposedEvents         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
+		ExternalIds           func(childComplexity int) int
 		ID                    func(childComplexity int) int
+		IPRestrictions        func(childComplexity int) int
 		LastModifiedAt        func(childComplexity int) int
 		Name                  func(childComplexity int) int
 		Namespace             func(childComplexity int) int
@@ -284,6 +301,11 @@ type ComplexityRoot struct {
 	AvailableTransition struct {
 		Action  func(childComplexity int) int
 		ToState func(childComplexity int) int
+	}
+
+	BasicAuthCredentials struct {
+		Password func(childComplexity int) int
+		Username func(childComplexity int) int
 	}
 
 	CreateTeamPayload struct {
@@ -446,6 +468,19 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ExternalId struct {
+		Id     func(childComplexity int) int
+		Schema func(childComplexity int) int
+	}
+
+	ExternalIdentityProvider struct {
+		Basic         func(childComplexity int) int
+		Client        func(childComplexity int) int
+		GrantType     func(childComplexity int) int
+		TokenEndpoint func(childComplexity int) int
+		TokenRequest  func(childComplexity int) int
+	}
+
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
@@ -454,6 +489,23 @@ type ComplexityRoot struct {
 		Name        func(childComplexity int) int
 		Namespace   func(childComplexity int) int
 		Teams       func(childComplexity int) int
+	}
+
+	IpRestrictions struct {
+		Allow func(childComplexity int) int
+		Deny  func(childComplexity int) int
+	}
+
+	Limits struct {
+		Hour   func(childComplexity int) int
+		Minute func(childComplexity int) int
+		Second func(childComplexity int) int
+	}
+
+	Machine2MachineAuthentication struct {
+		Basic       func(childComplexity int) int
+		ExternalIDP func(childComplexity int) int
+		Scopes      func(childComplexity int) int
 	}
 
 	Member struct {
@@ -481,6 +533,12 @@ type ComplexityRoot struct {
 		Message func(childComplexity int) int
 	}
 
+	OAuth2ClientCredentials struct {
+		ClientId     func(childComplexity int) int
+		ClientKey    func(childComplexity int) int
+		ClientSecret func(childComplexity int) int
+	}
+
 	PageInfo struct {
 		EndCursor       func(childComplexity int) int
 		HasNextPage     func(childComplexity int) int
@@ -503,6 +561,26 @@ type ComplexityRoot struct {
 		Nodes              func(childComplexity int, ids []int) int
 		Teams              func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) int
 		Zones              func(childComplexity int) int
+	}
+
+	RateLimit struct {
+		Provider            func(childComplexity int) int
+		SubscriberRateLimit func(childComplexity int) int
+	}
+
+	RateLimitConfig struct {
+		Limits  func(childComplexity int) int
+		Options func(childComplexity int) int
+	}
+
+	RateLimitOptions struct {
+		FaultTolerant     func(childComplexity int) int
+		HideClientHeaders func(childComplexity int) int
+	}
+
+	RateLimitOverrides struct {
+		Limits     func(childComplexity int) int
+		Subscriber func(childComplexity int) int
 	}
 
 	RemoveTeamMemberPayload struct {
@@ -537,6 +615,21 @@ type ComplexityRoot struct {
 	SelectionFilter struct {
 		Attributes func(childComplexity int) int
 		Expression func(childComplexity int) int
+	}
+
+	SubscriberMachine2MachineAuthentication struct {
+		Basic  func(childComplexity int) int
+		Client func(childComplexity int) int
+		Scopes func(childComplexity int) int
+	}
+
+	SubscriberRateLimitDefaults struct {
+		Limits func(childComplexity int) int
+	}
+
+	SubscriberRateLimits struct {
+		Default   func(childComplexity int) int
+		Overrides func(childComplexity int) int
 	}
 
 	Team struct {
@@ -578,6 +671,10 @@ type ComplexityRoot struct {
 		GroupName   func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
+	}
+
+	Traffic struct {
+		RateLimit func(childComplexity int) int
 	}
 
 	UpdateTeamPayload struct {
@@ -862,6 +959,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposure.Owner(childComplexity), true
 
+	case "ApiExposure.security":
+		if e.ComplexityRoot.ApiExposure.Security == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.Security(childComplexity), true
+
 	case "ApiExposure.statusMessage":
 		if e.ComplexityRoot.ApiExposure.StatusMessage == nil {
 			break
@@ -882,6 +986,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposure.Subscriptions(childComplexity), true
+
+	case "ApiExposure.traffic":
+		if e.ComplexityRoot.ApiExposure.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.Traffic(childComplexity), true
 
 	case "ApiExposure.upstreams":
 		if e.ComplexityRoot.ApiExposure.Upstreams == nil {
@@ -988,12 +1099,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposureInfo.OwnerTeam(childComplexity), true
 
+	case "ApiExposureInfo.traffic":
+		if e.ComplexityRoot.ApiExposureInfo.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.Traffic(childComplexity), true
+
 	case "ApiExposureInfo.visibility":
 		if e.ComplexityRoot.ApiExposureInfo.Visibility == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.Visibility(childComplexity), true
+
+	case "ApiExposureSecurity.m2m":
+		if e.ComplexityRoot.ApiExposureSecurity.M2M == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureSecurity.M2M(childComplexity), true
 
 	case "ApiSubscription.approval":
 		if e.ComplexityRoot.ApiSubscription.Approval == nil {
@@ -1191,6 +1316,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.StatusPhase(childComplexity), true
 
+	case "ApiSubscriptionSecurity.m2m":
+		if e.ComplexityRoot.ApiSubscriptionSecurity.M2M == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionSecurity.M2M(childComplexity), true
+
 	case "Application.clientID":
 		if e.ComplexityRoot.Application.ClientID == nil {
 			break
@@ -1250,12 +1382,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Application.ExposedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
 
+	case "Application.externalIds":
+		if e.ComplexityRoot.Application.ExternalIds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.ExternalIds(childComplexity), true
+
 	case "Application.id":
 		if e.ComplexityRoot.Application.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ID(childComplexity), true
+
+	case "Application.ipRestrictions":
+		if e.ComplexityRoot.Application.IPRestrictions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.IPRestrictions(childComplexity), true
 
 	case "Application.lastModifiedAt":
 		if e.ComplexityRoot.Application.LastModifiedAt == nil {
@@ -1742,6 +1888,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AvailableTransition.ToState(childComplexity), true
+
+	case "BasicAuthCredentials.password":
+		if e.ComplexityRoot.BasicAuthCredentials.Password == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BasicAuthCredentials.Password(childComplexity), true
+
+	case "BasicAuthCredentials.username":
+		if e.ComplexityRoot.BasicAuthCredentials.Username == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BasicAuthCredentials.Username(childComplexity), true
 
 	case "CreateTeamPayload.accepted":
 		if e.ComplexityRoot.CreateTeamPayload.Accepted == nil {
@@ -2464,6 +2624,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventTypeEdge.Node(childComplexity), true
 
+	case "ExternalId.Id":
+		if e.ComplexityRoot.ExternalId.Id == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalId.Id(childComplexity), true
+
+	case "ExternalId.Schema":
+		if e.ComplexityRoot.ExternalId.Schema == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalId.Schema(childComplexity), true
+
+	case "ExternalIdentityProvider.basic":
+		if e.ComplexityRoot.ExternalIdentityProvider.Basic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.Basic(childComplexity), true
+
+	case "ExternalIdentityProvider.client":
+		if e.ComplexityRoot.ExternalIdentityProvider.Client == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.Client(childComplexity), true
+
+	case "ExternalIdentityProvider.grantType":
+		if e.ComplexityRoot.ExternalIdentityProvider.GrantType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.GrantType(childComplexity), true
+
+	case "ExternalIdentityProvider.tokenEndpoint":
+		if e.ComplexityRoot.ExternalIdentityProvider.TokenEndpoint == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.TokenEndpoint(childComplexity), true
+
+	case "ExternalIdentityProvider.tokenRequest":
+		if e.ComplexityRoot.ExternalIdentityProvider.TokenRequest == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.TokenRequest(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -2512,6 +2721,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Group.Teams(childComplexity), true
+
+	case "IpRestrictions.Allow":
+		if e.ComplexityRoot.IpRestrictions.Allow == nil {
+			break
+		}
+
+		return e.ComplexityRoot.IpRestrictions.Allow(childComplexity), true
+
+	case "IpRestrictions.Deny":
+		if e.ComplexityRoot.IpRestrictions.Deny == nil {
+			break
+		}
+
+		return e.ComplexityRoot.IpRestrictions.Deny(childComplexity), true
+
+	case "Limits.hour":
+		if e.ComplexityRoot.Limits.Hour == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Limits.Hour(childComplexity), true
+
+	case "Limits.minute":
+		if e.ComplexityRoot.Limits.Minute == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Limits.Minute(childComplexity), true
+
+	case "Limits.second":
+		if e.ComplexityRoot.Limits.Second == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Limits.Second(childComplexity), true
+
+	case "Machine2MachineAuthentication.basic":
+		if e.ComplexityRoot.Machine2MachineAuthentication.Basic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Machine2MachineAuthentication.Basic(childComplexity), true
+
+	case "Machine2MachineAuthentication.externalIDP":
+		if e.ComplexityRoot.Machine2MachineAuthentication.ExternalIDP == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Machine2MachineAuthentication.ExternalIDP(childComplexity), true
+
+	case "Machine2MachineAuthentication.scopes":
+		if e.ComplexityRoot.Machine2MachineAuthentication.Scopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Machine2MachineAuthentication.Scopes(childComplexity), true
 
 	case "Member.email":
 		if e.ComplexityRoot.Member.Email == nil {
@@ -2664,6 +2929,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MutationError.Message(childComplexity), true
+
+	case "OAuth2ClientCredentials.clientId":
+		if e.ComplexityRoot.OAuth2ClientCredentials.ClientId == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuth2ClientCredentials.ClientId(childComplexity), true
+
+	case "OAuth2ClientCredentials.clientKey":
+		if e.ComplexityRoot.OAuth2ClientCredentials.ClientKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuth2ClientCredentials.ClientKey(childComplexity), true
+
+	case "OAuth2ClientCredentials.clientSecret":
+		if e.ComplexityRoot.OAuth2ClientCredentials.ClientSecret == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuth2ClientCredentials.ClientSecret(childComplexity), true
 
 	case "PageInfo.endCursor":
 		if e.ComplexityRoot.PageInfo.EndCursor == nil {
@@ -2851,6 +3137,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Zones(childComplexity), true
 
+	case "RateLimit.provider":
+		if e.ComplexityRoot.RateLimit.Provider == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimit.Provider(childComplexity), true
+
+	case "RateLimit.subscriberRateLimit":
+		if e.ComplexityRoot.RateLimit.SubscriberRateLimit == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimit.SubscriberRateLimit(childComplexity), true
+
+	case "RateLimitConfig.limits":
+		if e.ComplexityRoot.RateLimitConfig.Limits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitConfig.Limits(childComplexity), true
+
+	case "RateLimitConfig.options":
+		if e.ComplexityRoot.RateLimitConfig.Options == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitConfig.Options(childComplexity), true
+
+	case "RateLimitOptions.faultTolerant":
+		if e.ComplexityRoot.RateLimitOptions.FaultTolerant == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitOptions.FaultTolerant(childComplexity), true
+
+	case "RateLimitOptions.hideClientHeaders":
+		if e.ComplexityRoot.RateLimitOptions.HideClientHeaders == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitOptions.HideClientHeaders(childComplexity), true
+
+	case "RateLimitOverrides.limits":
+		if e.ComplexityRoot.RateLimitOverrides.Limits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitOverrides.Limits(childComplexity), true
+
+	case "RateLimitOverrides.subscriber":
+		if e.ComplexityRoot.RateLimitOverrides.Subscriber == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitOverrides.Subscriber(childComplexity), true
+
 	case "RemoveTeamMemberPayload.errors":
 		if e.ComplexityRoot.RemoveTeamMemberPayload.Errors == nil {
 			break
@@ -2962,6 +3304,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SelectionFilter.Expression(childComplexity), true
+
+	case "SubscriberMachine2MachineAuthentication.basic":
+		if e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Basic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Basic(childComplexity), true
+
+	case "SubscriberMachine2MachineAuthentication.client":
+		if e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Client == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Client(childComplexity), true
+
+	case "SubscriberMachine2MachineAuthentication.scopes":
+		if e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Scopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Scopes(childComplexity), true
+
+	case "SubscriberRateLimitDefaults.limits":
+		if e.ComplexityRoot.SubscriberRateLimitDefaults.Limits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberRateLimitDefaults.Limits(childComplexity), true
+
+	case "SubscriberRateLimits.default":
+		if e.ComplexityRoot.SubscriberRateLimits.Default == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberRateLimits.Default(childComplexity), true
+
+	case "SubscriberRateLimits.overrides":
+		if e.ComplexityRoot.SubscriberRateLimits.Overrides == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberRateLimits.Overrides(childComplexity), true
 
 	case "Team.apis":
 		if e.ComplexityRoot.Team.Apis == nil {
@@ -3180,6 +3564,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamInfo.Name(childComplexity), true
+
+	case "Traffic.rateLimit":
+		if e.ComplexityRoot.Traffic.RateLimit == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Traffic.RateLimit(childComplexity), true
 
 	case "UpdateTeamPayload.accepted":
 		if e.ComplexityRoot.UpdateTeamPayload.Accepted == nil {
@@ -3441,6 +3832,8 @@ type ApiExposure implements Node {
   active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
+  security: ApiExposureSecurity
+  traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
@@ -4168,6 +4561,8 @@ type Application implements Node {
   currentExpiresAt: Time
   secretRotationPhase: ApplicationSecretRotationPhase!
   secretRotationMessage: String
+  externalIds: [ExternalId!]
+  ipRestrictions: IpRestrictions
   zone: Zone!
   exposedApis(
     """
@@ -7185,6 +7580,16 @@ type RequesterInfo {
   applicationName: String
 }
 
+type ExternalId {
+  Id: String!
+  Schema: String!
+}
+
+type IpRestrictions {
+  Allow: [String!]
+  Deny: [String!]
+}
+
 type DeciderInfo {
   teamName: String!
   teamEmail: String
@@ -7246,16 +7651,12 @@ enum ApiExposureFeature {
   BASIC_AUTH
   CIRCUIT_BREAKER
   CUSTOM_SCOPES
-  DYNAMIC_UPSTREAM
   EXTERNAL_IDP
   FAILOVER
   HEADER_TRANSFORMATION
-  IP_RESTRICTION
   LAST_MILE_SECURITY
   LOAD_BALANCING
-  PASSTHROUGH
   RATE_LIMIT
-  ACCESS_CONTROL
 }
 
 enum ApprovalAction {
@@ -7278,10 +7679,98 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
+  traffic: Traffic 
   "Application name that owns this exposure"
   ownerApplicationName: String!
   "Owning team (reduced view)"
   ownerTeam: TeamInfo!
+}
+
+# Security
+
+enum TokenRequestMethod {
+  client_secret_basic
+  client_secret_post
+}
+
+type BasicAuthCredentials {
+  username: String!
+  password: String!
+}
+
+type OAuth2ClientCredentials {
+  clientId: String!
+  clientSecret: String
+  clientKey: String
+}
+
+type ExternalIdentityProvider {
+  tokenEndpoint: String!
+  tokenRequest: TokenRequestMethod
+  grantType: String
+  basic: BasicAuthCredentials
+  client: OAuth2ClientCredentials
+}
+
+type Machine2MachineAuthentication {
+  externalIDP: ExternalIdentityProvider
+  basic: BasicAuthCredentials
+  scopes: [String!]
+}
+
+type SubscriberMachine2MachineAuthentication {
+  client: OAuth2ClientCredentials
+  basic: BasicAuthCredentials
+  scopes: [String!]
+}
+
+type ApiExposureSecurity {
+  m2m: Machine2MachineAuthentication
+}
+
+type ApiSubscriptionSecurity {
+  m2m: SubscriberMachine2MachineAuthentication
+}
+
+# Traffic 
+
+type Limits {
+  second: Int
+  minute: Int
+  hour: Int
+}
+
+type RateLimitOptions {
+  hideClientHeaders: Boolean
+  faultTolerant: Boolean
+}
+
+type RateLimitConfig {
+  limits: Limits!
+  options: RateLimitOptions
+}
+
+type SubscriberRateLimitDefaults {
+  limits: Limits!
+}
+
+type RateLimitOverrides {
+  subscriber: String!
+  limits: Limits!
+}
+
+type SubscriberRateLimits {
+  default: SubscriberRateLimitDefaults
+  overrides: [RateLimitOverrides!]
+}
+
+type RateLimit {
+  provider: RateLimitConfig
+  subscriberRateLimit: SubscriberRateLimits
+}
+
+type Traffic {
+  rateLimit: RateLimit
 }
 
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
@@ -7510,6 +7999,10 @@ func (ec *executionContext) childFields_ApiExposure(ctx context.Context, field g
 		return ec.fieldContext_ApiExposure_features(ctx, field)
 	case "upstreams":
 		return ec.fieldContext_ApiExposure_upstreams(ctx, field)
+	case "security":
+		return ec.fieldContext_ApiExposure_security(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiExposure_traffic(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_ApiExposure_approvalConfig(ctx, field)
 	case "apiVersion":
@@ -7562,12 +8055,22 @@ func (ec *executionContext) childFields_ApiExposureInfo(ctx context.Context, fie
 		return ec.fieldContext_ApiExposureInfo_features(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_ApiExposureInfo_approvalConfig(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiExposureInfo_traffic(ctx, field)
 	case "ownerApplicationName":
 		return ec.fieldContext_ApiExposureInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_ApiExposureInfo_ownerTeam(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiExposureInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiExposureSecurity(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "m2m":
+		return ec.fieldContext_ApiExposureSecurity_m2m(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiExposureSecurity", field.Name)
 }
 
 func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -7682,6 +8185,10 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_secretRotationPhase(ctx, field)
 	case "secretRotationMessage":
 		return ec.fieldContext_Application_secretRotationMessage(ctx, field)
+	case "externalIds":
+		return ec.fieldContext_Application_externalIds(ctx, field)
+	case "ipRestrictions":
+		return ec.fieldContext_Application_ipRestrictions(ctx, field)
 	case "zone":
 		return ec.fieldContext_Application_zone(ctx, field)
 	case "exposedApis":
@@ -7866,6 +8373,16 @@ func (ec *executionContext) childFields_AvailableTransition(ctx context.Context,
 		return ec.fieldContext_AvailableTransition_toState(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type AvailableTransition", field.Name)
+}
+
+func (ec *executionContext) childFields_BasicAuthCredentials(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "username":
+		return ec.fieldContext_BasicAuthCredentials_username(ctx, field)
+	case "password":
+		return ec.fieldContext_BasicAuthCredentials_password(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type BasicAuthCredentials", field.Name)
 }
 
 func (ec *executionContext) childFields_CreateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8188,6 +8705,32 @@ func (ec *executionContext) childFields_EventTypeEdge(ctx context.Context, field
 	return nil, fmt.Errorf("no field named %q was found under type EventTypeEdge", field.Name)
 }
 
+func (ec *executionContext) childFields_ExternalId(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "Id":
+		return ec.fieldContext_ExternalId_Id(ctx, field)
+	case "Schema":
+		return ec.fieldContext_ExternalId_Schema(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ExternalId", field.Name)
+}
+
+func (ec *executionContext) childFields_ExternalIdentityProvider(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "tokenEndpoint":
+		return ec.fieldContext_ExternalIdentityProvider_tokenEndpoint(ctx, field)
+	case "tokenRequest":
+		return ec.fieldContext_ExternalIdentityProvider_tokenRequest(ctx, field)
+	case "grantType":
+		return ec.fieldContext_ExternalIdentityProvider_grantType(ctx, field)
+	case "basic":
+		return ec.fieldContext_ExternalIdentityProvider_basic(ctx, field)
+	case "client":
+		return ec.fieldContext_ExternalIdentityProvider_client(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ExternalIdentityProvider", field.Name)
+}
+
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -8206,6 +8749,40 @@ func (ec *executionContext) childFields_Group(ctx context.Context, field graphql
 		return ec.fieldContext_Group_teams(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+}
+
+func (ec *executionContext) childFields_IpRestrictions(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "Allow":
+		return ec.fieldContext_IpRestrictions_Allow(ctx, field)
+	case "Deny":
+		return ec.fieldContext_IpRestrictions_Deny(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type IpRestrictions", field.Name)
+}
+
+func (ec *executionContext) childFields_Limits(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "second":
+		return ec.fieldContext_Limits_second(ctx, field)
+	case "minute":
+		return ec.fieldContext_Limits_minute(ctx, field)
+	case "hour":
+		return ec.fieldContext_Limits_hour(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Limits", field.Name)
+}
+
+func (ec *executionContext) childFields_Machine2MachineAuthentication(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "externalIDP":
+		return ec.fieldContext_Machine2MachineAuthentication_externalIDP(ctx, field)
+	case "basic":
+		return ec.fieldContext_Machine2MachineAuthentication_basic(ctx, field)
+	case "scopes":
+		return ec.fieldContext_Machine2MachineAuthentication_scopes(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Machine2MachineAuthentication", field.Name)
 }
 
 func (ec *executionContext) childFields_Member(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8236,6 +8813,18 @@ func (ec *executionContext) childFields_MutationError(ctx context.Context, field
 	return nil, fmt.Errorf("no field named %q was found under type MutationError", field.Name)
 }
 
+func (ec *executionContext) childFields_OAuth2ClientCredentials(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "clientId":
+		return ec.fieldContext_OAuth2ClientCredentials_clientId(ctx, field)
+	case "clientSecret":
+		return ec.fieldContext_OAuth2ClientCredentials_clientSecret(ctx, field)
+	case "clientKey":
+		return ec.fieldContext_OAuth2ClientCredentials_clientKey(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type OAuth2ClientCredentials", field.Name)
+}
+
 func (ec *executionContext) childFields_PageInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "hasNextPage":
@@ -8248,6 +8837,46 @@ func (ec *executionContext) childFields_PageInfo(ctx context.Context, field grap
 		return ec.fieldContext_PageInfo_endCursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_RateLimit(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "provider":
+		return ec.fieldContext_RateLimit_provider(ctx, field)
+	case "subscriberRateLimit":
+		return ec.fieldContext_RateLimit_subscriberRateLimit(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RateLimit", field.Name)
+}
+
+func (ec *executionContext) childFields_RateLimitConfig(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "limits":
+		return ec.fieldContext_RateLimitConfig_limits(ctx, field)
+	case "options":
+		return ec.fieldContext_RateLimitConfig_options(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RateLimitConfig", field.Name)
+}
+
+func (ec *executionContext) childFields_RateLimitOptions(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "hideClientHeaders":
+		return ec.fieldContext_RateLimitOptions_hideClientHeaders(ctx, field)
+	case "faultTolerant":
+		return ec.fieldContext_RateLimitOptions_faultTolerant(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RateLimitOptions", field.Name)
+}
+
+func (ec *executionContext) childFields_RateLimitOverrides(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "subscriber":
+		return ec.fieldContext_RateLimitOverrides_subscriber(ctx, field)
+	case "limits":
+		return ec.fieldContext_RateLimitOverrides_limits(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RateLimitOverrides", field.Name)
 }
 
 func (ec *executionContext) childFields_RemoveTeamMemberPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8316,6 +8945,36 @@ func (ec *executionContext) childFields_SelectionFilter(ctx context.Context, fie
 		return ec.fieldContext_SelectionFilter_expression(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type SelectionFilter", field.Name)
+}
+
+func (ec *executionContext) childFields_SubscriberMachine2MachineAuthentication(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "client":
+		return ec.fieldContext_SubscriberMachine2MachineAuthentication_client(ctx, field)
+	case "basic":
+		return ec.fieldContext_SubscriberMachine2MachineAuthentication_basic(ctx, field)
+	case "scopes":
+		return ec.fieldContext_SubscriberMachine2MachineAuthentication_scopes(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SubscriberMachine2MachineAuthentication", field.Name)
+}
+
+func (ec *executionContext) childFields_SubscriberRateLimitDefaults(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "limits":
+		return ec.fieldContext_SubscriberRateLimitDefaults_limits(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SubscriberRateLimitDefaults", field.Name)
+}
+
+func (ec *executionContext) childFields_SubscriberRateLimits(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "default":
+		return ec.fieldContext_SubscriberRateLimits_default(ctx, field)
+	case "overrides":
+		return ec.fieldContext_SubscriberRateLimits_overrides(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SubscriberRateLimits", field.Name)
 }
 
 func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8398,6 +9057,14 @@ func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field grap
 		return ec.fieldContext_TeamInfo_description(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TeamInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_Traffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "rateLimit":
+		return ec.fieldContext_Traffic_rateLimit(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Traffic", field.Name)
 }
 
 func (ec *executionContext) childFields_UpdateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

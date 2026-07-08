@@ -8,8 +8,10 @@ import (
 	"context"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+	"github.com/telekom/controlplane/projector/internal/util"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -49,6 +51,23 @@ func (t *Translator) ShouldSkip(_ *apiv1.ApiSubscription) (bool, string) {
 func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*APISubscriptionData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
+	var security *model.ApiSubscriptionSecurity
+	if obj.Spec.Security != nil {
+		security = &model.ApiSubscriptionSecurity{}
+		if obj.Spec.Security.M2M != nil {
+			security.M2M = &model.SubscriberMachine2MachineAuthentication{}
+			if obj.Spec.Security.M2M.Client != nil {
+				security.M2M.Client = util.MapCrOAuthToCpApi(obj.Spec.Security.M2M.Client)
+			}
+			if obj.Spec.Security.M2M.Basic != nil {
+				security.M2M.Basic = util.MapCrBasicAuthToCpApi(obj.Spec.Security.M2M.Basic)
+			}
+			if len(obj.Spec.Security.M2M.Scopes) > 0 {
+				security.M2M.Scopes = obj.Spec.Security.M2M.Scopes
+			}
+		}
+	}
+
 	return &APISubscriptionData{
 		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:    phase,
@@ -56,6 +75,7 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*
 		BasePath:       obj.Spec.ApiBasePath,
 		M2MAuthMethod:  deriveM2MAuthMethod(obj.Spec.Security),
 		ApprovedScopes: deriveApprovedScopes(obj.Spec.Security),
+		Security:       security,
 		OwnerAppName:   obj.Spec.Requestor.Application.Name,
 		OwnerTeamName:  shared.TeamNameFromNamespace(obj.Namespace),
 		TargetBasePath: obj.Spec.ApiBasePath,

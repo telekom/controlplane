@@ -1261,6 +1261,8 @@ type ApiExposureMutation struct {
 	appendfeatures       []string
 	upstreams            *[]model.Upstream
 	appendupstreams      []model.Upstream
+	security             *model.ApiExposureSecurity
+	traffic              *model.Traffic
 	approval_config      *model.ApprovalConfig
 	api_version          *string
 	clearedFields        map[string]struct{}
@@ -1852,6 +1854,104 @@ func (m *ApiExposureMutation) ResetUpstreams() {
 	m.appendupstreams = nil
 }
 
+// SetSecurity sets the "security" field.
+func (m *ApiExposureMutation) SetSecurity(mes model.ApiExposureSecurity) {
+	m.security = &mes
+}
+
+// Security returns the value of the "security" field in the mutation.
+func (m *ApiExposureMutation) Security() (r model.ApiExposureSecurity, exists bool) {
+	v := m.security
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecurity returns the old "security" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldSecurity(ctx context.Context) (v model.ApiExposureSecurity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
+	}
+	return oldValue.Security, nil
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (m *ApiExposureMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[apiexposure.FieldSecurity] = struct{}{}
+}
+
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *ApiExposureMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldSecurity]
+	return ok
+}
+
+// ResetSecurity resets all changes to the "security" field.
+func (m *ApiExposureMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, apiexposure.FieldSecurity)
+}
+
+// SetTraffic sets the "traffic" field.
+func (m *ApiExposureMutation) SetTraffic(value model.Traffic) {
+	m.traffic = &value
+}
+
+// Traffic returns the value of the "traffic" field in the mutation.
+func (m *ApiExposureMutation) Traffic() (r model.Traffic, exists bool) {
+	v := m.traffic
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTraffic returns the old "traffic" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldTraffic(ctx context.Context) (v model.Traffic, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTraffic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
+	}
+	return oldValue.Traffic, nil
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (m *ApiExposureMutation) ClearTraffic() {
+	m.traffic = nil
+	m.clearedFields[apiexposure.FieldTraffic] = struct{}{}
+}
+
+// TrafficCleared returns if the "traffic" field was cleared in this mutation.
+func (m *ApiExposureMutation) TrafficCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldTraffic]
+	return ok
+}
+
+// ResetTraffic resets all changes to the "traffic" field.
+func (m *ApiExposureMutation) ResetTraffic() {
+	m.traffic = nil
+	delete(m.clearedFields, apiexposure.FieldTraffic)
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (m *ApiExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
 	m.approval_config = &mc
@@ -2103,7 +2203,7 @@ func (m *ApiExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiExposureMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, apiexposure.FieldCreatedAt)
 	}
@@ -2136,6 +2236,12 @@ func (m *ApiExposureMutation) Fields() []string {
 	}
 	if m.upstreams != nil {
 		fields = append(fields, apiexposure.FieldUpstreams)
+	}
+	if m.security != nil {
+		fields = append(fields, apiexposure.FieldSecurity)
+	}
+	if m.traffic != nil {
+		fields = append(fields, apiexposure.FieldTraffic)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, apiexposure.FieldApprovalConfig)
@@ -2173,6 +2279,10 @@ func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Features()
 	case apiexposure.FieldUpstreams:
 		return m.Upstreams()
+	case apiexposure.FieldSecurity:
+		return m.Security()
+	case apiexposure.FieldTraffic:
+		return m.Traffic()
 	case apiexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	case apiexposure.FieldAPIVersion:
@@ -2208,6 +2318,10 @@ func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldFeatures(ctx)
 	case apiexposure.FieldUpstreams:
 		return m.OldUpstreams(ctx)
+	case apiexposure.FieldSecurity:
+		return m.OldSecurity(ctx)
+	case apiexposure.FieldTraffic:
+		return m.OldTraffic(ctx)
 	case apiexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	case apiexposure.FieldAPIVersion:
@@ -2298,6 +2412,20 @@ func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUpstreams(v)
 		return nil
+	case apiexposure.FieldSecurity:
+		v, ok := value.(model.ApiExposureSecurity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurity(v)
+		return nil
+	case apiexposure.FieldTraffic:
+		v, ok := value.(model.Traffic)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTraffic(v)
+		return nil
 	case apiexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
 		if !ok {
@@ -2354,6 +2482,12 @@ func (m *ApiExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(apiexposure.FieldActive) {
 		fields = append(fields, apiexposure.FieldActive)
 	}
+	if m.FieldCleared(apiexposure.FieldSecurity) {
+		fields = append(fields, apiexposure.FieldSecurity)
+	}
+	if m.FieldCleared(apiexposure.FieldTraffic) {
+		fields = append(fields, apiexposure.FieldTraffic)
+	}
 	if m.FieldCleared(apiexposure.FieldAPIVersion) {
 		fields = append(fields, apiexposure.FieldAPIVersion)
 	}
@@ -2382,6 +2516,12 @@ func (m *ApiExposureMutation) ClearField(name string) error {
 		return nil
 	case apiexposure.FieldActive:
 		m.ClearActive()
+		return nil
+	case apiexposure.FieldSecurity:
+		m.ClearSecurity()
+		return nil
+	case apiexposure.FieldTraffic:
+		m.ClearTraffic()
 		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ClearAPIVersion()
@@ -2426,6 +2566,12 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 		return nil
 	case apiexposure.FieldUpstreams:
 		m.ResetUpstreams()
+		return nil
+	case apiexposure.FieldSecurity:
+		m.ResetSecurity()
+		return nil
+	case apiexposure.FieldTraffic:
+		m.ResetTraffic()
 		return nil
 	case apiexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()
@@ -3891,6 +4037,9 @@ type ApplicationMutation struct {
 	current_expires_at       *time.Time
 	secret_rotation_phase    *application.SecretRotationPhase
 	secret_rotation_message  *string
+	external_ids             *[]model.ExternalId
+	appendexternal_ids       []model.ExternalId
+	ip_restrictions          *model.IpRestrictions
 	clearedFields            map[string]struct{}
 	zone                     *int
 	clearedzone              bool
@@ -4632,6 +4781,120 @@ func (m *ApplicationMutation) ResetSecretRotationMessage() {
 	delete(m.clearedFields, application.FieldSecretRotationMessage)
 }
 
+// SetExternalIds sets the "external_ids" field.
+func (m *ApplicationMutation) SetExternalIds(mi []model.ExternalId) {
+	m.external_ids = &mi
+	m.appendexternal_ids = nil
+}
+
+// ExternalIds returns the value of the "external_ids" field in the mutation.
+func (m *ApplicationMutation) ExternalIds() (r []model.ExternalId, exists bool) {
+	v := m.external_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalIds returns the old "external_ids" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldExternalIds(ctx context.Context) (v []model.ExternalId, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalIds: %w", err)
+	}
+	return oldValue.ExternalIds, nil
+}
+
+// AppendExternalIds adds mi to the "external_ids" field.
+func (m *ApplicationMutation) AppendExternalIds(mi []model.ExternalId) {
+	m.appendexternal_ids = append(m.appendexternal_ids, mi...)
+}
+
+// AppendedExternalIds returns the list of values that were appended to the "external_ids" field in this mutation.
+func (m *ApplicationMutation) AppendedExternalIds() ([]model.ExternalId, bool) {
+	if len(m.appendexternal_ids) == 0 {
+		return nil, false
+	}
+	return m.appendexternal_ids, true
+}
+
+// ClearExternalIds clears the value of the "external_ids" field.
+func (m *ApplicationMutation) ClearExternalIds() {
+	m.external_ids = nil
+	m.appendexternal_ids = nil
+	m.clearedFields[application.FieldExternalIds] = struct{}{}
+}
+
+// ExternalIdsCleared returns if the "external_ids" field was cleared in this mutation.
+func (m *ApplicationMutation) ExternalIdsCleared() bool {
+	_, ok := m.clearedFields[application.FieldExternalIds]
+	return ok
+}
+
+// ResetExternalIds resets all changes to the "external_ids" field.
+func (m *ApplicationMutation) ResetExternalIds() {
+	m.external_ids = nil
+	m.appendexternal_ids = nil
+	delete(m.clearedFields, application.FieldExternalIds)
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (m *ApplicationMutation) SetIPRestrictions(mr model.IpRestrictions) {
+	m.ip_restrictions = &mr
+}
+
+// IPRestrictions returns the value of the "ip_restrictions" field in the mutation.
+func (m *ApplicationMutation) IPRestrictions() (r model.IpRestrictions, exists bool) {
+	v := m.ip_restrictions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIPRestrictions returns the old "ip_restrictions" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldIPRestrictions(ctx context.Context) (v model.IpRestrictions, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIPRestrictions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIPRestrictions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIPRestrictions: %w", err)
+	}
+	return oldValue.IPRestrictions, nil
+}
+
+// ClearIPRestrictions clears the value of the "ip_restrictions" field.
+func (m *ApplicationMutation) ClearIPRestrictions() {
+	m.ip_restrictions = nil
+	m.clearedFields[application.FieldIPRestrictions] = struct{}{}
+}
+
+// IPRestrictionsCleared returns if the "ip_restrictions" field was cleared in this mutation.
+func (m *ApplicationMutation) IPRestrictionsCleared() bool {
+	_, ok := m.clearedFields[application.FieldIPRestrictions]
+	return ok
+}
+
+// ResetIPRestrictions resets all changes to the "ip_restrictions" field.
+func (m *ApplicationMutation) ResetIPRestrictions() {
+	m.ip_restrictions = nil
+	delete(m.clearedFields, application.FieldIPRestrictions)
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by id.
 func (m *ApplicationMutation) SetZoneID(id int) {
 	m.zone = &id
@@ -4960,7 +5223,7 @@ func (m *ApplicationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApplicationMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, application.FieldCreatedAt)
 	}
@@ -5003,6 +5266,12 @@ func (m *ApplicationMutation) Fields() []string {
 	if m.secret_rotation_message != nil {
 		fields = append(fields, application.FieldSecretRotationMessage)
 	}
+	if m.external_ids != nil {
+		fields = append(fields, application.FieldExternalIds)
+	}
+	if m.ip_restrictions != nil {
+		fields = append(fields, application.FieldIPRestrictions)
+	}
 	return fields
 }
 
@@ -5039,6 +5308,10 @@ func (m *ApplicationMutation) Field(name string) (ent.Value, bool) {
 		return m.SecretRotationPhase()
 	case application.FieldSecretRotationMessage:
 		return m.SecretRotationMessage()
+	case application.FieldExternalIds:
+		return m.ExternalIds()
+	case application.FieldIPRestrictions:
+		return m.IPRestrictions()
 	}
 	return nil, false
 }
@@ -5076,6 +5349,10 @@ func (m *ApplicationMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldSecretRotationPhase(ctx)
 	case application.FieldSecretRotationMessage:
 		return m.OldSecretRotationMessage(ctx)
+	case application.FieldExternalIds:
+		return m.OldExternalIds(ctx)
+	case application.FieldIPRestrictions:
+		return m.OldIPRestrictions(ctx)
 	}
 	return nil, fmt.Errorf("unknown Application field %s", name)
 }
@@ -5183,6 +5460,20 @@ func (m *ApplicationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSecretRotationMessage(v)
 		return nil
+	case application.FieldExternalIds:
+		v, ok := value.([]model.ExternalId)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalIds(v)
+		return nil
+	case application.FieldIPRestrictions:
+		v, ok := value.(model.IpRestrictions)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIPRestrictions(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Application field %s", name)
 }
@@ -5240,6 +5531,12 @@ func (m *ApplicationMutation) ClearedFields() []string {
 	if m.FieldCleared(application.FieldSecretRotationMessage) {
 		fields = append(fields, application.FieldSecretRotationMessage)
 	}
+	if m.FieldCleared(application.FieldExternalIds) {
+		fields = append(fields, application.FieldExternalIds)
+	}
+	if m.FieldCleared(application.FieldIPRestrictions) {
+		fields = append(fields, application.FieldIPRestrictions)
+	}
 	return fields
 }
 
@@ -5280,6 +5577,12 @@ func (m *ApplicationMutation) ClearField(name string) error {
 		return nil
 	case application.FieldSecretRotationMessage:
 		m.ClearSecretRotationMessage()
+		return nil
+	case application.FieldExternalIds:
+		m.ClearExternalIds()
+		return nil
+	case application.FieldIPRestrictions:
+		m.ClearIPRestrictions()
 		return nil
 	}
 	return fmt.Errorf("unknown Application nullable field %s", name)
@@ -5330,6 +5633,12 @@ func (m *ApplicationMutation) ResetField(name string) error {
 		return nil
 	case application.FieldSecretRotationMessage:
 		m.ResetSecretRotationMessage()
+		return nil
+	case application.FieldExternalIds:
+		m.ResetExternalIds()
+		return nil
+	case application.FieldIPRestrictions:
+		m.ResetIPRestrictions()
 		return nil
 	}
 	return fmt.Errorf("unknown Application field %s", name)

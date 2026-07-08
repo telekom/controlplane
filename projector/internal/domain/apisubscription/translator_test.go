@@ -78,6 +78,12 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(data.BasePath).To(Equal("/api/v1/users"))
 			Expect(data.M2MAuthMethod).To(Equal("OAUTH2_CLIENT"))
 			Expect(data.ApprovedScopes).To(Equal([]string{"read", "write"}))
+			Expect(data.Security).NotTo(BeNil())
+			Expect(data.Security.M2M).NotTo(BeNil())
+			Expect(data.Security.M2M.Client).NotTo(BeNil())
+			Expect(data.Security.M2M.Client.ClientId).To(Equal("my-client-id"))
+			Expect(*data.Security.M2M.Client.ClientSecret).To(Equal("secret"))
+			Expect(data.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
 			Expect(data.OwnerAppName).To(Equal("consumer-app"))
 			Expect(data.OwnerTeamName).To(Equal("platform--narvi"))
 			Expect(data.TargetBasePath).To(Equal("/api/v1/users"))
@@ -128,6 +134,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("NONE"))
 			Expect(data.ApprovedScopes).To(Equal([]string{}))
+			Expect(data.Security).To(BeNil())
 		})
 
 		It("should return NONE when M2M is nil", func() {
@@ -135,6 +142,8 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("NONE"))
 			Expect(data.ApprovedScopes).To(Equal([]string{}))
+			Expect(data.Security).NotTo(BeNil())
+			Expect(data.Security.M2M).To(BeNil())
 		})
 
 		It("should return OAUTH2_CLIENT when Client is set", func() {
@@ -145,6 +154,8 @@ var _ = Describe("ApiSubscription Translator", func() {
 			}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("OAUTH2_CLIENT"))
+			Expect(data.Security.M2M.Client).NotTo(BeNil())
+			Expect(data.Security.M2M.Client.ClientId).To(Equal("cid"))
 		})
 
 		It("should return BASIC_AUTH when Basic is set", func() {
@@ -155,6 +166,8 @@ var _ = Describe("ApiSubscription Translator", func() {
 			}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("BASIC_AUTH"))
+			Expect(data.Security.M2M.Basic).NotTo(BeNil())
+			Expect(data.Security.M2M.Basic.Username).To(Equal("u"))
 		})
 
 		It("should return SCOPES_ONLY when only scopes are set", func() {
@@ -166,6 +179,9 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("SCOPES_ONLY"))
 			Expect(data.ApprovedScopes).To(Equal([]string{"read"}))
+			Expect(data.Security.M2M.Scopes).To(Equal([]string{"read"}))
+			Expect(data.Security.M2M.Client).To(BeNil())
+			Expect(data.Security.M2M.Basic).To(BeNil())
 		})
 
 		It("should return NONE when M2M is set but all fields nil/empty", func() {
@@ -174,6 +190,10 @@ var _ = Describe("ApiSubscription Translator", func() {
 			}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("NONE"))
+			Expect(data.Security.M2M).NotTo(BeNil())
+			Expect(data.Security.M2M.Client).To(BeNil())
+			Expect(data.Security.M2M.Basic).To(BeNil())
+			Expect(data.Security.M2M.Scopes).To(BeNil())
 		})
 
 		It("should prefer OAUTH2_CLIENT over BASIC_AUTH and SCOPES_ONLY", func() {
@@ -197,6 +217,121 @@ var _ = Describe("ApiSubscription Translator", func() {
 			}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("BASIC_AUTH"))
+		})
+	})
+
+	Describe("Security mapping", func() {
+		It("should map nil security to nil", func() {
+			obj := &apiv1.ApiSubscription{
+				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
+				Spec: apiv1.ApiSubscriptionSpec{
+					ApiBasePath: "/api/test",
+					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Security:    nil,
+				},
+			}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Security).To(BeNil())
+			Expect(data.M2MAuthMethod).To(Equal("NONE"))
+		})
+
+		It("should map security with nil M2M", func() {
+			obj := &apiv1.ApiSubscription{
+				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
+				Spec: apiv1.ApiSubscriptionSpec{
+					ApiBasePath: "/api/test",
+					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Security:    &apiv1.SubscriberSecurity{},
+				},
+			}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Security).NotTo(BeNil())
+			Expect(data.Security.M2M).To(BeNil())
+			Expect(data.M2MAuthMethod).To(Equal("NONE"))
+		})
+
+		It("should map security with client credentials", func() {
+			obj := &apiv1.ApiSubscription{
+				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
+				Spec: apiv1.ApiSubscriptionSpec{
+					ApiBasePath: "/api/test",
+					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Security: &apiv1.SubscriberSecurity{
+						M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+							Client: &apiv1.OAuth2ClientCredentials{
+								ClientId:     "test-client-id",
+								ClientSecret: "test-dummy-secret",
+							},
+							Scopes: []string{"read", "write"},
+						},
+					},
+				},
+			}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.M2MAuthMethod).To(Equal("OAUTH2_CLIENT"))
+			Expect(data.ApprovedScopes).To(Equal([]string{"read", "write"}))
+			Expect(data.Security).NotTo(BeNil())
+			Expect(data.Security.M2M).NotTo(BeNil())
+			Expect(data.Security.M2M.Client).NotTo(BeNil())
+			Expect(data.Security.M2M.Client.ClientId).To(Equal("test-client-id"))
+			Expect(*data.Security.M2M.Client.ClientSecret).To(Equal("test-dummy-secret"))
+			Expect(data.Security.M2M.Basic).To(BeNil())
+			Expect(data.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
+		})
+
+		It("should map security with basic auth", func() {
+			obj := &apiv1.ApiSubscription{
+				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
+				Spec: apiv1.ApiSubscriptionSpec{
+					ApiBasePath: "/api/test",
+					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Security: &apiv1.SubscriberSecurity{
+						M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+							Basic: &apiv1.BasicAuthCredentials{
+								Username: "test-user",
+								Password: "test-dummy-pass",
+							},
+						},
+					},
+				},
+			}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.M2MAuthMethod).To(Equal("BASIC_AUTH"))
+			Expect(data.Security).NotTo(BeNil())
+			Expect(data.Security.M2M).NotTo(BeNil())
+			Expect(data.Security.M2M.Basic).NotTo(BeNil())
+			Expect(data.Security.M2M.Basic.Username).To(Equal("test-user"))
+			Expect(data.Security.M2M.Basic.Password).To(Equal("test-dummy-pass"))
+			Expect(data.Security.M2M.Client).To(BeNil())
+			Expect(data.Security.M2M.Scopes).To(BeNil())
+		})
+
+		It("should map security with scopes only", func() {
+			obj := &apiv1.ApiSubscription{
+				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
+				Spec: apiv1.ApiSubscriptionSpec{
+					ApiBasePath: "/api/test",
+					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Security: &apiv1.SubscriberSecurity{
+						M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+							Scopes: []string{"admin"},
+						},
+					},
+				},
+			}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.M2MAuthMethod).To(Equal("SCOPES_ONLY"))
+			Expect(data.ApprovedScopes).To(Equal([]string{"admin"}))
+			Expect(data.Security).NotTo(BeNil())
+			Expect(data.Security.M2M).NotTo(BeNil())
+			Expect(data.Security.M2M.Client).To(BeNil())
+			Expect(data.Security.M2M.Basic).To(BeNil())
+			Expect(data.Security.M2M.Scopes).To(Equal([]string{"admin"}))
 		})
 	})
 
