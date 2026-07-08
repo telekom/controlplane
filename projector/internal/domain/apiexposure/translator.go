@@ -83,10 +83,12 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		}
 		if obj.Spec.Traffic.RateLimit.SubscriberRateLimit != nil {
 			traffic.RateLimit.SubscriberRateLimit = &model.SubscriberRateLimits{
-				Default: &model.SubscriberRateLimitDefaults{
-					Limits: model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits),
-				},
 				Overrides: []model.RateLimitOverrides{},
+			}
+			if obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default != nil {
+				traffic.RateLimit.SubscriberRateLimit.Default = &model.SubscriberRateLimitDefaults{
+					Limits: model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits),
+				}
 			}
 			for i := range obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides {
 				traffic.RateLimit.SubscriberRateLimit.Overrides = append(traffic.RateLimit.SubscriberRateLimit.Overrides,
