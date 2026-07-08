@@ -44,7 +44,7 @@ var _ = Describe("CreateSSERoute", func() {
 		eventConfig = &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-zone-a", Namespace: "default"},
 			Spec: eventv1.EventConfigSpec{
-				ServerSendEventUrl: "http://sse-service:8080/sse",
+				Local: &eventv1.LocalBackend{ServerSendEventUrl: "http://sse-service:8080/sse"},
 			},
 		}
 	})
@@ -75,7 +75,7 @@ var _ = Describe("CreateSSERoute", func() {
 		badConfig := &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-bad", Namespace: "default"},
 			Spec: eventv1.EventConfigSpec{
-				ServerSendEventUrl: "://bad-url",
+				Local: &eventv1.LocalBackend{ServerSendEventUrl: "://bad-url"},
 			},
 		}
 
@@ -118,7 +118,7 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Paths).To(HaveLen(1))
-		Expect(route.Spec.Paths[0]).To(Equal("/sse/v1/de.telekom.test.v1"))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/sse/v1/de.telekom.test.v1"))
 
 		// Verify Security
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
@@ -133,7 +133,7 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(route.Spec.GatewayRef.Namespace).To(Equal("default"))
 	})
 
-	It("should add MeshClientName to DefaultConsumers when isTargetOfProxy is true", func() {
+	It("should add GatewayConsumerName to DefaultConsumers when isTargetOfProxy is true", func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
@@ -144,10 +144,11 @@ var _ = Describe("CreateSSERoute", func() {
 		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig, true)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
-		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(util.MeshClientName))
+		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(gatewayapi.GatewayConsumerName))
+		Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(util.CallbackClientName))
 	})
 
-	It("should NOT add MeshClientName to DefaultConsumers when isTargetOfProxy is false", func() {
+	It("should NOT add any mesh consumer to DefaultConsumers when isTargetOfProxy is false", func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
@@ -169,7 +170,7 @@ var _ = Describe("CreateSSERoute", func() {
 		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig, false)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update SSE Route"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
 		Expect(err.Error()).To(ContainSubstring("create failed"))
 	})
 })
@@ -259,7 +260,6 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("subscriber zone"))
 		Expect(err.Error()).To(ContainSubstring("has no default preset"))
 	})
 
@@ -271,7 +271,6 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("subscriber zone"))
 		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 
@@ -314,13 +313,13 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
 		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(443)))
-		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/sse/v1/de.telekom.test.v1"))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/horizon/sse/v1/de.telekom.test.v1"))
 
 		// Verify hostnames and paths from subscriber zone's preset
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Paths).To(HaveLen(1))
-		Expect(route.Spec.Paths[0]).To(Equal("/sse/v1/de.telekom.test.v1"))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/sse/v1/de.telekom.test.v1"))
 
 		// Verify Security
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
@@ -345,7 +344,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		route, err := util.CreateSSEProxyRoute(ctx, "de.telekom.test.v1", subscriberZone, providerZone)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update SSE proxy Route"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
 		Expect(err.Error()).To(ContainSubstring("create failed"))
 	})
 })

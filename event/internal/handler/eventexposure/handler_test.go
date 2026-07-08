@@ -115,14 +115,16 @@ func makeReadyEventConfig() eventv1.EventConfig {
 		},
 		Spec: eventv1.EventConfigSpec{
 			Zone: ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
-			Admin: eventv1.AdminConfig{
-				Url: "https://admin.example.com",
-				Client: eventv1.ClientConfig{
-					Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+			Local: &eventv1.LocalBackend{
+				Admin: eventv1.AdminConfig{
+					Url: "https://admin.example.com",
+					Client: eventv1.ClientConfig{
+						Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+					},
 				},
+				ServerSendEventUrl: "https://sse.example.com",
+				PublishEventUrl:    "http://publish.internal:8080/publish",
 			},
-			ServerSendEventUrl: "https://sse.example.com",
-			PublishEventUrl:    "http://publish.internal:8080/publish",
 		},
 		Status: eventv1.EventConfigStatus{
 			EventStore: &ctypes.ObjectRef{

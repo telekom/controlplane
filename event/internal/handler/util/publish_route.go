@@ -10,16 +10,23 @@ import (
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
+
+// How this works:
+//
+// Provider is on a "real" zone ("provider" --> "foo"):
+// 1. Provider has a publishEventUrl "https://foo-gateway/horizon/events/v1"
+// 2. Provider published the events to this and thats it
+//
+// Provider is on a "proxy" zone ("provider" --> "bar" --> "foo"):
+// 1. Provider has a publishEventUrl "https://bar-gateway/horizon/events/v1"
+// 2. Provider published the events to this and bar-gateway forwards it to foo-gateway which then forwards it to the correct internal service
 
 // CreatePublishRoute creates a Route for the publishing events
 // The Route is created once per zone where the event-feature is configured
@@ -35,28 +42,14 @@ func CreatePublishRoute(
 		opt(options)
 	}
 
-	c := cclient.ClientFromContextOrDie(ctx)
-	name := makePublishRouteName(eventConfig)
-
-	// Resolve default preset for hostnames/paths
-	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+	preset, err := resolvePreset(zone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no default preset: %s", zone.Name, err)
-	}
-	if zone.Status.Gateway == nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status", zone.Name)
+		return nil, err
 	}
 
-	route := &gatewayv1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: zone.Status.Namespace,
-		},
-	}
-
-	upstream, err := parseUpstream(eventConfig.Spec.PublishEventUrl)
+	upstream, err := parseUpstream(eventConfig.Spec.Local.PublishEventUrl)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse publishEventUrl %q", eventConfig.Spec.PublishEventUrl)
+		return nil, errors.Wrapf(err, "failed to parse publishEventUrl %q", eventConfig.Spec.Local.PublishEventUrl)
 	}
 
 	// The publish route serves two downstream paths; the events path is first so it becomes the main path.
@@ -64,17 +57,19 @@ func CreatePublishRoute(
 	_, publishPaths := preset.ResolveHostnamesAndPaths(makePublishRoutePath())
 	paths := slices.Concat(eventsPaths, publishPaths)
 
-	mutator := func() error {
-		if refErr := controllerutil.SetControllerReference(eventConfig, route, c.Scheme()); refErr != nil {
-			return errors.Wrap(refErr, "failed to set controller reference to EventConfig")
-		}
+	route := &gatewayv1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      makePublishRouteName(),
+			Namespace: zone.Status.Namespace,
+		},
+	}
 
+	build := func() error {
 		route.Labels = map[string]string{
 			config.DomainLabelKey:        "event",
 			config.BuildLabelKey("zone"): zone.Name,
 			config.BuildLabelKey("type"): "publish",
 		}
-
 		route.Spec = gatewayv1.RouteSpec{
 			GatewayRef: *zone.Status.Gateway,
 			Type:       gatewayv1.RouteTypePrimary,
@@ -85,15 +80,75 @@ func CreatePublishRoute(
 				DisableAccessControl: true,
 			},
 		}
-		options.applySecurity(route)
-
 		return nil
 	}
+	return finalizeRoute(ctx, route, options, build)
+}
 
-	_, err = c.CreateOrUpdate(ctx, route, mutator)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create or update publish Route %q", ctypes.ObjectRefFromObject(route).String())
+// CreatePublishProxyRoute creates the publish Route for a proxy zone that runs no
+// local event backend. Instead of pointing at an internal service, it is a proxy
+// Route (mesh-client authenticated) whose upstream is the target zone's gateway.
+// It mirrors the primary publish route's two downstream paths; the upstream carries
+// no path, so the gateway preserves the request path when forwarding to the target's
+// primary publish Route (same mechanism the primary route relies on for its two paths).
+func CreatePublishProxyRoute(
+	ctx context.Context,
+	sourceZone *adminv1.Zone,
+	targetZone *adminv1.Zone,
+	opts ...Option,
+) (*gatewayv1.Route, error) {
+	options := &Options{}
+	for _, opt := range opts {
+		opt(options)
 	}
 
-	return route, nil
+	sourcePreset, err := resolvePreset(sourceZone)
+	if err != nil {
+		return nil, err
+	}
+
+	targetPreset, err := targetZone.Spec.Gateway.GetDefaultPreset()
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
+	}
+
+	// Upstream is the target zone's gateway base URL (no path). The two downstream
+	// publish paths are preserved and forwarded to the target's primary publish Route.
+	// ponytail: assumes gateway preserves request path on empty upstream path, same as
+	// the primary publish route; verify against a real gateway before relying on it.
+	upstream, err := gatewayUpstream(targetPreset, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create upstream for proxy publish Route")
+	}
+
+	hostnames, eventsPaths := sourcePreset.ResolveHostnamesAndPaths(makePublishEventsRoutePath())
+	_, publishPaths := sourcePreset.ResolveHostnamesAndPaths(makePublishRoutePath())
+	paths := slices.Concat(eventsPaths, publishPaths)
+
+	route := &gatewayv1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      makePublishRouteName(),
+			Namespace: sourceZone.Status.Namespace,
+		},
+	}
+
+	build := func() error {
+		route.Labels = map[string]string{
+			config.DomainLabelKey:        "event",
+			config.BuildLabelKey("zone"): sourceZone.Name,
+			config.BuildLabelKey("type"): "publish-proxy",
+		}
+		route.Spec = gatewayv1.RouteSpec{
+			GatewayRef: *sourceZone.Status.Gateway,
+			Type:       gatewayv1.RouteTypeProxy,
+			Backend:    gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{upstream}},
+			Hostnames:  hostnames,
+			Paths:      paths,
+			Security: gatewayv1.Security{
+				DisableAccessControl: true,
+			},
+		}
+		return nil
+	}
+	return finalizeRoute(ctx, route, options, build)
 }

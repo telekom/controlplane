@@ -47,7 +47,7 @@ var _ = Describe("CreatePublishRoute", func() {
 				UID:       k8stypes.UID("ec-uid-1234"),
 			},
 			Spec: eventv1.EventConfigSpec{
-				PublishEventUrl: "http://publish-service:8080/events",
+				Local: &eventv1.LocalBackend{PublishEventUrl: "http://publish-service:8080/events"},
 			},
 		}
 	})
@@ -80,7 +80,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		badConfig := &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-bad", Namespace: "default"},
 			Spec: eventv1.EventConfigSpec{
-				PublishEventUrl: "://bad-url",
+				Local: &eventv1.LocalBackend{PublishEventUrl: "://bad-url"},
 			},
 		}
 
@@ -106,7 +106,7 @@ var _ = Describe("CreatePublishRoute", func() {
 				return controllerutil.OperationResultCreated, err
 			})
 
-		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
+		route, err := util.CreatePublishRoute(ctx, zone, eventConfig, util.WithOwner(eventConfig))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
 
@@ -161,7 +161,7 @@ var _ = Describe("CreatePublishRoute", func() {
 				UID:       k8stypes.UID("ec-uid-1234"),
 			},
 			Spec: eventv1.EventConfigSpec{
-				PublishEventUrl: "https://publish-service.internal:9443/api/publish",
+				Local: &eventv1.LocalBackend{PublishEventUrl: "https://publish-service.internal:9443/api/publish"},
 			},
 		}
 
@@ -194,7 +194,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update publish Route"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
 		Expect(err.Error()).To(ContainSubstring("create failed"))
 	})
 })

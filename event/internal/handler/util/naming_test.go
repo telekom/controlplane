@@ -6,10 +6,6 @@ package util
 
 import (
 	"testing"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
 )
 
 func TestNamingConstants(t *testing.T) {
@@ -19,8 +15,8 @@ func TestNamingConstants(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "MeshClientName",
-			got:      MeshClientName,
+			name:     "CallbackClientName",
+			got:      CallbackClientName,
 			expected: "eventstore",
 		},
 		{
@@ -45,32 +41,8 @@ func TestNamingConstants(t *testing.T) {
 }
 
 func TestNamingMakePublishRouteName(t *testing.T) {
-	tests := []struct {
-		name        string
-		eventConfig *eventv1.EventConfig
-		expected    string
-	}{
-		{
-			name:        "with nil EventConfig",
-			eventConfig: nil,
-			expected:    "publish",
-		},
-		{
-			name: "with valid EventConfig",
-			eventConfig: &eventv1.EventConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "ec-zone-a", Namespace: "default"},
-			},
-			expected: "publish",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := makePublishRouteName(tc.eventConfig)
-			if got != tc.expected {
-				t.Errorf("makePublishRouteName() = %q, want %q", got, tc.expected)
-			}
-		})
+	if got := makePublishRouteName(); got != "publish" {
+		t.Errorf("makePublishRouteName() = %q, want %q", got, "publish")
 	}
 }
 
@@ -130,17 +102,17 @@ func TestNamingMakeSSERoutePath(t *testing.T) {
 		{
 			name:      "dotted event type",
 			eventType: "de.telekom.test.v1",
-			expected:  "/sse/v1/de.telekom.test.v1",
+			expected:  "/horizon/sse/v1/de.telekom.test.v1",
 		},
 		{
 			name:      "already hyphenated",
 			eventType: "simple-event",
-			expected:  "/sse/v1/simple-event",
+			expected:  "/horizon/sse/v1/simple-event",
 		},
 		{
 			name:      "uppercase letters get lowered",
 			eventType: "DE.Telekom.Test.V1",
-			expected:  "/sse/v1/de.telekom.test.v1",
+			expected:  "/horizon/sse/v1/de.telekom.test.v1",
 		},
 	}
 
@@ -196,17 +168,17 @@ func TestNamingMakeCallbackRoutePath(t *testing.T) {
 		{
 			name:     "standard zone name",
 			zoneName: "zone-a",
-			expected: "/zone-a/callback/v1",
+			expected: "/horizon-zone-a/callback/v1",
 		},
 		{
 			name:     "zone name with multiple segments",
 			zoneName: "eu-west-1",
-			expected: "/eu-west-1/callback/v1",
+			expected: "/horizon-eu-west-1/callback/v1",
 		},
 		{
 			name:     "empty zone name",
 			zoneName: "",
-			expected: "//callback/v1",
+			expected: "/horizon/callback/v1",
 		},
 	}
 
