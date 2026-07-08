@@ -291,6 +291,10 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              providerURL:
+                description: ProviderURL is the URL of publishing events in the provider
+                  zone.
+                type: string
               proxyRoutes:
                 description: ProxyRoutes references proxy gateway Route CRs for cross-zone
                   SSE delivery.
