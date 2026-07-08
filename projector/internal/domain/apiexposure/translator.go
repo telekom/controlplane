@@ -132,7 +132,7 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 
 // determineFeatures checks for the feature of a given APIExposures
 func mapFeatures(obj *apiv1.ApiExposure) []string {
-	featureList := []string{""}
+	featureList := []string{}
 
 	// SECURITY RELATED
 	featureList = append(featureList, "LAST_MILE_SECURITY")

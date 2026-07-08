@@ -147,7 +147,7 @@ var _ = Describe("ApiExposure Translator", func() {
 			Expect(data.BasePath).To(Equal("/api/v1/users"))
 			Expect(data.Visibility).To(Equal("WORLD"))
 			Expect(data.Active).To(BeTrue())
-			Expect(data.Features).To(HaveLen(7))
+			Expect(data.Features).To(HaveLen(6))
 			Expect(data.Features).To(ContainElements("LAST_MILE_SECURITY", "EXTERNAL_IDP", "CUSTOM_SCOPES", "BASIC_AUTH", "RATE_LIMIT", "FAILOVER"))
 			Expect(data.Upstreams).To(HaveLen(1))
 			Expect(data.Upstreams[0].URL).To(Equal("https://backend.example.com"))
