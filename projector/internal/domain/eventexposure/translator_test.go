@@ -49,7 +49,8 @@ var _ = Describe("EventExposure Translator", func() {
 					},
 				},
 				Status: eventv1.EventExposureStatus{
-					Active: true,
+					Active:      true,
+					ProviderURL: "https://gateway.example.com/events/provider",
 					Conditions: []metav1.Condition{
 						{
 							Type:    "Ready",
@@ -73,6 +74,26 @@ var _ = Describe("EventExposure Translator", func() {
 			Expect(data.StatusPhase).To(Equal("READY"))
 			Expect(data.StatusMessage).To(Equal("all good"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
+			Expect(data.GatewayProviderUrl).To(Equal("https://gateway.example.com/events/provider"))
+		})
+
+		It("should set GatewayProviderUrl to empty when status has no provider url", func() {
+			obj := &eventv1.EventExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "no-provider-url",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: eventv1.EventExposureSpec{
+					EventType:  "de.telekom.test.v1",
+					Visibility: eventv1.VisibilityWorld,
+					Approval:   eventv1.Approval{Strategy: eventv1.ApprovalStrategyAuto},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.GatewayProviderUrl).To(BeEmpty())
 		})
 
 		It("should upper-case Zone visibility", func() {
