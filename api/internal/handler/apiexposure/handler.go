@@ -82,6 +82,10 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return nil
 	}
 
+	if !validateFailover(apiExp) {
+		return nil
+	}
+
 	// --- Route Provisioning Pipeline ---
 
 	// 1. Determine routing state (subscribers, flags, exposure zone)
@@ -107,90 +111,6 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	logger.Info("✅ ApiExposure is processed")
 
 	return nil
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Route Provisioning Pipeline
-// ──────────────────────────────────────────────────────────────────────────────
-//
-// The route provisioning pipeline runs in three steps:
-//
-//  1. determineRoutingState — fetches subscribers and zone data, derives flags.
-//  2. manageProxyRoutes    — creates proxy routes, collects consumer failover enrichment.
-//  3. createRealRoute      — creates the real route using the enriched state.
-//
-// All steps share a single routingState instance to avoid redundant API calls
-// and make the data flow between steps explicit.
-
-// routingState holds pre-computed data used across the route provisioning pipeline.
-//
-// The distinction between "consumer failover" and "provider failover" is important:
-//   - Consumer failover (a.k.a. DTC/DNS failover): all proxy routes AND the real route are
-//     enriched with additional hostnames and IDP issuers from ALL zones that have the
-//     ConsumerFailover feature enabled. This allows external DNS to switch consumers
-//     between zone gateways transparently.
-//   - Provider failover: creates a secondary route in a backup zone with the provider's
-//     upstreams, allowing traffic to be served from a different zone if the provider fails.
-//     Managed separately via WithFailoverUpstreams/WithFailoverSecurity.
-type routingState struct {
-	// ──────────────────────────────────────────────────────────────────────────
-	// Determined up front by determineRoutingState
-	// ──────────────────────────────────────────────────────────────────────────
-
-	// realmName is the environment/realm name used for token validation on all routes.
-	realmName string
-
-	// subscribers is the full list of approved, non-deleted ApiSubscriptions for this exposure.
-	// Used to determine which zones need proxy routes and whether consumer failover is active.
-	subscribers []*apiapi.ApiSubscription
-
-	// hasCrossZoneSubs is true if at least one subscriber is in a different zone than the exposure.
-	// Drives: real route gets GatewayConsumerName in DefaultConsumers (mesh-client access).
-	hasCrossZoneSubs bool
-
-	// hasLocalSubs is true if at least one subscriber is in the same zone as the exposure.
-	// Drives: real route trusts the exposure zone's own IDP issuer (direct consumer access).
-	hasLocalSubs bool
-
-	// hasConsumerFailover is true if at least one subscriber has consumer failover configured.
-	// When true, ALL proxy routes and the real route are enriched with failover hostnames/issuers.
-	hasConsumerFailover bool
-
-	// exposureZone is the Zone object where the API is exposed (provider zone).
-	// Used to read the zone's IDP issuer and to identify which zone is "self" in the failover loop.
-	exposureZone *adminv1.Zone
-
-	// ──────────────────────────────────────────────────────────────────────────
-	// Consumer failover enrichment — produced by manageProxyRoutes
-	// Applied to ALL proxy routes AND the real route.
-	// Collected from every zone that has the ConsumerFailover feature enabled
-	// (including the exposure zone itself).
-	// ──────────────────────────────────────────────────────────────────────────
-
-	// consumerFailoverHosts are the hostnames from the ConsumerFailover gateway presets of all
-	// eligible zones. Added as additional hostnames so that any zone's gateway can accept
-	// traffic for any other zone's failover hostname after a DNS switch.
-	consumerFailoverHosts []string
-
-	// consumerFailoverPaths are the paths from the ConsumerFailover gateway presets of all
-	// eligible zones. Added alongside consumerFailoverHosts.
-	consumerFailoverPaths []string
-
-	// consumerFailoverIssuers are the IDP issuers from all eligible zones.
-	// Added as trusted issuers so that when a consumer fails over to a different zone's
-	// gateway, the route can validate the consumer's home-zone IDP token directly.
-	consumerFailoverIssuers []string
-
-	// ──────────────────────────────────────────────────────────────────────────
-	// Mesh trust — produced by manageProxyRoutes
-	// Only for the real route. NOT related to consumer failover.
-	// ──────────────────────────────────────────────────────────────────────────
-
-	// crossZoneLmsIssuers are the LMS (Last-Mile-Security) issuers from all non-exposure
-	// zones that have proxy routes. The real route must trust these because proxy gateways
-	// in other zones stamp an LMS token before forwarding traffic to the provider zone.
-	// This is a mesh concern, not a consumer failover concern.
-	crossZoneLmsIssuers []string
 }
 
 // determineRoutingState fetches and pre-computes all data needed for route provisioning.
@@ -245,6 +165,8 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 
 	// Build the set of zones that need a proxy route.
 	// Starts with cross-zone subscriber zones, then extended by consumer failover zones.
+
+	logger.V(1).Info("collecting cross zone subscribers", "subs", len(state.subscribers))
 	allRelevantZones := h.collectCrossZoneSubscriberZones(apiExp, state)
 
 	// --- Consumer failover: collect enrichment data from all eligible zones ---
@@ -256,26 +178,43 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 		if err != nil {
 			return err
 		}
+	} else {
+		logger.V(1).Info("Consumer failover is not enabled for any subscriber")
 	}
 
 	// --- Collect LMS issuers from all cross-zone proxy route zones ---
 	// Proxy gateways stamp an LMS token before forwarding traffic to the provider zone,
 	// so the real route must trust the LMS issuer of every zone that has a proxy route.
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
-	for _, zoneRef := range allRelevantZones {
-		z, err := util.GetZone(ctx, scopedClient, zoneRef.K8s())
-		if err != nil {
-			return errors.Wrapf(err, "failed to get zone %s for LMS issuer collection", zoneRef.Name)
-		}
-		if z.Status.Links.LmsIssuer != "" {
-			state.crossZoneLmsIssuers = append(state.crossZoneLmsIssuers, z.Status.Links.LmsIssuer)
-		}
-	}
 
 	// --- Create proxy routes ---
 	apiExp.Status.ProxyRoutes = nil
 
 	for _, subscriberZoneRef := range allRelevantZones {
+		subscriberZone, err := util.GetZone(ctx, scopedClient, subscriberZoneRef.K8s())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get zone %s for LMS issuer collection", subscriberZoneRef.Name)
+		}
+		if subscriberZone.Status.Links.LmsIssuer != "" {
+			state.AddCrossZoneLmsIssuer(subscriberZoneRef, subscriberZone.Status.Links.LmsIssuer)
+		}
+
+		if subscriberZoneRef.Equals(&apiExp.Spec.Zone) {
+			logger.V(1).Info("Skipping proxy route creation for exposure zone itself", "zone", subscriberZoneRef.Name)
+			continue
+		}
+		if apiExp.HasFailover() {
+			alreadySecondaryRoute := slices.ContainsFunc(apiExp.Spec.Traffic.Failover.Zones, func(failoverZone types.ObjectRef) bool {
+				return failoverZone.Equals(&subscriberZoneRef)
+			})
+			if alreadySecondaryRoute {
+				logger.V(1).Info("Skipping proxy route creation for zone that is already a provider failover zone (secondary)", "zone", subscriberZoneRef.Name)
+				continue
+			}
+		}
+
+		logger.V(1).Info("Creating/updating proxy route for subscriber zone", "zone", subscriberZoneRef.Name)
+
 		options := []util.CreateRouteOption{
 			util.WithRealmName(state.realmName),
 		}
@@ -290,7 +229,8 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 		}
 
 		// Consumer failover enrichment: add all failover hostnames, paths, and IDP issuers
-		if state.hasConsumerFailover {
+		// We need to check if the subscriber zone has the consumer failover feature enabled
+		if state.hasConsumerFailover && subscriberZone.IsFeatureEnabled(adminv1.FeatureConsumerFailover) {
 			options = append(options,
 				util.WithAdditionalHostnames(state.consumerFailoverHosts...),
 				util.WithAdditionalPaths(state.consumerFailoverPaths...),
@@ -308,21 +248,8 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 	}
 
 	// --- Provider failover (secondary) routes ---
-	apiExp.Status.FailoverRoutes = nil
-	if apiExp.HasFailover() {
-		for _, failoverZone := range apiExp.Spec.Traffic.Failover.Zones {
-			failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
-				util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
-				util.WithFailoverSecurity(apiExp.Spec.Security),
-				util.WithTrustedIssuers(state.crossZoneLmsIssuers),
-				util.WithRealmName(state.realmName),
-			)
-			if err != nil {
-				return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in zone: %s", apiExp.Name, failoverZone.Name)
-			}
-			apiExp.Status.FailoverRoutes = append(apiExp.Status.FailoverRoutes, *types.ObjectRefFromObject(failoverRoute))
-			logger.V(1).Info("Failover secondary route created/updated", "zone", failoverZone.Name, "route", failoverRoute.Name)
-		}
+	if err := h.createFailoverRoutes(ctx, apiExp, state); err != nil {
+		return err
 	}
 
 	// Cleanup stale proxy routes that were not touched in this reconciliation
@@ -337,6 +264,57 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 	return nil
 }
 
+// createFailoverRoutes creates the provider failover (secondary) routes for each
+// configured failover zone, enriching them with consumer failover data where applicable.
+func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *apiapi.ApiExposure, state *routingState) error {
+	logger := log.FromContext(ctx)
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	apiExp.Status.FailoverRoutes = nil
+	if !apiExp.HasFailover() {
+		return nil
+	}
+
+	for _, failoverZone := range apiExp.Spec.Traffic.Failover.Zones {
+		providerFailoverZone, err := util.GetZone(ctx, scopedClient, failoverZone.K8s())
+		if err != nil {
+			if !apierrors.IsNotFound(err) {
+				return errors.Wrapf(err, "failed to get provider failover zone %q for apiExposure", failoverZone.Name)
+			}
+			return ctrlerrors.BlockedErrorf("Provider failover zone %q does not exist", failoverZone.Name)
+		}
+
+		options := []util.CreateRouteOption{
+			util.WithRealmName(state.realmName),
+		}
+
+		// If the provider failover zone has the ConsumerFailover feature enabled, enrich the failover route with all consumer failover hostnames, paths, and issuers.
+		// This is necessary because we skipped the route creation in the previous loop.
+		// We need to check this explicitly as consumer-failover-zones and provider-failover-zones could be disjoint sets.
+		if state.hasConsumerFailover && providerFailoverZone.IsFeatureEnabled(adminv1.FeatureConsumerFailover) {
+			options = append(options,
+				util.WithAdditionalHostnames(state.consumerFailoverHosts...),
+				util.WithAdditionalPaths(state.consumerFailoverPaths...),
+				util.WithTrustedIssuers(state.consumerFailoverIssuers),
+			)
+		}
+
+		options = append(options,
+			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
+			util.WithFailoverSecurity(apiExp.Spec.Security),
+			util.AddTrustedIssuers(state.CrossZoneLmsIssuers(failoverZone)...),
+		)
+
+		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath, options...)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in zone: %s", apiExp.Name, failoverZone.Name)
+		}
+		apiExp.Status.FailoverRoutes = append(apiExp.Status.FailoverRoutes, *types.ObjectRefFromObject(failoverRoute))
+		logger.V(1).Info("Failover secondary route created/updated", "zone", failoverZone.Name, "route", failoverRoute.Name)
+	}
+	return nil
+}
+
 // collectCrossZoneSubscriberZones returns the set of subscriber zones that need
 // a proxy route (i.e. not local to the exposure and not already covered by provider failover).
 func (h *ApiExposureHandler) collectCrossZoneSubscriberZones(apiExp *apiapi.ApiExposure, state *routingState) []types.ObjectRef {
@@ -346,16 +324,8 @@ func (h *ApiExposureHandler) collectCrossZoneSubscriberZones(apiExp *apiapi.ApiE
 		if sub.Spec.Zone.Equals(&apiExp.Spec.Zone) {
 			continue
 		}
-		if apiExp.HasFailover() {
-			alreadySecondaryRoute := slices.ContainsFunc(apiExp.Spec.Traffic.Failover.Zones, func(failoverZone types.ObjectRef) bool {
-				return failoverZone.Equals(&sub.Spec.Zone)
-			})
-			if alreadySecondaryRoute {
-				continue
-			}
-		}
 
-		if !slices.Contains(zones, sub.Spec.Zone) {
+		if !slices.ContainsFunc(zones, func(z types.ObjectRef) bool { return z.Equals(&sub.Spec.Zone) }) {
 			zones = append(zones, sub.Spec.Zone)
 		}
 	}
@@ -378,17 +348,9 @@ func (h *ApiExposureHandler) collectConsumerFailoverEnrichment(ctx context.Conte
 		logger.Info("No zones with consumer failover feature enabled found, skipping failover configuration")
 		return allRelevantZones, nil
 	}
+	logger.V(1).Info("Collecting consumer failover enrichment from eligible zones", "count", len(availableFailoverZones))
 
 	for _, zone := range availableFailoverZones {
-		if apiExp.HasFailover() {
-			alreadySecondaryRoute := slices.ContainsFunc(apiExp.Spec.Traffic.Failover.Zones, func(failoverZone types.ObjectRef) bool {
-				return failoverZone.Equals(zone)
-			})
-			if alreadySecondaryRoute {
-				continue
-			}
-		}
-
 		preset, err := zone.SelectGatewayPreset(adminv1.FeatureConsumerFailover)
 		if err != nil {
 			return nil, ctrlerrors.BlockedErrorf("Zone %q does not have a gateway preset with consumer failover feature enabled", zone.Name)
@@ -400,11 +362,12 @@ func (h *ApiExposureHandler) collectConsumerFailoverEnrichment(ctx context.Conte
 		state.consumerFailoverIssuers = append(state.consumerFailoverIssuers, zone.Status.Links.Issuer)
 
 		if apiExp.Spec.Zone.Equals(zone) {
+			// return here to avoid adding the exposure zone itself to the list of allRelevantZones, which is only for proxy routes
 			continue
 		}
 
 		objRef := types.ObjectRefFromObject(zone)
-		if !slices.Contains(allRelevantZones, *objRef) {
+		if !slices.ContainsFunc(allRelevantZones, func(z types.ObjectRef) bool { return z.Equals(objRef) }) {
 			allRelevantZones = append(allRelevantZones, *objRef)
 		}
 	}
@@ -429,18 +392,26 @@ func (h *ApiExposureHandler) createRealRoute(ctx context.Context, apiExp *apiapi
 		util.WithProxyTarget(state.hasCrossZoneSubs),
 	}
 
+	// The exposure zone only participates in the consumer failover pool if it has the
+	// feature enabled. Only then may its real route accept other
+	// zones' failover hostnames and trust their home-zone IDP issuers directly. Mirrors the
+	// per-zone gating applied to proxy/provider-failover routes in manageProxyRoutes.
+	exposureZoneHasFailover := state.exposureZone.IsFeatureEnabled(adminv1.FeatureConsumerFailover)
+
 	// Build TrustedIssuers for the real route
 	var trustedIssuers []string
 	if state.hasLocalSubs && state.exposureZone.Status.Links.Issuer != "" {
 		trustedIssuers = append(trustedIssuers, state.exposureZone.Status.Links.Issuer)
 	}
-	trustedIssuers = append(trustedIssuers, state.crossZoneLmsIssuers...)
-	trustedIssuers = append(trustedIssuers, state.consumerFailoverIssuers...)
+	trustedIssuers = append(trustedIssuers, state.CrossZoneLmsIssuers()...)
+	if exposureZoneHasFailover {
+		trustedIssuers = append(trustedIssuers, state.consumerFailoverIssuers...)
+	}
 	options = append(options, util.WithTrustedIssuers(trustedIssuers))
 
 	// Consumer failover: the real route also gets all failover hostnames/paths so that
 	// consumers failing over directly to the provider zone's gateway can reach it.
-	if len(state.consumerFailoverHosts) > 0 {
+	if exposureZoneHasFailover && len(state.consumerFailoverHosts) > 0 {
 		options = append(options,
 			util.WithAdditionalHostnames(state.consumerFailoverHosts...),
 			util.WithAdditionalPaths(state.consumerFailoverPaths...),
@@ -587,4 +558,20 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 		apiExp.SetCondition(condition.NewBlockedCondition(msg))
 	}
 	return false
+}
+
+func validateFailover(apiExp *apiapi.ApiExposure) bool {
+	if !apiExp.HasFailover() {
+		return true
+	}
+
+	for _, failoverZone := range apiExp.Spec.Traffic.Failover.Zones {
+		if failoverZone.Equals(&apiExp.Spec.Zone) {
+			msg := fmt.Sprintf("cannot use the same zone %q as both primary and failover zone for apiExposure: %s", failoverZone.Name, apiExp.Name)
+			apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
+			apiExp.SetCondition(condition.NewBlockedCondition(msg))
+			return false
+		}
+	}
+	return true
 }
