@@ -6,6 +6,9 @@
 # The ent-generated schema is in ent.graphql.
 
 # Reduced team information for cross-tenant contexts.
+
+scalar Map
+
 type TeamInfo {
   id: ID!
   name: String!
@@ -49,6 +52,45 @@ type Decision {
 type AvailableTransition {
   action: ApprovalAction!
   toState: ApprovalState!
+}
+
+type EventScope {
+  name: String!
+  trigger: EventTrigger!
+}
+
+type EventTrigger {
+  responseFilter: ResponseFilter
+  selectionFilter: SelectionFilter
+}
+
+enum ResponseFilterMode {
+  INCLUDE
+  EXCLUDE
+}
+
+type ResponseFilter {
+  paths: [String]!
+  mode: ResponseFilterMode 
+}
+
+type SelectionFilter {
+  attributes: Map
+  expression: String!
+}
+
+type EventDelivery {
+  payload: PayloadType!
+  eventRetentionTime: String!
+  circuitBreakerOptOut: Boolean!
+  retryableStatusCodes: [Int!]
+  redeliveriesPerSecond: Int
+  enforceGetHttpRequestMethodForHealthCheck: Boolean!
+}
+
+enum PayloadType {
+  DATA
+  DATA_REF
 }
 
 enum ApiExposureFeature {

@@ -44,12 +44,21 @@ type AvailableTransitionResolver interface {
 type DecisionResolver interface {
 	ResultingState(ctx context.Context, obj *model.Decision) (*approval.State, error)
 }
+type EventDeliveryResolver interface {
+	Payload(ctx context.Context, obj *model.EventDelivery) (model1.PayloadType, error)
+}
 type EventExposureInfoResolver interface {
 	Visibility(ctx context.Context, obj *model.EventExposureInfo) (eventexposure.Visibility, error)
 }
 type EventSubscriptionInfoResolver interface {
 	DeliveryType(ctx context.Context, obj *model.EventSubscriptionInfo) (eventsubscription.DeliveryType, error)
 	StatusPhase(ctx context.Context, obj *model.EventSubscriptionInfo) (*eventsubscription.StatusPhase, error)
+}
+type ResponseFilterResolver interface {
+	Mode(ctx context.Context, obj *model.ResponseFilter) (*model1.ResponseFilterMode, error)
+}
+type SelectionFilterResolver interface {
+	Attributes(ctx context.Context, obj *model.SelectionFilter) (map[string]any, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -712,6 +721,144 @@ func (ec *executionContext) fieldContext_Decision_resultingState(_ context.Conte
 	return graphql.NewScalarFieldContext("Decision", field, true, true, errors.New("field of type ApprovalState does not have child fields"))
 }
 
+func (ec *executionContext) _EventDelivery_payload(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventDelivery_payload(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.EventDelivery().Payload(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model1.PayloadType) graphql.Marshaler {
+			return ec.marshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventDelivery_payload(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventDelivery", field, true, true, errors.New("field of type PayloadType does not have child fields"))
+}
+
+func (ec *executionContext) _EventDelivery_eventRetentionTime(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventDelivery_eventRetentionTime(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.EventRetentionTime, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventDelivery_eventRetentionTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _EventDelivery_circuitBreakerOptOut(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventDelivery_circuitBreakerOptOut(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CircuitBreakerOptOut, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventDelivery_circuitBreakerOptOut(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _EventDelivery_retryableStatusCodes(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventDelivery_retryableStatusCodes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RetryableStatusCodes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []int) graphql.Marshaler {
+			return ec.marshalOInt2ᚕintᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventDelivery_retryableStatusCodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _EventDelivery_redeliveriesPerSecond(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventDelivery_redeliveriesPerSecond(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RedeliveriesPerSecond, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *int) graphql.Marshaler {
+			return ec.marshalOInt2ᚖint(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventDelivery_redeliveriesPerSecond(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.EnforceGetHttpRequestMethodForHealthCheck, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventDelivery_enforceGetHttpRequestMethodForHealthCheck(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
 func (ec *executionContext) _EventExposureInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.EventExposureInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -891,6 +1038,61 @@ func (ec *executionContext) fieldContext_EventExposureInfo_ownerTeam(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _EventScope_name(ctx context.Context, field graphql.CollectedField, obj *model.EventScope) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventScope_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventScope_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventScope", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _EventScope_trigger(ctx context.Context, field graphql.CollectedField, obj *model.EventScope) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventScope_trigger(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Trigger, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.EventTrigger) graphql.Marshaler {
+			return ec.marshalNEventTrigger2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventScope_trigger(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventScope",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_EventTrigger(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _EventSubscriptionInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.EventSubscriptionInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1061,6 +1263,70 @@ func (ec *executionContext) fieldContext_EventSubscriptionInfo_ownerTeam(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _EventTrigger_responseFilter(ctx context.Context, field graphql.CollectedField, obj *model.EventTrigger) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventTrigger_responseFilter(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ResponseFilter, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ResponseFilter) graphql.Marshaler {
+			return ec.marshalOResponseFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐResponseFilter(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventTrigger_responseFilter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventTrigger",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ResponseFilter(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventTrigger_selectionFilter(ctx context.Context, field graphql.CollectedField, obj *model.EventTrigger) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventTrigger_selectionFilter(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SelectionFilter, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.SelectionFilter) graphql.Marshaler {
+			return ec.marshalOSelectionFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSelectionFilter(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventTrigger_selectionFilter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventTrigger",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SelectionFilter(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RequesterInfo_teamName(ctx context.Context, field graphql.CollectedField, obj *model.RequesterInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1151,6 +1417,98 @@ func (ec *executionContext) _RequesterInfo_applicationName(ctx context.Context, 
 }
 func (ec *executionContext) fieldContext_RequesterInfo_applicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("RequesterInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ResponseFilter_paths(ctx context.Context, field graphql.CollectedField, obj *model.ResponseFilter) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ResponseFilter_paths(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Paths, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstring(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ResponseFilter_paths(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ResponseFilter", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ResponseFilter_mode(ctx context.Context, field graphql.CollectedField, obj *model.ResponseFilter) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ResponseFilter_mode(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.ResponseFilter().Mode(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.ResponseFilterMode) graphql.Marshaler {
+			return ec.marshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ResponseFilter_mode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ResponseFilter", field, true, true, errors.New("field of type ResponseFilterMode does not have child fields"))
+}
+
+func (ec *executionContext) _SelectionFilter_attributes(ctx context.Context, field graphql.CollectedField, obj *model.SelectionFilter) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SelectionFilter_attributes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.SelectionFilter().Attributes(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v map[string]any) graphql.Marshaler {
+			return ec.marshalOMap2map(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SelectionFilter_attributes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SelectionFilter", field, true, true, errors.New("field of type Map does not have child fields"))
+}
+
+func (ec *executionContext) _SelectionFilter_expression(ctx context.Context, field graphql.CollectedField, obj *model.SelectionFilter) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SelectionFilter_expression(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Expression, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SelectionFilter_expression(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SelectionFilter", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _TeamInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
@@ -1939,6 +2297,95 @@ func (ec *executionContext) _Decision(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var eventDeliveryImplementors = []string{"EventDelivery"}
+
+func (ec *executionContext) _EventDelivery(ctx context.Context, sel ast.SelectionSet, obj *model.EventDelivery) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventDeliveryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EventDelivery")
+		case "payload":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._EventDelivery_payload(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "eventRetentionTime":
+			out.Values[i] = ec._EventDelivery_eventRetentionTime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "circuitBreakerOptOut":
+			out.Values[i] = ec._EventDelivery_circuitBreakerOptOut(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "retryableStatusCodes":
+			out.Values[i] = ec._EventDelivery_retryableStatusCodes(ctx, field, obj)
+		case "redeliveriesPerSecond":
+			out.Values[i] = ec._EventDelivery_redeliveriesPerSecond(ctx, field, obj)
+		case "enforceGetHttpRequestMethodForHealthCheck":
+			out.Values[i] = ec._EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var eventExposureInfoImplementors = []string{"EventExposureInfo"}
 
 func (ec *executionContext) _EventExposureInfo(ctx context.Context, sel ast.SelectionSet, obj *model.EventExposureInfo) graphql.Marshaler {
@@ -2012,6 +2459,50 @@ func (ec *executionContext) _EventExposureInfo(ctx context.Context, sel ast.Sele
 			out.Values[i] = ec._EventExposureInfo_ownerTeam(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var eventScopeImplementors = []string{"EventScope"}
+
+func (ec *executionContext) _EventScope(ctx context.Context, sel ast.SelectionSet, obj *model.EventScope) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventScopeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EventScope")
+		case "name":
+			out.Values[i] = ec._EventScope_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "trigger":
+			out.Values[i] = ec._EventScope_trigger(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -2161,6 +2652,44 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 	return out
 }
 
+var eventTriggerImplementors = []string{"EventTrigger"}
+
+func (ec *executionContext) _EventTrigger(ctx context.Context, sel ast.SelectionSet, obj *model.EventTrigger) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventTriggerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EventTrigger")
+		case "responseFilter":
+			out.Values[i] = ec._EventTrigger_responseFilter(ctx, field, obj)
+		case "selectionFilter":
+			out.Values[i] = ec._EventTrigger_selectionFilter(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var requesterInfoImplementors = []string{"RequesterInfo"}
 
 func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.SelectionSet, obj *model.RequesterInfo) graphql.Marshaler {
@@ -2186,6 +2715,150 @@ func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._RequesterInfo_reason(ctx, field, obj)
 		case "applicationName":
 			out.Values[i] = ec._RequesterInfo_applicationName(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var responseFilterImplementors = []string{"ResponseFilter"}
+
+func (ec *executionContext) _ResponseFilter(ctx context.Context, sel ast.SelectionSet, obj *model.ResponseFilter) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, responseFilterImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResponseFilter")
+		case "paths":
+			out.Values[i] = ec._ResponseFilter_paths(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "mode":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResponseFilter_mode(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var selectionFilterImplementors = []string{"SelectionFilter"}
+
+func (ec *executionContext) _SelectionFilter(ctx context.Context, sel ast.SelectionSet, obj *model.SelectionFilter) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, selectionFilterImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SelectionFilter")
+		case "attributes":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SelectionFilter_attributes(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "expression":
+			out.Values[i] = ec._SelectionFilter_expression(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2461,6 +3134,10 @@ func (ec *executionContext) marshalNDecision2ᚕgithubᚗcomᚋtelekomᚋcontrol
 	return ret
 }
 
+func (ec *executionContext) marshalNEventDelivery2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventDelivery(ctx context.Context, sel ast.SelectionSet, v model.EventDelivery) graphql.Marshaler {
+	return ec._EventDelivery(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNEventExposureInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v model.EventExposureInfo) graphql.Marshaler {
 	return ec._EventExposureInfo(ctx, sel, &v)
 }
@@ -2499,6 +3176,20 @@ func (ec *executionContext) marshalNEventSubscriptionInfo2ᚖgithubᚗcomᚋtele
 		return graphql.Null
 	}
 	return ec._EventSubscriptionInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNEventTrigger2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx context.Context, sel ast.SelectionSet, v model.EventTrigger) graphql.Marshaler {
+	return ec._EventTrigger(ctx, sel, &v)
+}
+
+func (ec *executionContext) unmarshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, v any) (model1.PayloadType, error) {
+	var res model1.PayloadType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, sel ast.SelectionSet, v model1.PayloadType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNRequesterInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRequesterInfo(ctx context.Context, sel ast.SelectionSet, v model.RequesterInfo) graphql.Marshaler {
@@ -2580,6 +3271,78 @@ func (ec *executionContext) marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekom�
 		return graphql.Null
 	}
 	return ec._EventExposureInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOEventScope2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v model.EventScope) graphql.Marshaler {
+	return ec._EventScope(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v []model.EventScope) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOEventScope2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx, sel, v[i])
+	})
+
+	return ret
+}
+
+func (ec *executionContext) marshalOEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx context.Context, sel ast.SelectionSet, v *model.EventTrigger) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._EventTrigger(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]any) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalMap(v)
+	return res
+}
+
+func (ec *executionContext) marshalOResponseFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐResponseFilter(ctx context.Context, sel ast.SelectionSet, v *model.ResponseFilter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ResponseFilter(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, v any) (*model1.ResponseFilterMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model1.ResponseFilterMode)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, sel ast.SelectionSet, v *model1.ResponseFilterMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalOSelectionFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSelectionFilter(ctx context.Context, sel ast.SelectionSet, v *model.SelectionFilter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SelectionFilter(ctx, sel, v)
 }
 
 // endregion ***************************** type.gotpl *****************************

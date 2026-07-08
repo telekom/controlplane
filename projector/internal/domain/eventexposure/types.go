@@ -30,6 +30,7 @@ type EventExposureData struct {
 	Visibility     string // "WORLD", "ZONE", "ENTERPRISE" (upper-cased)
 	Active         bool
 	ApprovalConfig model.ApprovalConfig
+	Scopes         []model.EventScope
 	AppName        string // resolved to owner Application FK
 	TeamName       string // used to resolve owner Application FK
 }

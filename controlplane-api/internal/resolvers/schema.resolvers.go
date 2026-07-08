@@ -335,6 +335,11 @@ func (r *decisionResolver) ResultingState(ctx context.Context, obj *model.Decisi
 	return &s, nil
 }
 
+// Payload is the resolver for the payload field.
+func (r *eventDeliveryResolver) Payload(ctx context.Context, obj *model.EventDelivery) (gqlmodel.PayloadType, error) {
+	return gqlmodel.PayloadType(obj.Payload), nil
+}
+
 // Subscriptions is the resolver for the subscriptions field.
 // Returns reduced EventSubscriptionInfo types for cross-tenant safety.
 func (r *eventExposureResolver) Subscriptions(ctx context.Context, obj *ent.EventExposure) ([]*model.EventSubscriptionInfo, error) {
@@ -497,6 +502,27 @@ func (r *queryResolver) APICategories(ctx context.Context) ([]*gqlmodel.APICateg
 	return categories, nil
 }
 
+// Mode is the resolver for the mode field.
+func (r *responseFilterResolver) Mode(ctx context.Context, obj *model.ResponseFilter) (*gqlmodel.ResponseFilterMode, error) {
+	if obj.Mode == "" {
+		return nil, nil
+	}
+	m := gqlmodel.ResponseFilterMode(obj.Mode)
+	return &m, nil
+}
+
+// Attributes is the resolver for the attributes field.
+func (r *selectionFilterResolver) Attributes(ctx context.Context, obj *model.SelectionFilter) (map[string]any, error) {
+	if obj.Attributes == nil {
+		return nil, nil
+	}
+	result := make(map[string]any, len(obj.Attributes))
+	for k, v := range obj.Attributes {
+		result[k] = v
+	}
+	return result, nil
+}
+
 // TokenURL is the resolver for the tokenUrl field.
 func (r *zoneResolver) TokenURL(ctx context.Context, obj *ent.Zone) (*string, error) {
 	if obj.IssuerURL == nil {
@@ -526,6 +552,9 @@ func (r *Resolver) AvailableTransition() AvailableTransitionResolver {
 // Decision returns DecisionResolver implementation.
 func (r *Resolver) Decision() DecisionResolver { return &decisionResolver{r} }
 
+// EventDelivery returns EventDeliveryResolver implementation.
+func (r *Resolver) EventDelivery() EventDeliveryResolver { return &eventDeliveryResolver{r} }
+
 // EventExposureInfo returns EventExposureInfoResolver implementation.
 func (r *Resolver) EventExposureInfo() EventExposureInfoResolver {
 	return &eventExposureInfoResolver{r}
@@ -536,10 +565,19 @@ func (r *Resolver) EventSubscriptionInfo() EventSubscriptionInfoResolver {
 	return &eventSubscriptionInfoResolver{r}
 }
 
+// ResponseFilter returns ResponseFilterResolver implementation.
+func (r *Resolver) ResponseFilter() ResponseFilterResolver { return &responseFilterResolver{r} }
+
+// SelectionFilter returns SelectionFilterResolver implementation.
+func (r *Resolver) SelectionFilter() SelectionFilterResolver { return &selectionFilterResolver{r} }
+
 type apiExposureInfoResolver struct{ *Resolver }
 type apiSubscriptionInfoResolver struct{ *Resolver }
 type approvalConfigResolver struct{ *Resolver }
 type availableTransitionResolver struct{ *Resolver }
 type decisionResolver struct{ *Resolver }
+type eventDeliveryResolver struct{ *Resolver }
 type eventExposureInfoResolver struct{ *Resolver }
 type eventSubscriptionInfoResolver struct{ *Resolver }
+type responseFilterResolver struct{ *Resolver }
+type selectionFilterResolver struct{ *Resolver }
