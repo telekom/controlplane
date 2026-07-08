@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
-
-	jwtware "github.com/gofiber/contrib/jwt"
 )
 
 type contextKey string
@@ -102,10 +102,13 @@ func IdentityExtraction(log logr.Logger) fiber.Handler {
 // extractIdentity parses the ConsumerIdentity from JWT claims.
 // clientId format: "group--team--user" (e.g. "eni--hyper--team-user")
 func extractIdentity(claims jwt.MapClaims) (*ConsumerIdentity, error) {
-	clientID, _ := claims["clientId"].(string)
-	if clientID == "" {
+	clientID, ok := claims["clientId"].(string)
+	if !ok || clientID == "" {
 		// Fallback: some issuers use "azp" (authorized party)
-		clientID, _ = claims["azp"].(string)
+		clientID, ok = claims["azp"].(string)
+		if !ok {
+			clientID = ""
+		}
 	}
 	if clientID == "" {
 		return nil, fiber.NewError(fiber.StatusUnauthorized, "missing clientId claim")

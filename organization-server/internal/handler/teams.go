@@ -384,7 +384,3 @@ func (h *Handler) GetTeamResources(c *fiber.Ctx) error {
 	c.Set("X-Result-Count", intToStr(len(paged)))
 	return c.JSON(mapper.BuildPaginatedResponse(c, paged, total, p))
 }
-
-func buildPaginationLink(c *fiber.Ctx, offset, limit int) string {
-	return c.Path() + "?offset=" + intToStr(offset) + "&limit=" + intToStr(limit)
-}

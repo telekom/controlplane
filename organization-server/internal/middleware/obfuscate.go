@@ -81,7 +81,10 @@ func redactSensitiveFields(body []byte) []byte {
 	var obj map[string]any
 	if err := json.Unmarshal(body, &obj); err == nil {
 		if redactObject(obj) {
-			result, _ := json.Marshal(obj)
+			result, err := json.Marshal(obj)
+			if err != nil {
+				return nil
+			}
 			return result
 		}
 		return nil
@@ -97,7 +100,10 @@ func redactSensitiveFields(body []byte) []byte {
 			}
 		}
 		if changed {
-			result, _ := json.Marshal(arr)
+			result, err := json.Marshal(arr)
+			if err != nil {
+				return nil
+			}
 			return result
 		}
 	}
@@ -122,16 +128,24 @@ func redactObject(obj map[string]any) bool {
 
 	// Handle paginated responses with "items" array.
 	if items, ok := obj["items"]; ok {
-		if arr, ok := items.([]any); ok {
-			for _, item := range arr {
-				if m, ok := item.(map[string]any); ok {
-					if redactObject(m) {
-						changed = true
-					}
-				}
+		changed = redactItems(items) || changed
+	}
+
+	return changed
+}
+
+func redactItems(items any) bool {
+	arr, ok := items.([]any)
+	if !ok {
+		return false
+	}
+	changed := false
+	for _, item := range arr {
+		if m, ok := item.(map[string]any); ok {
+			if redactObject(m) {
+				changed = true
 			}
 		}
 	}
-
 	return changed
 }

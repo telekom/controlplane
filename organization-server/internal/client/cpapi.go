@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
+
 	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 )
 
@@ -32,7 +33,10 @@ func WithIdentity(ctx context.Context, id *ConsumerIdentity) context.Context {
 
 // identityFromContext extracts ConsumerIdentity from context.
 func identityFromContext(ctx context.Context) *ConsumerIdentity {
-	v, _ := ctx.Value(identityContextKey).(*ConsumerIdentity)
+	v, ok := ctx.Value(identityContextKey).(*ConsumerIdentity)
+	if !ok {
+		return nil
+	}
 	return v
 }
 

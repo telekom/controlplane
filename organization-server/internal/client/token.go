@@ -64,11 +64,11 @@ func (ts *TokenSource) fetchToken() (string, time.Time, error) {
 		"client_secret": {ts.clientSecret},
 	}
 
-	resp, err := ts.httpClient.Post(ts.tokenURL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
+	resp, err := ts.httpClient.Post(ts.tokenURL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode())) //nolint:gosec // tokenURL is from trusted config, not user input
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("fetching OAuth token: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // best-effort close
 
 	if resp.StatusCode != http.StatusOK {
 		return "", time.Time{}, fmt.Errorf("OAuth token endpoint returned %d", resp.StatusCode)

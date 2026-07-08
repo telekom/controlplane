@@ -86,6 +86,8 @@ func newTestApp(graphqlURL, roverURL string) *fiber.App {
 
 // makeToken creates a mock JWT (unsigned) with the given claims for testing.
 // Uses the clientId format expected by IdentityExtraction: "group--team--user"
+//
+//nolint:unparam // group is always "eni" in current tests but kept as parameter for flexibility
 func makeToken(group, team string, scopes []string) string {
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
 	claims := map[string]any{

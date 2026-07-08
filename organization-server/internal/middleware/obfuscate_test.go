@@ -95,7 +95,7 @@ func TestRedactSensitiveFields_Array(t *testing.T) {
 }
 
 func contains(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && stringContains(s, substr)
+	return s != "" && substr != "" && stringContains(s, substr)
 }
 
 func stringContains(s, substr string) bool {
