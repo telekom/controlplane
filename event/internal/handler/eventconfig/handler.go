@@ -262,15 +262,19 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 }
 
 // listMeshPeerZones lists the zones of all other EventConfigs (excluding obj's own zone).
-// realPeers: non-proxy peers that host a backend (a proxy Route can point at them).
-// allPeers:  every peer (real + proxy); proxy peers are trust-only, no Route target.
-func (h *EventConfigHandler) listMeshPeerZones(ctx context.Context, obj *eventv1.EventConfig) (realPeerZones, allPeerZones []*adminv1.Zone, err error) {
+// realPeers:    non-proxy peers that host a backend (a proxy Route can point at them).
+// allPeers:     every peer (real + proxy); proxy peers are trust-only, no Route target.
+// inboundPeers: peers that mesh with obj's zone (SupportsZone), i.e. are actually allowed
+//
+//	to read this zone's primary Route. Only these peers' LMS issuers may be
+//	trusted on the primary; a peer that does not mesh here gets no trust.
+func (h *EventConfigHandler) listMeshPeerZones(ctx context.Context, obj *eventv1.EventConfig) (realPeerZones, allPeerZones, inboundPeerZones []*adminv1.Zone, err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
 	otherEventConfigs := &eventv1.EventConfigList{}
 	if err = c.List(ctx, otherEventConfigs); err != nil {
-		return nil, nil, errors.Wrap(err, "failed to list other EventConfigs")
+		return nil, nil, nil, errors.Wrap(err, "failed to list other EventConfigs")
 	}
 	logger.V(1).Info("Fetched other EventConfigs", "count", len(otherEventConfigs.Items))
 
@@ -281,14 +285,17 @@ func (h *EventConfigHandler) listMeshPeerZones(ctx context.Context, obj *eventv1
 		}
 		otherZone, zoneErr := util.GetZone(ctx, other.Spec.Zone.K8s())
 		if zoneErr != nil {
-			return nil, nil, errors.Wrapf(zoneErr, "failed to get zone for other EventConfig %q", other.Name)
+			return nil, nil, nil, errors.Wrapf(zoneErr, "failed to get zone for other EventConfig %q", other.Name)
 		}
 		allPeerZones = append(allPeerZones, otherZone)
 		if !other.IsProxy() {
 			realPeerZones = append(realPeerZones, otherZone)
 		}
+		if other.SupportsZone(obj.Spec.Zone.Name) {
+			inboundPeerZones = append(inboundPeerZones, otherZone)
+		}
 	}
-	return realPeerZones, allPeerZones, nil
+	return realPeerZones, allPeerZones, inboundPeerZones, nil
 }
 
 func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone, meshCfg *eventv1.MeshConfig) error {
@@ -297,8 +304,9 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 	realmName := myZone.Status.RealmName
 
 	// Callbacks proxy to every peer (proxy zones also expose a local callback primary),
-	// so route targets and trust both use the full peer set.
-	_, otherZones, err := h.listMeshPeerZones(ctx, obj)
+	// so route targets use the full peer set. Primary-route trust, however, is limited to
+	// inbound peers: only zones that mesh with this zone may read its callback primary.
+	_, otherZones, inboundZones, err := h.listMeshPeerZones(ctx, obj)
 	if err != nil {
 		return err
 	}
@@ -327,9 +335,11 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 		obj.Status.ProxyCallbackURLs[zoneName] = util.RouteDownstreamURL(route)
 	}
 
-	// Primary callback route: trusted issuers = [IDP issuer] + [LMS issuers from proxy zones]
-	isProxyTarget := len(obj.Status.ProxyCallbackRoutes) > 0
-	primaryTrustedIssuers := collectPrimaryTrustedIssuers(myZone, otherZones, isProxyTarget)
+	// Primary callback route: trusted issuers = [IDP issuer] + [LMS issuers of inbound peers].
+	// A peer's LMS issuer is trusted only if that peer meshes with this zone; without a mesh
+	// there is no LMS issuer to add and no mesh-client consumer on the primary.
+	isProxyTarget := len(inboundZones) > 0
+	primaryTrustedIssuers := collectPrimaryTrustedIssuers(myZone, inboundZones, isProxyTarget)
 
 	myCallbackRoute, err := util.CreateCallbackRoute(ctx, myZone,
 		util.WithOwner(obj),
@@ -417,9 +427,10 @@ func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *event
 	realmName := myZone.Status.RealmName
 
 	// realPeerZones excludes proxy peers (they run no local Voyager backend, so there
-	// is no primary Route to point a proxy Route at). allPeerZones includes proxy peers,
-	// which must be trusted on the primary Route because they read this zone's Voyager.
-	realPeerZones, allPeerZones, err := h.listMeshPeerZones(ctx, obj)
+	// is no primary Route to point a proxy Route at). inboundPeerZones are the peers that
+	// mesh with this zone and are therefore allowed to read its Voyager primary; only their
+	// LMS issuers are trusted on the primary Route.
+	realPeerZones, _, inboundPeerZones, err := h.listMeshPeerZones(ctx, obj)
 	if err != nil {
 		return err
 	}
@@ -449,10 +460,11 @@ func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *event
 	}
 
 	// Primary voyager route trust includes this zone's IDP issuer plus the LMS issuers of
-	// all peers (proxy and non-proxy) that proxy reads to this primary. isProxyTarget is
-	// true whenever any peer exists, since every mesh peer forwards to this primary Route.
-	isProxyTarget := len(allPeerZones) > 0
-	primaryTrustedIssuers := collectPrimaryTrustedIssuers(myZone, allPeerZones, isProxyTarget)
+	// the inbound peers (proxy and non-proxy) that mesh with this zone. isProxyTarget is
+	// true only when at least one such peer exists; a zone with no inbound mesh partners
+	// exposes no mesh-client consumer and trusts no LMS issuer on its primary.
+	isProxyTarget := len(inboundPeerZones) > 0
+	primaryTrustedIssuers := collectPrimaryTrustedIssuers(myZone, inboundPeerZones, isProxyTarget)
 
 	myVoyagerRoute, err := util.CreateVoyagerRoute(ctx, myZone, obj,
 		util.WithOwner(obj),
@@ -516,7 +528,7 @@ func (h *EventConfigHandler) createProxyVoyagerRoutes(ctx context.Context, obj *
 
 	// Mesh Routes: proxy to every other meshed non-proxy zone, like a local zone.
 	// Proxy routes authenticate to the target primary with this zone's LMS (mesh) issuer.
-	realPeerZones, _, err := h.listMeshPeerZones(ctx, obj)
+	realPeerZones, _, _, err := h.listMeshPeerZones(ctx, obj)
 	if err != nil {
 		return err
 	}
