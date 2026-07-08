@@ -57,6 +57,13 @@ func CreateSSERoute(
 		return nil, err
 	}
 
+	// The primary SSE Route points at the zone's local Horizon backend. A proxy
+	// zone has no local backend (Spec.Local == nil); callers must resolve the
+	// target (local) zone and build the primary Route there instead.
+	if eventConfig.Spec.Local == nil {
+		return nil, ctrlerrors.BlockedErrorf("EventConfig %q for zone %q has no local backend; SSE primary Route requires a local (non-proxy) zone", eventConfig.Name, zone.Name)
+	}
+
 	upstream, err := parseUpstream(eventConfig.Spec.Local.ServerSendEventUrl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse ServerSendEventUrl %q", eventConfig.Spec.Local.ServerSendEventUrl)

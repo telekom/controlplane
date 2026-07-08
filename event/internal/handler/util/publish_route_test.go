@@ -284,12 +284,12 @@ var _ = Describe("CreatePublishProxyRoute", func() {
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "publish-proxy"))
 		Expect(route.Spec.Type).To(Equal(gatewayapi.RouteTypeProxy))
 
-		// Upstream is the target gateway base URL with no path (gateway preserves request path).
+		// Upstream is the target gateway with the publish-events path.
 		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
 		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
 		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("target-gateway.example.com"))
 		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(443)))
-		Expect(route.Spec.Backend.Upstreams[0].Path).To(BeEmpty())
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/horizon/events/v1"))
 
 		// Downstream hostnames/paths come from the source preset; two publish paths.
 		Expect(route.Spec.Hostnames).To(HaveLen(1))

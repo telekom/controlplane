@@ -17,6 +17,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/config"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
@@ -83,6 +84,22 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("failed to parse ServerSendEventUrl"))
+	})
+
+	It("should return BlockedError (not panic) when EventConfig has no local backend", func() {
+		proxyConfig := &eventv1.EventConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "ec-proxy", Namespace: "default"},
+			Spec: eventv1.EventConfigSpec{
+				Proxy: &eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: "zone-b", Namespace: "default"}},
+			},
+		}
+
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, proxyConfig, false)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
+		rootCause := unwrapAll(err)
+		Expect(rootCause).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("no local backend"))
 	})
 
 	It("should create SSE route successfully", func() {

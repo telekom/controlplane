@@ -89,8 +89,7 @@ func CreatePublishRoute(
 // local event backend. Instead of pointing at an internal service, it is a proxy
 // Route (mesh-client authenticated) whose upstream is the target zone's gateway.
 // It mirrors the primary publish route's two downstream paths; the upstream carries
-// no path, so the gateway preserves the request path when forwarding to the target's
-// primary publish Route (same mechanism the primary route relies on for its two paths).
+// the /horizon/events/v1 path, forwarding to the target's primary publish Route.
 func CreatePublishProxyRoute(
 	ctx context.Context,
 	sourceZone *adminv1.Zone,
@@ -112,11 +111,9 @@ func CreatePublishProxyRoute(
 		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
 	}
 
-	// Upstream is the target zone's gateway base URL (no path). The two downstream
-	// publish paths are preserved and forwarded to the target's primary publish Route.
-	// ponytail: assumes gateway preserves request path on empty upstream path, same as
-	// the primary publish route; verify against a real gateway before relying on it.
-	upstream, err := gatewayUpstream(targetPreset, "")
+	// Upstream is the target zone's gateway publish-events path. The proxy forwards to
+	// the target's primary publish Route at /horizon/events/v1.
+	upstream, err := gatewayUpstream(targetPreset, makePublishEventsRoutePath())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create upstream for proxy publish Route")
 	}
