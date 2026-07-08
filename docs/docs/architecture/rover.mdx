@@ -25,9 +25,25 @@ Users interact with the Rover domain through three paths:
 - **Application domain** — Creates Application resources.
 - **API domain** — Creates Api, ApiExposure, and ApiSubscription resources.
 - **Event domain** — Creates EventExposure and EventSubscription resources.
+- **File domain (SFTP)** — Creates the SFTP user (shared space) from a `FileSpecification` and registers producer/consumer SSH public keys for `fileType` exposures and subscriptions. Gated behind the `file` feature flag.
 - **Gateway domain** — Configures traffic management settings.
 - **Identity domain** — Configures authentication settings.
 - **Approval domain** — Integrates approval requirements for exposures.
+
+## File Types (SFTP)
+
+Rover can configure an external SFTP file-transfer service without changing the customer-facing Rover file:
+
+- A `FileSpecification` (`metadata.name` must equal `spec.type`) provisions an SFTP user with a default shared space.
+- A `fileType` **exposure** (producer) or **subscription** (consumer) with `variant: sftp` and one or more `publicKeys` registers those SSH keys on the matching SFTP user.
+
+Validation rules enforced by the Rover webhook:
+
+- `fileType` exposures/subscriptions are only allowed on the `cetus` and `canis` zones.
+- `variant: sftp` is optional.
+- At least one public key is required; both the key `label` and `key` value must be unique per `fileType`.
+
+Because file transfer happens directly over SFTP, a Rover that only exposes/subscribes to file types yields a **logical** Application (`needsClient` and `needsConsumer` are `false`). If the same Rover also has an API or event subscription, a client is still required.
 
 ## Related Pages
 
