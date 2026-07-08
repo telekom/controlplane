@@ -156,9 +156,18 @@ When navigating relationships that cross team boundaries (for example, from a su
 
 ### Authentication
 
-When security is enabled, the API expects a **JWT bearer token** in the `Authorization` header. The token's issuer must match one of the configured `trustedIssuers`. The API extracts the caller's identity (team, group, or admin role) from the JWT claims and uses it for team isolation.
+The ControlPlane API supports two security modes, configured via `security.mode`:
 
-When security is disabled (local development only), the API grants admin-level access to all queries.
+| Mode | JWT required | Signature validated | Default viewer | Use case |
+|------|-------------|---------------------|----------------|----------|
+| `jwt` | Yes | **Yes** | From JWT claims | Production |
+| `mock` | Yes | **No** | From JWT claims | Local development / integration testing |
+
+The **default mode is `jwt`** (secure by default). A deployment without explicit security configuration will panic at startup if no `trustedIssuers` are provided — this is intentional fail-closed behaviour.
+
+Both modes require a **JWT bearer token** in the `Authorization` header. The token's issuer must match one of the configured `trustedIssuers` (only enforced in `jwt` mode). The API extracts the caller's identity (team, group, or admin role) from the JWT claims and uses it for team isolation.
+
+See the [Admin Journey: ControlPlane API](../admin-journey/controlplane-api.md) page for configuration examples and Keycloak integration guidance.
 
 ## Domain Interactions
 

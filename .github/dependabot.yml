@@ -21,35 +21,62 @@ updates:
       - application/api
       - approval
       - approval/api
+      - cpapi/api
+    groups:
+      minor-patch:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: "gomod"
+    schedule:
+      interval: "monthly"
+    directories:
       - common
       - common-server
       - controlplane-api
-      - cpapi/api
       - discovery-server
       - event
       - event/api
       - file-manager
+      - projector
+      - secret-manager
+    groups:
+      minor-patch:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: "gomod"
+    schedule:
+      interval: "monthly"
+    directories:
       - gateway
       - gateway/api
       - identity
       - identity/api
+      - notification
+      - notification/api
       - organization
       - organization/api
       - organization-server
+      - permission
+      - permission/api
+    groups:
+      minor-patch:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: "gomod"
+    schedule:
+      interval: "monthly"
+    directories:
       - pubsub
       - pubsub/api
       - rover
       - rover/api
       - rover-ctl
       - rover-server
-      - secret-manager
       - tools/route-tester
       - tools/snapshotter
-      - notification
-      - notification/api
-      - projector
-      - permission
-      - permission/api
     groups:
       minor-patch:
         update-types:

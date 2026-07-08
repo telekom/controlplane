@@ -127,7 +127,7 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 // reconcileSSERoutes manages SSE Route creation for cross-zone proxy routes and the primary route.
 func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *eventv1.EventExposure, zone *adminv1.Zone, eventConfig *eventv1.EventConfig) error {
 	logger := log.FromContext(ctx)
-	realmName := adminv1.RealmNameFromContext(ctx)
+	realmName := zone.Status.RealmName
 
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil

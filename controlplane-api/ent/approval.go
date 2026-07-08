@@ -52,6 +52,8 @@ type Approval struct {
 	AvailableTransitions []model.AvailableTransition `json:"available_transitions,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// ExpiresAt holds the value of the "expiresAt" field.
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 	// State holds the value of the "state" field.
 	State approval.State `json:"state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -106,7 +108,7 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case approval.FieldStatusPhase, approval.FieldStatusMessage, approval.FieldEnvironment, approval.FieldNamespace, approval.FieldAction, approval.FieldStrategy, approval.FieldDeciderTeamName, approval.FieldName, approval.FieldState:
 			values[i] = new(sql.NullString)
-		case approval.FieldCreatedAt, approval.FieldLastModifiedAt:
+		case approval.FieldCreatedAt, approval.FieldLastModifiedAt, approval.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
 		case approval.ForeignKeys[0]: // api_subscription_approval
 			values[i] = new(sql.NullInt64)
@@ -228,6 +230,13 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Name = value.String
 			}
+		case approval.FieldExpiresAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field expiresAt", values[i])
+			} else if value.Valid {
+				_m.ExpiresAt = new(time.Time)
+				*_m.ExpiresAt = value.Time
+			}
 		case approval.FieldState:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field state", values[i])
@@ -341,6 +350,11 @@ func (_m *Approval) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
+	if v := _m.ExpiresAt; v != nil {
+		builder.WriteString("expiresAt=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("state=")
 	builder.WriteString(fmt.Sprintf("%v", _m.State))

@@ -238,7 +238,7 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
-	realmName := adminv1.RealmNameFromContext(ctx)
+	realmName := myZone.Status.RealmName
 
 	otherEventConfigs := &eventv1.EventConfigList{}
 	err := c.List(ctx, otherEventConfigs)
@@ -304,7 +304,7 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 }
 
 func (h *EventConfigHandler) createPublishRoute(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone) error {
-	realmName := adminv1.RealmNameFromContext(ctx)
+	realmName := myZone.Status.RealmName
 
 	// Publish routes are accessed by event publishers (external services) using IDP tokens
 	var trustedIssuers []string
@@ -329,7 +329,7 @@ func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *event
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
-	realmName := adminv1.RealmNameFromContext(ctx)
+	realmName := myZone.Status.RealmName
 
 	otherEventConfigs := &eventv1.EventConfigList{}
 	err := c.List(ctx, otherEventConfigs)

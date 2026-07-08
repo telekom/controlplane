@@ -30,12 +30,16 @@ type CreateTeamInput struct {
 	Name        string        `json:"name"`
 	Email       string        `json:"email"`
 	Members     []MemberInput `json:"members"`
+	DisplayName *string       `json:"displayName,omitempty"`
+	Description *string       `json:"description,omitempty"`
 }
 
 // UpdateTeamInput is the input for updating team metadata.
 type UpdateTeamInput struct {
-	TeamID int     `json:"teamId"`
-	Email  *string `json:"email,omitempty"`
+	TeamID      int     `json:"teamId"`
+	Email       *string `json:"email,omitempty"`
+	DisplayName *string `json:"displayName,omitempty"`
+	Description *string `json:"description,omitempty"`
 }
 
 // DeleteTeamInput is the input for deleting a team.
