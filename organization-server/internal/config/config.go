@@ -4,7 +4,10 @@
 
 package config
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 // Config holds all configuration for the organization-server facade.
 type Config struct {
@@ -21,6 +24,17 @@ type Config struct {
 	// RoverEndpoint is the base URL of rover-server.
 	RoverEndpoint string
 
+	// RoverEnvironment is the environment claim used when constructing service tokens
+	// for rover-server calls (e.g. "controlplane").
+	RoverEnvironment string
+
+	// RoverScopePrefix is the scope prefix rover-server expects (e.g. "tardis").
+	RoverScopePrefix string
+
+	// TrustedIssuers is a comma-separated list of Keycloak issuer URLs.
+	// If empty, security runs in mock mode (tokens parsed but not verified).
+	TrustedIssuers []string
+
 	// OAuthTokenURL is the token endpoint for client_credentials grant.
 	OAuthTokenURL string
 
@@ -36,11 +50,23 @@ type Config struct {
 
 // Load reads configuration from environment variables with sensible defaults.
 func Load() *Config {
+	var issuers []string
+	if v := os.Getenv("SECURITY_TRUSTEDISSUERS"); v != "" {
+		for _, iss := range strings.Split(v, ",") {
+			if trimmed := strings.TrimSpace(iss); trimmed != "" {
+				issuers = append(issuers, trimmed)
+			}
+		}
+	}
+
 	return &Config{
 		Port:              envOrDefault("PORT", "8080"),
 		CPAPIEndpoint:     envOrDefault("CPAPI_ENDPOINT", "https://controlplane-api.controlplane-system.svc.cluster.local/graphql/query"),
 		CPAPICaFilePath:   envOrDefault("CPAPI_CA_FILE", "/var/run/secrets/trust-bundle/trust-bundle.pem"),
 		RoverEndpoint:     envOrDefault("ROVER_ENDPOINT", "http://rover-server.controlplane-system.svc.cluster.local"),
+		RoverEnvironment:  envOrDefault("ROVER_ENVIRONMENT", "controlplane"),
+		RoverScopePrefix:  envOrDefault("ROVER_SCOPE_PREFIX", "tardis"),
+		TrustedIssuers:    issuers,
 		OAuthTokenURL:     os.Getenv("OAUTH_TOKEN_URL"),
 		OAuthClientID:     os.Getenv("OAUTH_CLIENT_ID"),
 		OAuthClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"),

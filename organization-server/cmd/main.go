@@ -46,7 +46,7 @@ func main() {
 
 	// Upstream clients.
 	cpapiClient := client.NewCPAPIClient(cfg.CPAPIEndpoint, tokenSource, cfg.CPAPICaFilePath)
-	roverClient := client.NewRoverClient(cfg.RoverEndpoint)
+	roverClient := client.NewRoverClient(cfg.RoverEndpoint, cfg.RoverEnvironment, cfg.RoverScopePrefix)
 
 	// Fiber app.
 	app := fiber.New(fiber.Config{
@@ -68,12 +68,17 @@ func main() {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
-	// API routes under /organization/v1 — requires consumer token.
-	api := app.Group("/organization/v1", mw.TokenDecode(log), mw.Obfuscate())
+	// API routes under /organization/v1 — secured pipeline.
+	api := app.Group("/organization/v1",
+		mw.JWTValidation(log, cfg.TrustedIssuers),
+		mw.IdentityExtraction(log),
+		mw.Obfuscate(),
+	)
 
-	// Register all endpoint handlers.
-	h := handler.New(cpapiClient, roverClient, log)
-	h.RegisterRoutes(api)
+	// Register all endpoint handlers (TeamAuthorization applied per-route inside).
+	teamAuth := mw.TeamAuthorization(log)
+	h := handler.New(cpapiClient, roverClient, cfg.RoverEnvironment, log)
+	h.RegisterRoutes(api, teamAuth)
 
 	// Graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

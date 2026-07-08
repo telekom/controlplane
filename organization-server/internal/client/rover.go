@@ -11,20 +11,29 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 )
 
-// RoverClient calls rover-server endpoints, passing through the consumer's
-// original token for prefix-based scoping.
+// RoverClient calls rover-server endpoints using service-level mock tokens.
+// It constructs the correct prefix and token from the caller's identity,
+// rather than forwarding external tokens.
 type RoverClient struct {
-	baseURL    string
-	httpClient *http.Client
+	baseURL     string
+	environment string
+	scopePrefix string
+	httpClient  *http.Client
 }
 
 // NewRoverClient creates a new rover-server client.
-func NewRoverClient(baseURL string) *RoverClient {
+// environment is the env claim for mock tokens (e.g. "controlplane").
+// scopePrefix is the scope prefix rover-server expects (e.g. "tardis").
+func NewRoverClient(baseURL, environment, scopePrefix string) *RoverClient {
 	return &RoverClient{
-		baseURL:    baseURL,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		baseURL:     baseURL,
+		environment: environment,
+		scopePrefix: scopePrefix,
+		httpClient:  &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -42,22 +51,19 @@ type ResourceListResponse struct {
 	Items []ResourceRef `json:"items"`
 }
 
-// GetResources calls GET /resources on rover-server with optional prefix filter.
-// The consumerToken is passed through directly for scoping.
-func (r *RoverClient) GetResources(ctx context.Context, consumerToken string, prefix string) (*ResourceListResponse, error) {
-	url := r.baseURL + "/resources"
-	if prefix != "" {
-		url += "?prefix=" + prefix
-	}
+// GetResources calls GET /resources on rover-server for a specific team.
+// It constructs a mock admin token and the appropriate prefix from the team identity.
+func (r *RoverClient) GetResources(ctx context.Context, group, team string) (*ResourceListResponse, error) {
+	prefix := fmt.Sprintf("%s--%s--%s/", r.environment, group, team)
+	url := fmt.Sprintf("%s/resources?prefix=%s", r.baseURL, prefix)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("building request: %w", err)
 	}
 
-	if consumerToken != "" {
-		req.Header.Set("Authorization", "Bearer "+consumerToken)
-	}
+	token := mock.NewMockAccessToken(r.environment, "org-server", "service", []string{r.scopePrefix + ":admin:all"})
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := r.httpClient.Do(req)
 	if err != nil {

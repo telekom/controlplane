@@ -146,8 +146,8 @@ var _ = Describe("Team Handlers", func() {
 		DeferCleanup(roverServer.Close)
 
 		app = newTestApp(gqlServer.URL, roverServer.URL)
-		adminToken = makeToken("poc", "eni", "hyperion", []string{"tardis:admin:all"})
-		obfToken = makeToken("poc", "eni", "hyperion", []string{"tardis:admin:obfuscated"})
+		adminToken = makeToken("eni", "hyperion", []string{"tardis:admin:all"})
+		obfToken = makeToken("eni", "hyperion", []string{"tardis:admin:obfuscated"})
 	})
 
 	Describe("GET /organization/v1/hubs/:hub/teams", func() {
