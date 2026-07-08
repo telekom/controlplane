@@ -8,18 +8,17 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
-	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -27,12 +26,16 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
 const stringTrue = "true"
 
 var ApplicationLabelKey = config.BuildLabelKey("application")
+
+const (
+	ApiCategoryPolicyResolutionFailedReason = "ApiCategoryPolicyResolutionFailed"
+	ApiCategoryTeamCategoryNotAllowedReason = "ApiCategoryTeamCategoryNotAllowed"
+)
 
 // GetZone retrieves a Zone object based on the provided ObjectRef for a zone.
 func GetZone(ctx context.Context, scopedClient cclient.ScopedClient, ref client.ObjectKey) (*adminapi.Zone, error) {
@@ -43,9 +46,6 @@ func GetZone(ctx context.Context, scopedClient cclient.ScopedClient, ref client.
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to find zone %q", ref.String()))
 		}
 		return nil, ctrlerrors.BlockedErrorf("zone %q not found", ref.String())
-	}
-	if err := condition.EnsureReady(zone); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q is not ready", ref.String())
 	}
 
 	return zone, nil
@@ -83,25 +83,8 @@ func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationapi.A
 	return application, nil
 }
 
-func GetRealm(ctx context.Context, ref client.ObjectKey) (*gatewayapi.Realm, error) {
-	scopedClient := cclient.ClientFromContextOrDie(ctx)
-
-	realm := &gatewayapi.Realm{}
-	err := scopedClient.Get(ctx, ref, realm)
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return nil, errors.Wrap(err, fmt.Sprintf("failed to find realm %q", ref.String()))
-		}
-		return nil, ctrlerrors.BlockedErrorf("realm %q not found", ref.String())
-	}
-	if err := condition.EnsureReady(realm); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", ref.String())
-	}
-
-	return realm, nil
-}
-
-func GetRealmForZone(ctx context.Context, zoneRef types.ObjectRef, realmName string) (*gatewayapi.Realm, *adminapi.Zone, error) {
+// GetDefaultPresetForZone fetches the Zone for the given ref and returns its default gateway preset.
+func GetDefaultPresetForZone(ctx context.Context, zoneRef types.ObjectRef) (*adminapi.GatewayConfigPreset, *adminapi.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	zone, err := GetZone(ctx, c, zoneRef.K8s())
@@ -109,16 +92,29 @@ func GetRealmForZone(ctx context.Context, zoneRef types.ObjectRef, realmName str
 		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
 	}
 
-	realmRef := client.ObjectKey{
-		Name:      realmName,
-		Namespace: zone.Status.Namespace,
-	}
-	realm, err := GetRealm(ctx, realmRef)
+	preset, err := zone.Spec.Gateway.GetDefaultPreset()
 	if err != nil {
-		return nil, zone, errors.Wrapf(err, "failed to get realm %s", realmRef.String())
+		return nil, zone, errors.Wrapf(err, "failed to get default preset for zone %s", zoneRef.String())
 	}
 
-	return realm, zone, nil
+	return preset, zone, nil
+}
+
+// GetPresetForZone fetches the Zone for the given ref and returns the gateway preset with the given name.
+func GetPresetForZone(ctx context.Context, zoneRef types.ObjectRef, presetName string) (*adminapi.GatewayConfigPreset, *adminapi.Zone, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	zone, err := GetZone(ctx, c, zoneRef.K8s())
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
+	}
+
+	preset, err := zone.Spec.Gateway.GetPresetByName(presetName)
+	if err != nil {
+		return nil, zone, errors.Wrapf(err, "failed to get preset %q for zone %s", presetName, zoneRef.String())
+	}
+
+	return preset, zone, nil
 }
 
 // FindAPI checks if there is an active Api corresponding to the given apiBasePath.
@@ -159,6 +155,53 @@ func FindActiveAPI(ctx context.Context, apiBasePath string) (bool, *apiv1.Api, e
 	}
 
 	return true, relevantApi, nil
+}
+
+func ResolveActiveApiCategoryForApi(ctx context.Context, api *apiv1.Api) (*apiv1.ApiCategory, error) {
+	if api == nil {
+		return nil, errors.New("api is nil")
+	}
+	return ResolveActiveApiCategoryByLabelValue(ctx, api.Spec.Category)
+}
+
+func ResolveActiveApiCategoryByLabelValue(ctx context.Context, labelValue string) (*apiv1.ApiCategory, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	normalizedLabelValue := strings.TrimSpace(labelValue)
+	if normalizedLabelValue == "" {
+		return nil, ctrlerrors.BlockedErrorf("ApiCategory label value is empty")
+	}
+
+	apiCategoryList := &apiv1.ApiCategoryList{}
+	if err := scopedClient.List(ctx, apiCategoryList, client.MatchingFields{"spec.labelValue": normalizedLabelValue}); err != nil {
+		return nil, errors.Wrap(err, "failed to list ApiCategories by label value")
+	}
+	if len(apiCategoryList.Items) == 0 {
+		anyApiCategoryList := &apiv1.ApiCategoryList{}
+		if err := scopedClient.List(ctx, anyApiCategoryList, client.Limit(1)); err != nil {
+			return nil, errors.Wrap(err, "failed to verify whether ApiCategories exist")
+		}
+		if len(anyApiCategoryList.Items) == 0 {
+			return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "apicategories"}, normalizedLabelValue)
+		}
+		return nil, ctrlerrors.BlockedErrorf("ApiCategory %q not found", normalizedLabelValue)
+	}
+	apiCategory := &apiCategoryList.Items[0]
+	if !apiCategory.Spec.Active {
+		return nil, ctrlerrors.BlockedErrorf("ApiCategory %q is not active", normalizedLabelValue)
+	}
+	return apiCategory, nil
+}
+
+func BuildApiCategoryPolicyResolutionMessage(apiCategoryLabel string, err error) string {
+	return fmt.Sprintf("ApiCategory policy for category %q cannot be resolved: %v", apiCategoryLabel, err)
+}
+
+func BuildApiCategoryExposureDeniedMessage(teamCategory, apiCategoryLabel string) string {
+	return fmt.Sprintf("Team with category %q is not allowed to expose APIs of category %q", teamCategory, apiCategoryLabel)
+}
+
+func BuildApiCategorySubscriptionDeniedMessage(teamCategory, apiCategoryLabel string) string {
+	return fmt.Sprintf("Team with category %q is not allowed to subscribe to APIs of category %q", teamCategory, apiCategoryLabel)
 }
 
 // FindAPIExposure checks if there is an active ApiExposure corresponding to the given apiBasePath.
@@ -203,16 +246,27 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 	return true, relevantApiExposure, nil
 }
 
-// FindCrossZoneApiSubscriptionZones lists all ApiSubscriptions for a given apiBasePath
-// and returns the unique zone ObjectRefs where proxy routes should be created.
-// This includes both subscription zones and subscriber failover zones (exposure-driven pattern).
-// A zone is included if:
-// - It's a subscription zone that differs from the exposure's zone (cross-zone)
-// - It's a subscriber failover zone (for any approved subscription)
-// Zones are excluded if:
-// - Same as exposure zone (no proxy needed, real route serves them)
-// - In provider's failover zone (provider failover route serves them)
-func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExposure) ([]types.ObjectRef, error) {
+// FindFailoverEligibleZones lists all zones and returns those that are eligible for failover for a given zone.
+func FindFailoverEligibleZones(ctx context.Context, myZone types.ObjectRef) ([]types.ObjectRef, error) {
+	allZones, err := FindAllZonesWithFeatureEnabled(ctx, adminapi.FeatureConsumerFailover)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find zones with consumer failover feature enabled")
+	}
+
+	var eligibleZones []types.ObjectRef
+	for _, zone := range allZones {
+		// Skip same-zone as myZone (a zone cannot failover to itself)
+		if zone.Name == myZone.Name {
+			continue
+		}
+		eligibleZones = append(eligibleZones, *types.ObjectRefFromObject(zone))
+	}
+
+	return eligibleZones, nil
+}
+
+// FindAllSubscribersForApiExposure lists all ApiSubscriptions for a given ApiExposure that are approved and have a matching basepath.
+func FindAllSubscribersForApiExposure(ctx context.Context, apiExp *apiv1.ApiExposure) ([]*apiv1.ApiSubscription, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -223,8 +277,7 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 		return nil, errors.Wrapf(err, "failed to list ApiSubscriptions for basepath %q", apiExp.Spec.ApiBasePath)
 	}
 
-	seen := make(map[string]bool)
-	var zones []types.ObjectRef
+	var subscribers []*apiv1.ApiSubscription
 
 	for i := range subList.Items {
 		sub := &subList.Items[i]
@@ -242,40 +295,39 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 			continue
 		}
 
-		// Check approval status
-		approvalCond := meta.FindStatusCondition(sub.GetConditions(), approvalbuilder.ConditionTypeApprovalGranted)
-		if approvalCond == nil || approvalCond.Status != metav1.ConditionTrue {
-			logger.V(1).Info("Skipping subscription without approval", "subscription", sub.Name, "zone", sub.Spec.Zone.Name)
+		// We could check the Approval state here, however, we MUST NEVER remove a Route when a subscription (which was approved previously) is updated.
+		// A pending or rejected ApprovalRequest MUST NOT remove a Route, as this would break the API for the consumer.
+		// Therefore, we do not filter by Approval state here.
+
+		subscribers = append(subscribers, sub)
+	}
+
+	return subscribers, nil
+}
+
+// FindAllZonesWithFeatureEnabled lists all zones and returns those that have the given feature enabled.
+func FindAllZonesWithFeatureEnabled(ctx context.Context, featureName adminapi.FeatureName) ([]*adminapi.Zone, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	zoneList := &adminapi.ZoneList{}
+	if err := c.List(ctx, zoneList); err != nil {
+		return nil, errors.Wrap(err, "failed to list zones")
+	}
+
+	var zonesWithFeature []*adminapi.Zone
+	for i := range zoneList.Items {
+		zone := &zoneList.Items[i]
+
+		// Skip zones that are being deleted; their finalizer may still
+		// be running, but they should no longer be considered for feature checks.
+		if controller.IsBeingDeleted(zone) {
 			continue
 		}
 
-		// Collect candidate zones: subscription zone + subscriber failover zones
-		var candidateZones []types.ObjectRef
-		candidateZones = append(candidateZones, sub.Spec.Zone)
-		if sub.HasFailover() {
-			candidateZones = append(candidateZones, sub.Spec.Traffic.Failover.Zones...)
-		}
-
-		// Filter and deduplicate zones
-		for _, zone := range candidateZones {
-			// Skip same-zone as exposure (no cross-zone proxy needed)
-			if zone.Equals(&apiExp.Spec.Zone) {
-				continue
-			}
-
-			// CRITICAL: Skip if zone IS the provider's failover zone
-			// The provider failover route already exists in that zone and serves those zones
-			if apiExp.HasFailover() && apiExp.Spec.Traffic.Failover.ContainsZone(zone) {
-				continue
-			}
-
-			// Add zone if not already seen
-			if !seen[zone.Name] {
-				seen[zone.Name] = true
-				zones = append(zones, zone)
-			}
+		if zone.IsFeatureEnabled(featureName) {
+			zonesWithFeature = append(zonesWithFeature, zone)
 		}
 	}
 
-	return zones, nil
+	return zonesWithFeature, nil
 }

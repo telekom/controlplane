@@ -1,80 +1,57 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package feature
+package feature_test
 
 import (
 	"context"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
-	featuresmock "github.com/telekom/controlplane/gateway/internal/features/mock"
+	"github.com/telekom/controlplane/gateway/internal/features/feature"
+	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("DynamicUpstreamFeature", func() {
 
-	It("should return the correct feature type", func() {
-		Expect(InstanceDynamicUpstreamFeature.Name()).To(Equal(gatewayv1.FeatureTypeDynamicUpstream))
+	var (
+		ctx     context.Context
+		f       *feature.DynamicUpstreamFeature
+		builder *featmock.MockFeaturesBuilder
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		f = feature.InstanceDynamicUpstreamFeature
+		builder = featmock.NewMockFeaturesBuilder(GinkgoT())
 	})
 
-	It("should have priority higher than LastMileSecurityFeature", func() {
-		Expect(InstanceDynamicUpstreamFeature.Priority()).To(Equal(InstanceLastMileSecurityFeature.Priority() + 1))
-	})
-
-	Context("with mocked feature builder", func() {
-
-		var ctrl *gomock.Controller
-		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
-		var feature DynamicUpstreamFeature
-
-		BeforeEach(func() {
-			feature = *InstanceDynamicUpstreamFeature
-
-			ctrl = gomock.NewController(GinkgoT())
-			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
+	Describe("Name()", func() {
+		It("returns FeatureTypeDynamicUpstream", func() {
+			Expect(f.Name()).To(Equal(gatewayv1.FeatureTypeDynamicUpstream))
 		})
+	})
 
-		Context("check IsUsed", func() {
-			It("should return false when no route in builder", func() {
-				mockFeatureBuilder.EXPECT().GetRoute().Return(nil, false)
-				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
+	Describe("Priority()", func() {
+		It("returns 101", func() {
+			Expect(f.Priority()).To(Equal(101))
+		})
+	})
 
-			It("should return false when route has no upstreams", func() {
+	Describe("IsUsed()", func() {
+		Context("when route has 1 upstream with hostname localhost and DynamicUpstream configured on a non-proxy route", func() {
+			It("returns true", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
-						Upstreams: []gatewayv1.Upstream{},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
-				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
-
-			It("should return false when route has multiple upstreams", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Upstreams: []gatewayv1.Upstream{
-							{Host: "localhost"},
-							{Host: "localhost"},
-						},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
-				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
-
-			It("should return false when upstream is a proxy", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Upstreams: []gatewayv1.Upstream{
-							{
-								Host:      "localhost",
-								IssuerUrl: "https://issuer.example.com",
+						Type: gatewayv1.RouteTypePrimary,
+						Backend: gatewayv1.Backend{
+							Upstreams: []gatewayv1.Upstream{
+								{Scheme: "http", Hostname: "localhost", Port: 8080, Path: "/proxy"},
 							},
 						},
 						Traffic: gatewayv1.Traffic{
@@ -84,69 +61,122 @@ var _ = Describe("DynamicUpstreamFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
-				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
+				builder.EXPECT().GetRoute().Return(route, true)
 
-			It("should return false when upstream host is not localhost", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Upstreams: []gatewayv1.Upstream{
-							{Host: "example.com"},
-						},
-						Traffic: gatewayv1.Traffic{
-							DynamicUpstream: &gatewayv1.DynamicUpstream{
-								QueryParameter: "target_url",
-							},
-						},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
-				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
-
-			It("should return false when no DynamicUpstream config", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Upstreams: []gatewayv1.Upstream{
-							{Host: "localhost"},
-						},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
-				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
-
-			It("should return true when all conditions are met", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Upstreams: []gatewayv1.Upstream{
-							{Host: "localhost"},
-						},
-						Traffic: gatewayv1.Traffic{
-							DynamicUpstream: &gatewayv1.DynamicUpstream{
-								QueryParameter: "target_url",
-							},
-						},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
-				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
+				Expect(f.IsUsed(ctx, builder)).To(BeTrue())
 			})
 		})
 
-		Context("Apply", func() {
-			It("should return ErrNoRoute when no route in builder", func() {
-				mockFeatureBuilder.EXPECT().GetRoute().Return(nil, false)
-				err := feature.Apply(context.Background(), mockFeatureBuilder)
-				Expect(err).To(MatchError(features.ErrNoRoute))
-			})
-
-			It("should replace static remote_api_url with dynamic value", func() {
+		Context("when route has multiple upstreams", func() {
+			It("returns false", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
-						Upstreams: []gatewayv1.Upstream{
-							{Host: "localhost"},
+						Type: gatewayv1.RouteTypePrimary,
+						Backend: gatewayv1.Backend{
+							Upstreams: []gatewayv1.Upstream{
+								{Scheme: "http", Hostname: "localhost", Port: 8080, Path: "/proxy"},
+								{Scheme: "https", Hostname: "api.example.com", Port: 443, Path: "/v1"},
+							},
+						},
+						Traffic: gatewayv1.Traffic{
+							DynamicUpstream: &gatewayv1.DynamicUpstream{
+								QueryParameter: "target_url",
+							},
+						},
+					},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+			})
+		})
+
+		Context("when upstream hostname is not localhost", func() {
+			It("returns false", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						Type: gatewayv1.RouteTypePrimary,
+						Backend: gatewayv1.Backend{
+							Upstreams: []gatewayv1.Upstream{
+								{Scheme: "https", Hostname: "api.example.com", Port: 443, Path: "/v1"},
+							},
+						},
+						Traffic: gatewayv1.Traffic{
+							DynamicUpstream: &gatewayv1.DynamicUpstream{
+								QueryParameter: "target_url",
+							},
+						},
+					},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+			})
+		})
+
+		Context("when route is a proxy route", func() {
+			It("returns false", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						Type: gatewayv1.RouteTypeProxy,
+						Backend: gatewayv1.Backend{
+							Upstreams: []gatewayv1.Upstream{
+								{Scheme: "http", Hostname: "localhost", Port: 8080, Path: "/proxy"},
+							},
+						},
+						Traffic: gatewayv1.Traffic{
+							DynamicUpstream: &gatewayv1.DynamicUpstream{
+								QueryParameter: "target_url",
+							},
+						},
+					},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+			})
+		})
+
+		Context("when DynamicUpstream is not configured in traffic", func() {
+			It("returns false", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						Type: gatewayv1.RouteTypePrimary,
+						Backend: gatewayv1.Backend{
+							Upstreams: []gatewayv1.Upstream{
+								{Scheme: "http", Hostname: "localhost", Port: 8080, Path: "/proxy"},
+							},
+						},
+						Traffic: gatewayv1.Traffic{
+							DynamicUpstream: nil,
+						},
+					},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+			})
+		})
+
+		Context("when no route in builder", func() {
+			It("returns false", func() {
+				builder.EXPECT().GetRoute().Return(nil, false)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+			})
+		})
+	})
+
+	Describe("Apply()", func() {
+		Context("happy path", func() {
+			It("overrides remote_api_url with dynamic query param reference and removes the query parameter", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						Type: gatewayv1.RouteTypePrimary,
+						Backend: gatewayv1.Backend{
+							Upstreams: []gatewayv1.Upstream{
+								{Scheme: "http", Hostname: "localhost", Port: 8080, Path: "/proxy"},
+							},
 						},
 						Traffic: gatewayv1.Traffic{
 							DynamicUpstream: &gatewayv1.DynamicUpstream{
@@ -156,53 +186,34 @@ var _ = Describe("DynamicUpstreamFeature", func() {
 					},
 				}
 
-				rtpPlugin := &plugin.RequestTransformerPlugin{
-					Config: plugin.RequestTransformerPluginConfig{},
-				}
-				// Simulate LastMileSecurity having set the static header
-				rtpPlugin.Config.Append.AddHeader("remote_api_url", "https://static.example.com")
+				// Simulate what LastMileSecurity would have done: create RTP and pre-populate remote_api_url
+				rtpPlugin := plugin.RequestTransformerPluginFromRoute(route)
+				rtpPlugin.Config.Append.AddHeader("remote_api_url", "https://static-upstream.example.com:443/v1")
 
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
-				mockFeatureBuilder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
+				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
 
-				err := feature.Apply(context.Background(), mockFeatureBuilder)
+				err := f.Apply(ctx, builder)
 				Expect(err).ToNot(HaveOccurred())
 
-				// Verify static header was replaced with dynamic value
+				// The static remote_api_url should be replaced with the dynamic query parameter reference
+				Expect(rtpPlugin.Config.Append.Headers).ToNot(BeNil())
 				Expect(rtpPlugin.Config.Append.Headers.Get("remote_api_url")).To(Equal("$(query_params.target_url)"))
-				// Verify query parameter is removed from forwarded request
+
+				// The query parameter should be added to the remove list
 				Expect(rtpPlugin.Config.Remove.Querystring).ToNot(BeNil())
 				Expect(rtpPlugin.Config.Remove.Querystring.Contains("target_url")).To(BeTrue())
 			})
+		})
 
-			It("should use the configured query parameter name", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Upstreams: []gatewayv1.Upstream{
-							{Host: "localhost"},
-						},
-						Traffic: gatewayv1.Traffic{
-							DynamicUpstream: &gatewayv1.DynamicUpstream{
-								QueryParameter: "api_endpoint",
-							},
-						},
-					},
-				}
+		Context("error handling", func() {
+			Context("when no route in builder", func() {
+				It("returns ErrNoRoute", func() {
+					builder.EXPECT().GetRoute().Return(nil, false)
 
-				rtpPlugin := &plugin.RequestTransformerPlugin{
-					Config: plugin.RequestTransformerPluginConfig{},
-				}
-				rtpPlugin.Config.Append.AddHeader("remote_api_url", "https://original.example.com")
-
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
-				mockFeatureBuilder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
-
-				err := feature.Apply(context.Background(), mockFeatureBuilder)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(rtpPlugin.Config.Append.Headers.Get("remote_api_url")).To(Equal("$(query_params.api_endpoint)"))
-				Expect(rtpPlugin.Config.Remove.Querystring).ToNot(BeNil())
-				Expect(rtpPlugin.Config.Remove.Querystring.Contains("api_endpoint")).To(BeTrue())
+					err := f.Apply(ctx, builder)
+					Expect(err).To(MatchError(features.ErrNoRoute))
+				})
 			})
 		})
 	})

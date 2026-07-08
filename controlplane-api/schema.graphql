@@ -12,6 +12,8 @@ type TeamInfo {
   "Group name for display"
   groupName: String!
   email: String
+  displayName: String
+  description: String
 }
 
 type Upstream {

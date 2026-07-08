@@ -55,19 +55,17 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	})
 
 	needsClient := len(owner.Spec.Subscriptions) > 0 || hasAnyEventExposures
-	var subscriberFailoverZones []types.ObjectRef
+
+	var hasAnySubscriptionFailoverEnabled bool
 	if needsClient {
 		for _, subscription := range owner.Spec.Subscriptions {
 			switch subscription.Type() {
 			case roverv1.TypeApi:
-				if subscription.Api.Traffic.Failover != nil {
-					for _, zoneName := range subscription.Api.Traffic.Failover.Zones {
-						zoneRef := types.ObjectRef{
-							Name:      zoneName,
-							Namespace: environment,
-						}
-						subscriberFailoverZones = append(subscriberFailoverZones, zoneRef)
-					}
+				failoverConfig := subscription.Api.Traffic.Failover
+				if failoverConfig != nil && failoverConfig.Enabled {
+					hasAnySubscriptionFailoverEnabled = true
+					// break the inner loop, we only need to know if any subscription has failover enabled
+					break
 				}
 			}
 		}
@@ -99,7 +97,9 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,
 			Secret:        secretToApply,
-			FailoverZones: subscriberFailoverZones,
+			Failover: applicationv1.Failover{
+				Enabled: hasAnySubscriptionFailoverEnabled,
+			},
 			RotatedSecret: application.Spec.RotatedSecret,
 		}
 

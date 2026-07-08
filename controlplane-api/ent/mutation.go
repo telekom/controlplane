@@ -5791,6 +5791,7 @@ type ApprovalMutation struct {
 	available_transitions       *[]model.AvailableTransition
 	appendavailable_transitions []model.AvailableTransition
 	name                        *string
+	expiresAt                   *time.Time
 	state                       *approval.State
 	clearedFields               map[string]struct{}
 	api_subscription            *int
@@ -6487,6 +6488,55 @@ func (m *ApprovalMutation) ResetName() {
 	m.name = nil
 }
 
+// SetExpiresAt sets the "expiresAt" field.
+func (m *ApprovalMutation) SetExpiresAt(t time.Time) {
+	m.expiresAt = &t
+}
+
+// ExpiresAt returns the value of the "expiresAt" field in the mutation.
+func (m *ApprovalMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expiresAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expiresAt" field's value of the Approval entity.
+// If the Approval object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (m *ApprovalMutation) ClearExpiresAt() {
+	m.expiresAt = nil
+	m.clearedFields[approval.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expiresAt" field was cleared in this mutation.
+func (m *ApprovalMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[approval.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expiresAt" field.
+func (m *ApprovalMutation) ResetExpiresAt() {
+	m.expiresAt = nil
+	delete(m.clearedFields, approval.FieldExpiresAt)
+}
+
 // SetState sets the "state" field.
 func (m *ApprovalMutation) SetState(a approval.State) {
 	m.state = &a
@@ -6635,7 +6685,7 @@ func (m *ApprovalMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApprovalMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, approval.FieldCreatedAt)
 	}
@@ -6678,6 +6728,9 @@ func (m *ApprovalMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, approval.FieldName)
 	}
+	if m.expiresAt != nil {
+		fields = append(fields, approval.FieldExpiresAt)
+	}
 	if m.state != nil {
 		fields = append(fields, approval.FieldState)
 	}
@@ -6717,6 +6770,8 @@ func (m *ApprovalMutation) Field(name string) (ent.Value, bool) {
 		return m.AvailableTransitions()
 	case approval.FieldName:
 		return m.Name()
+	case approval.FieldExpiresAt:
+		return m.ExpiresAt()
 	case approval.FieldState:
 		return m.State()
 	}
@@ -6756,6 +6811,8 @@ func (m *ApprovalMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldAvailableTransitions(ctx)
 	case approval.FieldName:
 		return m.OldName(ctx)
+	case approval.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
 	case approval.FieldState:
 		return m.OldState(ctx)
 	}
@@ -6865,6 +6922,13 @@ func (m *ApprovalMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
+	case approval.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
 	case approval.FieldState:
 		v, ok := value.(approval.State)
 		if !ok {
@@ -6914,6 +6978,9 @@ func (m *ApprovalMutation) ClearedFields() []string {
 	if m.FieldCleared(approval.FieldAvailableTransitions) {
 		fields = append(fields, approval.FieldAvailableTransitions)
 	}
+	if m.FieldCleared(approval.FieldExpiresAt) {
+		fields = append(fields, approval.FieldExpiresAt)
+	}
 	return fields
 }
 
@@ -6939,6 +7006,9 @@ func (m *ApprovalMutation) ClearField(name string) error {
 		return nil
 	case approval.FieldAvailableTransitions:
 		m.ClearAvailableTransitions()
+		return nil
+	case approval.FieldExpiresAt:
+		m.ClearExpiresAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval nullable field %s", name)
@@ -6989,6 +7059,9 @@ func (m *ApprovalMutation) ResetField(name string) error {
 		return nil
 	case approval.FieldName:
 		m.ResetName()
+		return nil
+	case approval.FieldExpiresAt:
+		m.ResetExpiresAt()
 		return nil
 	case approval.FieldState:
 		m.ResetState()
@@ -12909,6 +12982,8 @@ type TeamMutation struct {
 	namespace           *string
 	name                *string
 	email               *string
+	displayName         *string
+	description         *string
 	category            *team.Category
 	team_token          *string
 	clearedFields       map[string]struct{}
@@ -13356,6 +13431,104 @@ func (m *TeamMutation) ResetEmail() {
 	m.email = nil
 }
 
+// SetDisplayName sets the "displayName" field.
+func (m *TeamMutation) SetDisplayName(s string) {
+	m.displayName = &s
+}
+
+// DisplayName returns the value of the "displayName" field in the mutation.
+func (m *TeamMutation) DisplayName() (r string, exists bool) {
+	v := m.displayName
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisplayName returns the old "displayName" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldDisplayName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisplayName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
+	}
+	return oldValue.DisplayName, nil
+}
+
+// ClearDisplayName clears the value of the "displayName" field.
+func (m *TeamMutation) ClearDisplayName() {
+	m.displayName = nil
+	m.clearedFields[team.FieldDisplayName] = struct{}{}
+}
+
+// DisplayNameCleared returns if the "displayName" field was cleared in this mutation.
+func (m *TeamMutation) DisplayNameCleared() bool {
+	_, ok := m.clearedFields[team.FieldDisplayName]
+	return ok
+}
+
+// ResetDisplayName resets all changes to the "displayName" field.
+func (m *TeamMutation) ResetDisplayName() {
+	m.displayName = nil
+	delete(m.clearedFields, team.FieldDisplayName)
+}
+
+// SetDescription sets the "description" field.
+func (m *TeamMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *TeamMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *TeamMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[team.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *TeamMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[team.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *TeamMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, team.FieldDescription)
+}
+
 // SetCategory sets the "category" field.
 func (m *TeamMutation) SetCategory(t team.Category) {
 	m.category = &t
@@ -13730,7 +13903,7 @@ func (m *TeamMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TeamMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, team.FieldCreatedAt)
 	}
@@ -13754,6 +13927,12 @@ func (m *TeamMutation) Fields() []string {
 	}
 	if m.email != nil {
 		fields = append(fields, team.FieldEmail)
+	}
+	if m.displayName != nil {
+		fields = append(fields, team.FieldDisplayName)
+	}
+	if m.description != nil {
+		fields = append(fields, team.FieldDescription)
 	}
 	if m.category != nil {
 		fields = append(fields, team.FieldCategory)
@@ -13785,6 +13964,10 @@ func (m *TeamMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case team.FieldEmail:
 		return m.Email()
+	case team.FieldDisplayName:
+		return m.DisplayName()
+	case team.FieldDescription:
+		return m.Description()
 	case team.FieldCategory:
 		return m.Category()
 	case team.FieldTeamToken:
@@ -13814,6 +13997,10 @@ func (m *TeamMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case team.FieldEmail:
 		return m.OldEmail(ctx)
+	case team.FieldDisplayName:
+		return m.OldDisplayName(ctx)
+	case team.FieldDescription:
+		return m.OldDescription(ctx)
 	case team.FieldCategory:
 		return m.OldCategory(ctx)
 	case team.FieldTeamToken:
@@ -13883,6 +14070,20 @@ func (m *TeamMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEmail(v)
 		return nil
+	case team.FieldDisplayName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisplayName(v)
+		return nil
+	case team.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
 	case team.FieldCategory:
 		v, ok := value.(team.Category)
 		if !ok {
@@ -13936,6 +14137,12 @@ func (m *TeamMutation) ClearedFields() []string {
 	if m.FieldCleared(team.FieldEnvironment) {
 		fields = append(fields, team.FieldEnvironment)
 	}
+	if m.FieldCleared(team.FieldDisplayName) {
+		fields = append(fields, team.FieldDisplayName)
+	}
+	if m.FieldCleared(team.FieldDescription) {
+		fields = append(fields, team.FieldDescription)
+	}
 	if m.FieldCleared(team.FieldTeamToken) {
 		fields = append(fields, team.FieldTeamToken)
 	}
@@ -13961,6 +14168,12 @@ func (m *TeamMutation) ClearField(name string) error {
 		return nil
 	case team.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case team.FieldDisplayName:
+		m.ClearDisplayName()
+		return nil
+	case team.FieldDescription:
+		m.ClearDescription()
 		return nil
 	case team.FieldTeamToken:
 		m.ClearTeamToken()
@@ -13996,6 +14209,12 @@ func (m *TeamMutation) ResetField(name string) error {
 		return nil
 	case team.FieldEmail:
 		m.ResetEmail()
+		return nil
+	case team.FieldDisplayName:
+		m.ResetDisplayName()
+		return nil
+	case team.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case team.FieldCategory:
 		m.ResetCategory()

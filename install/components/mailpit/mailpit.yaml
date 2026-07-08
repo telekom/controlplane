@@ -40,9 +40,19 @@ spec:
         app.kubernetes.io/name: mailpit
         app.kubernetes.io/component: mail
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: mailpit
           image: axllent/mailpit:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "ALL"
           ports:
             - name: smtp
               containerPort: 1025

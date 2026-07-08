@@ -46,14 +46,14 @@ func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.Featur
 	if !ok {
 		return false
 	}
-	isPrimaryRoute := !route.IsProxy()
+	isPrimaryRoute := route.Spec.Type == gatewayv1.RouteTypePrimary
 	isConfigured := false
 
-	if route.HasFailoverSecurity() {
+	if HasFailoverSecurity(route) {
 		isConfigured = route.Spec.Traffic.Failover.Security.HasM2MExternalIDP()
 	}
 
-	if isPrimaryRoute && route.HasM2MExternalIdp() {
+	if isPrimaryRoute && HasM2MExternalIdp(route) {
 		isConfigured = true
 	}
 
@@ -72,7 +72,7 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	// If the route is a failover secondary route, we use the failover security settings
 	// Otherwise, we use the primary route security settings.
 	security := route.Spec.Security
-	if route.HasFailoverSecurity() {
+	if HasFailoverSecurity(route) {
 		security = route.Spec.Traffic.Failover.Security
 	}
 
@@ -152,7 +152,7 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 		return in, err
 	}
 	in.TokenRequest = tokenRequest
-	in.GrantType = providerSettings.GrantType
+	in.GrantType = string(providerSettings.GrantType)
 
 	return in, nil
 }
@@ -183,7 +183,7 @@ func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	}
 
 	in.Password = password
-	in.GrantType = providerSettings.GrantType
+	in.GrantType = string(providerSettings.GrantType)
 
 	return in, nil
 }

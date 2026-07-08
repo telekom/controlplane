@@ -6,7 +6,6 @@ package controller
 
 import (
 	"context"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -61,8 +60,7 @@ func (r *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&organizationv1.Team{}).
-		Watches(&identityv1.Client{},
-			handler.EnqueueRequestsFromMapFunc(r.mapClientToTeam),
+		Owns(&identityv1.Client{},
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&notificationv1.NotificationChannel{},
 			handler.EnqueueRequestsFromMapFunc(r.mapNotificationChannelToTeam),
@@ -100,36 +98,6 @@ func (r *TeamReconciler) mapGroupToTeam(ctx context.Context, obj client.Object) 
 	requests := make([]reconcile.Request, 0, len(teamList.Items))
 	for i := range teamList.Items {
 		if teamList.Items[i].Spec.Group == groupObj.Name {
-			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&teamList.Items[i])})
-		}
-	}
-
-	return requests
-}
-
-func (r *TeamReconciler) mapClientToTeam(ctx context.Context, obj client.Object) []reconcile.Request {
-	logger := log.FromContext(ctx)
-
-	identityClient, ok := obj.(*identityv1.Client)
-	if !ok {
-		return nil
-	}
-
-	listOptsForTeams := []client.ListOption{
-		client.MatchingLabels{
-			cconfig.EnvironmentLabelKey: identityClient.Labels[cconfig.EnvironmentLabelKey],
-		},
-	}
-
-	teamList := organizationv1.TeamList{}
-	if err := r.List(ctx, &teamList, listOptsForTeams...); err != nil {
-		logger.Error(err, "failed to list Teams")
-		return nil
-	}
-
-	requests := make([]reconcile.Request, 0, len(teamList.Items))
-	for i := range teamList.Items {
-		if teamList.Items[i].Status.Namespace == identityClient.GetNamespace() && strings.HasSuffix(identityClient.GetName(), "--team-user") {
 			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&teamList.Items[i])})
 		}
 	}

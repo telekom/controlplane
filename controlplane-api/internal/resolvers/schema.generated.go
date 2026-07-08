@@ -2264,6 +2264,52 @@ func (ec *executionContext) fieldContext_TeamInfo_email(_ context.Context, field
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _TeamInfo_displayName(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TeamInfo_displayName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TeamInfo_displayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TeamInfo_description(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TeamInfo_description(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TeamInfo_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Traffic_rateLimit(ctx context.Context, field graphql.CollectedField, obj *model.Traffic) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,

@@ -1158,6 +1158,11 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, approval.FieldName)
 				fieldSeen[approval.FieldName] = struct{}{}
 			}
+		case "expiresat":
+			if _, ok := fieldSeen[approval.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, approval.FieldExpiresAt)
+				fieldSeen[approval.FieldExpiresAt] = struct{}{}
+			}
 		case "state":
 			if _, ok := fieldSeen[approval.FieldState]; !ok {
 				selectedFields = append(selectedFields, approval.FieldState)
@@ -2390,6 +2395,16 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			if _, ok := fieldSeen[team.FieldEmail]; !ok {
 				selectedFields = append(selectedFields, team.FieldEmail)
 				fieldSeen[team.FieldEmail] = struct{}{}
+			}
+		case "displayname":
+			if _, ok := fieldSeen[team.FieldDisplayName]; !ok {
+				selectedFields = append(selectedFields, team.FieldDisplayName)
+				fieldSeen[team.FieldDisplayName] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[team.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, team.FieldDescription)
+				fieldSeen[team.FieldDescription] = struct{}{}
 			}
 		case "category":
 			if _, ok := fieldSeen[team.FieldCategory]; !ok {

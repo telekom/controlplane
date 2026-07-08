@@ -35,12 +35,10 @@ type Feature interface {
 	Apply(ctx context.Context, builder FeaturesBuilder) error
 }
 
-//go:generate mockgen -source=builder.go -destination=mock/builder.gen.go -package=mock
 type FeaturesBuilder interface {
 	EnableFeature(f Feature)
 	GetRoute() (*gatewayv1.Route, bool)
 	GetConsumer() (*gatewayv1.Consumer, bool)
-	GetRealm() *gatewayv1.Realm
 	GetGateway() *gatewayv1.Gateway
 	GetAllowedConsumers() []*gatewayv1.ConsumeRoute
 	AddAllowedConsumers(...*gatewayv1.ConsumeRoute)
@@ -73,7 +71,6 @@ type Builder struct {
 	Route    *gatewayv1.Route
 	Consumer *gatewayv1.Consumer
 
-	Realm   *gatewayv1.Realm
 	Gateway *gatewayv1.Gateway
 
 	Upstream client.Upstream
@@ -95,14 +92,13 @@ func (b *Builder) GetKongClient() client.KongClient {
 	return b.kc
 }
 
-var NewFeatureBuilder = func(kc client.KongClient, route *gatewayv1.Route, consumer *gatewayv1.Consumer, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) FeaturesBuilder {
+var NewFeatureBuilder = func(kc client.KongClient, route *gatewayv1.Route, consumer *gatewayv1.Consumer, gateway *gatewayv1.Gateway) FeaturesBuilder {
 	return &Builder{
 		kc: kc,
 
 		AllowedConsumers: []*gatewayv1.ConsumeRoute{},
 		Route:            route,
 		Consumer:         consumer,
-		Realm:            realm,
 		Gateway:          gateway,
 
 		Plugins:  map[string]client.CustomPlugin{},
@@ -125,10 +121,6 @@ func (b *Builder) GetConsumer() (*gatewayv1.Consumer, bool) {
 		return nil, false
 	}
 	return b.Consumer, true
-}
-
-func (b *Builder) GetRealm() *gatewayv1.Realm {
-	return b.Realm
 }
 
 func (b *Builder) GetGateway() *gatewayv1.Gateway {

@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -43,7 +44,6 @@ type EventExposureReconciler struct {
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventsubscriptions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients,verbs=get;list;watch
@@ -86,6 +86,13 @@ func (r *EventExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Watches(&eventv1.EventSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventSubscriptionToEventExposure),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		// Watch Application because EventExposure needs the Application's ClientId to create
+		// Publisher resources. Without this watch, a BlockedError from a not-yet-ready Application
+		// would never be unblocked since nothing else triggers reconciliation.
+		Watches(&applicationv1.Application{},
+			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToEventExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
@@ -189,7 +196,7 @@ func (r *EventExposureReconciler) MapRouteToEventExposure(ctx context.Context, o
 }
 
 // MapZoneToEventExposure enqueues EventExposures referencing the changed Zone.
-// This ensures EventExposures react to zone status changes (e.g., GatewayRealm becoming available).
+// This ensures EventExposures react to zone status changes (e.g., Gateway preset becoming available).
 func (r *EventExposureReconciler) MapZoneToEventExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	zone, ok := obj.(*adminv1.Zone)
 	if !ok {
@@ -272,6 +279,31 @@ func (r *EventExposureReconciler) MapEventSubscriptionToEventExposure(ctx contex
 				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 			})
 		}
+	}
+	return reqs
+}
+
+// MapApplicationToEventExposure enqueues EventExposures whose provider matches the changed Application.
+// This is needed because EventExposure uses the Application's ClientId to create Publisher resources.
+func (r *EventExposureReconciler) MapApplicationToEventExposure(ctx context.Context, obj client.Object) []reconcile.Request {
+	application, ok := obj.(*applicationv1.Application)
+	if !ok {
+		return nil
+	}
+
+	list := &eventv1.EventExposureList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
+	}, client.InNamespace(application.Namespace)); err != nil {
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 	return reqs
 }

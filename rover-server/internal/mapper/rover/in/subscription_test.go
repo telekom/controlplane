@@ -253,46 +253,4 @@ var _ = Describe("Subscription Mapper", func() {
 		})
 	})
 
-	Context("mapSubscriptionTraffic", func() {
-		It("must map failover zones", func() {
-			input := api.ApiSubscription{
-				BasePath: "/test",
-				Failover: api.Failover{
-					Zones: []string{"zone-a", "zone-b"},
-				},
-			}
-
-			output := &roverv1.ApiSubscription{}
-			mapSubscriptionTraffic(input, output)
-
-			Expect(output.Traffic.Failover).ToNot(BeNil())
-			Expect(output.Traffic.Failover.Zones).To(ConsistOf("zone-a", "zone-b"))
-		})
-
-		It("must handle empty failover zones", func() {
-			input := api.ApiSubscription{
-				BasePath: "/test",
-				Failover: api.Failover{
-					Zones: []string{},
-				},
-			}
-
-			output := &roverv1.ApiSubscription{}
-			mapSubscriptionTraffic(input, output)
-
-			Expect(output.Traffic.Failover).To(BeNil())
-		})
-
-		It("must handle nil failover", func() {
-			input := api.ApiSubscription{
-				BasePath: "/test",
-			}
-
-			output := &roverv1.ApiSubscription{}
-			mapSubscriptionTraffic(input, output)
-
-			Expect(output.Traffic.Failover).To(BeNil())
-		})
-	})
-
 })

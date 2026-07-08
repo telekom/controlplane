@@ -54,13 +54,26 @@ spec:
         app.kubernetes.io/name: controlplane-postgres
         app.kubernetes.io/component: database
     spec:
+      automountServiceAccountToken: false
       securityContext:
         fsGroup: 999
         runAsGroup: 999
+        runAsNonRoot: true
         runAsUser: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: postgres
           image: postgres:16-alpine
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsGroup: 999
+            runAsNonRoot: true
+            runAsUser: 999
           env:
             - name: POSTGRES_DB
               value: controlplane

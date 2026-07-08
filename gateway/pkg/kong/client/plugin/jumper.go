@@ -40,13 +40,15 @@ type LoadBalancing struct {
 
 type LoadBalancingServer struct {
 	Upstream string `json:"upstream"`
-	Weight   int    `json:"weight,omitempty"`
+	Weight   int32  `json:"weight,omitempty"`
 }
 
 type JumperConfig struct {
 	OAuth         map[ConsumerId]OauthCredentials     `json:"oauth,omitempty"`
 	BasicAuth     map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
 	LoadBalancing *LoadBalancing                      `json:"loadBalancing,omitempty"`
+	// Mesh indicates whether the Jumper should operate in mesh mode.
+	Mesh bool `json:"mesh,omitempty"`
 }
 
 func NewJumperConfig() *JumperConfig {
@@ -62,13 +64,19 @@ type RoutingConfig struct {
 	ApiBasePath   string `json:"apiBasePath,omitzero"`
 	Realm         string `json:"realm,omitempty"`
 	Environment   string `json:"environment,omitempty"`
-	Issuer        string `json:"issuer,omitempty"`
-	ClientId      string `json:"clientId,omitempty"`
-	ClientSecret  string `json:"clientSecret,omitempty"`
+	// Issuer is deprecated and should not be used anymore.
+	Issuer string `json:"issuer,omitempty"`
+	// ClientId is deprecated and should not be used anymore.
+	ClientId string `json:"clientId,omitempty"`
+	// ClientSecret is deprecated and should not be used anymore.
+	ClientSecret string `json:"clientSecret,omitempty"`
 	// TargetZoneName is used to determine if the zone is currently available using zoneHealthCheckService
 	TargetZoneName string `json:"targetZoneName,omitempty"`
 
+	// TokenEndpoint is used for external-IDP
 	TokenEndpoint string `json:"tokenEndpoint,omitempty"`
+	// Mesh indicates whether this routing config is for a mesh scenario.
+	Mesh bool `json:"mesh,omitempty"`
 }
 
 type RoutingConfigs []*RoutingConfig

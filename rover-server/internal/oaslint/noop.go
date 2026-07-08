@@ -7,16 +7,19 @@ package oaslint
 import (
 	"context"
 	"io"
+
+	"github.com/go-logr/logr"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-var _ Linter = (*NoopLinter)(nil)
+var _ Linter = (*noopLinter)(nil)
 
-// NoopLinter always returns a passing result. Used when linting is disabled.
-type NoopLinter struct{}
+// noopLinter always skips linting. Used when no linter URL is configured.
+type noopLinter struct{}
 
-func (n *NoopLinter) Lint(_ context.Context, _ io.Reader) (*LintResult, error) {
-	return &LintResult{
-		Passed: true,
-		Reason: "linting is disabled",
-	}, nil
+func (n *noopLinter) Lint(ctx context.Context, apiSpec *roverv1.ApiSpecification, _ *apiv1.ApiCategory, _ io.Reader) (Outcome, error) {
+	logr.FromContextOrDiscard(ctx).V(1).Info("Linter URL not configured, skipping")
+	apiSpec.Spec.Lint = &roverv1.LintResult{Passed: true, Message: "linting is disabled"}
+	return Skipped, nil
 }
