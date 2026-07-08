@@ -660,6 +660,33 @@ var _ = Describe("Zone Handler Steps", func() {
 	})
 
 	// ─────────────────────────────────────────────────────────────────────────
+	// Step: populateRealmName
+	// ─────────────────────────────────────────────────────────────────────────
+
+	Describe("populateRealmName", func() {
+		It("should default realmName to environment name when Spec.RealmName is empty", func() {
+			testCtx := newTestContext(zone)
+			hc := newTestHandlingContext(testCtx, zone)
+
+			Expect(hc.Environment.Spec.RealmName).To(BeEmpty())
+
+			err := populateRealmName(testCtx, hc)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(zone.Status.RealmName).To(Equal(testEnvironment))
+		})
+
+		It("should use Spec.RealmName when it is set", func() {
+			testCtx := newTestContext(zone)
+			hc := newTestHandlingContext(testCtx, zone)
+			hc.Environment.Spec.RealmName = "custom-realm"
+
+			err := populateRealmName(testCtx, hc)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(zone.Status.RealmName).To(Equal("custom-realm"))
+		})
+	})
+
+	// ─────────────────────────────────────────────────────────────────────────
 	// Full Pipeline (CreateOrUpdate)
 	// ─────────────────────────────────────────────────────────────────────────
 

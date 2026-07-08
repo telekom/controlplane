@@ -43,7 +43,7 @@ func (s StatusEval) ConsolePrettyPrint(w io.Writer) error {
 
 	// Print resource details
 	fmt.Fprintf(buf, "%s: %s/%s\n", "Resource", s.obj.GetKind(), s.obj.GetName())
-	fmt.Fprintf(buf, "Status: %s | Processing: %s\n", s.status.GetOverallStatus(), s.status.GetProcessingState())
+	fmt.Fprintf(buf, "Status: %s\n", s.status.GetOverallStatus())
 
 	// Group information messages by kind
 	if len(s.status.GetInfo()) > 0 {
@@ -160,21 +160,19 @@ func (s StatusEval) JsonPrettyPrint(w io.Writer) error {
 
 	// Create a structured representation of the status for JSON output
 	output := struct {
-		Resource        string                `json:"resource"`
-		Status          types.OverallStatus   `json:"status"`
-		ProcessingState types.ProcessingState `json:"processingState"`
-		Errors          GroupedStatusInfo     `json:"errors,omitempty"`
-		Warnings        GroupedStatusInfo     `json:"warnings,omitempty"`
-		Info            GroupedStatusInfo     `json:"info,omitempty"`
-		Success         bool                  `json:"success"`
+		Resource string              `json:"resource"`
+		Status   types.OverallStatus `json:"status"`
+		Errors   GroupedStatusInfo   `json:"errors,omitempty"`
+		Warnings GroupedStatusInfo   `json:"warnings,omitempty"`
+		Info     GroupedStatusInfo   `json:"info,omitempty"`
+		Success  bool                `json:"success"`
 	}{
-		Resource:        fmt.Sprintf("%s/%s", s.obj.GetKind(), s.obj.GetName()),
-		Status:          s.status.GetOverallStatus(),
-		ProcessingState: s.status.GetProcessingState(),
-		Errors:          groupedErrors,
-		Warnings:        groupedWarnings,
-		Info:            groupedInfo,
-		Success:         s.IsSuccess(),
+		Resource: fmt.Sprintf("%s/%s", s.obj.GetKind(), s.obj.GetName()),
+		Status:   s.status.GetOverallStatus(),
+		Errors:   groupedErrors,
+		Warnings: groupedWarnings,
+		Info:     groupedInfo,
+		Success:  s.IsSuccess(),
 	}
 
 	// Marshal with indentation for pretty printing
@@ -189,7 +187,7 @@ func (s StatusEval) JsonPrettyPrint(w io.Writer) error {
 }
 
 func (s StatusEval) IsSuccess() bool {
-	return s.status.GetOverallStatus() == types.OverallStatusComplete && s.status.GetProcessingState() == types.ProcessingStateDone
+	return s.status.GetOverallStatus() == types.OverallStatusComplete
 }
 
 func (s StatusEval) IsFailure() bool {
@@ -201,5 +199,6 @@ func (s StatusEval) IsBlocked() bool {
 }
 
 func (s StatusEval) IsProcessed() bool {
-	return s.status.GetProcessingState() == types.ProcessingStateDone
+	os := s.status.GetOverallStatus()
+	return os == types.OverallStatusComplete || os == types.OverallStatusDone || os == types.OverallStatusBlocked
 }

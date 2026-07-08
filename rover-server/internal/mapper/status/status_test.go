@@ -7,7 +7,6 @@ package status
 import (
 	"fmt"
 
-	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
@@ -30,8 +29,10 @@ var _ = Describe("Rover Status Mapper", func() {
 
 			Expect(err).To(BeNil())
 			Expect(status).ToNot(BeNil())
-
-			snaps.MatchJSON(GinkgoT(), status)
+			// Rover fixture: Ready=False/SubResourceNotReady, sub-resource blocked (NoApproval)
+			// reconcileWithSubResources overrides to Blocked/Done
+			Expect(status.State).To(Equal(api.Blocked))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
 		})
 
 		It("stays Complete/Done when sub-resources have no ObservedGeneration (backward compat)", func() {
@@ -75,10 +76,14 @@ var _ = Describe("Rover Status Mapper", func() {
 		It("must map rover response correctly", func() {
 			response, err := MapRoverResponse(ctx, rover, stores)
 
-			Expect(response).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), response)
-
 			Expect(err).To(BeNil())
+			Expect(response).ToNot(BeNil())
+			// Rover fixture: Ready=False/SubResourceNotReady, sub-resource blocked (NoApproval)
+			// reconcileWithSubResources overrides parent to Blocked/Done
+			// CompareAndReturn(Blocked, Blocked) → Blocked
+			Expect(response.State).To(Equal(api.Blocked))
+			Expect(response.ProcessingState).To(Equal(api.ProcessingStateDone))
+			Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
 		})
 
 		It("must return an error if the input rover is nil", func() {
@@ -90,8 +95,8 @@ var _ = Describe("Rover Status Mapper", func() {
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
-		It("must map rover response correctly when processing condition is missing", func() {
-			roverNoProcessing := &v1.Rover{
+		It("must map rover response correctly when no conditions exist", func() {
+			roverNoConditions := &v1.Rover{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: "rover.cp.ei.telekom.de/v1",
 					Kind:       "Rover",
@@ -102,12 +107,13 @@ var _ = Describe("Rover Status Mapper", func() {
 				},
 			}
 
-			response, err := MapRoverResponse(ctx, roverNoProcessing, stores)
-
-			Expect(response).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), response)
+			response, err := MapRoverResponse(ctx, roverNoConditions, stores)
 
 			Expect(err).To(BeNil())
+			Expect(response).ToNot(BeNil())
+			Expect(response.State).To(Equal(api.None))
+			Expect(response.ProcessingState).To(Equal(api.ProcessingStatePending))
+			Expect(response.OverallStatus).To(Equal(api.OverallStatusPending))
 		})
 	})
 
@@ -116,94 +122,32 @@ var _ = Describe("Rover Status Mapper", func() {
 			status := GetOverallStatus(rover.GetConditions())
 
 			Expect(status).ToNot(BeNil())
-			Expect(status).To(Equal(api.OverallStatusBlocked))
+			Expect(status).To(Equal(api.OverallStatusProcessing))
 		})
 
 		It("must get overall status correctly if the input is nil", func() {
 			status := GetOverallStatus(nil)
 
 			Expect(status).ToNot(BeNil())
-			Expect(status).To(Equal(api.OverallStatusNone))
-		})
-	})
-
-	Context("isProcessingStale", func() {
-		It("returns true when processing ObservedGeneration is behind object generation", func() {
-			conditions := []metav1.Condition{
-				{
-					Type:               condition.ConditionTypeProcessing,
-					Status:             metav1.ConditionFalse,
-					Reason:             "Done",
-					ObservedGeneration: 3,
-				},
-			}
-
-			Expect(isProcessingStale(conditions, 5)).To(BeTrue())
-		})
-
-		It("returns false when processing ObservedGeneration matches object generation", func() {
-			conditions := []metav1.Condition{
-				{
-					Type:               condition.ConditionTypeProcessing,
-					Status:             metav1.ConditionFalse,
-					Reason:             "Done",
-					ObservedGeneration: 5,
-				},
-			}
-
-			Expect(isProcessingStale(conditions, 5)).To(BeFalse())
-		})
-
-		It("returns false when there is no processing condition", func() {
-			conditions := []metav1.Condition{
-				{
-					Type:   condition.ConditionTypeReady,
-					Status: metav1.ConditionTrue,
-				},
-			}
-
-			Expect(isProcessingStale(conditions, 5)).To(BeFalse())
-		})
-
-		It("returns false when ObservedGeneration is zero (backward compat)", func() {
-			conditions := []metav1.Condition{
-				{
-					Type:               condition.ConditionTypeProcessing,
-					Status:             metav1.ConditionFalse,
-					Reason:             "Done",
-					ObservedGeneration: 0,
-				},
-			}
-
-			Expect(isProcessingStale(conditions, 5)).To(BeFalse())
-		})
-
-		It("returns false when object generation is zero", func() {
-			conditions := []metav1.Condition{
-				{
-					Type:               condition.ConditionTypeProcessing,
-					Status:             metav1.ConditionFalse,
-					Reason:             "Done",
-					ObservedGeneration: 3,
-				},
-			}
-
-			Expect(isProcessingStale(conditions, 0)).To(BeFalse())
+			Expect(status).To(Equal(api.OverallStatusPending))
 		})
 	})
 
 	Context("FillStateInfo", func() {
-		It("if no processing condition exists status will be none and warnings are created", func() {
+		It("if no conditions exist status will be none with warning", func() {
 			var conditions []metav1.Condition
 			status := &api.Status{}
 
 			fillStateInfo(conditions, 0, status)
 
 			Expect(status).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), status)
+			Expect(status.State).To(Equal(api.None))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStatePending))
+			Expect(status.Warnings).To(HaveLen(1))
+			Expect(status.Warnings[0].Message).To(Equal("No conditions found"))
 		})
 
-		It("if no ready condition exists status will be none and warnings are created", func() {
+		It("if only processing exists (no ready) falls back to processing condition", func() {
 			conditions := []metav1.Condition{
 				{
 					Type:   condition.ConditionTypeProcessing,
@@ -215,10 +159,11 @@ var _ = Describe("Rover Status Mapper", func() {
 			fillStateInfo(conditions, 0, status)
 
 			Expect(status).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), status)
+			Expect(status.State).To(Equal(api.None))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateProcessing))
 		})
 
-		It("if processing condition status will be blocked and processing", func() {
+		It("if ready is false with processing-equivalent reason returns processing", func() {
 			conditions := []metav1.Condition{
 				{
 					Type:   condition.ConditionTypeProcessing,
@@ -227,6 +172,7 @@ var _ = Describe("Rover Status Mapper", func() {
 				{
 					Type:   condition.ConditionTypeReady,
 					Status: metav1.ConditionFalse,
+					Reason: "SubResourceNotReady",
 				},
 			}
 			status := &api.Status{}
@@ -234,10 +180,33 @@ var _ = Describe("Rover Status Mapper", func() {
 			fillStateInfo(conditions, 0, status)
 
 			Expect(status).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), status)
+			Expect(status.State).To(Equal(api.None))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateProcessing))
 		})
 
-		It("if processing condition is blocked status will be blocked and warning", func() {
+		It("if ready is false with Provisioning reason returns processing", func() {
+			conditions := []metav1.Condition{
+				{
+					Type:   condition.ConditionTypeProcessing,
+					Status: metav1.ConditionTrue,
+					Reason: "Provisioning",
+				},
+				{
+					Type:   condition.ConditionTypeReady,
+					Status: metav1.ConditionFalse,
+					Reason: "Provisioning",
+				},
+			}
+			status := &api.Status{}
+
+			fillStateInfo(conditions, 0, status)
+
+			Expect(status).ToNot(BeNil())
+			Expect(status.State).To(Equal(api.None))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateProcessing))
+		})
+
+		It("if ready is false with non-processing reason returns blocked", func() {
 			conditions := []metav1.Condition{
 				{
 					Type:    condition.ConditionTypeProcessing,
@@ -245,8 +214,10 @@ var _ = Describe("Rover Status Mapper", func() {
 					Message: "Blocked due to dependency",
 				},
 				{
-					Type:   condition.ConditionTypeReady,
-					Status: metav1.ConditionFalse,
+					Type:    condition.ConditionTypeReady,
+					Status:  metav1.ConditionFalse,
+					Reason:  "ApprovalPending",
+					Message: "Waiting for approval",
 				},
 			}
 			status := &api.Status{}
@@ -254,10 +225,13 @@ var _ = Describe("Rover Status Mapper", func() {
 			fillStateInfo(conditions, 0, status)
 
 			Expect(status).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), status)
+			Expect(status.State).To(Equal(api.Blocked))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+			Expect(status.Warnings).To(HaveLen(1))
+			Expect(status.Warnings[0].Message).To(Equal("Waiting for approval"))
 		})
 
-		It("if processing done and ready true status will be complete", func() {
+		It("if ready is true status will be complete", func() {
 			conditions := []metav1.Condition{
 				{
 					Type:   condition.ConditionTypeProcessing,
@@ -266,6 +240,7 @@ var _ = Describe("Rover Status Mapper", func() {
 				{
 					Type:   condition.ConditionTypeReady,
 					Status: metav1.ConditionTrue,
+					Reason: "Provisioned",
 				},
 			}
 			status := &api.Status{}
@@ -273,39 +248,93 @@ var _ = Describe("Rover Status Mapper", func() {
 			fillStateInfo(conditions, 0, status)
 
 			Expect(status).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), status)
+			Expect(status.State).To(Equal(api.Complete))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
 		})
 
-		It("if processing done and ready false status will be blocked and warning", func() {
-			conditions := []metav1.Condition{
-				{
-					Type:   condition.ConditionTypeProcessing,
-					Reason: "Done",
-				},
-				{
-					Type:    condition.ConditionTypeReady,
-					Status:  metav1.ConditionFalse,
-					Message: "Not ready yet",
-				},
-			}
-			status := &api.Status{}
-
-			fillStateInfo(conditions, 0, status)
-
-			Expect(status).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), status)
-		})
-
-		It("if processing failed status will be failed and error", func() {
+		It("if ready is true then ready wins even if processing says blocked", func() {
 			conditions := []metav1.Condition{
 				{
 					Type:    condition.ConditionTypeProcessing,
+					Status:  metav1.ConditionFalse,
+					Reason:  "Blocked",
+					Message: "Zone is not ready yet",
+				},
+				{
+					Type:   condition.ConditionTypeReady,
+					Status: metav1.ConditionTrue,
+					Reason: "Provisioned",
+				},
+			}
+			status := &api.Status{}
+
+			fillStateInfo(conditions, 0, status)
+
+			Expect(status).ToNot(BeNil())
+			Expect(status.State).To(Equal(api.Complete))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+		})
+
+		It("if ready is unknown and processing is blocked falls back to processing", func() {
+			conditions := []metav1.Condition{
+				{
+					Type:    condition.ConditionTypeProcessing,
+					Status:  metav1.ConditionFalse,
+					Reason:  "Blocked",
+					Message: "Environment label is missing",
+				},
+				{
+					Type:   condition.ConditionTypeReady,
+					Status: metav1.ConditionUnknown,
+					Reason: "Unknown",
+				},
+			}
+			status := &api.Status{}
+
+			fillStateInfo(conditions, 0, status)
+
+			Expect(status).ToNot(BeNil())
+			Expect(status.State).To(Equal(api.Blocked))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+			Expect(status.Warnings).To(HaveLen(1))
+			Expect(status.Warnings[0].Message).To(Equal("Environment label is missing"))
+		})
+
+		It("if ready is unknown and processing is done falls back to processing", func() {
+			conditions := []metav1.Condition{
+				{
+					Type:   condition.ConditionTypeProcessing,
+					Status: metav1.ConditionFalse,
+					Reason: "Done",
+				},
+				{
+					Type:   condition.ConditionTypeReady,
+					Status: metav1.ConditionUnknown,
+					Reason: "Unknown",
+				},
+			}
+			status := &api.Status{}
+
+			fillStateInfo(conditions, 0, status)
+
+			Expect(status).ToNot(BeNil())
+			Expect(status.State).To(Equal(api.None))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+		})
+
+		It("if processing has unknown reason and ready is false with unknown reason returns blocked", func() {
+			conditions := []metav1.Condition{
+				{
+					Type:    condition.ConditionTypeProcessing,
+					Status:  metav1.ConditionFalse,
 					Reason:  "Failed",
 					Message: "Processing failed",
 				},
 				{
-					Type:   condition.ConditionTypeReady,
-					Status: metav1.ConditionFalse,
+					Type:    condition.ConditionTypeReady,
+					Status:  metav1.ConditionFalse,
+					Reason:  "SomeFailure",
+					Message: "Something went wrong",
 				},
 			}
 			status := &api.Status{}
@@ -313,7 +342,10 @@ var _ = Describe("Rover Status Mapper", func() {
 			fillStateInfo(conditions, 0, status)
 
 			Expect(status).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), status)
+			Expect(status.State).To(Equal(api.Blocked))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+			Expect(status.Warnings).To(HaveLen(1))
+			Expect(status.Warnings[0].Message).To(Equal("Something went wrong"))
 		})
 
 		It("if processing condition is stale status will be none and pending", func() {
@@ -323,6 +355,29 @@ var _ = Describe("Rover Status Mapper", func() {
 					Status:             metav1.ConditionFalse,
 					Reason:             "Done",
 					ObservedGeneration: 1,
+				},
+				{
+					Type:               condition.ConditionTypeReady,
+					Status:             metav1.ConditionTrue,
+					ObservedGeneration: 1,
+				},
+			}
+			status := &api.Status{}
+
+			fillStateInfo(conditions, 2, status)
+
+			Expect(status).ToNot(BeNil())
+			Expect(status.State).To(Equal(api.None))
+			Expect(status.ProcessingState).To(Equal(api.ProcessingStatePending))
+		})
+
+		It("if ready condition is stale status will be none and pending", func() {
+			conditions := []metav1.Condition{
+				{
+					Type:               condition.ConditionTypeProcessing,
+					Status:             metav1.ConditionFalse,
+					Reason:             "Done",
+					ObservedGeneration: 2,
 				},
 				{
 					Type:               condition.ConditionTypeReady,

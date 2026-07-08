@@ -98,7 +98,7 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	}
 
 	realm.SetCondition(condition.NewDoneProcessingCondition("Created Realm"))
-	realm.SetCondition(condition.NewReadyCondition("Ready", "Realm is ready"))
+	realm.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Realm is ready"))
 
 	return nil
 }

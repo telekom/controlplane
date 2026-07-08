@@ -46,6 +46,15 @@ type TeamSpec struct {
 	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
 	Name string `json:"name"`
 
+	// DisplayName is the name of the team, that should be displayed in UI if available
+	// +kubebuilder:validation:Optional
+	DisplayName string `json:"displayName,omitempty"`
+
+	// Description of a team
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=256
+	Description string `json:"description,omitempty"`
+
 	// Group is the group of the team
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1

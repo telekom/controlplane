@@ -1198,6 +1198,7 @@ type Approval implements Node {
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
   name: String!
+  expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
 }
 """
@@ -1704,6 +1705,19 @@ input ApprovalWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
+  """
+  expiresAt field predicates
+  """
+  expiresat: Time
+  expiresatNEQ: Time
+  expiresatIn: [Time!]
+  expiresatNotIn: [Time!]
+  expiresatGT: Time
+  expiresatGTE: Time
+  expiresatLT: Time
+  expiresatLTE: Time
+  expiresatIsNil: Boolean
+  expiresatNotNil: Boolean
   """
   state field predicates
   """
@@ -3046,6 +3060,8 @@ type Team implements Node {
   namespace: String!
   name: String!
   email: String!
+  displayname: String @goField(name: "DisplayName", forceResolver: false)
+  description: String
   category: TeamCategory!
   teamToken: String
   group: Group
@@ -3345,6 +3361,42 @@ input TeamWhereInput {
   emailHasSuffix: String
   emailEqualFold: String
   emailContainsFold: String
+  """
+  displayName field predicates
+  """
+  displayname: String
+  displaynameNEQ: String
+  displaynameIn: [String!]
+  displaynameNotIn: [String!]
+  displaynameGT: String
+  displaynameGTE: String
+  displaynameLT: String
+  displaynameLTE: String
+  displaynameContains: String
+  displaynameHasPrefix: String
+  displaynameHasSuffix: String
+  displaynameIsNil: Boolean
+  displaynameNotNil: Boolean
+  displaynameEqualFold: String
+  displaynameContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
   """
   category field predicates
   """

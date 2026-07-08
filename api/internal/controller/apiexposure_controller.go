@@ -151,6 +151,10 @@ func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context,
 	return reqs
 }
 
+// MapRouteToApiExposure enqueues ApiExposures when a Route they manage is externally modified.
+// Routes are created in zone namespaces, so we use the basepath label to find the owning exposures.
+//
+//nolint:dupl // controller map helpers intentionally mirror each other across exposure/subscription
 func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 	route, ok := obj.(*gatewayv1.Route)
@@ -180,6 +184,8 @@ func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj c
 	return reqs
 }
 
+// MapZoneToApiExposure enqueues ApiExposures that reference a changed Zone.
+// This ensures exposures react to zone readiness or namespace changes.
 func (r *ApiExposureReconciler) MapZoneToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 	zone, ok := obj.(*adminv1.Zone)

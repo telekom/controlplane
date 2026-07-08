@@ -254,12 +254,10 @@ var _ = Describe("FailoverFeature", func() {
 					}
 
 					routingConfigs := &plugin.RoutingConfigs{}
-					jumperConfig := plugin.NewJumperConfig()
 
 					builder.EXPECT().GetRoute().Return(route, true)
 					builder.EXPECT().RoutingConfigs().Return(routingConfigs)
 					builder.EXPECT().SetUpstream(mock.Anything).Return()
-					builder.EXPECT().JumperConfig().Return(jumperConfig)
 
 					err := f.Apply(ctx, builder)
 					Expect(err).ToNot(HaveOccurred())
@@ -364,12 +362,10 @@ var _ = Describe("FailoverFeature", func() {
 					}
 
 					routingConfigs := &plugin.RoutingConfigs{}
-					jumperConfig := plugin.NewJumperConfig()
 
 					builder.EXPECT().GetRoute().Return(route, true)
 					builder.EXPECT().RoutingConfigs().Return(routingConfigs)
 					builder.EXPECT().SetUpstream(mock.Anything).Return()
-					builder.EXPECT().JumperConfig().Return(jumperConfig)
 
 					err := f.Apply(ctx, builder)
 					Expect(err).ToNot(HaveOccurred())
@@ -381,6 +377,7 @@ var _ = Describe("FailoverFeature", func() {
 					proxyConfig := routingConfigs.Get(0)
 					Expect(proxyConfig.RemoteApiUrl).To(Equal("https://primary.example.com:443/api"))
 					Expect(proxyConfig.TargetZoneName).To(Equal("zone-a"))
+					Expect(proxyConfig.Mesh).To(BeTrue())
 					Expect(proxyConfig.JumperConfig).To(BeNil())
 
 					// index 1: first failover target (zone-b)
@@ -388,16 +385,16 @@ var _ = Describe("FailoverFeature", func() {
 					Expect(target1.RemoteApiUrl).To(Equal("https://failover-a.example.com:443/v1"))
 					Expect(target1.ApiBasePath).To(Equal("/v1"))
 					Expect(target1.TargetZoneName).To(Equal("zone-b"))
-					Expect(target1.JumperConfig).To(Equal(jumperConfig))
-					Expect(target1.LoadBalancing).To(BeNil())
+					Expect(target1.Mesh).To(BeTrue())
+					Expect(target1.JumperConfig).To(BeNil())
 
 					// index 2: second failover target (zone-c)
 					target2 := routingConfigs.Get(2)
 					Expect(target2.RemoteApiUrl).To(Equal("https://failover-b.example.com:443/v1"))
 					Expect(target2.ApiBasePath).To(Equal("/v1"))
 					Expect(target2.TargetZoneName).To(Equal("zone-c"))
-					Expect(target2.JumperConfig).To(Equal(jumperConfig))
-					Expect(target2.LoadBalancing).To(BeNil())
+					Expect(target2.Mesh).To(BeTrue())
+					Expect(target2.JumperConfig).To(BeNil())
 				})
 			})
 		})

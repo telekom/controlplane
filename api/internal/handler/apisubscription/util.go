@@ -30,7 +30,7 @@ func ApiMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (*apiapi.
 		return nil, err
 	}
 	if !found {
-		apiSub.SetCondition(condition.NewNotReadyCondition("NoApi",
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("API %q is not registered. Cannot provision ApiSubscription", apiSub.Spec.ApiBasePath)),
 		)
 		msg := fmt.Sprintf("API %q is not registered. ApiExposure will be automatically processed, when the API is registered and exposed", apiSub.Spec.ApiBasePath)
@@ -57,7 +57,7 @@ func ApiExposureMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (
 	}
 	if !found {
 		logger.Info("no active ApiExposure found", "basePath", apiSub.Spec.ApiBasePath)
-		apiSub.SetCondition(condition.NewNotReadyCondition("NoApiExposure",
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("API %q is not exposed. Cannot provision ApiSubscription", apiSub.Spec.ApiBasePath)),
 		)
 		msg := fmt.Sprintf("API %q is not exposed. ApiSubscription will be automatically processed, when the API is exposed", apiSub.Spec.ApiBasePath)

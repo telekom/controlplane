@@ -41,6 +41,8 @@ spec:
         runAsGroup: 65534
         runAsNonRoot: true
         runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: manager
           args:
@@ -84,7 +86,7 @@ spec:
               cpu: 500m
               memory: 128Mi
             requests:
-              cpu: 10m
+              cpu: 30m
               memory: 32Mi
           volumeMounts:
             - name: controlplane-api-config

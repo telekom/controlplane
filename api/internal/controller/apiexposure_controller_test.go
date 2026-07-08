@@ -74,6 +74,10 @@ func CreateZone(name string) *adminapi.Zone {
 	Expect(err).ToNot(HaveOccurred())
 
 	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.IdentityRealm = &types.ObjectRef{
+		Name:      testEnvironment,
+		Namespace: testEnvironment + "--" + name,
+	}
 	zone.Status.Gateway = &types.ObjectRef{
 		Name:      "test-gateway",
 		Namespace: testEnvironment + "--" + name,
@@ -354,6 +358,8 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				M2M: &apiv1.Machine2MachineAuthentication{
 					ExternalIDP: &apiv1.ExternalIdentityProvider{
 						TokenEndpoint: "https://example.com/token",
+						TokenRequest:  apiv1.TokenRequestClientSecretBasic,
+						GrantType:     "client_credentials",
 						Client: &apiv1.OAuth2ClientCredentials{
 							ClientId:     "client-id",
 							ClientSecret: "******",
@@ -421,7 +427,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal(gatewayapi.TokenRequestClientSecretBasic))
-				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal(gatewayapi.GrantTypeClientCredentials))
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -458,7 +464,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApiExposure.Status.Active).To(BeFalse())
 				readyCond := meta.FindStatusCondition(secondApiExposure.GetConditions(), condition.ConditionTypeReady)
-				testutil.ExpectConditionToBeFalse(g, readyCond, "ApiCaseConflict")
+				testutil.ExpectConditionToBeFalse(g, readyCond, condition.ReasonPreconditionNotMet)
 				Expect(readyCond.Message).To(ContainSubstring(`API is registered but the case does not match (got="/ApiExpctrl/Test/v1", found="/apiexpctrl/test/v1").`))
 			}, timeout, interval).Should(Succeed())
 		})
@@ -553,7 +559,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 
 				g.Expect(apiExposure.Status.Active).To(BeTrue())
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
@@ -632,6 +638,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				M2M: &apiv1.Machine2MachineAuthentication{
 					ExternalIDP: &apiv1.ExternalIdentityProvider{
 						TokenEndpoint: "https://my-issser.example.com/token",
+						TokenRequest:  apiv1.TokenRequestClientSecretBasic,
 						GrantType:     "password",
 						Basic: &apiv1.BasicAuthCredentials{
 							Username: "my-username",
@@ -683,7 +690,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(failoverRoute.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
 
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://my-issser.example.com/token"))
-				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.GrantType).To(Equal("password"))
+				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.GrantType).To(Equal(gatewayapi.GrantTypePassword))
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.Basic.Username).To(Equal("my-username"))
 				Expect(failoverRoute.Spec.Traffic.Failover.Security.M2M.ExternalIDP.Basic.Password).To(Equal("my-password"))
 			}, timeout, interval).Should(Succeed())
