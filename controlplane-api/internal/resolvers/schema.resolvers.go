@@ -142,11 +142,6 @@ func (r *apiExposureInfoResolver) Features(ctx context.Context, obj *model.ApiEx
 	return result, nil
 }
 
-// Traffic is the resolver for the traffic field.
-func (r *apiExposureInfoResolver) Traffic(ctx context.Context, obj *model.ApiExposureInfo) (*model.Traffic, error) {
-	return &obj.Traffic, nil
-}
-
 // Target is the resolver for the target field.
 // Returns reduced ApiExposureInfo type for cross-tenant safety.
 func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiExposureInfo, error) {

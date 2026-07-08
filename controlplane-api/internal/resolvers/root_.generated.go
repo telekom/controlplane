@@ -7390,7 +7390,6 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
-  # traffic required to depict rateLimiting information
   traffic: Traffic 
   "Application name that owns this exposure"
   ownerApplicationName: String!

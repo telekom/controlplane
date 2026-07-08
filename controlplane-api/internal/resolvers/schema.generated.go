@@ -30,8 +30,6 @@ type ApiExposureInfoResolver interface {
 	Visibility(ctx context.Context, obj *model.ApiExposureInfo) (apiexposure.Visibility, error)
 
 	Features(ctx context.Context, obj *model.ApiExposureInfo) ([]model1.APIExposureFeature, error)
-
-	Traffic(ctx context.Context, obj *model.ApiExposureInfo) (*model.Traffic, error)
 }
 type ApiSubscriptionInfoResolver interface {
 	StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error)
@@ -281,11 +279,11 @@ func (ec *executionContext) _ApiExposureInfo_traffic(ctx context.Context, field 
 			return ec.fieldContext_ApiExposureInfo_traffic(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.ApiExposureInfo().Traffic(ctx, obj)
+			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
-			return ec.marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v model.Traffic) graphql.Marshaler {
+			return ec.marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
 		},
 		true,
 		false,
@@ -295,8 +293,8 @@ func (ec *executionContext) fieldContext_ApiExposureInfo_traffic(_ context.Conte
 	fc = &graphql.FieldContext{
 		Object:     "ApiExposureInfo",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_Traffic(ctx, field)
 		},
@@ -2569,38 +2567,7 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "traffic":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ApiExposureInfo_traffic(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._ApiExposureInfo_traffic(ctx, field, obj)
 		case "ownerApplicationName":
 			out.Values[i] = ec._ApiExposureInfo_ownerApplicationName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4122,6 +4089,10 @@ func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "email":
 			out.Values[i] = ec._TeamInfo_email(ctx, field, obj)
+		case "displayName":
+			out.Values[i] = ec._TeamInfo_displayName(ctx, field, obj)
+		case "description":
+			out.Values[i] = ec._TeamInfo_description(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4642,13 +4613,6 @@ func (ec *executionContext) marshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekom
 
 func (ec *executionContext) marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v model.Traffic) graphql.Marshaler {
 	return ec._Traffic(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Traffic(ctx, sel, v)
 }
 
 // endregion ***************************** type.gotpl *****************************
