@@ -680,7 +680,7 @@ var _ = Describe("ApiExposure Translator", func() {
 			Expect(data.Traffic.RateLimit.SubscriberRateLimit.Overrides).To(BeEmpty())
 		})
 
-		It("should produce empty Traffic when no RateLimit is set", func() {
+		It("should produce nil Traffic when no RateLimit or Failover is set", func() {
 			obj := &apiv1.ApiExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "no-traffic",
@@ -697,8 +697,7 @@ var _ = Describe("ApiExposure Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(data.Traffic).NotTo(BeNil())
-			Expect(data.Traffic.RateLimit).To(BeNil())
+			Expect(data.Traffic).To(BeNil())
 		})
 	})
 

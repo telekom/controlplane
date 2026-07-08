@@ -56,7 +56,7 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 	}
 
 	var security *model.ApiExposureSecurity
-	if obj.Spec.Security != nil {
+	if obj.Spec.Security != nil && obj.Spec.Security.M2M != nil {
 		security = &model.ApiExposureSecurity{}
 		if obj.Spec.Security.M2M != nil {
 			security.M2M = &model.Machine2MachineAuthentication{}
@@ -72,38 +72,41 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		}
 	}
 
-	traffic := &model.Traffic{}
-	if obj.Spec.Traffic.RateLimit != nil {
-		traffic.RateLimit = &model.RateLimit{}
-		if obj.Spec.Traffic.RateLimit.Provider != nil {
-			traffic.RateLimit.Provider = &model.RateLimitConfig{
-				Limits:  model.Limits(obj.Spec.Traffic.RateLimit.Provider.Limits),
-				Options: model.RateLimitOptions(obj.Spec.Traffic.RateLimit.Provider.Options),
-			}
-		}
-		if obj.Spec.Traffic.RateLimit.SubscriberRateLimit != nil {
-			traffic.RateLimit.SubscriberRateLimit = &model.SubscriberRateLimits{
-				Overrides: []model.RateLimitOverrides{},
-			}
-			if obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default != nil {
-				traffic.RateLimit.SubscriberRateLimit.Default = &model.SubscriberRateLimitDefaults{
-					Limits: model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits),
+	var traffic *model.Traffic
+	if obj.Spec.Traffic.RateLimit != nil || obj.Spec.Traffic.Failover != nil {
+		traffic = &model.Traffic{}
+		if obj.Spec.Traffic.RateLimit != nil {
+			traffic.RateLimit = &model.RateLimit{}
+			if obj.Spec.Traffic.RateLimit.Provider != nil {
+				traffic.RateLimit.Provider = &model.RateLimitConfig{
+					Limits:  model.Limits(obj.Spec.Traffic.RateLimit.Provider.Limits),
+					Options: model.RateLimitOptions(obj.Spec.Traffic.RateLimit.Provider.Options),
 				}
 			}
-			for i := range obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides {
-				traffic.RateLimit.SubscriberRateLimit.Overrides = append(traffic.RateLimit.SubscriberRateLimit.Overrides,
-					model.RateLimitOverrides{
-						Subscriber: obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Subscriber,
-						Limits:     model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Limits),
-					},
-				)
+			if obj.Spec.Traffic.RateLimit.SubscriberRateLimit != nil {
+				traffic.RateLimit.SubscriberRateLimit = &model.SubscriberRateLimits{
+					Overrides: []model.RateLimitOverrides{},
+				}
+				if obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default != nil {
+					traffic.RateLimit.SubscriberRateLimit.Default = &model.SubscriberRateLimitDefaults{
+						Limits: model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits),
+					}
+				}
+				for i := range obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides {
+					traffic.RateLimit.SubscriberRateLimit.Overrides = append(traffic.RateLimit.SubscriberRateLimit.Overrides,
+						model.RateLimitOverrides{
+							Subscriber: obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Subscriber,
+							Limits:     model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Limits),
+						},
+					)
+				}
 			}
 		}
-	}
-	if obj.Spec.Traffic.Failover != nil {
-		traffic.Failover = &model.Failover{}
-		for i := range obj.Spec.Traffic.Failover.Zones {
-			traffic.Failover.Zones = append(traffic.Failover.Zones, obj.Spec.Traffic.Failover.Zones[i].Name)
+		if obj.Spec.Traffic.Failover != nil {
+			traffic.Failover = &model.Failover{}
+			for i := range obj.Spec.Traffic.Failover.Zones {
+				traffic.Failover.Zones = append(traffic.Failover.Zones, obj.Spec.Traffic.Failover.Zones[i].Name)
+			}
 		}
 	}
 
