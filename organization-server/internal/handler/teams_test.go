@@ -152,7 +152,7 @@ var _ = Describe("Team Handlers", func() {
 
 	Describe("GET /organization/v1/hubs/:hub/teams", func() {
 		It("should list teams", func() {
-			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams", nil)
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			items := expectJSONArray(resp, err)
 			Expect(items).To(HaveLen(1))
@@ -163,7 +163,7 @@ var _ = Describe("Team Handlers", func() {
 
 	Describe("GET /organization/v1/hubs/:hub/teams/:team", func() {
 		It("should get a team with full details for admin", func() {
-			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", nil)
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			result := expectJSON(resp, err)
 			Expect(result["name"]).To(Equal("hyperion"))
@@ -172,7 +172,7 @@ var _ = Describe("Team Handlers", func() {
 		})
 
 		It("should strip teamToken for obfuscated scope", func() {
-			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", nil)
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
 			resp, err := executeRequest(app, req, obfToken)
 			result := expectJSON(resp, err)
 			Expect(result["name"]).To(Equal("hyperion"))
@@ -202,7 +202,7 @@ var _ = Describe("Team Handlers", func() {
 
 	Describe("DELETE /organization/v1/hubs/:hub/teams/:team", func() {
 		It("should delete a team", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/organization/v1/hubs/eni/teams/hyperion", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			expectStatus(resp, err, http.StatusNoContent)
 		})
@@ -210,7 +210,7 @@ var _ = Describe("Team Handlers", func() {
 
 	Describe("PATCH /organization/v1/hubs/:hub/teams/:team/teamToken", func() {
 		It("should rotate the team token", func() {
-			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", nil)
+			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -221,7 +221,7 @@ var _ = Describe("Team Handlers", func() {
 		})
 
 		It("should strip rotated token for obfuscated scope", func() {
-			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", nil)
+			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
 			resp, err := executeRequest(app, req, obfToken)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -234,7 +234,7 @@ var _ = Describe("Team Handlers", func() {
 
 	Describe("GET /organization/v1/hubs/:hub/teams/:team/resources", func() {
 		It("should proxy resources from rover-server", func() {
-			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion/resources", nil)
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion/resources", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))

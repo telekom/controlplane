@@ -88,17 +88,6 @@ func (h *Handler) mapMutationErrors(c *fiber.Ctx, errors []MutationError) error 
 	})
 }
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
-func ptrOr[T any](p *T, def T) T {
-	if p != nil {
-		return *p
-	}
-	return def
-}
-
 func intToStr(i int) string {
 	return strconv.Itoa(i)
 }

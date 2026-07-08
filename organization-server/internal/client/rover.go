@@ -57,7 +57,7 @@ func (r *RoverClient) GetResources(ctx context.Context, group, team string) (*Re
 	prefix := fmt.Sprintf("%s--%s--%s/", r.environment, group, team)
 	url := fmt.Sprintf("%s/resources?prefix=%s", r.baseURL, prefix)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("building request: %w", err)
 	}
@@ -69,7 +69,7 @@ func (r *RoverClient) GetResources(ctx context.Context, group, team string) (*Re
 	if err != nil {
 		return nil, fmt.Errorf("calling rover-server: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // best-effort close
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

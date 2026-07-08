@@ -95,7 +95,7 @@ var _ = Describe("Hub Handlers", func() {
 
 	Describe("GET /organization/v1/hubs", func() {
 		It("should list all hubs", func() {
-			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs", nil)
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			items := expectJSONArray(resp, err)
 			Expect(items).To(HaveLen(2))
@@ -104,7 +104,7 @@ var _ = Describe("Hub Handlers", func() {
 
 	Describe("GET /organization/v1/hubs/:hub", func() {
 		It("should get a single hub", func() {
-			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni", nil)
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			result := expectJSON(resp, err)
 			Expect(result["name"]).To(Equal("eni"))
@@ -134,7 +134,7 @@ var _ = Describe("Hub Handlers", func() {
 
 	Describe("DELETE /organization/v1/hubs/:hub", func() {
 		It("should delete a hub", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/organization/v1/hubs/eni", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/organization/v1/hubs/eni", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			expectStatus(resp, err, http.StatusNoContent)
 		})
@@ -142,7 +142,7 @@ var _ = Describe("Hub Handlers", func() {
 
 	Describe("Authentication", func() {
 		It("should reject requests without a token", func() {
-			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs", nil)
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs", http.NoBody)
 			resp, err := app.Test(req, -1)
 			expectStatus(resp, err, http.StatusUnauthorized)
 		})
@@ -151,7 +151,7 @@ var _ = Describe("Hub Handlers", func() {
 	Describe("Obfuscation", func() {
 		It("should not expose sensitive fields with obfuscated scope", func() {
 			// Hub responses don't have sensitive fields, but verifies middleware doesn't break
-			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni", nil)
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni", http.NoBody)
 			resp, err := executeRequest(app, req, obfToken)
 			result := expectJSON(resp, err)
 			Expect(result["name"]).To(Equal("eni"))
