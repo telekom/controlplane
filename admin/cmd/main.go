@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -178,7 +179,13 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "RemoteOrganization")
 		os.Exit(1)
 	}
+
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		webhookv1.RegisterIndexesOrDie(context.Background(), mgr)
+		if err = webhookv1.SetupEnvironmentWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Environment")
+			os.Exit(1)
+		}
 		if err := webhookv1.SetupZoneWebhookWithManager(mgr, secretsapi.API()); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Zone")
 			os.Exit(1)

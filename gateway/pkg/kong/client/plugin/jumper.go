@@ -73,7 +73,10 @@ type RoutingConfig struct {
 	// TargetZoneName is used to determine if the zone is currently available using zoneHealthCheckService
 	TargetZoneName string `json:"targetZoneName,omitempty"`
 
+	// TokenEndpoint is used for external-IDP
 	TokenEndpoint string `json:"tokenEndpoint,omitempty"`
+	// Mesh indicates whether this routing config is for a mesh scenario.
+	Mesh bool `json:"mesh,omitempty"`
 }
 
 type RoutingConfigs []*RoutingConfig
