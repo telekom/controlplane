@@ -5,6 +5,8 @@
 package security
 
 import (
+	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
@@ -19,51 +21,61 @@ const (
 
 type Option[T any] func(T)
 
+// Mode controls the authentication behaviour of the security middleware.
+type Mode string
+
+// ModeJWT enables full JWT validation against trusted issuers.
+// Requires at least one TrustedIssuer to be configured.
+const ModeJWT Mode = "jwt"
+
+// ModeMock enables JWT parsing without signature validation.
+// For integration testing with controlled tokens only — never use in production.
+const ModeMock Mode = "mock"
+
 type SecurityOpts struct {
-	Enabled bool
-	Log     logr.Logger
+	// Mode controls the authentication behaviour.
+	// Use the ModeJWT or ModeMock constants.
+	Mode Mode
+	Log  logr.Logger
 
 	JWTOpts             []Option[*JWTOpts]
 	BusinessContextOpts []Option[*BusinessContextOpts]
 	CheckAccessOpts     []Option[*CheckAccessOpts]
 }
 
-// ConfigureSecurity configures the security middlewares
-// This is a convenience function that configures the JWT middleware
-// and the business context middleware
-// It also returns the check access middleware that should be configured on the route level
+// ConfigureSecurity configures the security middlewares based on SecurityOpts.Mode.
+// It returns the checkAccess middleware to be applied on individual routes.
+//
+// Mode behaviour:
+//   - ModeJWT ("jwt")  — Full JWT validation against trusted issuers. Panics if no trusted issuers are configured.
+//   - ModeMock ("mock") — JWT parsed without signature validation. Logs a prominent warning.
+//
+// Panics on any other Mode value (including empty string).
 func ConfigureSecurity(router fiber.Router, opts SecurityOpts) fiber.Handler {
-	if !opts.Enabled {
-		opts.Log.Info("⚠️ Security middleware disabled")
-		return func(c *fiber.Ctx) error {
-			ctxLog := opts.Log.WithName("mock")
-			ctx := logr.NewContext(c.UserContext(), ctxLog)
-			c.SetUserContext(ctx)
-			return c.Next()
-		}
-	}
-	opts.Log.Info("🔑 Security middleware enabled")
-
 	busCtx := NewBusinessCtxMiddlewareWithOpts(opts.BusinessContextOpts...)
 	checkAccess := NewCheckAccessMiddlewareWithOpts(opts.CheckAccessOpts...)
 
-	if IsMock(opts.JWTOpts) {
-		opts.Log.Info("⚠️ Security middleware mocked")
-		router.Use(mock.NewJWTMock())
-	} else {
+	switch opts.Mode {
+	case ModeJWT:
+		jwtOpts := &JWTOpts{}
+		for _, f := range opts.JWTOpts {
+			f(jwtOpts)
+		}
+		if len(jwtOpts.TrustedIssuers) == 0 {
+			panic("security.mode=jwt requires at least one trustedIssuer — configure security.trustedIssuers or set security.mode=mock for integration testing")
+		}
+		opts.Log.Info("🔒 Security mode: JWT validation enabled")
 		router.Use(NewJWTWithOpts(opts.JWTOpts...))
-	}
+		router.Use(busCtx)
+		return checkAccess
 
-	router.Use(busCtx)
-	return checkAccess
-}
+	case ModeMock:
+		opts.Log.Info("⚠️  Security mode: mock — JWT signatures NOT validated. DO NOT USE IN PRODUCTION.")
+		router.Use(mock.NewJWTMock())
+		router.Use(busCtx)
+		return checkAccess
 
-// IsMock checks if the security middleware is mocked
-// If the trusted issuers are not set, the middleware is considered mocked
-func IsMock(opts []Option[*JWTOpts]) bool {
-	jwtOpts := JWTOpts{}
-	for _, f := range opts {
-		f(&jwtOpts)
+	default:
+		panic(fmt.Sprintf("invalid security.mode: %q (must be one of: mock, jwt)", opts.Mode))
 	}
-	return len(jwtOpts.TrustedIssuers) == 0
 }
