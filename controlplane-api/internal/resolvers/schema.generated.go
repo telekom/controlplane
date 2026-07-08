@@ -57,12 +57,6 @@ type EventSubscriptionInfoResolver interface {
 	DeliveryType(ctx context.Context, obj *model.EventSubscriptionInfo) (eventsubscription.DeliveryType, error)
 	StatusPhase(ctx context.Context, obj *model.EventSubscriptionInfo) (*eventsubscription.StatusPhase, error)
 }
-type ResponseFilterResolver interface {
-	Mode(ctx context.Context, obj *model.ResponseFilter) (*model1.ResponseFilterMode, error)
-}
-type SelectionFilterResolver interface {
-	Attributes(ctx context.Context, obj *model.SelectionFilter) (map[string]any, error)
-}
 type ExternalIdResolver interface {
 	Schema(ctx context.Context, obj *model.ExternalId) (string, error)
 }
@@ -72,6 +66,12 @@ type ExternalIdentityProviderResolver interface {
 type OAuth2ClientCredentialsResolver interface {
 	ClientSecret(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error)
 	ClientKey(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error)
+}
+type ResponseFilterResolver interface {
+	Mode(ctx context.Context, obj *model.ResponseFilter) (*model1.ResponseFilterMode, error)
+}
+type SelectionFilterResolver interface {
+	Attributes(ctx context.Context, obj *model.SelectionFilter) (map[string]any, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -291,8 +291,8 @@ func (ec *executionContext) _ApiExposureInfo_traffic(ctx context.Context, field 
 			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.Traffic) graphql.Marshaler {
-			return ec.marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
+			return ec.marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
 		},
 		true,
 		false,
@@ -5070,6 +5070,14 @@ func (ec *executionContext) marshalNEventTrigger2githubᚗcomᚋtelekomᚋcontro
 	return ec._EventTrigger(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx context.Context, sel ast.SelectionSet, v model.ExternalId) graphql.Marshaler {
+	return ec._ExternalId(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model.Limits) graphql.Marshaler {
+	return ec._Limits(ctx, sel, &v)
+}
+
 func (ec *executionContext) unmarshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, v any) (model1.PayloadType, error) {
 	var res model1.PayloadType
 	err := res.UnmarshalGQL(v)
@@ -5078,14 +5086,6 @@ func (ec *executionContext) unmarshalNPayloadType2githubᚗcomᚋtelekomᚋcontr
 
 func (ec *executionContext) marshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, sel ast.SelectionSet, v model1.PayloadType) graphql.Marshaler {
 	return v
-}
-
-func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx context.Context, sel ast.SelectionSet, v model.ExternalId) graphql.Marshaler {
-	return ec._ExternalId(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model.Limits) graphql.Marshaler {
-	return ec._Limits(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNRateLimitOverrides2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverrides(ctx context.Context, sel ast.SelectionSet, v model.RateLimitOverrides) graphql.Marshaler {
@@ -5208,54 +5208,6 @@ func (ec *executionContext) marshalOEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcon
 	return ec._EventTrigger(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalMap(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]any) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	_ = sel
-	_ = ctx
-	res := graphql.MarshalMap(v)
-	return res
-}
-
-func (ec *executionContext) marshalOResponseFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐResponseFilter(ctx context.Context, sel ast.SelectionSet, v *model.ResponseFilter) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ResponseFilter(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, v any) (*model1.ResponseFilterMode, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(model1.ResponseFilterMode)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, sel ast.SelectionSet, v *model1.ResponseFilterMode) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
-}
-
-func (ec *executionContext) marshalOSelectionFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSelectionFilter(ctx context.Context, sel ast.SelectionSet, v *model.SelectionFilter) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._SelectionFilter(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ExternalId) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -5291,6 +5243,24 @@ func (ec *executionContext) marshalOMachine2MachineAuthentication2ᚖgithubᚗco
 		return graphql.Null
 	}
 	return ec._Machine2MachineAuthentication(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]any) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalMap(v)
+	return res
 }
 
 func (ec *executionContext) marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOAuth2ClientCredentials(ctx context.Context, sel ast.SelectionSet, v *model.OAuth2ClientCredentials) graphql.Marshaler {
@@ -5337,6 +5307,36 @@ func (ec *executionContext) marshalORateLimitOverrides2ᚕgithubᚗcomᚋtelekom
 	return ret
 }
 
+func (ec *executionContext) marshalOResponseFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐResponseFilter(ctx context.Context, sel ast.SelectionSet, v *model.ResponseFilter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ResponseFilter(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, v any) (*model1.ResponseFilterMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model1.ResponseFilterMode)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, sel ast.SelectionSet, v *model1.ResponseFilterMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalOSelectionFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSelectionFilter(ctx context.Context, sel ast.SelectionSet, v *model.SelectionFilter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SelectionFilter(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -5376,6 +5376,13 @@ func (ec *executionContext) marshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekom
 
 func (ec *executionContext) marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v model.Traffic) graphql.Marshaler {
 	return ec._Traffic(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Traffic(ctx, sel, v)
 }
 
 // endregion ***************************** type.gotpl *****************************

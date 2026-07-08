@@ -609,12 +609,6 @@ func (r *Resolver) EventSubscriptionInfo() EventSubscriptionInfoResolver {
 	return &eventSubscriptionInfoResolver{r}
 }
 
-// ResponseFilter returns ResponseFilterResolver implementation.
-func (r *Resolver) ResponseFilter() ResponseFilterResolver { return &responseFilterResolver{r} }
-
-// SelectionFilter returns SelectionFilterResolver implementation.
-func (r *Resolver) SelectionFilter() SelectionFilterResolver { return &selectionFilterResolver{r} }
-
 // ExternalId returns ExternalIdResolver implementation.
 func (r *Resolver) ExternalId() ExternalIdResolver { return &externalIdResolver{r} }
 
@@ -628,6 +622,12 @@ func (r *Resolver) OAuth2ClientCredentials() OAuth2ClientCredentialsResolver {
 	return &oAuth2ClientCredentialsResolver{r}
 }
 
+// ResponseFilter returns ResponseFilterResolver implementation.
+func (r *Resolver) ResponseFilter() ResponseFilterResolver { return &responseFilterResolver{r} }
+
+// SelectionFilter returns SelectionFilterResolver implementation.
+func (r *Resolver) SelectionFilter() SelectionFilterResolver { return &selectionFilterResolver{r} }
+
 type apiExposureInfoResolver struct{ *Resolver }
 type apiSubscriptionInfoResolver struct{ *Resolver }
 type approvalConfigResolver struct{ *Resolver }
@@ -637,8 +637,8 @@ type decisionResolver struct{ *Resolver }
 type eventDeliveryResolver struct{ *Resolver }
 type eventExposureInfoResolver struct{ *Resolver }
 type eventSubscriptionInfoResolver struct{ *Resolver }
-type responseFilterResolver struct{ *Resolver }
-type selectionFilterResolver struct{ *Resolver }
 type externalIdResolver struct{ *Resolver }
 type externalIdentityProviderResolver struct{ *Resolver }
 type oAuth2ClientCredentialsResolver struct{ *Resolver }
+type responseFilterResolver struct{ *Resolver }
+type selectionFilterResolver struct{ *Resolver }
