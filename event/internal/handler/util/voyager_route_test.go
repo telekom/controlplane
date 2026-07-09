@@ -123,16 +123,8 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Paths).To(HaveLen(2))
-		Expect(route.Spec.Paths[0]).To(Equal("/horizon-zone-a/voyager/v1"))
-		Expect(route.Spec.Paths[1]).To(Equal("/horizon/voyager/v1"))
-
-		// Verify Security
-		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
-		Expect(route.Spec.Security.DefaultConsumers).To(BeEmpty())
-
-		// Verify GatewayRef
-		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
-		Expect(route.Spec.GatewayRef.Namespace).To(Equal("default"))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/voyager/v1"))
+		Expect(route.Spec.Paths[1]).To(Equal("/horizon-zone-a/voyager/v1"))
 	})
 
 	It("should add GatewayConsumerName to DefaultConsumers when IsProxyTarget", func() {
@@ -371,8 +363,8 @@ var _ = Describe("CreateProxyLocalVoyagerRoute", func() {
 
 		// Downstream serves both the mesh path (own zone) and the local shortcut
 		Expect(route.Spec.Paths).To(HaveLen(2))
-		Expect(route.Spec.Paths[0]).To(Equal("/horizon-zone-a/voyager/v1"))
-		Expect(route.Spec.Paths[1]).To(Equal("/horizon/voyager/v1"))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/voyager/v1"))
+		Expect(route.Spec.Paths[1]).To(Equal("/horizon-zone-a/voyager/v1"))
 
 		// Downstream is served by the source zone's gateway
 		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))

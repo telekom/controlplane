@@ -59,10 +59,11 @@ func CreateVoyagerRoute(
 		return nil, errors.Wrapf(err, "failed to parse voyagerApiUrl %q", eventConfig.Spec.Local.VoyagerApiUrl)
 	}
 
-	// The voyager route serves two paths: the mesh path (with zone name) and the local path (without zone name)
+	// The voyager route serves two paths: the local shortcut (without zone name) and the mesh
+	// path (with zone name). The local path is first so it becomes the canonical VoyagerURL.
 	meshHostnames, meshPaths := preset.ResolveHostnamesAndPaths(makeVoyagerRoutePath(zone.Name))
 	_, localPaths := preset.ResolveHostnamesAndPaths(makeVoyagerRoutePath(""))
-	allPaths := slices.Concat(meshPaths, localPaths)
+	allPaths := slices.Concat(localPaths, meshPaths)
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -126,10 +127,11 @@ func CreateProxyLocalVoyagerRoute(
 		return nil, errors.Wrap(err, "failed to create upstream for proxy local voyager Route")
 	}
 
-	// Downstream serves both the mesh path (with source zone name) and the local shortcut.
+	// Downstream serves both the local shortcut and the mesh path (with source zone name).
+	// The local path is first so it becomes the canonical VoyagerURL.
 	meshHostnames, meshPaths := sourcePreset.ResolveHostnamesAndPaths(makeVoyagerRoutePath(sourceZone.Name))
 	_, localPaths := sourcePreset.ResolveHostnamesAndPaths(makeVoyagerRoutePath(""))
-	allPaths := slices.Concat(meshPaths, localPaths)
+	allPaths := slices.Concat(localPaths, meshPaths)
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
