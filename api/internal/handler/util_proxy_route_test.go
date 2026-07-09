@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	identityapi "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -87,37 +86,6 @@ func CreateZone(name string) *adminapi.Zone {
 	return zone
 }
 
-func CreateGatewayClient(zone *adminapi.Zone) *identityapi.Client {
-	gwClient := &identityapi.Client{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gateway",
-			Namespace: zone.Status.Namespace,
-			Labels: map[string]string{
-				config.EnvironmentLabelKey: testEnvironment,
-			},
-		},
-		Spec: identityapi.ClientSpec{
-			Realm: &types.ObjectRef{
-				Name:      "test",
-				Namespace: zone.Status.Namespace,
-			},
-			ClientId:     "gateway",
-			ClientSecret: "topsecret",
-		},
-	}
-
-	err := k8sClient.Create(ctx, gwClient)
-	Expect(err).ToNot(HaveOccurred())
-
-	gwClient.Status = identityapi.ClientStatus{
-		IssuerUrl: fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", zone.Name),
-	}
-	err = k8sClient.Status().Update(ctx, gwClient)
-	Expect(err).ToNot(HaveOccurred())
-
-	return gwClient
-}
-
 var _ = Describe("Util Tests", func() {
 	Context("Creation of Proxy-Routes", Ordered, func() {
 		ctx = context.Background()
@@ -131,11 +99,9 @@ var _ = Describe("Util Tests", func() {
 
 			By("Creating the consumer Zone")
 			consumerZone = CreateZone("consumer")
-			CreateGatewayClient(consumerZone)
 
 			By("Creating the provider Zone")
 			providerZone = CreateZone("provider")
-			CreateGatewayClient(providerZone)
 		})
 
 		It("should create a normal Proxy-Route", func() {
