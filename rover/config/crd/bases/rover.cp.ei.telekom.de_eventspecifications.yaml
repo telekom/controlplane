@@ -47,10 +47,7 @@ spec:
             properties:
               category:
                 default: other
-                description: |-
-                  Category of the event, defaults to "other" if not specified.
-                  Restricted to lowercase letters to keep a future migration to a
-                  dedicated EventCategory CR straightforward.
+                description: Category of the event.
                 pattern: ^[a-z]+$
                 type: string
               description:
@@ -74,7 +71,6 @@ spec:
                 pattern: ^\d+.*$
                 type: string
             required:
-            - category
             - type
             - version
             type: object
