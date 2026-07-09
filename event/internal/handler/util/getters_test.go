@@ -515,7 +515,7 @@ var _ = Describe("FindActiveEventType", func() {
 		Expect(result.Name).To(Equal("test-type"))
 	})
 
-	It("should return BlockedError when active EventType is not ready", func() {
+	It("should return active EventType even when it is not ready (readiness is not checked)", func() {
 		et := eventv1.EventType{
 			ObjectMeta: metav1.ObjectMeta{Name: "test-type", CreationTimestamp: metav1.Now()},
 			Spec:       eventv1.EventTypeSpec{Type: "de.telekom.test.v1"},
@@ -531,12 +531,10 @@ var _ = Describe("FindActiveEventType", func() {
 			Return(nil)
 
 		found, result, err := util.FindActiveEventType(ctx, "de.telekom.test.v1")
-		Expect(err).To(HaveOccurred())
-		Expect(found).To(BeFalse())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeTrue())
 		Expect(result).ToNot(BeNil())
-		rootCause := unwrapAll(err)
-		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not ready"))
+		Expect(result.Name).To(Equal("test-type"))
 	})
 })
 

@@ -7,7 +7,7 @@ package util
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -117,7 +117,9 @@ func GetPresetForZone(ctx context.Context, zoneRef types.ObjectRef, presetName s
 	return preset, zone, nil
 }
 
-// FindAPI checks if there is an active Api corresponding to the given apiBasePath.
+// FindActiveAPI checks if there is an active Api corresponding to the given apiBasePath.
+// It only checks the Status.Active field and does not check readiness. A returned Api may not be ready.
+// Returns (found, api, error). If found is false, there is no active Api.
 func FindActiveAPI(ctx context.Context, apiBasePath string) (bool, *apiv1.Api, error) {
 	logger := log.FromContext(ctx)
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
@@ -133,28 +135,20 @@ func FindActiveAPI(ctx context.Context, apiBasePath string) (bool, *apiv1.Api, e
 			"failed to list corresponding Apis for ApiBasePath: %q", apiBasePathLabelValue)
 	}
 
-	var relevantApi *apiv1.Api
-
 	switch len(apiList.Items) {
 	case 0:
 		return false, nil, nil
 	case 1:
-		relevantApi = &apiList.Items[0]
+		return true, &apiList.Items[0], nil
 	default:
 		// This should never happens as the Api-Handler ensures uniqueness of active Apis per BasePath
 		// sort the list by creation timestamp and get the oldest one
-		sort.Slice(apiList.Items, func(i, j int) bool {
-			return apiList.Items[i].CreationTimestamp.Before(&apiList.Items[j].CreationTimestamp)
+		slices.SortStableFunc(apiList.Items, func(a, b apiv1.Api) int {
+			return a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
 		})
-		relevantApi = &apiList.Items[0]
-		logger.Info("⚠️  Multiple active Apis found for the same BasePath. Using the oldest one.", "basePath", apiBasePathLabelValue, "apiName", relevantApi.Name)
+		logger.Info("⚠️  Multiple active Apis found for the same BasePath. Using the oldest one.", "basePath", apiBasePathLabelValue, "apiName", apiList.Items[0].Name)
+		return true, &apiList.Items[0], nil
 	}
-
-	if err := condition.EnsureReady(relevantApi); err != nil {
-		return false, relevantApi, ctrlerrors.BlockedErrorf("No API %q is ready.", apiBasePath)
-	}
-
-	return true, relevantApi, nil
 }
 
 func ResolveActiveApiCategoryForApi(ctx context.Context, api *apiv1.Api) (*apiv1.ApiCategory, error) {
@@ -204,7 +198,9 @@ func BuildApiCategorySubscriptionDeniedMessage(teamCategory, apiCategoryLabel st
 	return fmt.Sprintf("Team with category %q is not allowed to subscribe to APIs of category %q", teamCategory, apiCategoryLabel)
 }
 
-// FindAPIExposure checks if there is an active ApiExposure corresponding to the given apiBasePath.
+// FindActiveAPIExposure checks if there is an active ApiExposure corresponding to the given apiBasePath.
+// It only checks the Status.Active field and does not check readiness. A returned ApiExposure may not be ready.
+// Returns (found, apiExposure, error). If found is false, there is no active ApiExposure.
 func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv1.ApiExposure, error) {
 	logger := log.FromContext(ctx)
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
@@ -222,28 +218,22 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 
 	logger.V(1).Info("found active ApiExposures", "size", len(apiExposureList.Items), "basePath", apiBasePathLabelValue)
 
-	var relevantApiExposure *apiv1.ApiExposure
-
 	switch len(apiExposureList.Items) {
 	case 0:
+		// none found (allowed)
 		return false, nil, nil
 	case 1:
-		relevantApiExposure = &apiExposureList.Items[0]
+		// there already is exactly one active ApiExposure (allowed)
+		return true, &apiExposureList.Items[0], nil
 	default:
 		// This should never happens as the ApiExposure-Handler ensures uniqueness of active ApiExposures per BasePath
 		// sort the list by creation timestamp and get the oldest one
-		sort.Slice(apiExposureList.Items, func(i, j int) bool {
-			return apiExposureList.Items[i].CreationTimestamp.Before(&apiExposureList.Items[j].CreationTimestamp)
+		slices.SortStableFunc(apiExposureList.Items, func(a, b apiv1.ApiExposure) int {
+			return a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
 		})
-		relevantApiExposure = &apiExposureList.Items[0]
-		logger.Info("⚠️  Multiple active ApiExposures found for the same BasePath. Using the oldest one.", "basePath", apiBasePathLabelValue, "apiExposureName", relevantApiExposure.Name)
+		logger.Info("⚠️  Multiple active ApiExposures found for the same BasePath. Using the oldest one.", "basePath", apiBasePathLabelValue, "apiExposureName", apiExposureList.Items[0].Name)
+		return true, &apiExposureList.Items[0], nil
 	}
-
-	if err := condition.EnsureReady(relevantApiExposure); err != nil {
-		return false, relevantApiExposure, ctrlerrors.BlockedErrorf("No ApiExposure %q is ready.", apiBasePath)
-	}
-
-	return true, relevantApiExposure, nil
 }
 
 // FindFailoverEligibleZones lists all zones and returns those that are eligible for failover for a given zone.
