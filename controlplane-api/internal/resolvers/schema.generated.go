@@ -4940,20 +4940,6 @@ func (ec *executionContext) marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekom
 	return ret
 }
 
-func (ec *executionContext) marshalNApiExposureInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v model.ApiExposureInfo) graphql.Marshaler {
-	return ec._ApiExposureInfo(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ApiExposureInfo(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ApiSubscriptionInfo) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -5024,20 +5010,6 @@ func (ec *executionContext) marshalNDecision2ᚕgithubᚗcomᚋtelekomᚋcontrol
 
 func (ec *executionContext) marshalNEventDelivery2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventDelivery(ctx context.Context, sel ast.SelectionSet, v model.EventDelivery) graphql.Marshaler {
 	return ec._EventDelivery(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNEventExposureInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v model.EventExposureInfo) graphql.Marshaler {
-	return ec._EventExposureInfo(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._EventExposureInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNEventSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EventSubscriptionInfo) graphql.Marshaler {

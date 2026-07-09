@@ -7743,8 +7743,8 @@ extend type Zone {
 }
 
 extend type ApiSubscription {
-  "Target exposure (reduced view — cross-tenant boundary)"
-  target: ApiExposureInfo! @goField(forceResolver: true)
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
+  target: ApiExposureInfo @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
@@ -7753,8 +7753,8 @@ extend type ApiExposure {
 }
 
 extend type EventSubscription {
-  "Target exposure (reduced view — cross-tenant boundary)"
-  target: EventExposureInfo! @goField(forceResolver: true)
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target event is not yet exposed."
+  target: EventExposureInfo @goField(forceResolver: true)
 }
 
 extend type EventExposure {

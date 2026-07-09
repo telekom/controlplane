@@ -2609,10 +2609,10 @@ func (ec *executionContext) _ApiSubscription_target(ctx context.Context, field g
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
-			return ec.marshalNApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx, selections, v)
+			return ec.marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
 func (ec *executionContext) fieldContext_ApiSubscription_target(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5735,10 +5735,10 @@ func (ec *executionContext) _EventSubscription_target(ctx context.Context, field
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
-			return ec.marshalNEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx, selections, v)
+			return ec.marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
 func (ec *executionContext) fieldContext_EventSubscription_target(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20341,16 +20341,13 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 		case "target":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._ApiSubscription_target(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -21859,16 +21856,13 @@ func (ec *executionContext) _EventSubscription(ctx context.Context, sel ast.Sele
 		case "target":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._EventSubscription_target(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
