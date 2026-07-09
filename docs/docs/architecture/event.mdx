@@ -26,18 +26,27 @@ The mesh topology is configured through the EventConfig resource. With `fullMesh
 
 ## Event Routes
 
-To move events between the people who send them, the people who receive them, and the event backend (Horizon), the Event domain wires up four kinds of gateway routes. A route is simply an address on the gateway that accepts traffic and forwards it to the right place.
+Events flow between three parties: the services that **send** them, the services that **receive** them, and the **event backend** (Horizon) that stores and distributes them. To carry that traffic, the Event domain wires up gateway routes. A route is simply an address on the gateway that accepts traffic and forwards it to the right place, so no participant ever needs to know where the backend actually lives.
 
-Three of these routes handle the everyday flow of events and are created **once per zone**, the moment the event feature is switched on in that zone. The fourth is created **once per event type**, when a provider exposes an event.
+There are four kinds of route. Three of them handle the everyday flow of events and are created **once per zone**, the moment the event feature is switched on in that zone. The fourth carries live streams and is created **once per event type**, when a provider exposes an event.
 
-| Route | Created | Used by | What it does |
-|-------|---------|---------|--------------|
+| Route | Created | Called by | What it does |
+|-------|---------|-----------|--------------|
 | **Publish** | Per zone | Event publishers | Accepts events that a service wants to send into the platform. |
 | **Callback** | Per zone | The event backend (Horizon) | Delivers events to subscribers that asked to be *called back* at their own address. |
 | **Voyager** | Per zone | Subscribers | Lets a subscriber ask for past events to be re-sent (redelivery). |
 | **SSE** | Per event type | Subscribers | Streams events live to subscribers that asked for a continuous *server-sent events* connection. |
 
-Every one of these routes comes in two flavours. When the sender and receiver share the same zone, a single **local route** connects them directly. When they live in different zones, the platform adds a **proxy route** in the caller's own zone that quietly forwards the traffic across the zone boundary — so each participant only ever talks to a gateway in its own zone, and the cross-zone hop stays invisible to them.
+### Local routes and proxy routes
+
+Every route comes in two flavours, and which one is used depends only on whether the two parties share a zone:
+
+- **Local route** — when the sender and receiver are in the **same zone**, a single local route connects them directly.
+- **Proxy route** — when they are in **different zones**, the platform adds a proxy route in the caller's own zone that quietly forwards the traffic across the zone boundary.
+
+The proxy route is what makes [proxy zones](../admin-journey/environments-and-zones.md#proxy-zones) work: a zone that runs no backend of its own still exposes a full set of local addresses, and every one of them forwards to the target zone behind the scenes. Either way, each participant only ever talks to a gateway in its own zone, and the cross-zone hop stays invisible.
+
+The external addresses that result from all of this are published on the `EventConfig` status — for example `publishUrl`, `callbackUrl`, and `voyagerUrl` for the local routes, and the `proxyCallbackUrls` / `proxyVoyagerUrls` maps (keyed by zone name) for the cross-zone proxy routes.
 
 ### Publish Route
 
@@ -47,16 +56,16 @@ When the publisher sits in the same zone as the event backend, the local publish
 
 ```mermaid
 graph LR
-    subgraph Local["Same zone"]
-        P1["<b>Publisher</b>"] -->|"send events"| PR1["<b>Publish Route</b>"]
-        PR1 --> B1["<b>Event Backend</b>"]
+    subgraph PZ["Proxy zone — no backend"]
+        P2["<b>Publisher</b>"] -->|"send events"| PR2["<b>Publish Route</b><br/><i>proxy</i>"]
     end
 
-    subgraph Proxy["Publisher in a proxy zone"]
-        P2["<b>Publisher</b>"] -->|"send events"| PR2["<b>Publish Route</b><br/><i>proxy zone</i>"]
-        PR2 -->|"cross-zone hop"| PR3["<b>Publish Route</b><br/><i>target zone</i>"]
-        PR3 --> B2["<b>Event Backend</b>"]
+    subgraph TZ["Target zone — runs the backend"]
+        P1["<b>Publisher</b><br/><i>same zone</i>"] -->|"send events"| PR1["<b>Publish Route</b>"]
+        PR1 --> B["<b>Event Backend</b>"]
     end
+
+    PR2 -.->|"cross-zone hop"| PR1
 ```
 
 ### Callback Route
@@ -67,16 +76,17 @@ When subscriber and backend share a zone, the local callback route forwards stra
 
 ```mermaid
 graph LR
-    subgraph Local["Same zone"]
-        H1["<b>Event Backend</b>"] -->|"push event"| CR1["<b>Callback Route</b>"]
-        CR1 -->|"forward"| S1["<b>Subscriber's address</b>"]
+    subgraph TZ["Target zone — runs the backend"]
+        B["<b>Event Backend</b>"] -->|"push event"| CR1["<b>Callback Route</b>"]
+        CR1 -->|"forward"| S1["<b>Subscriber's address</b><br/><i>same zone</i>"]
+        B -->|"push event"| CR2["<b>Callback Route</b><br/><i>proxy</i>"]
     end
 
-    subgraph Cross["Different zones"]
-        H2["<b>Event Backend</b>"] -->|"push event"| CR2["<b>Callback Route</b><br/><i>backend zone</i>"]
-        CR2 -->|"cross-zone hop"| CR3["<b>Callback Route</b><br/><i>subscriber zone</i>"]
-        CR3 -->|"forward"| S2["<b>Subscriber's address</b>"]
+    subgraph PZ["Proxy zone — no backend"]
+        CR3["<b>Callback Route</b>"] -->|"forward"| S2["<b>Subscriber's address</b>"]
     end
+
+    CR2 -.->|"cross-zone hop"| CR3
 ```
 
 ### Voyager Route
@@ -87,16 +97,16 @@ In the same zone, the subscriber's request goes straight to the Voyager backend.
 
 ```mermaid
 graph LR
-    subgraph Local["Same zone"]
-        U1["<b>Subscriber</b>"] -->|"request redelivery"| VR1["<b>Voyager Route</b>"]
-        VR1 --> V1["<b>Voyager Backend</b>"]
+    subgraph PZ["Proxy zone — no backend"]
+        U2["<b>Subscriber</b>"] -->|"request redelivery"| VR2["<b>Voyager Route</b><br/><i>proxy</i>"]
     end
 
-    subgraph Cross["Different zones"]
-        U2["<b>Subscriber</b>"] -->|"request redelivery"| VR2["<b>Voyager Route</b><br/><i>subscriber zone</i>"]
-        VR2 -->|"cross-zone hop"| VR3["<b>Voyager Route</b><br/><i>provider zone</i>"]
-        VR3 --> V2["<b>Voyager Backend</b>"]
+    subgraph TZ["Target zone — runs the backend"]
+        U1["<b>Subscriber</b><br/><i>same zone</i>"] -->|"request redelivery"| VR1["<b>Voyager Route</b>"]
+        VR1 --> V["<b>Voyager Backend</b>"]
     end
+
+    VR2 -.->|"cross-zone hop"| VR1
 ```
 
 ### SSE Route
@@ -107,16 +117,16 @@ When the subscriber and the event backend share a zone, the SSE route connects t
 
 ```mermaid
 graph LR
-    subgraph Local["Same zone"]
-        C1["<b>Subscriber</b>"] -->|"open stream"| SR1["<b>SSE Route</b>"]
-        SR1 -->|"live events"| H1["<b>Event Backend</b>"]
+    subgraph PZ["Proxy zone — no backend"]
+        C2["<b>Subscriber</b>"] -->|"open stream"| SR2["<b>SSE Route</b><br/><i>proxy</i>"]
     end
 
-    subgraph Cross["Different zones"]
-        C2["<b>Subscriber</b>"] -->|"open stream"| SR2["<b>SSE Route</b><br/><i>subscriber zone</i>"]
-        SR2 -->|"cross-zone hop"| SR3["<b>SSE Route</b><br/><i>provider zone</i>"]
-        SR3 -->|"live events"| H2["<b>Event Backend</b>"]
+    subgraph TZ["Target zone — runs the backend"]
+        C1["<b>Subscriber</b><br/><i>same zone</i>"] -->|"open stream"| SR1["<b>SSE Route</b><br/><i>per event type</i>"]
+        SR1 -->|"live events"| H["<b>Event Backend</b>"]
     end
+
+    SR2 -.->|"cross-zone hop"| SR1
 ```
 
 ## Domain Interactions
