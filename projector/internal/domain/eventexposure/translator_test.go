@@ -73,8 +73,8 @@ var _ = Describe("EventExposure Translator", func() {
 					},
 				},
 				Status: eventv1.EventExposureStatus{
-					Active:      true,
-					ProviderURL: "https://gateway.example.com/events/provider",
+					Active:     true,
+					PublishURL: "https://gateway.example.com/events/provider",
 					Conditions: []metav1.Condition{
 						{
 							Type:    "Ready",

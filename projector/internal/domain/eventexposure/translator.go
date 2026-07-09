@@ -51,7 +51,7 @@ func (t *Translator) Translate(_ context.Context, obj *eventv1.EventExposure) (*
 		StatusPhase:        phase,
 		StatusMessage:      message,
 		EventType:          obj.Spec.EventType,
-		GatewayProviderUrl: obj.Status.ProviderURL,
+		GatewayProviderUrl: obj.Status.PublishURL,
 		Visibility:         strings.ToUpper(string(obj.Spec.Visibility)),
 		Active:             obj.Status.Active,
 		ApprovalConfig: model.ApprovalConfig{

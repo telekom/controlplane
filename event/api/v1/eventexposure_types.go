@@ -109,9 +109,9 @@ type EventExposureStatus struct {
 	// +optional
 	CallbackURL string `json:"callbackURL,omitempty"`
 
-	// ProviderURL is the URL of publishing events in the provider zone.
+	// PublishURL is the URL of publishing events in the provider zone.
 	// +optional
-	ProviderURL string `json:"providerURL,omitempty"`
+	PublishURL string `json:"publishURL,omitempty"`
 }
 
 // +kubebuilder:object:root=true

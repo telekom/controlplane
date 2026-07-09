@@ -611,14 +611,14 @@ var _ = Describe("EventExposureHandler", func() {
 			Expect(processingCond.Reason).To(Equal("Done"))
 		})
 
-		It("should set ProviderURL from EventConfig PublishURL and EventType", func() {
+		It("should set PublishURL from EventConfig PublishURL", func() {
 			setupFullHappyPath()
 			fakeClient.EXPECT().AllReady().Return(true).Once()
 
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(obj.Status.ProviderURL).To(Equal("https://publish.gateway.example.com/de.telekom.eni.quickstart.v1"))
+			Expect(obj.Status.PublishURL).To(Equal("https://publish.gateway.example.com"))
 		})
 	})
 
