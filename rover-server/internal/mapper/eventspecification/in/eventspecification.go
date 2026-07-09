@@ -30,7 +30,7 @@ func MapRequest(req api.EventSpecification, specOrFileId string, id mapper.Resou
 	eventSpec.Spec.Type = req.Type
 	eventSpec.Spec.Version = req.Version
 	eventSpec.Spec.Description = req.Description
-	eventSpec.Spec.Category = req.Category
+	eventSpec.Spec.Category = defaultCategory(req.Category)
 
 	// Derive the resource name from the event type (dots → hyphens)
 	eventSpec.Name = strings.ToLower(strings.ReplaceAll(req.Type, ".", "-"))
@@ -47,4 +47,15 @@ func MapRequest(req api.EventSpecification, specOrFileId string, id mapper.Resou
 	eventSpec.Spec.Specification = specOrFileId
 
 	return eventSpec, nil
+}
+
+// defaultCategory normalizes the optional REST category to the CRD's expected
+// form: lowercase, defaulting to "other" when omitted. Programmatic clients
+// can send "" which bypasses the CRD default, so we apply it here at the
+// trust boundary.
+func defaultCategory(category string) string {
+	if category == "" {
+		return "other"
+	}
+	return strings.ToLower(category)
 }

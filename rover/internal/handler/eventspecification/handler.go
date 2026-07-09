@@ -47,11 +47,18 @@ func (h *EventSpecificationHandler) CreateOrUpdate(ctx context.Context, eventSpe
 			eventv1.EventTypeLabelKey: labelutil.NormalizeLabelValue(eventSpec.Spec.Type),
 		}
 
+		category := eventSpec.Spec.Category
+		if category == "" {
+			// Existing resources created before the category field existed
+			// have an empty value; keep reconciliation robust.
+			category = "other"
+		}
+
 		eventType.Spec = eventv1.EventTypeSpec{
 			Type:          eventSpec.Spec.Type,
 			Version:       eventSpec.Spec.Version,
 			Description:   eventSpec.Spec.Description,
-			Category:      eventSpec.Spec.Category,
+			Category:      category,
 			Specification: eventSpec.Spec.Specification,
 		}
 
