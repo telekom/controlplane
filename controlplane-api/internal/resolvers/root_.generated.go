@@ -717,7 +717,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AddTeamMemberPayload.Errors(childComplexity), true
-
 	case "AddTeamMemberPayload.team":
 		if e.ComplexityRoot.AddTeamMemberPayload.Team == nil {
 			break
@@ -731,98 +730,84 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Api.Active(childComplexity), true
-
 	case "Api.activeExposure":
 		if e.ComplexityRoot.Api.ActiveExposure == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.ActiveExposure(childComplexity), true
-
 	case "Api.basePath":
 		if e.ComplexityRoot.Api.BasePath == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.BasePath(childComplexity), true
-
 	case "Api.category":
 		if e.ComplexityRoot.Api.Category == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Category(childComplexity), true
-
 	case "Api.createdAt":
 		if e.ComplexityRoot.Api.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.CreatedAt(childComplexity), true
-
 	case "Api.id":
 		if e.ComplexityRoot.Api.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.ID(childComplexity), true
-
 	case "Api.lastModifiedAt":
 		if e.ComplexityRoot.Api.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.LastModifiedAt(childComplexity), true
-
 	case "Api.namespace":
 		if e.ComplexityRoot.Api.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Namespace(childComplexity), true
-
 	case "Api.oauth2Scopes":
 		if e.ComplexityRoot.Api.Oauth2Scopes == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Oauth2Scopes(childComplexity), true
-
 	case "Api.owner":
 		if e.ComplexityRoot.Api.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Owner(childComplexity), true
-
 	case "Api.specificationUrl":
 		if e.ComplexityRoot.Api.SpecificationURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.SpecificationURL(childComplexity), true
-
 	case "Api.statusMessage":
 		if e.ComplexityRoot.Api.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.StatusMessage(childComplexity), true
-
 	case "Api.statusPhase":
 		if e.ComplexityRoot.Api.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.StatusPhase(childComplexity), true
-
 	case "Api.version":
 		if e.ComplexityRoot.Api.Version == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Version(childComplexity), true
-
 	case "Api.xVendor":
 		if e.ComplexityRoot.Api.XVendor == nil {
 			break
@@ -843,14 +828,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiConnection.Edges(childComplexity), true
-
 	case "ApiConnection.pageInfo":
 		if e.ComplexityRoot.ApiConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiConnection.PageInfo(childComplexity), true
-
 	case "ApiConnection.totalCount":
 		if e.ComplexityRoot.ApiConnection.TotalCount == nil {
 			break
@@ -864,7 +847,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiEdge.Cursor(childComplexity), true
-
 	case "ApiEdge.node":
 		if e.ComplexityRoot.ApiEdge.Node == nil {
 			break
@@ -878,126 +860,108 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposure.API(childComplexity), true
-
 	case "ApiExposure.apiVersion":
 		if e.ComplexityRoot.ApiExposure.APIVersion == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.APIVersion(childComplexity), true
-
 	case "ApiExposure.active":
 		if e.ComplexityRoot.ApiExposure.Active == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Active(childComplexity), true
-
 	case "ApiExposure.approvalConfig":
 		if e.ComplexityRoot.ApiExposure.ApprovalConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.ApprovalConfig(childComplexity), true
-
 	case "ApiExposure.basePath":
 		if e.ComplexityRoot.ApiExposure.BasePath == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.BasePath(childComplexity), true
-
 	case "ApiExposure.createdAt":
 		if e.ComplexityRoot.ApiExposure.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.CreatedAt(childComplexity), true
-
 	case "ApiExposure.environment":
 		if e.ComplexityRoot.ApiExposure.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Environment(childComplexity), true
-
 	case "ApiExposure.features":
 		if e.ComplexityRoot.ApiExposure.Features == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Features(childComplexity), true
-
 	case "ApiExposure.id":
 		if e.ComplexityRoot.ApiExposure.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.ID(childComplexity), true
-
 	case "ApiExposure.lastModifiedAt":
 		if e.ComplexityRoot.ApiExposure.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.LastModifiedAt(childComplexity), true
-
 	case "ApiExposure.namespace":
 		if e.ComplexityRoot.ApiExposure.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Namespace(childComplexity), true
-
 	case "ApiExposure.owner":
 		if e.ComplexityRoot.ApiExposure.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Owner(childComplexity), true
-
 	case "ApiExposure.security":
 		if e.ComplexityRoot.ApiExposure.Security == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Security(childComplexity), true
-
 	case "ApiExposure.statusMessage":
 		if e.ComplexityRoot.ApiExposure.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.StatusMessage(childComplexity), true
-
 	case "ApiExposure.statusPhase":
 		if e.ComplexityRoot.ApiExposure.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.StatusPhase(childComplexity), true
-
 	case "ApiExposure.subscriptions":
 		if e.ComplexityRoot.ApiExposure.Subscriptions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Subscriptions(childComplexity), true
-
 	case "ApiExposure.traffic":
 		if e.ComplexityRoot.ApiExposure.Traffic == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Traffic(childComplexity), true
-
 	case "ApiExposure.upstreams":
 		if e.ComplexityRoot.ApiExposure.Upstreams == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Upstreams(childComplexity), true
-
 	case "ApiExposure.visibility":
 		if e.ComplexityRoot.ApiExposure.Visibility == nil {
 			break
@@ -1011,14 +975,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureConnection.Edges(childComplexity), true
-
 	case "ApiExposureConnection.pageInfo":
 		if e.ComplexityRoot.ApiExposureConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureConnection.PageInfo(childComplexity), true
-
 	case "ApiExposureConnection.totalCount":
 		if e.ComplexityRoot.ApiExposureConnection.TotalCount == nil {
 			break
@@ -1032,7 +994,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureEdge.Cursor(childComplexity), true
-
 	case "ApiExposureEdge.node":
 		if e.ComplexityRoot.ApiExposureEdge.Node == nil {
 			break
@@ -1046,63 +1007,54 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.Active(childComplexity), true
-
 	case "ApiExposureInfo.apiVersion":
 		if e.ComplexityRoot.ApiExposureInfo.ApiVersion == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.ApiVersion(childComplexity), true
-
 	case "ApiExposureInfo.approvalConfig":
 		if e.ComplexityRoot.ApiExposureInfo.ApprovalConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.ApprovalConfig(childComplexity), true
-
 	case "ApiExposureInfo.basePath":
 		if e.ComplexityRoot.ApiExposureInfo.BasePath == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.BasePath(childComplexity), true
-
 	case "ApiExposureInfo.features":
 		if e.ComplexityRoot.ApiExposureInfo.Features == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.Features(childComplexity), true
-
 	case "ApiExposureInfo.id":
 		if e.ComplexityRoot.ApiExposureInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.ID(childComplexity), true
-
 	case "ApiExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.ApiExposureInfo.OwnerApplicationName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.OwnerApplicationName(childComplexity), true
-
 	case "ApiExposureInfo.ownerTeam":
 		if e.ComplexityRoot.ApiExposureInfo.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.OwnerTeam(childComplexity), true
-
 	case "ApiExposureInfo.traffic":
 		if e.ComplexityRoot.ApiExposureInfo.Traffic == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.Traffic(childComplexity), true
-
 	case "ApiExposureInfo.visibility":
 		if e.ComplexityRoot.ApiExposureInfo.Visibility == nil {
 			break
@@ -1123,105 +1075,90 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Approval(childComplexity), true
-
 	case "ApiSubscription.approvalRequests":
 		if e.ComplexityRoot.ApiSubscription.ApprovalRequests == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.ApprovalRequests(childComplexity), true
-
 	case "ApiSubscription.approvedScopes":
 		if e.ComplexityRoot.ApiSubscription.ApprovedScopes == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.ApprovedScopes(childComplexity), true
-
 	case "ApiSubscription.basePath":
 		if e.ComplexityRoot.ApiSubscription.BasePath == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.BasePath(childComplexity), true
-
 	case "ApiSubscription.createdAt":
 		if e.ComplexityRoot.ApiSubscription.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.CreatedAt(childComplexity), true
-
 	case "ApiSubscription.environment":
 		if e.ComplexityRoot.ApiSubscription.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Environment(childComplexity), true
-
 	case "ApiSubscription.failoverZones":
 		if e.ComplexityRoot.ApiSubscription.FailoverZones == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.FailoverZones(childComplexity), true
-
 	case "ApiSubscription.id":
 		if e.ComplexityRoot.ApiSubscription.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.ID(childComplexity), true
-
 	case "ApiSubscription.lastModifiedAt":
 		if e.ComplexityRoot.ApiSubscription.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.LastModifiedAt(childComplexity), true
-
 	case "ApiSubscription.m2mAuthMethod":
 		if e.ComplexityRoot.ApiSubscription.M2mAuthMethod == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.M2mAuthMethod(childComplexity), true
-
 	case "ApiSubscription.name":
 		if e.ComplexityRoot.ApiSubscription.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Name(childComplexity), true
-
 	case "ApiSubscription.namespace":
 		if e.ComplexityRoot.ApiSubscription.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Namespace(childComplexity), true
-
 	case "ApiSubscription.owner":
 		if e.ComplexityRoot.ApiSubscription.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Owner(childComplexity), true
-
 	case "ApiSubscription.statusMessage":
 		if e.ComplexityRoot.ApiSubscription.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.StatusMessage(childComplexity), true
-
 	case "ApiSubscription.statusPhase":
 		if e.ComplexityRoot.ApiSubscription.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.StatusPhase(childComplexity), true
-
 	case "ApiSubscription.target":
 		if e.ComplexityRoot.ApiSubscription.Target == nil {
 			break
@@ -1235,14 +1172,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionConnection.Edges(childComplexity), true
-
 	case "ApiSubscriptionConnection.pageInfo":
 		if e.ComplexityRoot.ApiSubscriptionConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionConnection.PageInfo(childComplexity), true
-
 	case "ApiSubscriptionConnection.totalCount":
 		if e.ComplexityRoot.ApiSubscriptionConnection.TotalCount == nil {
 			break
@@ -1256,7 +1191,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionEdge.Cursor(childComplexity), true
-
 	case "ApiSubscriptionEdge.node":
 		if e.ComplexityRoot.ApiSubscriptionEdge.Node == nil {
 			break
@@ -1270,35 +1204,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.BasePath(childComplexity), true
-
 	case "ApiSubscriptionInfo.id":
 		if e.ComplexityRoot.ApiSubscriptionInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.ID(childComplexity), true
-
 	case "ApiSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplicationName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplicationName(childComplexity), true
-
 	case "ApiSubscriptionInfo.ownerTeam":
 		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.OwnerTeam(childComplexity), true
-
 	case "ApiSubscriptionInfo.statusMessage":
 		if e.ComplexityRoot.ApiSubscriptionInfo.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.StatusMessage(childComplexity), true
-
 	case "ApiSubscriptionInfo.statusPhase":
 		if e.ComplexityRoot.ApiSubscriptionInfo.StatusPhase == nil {
 			break
@@ -1319,35 +1248,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.ClientID(childComplexity), true
-
 	case "Application.clientSecret":
 		if e.ComplexityRoot.Application.ClientSecret == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ClientSecret(childComplexity), true
-
 	case "Application.createdAt":
 		if e.ComplexityRoot.Application.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.CreatedAt(childComplexity), true
-
 	case "Application.currentExpiresAt":
 		if e.ComplexityRoot.Application.CurrentExpiresAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.CurrentExpiresAt(childComplexity), true
-
 	case "Application.environment":
 		if e.ComplexityRoot.Application.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.Environment(childComplexity), true
-
 	case "Application.exposedApis":
 		if e.ComplexityRoot.Application.ExposedApis == nil {
 			break
@@ -1359,7 +1283,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.ExposedApis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiExposureOrder), args["where"].(*ent.ApiExposureWhereInput)), true
-
 	case "Application.exposedEvents":
 		if e.ComplexityRoot.Application.ExposedEvents == nil {
 			break
@@ -1371,98 +1294,84 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.ExposedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
-
 	case "Application.externalIds":
 		if e.ComplexityRoot.Application.ExternalIds == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ExternalIds(childComplexity), true
-
 	case "Application.id":
 		if e.ComplexityRoot.Application.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ID(childComplexity), true
-
 	case "Application.ipRestrictions":
 		if e.ComplexityRoot.Application.IPRestrictions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.IPRestrictions(childComplexity), true
-
 	case "Application.lastModifiedAt":
 		if e.ComplexityRoot.Application.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.LastModifiedAt(childComplexity), true
-
 	case "Application.name":
 		if e.ComplexityRoot.Application.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.Name(childComplexity), true
-
 	case "Application.namespace":
 		if e.ComplexityRoot.Application.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.Namespace(childComplexity), true
-
 	case "Application.ownerTeam":
 		if e.ComplexityRoot.Application.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.OwnerTeam(childComplexity), true
-
 	case "Application.rotatedClientSecret":
 		if e.ComplexityRoot.Application.RotatedClientSecret == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.RotatedClientSecret(childComplexity), true
-
 	case "Application.rotatedExpiresAt":
 		if e.ComplexityRoot.Application.RotatedExpiresAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.RotatedExpiresAt(childComplexity), true
-
 	case "Application.secretRotationMessage":
 		if e.ComplexityRoot.Application.SecretRotationMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.SecretRotationMessage(childComplexity), true
-
 	case "Application.secretRotationPhase":
 		if e.ComplexityRoot.Application.SecretRotationPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.SecretRotationPhase(childComplexity), true
-
 	case "Application.statusMessage":
 		if e.ComplexityRoot.Application.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.StatusMessage(childComplexity), true
-
 	case "Application.statusPhase":
 		if e.ComplexityRoot.Application.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.StatusPhase(childComplexity), true
-
 	case "Application.subscribedApis":
 		if e.ComplexityRoot.Application.SubscribedApis == nil {
 			break
@@ -1474,7 +1383,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedApis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiSubscriptionOrder), args["where"].(*ent.ApiSubscriptionWhereInput)), true
-
 	case "Application.subscribedEvents":
 		if e.ComplexityRoot.Application.SubscribedEvents == nil {
 			break
@@ -1486,7 +1394,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
-
 	case "Application.zone":
 		if e.ComplexityRoot.Application.Zone == nil {
 			break
@@ -1500,14 +1407,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApplicationConnection.Edges(childComplexity), true
-
 	case "ApplicationConnection.pageInfo":
 		if e.ComplexityRoot.ApplicationConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApplicationConnection.PageInfo(childComplexity), true
-
 	case "ApplicationConnection.totalCount":
 		if e.ComplexityRoot.ApplicationConnection.TotalCount == nil {
 			break
@@ -1521,7 +1426,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApplicationEdge.Cursor(childComplexity), true
-
 	case "ApplicationEdge.node":
 		if e.ComplexityRoot.ApplicationEdge.Node == nil {
 			break
@@ -1535,119 +1439,102 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.Action(childComplexity), true
-
 	case "Approval.availableTransitions":
 		if e.ComplexityRoot.Approval.AvailableTransitions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.AvailableTransitions(childComplexity), true
-
 	case "Approval.createdAt":
 		if e.ComplexityRoot.Approval.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.CreatedAt(childComplexity), true
-
 	case "Approval.decider":
 		if e.ComplexityRoot.Approval.Decider == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Decider(childComplexity), true
-
 	case "Approval.deciderTeamName":
 		if e.ComplexityRoot.Approval.DeciderTeamName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.DeciderTeamName(childComplexity), true
-
 	case "Approval.decisions":
 		if e.ComplexityRoot.Approval.Decisions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Decisions(childComplexity), true
-
 	case "Approval.environment":
 		if e.ComplexityRoot.Approval.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Environment(childComplexity), true
-
 	case "Approval.expiresat":
 		if e.ComplexityRoot.Approval.ExpiresAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.ExpiresAt(childComplexity), true
-
 	case "Approval.id":
 		if e.ComplexityRoot.Approval.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.ID(childComplexity), true
-
 	case "Approval.lastModifiedAt":
 		if e.ComplexityRoot.Approval.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.LastModifiedAt(childComplexity), true
-
 	case "Approval.name":
 		if e.ComplexityRoot.Approval.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Name(childComplexity), true
-
 	case "Approval.namespace":
 		if e.ComplexityRoot.Approval.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Namespace(childComplexity), true
-
 	case "Approval.requester":
 		if e.ComplexityRoot.Approval.Requester == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Requester(childComplexity), true
-
 	case "Approval.state":
 		if e.ComplexityRoot.Approval.State == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.State(childComplexity), true
-
 	case "Approval.statusMessage":
 		if e.ComplexityRoot.Approval.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.StatusMessage(childComplexity), true
-
 	case "Approval.statusPhase":
 		if e.ComplexityRoot.Approval.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.StatusPhase(childComplexity), true
-
 	case "Approval.strategy":
 		if e.ComplexityRoot.Approval.Strategy == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Strategy(childComplexity), true
-
 	case "Approval.subscription":
 		if e.ComplexityRoot.Approval.Subscription == nil {
 			break
@@ -1661,7 +1548,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalConfig.Strategy(childComplexity), true
-
 	case "ApprovalConfig.trustedTeams":
 		if e.ComplexityRoot.ApprovalConfig.TrustedTeams == nil {
 			break
@@ -1675,14 +1561,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalConnection.Edges(childComplexity), true
-
 	case "ApprovalConnection.pageInfo":
 		if e.ComplexityRoot.ApprovalConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalConnection.PageInfo(childComplexity), true
-
 	case "ApprovalConnection.totalCount":
 		if e.ComplexityRoot.ApprovalConnection.TotalCount == nil {
 			break
@@ -1696,7 +1580,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalEdge.Cursor(childComplexity), true
-
 	case "ApprovalEdge.node":
 		if e.ComplexityRoot.ApprovalEdge.Node == nil {
 			break
@@ -1710,119 +1593,102 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Action(childComplexity), true
-
 	case "ApprovalRequest.approval":
 		if e.ComplexityRoot.ApprovalRequest.Approval == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Approval(childComplexity), true
-
 	case "ApprovalRequest.availableTransitions":
 		if e.ComplexityRoot.ApprovalRequest.AvailableTransitions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.AvailableTransitions(childComplexity), true
-
 	case "ApprovalRequest.createdAt":
 		if e.ComplexityRoot.ApprovalRequest.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.CreatedAt(childComplexity), true
-
 	case "ApprovalRequest.decider":
 		if e.ComplexityRoot.ApprovalRequest.Decider == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Decider(childComplexity), true
-
 	case "ApprovalRequest.deciderTeamName":
 		if e.ComplexityRoot.ApprovalRequest.DeciderTeamName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.DeciderTeamName(childComplexity), true
-
 	case "ApprovalRequest.decisions":
 		if e.ComplexityRoot.ApprovalRequest.Decisions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Decisions(childComplexity), true
-
 	case "ApprovalRequest.environment":
 		if e.ComplexityRoot.ApprovalRequest.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Environment(childComplexity), true
-
 	case "ApprovalRequest.id":
 		if e.ComplexityRoot.ApprovalRequest.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.ID(childComplexity), true
-
 	case "ApprovalRequest.lastModifiedAt":
 		if e.ComplexityRoot.ApprovalRequest.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.LastModifiedAt(childComplexity), true
-
 	case "ApprovalRequest.name":
 		if e.ComplexityRoot.ApprovalRequest.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Name(childComplexity), true
-
 	case "ApprovalRequest.namespace":
 		if e.ComplexityRoot.ApprovalRequest.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Namespace(childComplexity), true
-
 	case "ApprovalRequest.requester":
 		if e.ComplexityRoot.ApprovalRequest.Requester == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Requester(childComplexity), true
-
 	case "ApprovalRequest.state":
 		if e.ComplexityRoot.ApprovalRequest.State == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.State(childComplexity), true
-
 	case "ApprovalRequest.statusMessage":
 		if e.ComplexityRoot.ApprovalRequest.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.StatusMessage(childComplexity), true
-
 	case "ApprovalRequest.statusPhase":
 		if e.ComplexityRoot.ApprovalRequest.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.StatusPhase(childComplexity), true
-
 	case "ApprovalRequest.strategy":
 		if e.ComplexityRoot.ApprovalRequest.Strategy == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Strategy(childComplexity), true
-
 	case "ApprovalRequest.subscription":
 		if e.ComplexityRoot.ApprovalRequest.Subscription == nil {
 			break
@@ -1836,14 +1702,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequestConnection.Edges(childComplexity), true
-
 	case "ApprovalRequestConnection.pageInfo":
 		if e.ComplexityRoot.ApprovalRequestConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequestConnection.PageInfo(childComplexity), true
-
 	case "ApprovalRequestConnection.totalCount":
 		if e.ComplexityRoot.ApprovalRequestConnection.TotalCount == nil {
 			break
@@ -1857,7 +1721,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequestEdge.Cursor(childComplexity), true
-
 	case "ApprovalRequestEdge.node":
 		if e.ComplexityRoot.ApprovalRequestEdge.Node == nil {
 			break
@@ -1871,7 +1734,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AvailableTransition.Action(childComplexity), true
-
 	case "AvailableTransition.toState":
 		if e.ComplexityRoot.AvailableTransition.ToState == nil {
 			break
@@ -1885,7 +1747,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.BasicAuthCredentials.Password(childComplexity), true
-
 	case "BasicAuthCredentials.username":
 		if e.ComplexityRoot.BasicAuthCredentials.Username == nil {
 			break
@@ -1899,14 +1760,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.CreateTeamPayload.Accepted(childComplexity), true
-
 	case "CreateTeamPayload.errors":
 		if e.ComplexityRoot.CreateTeamPayload.Errors == nil {
 			break
 		}
 
 		return e.ComplexityRoot.CreateTeamPayload.Errors(childComplexity), true
-
 	case "CreateTeamPayload.team":
 		if e.ComplexityRoot.CreateTeamPayload.Team == nil {
 			break
@@ -1920,14 +1779,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DecideApprovalPayload.Accepted(childComplexity), true
-
 	case "DecideApprovalPayload.approval":
 		if e.ComplexityRoot.DecideApprovalPayload.Approval == nil {
 			break
 		}
 
 		return e.ComplexityRoot.DecideApprovalPayload.Approval(childComplexity), true
-
 	case "DecideApprovalPayload.errors":
 		if e.ComplexityRoot.DecideApprovalPayload.Errors == nil {
 			break
@@ -1941,14 +1798,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DecideApprovalRequestPayload.Accepted(childComplexity), true
-
 	case "DecideApprovalRequestPayload.approvalRequest":
 		if e.ComplexityRoot.DecideApprovalRequestPayload.ApprovalRequest == nil {
 			break
 		}
 
 		return e.ComplexityRoot.DecideApprovalRequestPayload.ApprovalRequest(childComplexity), true
-
 	case "DecideApprovalRequestPayload.errors":
 		if e.ComplexityRoot.DecideApprovalRequestPayload.Errors == nil {
 			break
@@ -1962,7 +1817,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DeciderInfo.TeamEmail(childComplexity), true
-
 	case "DeciderInfo.teamName":
 		if e.ComplexityRoot.DeciderInfo.TeamName == nil {
 			break
@@ -1976,28 +1830,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Decision.Comment(childComplexity), true
-
 	case "Decision.email":
 		if e.ComplexityRoot.Decision.Email == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Decision.Email(childComplexity), true
-
 	case "Decision.name":
 		if e.ComplexityRoot.Decision.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Decision.Name(childComplexity), true
-
 	case "Decision.resultingState":
 		if e.ComplexityRoot.Decision.ResultingState == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Decision.ResultingState(childComplexity), true
-
 	case "Decision.timestamp":
 		if e.ComplexityRoot.Decision.Timestamp == nil {
 			break
@@ -2011,35 +1861,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventDelivery.CircuitBreakerOptOut(childComplexity), true
-
 	case "EventDelivery.enforceGetHttpRequestMethodForHealthCheck":
 		if e.ComplexityRoot.EventDelivery.EnforceGetHttpRequestMethodForHealthCheck == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventDelivery.EnforceGetHttpRequestMethodForHealthCheck(childComplexity), true
-
 	case "EventDelivery.eventRetentionTime":
 		if e.ComplexityRoot.EventDelivery.EventRetentionTime == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventDelivery.EventRetentionTime(childComplexity), true
-
 	case "EventDelivery.payload":
 		if e.ComplexityRoot.EventDelivery.Payload == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventDelivery.Payload(childComplexity), true
-
 	case "EventDelivery.redeliveriesPerSecond":
 		if e.ComplexityRoot.EventDelivery.RedeliveriesPerSecond == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventDelivery.RedeliveriesPerSecond(childComplexity), true
-
 	case "EventDelivery.retryableStatusCodes":
 		if e.ComplexityRoot.EventDelivery.RetryableStatusCodes == nil {
 			break
@@ -2053,98 +1898,84 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposure.Active(childComplexity), true
-
 	case "EventExposure.approvalConfig":
 		if e.ComplexityRoot.EventExposure.ApprovalConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.ApprovalConfig(childComplexity), true
-
 	case "EventExposure.createdAt":
 		if e.ComplexityRoot.EventExposure.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.CreatedAt(childComplexity), true
-
 	case "EventExposure.environment":
 		if e.ComplexityRoot.EventExposure.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Environment(childComplexity), true
-
 	case "EventExposure.eventScopes":
 		if e.ComplexityRoot.EventExposure.EventScopes == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.EventScopes(childComplexity), true
-
 	case "EventExposure.eventType":
 		if e.ComplexityRoot.EventExposure.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.EventType(childComplexity), true
-
 	case "EventExposure.eventTypeDef":
 		if e.ComplexityRoot.EventExposure.EventTypeDef == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.EventTypeDef(childComplexity), true
-
 	case "EventExposure.id":
 		if e.ComplexityRoot.EventExposure.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.ID(childComplexity), true
-
 	case "EventExposure.lastModifiedAt":
 		if e.ComplexityRoot.EventExposure.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.LastModifiedAt(childComplexity), true
-
 	case "EventExposure.namespace":
 		if e.ComplexityRoot.EventExposure.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Namespace(childComplexity), true
-
 	case "EventExposure.owner":
 		if e.ComplexityRoot.EventExposure.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Owner(childComplexity), true
-
 	case "EventExposure.statusMessage":
 		if e.ComplexityRoot.EventExposure.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.StatusMessage(childComplexity), true
-
 	case "EventExposure.statusPhase":
 		if e.ComplexityRoot.EventExposure.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.StatusPhase(childComplexity), true
-
 	case "EventExposure.subscriptions":
 		if e.ComplexityRoot.EventExposure.Subscriptions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Subscriptions(childComplexity), true
-
 	case "EventExposure.visibility":
 		if e.ComplexityRoot.EventExposure.Visibility == nil {
 			break
@@ -2158,14 +1989,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureConnection.Edges(childComplexity), true
-
 	case "EventExposureConnection.pageInfo":
 		if e.ComplexityRoot.EventExposureConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureConnection.PageInfo(childComplexity), true
-
 	case "EventExposureConnection.totalCount":
 		if e.ComplexityRoot.EventExposureConnection.TotalCount == nil {
 			break
@@ -2179,7 +2008,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureEdge.Cursor(childComplexity), true
-
 	case "EventExposureEdge.node":
 		if e.ComplexityRoot.EventExposureEdge.Node == nil {
 			break
@@ -2193,42 +2021,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.Active(childComplexity), true
-
 	case "EventExposureInfo.approvalConfig":
 		if e.ComplexityRoot.EventExposureInfo.ApprovalConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.ApprovalConfig(childComplexity), true
-
 	case "EventExposureInfo.eventType":
 		if e.ComplexityRoot.EventExposureInfo.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.EventType(childComplexity), true
-
 	case "EventExposureInfo.id":
 		if e.ComplexityRoot.EventExposureInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.ID(childComplexity), true
-
 	case "EventExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.EventExposureInfo.OwnerApplicationName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.OwnerApplicationName(childComplexity), true
-
 	case "EventExposureInfo.ownerTeam":
 		if e.ComplexityRoot.EventExposureInfo.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.OwnerTeam(childComplexity), true
-
 	case "EventExposureInfo.visibility":
 		if e.ComplexityRoot.EventExposureInfo.Visibility == nil {
 			break
@@ -2242,7 +2064,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventScope.Name(childComplexity), true
-
 	case "EventScope.trigger":
 		if e.ComplexityRoot.EventScope.Trigger == nil {
 			break
@@ -2256,119 +2077,102 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscription.Approval(childComplexity), true
-
 	case "EventSubscription.approvalRequests":
 		if e.ComplexityRoot.EventSubscription.ApprovalRequests == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.ApprovalRequests(childComplexity), true
-
 	case "EventSubscription.callbackURL":
 		if e.ComplexityRoot.EventSubscription.CallbackURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.CallbackURL(childComplexity), true
-
 	case "EventSubscription.createdAt":
 		if e.ComplexityRoot.EventSubscription.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.CreatedAt(childComplexity), true
-
 	case "EventSubscription.delivery":
 		if e.ComplexityRoot.EventSubscription.Delivery == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Delivery(childComplexity), true
-
 	case "EventSubscription.deliveryType":
 		if e.ComplexityRoot.EventSubscription.DeliveryType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.DeliveryType(childComplexity), true
-
 	case "EventSubscription.environment":
 		if e.ComplexityRoot.EventSubscription.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Environment(childComplexity), true
-
 	case "EventSubscription.eventType":
 		if e.ComplexityRoot.EventSubscription.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.EventType(childComplexity), true
-
 	case "EventSubscription.id":
 		if e.ComplexityRoot.EventSubscription.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.ID(childComplexity), true
-
 	case "EventSubscription.lastModifiedAt":
 		if e.ComplexityRoot.EventSubscription.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.LastModifiedAt(childComplexity), true
-
 	case "EventSubscription.name":
 		if e.ComplexityRoot.EventSubscription.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Name(childComplexity), true
-
 	case "EventSubscription.namespace":
 		if e.ComplexityRoot.EventSubscription.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Namespace(childComplexity), true
-
 	case "EventSubscription.owner":
 		if e.ComplexityRoot.EventSubscription.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Owner(childComplexity), true
-
 	case "EventSubscription.scopes":
 		if e.ComplexityRoot.EventSubscription.Scopes == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Scopes(childComplexity), true
-
 	case "EventSubscription.statusMessage":
 		if e.ComplexityRoot.EventSubscription.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.StatusMessage(childComplexity), true
-
 	case "EventSubscription.statusPhase":
 		if e.ComplexityRoot.EventSubscription.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.StatusPhase(childComplexity), true
-
 	case "EventSubscription.target":
 		if e.ComplexityRoot.EventSubscription.Target == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Target(childComplexity), true
-
 	case "EventSubscription.trigger":
 		if e.ComplexityRoot.EventSubscription.Trigger == nil {
 			break
@@ -2382,14 +2186,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscriptionConnection.Edges(childComplexity), true
-
 	case "EventSubscriptionConnection.pageInfo":
 		if e.ComplexityRoot.EventSubscriptionConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionConnection.PageInfo(childComplexity), true
-
 	case "EventSubscriptionConnection.totalCount":
 		if e.ComplexityRoot.EventSubscriptionConnection.TotalCount == nil {
 			break
@@ -2403,7 +2205,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscriptionEdge.Cursor(childComplexity), true
-
 	case "EventSubscriptionEdge.node":
 		if e.ComplexityRoot.EventSubscriptionEdge.Node == nil {
 			break
@@ -2417,42 +2218,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.DeliveryType(childComplexity), true
-
 	case "EventSubscriptionInfo.eventType":
 		if e.ComplexityRoot.EventSubscriptionInfo.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.EventType(childComplexity), true
-
 	case "EventSubscriptionInfo.id":
 		if e.ComplexityRoot.EventSubscriptionInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.ID(childComplexity), true
-
 	case "EventSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.EventSubscriptionInfo.OwnerApplicationName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.OwnerApplicationName(childComplexity), true
-
 	case "EventSubscriptionInfo.ownerTeam":
 		if e.ComplexityRoot.EventSubscriptionInfo.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.OwnerTeam(childComplexity), true
-
 	case "EventSubscriptionInfo.statusMessage":
 		if e.ComplexityRoot.EventSubscriptionInfo.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.StatusMessage(childComplexity), true
-
 	case "EventSubscriptionInfo.statusPhase":
 		if e.ComplexityRoot.EventSubscriptionInfo.StatusPhase == nil {
 			break
@@ -2466,7 +2261,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventTrigger.ResponseFilter(childComplexity), true
-
 	case "EventTrigger.selectionFilter":
 		if e.ComplexityRoot.EventTrigger.SelectionFilter == nil {
 			break
@@ -2480,84 +2274,72 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventType.Active(childComplexity), true
-
 	case "EventType.activeExposure":
 		if e.ComplexityRoot.EventType.ActiveExposure == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.ActiveExposure(childComplexity), true
-
 	case "EventType.createdAt":
 		if e.ComplexityRoot.EventType.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.CreatedAt(childComplexity), true
-
 	case "EventType.description":
 		if e.ComplexityRoot.EventType.Description == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.Description(childComplexity), true
-
 	case "EventType.eventType":
 		if e.ComplexityRoot.EventType.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.EventType(childComplexity), true
-
 	case "EventType.id":
 		if e.ComplexityRoot.EventType.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.ID(childComplexity), true
-
 	case "EventType.lastModifiedAt":
 		if e.ComplexityRoot.EventType.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.LastModifiedAt(childComplexity), true
-
 	case "EventType.namespace":
 		if e.ComplexityRoot.EventType.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.Namespace(childComplexity), true
-
 	case "EventType.owner":
 		if e.ComplexityRoot.EventType.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.Owner(childComplexity), true
-
 	case "EventType.specificationUrl":
 		if e.ComplexityRoot.EventType.SpecificationURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.SpecificationURL(childComplexity), true
-
 	case "EventType.statusMessage":
 		if e.ComplexityRoot.EventType.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.StatusMessage(childComplexity), true
-
 	case "EventType.statusPhase":
 		if e.ComplexityRoot.EventType.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.StatusPhase(childComplexity), true
-
 	case "EventType.version":
 		if e.ComplexityRoot.EventType.Version == nil {
 			break
@@ -2571,14 +2353,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventTypeConnection.Edges(childComplexity), true
-
 	case "EventTypeConnection.pageInfo":
 		if e.ComplexityRoot.EventTypeConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventTypeConnection.PageInfo(childComplexity), true
-
 	case "EventTypeConnection.totalCount":
 		if e.ComplexityRoot.EventTypeConnection.TotalCount == nil {
 			break
@@ -2592,7 +2372,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventTypeEdge.Cursor(childComplexity), true
-
 	case "EventTypeEdge.node":
 		if e.ComplexityRoot.EventTypeEdge.Node == nil {
 			break
@@ -2606,7 +2385,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ExternalId.Id(childComplexity), true
-
 	case "ExternalId.Schema":
 		if e.ComplexityRoot.ExternalId.Schema == nil {
 			break
@@ -2620,28 +2398,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ExternalIdentityProvider.Basic(childComplexity), true
-
 	case "ExternalIdentityProvider.client":
 		if e.ComplexityRoot.ExternalIdentityProvider.Client == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ExternalIdentityProvider.Client(childComplexity), true
-
 	case "ExternalIdentityProvider.grantType":
 		if e.ComplexityRoot.ExternalIdentityProvider.GrantType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ExternalIdentityProvider.GrantType(childComplexity), true
-
 	case "ExternalIdentityProvider.tokenEndpoint":
 		if e.ComplexityRoot.ExternalIdentityProvider.TokenEndpoint == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ExternalIdentityProvider.TokenEndpoint(childComplexity), true
-
 	case "ExternalIdentityProvider.tokenRequest":
 		if e.ComplexityRoot.ExternalIdentityProvider.TokenRequest == nil {
 			break
@@ -2655,42 +2429,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Group.Description(childComplexity), true
-
 	case "Group.displayName":
 		if e.ComplexityRoot.Group.DisplayName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.DisplayName(childComplexity), true
-
 	case "Group.environment":
 		if e.ComplexityRoot.Group.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.Environment(childComplexity), true
-
 	case "Group.id":
 		if e.ComplexityRoot.Group.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.ID(childComplexity), true
-
 	case "Group.name":
 		if e.ComplexityRoot.Group.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.Name(childComplexity), true
-
 	case "Group.namespace":
 		if e.ComplexityRoot.Group.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.Namespace(childComplexity), true
-
 	case "Group.teams":
 		if e.ComplexityRoot.Group.Teams == nil {
 			break
@@ -2704,7 +2472,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.IpRestrictions.Allow(childComplexity), true
-
 	case "IpRestrictions.Deny":
 		if e.ComplexityRoot.IpRestrictions.Deny == nil {
 			break
@@ -2718,14 +2485,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Limits.Hour(childComplexity), true
-
 	case "Limits.minute":
 		if e.ComplexityRoot.Limits.Minute == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Limits.Minute(childComplexity), true
-
 	case "Limits.second":
 		if e.ComplexityRoot.Limits.Second == nil {
 			break
@@ -2739,14 +2504,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Machine2MachineAuthentication.Basic(childComplexity), true
-
 	case "Machine2MachineAuthentication.externalIDP":
 		if e.ComplexityRoot.Machine2MachineAuthentication.ExternalIDP == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Machine2MachineAuthentication.ExternalIDP(childComplexity), true
-
 	case "Machine2MachineAuthentication.scopes":
 		if e.ComplexityRoot.Machine2MachineAuthentication.Scopes == nil {
 			break
@@ -2760,28 +2523,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Member.Email(childComplexity), true
-
 	case "Member.environment":
 		if e.ComplexityRoot.Member.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Member.Environment(childComplexity), true
-
 	case "Member.id":
 		if e.ComplexityRoot.Member.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Member.ID(childComplexity), true
-
 	case "Member.name":
 		if e.ComplexityRoot.Member.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Member.Name(childComplexity), true
-
 	case "Member.team":
 		if e.ComplexityRoot.Member.Team == nil {
 			break
@@ -2800,7 +2559,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddTeamMember(childComplexity, args["teamId"].(int), args["member"].(model.MemberInput)), true
-
 	case "Mutation.createTeam":
 		if e.ComplexityRoot.Mutation.CreateTeam == nil {
 			break
@@ -2812,7 +2570,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateTeam(childComplexity, args["input"].(model.CreateTeamInput)), true
-
 	case "Mutation.decideApproval":
 		if e.ComplexityRoot.Mutation.DecideApproval == nil {
 			break
@@ -2824,7 +2581,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DecideApproval(childComplexity, args["approvalId"].(int), args["input"].(model.DecisionInput)), true
-
 	case "Mutation.decideApprovalRequest":
 		if e.ComplexityRoot.Mutation.DecideApprovalRequest == nil {
 			break
@@ -2836,7 +2592,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DecideApprovalRequest(childComplexity, args["approvalRequestId"].(int), args["input"].(model.DecisionInput)), true
-
 	case "Mutation.removeTeamMember":
 		if e.ComplexityRoot.Mutation.RemoveTeamMember == nil {
 			break
@@ -2848,7 +2603,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RemoveTeamMember(childComplexity, args["teamId"].(int), args["memberEmail"].(string)), true
-
 	case "Mutation.rotateApplicationSecret":
 		if e.ComplexityRoot.Mutation.RotateApplicationSecret == nil {
 			break
@@ -2860,7 +2614,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RotateApplicationSecret(childComplexity, args["applicationId"].(int)), true
-
 	case "Mutation.rotateTeamToken":
 		if e.ComplexityRoot.Mutation.RotateTeamToken == nil {
 			break
@@ -2872,7 +2625,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RotateTeamToken(childComplexity, args["teamId"].(int)), true
-
 	case "Mutation.updateTeam":
 		if e.ComplexityRoot.Mutation.UpdateTeam == nil {
 			break
@@ -2891,14 +2643,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MutationError.Code(childComplexity), true
-
 	case "MutationError.field":
 		if e.ComplexityRoot.MutationError.Field == nil {
 			break
 		}
 
 		return e.ComplexityRoot.MutationError.Field(childComplexity), true
-
 	case "MutationError.message":
 		if e.ComplexityRoot.MutationError.Message == nil {
 			break
@@ -2912,14 +2662,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.OAuth2ClientCredentials.ClientId(childComplexity), true
-
 	case "OAuth2ClientCredentials.clientKey":
 		if e.ComplexityRoot.OAuth2ClientCredentials.ClientKey == nil {
 			break
 		}
 
 		return e.ComplexityRoot.OAuth2ClientCredentials.ClientKey(childComplexity), true
-
 	case "OAuth2ClientCredentials.clientSecret":
 		if e.ComplexityRoot.OAuth2ClientCredentials.ClientSecret == nil {
 			break
@@ -2933,21 +2681,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.PageInfo.EndCursor(childComplexity), true
-
 	case "PageInfo.hasNextPage":
 		if e.ComplexityRoot.PageInfo.HasNextPage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PageInfo.HasNextPage(childComplexity), true
-
 	case "PageInfo.hasPreviousPage":
 		if e.ComplexityRoot.PageInfo.HasPreviousPage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PageInfo.HasPreviousPage(childComplexity), true
-
 	case "PageInfo.startCursor":
 		if e.ComplexityRoot.PageInfo.StartCursor == nil {
 			break
@@ -2961,7 +2706,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.APICategories(childComplexity), true
-
 	case "Query.apiExposures":
 		if e.ComplexityRoot.Query.APIExposures == nil {
 			break
@@ -2973,7 +2717,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.APIExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiExposureOrder), args["where"].(*ent.ApiExposureWhereInput)), true
-
 	case "Query.apiSubscriptions":
 		if e.ComplexityRoot.Query.APISubscriptions == nil {
 			break
@@ -2985,7 +2728,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.APISubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiSubscriptionOrder), args["where"].(*ent.ApiSubscriptionWhereInput)), true
-
 	case "Query.apis":
 		if e.ComplexityRoot.Query.Apis == nil {
 			break
@@ -2997,7 +2739,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Apis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiOrder), args["where"].(*ent.ApiWhereInput)), true
-
 	case "Query.applications":
 		if e.ComplexityRoot.Query.Applications == nil {
 			break
@@ -3009,7 +2750,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Applications(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApplicationOrder), args["where"].(*ent.ApplicationWhereInput)), true
-
 	case "Query.approvalRequests":
 		if e.ComplexityRoot.Query.ApprovalRequests == nil {
 			break
@@ -3021,7 +2761,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.ApprovalRequests(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApprovalRequestOrder), args["where"].(*ent.ApprovalRequestWhereInput)), true
-
 	case "Query.approvals":
 		if e.ComplexityRoot.Query.Approvals == nil {
 			break
@@ -3033,7 +2772,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Approvals(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApprovalOrder), args["where"].(*ent.ApprovalWhereInput)), true
-
 	case "Query.eventExposures":
 		if e.ComplexityRoot.Query.EventExposures == nil {
 			break
@@ -3045,7 +2783,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
-
 	case "Query.eventSubscriptions":
 		if e.ComplexityRoot.Query.EventSubscriptions == nil {
 			break
@@ -3057,7 +2794,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventSubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
-
 	case "Query.eventTypes":
 		if e.ComplexityRoot.Query.EventTypes == nil {
 			break
@@ -3081,7 +2817,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Node(childComplexity, args["id"].(int)), true
-
 	case "Query.nodes":
 		if e.ComplexityRoot.Query.Nodes == nil {
 			break
@@ -3093,7 +2828,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Nodes(childComplexity, args["ids"].([]int)), true
-
 	case "Query.teams":
 		if e.ComplexityRoot.Query.Teams == nil {
 			break
@@ -3105,7 +2839,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Teams(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.TeamOrder), args["where"].(*ent.TeamWhereInput)), true
-
 	case "Query.zones":
 		if e.ComplexityRoot.Query.Zones == nil {
 			break
@@ -3119,7 +2852,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RateLimit.Provider(childComplexity), true
-
 	case "RateLimit.subscriberRateLimit":
 		if e.ComplexityRoot.RateLimit.SubscriberRateLimit == nil {
 			break
@@ -3133,7 +2865,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RateLimitConfig.Limits(childComplexity), true
-
 	case "RateLimitConfig.options":
 		if e.ComplexityRoot.RateLimitConfig.Options == nil {
 			break
@@ -3147,7 +2878,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RateLimitOptions.FaultTolerant(childComplexity), true
-
 	case "RateLimitOptions.hideClientHeaders":
 		if e.ComplexityRoot.RateLimitOptions.HideClientHeaders == nil {
 			break
@@ -3161,7 +2891,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RateLimitOverrides.Limits(childComplexity), true
-
 	case "RateLimitOverrides.subscriber":
 		if e.ComplexityRoot.RateLimitOverrides.Subscriber == nil {
 			break
@@ -3175,7 +2904,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RemoveTeamMemberPayload.Errors(childComplexity), true
-
 	case "RemoveTeamMemberPayload.team":
 		if e.ComplexityRoot.RemoveTeamMemberPayload.Team == nil {
 			break
@@ -3189,21 +2917,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RequesterInfo.ApplicationName(childComplexity), true
-
 	case "RequesterInfo.reason":
 		if e.ComplexityRoot.RequesterInfo.Reason == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RequesterInfo.Reason(childComplexity), true
-
 	case "RequesterInfo.teamEmail":
 		if e.ComplexityRoot.RequesterInfo.TeamEmail == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RequesterInfo.TeamEmail(childComplexity), true
-
 	case "RequesterInfo.teamName":
 		if e.ComplexityRoot.RequesterInfo.TeamName == nil {
 			break
@@ -3217,7 +2942,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ResponseFilter.Mode(childComplexity), true
-
 	case "ResponseFilter.paths":
 		if e.ComplexityRoot.ResponseFilter.Paths == nil {
 			break
@@ -3231,14 +2955,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RotateApplicationSecretPayload.Accepted(childComplexity), true
-
 	case "RotateApplicationSecretPayload.application":
 		if e.ComplexityRoot.RotateApplicationSecretPayload.Application == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RotateApplicationSecretPayload.Application(childComplexity), true
-
 	case "RotateApplicationSecretPayload.errors":
 		if e.ComplexityRoot.RotateApplicationSecretPayload.Errors == nil {
 			break
@@ -3252,14 +2974,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RotateTeamTokenPayload.Accepted(childComplexity), true
-
 	case "RotateTeamTokenPayload.errors":
 		if e.ComplexityRoot.RotateTeamTokenPayload.Errors == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RotateTeamTokenPayload.Errors(childComplexity), true
-
 	case "RotateTeamTokenPayload.team":
 		if e.ComplexityRoot.RotateTeamTokenPayload.Team == nil {
 			break
@@ -3273,7 +2993,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SelectionFilter.Attributes(childComplexity), true
-
 	case "SelectionFilter.expression":
 		if e.ComplexityRoot.SelectionFilter.Expression == nil {
 			break
@@ -3287,14 +3006,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Basic(childComplexity), true
-
 	case "SubscriberMachine2MachineAuthentication.client":
 		if e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Client == nil {
 			break
 		}
 
 		return e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Client(childComplexity), true
-
 	case "SubscriberMachine2MachineAuthentication.scopes":
 		if e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Scopes == nil {
 			break
@@ -3315,7 +3032,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SubscriberRateLimits.Default(childComplexity), true
-
 	case "SubscriberRateLimits.overrides":
 		if e.ComplexityRoot.SubscriberRateLimits.Overrides == nil {
 			break
@@ -3334,7 +3050,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.Apis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiOrder), args["where"].(*ent.ApiWhereInput)), true
-
 	case "Team.applications":
 		if e.ComplexityRoot.Team.Applications == nil {
 			break
@@ -3346,49 +3061,42 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.Applications(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApplicationOrder), args["where"].(*ent.ApplicationWhereInput)), true
-
 	case "Team.category":
 		if e.ComplexityRoot.Team.Category == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Category(childComplexity), true
-
 	case "Team.createdAt":
 		if e.ComplexityRoot.Team.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.CreatedAt(childComplexity), true
-
 	case "Team.description":
 		if e.ComplexityRoot.Team.Description == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Description(childComplexity), true
-
 	case "Team.displayname":
 		if e.ComplexityRoot.Team.DisplayName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.DisplayName(childComplexity), true
-
 	case "Team.email":
 		if e.ComplexityRoot.Team.Email == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Email(childComplexity), true
-
 	case "Team.environment":
 		if e.ComplexityRoot.Team.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Environment(childComplexity), true
-
 	case "Team.eventTypes":
 		if e.ComplexityRoot.Team.EventTypes == nil {
 			break
@@ -3400,63 +3108,54 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
-
 	case "Team.group":
 		if e.ComplexityRoot.Team.Group == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Group(childComplexity), true
-
 	case "Team.id":
 		if e.ComplexityRoot.Team.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.ID(childComplexity), true
-
 	case "Team.lastModifiedAt":
 		if e.ComplexityRoot.Team.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.LastModifiedAt(childComplexity), true
-
 	case "Team.members":
 		if e.ComplexityRoot.Team.Members == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Members(childComplexity), true
-
 	case "Team.name":
 		if e.ComplexityRoot.Team.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Name(childComplexity), true
-
 	case "Team.namespace":
 		if e.ComplexityRoot.Team.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Namespace(childComplexity), true
-
 	case "Team.statusMessage":
 		if e.ComplexityRoot.Team.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.StatusMessage(childComplexity), true
-
 	case "Team.statusPhase":
 		if e.ComplexityRoot.Team.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.StatusPhase(childComplexity), true
-
 	case "Team.teamToken":
 		if e.ComplexityRoot.Team.TeamToken == nil {
 			break
@@ -3470,14 +3169,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamConnection.Edges(childComplexity), true
-
 	case "TeamConnection.pageInfo":
 		if e.ComplexityRoot.TeamConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamConnection.PageInfo(childComplexity), true
-
 	case "TeamConnection.totalCount":
 		if e.ComplexityRoot.TeamConnection.TotalCount == nil {
 			break
@@ -3491,7 +3188,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamEdge.Cursor(childComplexity), true
-
 	case "TeamEdge.node":
 		if e.ComplexityRoot.TeamEdge.Node == nil {
 			break
@@ -3505,35 +3201,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamInfo.Description(childComplexity), true
-
 	case "TeamInfo.displayName":
 		if e.ComplexityRoot.TeamInfo.DisplayName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamInfo.DisplayName(childComplexity), true
-
 	case "TeamInfo.email":
 		if e.ComplexityRoot.TeamInfo.Email == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamInfo.Email(childComplexity), true
-
 	case "TeamInfo.groupName":
 		if e.ComplexityRoot.TeamInfo.GroupName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamInfo.GroupName(childComplexity), true
-
 	case "TeamInfo.id":
 		if e.ComplexityRoot.TeamInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamInfo.ID(childComplexity), true
-
 	case "TeamInfo.name":
 		if e.ComplexityRoot.TeamInfo.Name == nil {
 			break
@@ -3554,14 +3245,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.UpdateTeamPayload.Accepted(childComplexity), true
-
 	case "UpdateTeamPayload.errors":
 		if e.ComplexityRoot.UpdateTeamPayload.Errors == nil {
 			break
 		}
 
 		return e.ComplexityRoot.UpdateTeamPayload.Errors(childComplexity), true
-
 	case "UpdateTeamPayload.team":
 		if e.ComplexityRoot.UpdateTeamPayload.Team == nil {
 			break
@@ -3575,7 +3264,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Upstream.URL(childComplexity), true
-
 	case "Upstream.weight":
 		if e.ComplexityRoot.Upstream.Weight == nil {
 			break
@@ -3589,49 +3277,42 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.Applications(childComplexity), true
-
 	case "Zone.environment":
 		if e.ComplexityRoot.Zone.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.Environment(childComplexity), true
-
 	case "Zone.gatewayURL":
 		if e.ComplexityRoot.Zone.GatewayURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.GatewayURL(childComplexity), true
-
 	case "Zone.id":
 		if e.ComplexityRoot.Zone.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.ID(childComplexity), true
-
 	case "Zone.issuerURL":
 		if e.ComplexityRoot.Zone.IssuerURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.IssuerURL(childComplexity), true
-
 	case "Zone.name":
 		if e.ComplexityRoot.Zone.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.Name(childComplexity), true
-
 	case "Zone.tokenURL":
 		if e.ComplexityRoot.Zone.TokenURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.TokenURL(childComplexity), true
-
 	case "Zone.visibility":
 		if e.ComplexityRoot.Zone.Visibility == nil {
 			break
