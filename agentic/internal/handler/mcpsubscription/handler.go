@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -184,16 +183,16 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	}
 
 	// 8. Provision ConsumeRoute
-	if exposure.Status.Route == nil {
-		obj.SetCondition(condition.NewNotReadyCondition("RouteNotReady",
-			"McpExposure does not have a Route reference yet"))
-		obj.SetCondition(condition.NewBlockedCondition(
-			"McpExposure " + exposure.Name + " has no Route reference. " +
-				"McpSubscription will be automatically processed when the Route is created"))
+	routeRef, err := resolveRouteRef(ctx, obj, exposure, subscriberZone)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve route reference for ConsumeRoute")
+	}
+	if routeRef == nil {
+		// Blocking condition already set by resolveRouteRef
 		return nil
 	}
 
-	consumeRoute, err := h.createConsumeRoute(ctx, obj, exposure, requestorApp, subscriberZone)
+	consumeRoute, err := h.createConsumeRoute(ctx, obj, *routeRef, requestorApp)
 	if err != nil {
 		return errors.Wrap(err, "failed to create ConsumeRoute")
 	}
@@ -231,26 +230,53 @@ func (h *McpSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.McpS
 	return nil
 }
 
+// resolveRouteRef determines which Route the ConsumeRoute should reference,
+// based on whether the subscription is in the same zone as the exposure or cross-zone.
+// Returns (nil, nil) if the route isn't ready yet — a blocking condition is set on obj.
+func resolveRouteRef(
+	ctx context.Context,
+	obj *agenticv1.McpSubscription,
+	exposure *agenticv1.McpExposure,
+	subscriberZone *adminv1.Zone,
+) (*types.ObjectRef, error) {
+	logger := log.FromContext(ctx)
+
+	if obj.Spec.Zone.Name == exposure.Spec.Zone.Name {
+		// Same zone: reference the primary route directly
+		if exposure.Status.Route == nil {
+			obj.SetCondition(condition.NewNotReadyCondition("RouteNotReady",
+				"McpExposure does not have a Route reference yet"))
+			obj.SetCondition(condition.NewBlockedCondition("Waiting for McpExposure to create the route"))
+			return nil, nil
+		}
+		logger.V(1).Info("Referencing primary route from McpExposure", "route", exposure.Status.Route.String())
+		return exposure.Status.Route, nil
+	}
+
+	// Cross-zone: find the proxy route whose namespace matches the subscriber zone
+	for i := range exposure.Status.ProxyRoutes {
+		proxyRoute := &exposure.Status.ProxyRoutes[i]
+		if proxyRoute.Namespace == subscriberZone.Status.Namespace {
+			logger.V(1).Info("Referencing proxy route from McpExposure", "zone", obj.Spec.Zone.Name, "route", proxyRoute.String())
+			return proxyRoute, nil
+		}
+	}
+
+	obj.SetCondition(condition.NewNotReadyCondition("ProxyRouteNotReady",
+		"McpExposure has not created a proxy route for zone "+obj.Spec.Zone.Name+" yet"))
+	obj.SetCondition(condition.NewBlockedCondition(
+		"Waiting for McpExposure to create the proxy route for zone " + obj.Spec.Zone.Name))
+	return nil, nil
+}
+
 // createConsumeRoute creates a ConsumeRoute granting the subscriber access to the MCP route.
 func (h *McpSubscriptionHandler) createConsumeRoute(
 	ctx context.Context,
 	obj *agenticv1.McpSubscription,
-	exposure *agenticv1.McpExposure,
+	routeRef types.ObjectRef,
 	application *applicationv1.Application,
-	subscriberZone *adminv1.Zone,
 ) (*gatewayapi.ConsumeRoute, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-
-	// Use the route in the subscriber's zone if cross-zone, otherwise exposure's route
-	routeRef := *exposure.Status.Route
-	if obj.Spec.Zone.Name != exposure.Spec.Zone.Name {
-		// Cross-zone: find the proxy route in the subscriber zone
-		proxyRouteName := util.MakeMcpRouteName(obj.Spec.BasePath)
-		routeRef = types.ObjectRef{
-			Name:      proxyRouteName,
-			Namespace: subscriberZone.Status.Namespace,
-		}
-	}
 
 	consumeRouteName := routeRef.Name + "--" + labelutil.NormalizeNameValue(application.Status.ClientId)
 
@@ -282,11 +308,7 @@ func (h *McpSubscriptionHandler) createConsumeRoute(
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, consumeRoute, mutator)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, ctrlerrors.BlockedErrorf("Route %q not found — McpExposure may not have created the proxy route yet", routeRef.String())
-		}
+	if _, err := c.CreateOrUpdate(ctx, consumeRoute, mutator); err != nil {
 		return nil, errors.Wrapf(err, "failed to create or update ConsumeRoute %s/%s", consumeRoute.Namespace, consumeRoute.Name)
 	}
 
