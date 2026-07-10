@@ -7,6 +7,7 @@ package util
 import (
 	"context"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -66,7 +67,9 @@ func GetApplication(ctx context.Context, ref ctypes.ObjectRef) (*applicationapi.
 }
 
 // FindActiveMcpServer finds the active McpServer for a given basePath.
-// Returns (found, mcpServer, error). If found is false, there is no active McpServer.
+// Returns (found, mcpServer, error).
+// If found is false and mcpServer is non-nil, a server exists but with a different case
+// (e.g. /MyMcp vs /mymcp) — the caller should treat this as a conflict, not a missing server.
 func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1.McpServer, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -77,16 +80,24 @@ func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1
 		return false, nil, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
 	}
 
-	// Filter to matching basePath and active
+	// Filter to exact basePath match AND active; also detect case-only mismatches.
 	var candidates []agenticv1.McpServer
+	var caseConflict *agenticv1.McpServer
 	for i := range serverList.Items {
-		if serverList.Items[i].Spec.BasePath == basePath && serverList.Items[i].Status.Active {
-			candidates = append(candidates, serverList.Items[i])
+		server := &serverList.Items[i]
+		if !server.Status.Active {
+			continue
+		}
+		if server.Spec.BasePath == basePath {
+			candidates = append(candidates, *server)
+		} else if strings.EqualFold(server.Spec.BasePath, basePath) && caseConflict == nil {
+			caseConflict = server
 		}
 	}
 
 	if len(candidates) == 0 {
-		return false, nil, nil
+		// Return the case-conflict server (if any) so callers can surface a helpful error.
+		return false, caseConflict, nil
 	}
 
 	// Sort by CreationTimestamp ascending and return the oldest active one

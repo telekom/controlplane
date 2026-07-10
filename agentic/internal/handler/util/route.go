@@ -32,6 +32,7 @@ func CreateMcpRoute(
 	zone *adminv1.Zone,
 	isTargetOfProxy bool,
 	telecontextConsumer string,
+	crossZoneLmsIssuers []string,
 ) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -95,9 +96,15 @@ func CreateMcpRoute(
 			}
 		}
 
-		// Set trusted issuers from zone's IDP
+		// Set trusted issuers: the exposure zone's own IDP issuer plus any
+		// LMS issuers from cross-zone proxy gateways (mesh trust).
+		var trustedIssuers []string
 		if zone.Status.Links.Issuer != "" {
-			route.Spec.Security.TrustedIssuers = []string{zone.Status.Links.Issuer}
+			trustedIssuers = append(trustedIssuers, zone.Status.Links.Issuer)
+		}
+		trustedIssuers = append(trustedIssuers, crossZoneLmsIssuers...)
+		if len(trustedIssuers) > 0 {
+			route.Spec.Security.TrustedIssuers = trustedIssuers
 		}
 
 		// Apply transformation settings if provided

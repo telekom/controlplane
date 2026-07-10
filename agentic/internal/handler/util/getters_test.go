@@ -256,6 +256,33 @@ var _ = Describe("FindActiveMcpServer", func() {
 		Expect(found).To(BeFalse())
 	})
 
+	It("should return found=false and the conflicting server when a case-only mismatch exists", func() {
+		// Server is registered as /Mcp/Weather/V1 but caller asks for /mcp/weather/v1
+		conflict := makeReadyMcpServer("/Mcp/Weather/V1")
+		mockList([]agenticv1.McpServer{conflict})
+
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeFalse())
+		Expect(server).ToNot(BeNil())
+		Expect(server.Spec.BasePath).To(Equal("/Mcp/Weather/V1"))
+	})
+
+	It("should not treat case-only mismatches as a conflict when the server is inactive", func() {
+		inactive := agenticv1.McpServer{
+			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
+			Spec:       agenticv1.McpServerSpec{BasePath: "/Mcp/Weather/V1"},
+			Status:     agenticv1.McpServerStatus{Active: false},
+		}
+		mockList([]agenticv1.McpServer{inactive})
+
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeFalse())
+		// inactive servers are ignored — no conflict returned
+		Expect(server).To(BeNil())
+	})
+
 	It("should return BlockedError when active server is not ready", func() {
 		notReady := agenticv1.McpServer{
 			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},

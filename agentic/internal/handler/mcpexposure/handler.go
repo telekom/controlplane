@@ -32,11 +32,33 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	logger := log.FromContext(ctx)
 
 	// 1. Validate McpServer exists and is active
-	found, _, err := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
+	found, mcpServer, err := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return err
 	}
 	if !found {
+		// Check for case-only mismatch (e.g. /MyMcp vs /mymcp)
+		if mcpServer != nil {
+			msg := fmt.Sprintf("McpServer is registered but the case does not match (got=%q, found=%q). "+
+				"Please resolve the conflict by changing the BasePath of either the McpServer or the McpExposure.",
+				obj.Spec.BasePath, mcpServer.Spec.BasePath)
+			obj.SetCondition(condition.NewNotReadyCondition("McpServerCaseConflict", msg))
+			obj.SetCondition(condition.NewBlockedCondition(msg))
+			return nil
+		}
+
+		// McpServer is truly gone — clean up any previously created Routes
+		if obj.Status.Route != nil {
+			if cleanupErr := util.DeleteRouteIfExists(ctx, obj.Status.Route); cleanupErr != nil {
+				return errors.Wrap(cleanupErr, "failed to cleanup Route after McpServer not found")
+			}
+		}
+		for i := range obj.Status.ProxyRoutes {
+			if cleanupErr := util.DeleteRouteIfExists(ctx, &obj.Status.ProxyRoutes[i]); cleanupErr != nil {
+				return errors.Wrapf(cleanupErr, "failed to cleanup proxy Route after McpServer not found")
+			}
+		}
+
 		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
 			"No active McpServer found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
@@ -88,10 +110,16 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 		return errors.Wrap(err, "failed to find cross-zone MCP subscriptions")
 	}
 
+	var crossZoneLmsIssuers []string
 	for _, subscriberZoneRef := range crossZones {
 		subscriberZone, zoneErr := util.GetZone(ctx, subscriberZoneRef.K8s())
 		if zoneErr != nil {
 			return errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
+		}
+
+		// Collect LMS issuer so the real route trusts traffic forwarded by this proxy gateway
+		if subscriberZone.Status.Links.LmsIssuer != "" {
+			crossZoneLmsIssuers = append(crossZoneLmsIssuers, subscriberZone.Status.Links.LmsIssuer)
 		}
 
 		proxyRoute, routeErr := util.CreateMcpProxyRoute(ctx, obj.Spec.BasePath, subscriberZone, zone)
@@ -113,7 +141,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 
 	// 7. Create primary MCP route
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
-	route, err := util.CreateMcpRoute(ctx, obj, zone, isProxyTarget, telecontextConsumer)
+	route, err := util.CreateMcpRoute(ctx, obj, zone, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
 	if err != nil {
 		return errors.Wrap(err, "failed to create MCP Route")
 	}

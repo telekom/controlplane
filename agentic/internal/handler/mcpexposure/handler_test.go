@@ -9,8 +9,10 @@ import (
 	"fmt"
 
 	"github.com/stretchr/testify/mock"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -260,6 +262,42 @@ var _ = Describe("McpExposureHandler", func() {
 			Expect(readyCond.Reason).To(Equal("McpServerNotFound"))
 		})
 
+		It("should set Blocked and clean up Route when McpServer disappears after Route was created", func() {
+			// Simulate an exposure that already had a Route provisioned
+			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
+
+			mockListMcpServers([]agenticv1.McpServer{})
+
+			// Expect the stale Route to be deleted (NotFound is fine — already gone)
+			fakeClient.EXPECT().
+				Delete(ctx, mock.AnythingOfType("*v1.Route")).
+				Return(apierrors.NewNotFound(schema.GroupResource{Resource: "routes"}, "ai-gateway--mcp-weather-v1")).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			Expect(readyCond.Reason).To(Equal("McpServerNotFound"))
+		})
+
+		It("should set Blocked with case-conflict reason when McpServer exists under different case", func() {
+			// Server registered as /Mcp/Weather/V1 but exposure uses /mcp/weather/v1
+			conflictingServer := makeReadyMcpServer("/Mcp/Weather/V1")
+			mockListMcpServers([]agenticv1.McpServer{conflictingServer})
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(readyCond.Reason).To(Equal("McpServerCaseConflict"))
+			Expect(readyCond.Message).To(ContainSubstring("/mcp/weather/v1"))
+			Expect(readyCond.Message).To(ContainSubstring("/Mcp/Weather/V1"))
+		})
+
 		It("should return error when FindMcpExposures fails", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			mockListMcpServers([]agenticv1.McpServer{server})
@@ -446,7 +484,70 @@ var _ = Describe("McpExposureHandler", func() {
 			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(ContainElement("telecontext-app"))
 			Expect(obj.Status.Route).ToNot(BeNil())
 		})
-	})
+
+		It("should add cross-zone LMS issuer to TrustedIssuers on the real route", func() {
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			providerZone := makeReadyZoneWithAiGateway()
+			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
+
+			subscriberZone := makeReadyZoneWithAiGateway()
+			subscriberZone.Name = "subscriber-zone"
+			subscriberZone.Status.Links.LmsIssuer = "https://lms.subscriber.example.com"
+
+			approvedSub := agenticv1.McpSubscription{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "sub-1", Namespace: "default",
+				},
+				Spec: agenticv1.McpSubscriptionSpec{
+					BasePath: "/mcp/weather/v1",
+					Zone:     ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
+				},
+			}
+			meta.SetStatusCondition(&approvedSub.Status.Conditions, metav1.Condition{
+				Type: "ApprovalGranted", Status: metav1.ConditionTrue, Reason: "Approved",
+			})
+
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockGetZone(providerZone) // step 3 — provider zone
+			mockListMcpSubscriptions([]agenticv1.McpSubscription{approvedSub})
+
+			// GetZone for subscriber zone (in proxy route loop)
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "subscriber-zone", Namespace: "default"},
+					mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*adminv1.Zone) = *subscriberZone
+				}).
+				Return(nil).Once()
+
+			// proxy route CreateOrUpdate (in subscriber zone namespace)
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) { _ = mutate() }).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+
+			// real route CreateOrUpdate — capture to inspect TrustedIssuers
+			var capturedRoute gatewayv1.Route
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedRoute = *obj.(*gatewayv1.Route)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.subscriber.example.com"))
+			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://issuer.provider.example.com"))
+		})
+
+	}) // end Describe("CreateOrUpdate")
 
 	Describe("Delete", func() {
 		It("should skip Route deletion when another McpExposure exists", func() {
