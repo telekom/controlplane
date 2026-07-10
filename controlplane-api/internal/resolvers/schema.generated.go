@@ -5151,6 +5151,13 @@ func (ec *executionContext) marshalOApiExposureSecurity2githubᚗcomᚋtelekom�
 	return ec._ApiExposureSecurity(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionSecurity) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ApiSubscriptionSecurity(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null

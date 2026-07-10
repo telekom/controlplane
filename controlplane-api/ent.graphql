@@ -340,7 +340,7 @@ type ApiSubscription implements Node {
   name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
-  approvedScopes: [String!]!
+  security: ApiSubscriptionSecurity
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval

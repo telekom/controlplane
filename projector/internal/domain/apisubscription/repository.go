@@ -99,7 +99,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		SetNamespace(data.Meta.Namespace).
 		SetName(data.Meta.Name).
 		SetM2mAuthMethod(apisubscription.M2mAuthMethod(data.M2MAuthMethod)).
-		SetApprovedScopes(data.ApprovedScopes).
+		SetSecurity(data.Security).
 		SetStatusPhase(apisubscription.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
 		SetOwnerID(ownerAppID).
@@ -119,11 +119,16 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	// UpdateNewValues() only generates SET clauses for columns present in the
 	// INSERT, so the old target FK value would be preserved instead of being
 	// cleared to NULL. We explicitly clear it here.
-	if targetExposureID == nil {
-		if err := r.client.ApiSubscription.UpdateOneID(subscriptionID).
-			ClearTarget().
-			Exec(ctx); err != nil {
-			return fmt.Errorf("clear target FK for api_subscription %d (owner %q, basePath %q): %w",
+	if targetExposureID == nil || data.Security == nil {
+		update := r.client.ApiSubscription.UpdateOneID(subscriptionID)
+		if targetExposureID == nil {
+			update.ClearTarget()
+		}
+		if data.Security == nil {
+			update.ClearSecurity()
+		}
+		if err := update.Exec(ctx); err != nil {
+			return fmt.Errorf("clear nullable fields for api_subscription %d (owner %q, basePath %q): %w",
 				subscriptionID, data.OwnerAppName, data.BasePath, err)
 		}
 	}

@@ -151,7 +151,6 @@ type ComplexityRoot struct {
 	ApiSubscription struct {
 		Approval         func(childComplexity int) int
 		ApprovalRequests func(childComplexity int) int
-		ApprovedScopes   func(childComplexity int) int
 		BasePath         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		Environment      func(childComplexity int) int
@@ -162,6 +161,7 @@ type ComplexityRoot struct {
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		Security         func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
 		Target           func(childComplexity int) int
@@ -1131,13 +1131,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscription.ApprovalRequests(childComplexity), true
 
-	case "ApiSubscription.approvedScopes":
-		if e.ComplexityRoot.ApiSubscription.ApprovedScopes == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiSubscription.ApprovedScopes(childComplexity), true
-
 	case "ApiSubscription.basePath":
 		if e.ComplexityRoot.ApiSubscription.BasePath == nil {
 			break
@@ -1207,6 +1200,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Owner(childComplexity), true
+
+	case "ApiSubscription.security":
+		if e.ComplexityRoot.ApiSubscription.Security == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.Security(childComplexity), true
 
 	case "ApiSubscription.statusMessage":
 		if e.ComplexityRoot.ApiSubscription.StatusMessage == nil {
@@ -4088,7 +4088,7 @@ type ApiSubscription implements Node {
   name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
-  approvedScopes: [String!]!
+  security: ApiSubscriptionSecurity
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
@@ -8014,8 +8014,8 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 	case "m2mAuthMethod":
 		return ec.fieldContext_ApiSubscription_m2mAuthMethod(ctx, field)
-	case "approvedScopes":
-		return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
+	case "security":
+		return ec.fieldContext_ApiSubscription_security(ctx, field)
 	case "owner":
 		return ec.fieldContext_ApiSubscription_owner(ctx, field)
 	case "failoverZones":
@@ -8068,6 +8068,14 @@ func (ec *executionContext) childFields_ApiSubscriptionInfo(ctx context.Context,
 		return ec.fieldContext_ApiSubscriptionInfo_ownerTeam(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiSubscriptionSecurity(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "m2m":
+		return ec.fieldContext_ApiSubscriptionSecurity_m2m(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionSecurity", field.Name)
 }
 
 func (ec *executionContext) childFields_Application(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

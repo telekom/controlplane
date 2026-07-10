@@ -134,11 +134,10 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Name:        "my-subscription",
 				Environment: "prod",
 			},
-			StatusPhase:    "READY",
-			StatusMessage:  "subscription active",
-			BasePath:       "/api/v1/users",
-			M2MAuthMethod:  "OAUTH2_CLIENT",
-			ApprovedScopes: []string{"read", "write"},
+			StatusPhase:   "READY",
+			StatusMessage: "subscription active",
+			BasePath:      "/api/v1/users",
+			M2MAuthMethod: "OAUTH2_CLIENT",
 			Security: &model.ApiSubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Client: &model.OAuth2ClientCredentials{
@@ -170,7 +169,6 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.BasePath).To(Equal("/api/v1/users"))
 			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{"read", "write"}))
 			Expect(sub.StatusPhase.String()).To(Equal("READY"))
 			Expect(*sub.StatusMessage).To(Equal("subscription active"))
 
@@ -289,7 +287,6 @@ var _ = Describe("ApiSubscription Repository", func() {
 			data.StatusPhase = "ERROR"
 			data.StatusMessage = "failed to connect"
 			data.M2MAuthMethod = "BASIC_AUTH"
-			data.ApprovedScopes = []string{}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			sub, err := client.ApiSubscription.Query().
@@ -299,7 +296,6 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(sub.StatusPhase.String()).To(Equal("ERROR"))
 			Expect(*sub.StatusMessage).To(Equal("failed to connect"))
 			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{}))
 		})
 
 		It("should update security-derived fields on upsert conflict", func() {
@@ -312,11 +308,9 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{"read", "write"}))
 
 			// Change to BASIC_AUTH — align Security accordingly.
 			data.M2MAuthMethod = "BASIC_AUTH"
-			data.ApprovedScopes = []string{"admin"}
 			data.Security = &model.ApiSubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Basic: &model.BasicAuthCredentials{
@@ -333,11 +327,9 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{"admin"}))
 
 			// Clear security — set to NONE with nil Security.
 			data.M2MAuthMethod = "NONE"
-			data.ApprovedScopes = []string{}
 			data.Security = nil
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -346,13 +338,11 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.M2mAuthMethod.String()).To(Equal("NONE"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{}))
 		})
 
 		It("should update from BASIC_AUTH to OAUTH2_CLIENT on upsert conflict", func() {
 			data := baseData()
 			data.M2MAuthMethod = "BASIC_AUTH"
-			data.ApprovedScopes = []string{"read"}
 			data.Security = &model.ApiSubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Basic: &model.BasicAuthCredentials{
@@ -369,11 +359,9 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{"read"}))
 
 			// Switch to OAUTH2_CLIENT.
 			data.M2MAuthMethod = "OAUTH2_CLIENT"
-			data.ApprovedScopes = []string{"read", "write"}
 			data.Security = &model.ApiSubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Client: &model.OAuth2ClientCredentials{
@@ -389,7 +377,6 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{"read", "write"}))
 		})
 
 		It("should maintain meta cache entry", func() {

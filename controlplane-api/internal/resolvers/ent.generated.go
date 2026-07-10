@@ -2445,27 +2445,36 @@ func (ec *executionContext) fieldContext_ApiSubscription_m2mAuthMethod(_ context
 	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type ApiSubscriptionM2mAuthMethod does not have child fields"))
 }
 
-func (ec *executionContext) _ApiSubscription_approvedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiSubscription_security(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
+			return ec.fieldContext_ApiSubscription_security(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.ApprovedScopes, nil
+			return obj.Security, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
-			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiSubscriptionSecurity) graphql.Marshaler {
+			return ec.marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionSecurity(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
-func (ec *executionContext) fieldContext_ApiSubscription_approvedScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+func (ec *executionContext) fieldContext_ApiSubscription_security(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApiSubscriptionSecurity(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _ApiSubscription_owner(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
@@ -20198,11 +20207,8 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "approvedScopes":
-			out.Values[i] = ec._ApiSubscription_approvedScopes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
+		case "security":
+			out.Values[i] = ec._ApiSubscription_security(ctx, field, obj)
 		case "owner":
 			field := field
 

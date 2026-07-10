@@ -34,7 +34,6 @@ type APISubscriptionData struct {
 	StatusMessage  string
 	BasePath       string
 	M2MAuthMethod  string // "NONE", "OAUTH2_CLIENT", "BASIC_AUTH", "SCOPES_ONLY"
-	ApprovedScopes []string
 	Security       *model.ApiSubscriptionSecurity
 	OwnerAppName   string // resolved to owner Application FK (required)
 	OwnerTeamName  string // used to resolve owner Application FK

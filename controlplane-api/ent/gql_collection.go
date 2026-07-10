@@ -462,10 +462,10 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, apisubscription.FieldM2mAuthMethod)
 				fieldSeen[apisubscription.FieldM2mAuthMethod] = struct{}{}
 			}
-		case "approvedScopes":
-			if _, ok := fieldSeen[apisubscription.FieldApprovedScopes]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldApprovedScopes)
-				fieldSeen[apisubscription.FieldApprovedScopes] = struct{}{}
+		case "security":
+			if _, ok := fieldSeen[apisubscription.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldSecurity)
+				fieldSeen[apisubscription.FieldSecurity] = struct{}{}
 			}
 		case "id":
 		case "__typename":
