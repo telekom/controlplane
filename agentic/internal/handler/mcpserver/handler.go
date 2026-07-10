@@ -5,17 +5,20 @@
 package mcpserver
 
 import (
+	"cmp"
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 )
 
@@ -24,6 +27,7 @@ var _ handler.Handler[*agenticv1.McpServer] = &McpServerHandler{}
 type McpServerHandler struct{}
 
 func (h *McpServerHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.McpServer) error {
+	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// List all McpServers with the same basePath
@@ -42,27 +46,33 @@ func (h *McpServerHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Mc
 		}
 	}
 
-	// Determine active: oldest-wins semantics
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].CreationTimestamp.Before(&candidates[j].CreationTimestamp)
+	// Determine active: oldest-wins semantics.
+	// Use SortStableFunc with namespace as tiebreaker for equal timestamps,
+	// ensuring deterministic ordering even in the (unlikely) same-millisecond case.
+	slices.SortStableFunc(candidates, func(a, b agenticv1.McpServer) int {
+		c := a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
+		if c == 0 {
+			return cmp.Compare(a.GetNamespace(), b.GetNamespace())
+		}
+		return c
 	})
 
-	if len(candidates) > 0 && candidates[0].UID != obj.UID {
+	if ctypes.Equals(&candidates[0], obj) {
+		// This server is the active one
+		obj.Status.Active = true
+		obj.SetCondition(condition.NewReadyCondition("McpServerActive", "McpServer is active"))
+		obj.SetCondition(condition.NewDoneProcessingCondition("McpServer is processed"))
+		logger.Info("McpServer is processed")
+	} else {
 		// Another server already owns this basePath
 		obj.Status.Active = false
-		msg := fmt.Sprintf("BasePath %q is already registered by another McpServer.", obj.Spec.BasePath)
-		obj.SetCondition(condition.NewNotReadyCondition("McpServerAlreadyExists", msg))
-		obj.SetCondition(condition.NewBlockedCondition(msg + " McpServer will be automatically processed when the existing one is deleted"))
-		return nil
+		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotActive", "McpServer is not active"))
+		obj.SetCondition(condition.NewBlockedCondition(
+			fmt.Sprintf("McpServer is blocked, another McpServer with the same BasePath %q is active. "+
+				"It will be automatically processed, if the other McpServer will be deleted.", obj.Spec.BasePath),
+		))
+		logger.Info("McpServer is blocked, another McpServer with the same BasePath is already active.")
 	}
-
-	// This server is the active one
-	obj.Status.Active = true
-
-	obj.SetCondition(condition.NewReadyCondition("McpServerRegistered",
-		"McpServer has been registered"))
-	obj.SetCondition(condition.NewDoneProcessingCondition(
-		"McpServer has been registered"))
 
 	return nil
 }

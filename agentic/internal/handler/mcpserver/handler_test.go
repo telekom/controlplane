@@ -117,7 +117,7 @@ var _ = Describe("McpServerHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
 			Expect(readyCond).NotTo(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("McpServerAlreadyExists"))
+			Expect(readyCond.Reason).To(Equal("McpServerNotActive"))
 		})
 
 		It("should set Active=true when it is the oldest McpServer for basePath", func() {
