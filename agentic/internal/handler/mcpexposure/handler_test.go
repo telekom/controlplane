@@ -485,7 +485,7 @@ var _ = Describe("McpExposureHandler", func() {
 			Expect(obj.Status.Route).ToNot(BeNil())
 		})
 
-		It("should add cross-zone LMS issuer to TrustedIssuers on the real route", func() {
+		It("should add cross-zone LMS issuer to TrustedIssuers on the real route (no local subs — zone issuer excluded)", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			providerZone := makeReadyZoneWithAiGateway()
 			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
@@ -495,9 +495,7 @@ var _ = Describe("McpExposureHandler", func() {
 			subscriberZone.Status.Links.LmsIssuer = "https://lms.subscriber.example.com"
 
 			approvedSub := agenticv1.McpSubscription{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "sub-1", Namespace: "default",
-				},
+				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
 				Spec: agenticv1.McpSubscriptionSpec{
 					BasePath: "/mcp/weather/v1",
 					Zone:     ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
@@ -509,10 +507,9 @@ var _ = Describe("McpExposureHandler", func() {
 
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListMcpExposures([]agenticv1.McpExposure{})
-			mockGetZone(providerZone) // step 3 — provider zone
+			mockGetZone(providerZone)
 			mockListMcpSubscriptions([]agenticv1.McpSubscription{approvedSub})
 
-			// GetZone for subscriber zone (in proxy route loop)
 			fakeClient.EXPECT().
 				Get(ctx, k8stypes.NamespacedName{Name: "subscriber-zone", Namespace: "default"},
 					mock.AnythingOfType("*v1.Zone")).
@@ -521,13 +518,11 @@ var _ = Describe("McpExposureHandler", func() {
 				}).
 				Return(nil).Once()
 
-			// proxy route CreateOrUpdate (in subscriber zone namespace)
 			fakeClient.EXPECT().
 				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 				Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) { _ = mutate() }).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 
-			// real route CreateOrUpdate — capture to inspect TrustedIssuers
 			var capturedRoute gatewayv1.Route
 			fakeClient.EXPECT().
 				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
@@ -543,8 +538,10 @@ var _ = Describe("McpExposureHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
+			// LMS issuer from the proxy zone IS trusted
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.subscriber.example.com"))
-			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://issuer.provider.example.com"))
+			// No local subs → the provider zone's own IDP issuer is NOT added
+			Expect(capturedRoute.Spec.Security.TrustedIssuers).NotTo(ContainElement("https://issuer.provider.example.com"))
 		})
 
 	}) // end Describe("CreateOrUpdate")

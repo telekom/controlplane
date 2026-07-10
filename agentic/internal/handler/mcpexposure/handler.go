@@ -36,6 +36,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	if err != nil {
 		return err
 	}
+	obj.SetCondition(NewMcpServerCondition(found))
 	if !found {
 		// Check for case-only mismatch (e.g. /MyMcp vs /mymcp)
 		if mcpServer != nil {
@@ -79,6 +80,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 
 	if existingFound && existingExposure.UID != obj.UID {
 		obj.Status.Active = false
+		obj.SetCondition(NewMcpExposureActiveCondition(false))
 		msg := fmt.Sprintf("BasePath %q is already exposed by team %q.", obj.Spec.BasePath, existingExposure.Spec.Provider.Namespace)
 		obj.SetCondition(condition.NewNotReadyCondition("McpExposureAlreadyExists", msg))
 		obj.SetCondition(condition.NewBlockedCondition(msg + " McpExposure will be automatically processed when the existing one is deleted"))
@@ -87,6 +89,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 
 	// This exposure is active
 	obj.Status.Active = true
+	obj.SetCondition(NewMcpExposureActiveCondition(true))
 
 	// 3. Get and validate zone
 	zone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
@@ -105,7 +108,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil
 
-	crossZones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, obj.Spec.BasePath, obj.Spec.Zone.Name)
+	crossZones, hasLocalSubs, err := util.FindCrossZoneMcpSubscriptionZones(ctx, obj.Spec.BasePath, obj.Spec.Zone.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to find cross-zone MCP subscriptions")
 	}
@@ -141,7 +144,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 
 	// 7. Create primary MCP route
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
-	route, err := util.CreateMcpRoute(ctx, obj, zone, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
+	route, err := util.CreateMcpRoute(ctx, obj, zone, hasLocalSubs, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
 	if err != nil {
 		return errors.Wrap(err, "failed to create MCP Route")
 	}

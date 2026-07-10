@@ -181,8 +181,9 @@ func AnyOtherMcpExposureExists(ctx context.Context, basePath string, excludeUID 
 }
 
 // FindCrossZoneMcpSubscriptionZones lists all McpSubscriptions for a given basePath
-// and returns unique zone ObjectRefs where approved cross-zone subscriptions exist.
-func FindCrossZoneMcpSubscriptionZones(ctx context.Context, basePath, exposureZoneName string) ([]ctypes.ObjectRef, error) {
+// and returns unique zone ObjectRefs where approved cross-zone subscriptions exist,
+// plus a boolean indicating whether any approved same-zone subscriptions also exist.
+func FindCrossZoneMcpSubscriptionZones(ctx context.Context, basePath, exposureZoneName string) (zones []ctypes.ObjectRef, hasLocalSubs bool, err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -190,11 +191,10 @@ func FindCrossZoneMcpSubscriptionZones(ctx context.Context, basePath, exposureZo
 	if err := c.List(ctx, subList, client.MatchingLabels{
 		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to list McpSubscriptions for basePath %q", basePath)
+		return nil, false, errors.Wrapf(err, "failed to list McpSubscriptions for basePath %q", basePath)
 	}
 
 	seen := make(map[string]bool)
-	var zones []ctypes.ObjectRef
 	for i := range subList.Items {
 		sub := &subList.Items[i]
 		// Skip subscriptions being deleted
@@ -204,15 +204,16 @@ func FindCrossZoneMcpSubscriptionZones(ctx context.Context, basePath, exposureZo
 		if sub.Spec.BasePath != basePath {
 			continue
 		}
-		// Skip same-zone subscriptions
-		if sub.Spec.Zone.Name == exposureZoneName {
-			continue
-		}
 
-		// Only include approved subscriptions
+		// Only consider approved subscriptions
 		approvalCond := meta.FindStatusCondition(sub.GetConditions(), "ApprovalGranted")
 		if approvalCond == nil || approvalCond.Status != metav1.ConditionTrue {
 			logger.Info("Skipping MCP subscription with missing approval", "subscription", sub.Name, "zone", sub.Spec.Zone.Name)
+			continue
+		}
+
+		if sub.Spec.Zone.Name == exposureZoneName {
+			hasLocalSubs = true
 			continue
 		}
 
@@ -223,5 +224,5 @@ func FindCrossZoneMcpSubscriptionZones(ctx context.Context, basePath, exposureZo
 		}
 	}
 
-	return zones, nil
+	return zones, hasLocalSubs, nil
 }

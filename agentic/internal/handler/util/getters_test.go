@@ -467,7 +467,7 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 			List(ctx, &agenticv1.McpSubscriptionList{}, mock.Anything).
 			Return(fmt.Errorf("api error")).Once()
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).To(HaveOccurred())
 		Expect(zones).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("failed to list McpSubscriptions"))
@@ -476,7 +476,7 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 	It("should return empty when no subscriptions exist", func() {
 		mockList([]agenticv1.McpSubscription{})
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
@@ -485,7 +485,7 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		sameZone := approvedSub("sub-same", "/mcp/weather/v1", "zone-provider")
 		mockList([]agenticv1.McpSubscription{sameZone})
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
@@ -494,7 +494,7 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		sub := unapprovedSub("sub-pending", "/mcp/weather/v1", "zone-subscriber")
 		mockList([]agenticv1.McpSubscription{sub})
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
@@ -503,7 +503,7 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		sub := approvedSub("sub-1", "/mcp/weather/v1", "zone-subscriber")
 		mockList([]agenticv1.McpSubscription{sub})
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(HaveLen(1))
 		Expect(zones[0].Name).To(Equal("zone-subscriber"))
@@ -514,7 +514,7 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		sub2 := approvedSub("sub-2", "/mcp/weather/v1", "zone-subscriber")
 		mockList([]agenticv1.McpSubscription{sub1, sub2})
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(HaveLen(1))
 		Expect(zones[0].Name).To(Equal("zone-subscriber"))
@@ -525,7 +525,7 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		sub2 := approvedSub("sub-2", "/mcp/weather/v1", "zone-b")
 		mockList([]agenticv1.McpSubscription{sub1, sub2})
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(HaveLen(2))
 		Expect([]string{zones[0].Name, zones[1].Name}).To(ConsistOf("zone-a", "zone-b"))
@@ -535,7 +535,7 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		otherPath := approvedSub("sub-other", "/mcp/other/v1", "zone-subscriber")
 		mockList([]agenticv1.McpSubscription{otherPath})
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
@@ -547,8 +547,30 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		deleting.Finalizers = []string{"some-finalizer"}
 		mockList([]agenticv1.McpSubscription{deleting})
 
-		zones, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
+	})
+
+	It("should return hasLocalSubs=true when an approved same-zone subscription exists", func() {
+		sameZone := approvedSub("sub-local", "/mcp/weather/v1", "zone-provider")
+		crossZone := approvedSub("sub-cross", "/mcp/weather/v1", "zone-subscriber")
+		mockList([]agenticv1.McpSubscription{sameZone, crossZone})
+
+		zones, hasLocalSubs, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(hasLocalSubs).To(BeTrue())
+		// same-zone sub not included in cross-zone zones list
+		Expect(zones).To(HaveLen(1))
+		Expect(zones[0].Name).To(Equal("zone-subscriber"))
+	})
+
+	It("should return hasLocalSubs=false when only cross-zone subscriptions exist", func() {
+		crossZone := approvedSub("sub-cross", "/mcp/weather/v1", "zone-subscriber")
+		mockList([]agenticv1.McpSubscription{crossZone})
+
+		_, hasLocalSubs, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(hasLocalSubs).To(BeFalse())
 	})
 })

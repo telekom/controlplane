@@ -30,6 +30,7 @@ func CreateMcpRoute(
 	ctx context.Context,
 	exposure *agenticv1.McpExposure,
 	zone *adminv1.Zone,
+	hasLocalSubs bool,
 	isTargetOfProxy bool,
 	telecontextConsumer string,
 	crossZoneLmsIssuers []string,
@@ -96,10 +97,11 @@ func CreateMcpRoute(
 			}
 		}
 
-		// Set trusted issuers: the exposure zone's own IDP issuer plus any
-		// LMS issuers from cross-zone proxy gateways (mesh trust).
+		// Set trusted issuers: only add the exposure zone's own IDP issuer when
+		// there are local subscribers (direct callers). Cross-zone proxy gateways
+		// are trusted via their LMS issuers instead.
 		var trustedIssuers []string
-		if zone.Status.Links.Issuer != "" {
+		if hasLocalSubs && zone.Status.Links.Issuer != "" {
 			trustedIssuers = append(trustedIssuers, zone.Status.Links.Issuer)
 		}
 		trustedIssuers = append(trustedIssuers, crossZoneLmsIssuers...)
