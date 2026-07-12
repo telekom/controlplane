@@ -68,22 +68,33 @@ Standard exposure. The AI Gateway Route is created with normal access control. C
 
 Used for MCP servers that should be accessible by the **Telecontext platform consumer** without going through the standard subscription/approval flow.
 
-**How it works:** When `spec.variant: TELECONTEXTMCP` is set on an McpExposure, the operator reads a platform-level consumer name from the operator configuration (`TelecontextConsumerName`) and appends it to the AI Gateway Route's `spec.security.defaultConsumers`. The AI Gateway treats consumers in `defaultConsumers` as pre-authorized — they bypass the normal ConsumeRoute-based access control entirely.
+**How it works:** When `spec.variant: TELECONTEXTMCP` is set on an McpExposure, the operator resolves the Telecontext Application using a platform-level configuration (`AGENTIC_TELECONTEXT_APPLICATION_ID`, format: `group--team--appName`). From this, the operator:
 
-This is the same mechanism used for cross-zone meshing (`mesh-client` is also in `defaultConsumers`), but for a named platform consumer instead of the gateway mesh identity.
+1. **Looks up the Application CR** to discover its zone and derives the consumer name (`team--appName`)
+2. **Adds the consumer** to the AI Gateway Route's `spec.security.defaultConsumers`, giving the Telecontext application pre-authorized access without a ConsumeRoute or approval flow
+3. **Creates a proxy route** on the Telecontext Application's zone if it differs from the exposure zone, ensuring cross-zone reachability even when no regular subscribers exist on that zone
+4. **Trusts the Telecontext zone's LMS issuer** on the primary route, so mesh-forwarded traffic from the Telecontext zone is accepted
+
+This mirrors how the legacy Java controlplane handled Telecontext integration: iterating all zones and creating proxy routes where the Telecontext Application is located, plus granting access via a dedicated RoutePermission (now replaced by the `DefaultConsumers` mechanism).
 
 **Why not a ConsumeRoute?** A `ConsumeRoute` is namespace-scoped and goes through the approval flow. `DefaultConsumers` is a gateway-level bypass that is more appropriate for a trusted platform component that needs seamless, always-on access to TeleMCP servers across the whole platform.
 
 ```
 McpExposure (variant: TELECONTEXTMCP)
     │
-    └──▶ AI Gateway Route
-              └──▶ spec.security.defaultConsumers:
-                       - mesh-client          (cross-zone proxy access)
-                       - telecontext-app      (Telecontext platform consumer)
+    ├──▶ Resolve Application (from AGENTIC_TELECONTEXT_APPLICATION_ID)
+    │        └──▶ Get zone + derive consumer name
+    │
+    ├──▶ AI Gateway Route (primary, on exposure zone)
+    │        └──▶ spec.security.defaultConsumers:
+    │                 - gateway              (cross-zone proxy access)
+    │                 - telecontext--tcapp   (Telecontext platform consumer)
+    │
+    └──▶ AI Gateway Route (proxy, on Telecontext zone — if different)
+             └──▶ upstream = exposure zone's AI Gateway
 ```
 
-The `TelecontextConsumerName` value is injected at operator startup via environment variable and must be configured for zones that support the `TELECONTEXTMCP` variant.
+The `AGENTIC_TELECONTEXT_APPLICATION_ID` value is injected at operator startup via environment variable and must be configured for environments that support the `TELECONTEXTMCP` variant.
 
 ## Domain Interactions
 
