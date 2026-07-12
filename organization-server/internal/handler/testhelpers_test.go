@@ -69,14 +69,14 @@ func newTestApp(graphqlURL, roverURL string) *fiber.App {
 	})
 
 	cpapiClient := client.NewCPAPIClient(graphqlURL, nil, "")
-	roverClient := client.NewRoverClient(roverURL, "test", "tardis")
-	h := handler.New(cpapiClient, roverClient, "test", logr.Discard())
+	roverClient := client.NewRoverClient(roverURL, "tardis")
+	h := handler.New(cpapiClient, roverClient, logr.Discard())
 
 	// In tests: mock JWT (no trusted issuers) + identity extraction + permissive team auth
 	teamAuth := mw.TeamAuthorization(logr.Discard())
 	api := app.Group("/organization/v1",
 		mw.JWTValidation(logr.Discard(), nil),
-		mw.IdentityExtraction(logr.Discard()),
+		mw.IdentityExtraction(logr.Discard(), "test"),
 		mw.Obfuscate(),
 	)
 	h.RegisterRoutes(api, teamAuth)
@@ -86,8 +86,6 @@ func newTestApp(graphqlURL, roverURL string) *fiber.App {
 
 // makeToken creates a mock JWT (unsigned) with the given claims for testing.
 // Uses the clientId format expected by IdentityExtraction: "group--team--user"
-//
-//nolint:unparam // group is always "eni" in current tests but kept as parameter for flexibility
 func makeToken(group, team string, scopes []string) string {
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
 	claims := map[string]any{

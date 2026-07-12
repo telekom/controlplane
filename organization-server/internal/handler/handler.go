@@ -14,19 +14,17 @@ import (
 
 // Handler groups all endpoint handlers for the organization facade.
 type Handler struct {
-	cpapi       graphql.Client
-	rover       *client.RoverClient
-	environment string
-	log         logr.Logger
+	cpapi graphql.Client
+	rover *client.RoverClient
+	log   logr.Logger
 }
 
 // New creates a new Handler with the given upstream clients.
-func New(cpapi graphql.Client, rover *client.RoverClient, environment string, log logr.Logger) *Handler {
+func New(cpapi graphql.Client, rover *client.RoverClient, log logr.Logger) *Handler {
 	return &Handler{
-		cpapi:       cpapi,
-		rover:       rover,
-		environment: environment,
-		log:         log,
+		cpapi: cpapi,
+		rover: rover,
+		log:   log,
 	}
 }
 

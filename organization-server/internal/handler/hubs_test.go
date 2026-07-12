@@ -146,6 +146,13 @@ var _ = Describe("Hub Handlers", func() {
 			resp, err := app.Test(req, -1)
 			expectStatus(resp, err, http.StatusUnauthorized)
 		})
+
+		It("should reject cross-hub access for non-admin tokens", func() {
+			otherHubToken := makeToken("other-hub", "myteam", []string{"tardis:team:all"})
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni", http.NoBody)
+			resp, err := executeRequest(app, req, otherHubToken)
+			expectStatus(resp, err, http.StatusForbidden)
+		})
 	})
 
 	Describe("Obfuscation", func() {

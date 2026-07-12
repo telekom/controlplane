@@ -24,9 +24,10 @@ const (
 
 // ConsumerIdentity represents the caller's identity extracted from their JWT.
 type ConsumerIdentity struct {
-	Group  string
-	Team   string
-	Scopes []string
+	Group       string
+	Team        string
+	Environment string
+	Scopes      []string
 }
 
 // ConsumerIdentityFromContext retrieves the ConsumerIdentity stored in the request context.
@@ -73,7 +74,9 @@ func JWTValidation(log logr.Logger, trustedIssuers []string) fiber.Handler {
 // the validated JWT token's claims. Must run after JWTValidation.
 //
 // It reads clientId (format: "group--team--user") and scope/scopes claims.
-func IdentityExtraction(log logr.Logger) fiber.Handler {
+// Environment is derived from the issuer's realm name; fallbackEnv is used
+// in mock mode when no issuer is present.
+func IdentityExtraction(log logr.Logger, fallbackEnv string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user, ok := c.Locals("user").(*jwt.Token)
 		if !ok || user == nil {
@@ -87,7 +90,7 @@ func IdentityExtraction(log logr.Logger) fiber.Handler {
 			return c.Status(p.Code()).JSON(p, "application/problem+json")
 		}
 
-		identity, err := extractIdentity(claims)
+		identity, err := extractIdentity(claims, fallbackEnv)
 		if err != nil {
 			log.V(1).Info("Failed to extract identity from token", "error", err)
 			p := problems.Unauthorized("Unauthorized", "Unable to extract identity from token")
@@ -101,7 +104,8 @@ func IdentityExtraction(log logr.Logger) fiber.Handler {
 
 // extractIdentity parses the ConsumerIdentity from JWT claims.
 // clientId format: "group--team--user" (e.g. "eni--hyper--team-user")
-func extractIdentity(claims jwt.MapClaims) (*ConsumerIdentity, error) {
+// Environment is derived from the issuer's realm name (e.g. ".../realms/team-controlplane" → "controlplane").
+func extractIdentity(claims jwt.MapClaims, fallbackEnv string) (*ConsumerIdentity, error) {
 	clientID, ok := claims["clientId"].(string)
 	if !ok || clientID == "" {
 		// Fallback: some issuers use "azp" (authorized party)
@@ -130,22 +134,53 @@ func extractIdentity(claims jwt.MapClaims) (*ConsumerIdentity, error) {
 		scopes = strings.Fields(s)
 	}
 
+	// Derive environment from issuer realm name, fall back to config.
+	env := extractEnvironmentFromIssuer(claims)
+	if env == "" {
+		env = fallbackEnv
+	}
+
 	return &ConsumerIdentity{
-		Group:  group,
-		Team:   team,
-		Scopes: scopes,
+		Group:       group,
+		Team:        team,
+		Environment: env,
+		Scopes:      scopes,
 	}, nil
+}
+
+// extractEnvironmentFromIssuer derives the environment from the token's issuer URL.
+// Expected format: ".../realms/team-<environment>" → returns "<environment>".
+// Returns empty string if the issuer doesn't match the expected pattern.
+func extractEnvironmentFromIssuer(claims jwt.MapClaims) string {
+	iss, ok := claims["iss"].(string)
+	if !ok || iss == "" {
+		return ""
+	}
+
+	// Issuer format: https://keycloak.example.com/auth/realms/team-controlplane
+	const realmPrefix = "realms/team-"
+	idx := strings.LastIndex(iss, realmPrefix)
+	if idx < 0 {
+		return ""
+	}
+	return iss[idx+len(realmPrefix):]
 }
 
 // TeamAuthorization creates a middleware that verifies the caller's identity
 // matches the team they're trying to access (from :hub and :team path params).
 // This prevents cross-team access (e.g. team A accessing team B's data).
+// Admin-scoped tokens bypass this check entirely.
 func TeamAuthorization(log logr.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		identity := ConsumerIdentityFromContext(c)
 		if identity == nil {
 			p := problems.Forbidden("Forbidden", "No identity in context")
 			return c.Status(p.Code()).JSON(p, "application/problem+json")
+		}
+
+		// Admin tokens can access any resource
+		if isAdmin(identity.Scopes) {
+			return c.Next()
 		}
 
 		hub := c.Params("hub")
@@ -173,4 +208,15 @@ func TeamAuthorization(log logr.Logger) fiber.Handler {
 
 		return c.Next()
 	}
+}
+
+// isAdmin returns true if any scope matches the admin pattern (<prefix>:admin:<access>).
+func isAdmin(scopes []string) bool {
+	for _, s := range scopes {
+		parts := strings.Split(s, ":")
+		if len(parts) >= 2 && parts[len(parts)-2] == "admin" {
+			return true
+		}
+	}
+	return false
 }

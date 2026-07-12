@@ -20,18 +20,15 @@ import (
 // rather than forwarding external tokens.
 type RoverClient struct {
 	baseURL     string
-	environment string
 	scopePrefix string
 	httpClient  *http.Client
 }
 
 // NewRoverClient creates a new rover-server client.
-// environment is the env claim for mock tokens (e.g. "controlplane").
 // scopePrefix is the scope prefix rover-server expects (e.g. "tardis").
-func NewRoverClient(baseURL, environment, scopePrefix string) *RoverClient {
+func NewRoverClient(baseURL, scopePrefix string) *RoverClient {
 	return &RoverClient{
 		baseURL:     baseURL,
-		environment: environment,
 		scopePrefix: scopePrefix,
 		httpClient:  &http.Client{Timeout: 10 * time.Second},
 	}
@@ -53,8 +50,8 @@ type ResourceListResponse struct {
 
 // GetResources calls GET /resources on rover-server for a specific team.
 // It constructs a mock admin token and the appropriate prefix from the team identity.
-func (r *RoverClient) GetResources(ctx context.Context, group, team string) (*ResourceListResponse, error) {
-	prefix := fmt.Sprintf("%s--%s--%s/", r.environment, group, team)
+func (r *RoverClient) GetResources(ctx context.Context, environment, group, team string) (*ResourceListResponse, error) {
+	prefix := fmt.Sprintf("%s--%s--%s/", environment, group, team)
 	url := fmt.Sprintf("%s/resources?prefix=%s", r.baseURL, prefix)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
@@ -62,8 +59,9 @@ func (r *RoverClient) GetResources(ctx context.Context, group, team string) (*Re
 		return nil, fmt.Errorf("building request: %w", err)
 	}
 
-	token := mock.NewMockAccessToken(r.environment, "org-server", "service", []string{r.scopePrefix + ":admin:all"})
+	token := mock.NewMockAccessToken(environment, "org-server", "service", []string{r.scopePrefix + ":admin:all"})
 	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json")
 
 	resp, err := r.httpClient.Do(req)
 	if err != nil {

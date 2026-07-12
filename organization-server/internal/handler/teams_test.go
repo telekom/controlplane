@@ -178,6 +178,14 @@ var _ = Describe("Team Handlers", func() {
 			Expect(result["name"]).To(Equal("hyperion"))
 			Expect(result).NotTo(HaveKey("teamToken"))
 		})
+
+		It("should allow admin token from a different hub", func() {
+			crossHubAdmin := makeToken("platform", "service", []string{"tardis:admin:all"})
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
+			resp, err := executeRequest(app, req, crossHubAdmin)
+			result := expectJSON(resp, err)
+			Expect(result["name"]).To(Equal("hyperion"))
+		})
 	})
 
 	Describe("POST /organization/v1/hubs/:hub/teams", func() {
@@ -238,6 +246,22 @@ var _ = Describe("Team Handlers", func() {
 			resp, err := executeRequest(app, req, adminToken)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+	})
+
+	Describe("Authorization", func() {
+		It("should reject cross-team access for non-admin tokens", func() {
+			teamToken := makeToken("eni", "other-team", []string{"tardis:team:all"})
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
+			resp, err := executeRequest(app, req, teamToken)
+			expectStatus(resp, err, http.StatusForbidden)
+		})
+
+		It("should reject cross-hub access for non-admin tokens", func() {
+			otherHubToken := makeToken("other-hub", "hyperion", []string{"tardis:team:all"})
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
+			resp, err := executeRequest(app, req, otherHubToken)
+			expectStatus(resp, err, http.StatusForbidden)
 		})
 	})
 })
