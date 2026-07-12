@@ -523,6 +523,16 @@ func ActiveNotNil() predicate.EventExposure {
 	return predicate.EventExposure(sql.FieldNotNull(FieldActive))
 }
 
+// EventScopesIsNil applies the IsNil predicate on the "event_scopes" field.
+func EventScopesIsNil() predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldIsNull(FieldEventScopes))
+}
+
+// EventScopesNotNil applies the NotNil predicate on the "event_scopes" field.
+func EventScopesNotNil() predicate.EventExposure {
+	return predicate.EventExposure(sql.FieldNotNull(FieldEventScopes))
+}
+
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.EventExposure {
 	return predicate.EventExposure(func(s *sql.Selector) {

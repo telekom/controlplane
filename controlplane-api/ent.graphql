@@ -60,6 +60,8 @@ type ApiExposure implements Node {
   active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
+  security: ApiExposureSecurity
+  traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
@@ -768,6 +770,8 @@ type Application implements Node {
   currentExpiresAt: Time
   secretRotationPhase: ApplicationSecretRotationPhase!
   secretRotationMessage: String
+  externalIds: [ExternalId!]
+  ipRestrictions: IpRestrictions
   zone: Zone!
   exposedApis(
     """
@@ -1752,6 +1756,7 @@ type EventExposure implements Node {
   eventType: String!
   visibility: EventExposureVisibility!
   active: Boolean
+  eventScopes: [EventScope]
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -1982,6 +1987,9 @@ type EventSubscription implements Node {
   name: String!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
+  trigger: EventTrigger
+  delivery: EventDelivery!
+  scopes: [String!]
   callbackURL: String
   owner: Application!
   approval: Approval

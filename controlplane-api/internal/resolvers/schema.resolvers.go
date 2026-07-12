@@ -326,6 +326,18 @@ func (r *availableTransitionResolver) ToState(ctx context.Context, obj *model.Av
 	return approval.State(obj.ToState), nil
 }
 
+// Password is the resolver for the password field.
+func (r *basicAuthCredentialsResolver) Password(ctx context.Context, obj *model.BasicAuthCredentials) (string, error) {
+	resolved, err := r.secrets.Resolve(ctx, &obj.Password, "password")
+	if err != nil {
+		return "", err
+	}
+	if resolved == nil {
+		return "", nil
+	}
+	return *resolved, nil
+}
+
 // ResultingState is the resolver for the resultingState field.
 func (r *decisionResolver) ResultingState(ctx context.Context, obj *model.Decision) (*approval.State, error) {
 	if obj.ResultingState == nil {
@@ -333,6 +345,11 @@ func (r *decisionResolver) ResultingState(ctx context.Context, obj *model.Decisi
 	}
 	s := approval.State(*obj.ResultingState)
 	return &s, nil
+}
+
+// Payload is the resolver for the payload field.
+func (r *eventDeliveryResolver) Payload(ctx context.Context, obj *model.EventDelivery) (gqlmodel.PayloadType, error) {
+	return gqlmodel.PayloadType(obj.Payload), nil
 }
 
 // Subscriptions is the resolver for the subscriptions field.
@@ -474,6 +491,33 @@ func (r *eventTypeResolver) Owner(ctx context.Context, obj *ent.EventType) (*mod
 	return mapTeamInfo(team, group), nil
 }
 
+// Schema is the resolver for the Schema field.
+func (r *externalIdResolver) Schema(ctx context.Context, obj *model.ExternalId) (string, error) {
+	return obj.Scheme, nil
+}
+
+// TokenRequest is the resolver for the tokenRequest field.
+func (r *externalIdentityProviderResolver) TokenRequest(ctx context.Context, obj *model.ExternalIdentityProvider) (*gqlmodel.TokenRequestMethod, error) {
+	if obj.TokenRequest == nil {
+		return nil, nil
+	}
+	m := gqlmodel.TokenRequestMethod(*obj.TokenRequest)
+	if !m.IsValid() {
+		return nil, nil
+	}
+	return &m, nil
+}
+
+// ClientSecret is the resolver for the clientSecret field.
+func (r *oAuth2ClientCredentialsResolver) ClientSecret(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error) {
+	return r.secrets.Resolve(ctx, obj.ClientSecret, "clientSecret")
+}
+
+// ClientKey is the resolver for the clientKey field.
+func (r *oAuth2ClientCredentialsResolver) ClientKey(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error) {
+	return r.secrets.Resolve(ctx, obj.ClientKey, "clientKey")
+}
+
 // APICategories is the resolver for the apiCategories field.
 func (r *queryResolver) APICategories(ctx context.Context) ([]*gqlmodel.APICategory, error) {
 	// SystemContext: Categories are visible to all authenticated users regardless of tenant.
@@ -495,6 +539,27 @@ func (r *queryResolver) APICategories(ctx context.Context) ([]*gqlmodel.APICateg
 		categories[i] = &gqlmodel.APICategory{Name: name}
 	}
 	return categories, nil
+}
+
+// Mode is the resolver for the mode field.
+func (r *responseFilterResolver) Mode(ctx context.Context, obj *model.ResponseFilter) (*gqlmodel.ResponseFilterMode, error) {
+	if obj.Mode == "" {
+		return nil, nil
+	}
+	m := gqlmodel.ResponseFilterMode(obj.Mode)
+	return &m, nil
+}
+
+// Attributes is the resolver for the attributes field.
+func (r *selectionFilterResolver) Attributes(ctx context.Context, obj *model.SelectionFilter) (map[string]any, error) {
+	if obj.Attributes == nil {
+		return nil, nil
+	}
+	result := make(map[string]any, len(obj.Attributes))
+	for k, v := range obj.Attributes {
+		result[k] = v
+	}
+	return result, nil
 }
 
 // Groups is the resolver for the groups field.
@@ -536,8 +601,16 @@ func (r *Resolver) AvailableTransition() AvailableTransitionResolver {
 	return &availableTransitionResolver{r}
 }
 
+// BasicAuthCredentials returns BasicAuthCredentialsResolver implementation.
+func (r *Resolver) BasicAuthCredentials() BasicAuthCredentialsResolver {
+	return &basicAuthCredentialsResolver{r}
+}
+
 // Decision returns DecisionResolver implementation.
 func (r *Resolver) Decision() DecisionResolver { return &decisionResolver{r} }
+
+// EventDelivery returns EventDeliveryResolver implementation.
+func (r *Resolver) EventDelivery() EventDeliveryResolver { return &eventDeliveryResolver{r} }
 
 // EventExposureInfo returns EventExposureInfoResolver implementation.
 func (r *Resolver) EventExposureInfo() EventExposureInfoResolver {
@@ -549,10 +622,36 @@ func (r *Resolver) EventSubscriptionInfo() EventSubscriptionInfoResolver {
 	return &eventSubscriptionInfoResolver{r}
 }
 
+// ExternalId returns ExternalIdResolver implementation.
+func (r *Resolver) ExternalId() ExternalIdResolver { return &externalIdResolver{r} }
+
+// ExternalIdentityProvider returns ExternalIdentityProviderResolver implementation.
+func (r *Resolver) ExternalIdentityProvider() ExternalIdentityProviderResolver {
+	return &externalIdentityProviderResolver{r}
+}
+
+// OAuth2ClientCredentials returns OAuth2ClientCredentialsResolver implementation.
+func (r *Resolver) OAuth2ClientCredentials() OAuth2ClientCredentialsResolver {
+	return &oAuth2ClientCredentialsResolver{r}
+}
+
+// ResponseFilter returns ResponseFilterResolver implementation.
+func (r *Resolver) ResponseFilter() ResponseFilterResolver { return &responseFilterResolver{r} }
+
+// SelectionFilter returns SelectionFilterResolver implementation.
+func (r *Resolver) SelectionFilter() SelectionFilterResolver { return &selectionFilterResolver{r} }
+
 type apiExposureInfoResolver struct{ *Resolver }
 type apiSubscriptionInfoResolver struct{ *Resolver }
 type approvalConfigResolver struct{ *Resolver }
 type availableTransitionResolver struct{ *Resolver }
+type basicAuthCredentialsResolver struct{ *Resolver }
 type decisionResolver struct{ *Resolver }
+type eventDeliveryResolver struct{ *Resolver }
 type eventExposureInfoResolver struct{ *Resolver }
 type eventSubscriptionInfoResolver struct{ *Resolver }
+type externalIdResolver struct{ *Resolver }
+type externalIdentityProviderResolver struct{ *Resolver }
+type oAuth2ClientCredentialsResolver struct{ *Resolver }
+type responseFilterResolver struct{ *Resolver }
+type selectionFilterResolver struct{ *Resolver }
