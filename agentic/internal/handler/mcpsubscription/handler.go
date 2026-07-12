@@ -189,10 +189,7 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	}
 
 	// 8. Provision ConsumeRoute
-	routeRef, err := resolveRouteRef(ctx, obj, exposure, subscriberZone)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve route reference for ConsumeRoute")
-	}
+	routeRef := resolveRouteRef(ctx, obj, exposure, subscriberZone)
 	if routeRef == nil {
 		// Blocking condition already set by resolveRouteRef
 		return nil
@@ -238,13 +235,13 @@ func (h *McpSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.McpS
 
 // resolveRouteRef determines which Route the ConsumeRoute should reference,
 // based on whether the subscription is in the same zone as the exposure or cross-zone.
-// Returns (nil, nil) if the route isn't ready yet — a blocking condition is set on obj.
+// Returns nil if the route isn't ready yet — a blocking condition is set on obj.
 func resolveRouteRef(
 	ctx context.Context,
 	obj *agenticv1.McpSubscription,
 	exposure *agenticv1.McpExposure,
 	subscriberZone *adminv1.Zone,
-) (*types.ObjectRef, error) {
+) *types.ObjectRef {
 	logger := log.FromContext(ctx)
 
 	if obj.Spec.Zone.Name == exposure.Spec.Zone.Name {
@@ -253,10 +250,10 @@ func resolveRouteRef(
 			obj.SetCondition(condition.NewNotReadyCondition("RouteNotReady",
 				"McpExposure does not have a Route reference yet"))
 			obj.SetCondition(condition.NewBlockedCondition("Waiting for McpExposure to create the route"))
-			return nil, nil
+			return nil
 		}
 		logger.V(1).Info("Referencing primary route from McpExposure", "route", exposure.Status.Route.String())
-		return exposure.Status.Route, nil
+		return exposure.Status.Route
 	}
 
 	// Cross-zone: find the proxy route whose namespace matches the subscriber zone
@@ -264,7 +261,7 @@ func resolveRouteRef(
 		proxyRoute := &exposure.Status.ProxyRoutes[i]
 		if proxyRoute.Namespace == subscriberZone.Status.Namespace {
 			logger.V(1).Info("Referencing proxy route from McpExposure", "zone", obj.Spec.Zone.Name, "route", proxyRoute.String())
-			return proxyRoute, nil
+			return proxyRoute
 		}
 	}
 
@@ -272,7 +269,7 @@ func resolveRouteRef(
 		"McpExposure has not created a proxy route for zone "+obj.Spec.Zone.Name+" yet"))
 	obj.SetCondition(condition.NewBlockedCondition(
 		"Waiting for McpExposure to create the proxy route for zone " + obj.Spec.Zone.Name))
-	return nil, nil
+	return nil
 }
 
 // createConsumeRoute creates a ConsumeRoute granting the subscriber access to the MCP route.

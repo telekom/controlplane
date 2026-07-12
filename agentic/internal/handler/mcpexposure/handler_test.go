@@ -54,7 +54,6 @@ func newMcpExposure(name, basePath string) *agenticv1.McpExposure {
 	}
 }
 
-//nolint:unparam // test helper designed for reuse with different basePaths
 func makeReadyMcpServer(basePath string) agenticv1.McpServer {
 	s := agenticv1.McpServer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -137,9 +136,7 @@ func makeZoneWithoutAiGateway() *adminv1.Zone {
 	return z
 }
 
-var (
-	zoneKey = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
-)
+var zoneKey = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
 
 var _ = Describe("McpExposureHandler", func() {
 	var (
@@ -528,7 +525,6 @@ var _ = Describe("McpExposureHandler", func() {
 			// Mock the Telecontext Application lookup — DIFFERENT zone
 			telecontextZone := makeReadyZoneWithAiGateway()
 			telecontextZone.Name = "telecontext-zone"
-			telecontextZone.ObjectMeta.Name = "telecontext-zone"
 			telecontextZone.Status.Namespace = "telecontext-zone-ns"
 			telecontextZone.Status.Links.LmsIssuer = "https://lms.telecontext.example.com"
 			telecontextZone.Status.Links.Issuer = "https://issuer.telecontext.example.com"
@@ -654,7 +650,6 @@ var _ = Describe("McpExposureHandler", func() {
 			// No local subs → the provider zone's own IDP issuer is NOT added
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).NotTo(ContainElement("https://issuer.provider.example.com"))
 		})
-
 	}) // end Describe("CreateOrUpdate")
 
 	Describe("Delete", func() {
