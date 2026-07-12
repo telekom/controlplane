@@ -46,6 +46,10 @@ type McpServerSpec struct {
 	// +optional
 	Specification string `json:"specification,omitempty"`
 
+	// Category of the MCP server (e.g. "g-api", "m-api", "other").
+	// +kubebuilder:validation:Optional
+	Category string `json:"category,omitempty"`
+
 	// Oauth2Scopes contains the OAuth2 scopes extracted from the MCP specification.
 	// Subscriptions and exposures that declare scopes are validated against this list.
 	// +kubebuilder:validation:Optional
