@@ -90,6 +90,10 @@ func (r *McpSubscription) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
+func (r *McpSubscription) HasM2M() bool {
+	return r.Spec.Security != nil && r.Spec.Security.M2M != nil
+}
+
 // +kubebuilder:object:root=true
 
 // McpSubscriptionList contains a list of McpSubscription

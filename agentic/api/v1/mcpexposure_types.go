@@ -103,6 +103,17 @@ func (r *McpExposure) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
+func (r *McpExposure) HasM2M() bool {
+	return r.Spec.Security != nil && r.Spec.Security.M2M != nil
+}
+
+func (r *McpExposure) HasExternalIdp() bool {
+	if !r.HasM2M() {
+		return false
+	}
+	return r.Spec.Security.M2M.ExternalIDP != nil
+}
+
 // +kubebuilder:object:root=true
 
 // McpExposureList contains a list of McpExposure

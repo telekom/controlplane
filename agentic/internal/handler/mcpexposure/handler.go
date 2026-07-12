@@ -7,6 +7,7 @@ package mcpexposure
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -65,6 +66,11 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 		obj.SetCondition(condition.NewBlockedCondition(
 			"McpServer " + obj.Spec.BasePath + " does not exist or is not active. " +
 				"McpExposure will be automatically processed when the McpServer is registered"))
+		return nil
+	}
+
+	// 1b. Validate exposure scopes against McpServer's declared scopes
+	if !validateExposureScopes(ctx, mcpServer, obj) {
 		return nil
 	}
 
@@ -175,6 +181,30 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 		"McpExposure has been provisioned"))
 
 	return nil
+}
+
+// validateExposureScopes checks that the M2M scopes in the McpExposure are a valid subset of the McpServer's scopes.
+// It sets blocking conditions on the exposure and returns false if processing should stop.
+func validateExposureScopes(_ context.Context, mcpServer *agenticv1.McpServer, obj *agenticv1.McpExposure) bool {
+	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil || obj.HasExternalIdp() {
+		return true
+	}
+	if len(mcpServer.Spec.Oauth2Scopes) == 0 {
+		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "McpServer does not define any OAuth2 scopes"))
+		obj.SetCondition(condition.NewBlockedCondition("McpServer does not define any OAuth2 scopes. McpExposure will be automatically processed, if the McpServer will be updated with scopes"))
+		return false
+	}
+	scopesExist, invalidScopes := util.IsSubsetOfScopes(mcpServer.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
+	if !scopesExist {
+		message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
+			strings.Join(mcpServer.Spec.Oauth2Scopes, ", "),
+			strings.Join(invalidScopes, ", "),
+		)
+		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in McpExposure are not defined in the McpServer"))
+		obj.SetCondition(condition.NewBlockedCondition(message))
+		return false
+	}
+	return true
 }
 
 func (h *McpExposureHandler) Delete(ctx context.Context, obj *agenticv1.McpExposure) error {

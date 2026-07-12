@@ -70,6 +70,13 @@ spec:
                 description: Name is a human-readable name for the MCP server.
                 minLength: 1
                 type: string
+              scopes:
+                description: |-
+                  Oauth2Scopes contains the OAuth2 scopes extracted from the MCP specification.
+                  Subscriptions and exposures that declare scopes are validated against this list.
+                items:
+                  type: string
+                type: array
               specification:
                 description: |-
                   Specification contains the file ID reference from the file manager for

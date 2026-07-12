@@ -53,6 +53,7 @@ func (h *McpSpecificationHandler) CreateOrUpdate(ctx context.Context, mcpSpec *r
 			Name:          mcpSpec.Spec.Name,
 			Description:   mcpSpec.Spec.Description,
 			Specification: mcpSpec.Spec.Specification,
+			Oauth2Scopes:  mcpSpec.Spec.Oauth2Scopes,
 		}
 
 		return nil

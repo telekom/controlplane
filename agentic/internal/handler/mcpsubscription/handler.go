@@ -7,6 +7,7 @@ package mcpsubscription
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +40,7 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// 1. Validate McpServer exists and is active
-	found, _, findErr := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
+	found, mcpServer, findErr := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
 	if findErr != nil {
 		return findErr
 	}
@@ -49,6 +50,11 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		obj.SetCondition(condition.NewBlockedCondition(
 			"McpServer " + obj.Spec.BasePath + " does not exist or is not active. " +
 				"McpSubscription will be automatically processed when the McpServer is registered"))
+		return nil
+	}
+
+	// 1b. Validate subscription scopes against McpServer's declared scopes
+	if !validateSubscriptionScopes(mcpServer, obj) {
 		return nil
 	}
 
@@ -329,4 +335,28 @@ func validateVisibility(exposure *agenticv1.McpExposure, sub *agenticv1.McpSubsc
 	default:
 		return false
 	}
+}
+
+// validateSubscriptionScopes checks that the M2M scopes in the McpSubscription are a valid subset of the McpServer's scopes.
+// It sets blocking conditions on the subscription and returns false if processing should stop.
+func validateSubscriptionScopes(mcpServer *agenticv1.McpServer, obj *agenticv1.McpSubscription) bool {
+	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil {
+		return true
+	}
+	if len(mcpServer.Spec.Oauth2Scopes) == 0 {
+		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "McpServer does not define any OAuth2 scopes"))
+		obj.SetCondition(condition.NewBlockedCondition("McpServer does not define any OAuth2 scopes. McpSubscription will be automatically processed, if the McpServer will be updated with scopes"))
+		return false
+	}
+	scopesExist, invalidScopes := util.IsSubsetOfScopes(mcpServer.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
+	if !scopesExist {
+		message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
+			strings.Join(mcpServer.Spec.Oauth2Scopes, ", "),
+			strings.Join(invalidScopes, ", "),
+		)
+		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in McpSubscription are not defined in the McpServer"))
+		obj.SetCondition(condition.NewBlockedCondition(message))
+		return false
+	}
+	return true
 }

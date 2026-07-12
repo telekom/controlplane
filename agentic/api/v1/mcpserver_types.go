@@ -45,6 +45,11 @@ type McpServerSpec struct {
 	// the MCP server specification YAML.
 	// +optional
 	Specification string `json:"specification,omitempty"`
+
+	// Oauth2Scopes contains the OAuth2 scopes extracted from the MCP specification.
+	// Subscriptions and exposures that declare scopes are validated against this list.
+	// +kubebuilder:validation:Optional
+	Oauth2Scopes []string `json:"scopes,omitempty"`
 }
 
 // McpServerStatus defines the observed state of McpServer.
