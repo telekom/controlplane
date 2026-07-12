@@ -9,15 +9,13 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/bytedance/sonic"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 
 	"github.com/telekom/controlplane/organization-server/internal/client"
 	"github.com/telekom/controlplane/organization-server/internal/config"
@@ -46,38 +44,29 @@ func main() {
 
 	// Upstream clients.
 	cpapiClient := client.NewCPAPIClient(cfg.CPAPIEndpoint, tokenSource, cfg.CPAPICaFilePath)
-	roverClient := client.NewRoverClient(cfg.RoverEndpoint, cfg.RoverEnvironment, cfg.RoverScopePrefix)
+	roverClient := client.NewRoverClient(cfg.RoverEndpoint, cfg.RoverScopePrefix)
 
-	// Fiber app.
-	app := fiber.New(fiber.Config{
-		ReadTimeout:           5 * time.Second,
-		WriteTimeout:          10 * time.Second,
-		IdleTimeout:           60 * time.Second,
-		DisableStartupMessage: true,
-		JSONEncoder:           sonic.Marshal,
-		JSONDecoder:           sonic.Unmarshal,
-	})
+	// Fiber app — use common-server for standard middleware (logging, metrics,
+	// timeout, recover). Security is handled separately below because the facade
+	// has a custom auth pipeline (JWT + IdentityExtraction + TeamAuthorization).
+	appCfg := cserver.NewAppConfig()
+	appCfg.CtxLog = log
+	app := cserver.NewAppWithConfig(appCfg)
 
-	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
+	// Health/readiness probes (standard pattern from common-server).
+	probes := cserver.NewProbesController()
+	probes.Register(app, cserver.ControllerOpts{})
 
-	// Health/readiness probes (unauthenticated).
-	app.Get("/healthz", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
-	})
-	app.Get("/readyz", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
-	})
-
-	// API routes under /organization/v1 — secured pipeline.
+	// API routes under /organization/v1 — custom secured pipeline.
 	api := app.Group("/organization/v1",
 		mw.JWTValidation(log, cfg.TrustedIssuers),
-		mw.IdentityExtraction(log),
+		mw.IdentityExtraction(log, cfg.RoverEnvironment),
 		mw.Obfuscate(),
 	)
 
 	// Register all endpoint handlers (TeamAuthorization applied per-route inside).
 	teamAuth := mw.TeamAuthorization(log)
-	h := handler.New(cpapiClient, roverClient, cfg.RoverEnvironment, log)
+	h := handler.New(cpapiClient, roverClient, log)
 	h.RegisterRoutes(api, teamAuth)
 
 	// Graceful shutdown.
@@ -96,9 +85,6 @@ func main() {
 	<-ctx.Done()
 	log.Info("Shutting down...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	_ = shutdownCtx // Fiber's Shutdown doesn't take a context
 	if err := app.Shutdown(); err != nil {
 		log.Error(err, "Shutdown error")
 	}

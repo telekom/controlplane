@@ -10,6 +10,7 @@ import (
 	"github.com/telekom/controlplane/organization-server/internal/api"
 	gql "github.com/telekom/controlplane/organization-server/internal/graphql"
 	"github.com/telekom/controlplane/organization-server/internal/mapper"
+	mw "github.com/telekom/controlplane/organization-server/internal/middleware"
 )
 
 // CreateHub handles POST /hubs.
@@ -25,9 +26,10 @@ func (h *Handler) CreateHub(c *fiber.Ctx) error {
 	}
 
 	ctx := h.contextWithIdentity(c)
+	id := mw.ConsumerIdentityFromContext(c)
 	desc := req.Description
 	resp, err := gql.CreateGroup(ctx, h.cpapi, gql.CreateGroupInput{
-		Environment: h.environment,
+		Environment: id.Environment,
 		Name:        req.Name,
 		DisplayName: req.DisplayName,
 		Description: &desc,
@@ -229,8 +231,8 @@ func (h *Handler) DeleteHub(c *fiber.Ctx) error {
 
 // GetHubStatus handles GET /hubs/:hub/status.
 func (h *Handler) GetHubStatus(c *fiber.Ctx) error {
-	// Groups don't have a status phase in the current model.
-	// Return a static "done/complete" since groups are always immediately ready.
+	// TODO: Groups don't have a status phase in the current CP API model.
+	// When group lifecycle states are added, this should query actual state.
 	return c.JSON(api.ResourceStatusResponse{
 		OverallStatus:   "done",
 		ProcessingState: api.ProcessingStateDone,

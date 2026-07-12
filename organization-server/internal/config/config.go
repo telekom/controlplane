@@ -24,8 +24,10 @@ type Config struct {
 	// RoverEndpoint is the base URL of rover-server.
 	RoverEndpoint string
 
-	// RoverEnvironment is the environment claim used when constructing service tokens
-	// for rover-server calls (e.g. "controlplane").
+	// RoverEnvironment is the fallback environment used when the token's issuer
+	// does not contain a realm name (e.g. in mock mode). In production, the environment
+	// is derived from the JWT issuer URL (realm name). Keep this configured as a
+	// safety net for local development and mock-mode operation.
 	RoverEnvironment string
 
 	// RoverScopePrefix is the scope prefix rover-server expects (e.g. "tardis").

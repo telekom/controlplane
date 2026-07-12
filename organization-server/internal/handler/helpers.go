@@ -23,7 +23,7 @@ func (h *Handler) contextWithIdentity(c *fiber.Ctx) context.Context {
 	ctx := c.UserContext()
 	if id != nil {
 		ctx = client.WithIdentity(ctx, &client.ConsumerIdentity{
-			Environment: h.environment,
+			Environment: id.Environment,
 			Group:       id.Group,
 			Team:        id.Team,
 		})
@@ -60,6 +60,9 @@ func toMutationErrors[T any, PT interface {
 }
 
 // mapMutationErrors translates mutation errors to an HTTP error response.
+// Note: We use api.Error (generated from the original OAS) instead of problems.Problem
+// to maintain backward compatibility with the legacy Java org-server contract.
+// The error shape (including float32 status) is dictated by the OpenAPI spec.
 func (h *Handler) mapMutationErrors(c *fiber.Ctx, errors []MutationError) error {
 	if len(errors) == 0 {
 		return nil
@@ -107,6 +110,9 @@ func (h *Handler) resolveGroupID(ctx context.Context, name string) (string, erro
 }
 
 // resolveTeamID looks up a team by hub name + team name and returns its ent ID.
+// Path params use short names (e.g. /hubs/eni/teams/hyperion) but CP API stores
+// the full qualified name (group--team, e.g. "eni--hyperion"). This concatenation
+// bridges the two conventions.
 func (h *Handler) resolveTeamID(ctx context.Context, hubName, teamName string) (string, error) {
 	fullTeamName := hubName + "--" + teamName
 	resp, err := gql.GetTeam(ctx, h.cpapi, &gql.TeamWhereInput{
