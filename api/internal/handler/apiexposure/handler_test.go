@@ -80,6 +80,7 @@ func makeReadyZone(name, namespace, issuer, lmsIssuer string, presets ...adminv1
 		Status: adminv1.ZoneStatus{
 			Namespace: namespace,
 			Gateway:   &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace},
+			RealmName: testEnv,
 			Links: adminv1.Links{
 				Issuer:    issuer,
 				LmsIssuer: lmsIssuer,
@@ -167,10 +168,6 @@ var _ = Describe("ApiExposureHandler", func() {
 		zoneB = func() *adminv1.Zone {
 			return makeReadyZone("zone-b", "ns-b",
 				"https://idp.zone-b.example.com", "https://lms.zone-b.example.com")
-		}
-		zoneC = func() *adminv1.Zone {
-			return makeReadyZone("zone-c", "ns-c",
-				"https://idp.zone-c.example.com", "https://lms.zone-c.example.com")
 		}
 		zoneF = func() *adminv1.Zone {
 			return makeReadyZone("zone-f", "ns-f",
@@ -399,10 +396,11 @@ var _ = Describe("ApiExposureHandler", func() {
 		// Scenario 2: Consumer failover
 		//
 		// Exposure in zone-a, subscriber in zone-b with HasFailover()=true.
-		// Zones A and C have ConsumerFailover feature enabled with dedicated presets.
-		// Expects: 2 proxy routes (zone-b + zone-c) + 1 real route, all enriched.
-		Context("consumer failover: enriches all routes with failover hostnames and issuers", func() {
-			It("creates enriched proxy routes and a real route with consumer failover data", func() {
+		// Zones A and C have ConsumerFailover feature enabled with dedicated presets; zone-b does not.
+		// Expects: 2 proxy routes (zone-b + zone-c) + 1 real route. Only CF-capable zones (A, C) are
+		// enriched with failover hostnames/issuers; the plain zone-b proxy route is not.
+		Context("consumer failover: enriches only CF-capable zones with failover hostnames and issuers", func() {
+			It("enriches the CF-capable proxy route and the real route, but not the plain subscriber zone", func() {
 				obj := newApiExposure(basePath, zoneARef)
 
 				// --- Preamble ---
@@ -424,8 +422,8 @@ var _ = Describe("ApiExposureHandler", func() {
 				//            downstream-proxy-B(B) + upstream-proxy-B(A) +
 				//            downstream-proxy-C(C) + upstream-proxy-C(A) + real-route(A)
 				mockGetZone(zoneARef.K8s(), zoneACF(), 4) // determineRoutingState + upstream×2 + real route
-				mockGetZone(zoneBRef.K8s(), zoneB(), 2)   // LMS collection + downstream proxy-B
-				mockGetZone(zoneCRef.K8s(), zoneC(), 2)   // LMS collection + downstream proxy-C
+				mockGetZone(zoneBRef.K8s(), zoneB(), 2)   // LMS collection + downstream proxy-B (plain zone, no CF feature)
+				mockGetZone(zoneCRef.K8s(), zoneCCF(), 2) // LMS collection + downstream proxy-C (CF-enabled zone)
 
 				var routes []*gatewayapi.Route
 				capturedRoutes(&routes, 3) // 2 proxy + 1 real
@@ -443,13 +441,13 @@ var _ = Describe("ApiExposureHandler", func() {
 				proxyB := routes[0]
 				Expect(proxyB.Namespace).To(Equal("ns-b"))
 				Expect(proxyB.Spec.Type).To(Equal(gatewayapi.RouteTypeProxy))
-				// Enriched with consumer failover hostnames
-				Expect(proxyB.Spec.Hostnames).To(ContainElements("zone-a.cf.example.com", "zone-c.cf.example.com"))
-				// Proxy route trusts downstream IDP + consumer failover IDP issuers
+				// zone-b lacks the ConsumerFailover feature, so its proxy route is NOT enriched
+				// with failover hostnames — it cannot serve hostnames it has no gateway preset for.
+				Expect(proxyB.Spec.Hostnames).To(ContainElement("zone-b.gw.example.com"))
+				Expect(proxyB.Spec.Hostnames).ToNot(ContainElements("zone-a.cf.example.com", "zone-c.cf.example.com"))
+				// Proxy route trusts only its own downstream IDP issuer
 				Expect(proxyB.Spec.Security.TrustedIssuers).To(ConsistOf(
 					"https://idp.zone-b.example.com", // downstream zone's own issuer
-					"https://idp.zone-a.example.com", // consumer failover from zone-a
-					"https://idp.zone-c.example.com", // consumer failover from zone-c
 				))
 
 				// Proxy route for zone-c (index 1)
@@ -520,7 +518,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				//            real-route(A)
 				mockGetZone(zoneARef.K8s(), zoneA(), 4) // determineRoutingState + upstream×2 + real route
 				mockGetZone(zoneBRef.K8s(), zoneB(), 2) // LMS collection + downstream proxy
-				mockGetZone(zoneFRef.K8s(), zoneF(), 2) // addFailoverFallback + downstream secondary
+				mockGetZone(zoneFRef.K8s(), zoneF(), 3) // provider failover existence/feature check + addFailoverFallback + downstream secondary
 
 				var routes []*gatewayapi.Route
 				capturedRoutes(&routes, 3) // proxy + secondary + real

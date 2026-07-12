@@ -116,7 +116,7 @@ var _ = Describe("StatusPoller", func() {
 
 				// Verify results
 				Expect(err).To(MatchError(expectedErr))
-				Expect(result).To(BeNil())
+				Expect(result).To(Equal(status))
 
 				// Verify the mock was called as expected
 				handler.AssertExpectations(GinkgoT())
@@ -126,6 +126,44 @@ var _ = Describe("StatusPoller", func() {
 		// This test is removed as it causes flaky behavior in CI
 		// We can test context timeout handling without mocking
 
+		Context("when the context times out", func() {
+			It("should return the last known status alongside the error", func() {
+				// Use a very short timeout so it fires quickly
+				shortTimeout := 250 * time.Millisecond
+				shortPoller := common.NewStatusPoller(handler, func(_ context.Context, _ types.ObjectStatus) (bool, error) {
+					return true, nil // always continue polling
+				}, shortTimeout, 50*time.Millisecond)
+
+				// The status that will be returned on each poll
+				processingStatus := &common.ObjectStatusResponse{
+					ProcessingState: "processing",
+					OverallStatus:   "processing",
+				}
+
+				handler.EXPECT().Status(mock.Anything, "test-resource").Return(processingStatus, nil).Maybe()
+
+				// Start polling - should timeout
+				result, err := shortPoller.Start(testCtx, "test-resource")
+
+				// Verify that timeout error is returned with the last status
+				Expect(err).To(MatchError(context.DeadlineExceeded))
+				Expect(result).To(Equal(processingStatus))
+			})
+
+			It("should return nil status if no poll completed before timeout", func() {
+				// Use a timeout shorter than the poll interval
+				shortTimeout := 10 * time.Millisecond
+				shortPoller := common.NewStatusPoller(handler, nil, shortTimeout, 1*time.Second)
+
+				// Start polling - should timeout before any poll happens
+				result, err := shortPoller.Start(testCtx, "test-resource")
+
+				// Verify that timeout error is returned with nil status
+				Expect(err).To(MatchError(context.DeadlineExceeded))
+				Expect(result).To(BeNil())
+			})
+		})
+
 		Context("when no evaluation function is provided", func() {
 			It("should use the default eval function", func() {
 				// Create a poller with nil eval function (will use default)
@@ -134,10 +172,10 @@ var _ = Describe("StatusPoller", func() {
 				// First call - status not done yet
 				inProgressStatus := &common.ObjectStatusResponse{
 					ProcessingState: "processing",
-					OverallStatus:   "pending",
+					OverallStatus:   "processing",
 				}
 
-				// Second call - status is done
+				// Second call - status is complete
 				doneStatus := &common.ObjectStatusResponse{
 					ProcessingState: "done",
 					OverallStatus:   "complete",
@@ -158,18 +196,18 @@ var _ = Describe("StatusPoller", func() {
 				handler.AssertExpectations(GinkgoT())
 			})
 
-			It("should return an error when processing state is failed", func() {
+			It("should return an error when overall status is failed", func() {
 				// Create a poller with nil eval function (will use default)
 				defaultPoller := common.NewStatusPoller(handler, nil, timeout, interval)
 
 				// Status transitions: processing -> failed
 				inProgressStatus := &common.ObjectStatusResponse{
 					ProcessingState: "processing",
-					OverallStatus:   "pending",
+					OverallStatus:   "processing",
 				}
 				failedStatus := &common.ObjectStatusResponse{
 					ProcessingState: "failed",
-					OverallStatus:   "error",
+					OverallStatus:   "failed",
 				}
 
 				// Configure the mock to return statuses
@@ -182,7 +220,36 @@ var _ = Describe("StatusPoller", func() {
 				// Verify that an error is returned for failed state
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("resource processing failed"))
-				Expect(result).To(BeNil())
+				Expect(result).To(Equal(failedStatus))
+
+				// Verify the mock was called as expected
+				handler.AssertExpectations(GinkgoT())
+			})
+
+			It("should stop polling when overall status is blocked", func() {
+				// Create a poller with nil eval function (will use default)
+				defaultPoller := common.NewStatusPoller(handler, nil, timeout, interval)
+
+				// Status transitions: processing -> blocked
+				inProgressStatus := &common.ObjectStatusResponse{
+					ProcessingState: "processing",
+					OverallStatus:   "processing",
+				}
+				blockedStatus := &common.ObjectStatusResponse{
+					ProcessingState: "done",
+					OverallStatus:   "blocked",
+				}
+
+				// Configure the mock to return statuses
+				handler.EXPECT().Status(mock.Anything, "test-resource").Return(inProgressStatus, nil).Once()
+				handler.EXPECT().Status(mock.Anything, "test-resource").Return(blockedStatus, nil).Once()
+
+				// Start polling
+				result, err := defaultPoller.Start(testCtx, "test-resource")
+
+				// Verify that blocked stops polling without error
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).To(Equal(blockedStatus))
 
 				// Verify the mock was called as expected
 				handler.AssertExpectations(GinkgoT())

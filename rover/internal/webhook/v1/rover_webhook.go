@@ -115,6 +115,15 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, valErr.BuildError()
 	}
 
+	// Validate ConsumerFailover: feature must be enabled on this zone if ConsumerFailover is configured
+	if !zone.IsFeatureEnabled(adminv1.FeatureConsumerFailover) && rover.HasFailoverEnabledOnAnySubscription() {
+		valErr.AddInvalidError(
+			field.NewPath("spec").Child("zone"),
+			rover.Spec.Zone,
+			fmt.Sprintf("zone %q does not support consumer failover. Either disable it or select a different zone", rover.Spec.Zone))
+		return nil, valErr.BuildError()
+	}
+
 	if err := r.validatePermissions(valErr, rover); err != nil {
 		return nil, err
 	}

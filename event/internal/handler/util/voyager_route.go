@@ -149,7 +149,7 @@ func CreateProxyVoyagerRoute(
 
 	// Build upstream: points at target zone's gateway URL for voyager path
 	voyagerPath := makeVoyagerRoutePath(targetZone.Name)
-	upstreamUrl, err := url.JoinPath(targetPreset.Urls[0].GetFullUrl(), voyagerPath)
+	upstreamUrl, err := url.JoinPath(targetPreset.GetDefaultUrl(), voyagerPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build upstream URL for proxy voyager Route")
 	}

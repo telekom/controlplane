@@ -48,8 +48,8 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 	}
 	if updated {
 
-		obj.SetCondition(condition.NewProcessingCondition("Syncing", "Syncing with remote CP"))
-		obj.SetCondition(condition.NewNotReadyCondition("Syncing", "Syncing with remote CP"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "Syncing with remote CP"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "Syncing with remote CP"))
 		return nil
 	}
 	logger.V(1).Info("RemoteApiSubscription synced with remote CP but not updated")

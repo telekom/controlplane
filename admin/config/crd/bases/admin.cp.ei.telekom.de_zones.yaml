@@ -815,6 +815,10 @@ spec:
                 type: array
               namespace:
                 type: string
+              realmName:
+                description: RealmName as an abstraction layer and is retrieved from
+                  Env.Spec.RealmName
+                type: string
               teamApiIdentityRealm:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object

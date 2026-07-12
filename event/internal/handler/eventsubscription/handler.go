@@ -44,7 +44,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		return findErr
 	}
 	if !found {
-		obj.SetCondition(condition.NewNotReadyCondition("EventTypeNotFound",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"No active EventType found for type "+obj.Spec.EventType))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"EventType " + obj.Spec.EventType + " does not exist or is not active. " +
@@ -72,7 +72,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	}
 
 	if !exposureFound {
-		obj.SetCondition(condition.NewNotReadyCondition("EventExposureNotFound",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"No active EventExposure found for type "+obj.Spec.EventType))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"EventExposure for " + obj.Spec.EventType + " does not exist or is not active. " +
@@ -81,7 +81,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	}
 
 	if err = condition.EnsureReady(exposure); err != nil {
-		obj.SetCondition(condition.NewNotReadyCondition("EventExposureNotReady",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("EventExposure %q is not ready", exposure.Name)))
 
 		obj.SetCondition(condition.NewBlockedCondition(
@@ -98,7 +98,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		return errors.Wrap(err, "failed to validate event visibility for EventSubscription")
 	}
 	if !valid {
-		obj.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation", "EventExposure and EventSubscription visibility combination is not allowed"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "EventExposure and EventSubscription visibility combination is not allowed"))
 		return ctrlerrors.BlockedErrorf("EventSubscription is blocked. Subscriptions from zone %q are not allowed due to exposure visibility constraints", obj.Spec.Zone.GetName())
 	}
 
@@ -108,7 +108,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		return errors.Wrap(err, "failed to validate event scopes for EventSubscription")
 	}
 	if !valid {
-		obj.SetCondition(condition.NewNotReadyCondition("ScopeConstraintViolation", "Requested scopes are not allowed by the EventExposure"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Requested scopes are not allowed by the EventExposure"))
 		return ctrlerrors.BlockedErrorf("EventSubscription is blocked. Requested scopes %q are not allowed by the EventExposure", obj.Spec.Scopes)
 	}
 
@@ -118,7 +118,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	}
 
 	if !exposureEventConfig.SupportsZone(obj.Spec.Zone.Name) {
-		obj.SetCondition(condition.NewNotReadyCondition("ZoneNotSupported",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("EventConfig for zone %q does not support this subscription zone", exposure.Spec.Zone.Name)))
 		obj.SetCondition(condition.NewBlockedCondition(
 			fmt.Sprintf("EventConfig for zone %q does not support this subscription zone. "+
@@ -138,7 +138,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	}
 
 	if obj.Spec.Requestor.Kind != "Application" {
-		obj.SetCondition(condition.NewNotReadyCondition("InvalidRequestor",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
 			"Only requestors of kind 'Application' are supported"))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"EventSubscription with requestor kind " + obj.Spec.Requestor.Kind + " is not supported"))
@@ -199,19 +199,19 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	switch res {
 	case builder.ApprovalResultRequestDenied:
 		logger.Info("ApprovalRequest was denied — not touching child resources")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalRequestDenied", "ApprovalRequest has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "ApprovalRequest has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
 		return nil
 
 	case builder.ApprovalResultPending:
 		logger.Info("Approval is pending — waiting for approval")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Waiting for approval decision"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, "Waiting for approval decision"))
 		obj.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
 		return nil
 
 	case builder.ApprovalResultDenied:
 		logger.Info("Approval was denied — cleaning up Subscriber")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalDenied", "Approval has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
 		deleted, cleanupErr := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedBy(obj))
@@ -224,13 +224,14 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 
 	case builder.ApprovalResultGranted:
 		logger.Info("Approval is granted — continuing with provisioning")
+		builder.ClearApprovalPendingReady(obj)
 
 	default:
 		return errors.Errorf("unknown approval-builder result %q", res)
 	}
 
 	if exposure.Status.Publisher == nil {
-		obj.SetCondition(condition.NewNotReadyCondition("PublisherNotReady",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"EventExposure does not have a Publisher reference yet"))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"EventExposure " + exposure.Name + " has no Publisher reference. " +
@@ -253,13 +254,13 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	logger.V(1).Info("Subscriber created/updated", "subscriber", subscriber.Name)
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
 			"One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
 		return nil
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("EventSubscriptionProvisioned",
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"EventSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
 		"EventSubscription has been provisioned"))
@@ -270,12 +271,21 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 func (h *EventSubscriptionHandler) resolveSSEUrl(ctx context.Context, obj *eventv1.EventSubscription, exposure *eventv1.EventExposure, subscriber *pubsubv1.Subscriber) error {
 	baseUrl, ok := exposure.Status.SseURLs[obj.Spec.Zone.Name]
 	if !ok {
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonBlocked, "No SSE URL found in EventExposure status for subscription zone"))
 		return ctrlerrors.BlockedErrorf("no SSE URL found in EventExposure status for zone %q", obj.Spec.Zone.Name)
+	}
+
+	if !condition.IsReady(subscriber) {
+		// subscriber is not ready yet, return and wait for the next reconciliation when subscriber is ready and has subscription ID available in status
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for Subscriber to be ready"))
+		return ctrlerrors.BlockedErrorf("Waiting for Subscriber %q to be ready", subscriber.Name)
 	}
 
 	if subscriber.Status.SubscriptionId == "" {
 		contextutil.RecorderFromContextOrDie(ctx).Event(obj, "Warning", "WaitingForSubscriptionId",
 			fmt.Sprintf("Waiting for subscription ID to be available in Subscriber status for zone %q", obj.Spec.Zone.Name))
+
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for subscription ID to be available in Subscriber status"))
 		return ctrlerrors.BlockedErrorf("Waiting for SSE URL for zone %q to be available", obj.Spec.Zone.Name)
 	}
 

@@ -46,6 +46,10 @@ func (EventExposure) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Default(false),
+		field.JSON("event_scopes", []model.EventScope{}).
+			Optional().
+			Default([]model.EventScope{}).
+			Annotations(entgql.Type("[EventScope]"), entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("approval_config", model.ApprovalConfig{}).
 			Default(model.ApprovalConfig{Strategy: "AUTO"}).
 			Annotations(entgql.Type("ApprovalConfig"), entgql.Skip(entgql.SkipWhereInput)),

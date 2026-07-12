@@ -55,6 +55,8 @@ func MapAPISpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 		status.ProcessingState = api.ProcessingStateProcessing
 	}
 
+	reconcileWithSubResources(apiSpec.GetConditions(), &status, result)
+
 	processing := meta.FindStatusCondition(apiSpec.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
@@ -93,6 +95,8 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 		status.ProcessingState = api.ProcessingStateProcessing
 	}
 
+	reconcileWithSubResources(rover.GetConditions(), &status, result)
+
 	processing := meta.FindStatusCondition(rover.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
@@ -130,6 +134,8 @@ func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpeci
 	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
 		status.ProcessingState = api.ProcessingStateProcessing
 	}
+
+	reconcileWithSubResources(eventSpec.GetConditions(), &status, result)
 
 	processing := meta.FindStatusCondition(eventSpec.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time

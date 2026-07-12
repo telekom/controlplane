@@ -208,11 +208,11 @@ func setRoverConditions(c client.JanitorClient, roverObj *roverv1.Rover) {
 	roverObj.SetCondition(condition.NewDoneProcessingCondition("Provisioned all sub-resources"))
 
 	if c.AllReady() {
-		roverObj.SetCondition(condition.NewReadyCondition("ProvisioningDone", "All sub-resources are up to date"))
+		roverObj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "All sub-resources are up to date"))
 		return
 	}
 
-	roverObj.SetCondition(condition.NewNotReadyCondition("SubResourceNotReady", "At least one sub-resource is being processed"))
+	roverObj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "At least one sub-resource is being processed"))
 }
 
 func (h *RoverHandler) Delete(ctx context.Context, rover *roverv1.Rover) error {
@@ -224,7 +224,7 @@ func (h *RoverHandler) Delete(ctx context.Context, rover *roverv1.Rover) error {
 		err := secretsapi.API().DeleteApplication(ctx, envId, teamId, appId)
 		if err != nil {
 			// If this fails, we have an internal problem
-			rover.SetCondition(condition.NewNotReadyCondition("DeletionFailed", "Failed to delete application from secret manager"))
+			rover.SetCondition(condition.NewNotReadyCondition(condition.ReasonError, "Failed to delete application from secret manager"))
 			return errors.Wrap(err, "failed to delete application from secret manager")
 		}
 	}

@@ -67,17 +67,17 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 
 	if c.AnyChanged() {
 		app.SetCondition(
-			condition.NewNotReadyCondition("SubResourceProvisioning", "At least one sub-resource has been created or updated"))
+			condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "At least one sub-resource has been created or updated"))
 		return nil
 	}
 
 	if primaryClient != nil && !condition.IsReady(primaryClient) {
-		app.SetCondition(condition.NewNotReadyCondition("SubResourceProvisioned", "Waiting for primary identity client to be ready"))
+		app.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for primary identity client to be ready"))
 		return nil
 	}
 
 	// All sub-resources are up to date and primary client (if applicable) is ready.
-	app.SetCondition(condition.NewReadyCondition("SubResourceProvisioned", "All sub-resources are up to date"))
+	app.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "All sub-resources are up to date"))
 
 	if app.Spec.NeedsClient {
 		app.Status.ClientSecret = app.Spec.Secret
@@ -286,12 +286,14 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
-	realmName := contextutil.EnvFromContextOrDie(ctx)
 
-	// get namespace from zoneStatus
+	// Resolve realm name from zone status (decoupled from environment name)
+	if zone.Status.IdentityRealm == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %s has no IdentityRealm status set", zone.Name)
+	}
+	realmName := zone.Status.IdentityRealm.Name
 	namespace := zone.Status.Namespace
 
-	// get Realm with realmref from namespace
 	realmRef := &types.ObjectRef{
 		Name:      realmName,
 		Namespace: namespace,

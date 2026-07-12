@@ -38,7 +38,7 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 		return err
 	}
 	if !found {
-		obj.SetCondition(condition.NewNotReadyCondition("EventTypeNotFound",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"No active EventType found for type "+obj.Spec.EventType))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"EventType " + obj.Spec.EventType + " does not exist or is not active. " +
@@ -59,7 +59,7 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 		// Another exposure already owns this event type
 		obj.Status.Active = false
 		msg := fmt.Sprintf("Event-Type %q is already exposed by team %q.", obj.Spec.EventType, existingExposure.Spec.Provider.Namespace)
-		obj.SetCondition(condition.NewNotReadyCondition("EventExposureAlreadyExists", msg))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 		obj.SetCondition(condition.NewBlockedCondition(msg + " EventExposure will be automatically processed when the existing EventExposure is deleted"))
 		return nil
 	}
@@ -76,7 +76,7 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 
 	eventConfig, err := util.GetEventConfigForZone(ctx, obj.Spec.Zone.Name)
 	if err != nil {
-		obj.SetCondition(condition.NewNotReadyCondition("EventConfigNotReady", "Event Feature has not been fully provisioned for this zone yet"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Event Feature has not been fully provisioned for this zone yet"))
 		return err
 	}
 	obj.Status.CallbackURL = eventConfig.Status.CallbackURL
@@ -84,7 +84,7 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 
 	eventStore, err := util.GetEventStoreForZone(ctx, obj.Spec.Zone.Name)
 	if err != nil {
-		obj.SetCondition(condition.NewNotReadyCondition("EventStoreNotReady", "Event Feature has not been fully provisioned for this zone yet"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Event Feature has not been fully provisioned for this zone yet"))
 		return err
 	}
 	logger.V(1).Info("Found EventStore for zone", "zone", obj.Spec.Zone.Name, "eventStore", eventStore.Name)
@@ -110,13 +110,13 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	// 9. Set final conditions
 	c := cclient.ClientFromContextOrDie(ctx)
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
 			"One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
 		return nil
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("EventExposureProvisioned",
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"EventExposure has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
 		"EventExposure has been provisioned"))
@@ -127,7 +127,7 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 // reconcileSSERoutes manages SSE Route creation for cross-zone proxy routes and the primary route.
 func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *eventv1.EventExposure, zone *adminv1.Zone, eventConfig *eventv1.EventConfig) error {
 	logger := log.FromContext(ctx)
-	realmName := adminv1.RealmNameFromContext(ctx)
+	realmName := zone.Status.RealmName
 
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil

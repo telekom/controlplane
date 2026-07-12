@@ -74,6 +74,10 @@ func CreateZone(name string) *adminapi.Zone {
 	Expect(err).ToNot(HaveOccurred())
 
 	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.IdentityRealm = &types.ObjectRef{
+		Name:      testEnvironment,
+		Namespace: testEnvironment + "--" + name,
+	}
 	zone.Status.Gateway = &types.ObjectRef{
 		Name:      "test-gateway",
 		Namespace: testEnvironment + "--" + name,
@@ -460,7 +464,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApiExposure.Status.Active).To(BeFalse())
 				readyCond := meta.FindStatusCondition(secondApiExposure.GetConditions(), condition.ConditionTypeReady)
-				testutil.ExpectConditionToBeFalse(g, readyCond, "ApiCaseConflict")
+				testutil.ExpectConditionToBeFalse(g, readyCond, condition.ReasonPreconditionNotMet)
 				Expect(readyCond.Message).To(ContainSubstring(`API is registered but the case does not match (got="/ApiExpctrl/Test/v1", found="/apiexpctrl/test/v1").`))
 			}, timeout, interval).Should(Succeed())
 		})
@@ -555,7 +559,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 
 				g.Expect(apiExposure.Status.Active).To(BeTrue())
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())

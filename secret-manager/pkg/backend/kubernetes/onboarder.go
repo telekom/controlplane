@@ -28,6 +28,17 @@ func isRetryableConflict(err error) bool {
 	return apierrors.IsConflict(err) || apierrors.IsAlreadyExists(err)
 }
 
+// onboardError classifies a post-retry onboarding failure. An exhausted write
+// conflict is transient contention, so surface it as TooManyRequests (HTTP 429)
+// to match the Conjur backend and signal callers to retry; any other error
+// keeps the given descriptive type (which maps to a 500).
+func onboardError(err error, fallbackType string) error {
+	if isRetryableConflict(err) {
+		return backend.NewBackendError(nil, err, backend.TypeErrTooManyRequests)
+	}
+	return backend.NewBackendError(nil, err, fallbackType)
+}
+
 var _ backend.Onboarder = &KubernetesOnboarder{}
 
 type KubernetesOnboarder struct {
@@ -65,11 +76,16 @@ func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string
 		return err
 	})
 	if err != nil {
-		return backend.NewDefaultOnboardResponse(nil), backend.NewBackendError(nil, err, "failed to create or update environment")
+		return backend.NewDefaultOnboardResponse(nil), onboardError(err, "failed to create or update environment")
 	}
 
 	secretRefs := make(map[string]backend.SecretRef, len(secrets))
-	for secretName := range secrets {
+	for secretName, secretValue := range secrets {
+		// Empty defaults (e.g. zones "{}") are not stored, so don't advertise a
+		// ref that would fail on retrieval. Matches the Conjur backend.
+		if secretValue.IsEmpty() {
+			continue
+		}
 		secretRefs[secretName] = New(env, backend.NoTeam, backend.NoApp, secretName, obj.GetResourceVersion())
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, backend.NoTeam, backend.NoApp, options.SecretValues)
@@ -102,11 +118,16 @@ func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamI
 		return err
 	})
 	if err != nil {
-		return backend.NewDefaultOnboardResponse(nil), backend.NewBackendError(nil, err, "failed to create or update team")
+		return backend.NewDefaultOnboardResponse(nil), onboardError(err, "failed to create or update team")
 	}
 
 	secretRefs := make(map[string]backend.SecretRef, len(secrets))
-	for secretName := range secrets {
+	for secretName, secretValue := range secrets {
+		// Empty defaults are not stored, so don't advertise an unretrievable
+		// ref. Matches the Conjur backend.
+		if secretValue.IsEmpty() {
+			continue
+		}
 		secretRefs[secretName] = New(env, teamId, backend.NoApp, secretName, obj.GetResourceVersion())
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, teamId, backend.NoApp, options.SecretValues)
@@ -139,11 +160,16 @@ func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string
 		return err
 	})
 	if err != nil {
-		return backend.NewDefaultOnboardResponse(nil), backend.NewBackendError(nil, err, "failed to create or update application")
+		return backend.NewDefaultOnboardResponse(nil), onboardError(err, "failed to create or update application")
 	}
 
 	secretRefs := make(map[string]backend.SecretRef, len(secrets)+len(options.SecretValues))
-	for secretPath := range secrets {
+	for secretPath, secretValue := range secrets {
+		// Empty defaults (e.g. externalSecrets "{}") are not stored, so don't
+		// advertise an unretrievable ref. Matches the Conjur backend.
+		if secretValue.IsEmpty() {
+			continue
+		}
 		secretRefs[secretPath] = New(env, teamId, appId, secretPath, obj.GetResourceVersion())
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, teamId, appId, options.SecretValues)

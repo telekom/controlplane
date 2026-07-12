@@ -60,6 +60,8 @@ type ApiExposure implements Node {
   active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
+  security: ApiExposureSecurity
+  traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
@@ -768,6 +770,8 @@ type Application implements Node {
   currentExpiresAt: Time
   secretRotationPhase: ApplicationSecretRotationPhase!
   secretRotationMessage: String
+  externalIds: [ExternalId!]
+  ipRestrictions: IpRestrictions
   zone: Zone!
   exposedApis(
     """
@@ -1198,6 +1202,7 @@ type Approval implements Node {
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
   name: String!
+  expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
 }
 """
@@ -1705,6 +1710,19 @@ input ApprovalWhereInput {
   nameEqualFold: String
   nameContainsFold: String
   """
+  expiresAt field predicates
+  """
+  expiresat: Time
+  expiresatNEQ: Time
+  expiresatIn: [Time!]
+  expiresatNotIn: [Time!]
+  expiresatGT: Time
+  expiresatGTE: Time
+  expiresatLT: Time
+  expiresatLTE: Time
+  expiresatIsNil: Boolean
+  expiresatNotNil: Boolean
+  """
   state field predicates
   """
   state: ApprovalState
@@ -1738,6 +1756,7 @@ type EventExposure implements Node {
   eventType: String!
   visibility: EventExposureVisibility!
   active: Boolean
+  eventScopes: [EventScope]
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -1968,6 +1987,9 @@ type EventSubscription implements Node {
   name: String!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
+  trigger: EventTrigger
+  delivery: EventDelivery!
+  scopes: [String!]
   callbackURL: String
   owner: Application!
   approval: Approval
@@ -3042,6 +3064,8 @@ type Team implements Node {
   namespace: String!
   name: String!
   email: String!
+  displayname: String @goField(name: "DisplayName", forceResolver: false)
+  description: String
   category: TeamCategory!
   teamToken: String
   group: Group
@@ -3341,6 +3365,42 @@ input TeamWhereInput {
   emailHasSuffix: String
   emailEqualFold: String
   emailContainsFold: String
+  """
+  displayName field predicates
+  """
+  displayname: String
+  displaynameNEQ: String
+  displaynameIn: [String!]
+  displaynameNotIn: [String!]
+  displaynameGT: String
+  displaynameGTE: String
+  displaynameLT: String
+  displaynameLTE: String
+  displaynameContains: String
+  displaynameHasPrefix: String
+  displaynameHasSuffix: String
+  displaynameIsNil: Boolean
+  displaynameNotNil: Boolean
+  displaynameEqualFold: String
+  displaynameContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
   """
   category field predicates
   """

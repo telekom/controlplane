@@ -96,8 +96,8 @@ type Server struct {
 // RegisterRoutes sets up security middleware, OpenAPI validation, and all route handlers.
 func (s *Server) RegisterRoutes(router fiber.Router) {
 	checkAccess := security.ConfigureSecurity(router, security.SecurityOpts{
-		Enabled: s.Config.Security.Enabled,
-		Log:     s.Log,
+		Mode: s.Config.Security.Mode,
+		Log:  s.Log,
 		JWTOpts: []security.Option[*security.JWTOpts]{
 			security.WithLmsCheck(s.Config.Security.LMS.BasePath),
 			security.WithTrustedIssuers(s.Config.Security.TrustedIssuers),

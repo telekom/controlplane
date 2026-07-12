@@ -537,12 +537,12 @@ var _ = Describe("EventConfigHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ChildResourcesNotReady"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(processingCond.Reason).To(Equal("ChildResourcesNotReady"))
+			Expect(processingCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 		})
 
 		It("should return error when CleanupAll fails", func() {
@@ -568,7 +568,7 @@ var _ = Describe("EventConfigHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(readyCond.Reason).To(Equal("EventConfigProvisioned"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())

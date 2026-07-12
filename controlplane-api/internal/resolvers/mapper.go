@@ -22,10 +22,12 @@ func mapTeamInfo(team *ent.Team, group *ent.Group) *model.TeamInfo {
 		email = &team.Email
 	}
 	return &model.TeamInfo{
-		ID:        team.ID,
-		Name:      team.Name,
-		GroupName: groupName,
-		Email:     email,
+		ID:          team.ID,
+		Name:        team.Name,
+		GroupName:   groupName,
+		Email:       email,
+		DisplayName: team.DisplayName,
+		Description: team.Description,
 	}
 }
 
@@ -37,6 +39,7 @@ func mapApiExposureInfo(exposure *ent.ApiExposure, app *ent.Application, team *e
 		Active:     exposure.Active,
 		ApiVersion: exposure.APIVersion,
 		Features:   exposure.Features,
+		Traffic:    &exposure.Traffic,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     exposure.ApprovalConfig.Strategy,
 			TrustedTeams: exposure.ApprovalConfig.TrustedTeams,

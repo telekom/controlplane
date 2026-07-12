@@ -64,7 +64,7 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 	if types.Equals(&activeAPI, obj) {
 		// the oldest api is the same as the one we are trying to create
 		obj.Status.Active = true
-		obj.SetCondition(condition.NewReadyCondition("ApiActive", "Api is active"))
+		obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Api is active"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Api is processed"))
 		logger.Info("✅ Api is processed")
 
@@ -75,7 +75,7 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 
 		if obj.Spec.BasePath == activeAPI.Spec.BasePath {
 			// The exact same API (case matches)
-			obj.SetCondition(condition.NewNotReadyCondition("ApiNotActive", "Api is not active"))
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Api is not active"))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Api is blocked, another Api with the same BasePath is active. " +
 					"It will be automatically processed, if the other Api will be deleted.",
@@ -84,7 +84,7 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 
 		} else {
 			// The same API is exposed but it has a different case (e.g. /MyApi vs /myapi)
-			obj.SetCondition(condition.NewNotReadyCondition("ApiNotActiveCaseConflict", "Api is not active due to case conflict"))
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Api is not active due to case conflict"))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Api is blocked, another Api with the same BasePath but different case is active. " +
 					"Please resolve the conflict by changing the BasePath of one of the Apis.",

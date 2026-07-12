@@ -69,23 +69,30 @@ func (r *Rover) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
+// HasFailoverEnabledOnAnySubscription checks if any of the Rover's subscriptions have failover enabled
 func (r *Rover) HasFailoverEnabledOnAnySubscription() bool {
 	return slices.ContainsFunc(r.Spec.Subscriptions, func(sub Subscription) bool {
-		if sub.Type() == TypeApi && sub.Api != nil && sub.Api.Traffic.Failover != nil {
-			return true
+		switch sub.Type() {
+		case TypeApi:
+			return sub.Api != nil && sub.Api.Traffic.Failover != nil && sub.Api.Traffic.Failover.Enabled
+		default:
+			return false
 		}
-		return false
 	})
 }
 
+// EnableFailoverOnAllSubscriptions enables failover on all API subscriptions of the Rover
 func (r *Rover) EnableFailoverOnAllSubscriptions() {
 	for i := range r.Spec.Subscriptions {
 		sub := &r.Spec.Subscriptions[i]
-		if sub.Type() == TypeApi && sub.Api != nil {
-			if sub.Api.Traffic.Failover == nil {
-				sub.Api.Traffic.Failover = &SubscriberFailover{}
+		switch sub.Type() {
+		case TypeApi:
+			if sub.Api != nil {
+				if sub.Api.Traffic.Failover == nil {
+					sub.Api.Traffic.Failover = &SubscriberFailover{}
+				}
+				sub.Api.Traffic.Failover.Enabled = true
 			}
-			sub.Api.Traffic.Failover.Enabled = true
 		}
 	}
 }
