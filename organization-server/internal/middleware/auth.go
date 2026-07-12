@@ -48,11 +48,11 @@ func ConsumerIdentityFromContext(c *fiber.Ctx) *ConsumerIdentity {
 // but still decoded and checked for structure.
 func JWTValidation(log logr.Logger, trustedIssuers []string) fiber.Handler {
 	if len(trustedIssuers) == 0 {
-		log.Info("⚠️ Security: mock mode (no trusted issuers configured)")
+		log.Info("Security: mock mode (no trusted issuers configured)")
 		return mock.NewJWTMock()
 	}
 
-	log.Info("🔑 Security: JWT validation enabled", "issuers", trustedIssuers)
+	log.Info("Security: JWT validation enabled", "issuers", trustedIssuers)
 	jwkURLs := make([]string, 0, len(trustedIssuers))
 	for _, iss := range trustedIssuers {
 		jwkURLs = append(jwkURLs, iss+"/protocol/openid-connect/certs")
