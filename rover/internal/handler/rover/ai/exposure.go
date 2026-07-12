@@ -6,7 +6,6 @@ package ai
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -64,7 +63,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
 		switch {
 		case err != nil && apierrors.IsNotFound(err):
-			logger.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
+			logger.Info("Team not found for application", "application", owner.Name, "error", err)
 		case err != nil:
 			return err
 		default:
@@ -115,7 +114,7 @@ func mapTrustedTeams(ctx context.Context, teams []rover.TrustedTeam) ([]string, 
 		t, err := organizationv1.FindTeamForNamespace(ctx, namespace)
 		switch {
 		case err != nil && apierrors.IsNotFound(err):
-			logger.Info(fmt.Sprintf("Trusted team %s/%s not found", team.Group, team.Team))
+			logger.Info("Trusted team not found", "group", team.Group, "team", team.Team)
 		case err != nil:
 			return nil, err
 		default:
