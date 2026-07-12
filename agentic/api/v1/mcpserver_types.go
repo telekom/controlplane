@@ -24,7 +24,7 @@ type McpServerSpec struct {
 	// BasePath is the base path of the MCP server endpoint.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
+	// +kubebuilder:validation:Pattern=`^/.*$`
 	BasePath string `json:"basePath"`
 
 	// Version of the MCP server specification (e.g. "1.0.0").

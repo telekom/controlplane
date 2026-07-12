@@ -60,7 +60,7 @@ spec:
               basePath:
                 description: BasePath is the base path of the MCP server endpoint.
                 minLength: 1
-                pattern: ^/[a-z0-9-/]+$
+                pattern: ^/.*$
                 type: string
               category:
                 description: Category of the MCP server (e.g. "g-api", "m-api", "other").

@@ -87,7 +87,7 @@ spec:
               basePath:
                 description: BasePath references the McpServer via its basePath.
                 minLength: 1
-                pattern: ^/[a-z0-9-/]+$
+                pattern: ^/.*$
                 type: string
               provider:
                 description: Provider identifies the providing application.

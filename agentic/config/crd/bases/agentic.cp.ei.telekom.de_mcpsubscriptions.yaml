@@ -60,7 +60,7 @@ spec:
               basePath:
                 description: BasePath references the McpServer/McpExposure via basePath.
                 minLength: 1
-                pattern: ^/[a-z0-9-/]+$
+                pattern: ^/.*$
                 type: string
               requestor:
                 description: Requestor identifies the application requesting access

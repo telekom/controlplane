@@ -15,7 +15,7 @@ type McpSubscriptionSpec struct {
 	// BasePath references the McpServer/McpExposure via basePath.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
+	// +kubebuilder:validation:Pattern=`^/.*$`
 	BasePath string `json:"basePath"`
 
 	// Requestor identifies the application requesting access to the MCP server.

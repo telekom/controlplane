@@ -15,7 +15,7 @@ type McpExposureSpec struct {
 	// BasePath references the McpServer via its basePath.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
+	// +kubebuilder:validation:Pattern=`^/.*$`
 	BasePath string `json:"basePath"`
 
 	// Upstreams define the backend MCP server targets.
