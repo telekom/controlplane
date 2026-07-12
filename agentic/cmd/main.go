@@ -78,8 +78,8 @@ func main() {
 		setupLog.Error(err, "unable to load agentic config")
 		os.Exit(1)
 	}
-	if agenticCfg.TelecontextConsumerName != "" {
-		setupLog.Info("Telecontext integration configured", "consumerName", agenticCfg.TelecontextConsumerName)
+	if agenticCfg.TelecontextApplicationID != "" {
+		setupLog.Info("Telecontext integration configured", "applicationID", agenticCfg.TelecontextApplicationID)
 	}
 
 	disableHTTP2 := func(c *tls.Config) {

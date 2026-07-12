@@ -139,17 +139,54 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 		logger.V(1).Info("MCP proxy Route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
 	}
 
-	// 6. Resolve platform consumer for auto-access (TeleMCP variant)
-	telecontextConsumer := ""
+	// 6. Resolve Telecontext Application for auto-access (TeleMCP variant)
+	var telecontextInfo *util.TelecontextInfo
 	if obj.Spec.Variant.IsTelecontextVariant() {
-		if h.Config.TelecontextConsumerName == "" {
-			return errors.New("TELECONTEXTMCP variant requires telecontext consumer name to be configured")
+		if h.Config.TelecontextApplicationID == "" {
+			return errors.New("TELECONTEXTMCP variant requires telecontext application ID to be configured")
 		}
-		telecontextConsumer = h.Config.TelecontextConsumerName
+		var resolveErr error
+		telecontextInfo, resolveErr = util.ResolveTelecontextApplication(ctx, h.Config)
+		if resolveErr != nil {
+			return errors.Wrap(resolveErr, "failed to resolve Telecontext Application")
+		}
+
+		// If Telecontext is on a different zone, ensure a proxy route exists there
+		telecontextZoneName := telecontextInfo.Zone.Name
+		if telecontextZoneName != obj.Spec.Zone.Name {
+			alreadyInCrossZones := false
+			for _, z := range crossZones {
+				if z.Name == telecontextZoneName {
+					alreadyInCrossZones = true
+					break
+				}
+			}
+			if !alreadyInCrossZones {
+				telecontextZone, zoneErr := util.GetZone(ctx, telecontextInfo.Zone.K8s())
+				if zoneErr != nil {
+					return errors.Wrapf(zoneErr, "failed to get Telecontext zone %q", telecontextZoneName)
+				}
+
+				if telecontextZone.Status.Links.LmsIssuer != "" {
+					crossZoneLmsIssuers = append(crossZoneLmsIssuers, telecontextZone.Status.Links.LmsIssuer)
+				}
+
+				proxyRoute, routeErr := util.CreateMcpProxyRoute(ctx, obj.Spec.BasePath, telecontextZone, zone)
+				if routeErr != nil {
+					return errors.Wrapf(routeErr, "failed to create MCP proxy Route for Telecontext zone %q", telecontextZoneName)
+				}
+				obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *ctypes.ObjectRefFromObject(proxyRoute))
+				logger.V(1).Info("MCP proxy Route created/updated for Telecontext zone", "zone", telecontextZoneName, "route", proxyRoute.Name)
+			}
+		}
 	}
 
 	// 7. Create primary MCP route
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
+	telecontextConsumer := ""
+	if telecontextInfo != nil {
+		telecontextConsumer = telecontextInfo.ConsumerName
+	}
 	route, err := util.CreateMcpRoute(ctx, obj, zone, hasLocalSubs, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
 	if err != nil {
 		return errors.Wrap(err, "failed to create MCP Route")
