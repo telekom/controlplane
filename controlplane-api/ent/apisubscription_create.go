@@ -146,16 +146,16 @@ func (_c *ApiSubscriptionCreate) SetNillableGatewayURL(v *string) *ApiSubscripti
 	return _c
 }
 
-// SetIdpIssuers sets the "idp_issuers" field.
-func (_c *ApiSubscriptionCreate) SetIdpIssuers(v string) *ApiSubscriptionCreate {
-	_c.mutation.SetIdpIssuers(v)
+// SetIdpIssuer sets the "idp_issuer" field.
+func (_c *ApiSubscriptionCreate) SetIdpIssuer(v string) *ApiSubscriptionCreate {
+	_c.mutation.SetIdpIssuer(v)
 	return _c
 }
 
-// SetNillableIdpIssuers sets the "idp_issuers" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableIdpIssuers(v *string) *ApiSubscriptionCreate {
+// SetNillableIdpIssuer sets the "idp_issuer" field if the given value is not nil.
+func (_c *ApiSubscriptionCreate) SetNillableIdpIssuer(v *string) *ApiSubscriptionCreate {
 	if v != nil {
-		_c.SetIdpIssuers(*v)
+		_c.SetIdpIssuer(*v)
 	}
 	return _c
 }
@@ -425,9 +425,9 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
 		_node.GatewayURL = &value
 	}
-	if value, ok := _c.mutation.IdpIssuers(); ok {
-		_spec.SetField(apisubscription.FieldIdpIssuers, field.TypeString, value)
-		_node.IdpIssuers = &value
+	if value, ok := _c.mutation.IdpIssuer(); ok {
+		_spec.SetField(apisubscription.FieldIdpIssuer, field.TypeString, value)
+		_node.IdpIssuer = &value
 	}
 	if value, ok := _c.mutation.ApprovedScopes(); ok {
 		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
@@ -699,21 +699,21 @@ func (u *ApiSubscriptionUpsert) ClearGatewayURL() *ApiSubscriptionUpsert {
 	return u
 }
 
-// SetIdpIssuers sets the "idp_issuers" field.
-func (u *ApiSubscriptionUpsert) SetIdpIssuers(v string) *ApiSubscriptionUpsert {
-	u.Set(apisubscription.FieldIdpIssuers, v)
+// SetIdpIssuer sets the "idp_issuer" field.
+func (u *ApiSubscriptionUpsert) SetIdpIssuer(v string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldIdpIssuer, v)
 	return u
 }
 
-// UpdateIdpIssuers sets the "idp_issuers" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateIdpIssuers() *ApiSubscriptionUpsert {
-	u.SetExcluded(apisubscription.FieldIdpIssuers)
+// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateIdpIssuer() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldIdpIssuer)
 	return u
 }
 
-// ClearIdpIssuers clears the value of the "idp_issuers" field.
-func (u *ApiSubscriptionUpsert) ClearIdpIssuers() *ApiSubscriptionUpsert {
-	u.SetNull(apisubscription.FieldIdpIssuers)
+// ClearIdpIssuer clears the value of the "idp_issuer" field.
+func (u *ApiSubscriptionUpsert) ClearIdpIssuer() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldIdpIssuer)
 	return u
 }
 
@@ -928,24 +928,24 @@ func (u *ApiSubscriptionUpsertOne) ClearGatewayURL() *ApiSubscriptionUpsertOne {
 	})
 }
 
-// SetIdpIssuers sets the "idp_issuers" field.
-func (u *ApiSubscriptionUpsertOne) SetIdpIssuers(v string) *ApiSubscriptionUpsertOne {
+// SetIdpIssuer sets the "idp_issuer" field.
+func (u *ApiSubscriptionUpsertOne) SetIdpIssuer(v string) *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.SetIdpIssuers(v)
+		s.SetIdpIssuer(v)
 	})
 }
 
-// UpdateIdpIssuers sets the "idp_issuers" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateIdpIssuers() *ApiSubscriptionUpsertOne {
+// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateIdpIssuer() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.UpdateIdpIssuers()
+		s.UpdateIdpIssuer()
 	})
 }
 
-// ClearIdpIssuers clears the value of the "idp_issuers" field.
-func (u *ApiSubscriptionUpsertOne) ClearIdpIssuers() *ApiSubscriptionUpsertOne {
+// ClearIdpIssuer clears the value of the "idp_issuer" field.
+func (u *ApiSubscriptionUpsertOne) ClearIdpIssuer() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.ClearIdpIssuers()
+		s.ClearIdpIssuer()
 	})
 }
 
@@ -1328,24 +1328,24 @@ func (u *ApiSubscriptionUpsertBulk) ClearGatewayURL() *ApiSubscriptionUpsertBulk
 	})
 }
 
-// SetIdpIssuers sets the "idp_issuers" field.
-func (u *ApiSubscriptionUpsertBulk) SetIdpIssuers(v string) *ApiSubscriptionUpsertBulk {
+// SetIdpIssuer sets the "idp_issuer" field.
+func (u *ApiSubscriptionUpsertBulk) SetIdpIssuer(v string) *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.SetIdpIssuers(v)
+		s.SetIdpIssuer(v)
 	})
 }
 
-// UpdateIdpIssuers sets the "idp_issuers" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateIdpIssuers() *ApiSubscriptionUpsertBulk {
+// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateIdpIssuer() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.UpdateIdpIssuers()
+		s.UpdateIdpIssuer()
 	})
 }
 
-// ClearIdpIssuers clears the value of the "idp_issuers" field.
-func (u *ApiSubscriptionUpsertBulk) ClearIdpIssuers() *ApiSubscriptionUpsertBulk {
+// ClearIdpIssuer clears the value of the "idp_issuer" field.
+func (u *ApiSubscriptionUpsertBulk) ClearIdpIssuer() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.ClearIdpIssuers()
+		s.ClearIdpIssuer()
 	})
 }
 

@@ -82,7 +82,7 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*
 		TargetAppName:  "", // TODO: this needs to be improved, we need to get the ApiExposure into the context to resolve this
 		TargetTeamName: "",
 		GatewayUrl:     obj.Status.GatewayUrl,
-		IDPIssuers:     obj.Status.IdpIssuer,
+		IDPIssuer:      obj.Status.IdpIssuer,
 	}, nil
 }
 

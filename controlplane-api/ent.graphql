@@ -341,7 +341,7 @@ type ApiSubscription implements Node {
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
-  idpIssuers: String
+  idpIssuer: String
   approvedScopes: [String!]!
   owner: Application!
   failoverZones: [Zone!]
@@ -576,23 +576,23 @@ input ApiSubscriptionWhereInput {
   gatewayURLEqualFold: String
   gatewayURLContainsFold: String
   """
-  idp_issuers field predicates
+  idp_issuer field predicates
   """
-  idpIssuers: String
-  idpIssuersNEQ: String
-  idpIssuersIn: [String!]
-  idpIssuersNotIn: [String!]
-  idpIssuersGT: String
-  idpIssuersGTE: String
-  idpIssuersLT: String
-  idpIssuersLTE: String
-  idpIssuersContains: String
-  idpIssuersHasPrefix: String
-  idpIssuersHasSuffix: String
-  idpIssuersIsNil: Boolean
-  idpIssuersNotNil: Boolean
-  idpIssuersEqualFold: String
-  idpIssuersContainsFold: String
+  idpIssuer: String
+  idpIssuerNEQ: String
+  idpIssuerIn: [String!]
+  idpIssuerNotIn: [String!]
+  idpIssuerGT: String
+  idpIssuerGTE: String
+  idpIssuerLT: String
+  idpIssuerLTE: String
+  idpIssuerContains: String
+  idpIssuerHasPrefix: String
+  idpIssuerHasSuffix: String
+  idpIssuerIsNil: Boolean
+  idpIssuerNotNil: Boolean
+  idpIssuerEqualFold: String
+  idpIssuerContainsFold: String
   """
   owner edge predicates
   """

@@ -179,23 +179,23 @@ func (_u *ApiSubscriptionUpdate) ClearGatewayURL() *ApiSubscriptionUpdate {
 	return _u
 }
 
-// SetIdpIssuers sets the "idp_issuers" field.
-func (_u *ApiSubscriptionUpdate) SetIdpIssuers(v string) *ApiSubscriptionUpdate {
-	_u.mutation.SetIdpIssuers(v)
+// SetIdpIssuer sets the "idp_issuer" field.
+func (_u *ApiSubscriptionUpdate) SetIdpIssuer(v string) *ApiSubscriptionUpdate {
+	_u.mutation.SetIdpIssuer(v)
 	return _u
 }
 
-// SetNillableIdpIssuers sets the "idp_issuers" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableIdpIssuers(v *string) *ApiSubscriptionUpdate {
+// SetNillableIdpIssuer sets the "idp_issuer" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdate) SetNillableIdpIssuer(v *string) *ApiSubscriptionUpdate {
 	if v != nil {
-		_u.SetIdpIssuers(*v)
+		_u.SetIdpIssuer(*v)
 	}
 	return _u
 }
 
-// ClearIdpIssuers clears the value of the "idp_issuers" field.
-func (_u *ApiSubscriptionUpdate) ClearIdpIssuers() *ApiSubscriptionUpdate {
-	_u.mutation.ClearIdpIssuers()
+// ClearIdpIssuer clears the value of the "idp_issuer" field.
+func (_u *ApiSubscriptionUpdate) ClearIdpIssuer() *ApiSubscriptionUpdate {
+	_u.mutation.ClearIdpIssuer()
 	return _u
 }
 
@@ -481,11 +481,11 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if _u.mutation.GatewayURLCleared() {
 		_spec.ClearField(apisubscription.FieldGatewayURL, field.TypeString)
 	}
-	if value, ok := _u.mutation.IdpIssuers(); ok {
-		_spec.SetField(apisubscription.FieldIdpIssuers, field.TypeString, value)
+	if value, ok := _u.mutation.IdpIssuer(); ok {
+		_spec.SetField(apisubscription.FieldIdpIssuer, field.TypeString, value)
 	}
-	if _u.mutation.IdpIssuersCleared() {
-		_spec.ClearField(apisubscription.FieldIdpIssuers, field.TypeString)
+	if _u.mutation.IdpIssuerCleared() {
+		_spec.ClearField(apisubscription.FieldIdpIssuer, field.TypeString)
 	}
 	if value, ok := _u.mutation.ApprovedScopes(); ok {
 		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
@@ -834,23 +834,23 @@ func (_u *ApiSubscriptionUpdateOne) ClearGatewayURL() *ApiSubscriptionUpdateOne 
 	return _u
 }
 
-// SetIdpIssuers sets the "idp_issuers" field.
-func (_u *ApiSubscriptionUpdateOne) SetIdpIssuers(v string) *ApiSubscriptionUpdateOne {
-	_u.mutation.SetIdpIssuers(v)
+// SetIdpIssuer sets the "idp_issuer" field.
+func (_u *ApiSubscriptionUpdateOne) SetIdpIssuer(v string) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetIdpIssuer(v)
 	return _u
 }
 
-// SetNillableIdpIssuers sets the "idp_issuers" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableIdpIssuers(v *string) *ApiSubscriptionUpdateOne {
+// SetNillableIdpIssuer sets the "idp_issuer" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdateOne) SetNillableIdpIssuer(v *string) *ApiSubscriptionUpdateOne {
 	if v != nil {
-		_u.SetIdpIssuers(*v)
+		_u.SetIdpIssuer(*v)
 	}
 	return _u
 }
 
-// ClearIdpIssuers clears the value of the "idp_issuers" field.
-func (_u *ApiSubscriptionUpdateOne) ClearIdpIssuers() *ApiSubscriptionUpdateOne {
-	_u.mutation.ClearIdpIssuers()
+// ClearIdpIssuer clears the value of the "idp_issuer" field.
+func (_u *ApiSubscriptionUpdateOne) ClearIdpIssuer() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearIdpIssuer()
 	return _u
 }
 
@@ -1166,11 +1166,11 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	if _u.mutation.GatewayURLCleared() {
 		_spec.ClearField(apisubscription.FieldGatewayURL, field.TypeString)
 	}
-	if value, ok := _u.mutation.IdpIssuers(); ok {
-		_spec.SetField(apisubscription.FieldIdpIssuers, field.TypeString, value)
+	if value, ok := _u.mutation.IdpIssuer(); ok {
+		_spec.SetField(apisubscription.FieldIdpIssuer, field.TypeString, value)
 	}
-	if _u.mutation.IdpIssuersCleared() {
-		_spec.ClearField(apisubscription.FieldIdpIssuers, field.TypeString)
+	if _u.mutation.IdpIssuerCleared() {
+		_spec.ClearField(apisubscription.FieldIdpIssuer, field.TypeString)
 	}
 	if value, ok := _u.mutation.ApprovedScopes(); ok {
 		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)

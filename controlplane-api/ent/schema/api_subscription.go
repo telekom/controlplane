@@ -46,7 +46,7 @@ func (ApiSubscription) Fields() []ent.Field {
 		field.Text("gateway_url").
 			Optional().
 			Nillable(),
-		field.Text("idp_issuers").
+		field.Text("idp_issuer").
 			Optional().
 			Nillable(),
 		field.JSON("approved_scopes", []string{}).

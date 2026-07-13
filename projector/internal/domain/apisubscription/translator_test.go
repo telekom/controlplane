@@ -91,7 +91,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(data.TargetAppName).To(BeEmpty())
 			Expect(data.TargetTeamName).To(BeEmpty())
 			Expect(data.GatewayUrl).To(Equal("https://gateway.example.com/api/v1/users"))
-			Expect(data.IDPIssuers).To(Equal("https://idp.example.com/realms/my-realm"))
+			Expect(data.IDPIssuer).To(Equal("https://idp.example.com/realms/my-realm"))
 		})
 
 		It("should set GatewayUrl to empty when status has no gateway url", func() {
@@ -111,7 +111,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.GatewayUrl).To(BeEmpty())
-			Expect(data.IDPIssuers).To(BeEmpty())
+			Expect(data.IDPIssuer).To(BeEmpty())
 		})
 	})
 
