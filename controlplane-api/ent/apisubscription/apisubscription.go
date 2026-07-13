@@ -41,8 +41,8 @@ const (
 	FieldM2mAuthMethod = "m2m_auth_method"
 	// FieldGatewayURL holds the string denoting the gateway_url field in the database.
 	FieldGatewayURL = "gateway_url"
-	// FieldApprovedScopes holds the string denoting the approved_scopes field in the database.
-	FieldApprovedScopes = "approved_scopes"
+	// FieldSecurity holds the string denoting the security field in the database.
+	FieldSecurity = "security"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeTarget holds the string denoting the target edge name in mutations.
@@ -105,7 +105,7 @@ var Columns = []string{
 	FieldBasePath,
 	FieldM2mAuthMethod,
 	FieldGatewayURL,
-	FieldApprovedScopes,
+	FieldSecurity,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "api_subscriptions"
@@ -150,8 +150,6 @@ var (
 	NameValidator func(string) error
 	// BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	BasePathValidator func(string) error
-	// DefaultApprovedScopes holds the default value on creation for the "approved_scopes" field.
-	DefaultApprovedScopes []string
 )
 
 // StatusPhase defines the type for the "status_phase" enum field.

@@ -2719,8 +2719,7 @@ type ApiSubscriptionMutation struct {
 	base_path                *string
 	m2m_auth_method          *apisubscription.M2mAuthMethod
 	gateway_url              *string
-	approved_scopes          *[]string
-	appendapproved_scopes    []string
+	security                 **model.ApiSubscriptionSecurity
 	clearedFields            map[string]struct{}
 	owner                    *int
 	clearedowner             bool
@@ -3249,55 +3248,53 @@ func (m *ApiSubscriptionMutation) ResetGatewayURL() {
 	delete(m.clearedFields, apisubscription.FieldGatewayURL)
 }
 
-// SetApprovedScopes sets the "approved_scopes" field.
-func (m *ApiSubscriptionMutation) SetApprovedScopes(s []string) {
-	m.approved_scopes = &s
-	m.appendapproved_scopes = nil
+// SetSecurity sets the "security" field.
+func (m *ApiSubscriptionMutation) SetSecurity(mss *model.ApiSubscriptionSecurity) {
+	m.security = &mss
 }
 
-// ApprovedScopes returns the value of the "approved_scopes" field in the mutation.
-func (m *ApiSubscriptionMutation) ApprovedScopes() (r []string, exists bool) {
-	v := m.approved_scopes
+// Security returns the value of the "security" field in the mutation.
+func (m *ApiSubscriptionMutation) Security() (r *model.ApiSubscriptionSecurity, exists bool) {
+	v := m.security
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldApprovedScopes returns the old "approved_scopes" field's value of the ApiSubscription entity.
+// OldSecurity returns the old "security" field's value of the ApiSubscription entity.
 // If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldApprovedScopes(ctx context.Context) (v []string, err error) {
+func (m *ApiSubscriptionMutation) OldSecurity(ctx context.Context) (v *model.ApiSubscriptionSecurity, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldApprovedScopes is only allowed on UpdateOne operations")
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldApprovedScopes requires an ID field in the mutation")
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldApprovedScopes: %w", err)
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
 	}
-	return oldValue.ApprovedScopes, nil
+	return oldValue.Security, nil
 }
 
-// AppendApprovedScopes adds s to the "approved_scopes" field.
-func (m *ApiSubscriptionMutation) AppendApprovedScopes(s []string) {
-	m.appendapproved_scopes = append(m.appendapproved_scopes, s...)
+// ClearSecurity clears the value of the "security" field.
+func (m *ApiSubscriptionMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[apisubscription.FieldSecurity] = struct{}{}
 }
 
-// AppendedApprovedScopes returns the list of values that were appended to the "approved_scopes" field in this mutation.
-func (m *ApiSubscriptionMutation) AppendedApprovedScopes() ([]string, bool) {
-	if len(m.appendapproved_scopes) == 0 {
-		return nil, false
-	}
-	return m.appendapproved_scopes, true
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldSecurity]
+	return ok
 }
 
-// ResetApprovedScopes resets all changes to the "approved_scopes" field.
-func (m *ApiSubscriptionMutation) ResetApprovedScopes() {
-	m.approved_scopes = nil
-	m.appendapproved_scopes = nil
+// ResetSecurity resets all changes to the "security" field.
+func (m *ApiSubscriptionMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, apisubscription.FieldSecurity)
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by id.
@@ -3590,8 +3587,8 @@ func (m *ApiSubscriptionMutation) Fields() []string {
 	if m.gateway_url != nil {
 		fields = append(fields, apisubscription.FieldGatewayURL)
 	}
-	if m.approved_scopes != nil {
-		fields = append(fields, apisubscription.FieldApprovedScopes)
+	if m.security != nil {
+		fields = append(fields, apisubscription.FieldSecurity)
 	}
 	return fields
 }
@@ -3621,8 +3618,8 @@ func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.M2mAuthMethod()
 	case apisubscription.FieldGatewayURL:
 		return m.GatewayURL()
-	case apisubscription.FieldApprovedScopes:
-		return m.ApprovedScopes()
+	case apisubscription.FieldSecurity:
+		return m.Security()
 	}
 	return nil, false
 }
@@ -3652,8 +3649,8 @@ func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldM2mAuthMethod(ctx)
 	case apisubscription.FieldGatewayURL:
 		return m.OldGatewayURL(ctx)
-	case apisubscription.FieldApprovedScopes:
-		return m.OldApprovedScopes(ctx)
+	case apisubscription.FieldSecurity:
+		return m.OldSecurity(ctx)
 	}
 	return nil, fmt.Errorf("unknown ApiSubscription field %s", name)
 }
@@ -3733,12 +3730,12 @@ func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetGatewayURL(v)
 		return nil
-	case apisubscription.FieldApprovedScopes:
-		v, ok := value.([]string)
+	case apisubscription.FieldSecurity:
+		v, ok := value.(*model.ApiSubscriptionSecurity)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetApprovedScopes(v)
+		m.SetSecurity(v)
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription field %s", name)
@@ -3782,6 +3779,9 @@ func (m *ApiSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(apisubscription.FieldGatewayURL) {
 		fields = append(fields, apisubscription.FieldGatewayURL)
 	}
+	if m.FieldCleared(apisubscription.FieldSecurity) {
+		fields = append(fields, apisubscription.FieldSecurity)
+	}
 	return fields
 }
 
@@ -3807,6 +3807,9 @@ func (m *ApiSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case apisubscription.FieldGatewayURL:
 		m.ClearGatewayURL()
+		return nil
+	case apisubscription.FieldSecurity:
+		m.ClearSecurity()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription nullable field %s", name)
@@ -3846,8 +3849,8 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 	case apisubscription.FieldGatewayURL:
 		m.ResetGatewayURL()
 		return nil
-	case apisubscription.FieldApprovedScopes:
-		m.ResetApprovedScopes()
+	case apisubscription.FieldSecurity:
+		m.ResetSecurity()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription field %s", name)

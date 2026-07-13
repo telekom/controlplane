@@ -648,6 +648,16 @@ func GatewayURLContainsFold(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldContainsFold(FieldGatewayURL, v))
 }
 
+// SecurityIsNil applies the IsNil predicate on the "security" field.
+func SecurityIsNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIsNull(FieldSecurity))
+}
+
+// SecurityNotNil applies the NotNil predicate on the "security" field.
+func SecurityNotNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotNull(FieldSecurity))
+}
+
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.ApiSubscription {
 	return predicate.ApiSubscription(func(s *sql.Selector) {

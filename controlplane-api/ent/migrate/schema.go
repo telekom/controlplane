@@ -110,7 +110,7 @@ var (
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
 		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "approved_scopes", Type: field.TypeJSON},
+		{Name: "security", Type: field.TypeJSON, Nullable: true},
 		{Name: "api_subscription_target", Type: field.TypeInt, Nullable: true},
 		{Name: "application_subscribed_apis", Type: field.TypeInt},
 	}

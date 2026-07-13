@@ -167,10 +167,6 @@ func init() {
 	apisubscriptionDescBasePath := apisubscriptionFields[0].Descriptor()
 	// apisubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	apisubscription.BasePathValidator = apisubscriptionDescBasePath.Validators[0].(func(string) error)
-	// apisubscriptionDescApprovedScopes is the schema descriptor for approved_scopes field.
-	apisubscriptionDescApprovedScopes := apisubscriptionFields[3].Descriptor()
-	// apisubscription.DefaultApprovedScopes holds the default value on creation for the approved_scopes field.
-	apisubscription.DefaultApprovedScopes = apisubscriptionDescApprovedScopes.Default.([]string)
 	applicationMixin := schema.Application{}.Mixin()
 	application.Policy = privacy.NewPolicies(applicationMixin[0], schema.Application{})
 	application.Hooks[0] = func(next ent.Mutator) ent.Mutator {
