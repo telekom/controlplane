@@ -154,6 +154,20 @@ func (_c *ApprovalRequestCreate) SetAvailableTransitions(v []model.AvailableTran
 	return _c
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_c *ApprovalRequestCreate) SetRequestedScopes(v string) *ApprovalRequestCreate {
+	_c.mutation.SetRequestedScopes(v)
+	return _c
+}
+
+// SetNillableRequestedScopes sets the "requested_scopes" field if the given value is not nil.
+func (_c *ApprovalRequestCreate) SetNillableRequestedScopes(v *string) *ApprovalRequestCreate {
+	if v != nil {
+		_c.SetRequestedScopes(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *ApprovalRequestCreate) SetName(v string) *ApprovalRequestCreate {
 	_c.mutation.SetName(v)
@@ -427,6 +441,10 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 		_spec.SetField(approvalrequest.FieldAvailableTransitions, field.TypeJSON, value)
 		_node.AvailableTransitions = value
 	}
+	if value, ok := _c.mutation.RequestedScopes(); ok {
+		_spec.SetField(approvalrequest.FieldRequestedScopes, field.TypeString, value)
+		_node.RequestedScopes = &value
+	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(approvalrequest.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -686,6 +704,24 @@ func (u *ApprovalRequestUpsert) UpdateAvailableTransitions() *ApprovalRequestUps
 // ClearAvailableTransitions clears the value of the "available_transitions" field.
 func (u *ApprovalRequestUpsert) ClearAvailableTransitions() *ApprovalRequestUpsert {
 	u.SetNull(approvalrequest.FieldAvailableTransitions)
+	return u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApprovalRequestUpsert) SetRequestedScopes(v string) *ApprovalRequestUpsert {
+	u.Set(approvalrequest.FieldRequestedScopes, v)
+	return u
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApprovalRequestUpsert) UpdateRequestedScopes() *ApprovalRequestUpsert {
+	u.SetExcluded(approvalrequest.FieldRequestedScopes)
+	return u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApprovalRequestUpsert) ClearRequestedScopes() *ApprovalRequestUpsert {
+	u.SetNull(approvalrequest.FieldRequestedScopes)
 	return u
 }
 
@@ -951,6 +987,27 @@ func (u *ApprovalRequestUpsertOne) UpdateAvailableTransitions() *ApprovalRequest
 func (u *ApprovalRequestUpsertOne) ClearAvailableTransitions() *ApprovalRequestUpsertOne {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.ClearAvailableTransitions()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApprovalRequestUpsertOne) SetRequestedScopes(v string) *ApprovalRequestUpsertOne {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApprovalRequestUpsertOne) UpdateRequestedScopes() *ApprovalRequestUpsertOne {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApprovalRequestUpsertOne) ClearRequestedScopes() *ApprovalRequestUpsertOne {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.ClearRequestedScopes()
 	})
 }
 
@@ -1386,6 +1443,27 @@ func (u *ApprovalRequestUpsertBulk) UpdateAvailableTransitions() *ApprovalReques
 func (u *ApprovalRequestUpsertBulk) ClearAvailableTransitions() *ApprovalRequestUpsertBulk {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.ClearAvailableTransitions()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApprovalRequestUpsertBulk) SetRequestedScopes(v string) *ApprovalRequestUpsertBulk {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApprovalRequestUpsertBulk) UpdateRequestedScopes() *ApprovalRequestUpsertBulk {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApprovalRequestUpsertBulk) ClearRequestedScopes() *ApprovalRequestUpsertBulk {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.ClearRequestedScopes()
 	})
 }
 

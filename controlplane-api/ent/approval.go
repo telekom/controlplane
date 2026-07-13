@@ -50,6 +50,8 @@ type Approval struct {
 	Decisions []model.Decision `json:"decisions,omitempty"`
 	// AvailableTransitions holds the value of the "available_transitions" field.
 	AvailableTransitions []model.AvailableTransition `json:"available_transitions,omitempty"`
+	// If any, the access-scopes requested.
+	RequestedScopes *string `json:"requested_scopes,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// ExpiresAt holds the value of the "expiresAt" field.
@@ -106,7 +108,7 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case approval.FieldID:
 			values[i] = new(sql.NullInt64)
-		case approval.FieldStatusPhase, approval.FieldStatusMessage, approval.FieldEnvironment, approval.FieldNamespace, approval.FieldAction, approval.FieldStrategy, approval.FieldDeciderTeamName, approval.FieldName, approval.FieldState:
+		case approval.FieldStatusPhase, approval.FieldStatusMessage, approval.FieldEnvironment, approval.FieldNamespace, approval.FieldAction, approval.FieldStrategy, approval.FieldDeciderTeamName, approval.FieldRequestedScopes, approval.FieldName, approval.FieldState:
 			values[i] = new(sql.NullString)
 		case approval.FieldCreatedAt, approval.FieldLastModifiedAt, approval.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
@@ -223,6 +225,13 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.AvailableTransitions); err != nil {
 					return fmt.Errorf("unmarshal field available_transitions: %w", err)
 				}
+			}
+		case approval.FieldRequestedScopes:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field requested_scopes", values[i])
+			} else if value.Valid {
+				_m.RequestedScopes = new(string)
+				*_m.RequestedScopes = value.String
 			}
 		case approval.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -347,6 +356,11 @@ func (_m *Approval) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("available_transitions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AvailableTransitions))
+	builder.WriteString(", ")
+	if v := _m.RequestedScopes; v != nil {
+		builder.WriteString("requested_scopes=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)

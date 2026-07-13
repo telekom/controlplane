@@ -2902,6 +2902,23 @@ type ApprovalWhereInput struct {
 	DeciderTeamNameEqualFold    *string  `json:"deciderTeamNameEqualFold,omitempty"`
 	DeciderTeamNameContainsFold *string  `json:"deciderTeamNameContainsFold,omitempty"`
 
+	// "requested_scopes" field predicates.
+	RequestedScopes             *string  `json:"requestedScopes,omitempty"`
+	RequestedScopesNEQ          *string  `json:"requestedScopesNEQ,omitempty"`
+	RequestedScopesIn           []string `json:"requestedScopesIn,omitempty"`
+	RequestedScopesNotIn        []string `json:"requestedScopesNotIn,omitempty"`
+	RequestedScopesGT           *string  `json:"requestedScopesGT,omitempty"`
+	RequestedScopesGTE          *string  `json:"requestedScopesGTE,omitempty"`
+	RequestedScopesLT           *string  `json:"requestedScopesLT,omitempty"`
+	RequestedScopesLTE          *string  `json:"requestedScopesLTE,omitempty"`
+	RequestedScopesContains     *string  `json:"requestedScopesContains,omitempty"`
+	RequestedScopesHasPrefix    *string  `json:"requestedScopesHasPrefix,omitempty"`
+	RequestedScopesHasSuffix    *string  `json:"requestedScopesHasSuffix,omitempty"`
+	RequestedScopesIsNil        bool     `json:"requestedScopesIsNil,omitempty"`
+	RequestedScopesNotNil       bool     `json:"requestedScopesNotNil,omitempty"`
+	RequestedScopesEqualFold    *string  `json:"requestedScopesEqualFold,omitempty"`
+	RequestedScopesContainsFold *string  `json:"requestedScopesContainsFold,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -3324,6 +3341,51 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 	if i.DeciderTeamNameContainsFold != nil {
 		predicates = append(predicates, approval.DeciderTeamNameContainsFold(*i.DeciderTeamNameContainsFold))
 	}
+	if i.RequestedScopes != nil {
+		predicates = append(predicates, approval.RequestedScopesEQ(*i.RequestedScopes))
+	}
+	if i.RequestedScopesNEQ != nil {
+		predicates = append(predicates, approval.RequestedScopesNEQ(*i.RequestedScopesNEQ))
+	}
+	if len(i.RequestedScopesIn) > 0 {
+		predicates = append(predicates, approval.RequestedScopesIn(i.RequestedScopesIn...))
+	}
+	if len(i.RequestedScopesNotIn) > 0 {
+		predicates = append(predicates, approval.RequestedScopesNotIn(i.RequestedScopesNotIn...))
+	}
+	if i.RequestedScopesGT != nil {
+		predicates = append(predicates, approval.RequestedScopesGT(*i.RequestedScopesGT))
+	}
+	if i.RequestedScopesGTE != nil {
+		predicates = append(predicates, approval.RequestedScopesGTE(*i.RequestedScopesGTE))
+	}
+	if i.RequestedScopesLT != nil {
+		predicates = append(predicates, approval.RequestedScopesLT(*i.RequestedScopesLT))
+	}
+	if i.RequestedScopesLTE != nil {
+		predicates = append(predicates, approval.RequestedScopesLTE(*i.RequestedScopesLTE))
+	}
+	if i.RequestedScopesContains != nil {
+		predicates = append(predicates, approval.RequestedScopesContains(*i.RequestedScopesContains))
+	}
+	if i.RequestedScopesHasPrefix != nil {
+		predicates = append(predicates, approval.RequestedScopesHasPrefix(*i.RequestedScopesHasPrefix))
+	}
+	if i.RequestedScopesHasSuffix != nil {
+		predicates = append(predicates, approval.RequestedScopesHasSuffix(*i.RequestedScopesHasSuffix))
+	}
+	if i.RequestedScopesIsNil {
+		predicates = append(predicates, approval.RequestedScopesIsNil())
+	}
+	if i.RequestedScopesNotNil {
+		predicates = append(predicates, approval.RequestedScopesNotNil())
+	}
+	if i.RequestedScopesEqualFold != nil {
+		predicates = append(predicates, approval.RequestedScopesEqualFold(*i.RequestedScopesEqualFold))
+	}
+	if i.RequestedScopesContainsFold != nil {
+		predicates = append(predicates, approval.RequestedScopesContainsFold(*i.RequestedScopesContainsFold))
+	}
 	if i.Name != nil {
 		predicates = append(predicates, approval.NameEQ(*i.Name))
 	}
@@ -3581,6 +3643,23 @@ type ApprovalRequestWhereInput struct {
 	DeciderTeamNameHasSuffix    *string  `json:"deciderTeamNameHasSuffix,omitempty"`
 	DeciderTeamNameEqualFold    *string  `json:"deciderTeamNameEqualFold,omitempty"`
 	DeciderTeamNameContainsFold *string  `json:"deciderTeamNameContainsFold,omitempty"`
+
+	// "requested_scopes" field predicates.
+	RequestedScopes             *string  `json:"requestedScopes,omitempty"`
+	RequestedScopesNEQ          *string  `json:"requestedScopesNEQ,omitempty"`
+	RequestedScopesIn           []string `json:"requestedScopesIn,omitempty"`
+	RequestedScopesNotIn        []string `json:"requestedScopesNotIn,omitempty"`
+	RequestedScopesGT           *string  `json:"requestedScopesGT,omitempty"`
+	RequestedScopesGTE          *string  `json:"requestedScopesGTE,omitempty"`
+	RequestedScopesLT           *string  `json:"requestedScopesLT,omitempty"`
+	RequestedScopesLTE          *string  `json:"requestedScopesLTE,omitempty"`
+	RequestedScopesContains     *string  `json:"requestedScopesContains,omitempty"`
+	RequestedScopesHasPrefix    *string  `json:"requestedScopesHasPrefix,omitempty"`
+	RequestedScopesHasSuffix    *string  `json:"requestedScopesHasSuffix,omitempty"`
+	RequestedScopesIsNil        bool     `json:"requestedScopesIsNil,omitempty"`
+	RequestedScopesNotNil       bool     `json:"requestedScopesNotNil,omitempty"`
+	RequestedScopesEqualFold    *string  `json:"requestedScopesEqualFold,omitempty"`
+	RequestedScopesContainsFold *string  `json:"requestedScopesContainsFold,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -3991,6 +4070,51 @@ func (i *ApprovalRequestWhereInput) P() (predicate.ApprovalRequest, error) {
 	}
 	if i.DeciderTeamNameContainsFold != nil {
 		predicates = append(predicates, approvalrequest.DeciderTeamNameContainsFold(*i.DeciderTeamNameContainsFold))
+	}
+	if i.RequestedScopes != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesEQ(*i.RequestedScopes))
+	}
+	if i.RequestedScopesNEQ != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesNEQ(*i.RequestedScopesNEQ))
+	}
+	if len(i.RequestedScopesIn) > 0 {
+		predicates = append(predicates, approvalrequest.RequestedScopesIn(i.RequestedScopesIn...))
+	}
+	if len(i.RequestedScopesNotIn) > 0 {
+		predicates = append(predicates, approvalrequest.RequestedScopesNotIn(i.RequestedScopesNotIn...))
+	}
+	if i.RequestedScopesGT != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesGT(*i.RequestedScopesGT))
+	}
+	if i.RequestedScopesGTE != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesGTE(*i.RequestedScopesGTE))
+	}
+	if i.RequestedScopesLT != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesLT(*i.RequestedScopesLT))
+	}
+	if i.RequestedScopesLTE != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesLTE(*i.RequestedScopesLTE))
+	}
+	if i.RequestedScopesContains != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesContains(*i.RequestedScopesContains))
+	}
+	if i.RequestedScopesHasPrefix != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesHasPrefix(*i.RequestedScopesHasPrefix))
+	}
+	if i.RequestedScopesHasSuffix != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesHasSuffix(*i.RequestedScopesHasSuffix))
+	}
+	if i.RequestedScopesIsNil {
+		predicates = append(predicates, approvalrequest.RequestedScopesIsNil())
+	}
+	if i.RequestedScopesNotNil {
+		predicates = append(predicates, approvalrequest.RequestedScopesNotNil())
+	}
+	if i.RequestedScopesEqualFold != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesEqualFold(*i.RequestedScopesEqualFold))
+	}
+	if i.RequestedScopesContainsFold != nil {
+		predicates = append(predicates, approvalrequest.RequestedScopesContainsFold(*i.RequestedScopesContainsFold))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, approvalrequest.NameEQ(*i.Name))

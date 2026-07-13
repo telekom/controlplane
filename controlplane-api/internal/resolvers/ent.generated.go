@@ -3942,6 +3942,29 @@ func (ec *executionContext) fieldContext_Approval_availableTransitions(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _Approval_requestedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Approval_requestedScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RequestedScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Approval_requestedScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Approval", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Approval_name(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4532,6 +4555,29 @@ func (ec *executionContext) fieldContext_ApprovalRequest_availableTransitions(_ 
 		},
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _ApprovalRequest_requestedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApprovalRequest_requestedScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RequestedScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApprovalRequest_requestedScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApprovalRequest", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ApprovalRequest_name(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
@@ -12364,7 +12410,7 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "deciderTeamName", "deciderTeamNameNEQ", "deciderTeamNameIn", "deciderTeamNameNotIn", "deciderTeamNameGT", "deciderTeamNameGTE", "deciderTeamNameLT", "deciderTeamNameLTE", "deciderTeamNameContains", "deciderTeamNameHasPrefix", "deciderTeamNameHasSuffix", "deciderTeamNameEqualFold", "deciderTeamNameContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith", "hasEventSubscription", "hasEventSubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "deciderTeamName", "deciderTeamNameNEQ", "deciderTeamNameIn", "deciderTeamNameNotIn", "deciderTeamNameGT", "deciderTeamNameGTE", "deciderTeamNameLT", "deciderTeamNameLTE", "deciderTeamNameContains", "deciderTeamNameHasPrefix", "deciderTeamNameHasSuffix", "deciderTeamNameEqualFold", "deciderTeamNameContainsFold", "requestedScopes", "requestedScopesNEQ", "requestedScopesIn", "requestedScopesNotIn", "requestedScopesGT", "requestedScopesGTE", "requestedScopesLT", "requestedScopesLTE", "requestedScopesContains", "requestedScopesHasPrefix", "requestedScopesHasSuffix", "requestedScopesIsNil", "requestedScopesNotNil", "requestedScopesEqualFold", "requestedScopesContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith", "hasEventSubscription", "hasEventSubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13113,6 +13159,111 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 				return it, err
 			}
 			it.DeciderTeamNameContainsFold = data
+		case "requestedScopes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopes"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopes = data
+		case "requestedScopesNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesNEQ = data
+		case "requestedScopesIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesIn = data
+		case "requestedScopesNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesNotIn = data
+		case "requestedScopesGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesGT = data
+		case "requestedScopesGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesGTE = data
+		case "requestedScopesLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesLT = data
+		case "requestedScopesLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesLTE = data
+		case "requestedScopesContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesContains = data
+		case "requestedScopesHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesHasPrefix = data
+		case "requestedScopesHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesHasSuffix = data
+		case "requestedScopesIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesIsNil = data
+		case "requestedScopesNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesNotNil = data
+		case "requestedScopesEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesEqualFold = data
+		case "requestedScopesContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -13276,7 +13427,7 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "deciderTeamName", "deciderTeamNameNEQ", "deciderTeamNameIn", "deciderTeamNameNotIn", "deciderTeamNameGT", "deciderTeamNameGTE", "deciderTeamNameLT", "deciderTeamNameLTE", "deciderTeamNameContains", "deciderTeamNameHasPrefix", "deciderTeamNameHasSuffix", "deciderTeamNameEqualFold", "deciderTeamNameContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "expiresat", "expiresatNEQ", "expiresatIn", "expiresatNotIn", "expiresatGT", "expiresatGTE", "expiresatLT", "expiresatLTE", "expiresatIsNil", "expiresatNotNil", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith", "hasEventSubscription", "hasEventSubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "deciderTeamName", "deciderTeamNameNEQ", "deciderTeamNameIn", "deciderTeamNameNotIn", "deciderTeamNameGT", "deciderTeamNameGTE", "deciderTeamNameLT", "deciderTeamNameLTE", "deciderTeamNameContains", "deciderTeamNameHasPrefix", "deciderTeamNameHasSuffix", "deciderTeamNameEqualFold", "deciderTeamNameContainsFold", "requestedScopes", "requestedScopesNEQ", "requestedScopesIn", "requestedScopesNotIn", "requestedScopesGT", "requestedScopesGTE", "requestedScopesLT", "requestedScopesLTE", "requestedScopesContains", "requestedScopesHasPrefix", "requestedScopesHasSuffix", "requestedScopesIsNil", "requestedScopesNotNil", "requestedScopesEqualFold", "requestedScopesContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "expiresat", "expiresatNEQ", "expiresatIn", "expiresatNotIn", "expiresatGT", "expiresatGTE", "expiresatLT", "expiresatLTE", "expiresatIsNil", "expiresatNotNil", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith", "hasEventSubscription", "hasEventSubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14025,6 +14176,111 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 				return it, err
 			}
 			it.DeciderTeamNameContainsFold = data
+		case "requestedScopes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopes"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopes = data
+		case "requestedScopesNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesNEQ = data
+		case "requestedScopesIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesIn = data
+		case "requestedScopesNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesNotIn = data
+		case "requestedScopesGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesGT = data
+		case "requestedScopesGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesGTE = data
+		case "requestedScopesLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesLT = data
+		case "requestedScopesLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesLTE = data
+		case "requestedScopesContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesContains = data
+		case "requestedScopesHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesHasPrefix = data
+		case "requestedScopesHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesHasSuffix = data
+		case "requestedScopesIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesIsNil = data
+		case "requestedScopesNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesNotNil = data
+		case "requestedScopesEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesEqualFold = data
+		case "requestedScopesContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestedScopesContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestedScopesContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -21390,6 +21646,8 @@ func (ec *executionContext) _Approval(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "availableTransitions":
 			out.Values[i] = ec._Approval_availableTransitions(ctx, field, obj)
+		case "requestedScopes":
+			out.Values[i] = ec._Approval_requestedScopes(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._Approval_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -21617,6 +21875,8 @@ func (ec *executionContext) _ApprovalRequest(ctx context.Context, sel ast.Select
 			}
 		case "availableTransitions":
 			out.Values[i] = ec._ApprovalRequest_availableTransitions(ctx, field, obj)
+		case "requestedScopes":
+			out.Values[i] = ec._ApprovalRequest_requestedScopes(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._ApprovalRequest_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

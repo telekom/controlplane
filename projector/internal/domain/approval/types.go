@@ -53,4 +53,7 @@ type ApprovalData struct {
 	SubscriptionNamespace string
 	SubscriptionName      string
 	ExpiresAt             *time.Time
+
+	// AccessScopes is a comma-separated list of access scopes requested by the approval.
+	AccessScopes string
 }

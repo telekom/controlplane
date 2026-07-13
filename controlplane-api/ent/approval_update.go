@@ -215,6 +215,26 @@ func (_u *ApprovalUpdate) ClearAvailableTransitions() *ApprovalUpdate {
 	return _u
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *ApprovalUpdate) SetRequestedScopes(v string) *ApprovalUpdate {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// SetNillableRequestedScopes sets the "requested_scopes" field if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableRequestedScopes(v *string) *ApprovalUpdate {
+	if v != nil {
+		_u.SetRequestedScopes(*v)
+	}
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *ApprovalUpdate) ClearRequestedScopes() *ApprovalUpdate {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *ApprovalUpdate) SetName(v string) *ApprovalUpdate {
 	_u.mutation.SetName(v)
@@ -469,6 +489,12 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.AvailableTransitionsCleared() {
 		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(approval.FieldRequestedScopes, field.TypeString, value)
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(approval.FieldRequestedScopes, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)
@@ -737,6 +763,26 @@ func (_u *ApprovalUpdateOne) AppendAvailableTransitions(v []model.AvailableTrans
 // ClearAvailableTransitions clears the value of the "available_transitions" field.
 func (_u *ApprovalUpdateOne) ClearAvailableTransitions() *ApprovalUpdateOne {
 	_u.mutation.ClearAvailableTransitions()
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *ApprovalUpdateOne) SetRequestedScopes(v string) *ApprovalUpdateOne {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// SetNillableRequestedScopes sets the "requested_scopes" field if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableRequestedScopes(v *string) *ApprovalUpdateOne {
+	if v != nil {
+		_u.SetRequestedScopes(*v)
+	}
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *ApprovalUpdateOne) ClearRequestedScopes() *ApprovalUpdateOne {
+	_u.mutation.ClearRequestedScopes()
 	return _u
 }
 
@@ -1024,6 +1070,12 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 	}
 	if _u.mutation.AvailableTransitionsCleared() {
 		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(approval.FieldRequestedScopes, field.TypeString, value)
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(approval.FieldRequestedScopes, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)

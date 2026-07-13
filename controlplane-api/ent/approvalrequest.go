@@ -50,6 +50,8 @@ type ApprovalRequest struct {
 	Decisions []model.Decision `json:"decisions,omitempty"`
 	// AvailableTransitions holds the value of the "available_transitions" field.
 	AvailableTransitions []model.AvailableTransition `json:"available_transitions,omitempty"`
+	// If any, the access-scopes requested.
+	RequestedScopes *string `json:"requested_scopes,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// State holds the value of the "state" field.
@@ -104,7 +106,7 @@ func (*ApprovalRequest) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case approvalrequest.FieldID:
 			values[i] = new(sql.NullInt64)
-		case approvalrequest.FieldStatusPhase, approvalrequest.FieldStatusMessage, approvalrequest.FieldEnvironment, approvalrequest.FieldNamespace, approvalrequest.FieldAction, approvalrequest.FieldStrategy, approvalrequest.FieldDeciderTeamName, approvalrequest.FieldName, approvalrequest.FieldState:
+		case approvalrequest.FieldStatusPhase, approvalrequest.FieldStatusMessage, approvalrequest.FieldEnvironment, approvalrequest.FieldNamespace, approvalrequest.FieldAction, approvalrequest.FieldStrategy, approvalrequest.FieldDeciderTeamName, approvalrequest.FieldRequestedScopes, approvalrequest.FieldName, approvalrequest.FieldState:
 			values[i] = new(sql.NullString)
 		case approvalrequest.FieldCreatedAt, approvalrequest.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -222,6 +224,13 @@ func (_m *ApprovalRequest) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field available_transitions: %w", err)
 				}
 			}
+		case approvalrequest.FieldRequestedScopes:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field requested_scopes", values[i])
+			} else if value.Valid {
+				_m.RequestedScopes = new(string)
+				*_m.RequestedScopes = value.String
+			}
 		case approvalrequest.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -338,6 +347,11 @@ func (_m *ApprovalRequest) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("available_transitions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AvailableTransitions))
+	builder.WriteString(", ")
+	if v := _m.RequestedScopes; v != nil {
+		builder.WriteString("requested_scopes=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)

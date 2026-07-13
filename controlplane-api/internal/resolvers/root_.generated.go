@@ -242,6 +242,7 @@ type ComplexityRoot struct {
 		LastModifiedAt       func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Namespace            func(childComplexity int) int
+		RequestedScopes      func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -279,6 +280,7 @@ type ComplexityRoot struct {
 		LastModifiedAt       func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Namespace            func(childComplexity int) int
+		RequestedScopes      func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -1623,6 +1625,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Approval.Namespace(childComplexity), true
 
+	case "Approval.requestedScopes":
+		if e.ComplexityRoot.Approval.RequestedScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.RequestedScopes(childComplexity), true
+
 	case "Approval.requester":
 		if e.ComplexityRoot.Approval.Requester == nil {
 			break
@@ -1797,6 +1806,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Namespace(childComplexity), true
+
+	case "ApprovalRequest.requestedScopes":
+		if e.ComplexityRoot.ApprovalRequest.RequestedScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.RequestedScopes(childComplexity), true
 
 	case "ApprovalRequest.requester":
 		if e.ComplexityRoot.ApprovalRequest.Requester == nil {
@@ -4992,6 +5008,10 @@ type Approval implements Node {
   deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  """
+  If any, the access-scopes requested.
+  """
+  requestedScopes: String
   name: String!
   expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
@@ -5061,6 +5081,10 @@ type ApprovalRequest implements Node {
   deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  """
+  If any, the access-scopes requested.
+  """
+  requestedScopes: String
   name: String!
   state: ApprovalRequestState!
 }
@@ -5282,6 +5306,24 @@ input ApprovalRequestWhereInput {
   deciderTeamNameEqualFold: String
   deciderTeamNameContainsFold: String
   """
+  requested_scopes field predicates
+  """
+  requestedScopes: String
+  requestedScopesNEQ: String
+  requestedScopesIn: [String!]
+  requestedScopesNotIn: [String!]
+  requestedScopesGT: String
+  requestedScopesGTE: String
+  requestedScopesLT: String
+  requestedScopesLTE: String
+  requestedScopesContains: String
+  requestedScopesHasPrefix: String
+  requestedScopesHasSuffix: String
+  requestedScopesIsNil: Boolean
+  requestedScopesNotNil: Boolean
+  requestedScopesEqualFold: String
+  requestedScopesContainsFold: String
+  """
   name field predicates
   """
   name: String
@@ -5484,6 +5526,24 @@ input ApprovalWhereInput {
   deciderTeamNameHasSuffix: String
   deciderTeamNameEqualFold: String
   deciderTeamNameContainsFold: String
+  """
+  requested_scopes field predicates
+  """
+  requestedScopes: String
+  requestedScopesNEQ: String
+  requestedScopesIn: [String!]
+  requestedScopesNotIn: [String!]
+  requestedScopesGT: String
+  requestedScopesGTE: String
+  requestedScopesLT: String
+  requestedScopesLTE: String
+  requestedScopesContains: String
+  requestedScopesHasPrefix: String
+  requestedScopesHasSuffix: String
+  requestedScopesIsNil: Boolean
+  requestedScopesNotNil: Boolean
+  requestedScopesEqualFold: String
+  requestedScopesContainsFold: String
   """
   name field predicates
   """
@@ -8257,6 +8317,8 @@ func (ec *executionContext) childFields_Approval(ctx context.Context, field grap
 		return ec.fieldContext_Approval_decisions(ctx, field)
 	case "availableTransitions":
 		return ec.fieldContext_Approval_availableTransitions(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_Approval_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_Approval_name(ctx, field)
 	case "expiresat":
@@ -8331,6 +8393,8 @@ func (ec *executionContext) childFields_ApprovalRequest(ctx context.Context, fie
 		return ec.fieldContext_ApprovalRequest_decisions(ctx, field)
 	case "availableTransitions":
 		return ec.fieldContext_ApprovalRequest_availableTransitions(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_ApprovalRequest_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_ApprovalRequest_name(ctx, field)
 	case "state":
