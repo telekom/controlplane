@@ -306,7 +306,7 @@ var (
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "event_scopes", Type: field.TypeJSON, Nullable: true},
-		{Name: "gateway_provider_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "gateway_publishing_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "application_exposed_events", Type: field.TypeInt},
 		{Name: "event_type_exposures", Type: field.TypeInt, Nullable: true},
@@ -354,7 +354,7 @@ var (
 		{Name: "delivery", Type: field.TypeJSON},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "callback_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "gateway_consumer_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "gateway_sse_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "application_subscribed_events", Type: field.TypeInt},
 		{Name: "event_subscription_target", Type: field.TypeInt, Nullable: true},
 	}

@@ -1505,10 +1505,10 @@ func (_q *EventExposureQuery) collectField(ctx context.Context, oneNode bool, op
 				selectedFields = append(selectedFields, eventexposure.FieldEventScopes)
 				fieldSeen[eventexposure.FieldEventScopes] = struct{}{}
 			}
-		case "gatewayProviderURL":
-			if _, ok := fieldSeen[eventexposure.FieldGatewayProviderURL]; !ok {
-				selectedFields = append(selectedFields, eventexposure.FieldGatewayProviderURL)
-				fieldSeen[eventexposure.FieldGatewayProviderURL] = struct{}{}
+		case "gatewayPublishingURL":
+			if _, ok := fieldSeen[eventexposure.FieldGatewayPublishingURL]; !ok {
+				selectedFields = append(selectedFields, eventexposure.FieldGatewayPublishingURL)
+				fieldSeen[eventexposure.FieldGatewayPublishingURL] = struct{}{}
 			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[eventexposure.FieldApprovalConfig]; !ok {
@@ -1699,10 +1699,10 @@ func (_q *EventSubscriptionQuery) collectField(ctx context.Context, oneNode bool
 				selectedFields = append(selectedFields, eventsubscription.FieldCallbackURL)
 				fieldSeen[eventsubscription.FieldCallbackURL] = struct{}{}
 			}
-		case "gatewayConsumerURL":
-			if _, ok := fieldSeen[eventsubscription.FieldGatewayConsumerURL]; !ok {
-				selectedFields = append(selectedFields, eventsubscription.FieldGatewayConsumerURL)
-				fieldSeen[eventsubscription.FieldGatewayConsumerURL] = struct{}{}
+		case "gatewaySseURL":
+			if _, ok := fieldSeen[eventsubscription.FieldGatewaySseURL]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldGatewaySseURL)
+				fieldSeen[eventsubscription.FieldGatewaySseURL] = struct{}{}
 			}
 		case "id":
 		case "__typename":

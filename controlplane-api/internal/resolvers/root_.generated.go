@@ -350,22 +350,22 @@ type ComplexityRoot struct {
 	}
 
 	EventExposure struct {
-		Active             func(childComplexity int) int
-		ApprovalConfig     func(childComplexity int) int
-		CreatedAt          func(childComplexity int) int
-		Environment        func(childComplexity int) int
-		EventScopes        func(childComplexity int) int
-		EventType          func(childComplexity int) int
-		EventTypeDef       func(childComplexity int) int
-		GatewayProviderURL func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		LastModifiedAt     func(childComplexity int) int
-		Namespace          func(childComplexity int) int
-		Owner              func(childComplexity int) int
-		StatusMessage      func(childComplexity int) int
-		StatusPhase        func(childComplexity int) int
-		Subscriptions      func(childComplexity int) int
-		Visibility         func(childComplexity int) int
+		Active               func(childComplexity int) int
+		ApprovalConfig       func(childComplexity int) int
+		CreatedAt            func(childComplexity int) int
+		Environment          func(childComplexity int) int
+		EventScopes          func(childComplexity int) int
+		EventType            func(childComplexity int) int
+		EventTypeDef         func(childComplexity int) int
+		GatewayPublishingURL func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		LastModifiedAt       func(childComplexity int) int
+		Namespace            func(childComplexity int) int
+		Owner                func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
+		Subscriptions        func(childComplexity int) int
+		Visibility           func(childComplexity int) int
 	}
 
 	EventExposureConnection struct {
@@ -395,25 +395,25 @@ type ComplexityRoot struct {
 	}
 
 	EventSubscription struct {
-		Approval           func(childComplexity int) int
-		ApprovalRequests   func(childComplexity int) int
-		CallbackURL        func(childComplexity int) int
-		CreatedAt          func(childComplexity int) int
-		Delivery           func(childComplexity int) int
-		DeliveryType       func(childComplexity int) int
-		Environment        func(childComplexity int) int
-		EventType          func(childComplexity int) int
-		GatewayConsumerURL func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		LastModifiedAt     func(childComplexity int) int
-		Name               func(childComplexity int) int
-		Namespace          func(childComplexity int) int
-		Owner              func(childComplexity int) int
-		Scopes             func(childComplexity int) int
-		StatusMessage      func(childComplexity int) int
-		StatusPhase        func(childComplexity int) int
-		Target             func(childComplexity int) int
-		Trigger            func(childComplexity int) int
+		Approval         func(childComplexity int) int
+		ApprovalRequests func(childComplexity int) int
+		CallbackURL      func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Delivery         func(childComplexity int) int
+		DeliveryType     func(childComplexity int) int
+		Environment      func(childComplexity int) int
+		EventType        func(childComplexity int) int
+		GatewaySseURL    func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		Scopes           func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Target           func(childComplexity int) int
+		Trigger          func(childComplexity int) int
 	}
 
 	EventSubscriptionConnection struct {
@@ -2114,12 +2114,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventExposure.EventTypeDef(childComplexity), true
 
-	case "EventExposure.gatewayProviderURL":
-		if e.ComplexityRoot.EventExposure.GatewayProviderURL == nil {
+	case "EventExposure.gatewayPublishingURL":
+		if e.ComplexityRoot.EventExposure.GatewayPublishingURL == nil {
 			break
 		}
 
-		return e.ComplexityRoot.EventExposure.GatewayProviderURL(childComplexity), true
+		return e.ComplexityRoot.EventExposure.GatewayPublishingURL(childComplexity), true
 
 	case "EventExposure.id":
 		if e.ComplexityRoot.EventExposure.ID == nil {
@@ -2331,12 +2331,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventSubscription.EventType(childComplexity), true
 
-	case "EventSubscription.gatewayConsumerURL":
-		if e.ComplexityRoot.EventSubscription.GatewayConsumerURL == nil {
+	case "EventSubscription.gatewaySseURL":
+		if e.ComplexityRoot.EventSubscription.GatewaySseURL == nil {
 			break
 		}
 
-		return e.ComplexityRoot.EventSubscription.GatewayConsumerURL(childComplexity), true
+		return e.ComplexityRoot.EventSubscription.GatewaySseURL(childComplexity), true
 
 	case "EventSubscription.id":
 		if e.ComplexityRoot.EventSubscription.ID == nil {
@@ -5575,7 +5575,7 @@ type EventExposure implements Node {
   visibility: EventExposureVisibility!
   active: Boolean
   eventScopes: [EventScope]
-  gatewayProviderURL: String
+  gatewayPublishingURL: String
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -5780,23 +5780,23 @@ input EventExposureWhereInput {
   activeIsNil: Boolean
   activeNotNil: Boolean
   """
-  gateway_provider_url field predicates
+  gateway_publishing_url field predicates
   """
-  gatewayProviderURL: String
-  gatewayProviderURLNEQ: String
-  gatewayProviderURLIn: [String!]
-  gatewayProviderURLNotIn: [String!]
-  gatewayProviderURLGT: String
-  gatewayProviderURLGTE: String
-  gatewayProviderURLLT: String
-  gatewayProviderURLLTE: String
-  gatewayProviderURLContains: String
-  gatewayProviderURLHasPrefix: String
-  gatewayProviderURLHasSuffix: String
-  gatewayProviderURLIsNil: Boolean
-  gatewayProviderURLNotNil: Boolean
-  gatewayProviderURLEqualFold: String
-  gatewayProviderURLContainsFold: String
+  gatewayPublishingURL: String
+  gatewayPublishingURLNEQ: String
+  gatewayPublishingURLIn: [String!]
+  gatewayPublishingURLNotIn: [String!]
+  gatewayPublishingURLGT: String
+  gatewayPublishingURLGTE: String
+  gatewayPublishingURLLT: String
+  gatewayPublishingURLLTE: String
+  gatewayPublishingURLContains: String
+  gatewayPublishingURLHasPrefix: String
+  gatewayPublishingURLHasSuffix: String
+  gatewayPublishingURLIsNil: Boolean
+  gatewayPublishingURLNotNil: Boolean
+  gatewayPublishingURLEqualFold: String
+  gatewayPublishingURLContainsFold: String
   """
   owner edge predicates
   """
@@ -5828,7 +5828,7 @@ type EventSubscription implements Node {
   delivery: EventDelivery!
   scopes: [String!]
   callbackURL: String
-  gatewayConsumerURL: String
+  gatewaySseURL: String
   owner: Application!
   approval: Approval
   approvalRequests: [ApprovalRequest!]
@@ -6059,23 +6059,23 @@ input EventSubscriptionWhereInput {
   callbackURLEqualFold: String
   callbackURLContainsFold: String
   """
-  gateway_consumer_url field predicates
+  gateway_sse_url field predicates
   """
-  gatewayConsumerURL: String
-  gatewayConsumerURLNEQ: String
-  gatewayConsumerURLIn: [String!]
-  gatewayConsumerURLNotIn: [String!]
-  gatewayConsumerURLGT: String
-  gatewayConsumerURLGTE: String
-  gatewayConsumerURLLT: String
-  gatewayConsumerURLLTE: String
-  gatewayConsumerURLContains: String
-  gatewayConsumerURLHasPrefix: String
-  gatewayConsumerURLHasSuffix: String
-  gatewayConsumerURLIsNil: Boolean
-  gatewayConsumerURLNotNil: Boolean
-  gatewayConsumerURLEqualFold: String
-  gatewayConsumerURLContainsFold: String
+  gatewaySseURL: String
+  gatewaySseURLNEQ: String
+  gatewaySseURLIn: [String!]
+  gatewaySseURLNotIn: [String!]
+  gatewaySseURLGT: String
+  gatewaySseURLGTE: String
+  gatewaySseURLLT: String
+  gatewaySseURLLTE: String
+  gatewaySseURLContains: String
+  gatewaySseURLHasPrefix: String
+  gatewaySseURLHasSuffix: String
+  gatewaySseURLIsNil: Boolean
+  gatewaySseURLNotNil: Boolean
+  gatewaySseURLEqualFold: String
+  gatewaySseURLContainsFold: String
   """
   owner edge predicates
   """
@@ -8518,8 +8518,8 @@ func (ec *executionContext) childFields_EventExposure(ctx context.Context, field
 		return ec.fieldContext_EventExposure_active(ctx, field)
 	case "eventScopes":
 		return ec.fieldContext_EventExposure_eventScopes(ctx, field)
-	case "gatewayProviderURL":
-		return ec.fieldContext_EventExposure_gatewayProviderURL(ctx, field)
+	case "gatewayPublishingURL":
+		return ec.fieldContext_EventExposure_gatewayPublishingURL(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_EventExposure_approvalConfig(ctx, field)
 	case "owner":
@@ -8614,8 +8614,8 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_scopes(ctx, field)
 	case "callbackURL":
 		return ec.fieldContext_EventSubscription_callbackURL(ctx, field)
-	case "gatewayConsumerURL":
-		return ec.fieldContext_EventSubscription_gatewayConsumerURL(ctx, field)
+	case "gatewaySseURL":
+		return ec.fieldContext_EventSubscription_gatewaySseURL(ctx, field)
 	case "owner":
 		return ec.fieldContext_EventSubscription_owner(ctx, field)
 	case "approval":

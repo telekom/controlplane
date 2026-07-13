@@ -44,8 +44,8 @@ type EventExposure struct {
 	Active *bool `json:"active,omitempty"`
 	// EventScopes holds the value of the "event_scopes" field.
 	EventScopes []model.EventScope `json:"event_scopes,omitempty"`
-	// GatewayProviderURL holds the value of the "gateway_provider_url" field.
-	GatewayProviderURL *string `json:"gateway_provider_url,omitempty"`
+	// GatewayPublishingURL holds the value of the "gateway_publishing_url" field.
+	GatewayPublishingURL *string `json:"gateway_publishing_url,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
 	ApprovalConfig model.ApprovalConfig `json:"approval_config,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -115,7 +115,7 @@ func (*EventExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case eventexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case eventexposure.FieldStatusPhase, eventexposure.FieldStatusMessage, eventexposure.FieldEnvironment, eventexposure.FieldNamespace, eventexposure.FieldEventType, eventexposure.FieldVisibility, eventexposure.FieldGatewayProviderURL:
+		case eventexposure.FieldStatusPhase, eventexposure.FieldStatusMessage, eventexposure.FieldEnvironment, eventexposure.FieldNamespace, eventexposure.FieldEventType, eventexposure.FieldVisibility, eventexposure.FieldGatewayPublishingURL:
 			values[i] = new(sql.NullString)
 		case eventexposure.FieldCreatedAt, eventexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -210,12 +210,12 @@ func (_m *EventExposure) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field event_scopes: %w", err)
 				}
 			}
-		case eventexposure.FieldGatewayProviderURL:
+		case eventexposure.FieldGatewayPublishingURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field gateway_provider_url", values[i])
+				return fmt.Errorf("unexpected type %T for field gateway_publishing_url", values[i])
 			} else if value.Valid {
-				_m.GatewayProviderURL = new(string)
-				*_m.GatewayProviderURL = value.String
+				_m.GatewayPublishingURL = new(string)
+				*_m.GatewayPublishingURL = value.String
 			}
 		case eventexposure.FieldApprovalConfig:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -328,8 +328,8 @@ func (_m *EventExposure) String() string {
 	builder.WriteString("event_scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.EventScopes))
 	builder.WriteString(", ")
-	if v := _m.GatewayProviderURL; v != nil {
-		builder.WriteString("gateway_provider_url=")
+	if v := _m.GatewayPublishingURL; v != nil {
+		builder.WriteString("gateway_publishing_url=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

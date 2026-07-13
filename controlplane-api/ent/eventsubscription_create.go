@@ -172,16 +172,16 @@ func (_c *EventSubscriptionCreate) SetNillableCallbackURL(v *string) *EventSubsc
 	return _c
 }
 
-// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
-func (_c *EventSubscriptionCreate) SetGatewayConsumerURL(v string) *EventSubscriptionCreate {
-	_c.mutation.SetGatewayConsumerURL(v)
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (_c *EventSubscriptionCreate) SetGatewaySseURL(v string) *EventSubscriptionCreate {
+	_c.mutation.SetGatewaySseURL(v)
 	return _c
 }
 
-// SetNillableGatewayConsumerURL sets the "gateway_consumer_url" field if the given value is not nil.
-func (_c *EventSubscriptionCreate) SetNillableGatewayConsumerURL(v *string) *EventSubscriptionCreate {
+// SetNillableGatewaySseURL sets the "gateway_sse_url" field if the given value is not nil.
+func (_c *EventSubscriptionCreate) SetNillableGatewaySseURL(v *string) *EventSubscriptionCreate {
 	if v != nil {
-		_c.SetGatewayConsumerURL(*v)
+		_c.SetGatewaySseURL(*v)
 	}
 	return _c
 }
@@ -446,9 +446,9 @@ func (_c *EventSubscriptionCreate) createSpec() (*EventSubscription, *sqlgraph.C
 		_spec.SetField(eventsubscription.FieldCallbackURL, field.TypeString, value)
 		_node.CallbackURL = &value
 	}
-	if value, ok := _c.mutation.GatewayConsumerURL(); ok {
-		_spec.SetField(eventsubscription.FieldGatewayConsumerURL, field.TypeString, value)
-		_node.GatewayConsumerURL = &value
+	if value, ok := _c.mutation.GatewaySseURL(); ok {
+		_spec.SetField(eventsubscription.FieldGatewaySseURL, field.TypeString, value)
+		_node.GatewaySseURL = &value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -748,21 +748,21 @@ func (u *EventSubscriptionUpsert) ClearCallbackURL() *EventSubscriptionUpsert {
 	return u
 }
 
-// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
-func (u *EventSubscriptionUpsert) SetGatewayConsumerURL(v string) *EventSubscriptionUpsert {
-	u.Set(eventsubscription.FieldGatewayConsumerURL, v)
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsert) SetGatewaySseURL(v string) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldGatewaySseURL, v)
 	return u
 }
 
-// UpdateGatewayConsumerURL sets the "gateway_consumer_url" field to the value that was provided on create.
-func (u *EventSubscriptionUpsert) UpdateGatewayConsumerURL() *EventSubscriptionUpsert {
-	u.SetExcluded(eventsubscription.FieldGatewayConsumerURL)
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateGatewaySseURL() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldGatewaySseURL)
 	return u
 }
 
-// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
-func (u *EventSubscriptionUpsert) ClearGatewayConsumerURL() *EventSubscriptionUpsert {
-	u.SetNull(eventsubscription.FieldGatewayConsumerURL)
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsert) ClearGatewaySseURL() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldGatewaySseURL)
 	return u
 }
 
@@ -1021,24 +1021,24 @@ func (u *EventSubscriptionUpsertOne) ClearCallbackURL() *EventSubscriptionUpsert
 	})
 }
 
-// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
-func (u *EventSubscriptionUpsertOne) SetGatewayConsumerURL(v string) *EventSubscriptionUpsertOne {
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertOne) SetGatewaySseURL(v string) *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
-		s.SetGatewayConsumerURL(v)
+		s.SetGatewaySseURL(v)
 	})
 }
 
-// UpdateGatewayConsumerURL sets the "gateway_consumer_url" field to the value that was provided on create.
-func (u *EventSubscriptionUpsertOne) UpdateGatewayConsumerURL() *EventSubscriptionUpsertOne {
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateGatewaySseURL() *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
-		s.UpdateGatewayConsumerURL()
+		s.UpdateGatewaySseURL()
 	})
 }
 
-// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
-func (u *EventSubscriptionUpsertOne) ClearGatewayConsumerURL() *EventSubscriptionUpsertOne {
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertOne) ClearGatewaySseURL() *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
-		s.ClearGatewayConsumerURL()
+		s.ClearGatewaySseURL()
 	})
 }
 
@@ -1463,24 +1463,24 @@ func (u *EventSubscriptionUpsertBulk) ClearCallbackURL() *EventSubscriptionUpser
 	})
 }
 
-// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
-func (u *EventSubscriptionUpsertBulk) SetGatewayConsumerURL(v string) *EventSubscriptionUpsertBulk {
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertBulk) SetGatewaySseURL(v string) *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
-		s.SetGatewayConsumerURL(v)
+		s.SetGatewaySseURL(v)
 	})
 }
 
-// UpdateGatewayConsumerURL sets the "gateway_consumer_url" field to the value that was provided on create.
-func (u *EventSubscriptionUpsertBulk) UpdateGatewayConsumerURL() *EventSubscriptionUpsertBulk {
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateGatewaySseURL() *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
-		s.UpdateGatewayConsumerURL()
+		s.UpdateGatewaySseURL()
 	})
 }
 
-// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
-func (u *EventSubscriptionUpsertBulk) ClearGatewayConsumerURL() *EventSubscriptionUpsertBulk {
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertBulk) ClearGatewaySseURL() *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
-		s.ClearGatewayConsumerURL()
+		s.ClearGatewaySseURL()
 	})
 }
 

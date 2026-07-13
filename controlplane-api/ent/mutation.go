@@ -8631,33 +8631,33 @@ func (m *ApprovalRequestMutation) ResetEdge(name string) error {
 // EventExposureMutation represents an operation that mutates the EventExposure nodes in the graph.
 type EventExposureMutation struct {
 	config
-	op                    Op
-	typ                   string
-	id                    *int
-	created_at            *time.Time
-	last_modified_at      *time.Time
-	status_phase          *eventexposure.StatusPhase
-	status_message        *string
-	environment           *string
-	namespace             *string
-	event_type            *string
-	visibility            *eventexposure.Visibility
-	active                *bool
-	event_scopes          *[]model.EventScope
-	appendevent_scopes    []model.EventScope
-	gateway_provider_url  *string
-	approval_config       *model.ApprovalConfig
-	clearedFields         map[string]struct{}
-	owner                 *int
-	clearedowner          bool
-	event_type_def        *int
-	clearedevent_type_def bool
-	subscriptions         map[int]struct{}
-	removedsubscriptions  map[int]struct{}
-	clearedsubscriptions  bool
-	done                  bool
-	oldValue              func(context.Context) (*EventExposure, error)
-	predicates            []predicate.EventExposure
+	op                     Op
+	typ                    string
+	id                     *int
+	created_at             *time.Time
+	last_modified_at       *time.Time
+	status_phase           *eventexposure.StatusPhase
+	status_message         *string
+	environment            *string
+	namespace              *string
+	event_type             *string
+	visibility             *eventexposure.Visibility
+	active                 *bool
+	event_scopes           *[]model.EventScope
+	appendevent_scopes     []model.EventScope
+	gateway_publishing_url *string
+	approval_config        *model.ApprovalConfig
+	clearedFields          map[string]struct{}
+	owner                  *int
+	clearedowner           bool
+	event_type_def         *int
+	clearedevent_type_def  bool
+	subscriptions          map[int]struct{}
+	removedsubscriptions   map[int]struct{}
+	clearedsubscriptions   bool
+	done                   bool
+	oldValue               func(context.Context) (*EventExposure, error)
+	predicates             []predicate.EventExposure
 }
 
 var _ ent.Mutation = (*EventExposureMutation)(nil)
@@ -9199,53 +9199,53 @@ func (m *EventExposureMutation) ResetEventScopes() {
 	delete(m.clearedFields, eventexposure.FieldEventScopes)
 }
 
-// SetGatewayProviderURL sets the "gateway_provider_url" field.
-func (m *EventExposureMutation) SetGatewayProviderURL(s string) {
-	m.gateway_provider_url = &s
+// SetGatewayPublishingURL sets the "gateway_publishing_url" field.
+func (m *EventExposureMutation) SetGatewayPublishingURL(s string) {
+	m.gateway_publishing_url = &s
 }
 
-// GatewayProviderURL returns the value of the "gateway_provider_url" field in the mutation.
-func (m *EventExposureMutation) GatewayProviderURL() (r string, exists bool) {
-	v := m.gateway_provider_url
+// GatewayPublishingURL returns the value of the "gateway_publishing_url" field in the mutation.
+func (m *EventExposureMutation) GatewayPublishingURL() (r string, exists bool) {
+	v := m.gateway_publishing_url
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldGatewayProviderURL returns the old "gateway_provider_url" field's value of the EventExposure entity.
+// OldGatewayPublishingURL returns the old "gateway_publishing_url" field's value of the EventExposure entity.
 // If the EventExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EventExposureMutation) OldGatewayProviderURL(ctx context.Context) (v *string, err error) {
+func (m *EventExposureMutation) OldGatewayPublishingURL(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGatewayProviderURL is only allowed on UpdateOne operations")
+		return v, errors.New("OldGatewayPublishingURL is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGatewayProviderURL requires an ID field in the mutation")
+		return v, errors.New("OldGatewayPublishingURL requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGatewayProviderURL: %w", err)
+		return v, fmt.Errorf("querying old value for OldGatewayPublishingURL: %w", err)
 	}
-	return oldValue.GatewayProviderURL, nil
+	return oldValue.GatewayPublishingURL, nil
 }
 
-// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
-func (m *EventExposureMutation) ClearGatewayProviderURL() {
-	m.gateway_provider_url = nil
-	m.clearedFields[eventexposure.FieldGatewayProviderURL] = struct{}{}
+// ClearGatewayPublishingURL clears the value of the "gateway_publishing_url" field.
+func (m *EventExposureMutation) ClearGatewayPublishingURL() {
+	m.gateway_publishing_url = nil
+	m.clearedFields[eventexposure.FieldGatewayPublishingURL] = struct{}{}
 }
 
-// GatewayProviderURLCleared returns if the "gateway_provider_url" field was cleared in this mutation.
-func (m *EventExposureMutation) GatewayProviderURLCleared() bool {
-	_, ok := m.clearedFields[eventexposure.FieldGatewayProviderURL]
+// GatewayPublishingURLCleared returns if the "gateway_publishing_url" field was cleared in this mutation.
+func (m *EventExposureMutation) GatewayPublishingURLCleared() bool {
+	_, ok := m.clearedFields[eventexposure.FieldGatewayPublishingURL]
 	return ok
 }
 
-// ResetGatewayProviderURL resets all changes to the "gateway_provider_url" field.
-func (m *EventExposureMutation) ResetGatewayProviderURL() {
-	m.gateway_provider_url = nil
-	delete(m.clearedFields, eventexposure.FieldGatewayProviderURL)
+// ResetGatewayPublishingURL resets all changes to the "gateway_publishing_url" field.
+func (m *EventExposureMutation) ResetGatewayPublishingURL() {
+	m.gateway_publishing_url = nil
+	delete(m.clearedFields, eventexposure.FieldGatewayPublishingURL)
 }
 
 // SetApprovalConfig sets the "approval_config" field.
@@ -9481,8 +9481,8 @@ func (m *EventExposureMutation) Fields() []string {
 	if m.event_scopes != nil {
 		fields = append(fields, eventexposure.FieldEventScopes)
 	}
-	if m.gateway_provider_url != nil {
-		fields = append(fields, eventexposure.FieldGatewayProviderURL)
+	if m.gateway_publishing_url != nil {
+		fields = append(fields, eventexposure.FieldGatewayPublishingURL)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, eventexposure.FieldApprovalConfig)
@@ -9515,8 +9515,8 @@ func (m *EventExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Active()
 	case eventexposure.FieldEventScopes:
 		return m.EventScopes()
-	case eventexposure.FieldGatewayProviderURL:
-		return m.GatewayProviderURL()
+	case eventexposure.FieldGatewayPublishingURL:
+		return m.GatewayPublishingURL()
 	case eventexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	}
@@ -9548,8 +9548,8 @@ func (m *EventExposureMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldActive(ctx)
 	case eventexposure.FieldEventScopes:
 		return m.OldEventScopes(ctx)
-	case eventexposure.FieldGatewayProviderURL:
-		return m.OldGatewayProviderURL(ctx)
+	case eventexposure.FieldGatewayPublishingURL:
+		return m.OldGatewayPublishingURL(ctx)
 	case eventexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	}
@@ -9631,12 +9631,12 @@ func (m *EventExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEventScopes(v)
 		return nil
-	case eventexposure.FieldGatewayProviderURL:
+	case eventexposure.FieldGatewayPublishingURL:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetGatewayProviderURL(v)
+		m.SetGatewayPublishingURL(v)
 		return nil
 	case eventexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
@@ -9690,8 +9690,8 @@ func (m *EventExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(eventexposure.FieldEventScopes) {
 		fields = append(fields, eventexposure.FieldEventScopes)
 	}
-	if m.FieldCleared(eventexposure.FieldGatewayProviderURL) {
-		fields = append(fields, eventexposure.FieldGatewayProviderURL)
+	if m.FieldCleared(eventexposure.FieldGatewayPublishingURL) {
+		fields = append(fields, eventexposure.FieldGatewayPublishingURL)
 	}
 	return fields
 }
@@ -9722,8 +9722,8 @@ func (m *EventExposureMutation) ClearField(name string) error {
 	case eventexposure.FieldEventScopes:
 		m.ClearEventScopes()
 		return nil
-	case eventexposure.FieldGatewayProviderURL:
-		m.ClearGatewayProviderURL()
+	case eventexposure.FieldGatewayPublishingURL:
+		m.ClearGatewayPublishingURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventExposure nullable field %s", name)
@@ -9763,8 +9763,8 @@ func (m *EventExposureMutation) ResetField(name string) error {
 	case eventexposure.FieldEventScopes:
 		m.ResetEventScopes()
 		return nil
-	case eventexposure.FieldGatewayProviderURL:
-		m.ResetGatewayProviderURL()
+	case eventexposure.FieldGatewayPublishingURL:
+		m.ResetGatewayPublishingURL()
 		return nil
 	case eventexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()
@@ -9913,7 +9913,7 @@ type EventSubscriptionMutation struct {
 	scopes                   *[]string
 	appendscopes             []string
 	callback_url             *string
-	gateway_consumer_url     *string
+	gateway_sse_url          *string
 	clearedFields            map[string]struct{}
 	owner                    *int
 	clearedowner             bool
@@ -10589,53 +10589,53 @@ func (m *EventSubscriptionMutation) ResetCallbackURL() {
 	delete(m.clearedFields, eventsubscription.FieldCallbackURL)
 }
 
-// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
-func (m *EventSubscriptionMutation) SetGatewayConsumerURL(s string) {
-	m.gateway_consumer_url = &s
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (m *EventSubscriptionMutation) SetGatewaySseURL(s string) {
+	m.gateway_sse_url = &s
 }
 
-// GatewayConsumerURL returns the value of the "gateway_consumer_url" field in the mutation.
-func (m *EventSubscriptionMutation) GatewayConsumerURL() (r string, exists bool) {
-	v := m.gateway_consumer_url
+// GatewaySseURL returns the value of the "gateway_sse_url" field in the mutation.
+func (m *EventSubscriptionMutation) GatewaySseURL() (r string, exists bool) {
+	v := m.gateway_sse_url
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldGatewayConsumerURL returns the old "gateway_consumer_url" field's value of the EventSubscription entity.
+// OldGatewaySseURL returns the old "gateway_sse_url" field's value of the EventSubscription entity.
 // If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EventSubscriptionMutation) OldGatewayConsumerURL(ctx context.Context) (v *string, err error) {
+func (m *EventSubscriptionMutation) OldGatewaySseURL(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGatewayConsumerURL is only allowed on UpdateOne operations")
+		return v, errors.New("OldGatewaySseURL is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGatewayConsumerURL requires an ID field in the mutation")
+		return v, errors.New("OldGatewaySseURL requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGatewayConsumerURL: %w", err)
+		return v, fmt.Errorf("querying old value for OldGatewaySseURL: %w", err)
 	}
-	return oldValue.GatewayConsumerURL, nil
+	return oldValue.GatewaySseURL, nil
 }
 
-// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
-func (m *EventSubscriptionMutation) ClearGatewayConsumerURL() {
-	m.gateway_consumer_url = nil
-	m.clearedFields[eventsubscription.FieldGatewayConsumerURL] = struct{}{}
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (m *EventSubscriptionMutation) ClearGatewaySseURL() {
+	m.gateway_sse_url = nil
+	m.clearedFields[eventsubscription.FieldGatewaySseURL] = struct{}{}
 }
 
-// GatewayConsumerURLCleared returns if the "gateway_consumer_url" field was cleared in this mutation.
-func (m *EventSubscriptionMutation) GatewayConsumerURLCleared() bool {
-	_, ok := m.clearedFields[eventsubscription.FieldGatewayConsumerURL]
+// GatewaySseURLCleared returns if the "gateway_sse_url" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) GatewaySseURLCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldGatewaySseURL]
 	return ok
 }
 
-// ResetGatewayConsumerURL resets all changes to the "gateway_consumer_url" field.
-func (m *EventSubscriptionMutation) ResetGatewayConsumerURL() {
-	m.gateway_consumer_url = nil
-	delete(m.clearedFields, eventsubscription.FieldGatewayConsumerURL)
+// ResetGatewaySseURL resets all changes to the "gateway_sse_url" field.
+func (m *EventSubscriptionMutation) ResetGatewaySseURL() {
+	m.gateway_sse_url = nil
+	delete(m.clearedFields, eventsubscription.FieldGatewaySseURL)
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by id.
@@ -10883,8 +10883,8 @@ func (m *EventSubscriptionMutation) Fields() []string {
 	if m.callback_url != nil {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
 	}
-	if m.gateway_consumer_url != nil {
-		fields = append(fields, eventsubscription.FieldGatewayConsumerURL)
+	if m.gateway_sse_url != nil {
+		fields = append(fields, eventsubscription.FieldGatewaySseURL)
 	}
 	return fields
 }
@@ -10920,8 +10920,8 @@ func (m *EventSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.Scopes()
 	case eventsubscription.FieldCallbackURL:
 		return m.CallbackURL()
-	case eventsubscription.FieldGatewayConsumerURL:
-		return m.GatewayConsumerURL()
+	case eventsubscription.FieldGatewaySseURL:
+		return m.GatewaySseURL()
 	}
 	return nil, false
 }
@@ -10957,8 +10957,8 @@ func (m *EventSubscriptionMutation) OldField(ctx context.Context, name string) (
 		return m.OldScopes(ctx)
 	case eventsubscription.FieldCallbackURL:
 		return m.OldCallbackURL(ctx)
-	case eventsubscription.FieldGatewayConsumerURL:
-		return m.OldGatewayConsumerURL(ctx)
+	case eventsubscription.FieldGatewaySseURL:
+		return m.OldGatewaySseURL(ctx)
 	}
 	return nil, fmt.Errorf("unknown EventSubscription field %s", name)
 }
@@ -11059,12 +11059,12 @@ func (m *EventSubscriptionMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetCallbackURL(v)
 		return nil
-	case eventsubscription.FieldGatewayConsumerURL:
+	case eventsubscription.FieldGatewaySseURL:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetGatewayConsumerURL(v)
+		m.SetGatewaySseURL(v)
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription field %s", name)
@@ -11114,8 +11114,8 @@ func (m *EventSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(eventsubscription.FieldCallbackURL) {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
 	}
-	if m.FieldCleared(eventsubscription.FieldGatewayConsumerURL) {
-		fields = append(fields, eventsubscription.FieldGatewayConsumerURL)
+	if m.FieldCleared(eventsubscription.FieldGatewaySseURL) {
+		fields = append(fields, eventsubscription.FieldGatewaySseURL)
 	}
 	return fields
 }
@@ -11149,8 +11149,8 @@ func (m *EventSubscriptionMutation) ClearField(name string) error {
 	case eventsubscription.FieldCallbackURL:
 		m.ClearCallbackURL()
 		return nil
-	case eventsubscription.FieldGatewayConsumerURL:
-		m.ClearGatewayConsumerURL()
+	case eventsubscription.FieldGatewaySseURL:
+		m.ClearGatewaySseURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription nullable field %s", name)
@@ -11199,8 +11199,8 @@ func (m *EventSubscriptionMutation) ResetField(name string) error {
 	case eventsubscription.FieldCallbackURL:
 		m.ResetCallbackURL()
 		return nil
-	case eventsubscription.FieldGatewayConsumerURL:
-		m.ResetGatewayConsumerURL()
+	case eventsubscription.FieldGatewaySseURL:
+		m.ResetGatewaySseURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription field %s", name)

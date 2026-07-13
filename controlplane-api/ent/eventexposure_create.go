@@ -145,16 +145,16 @@ func (_c *EventExposureCreate) SetEventScopes(v []model.EventScope) *EventExposu
 	return _c
 }
 
-// SetGatewayProviderURL sets the "gateway_provider_url" field.
-func (_c *EventExposureCreate) SetGatewayProviderURL(v string) *EventExposureCreate {
-	_c.mutation.SetGatewayProviderURL(v)
+// SetGatewayPublishingURL sets the "gateway_publishing_url" field.
+func (_c *EventExposureCreate) SetGatewayPublishingURL(v string) *EventExposureCreate {
+	_c.mutation.SetGatewayPublishingURL(v)
 	return _c
 }
 
-// SetNillableGatewayProviderURL sets the "gateway_provider_url" field if the given value is not nil.
-func (_c *EventExposureCreate) SetNillableGatewayProviderURL(v *string) *EventExposureCreate {
+// SetNillableGatewayPublishingURL sets the "gateway_publishing_url" field if the given value is not nil.
+func (_c *EventExposureCreate) SetNillableGatewayPublishingURL(v *string) *EventExposureCreate {
 	if v != nil {
-		_c.SetGatewayProviderURL(*v)
+		_c.SetGatewayPublishingURL(*v)
 	}
 	return _c
 }
@@ -398,9 +398,9 @@ func (_c *EventExposureCreate) createSpec() (*EventExposure, *sqlgraph.CreateSpe
 		_spec.SetField(eventexposure.FieldEventScopes, field.TypeJSON, value)
 		_node.EventScopes = value
 	}
-	if value, ok := _c.mutation.GatewayProviderURL(); ok {
-		_spec.SetField(eventexposure.FieldGatewayProviderURL, field.TypeString, value)
-		_node.GatewayProviderURL = &value
+	if value, ok := _c.mutation.GatewayPublishingURL(); ok {
+		_spec.SetField(eventexposure.FieldGatewayPublishingURL, field.TypeString, value)
+		_node.GatewayPublishingURL = &value
 	}
 	if value, ok := _c.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -646,21 +646,21 @@ func (u *EventExposureUpsert) ClearEventScopes() *EventExposureUpsert {
 	return u
 }
 
-// SetGatewayProviderURL sets the "gateway_provider_url" field.
-func (u *EventExposureUpsert) SetGatewayProviderURL(v string) *EventExposureUpsert {
-	u.Set(eventexposure.FieldGatewayProviderURL, v)
+// SetGatewayPublishingURL sets the "gateway_publishing_url" field.
+func (u *EventExposureUpsert) SetGatewayPublishingURL(v string) *EventExposureUpsert {
+	u.Set(eventexposure.FieldGatewayPublishingURL, v)
 	return u
 }
 
-// UpdateGatewayProviderURL sets the "gateway_provider_url" field to the value that was provided on create.
-func (u *EventExposureUpsert) UpdateGatewayProviderURL() *EventExposureUpsert {
-	u.SetExcluded(eventexposure.FieldGatewayProviderURL)
+// UpdateGatewayPublishingURL sets the "gateway_publishing_url" field to the value that was provided on create.
+func (u *EventExposureUpsert) UpdateGatewayPublishingURL() *EventExposureUpsert {
+	u.SetExcluded(eventexposure.FieldGatewayPublishingURL)
 	return u
 }
 
-// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
-func (u *EventExposureUpsert) ClearGatewayProviderURL() *EventExposureUpsert {
-	u.SetNull(eventexposure.FieldGatewayProviderURL)
+// ClearGatewayPublishingURL clears the value of the "gateway_publishing_url" field.
+func (u *EventExposureUpsert) ClearGatewayPublishingURL() *EventExposureUpsert {
+	u.SetNull(eventexposure.FieldGatewayPublishingURL)
 	return u
 }
 
@@ -882,24 +882,24 @@ func (u *EventExposureUpsertOne) ClearEventScopes() *EventExposureUpsertOne {
 	})
 }
 
-// SetGatewayProviderURL sets the "gateway_provider_url" field.
-func (u *EventExposureUpsertOne) SetGatewayProviderURL(v string) *EventExposureUpsertOne {
+// SetGatewayPublishingURL sets the "gateway_publishing_url" field.
+func (u *EventExposureUpsertOne) SetGatewayPublishingURL(v string) *EventExposureUpsertOne {
 	return u.Update(func(s *EventExposureUpsert) {
-		s.SetGatewayProviderURL(v)
+		s.SetGatewayPublishingURL(v)
 	})
 }
 
-// UpdateGatewayProviderURL sets the "gateway_provider_url" field to the value that was provided on create.
-func (u *EventExposureUpsertOne) UpdateGatewayProviderURL() *EventExposureUpsertOne {
+// UpdateGatewayPublishingURL sets the "gateway_publishing_url" field to the value that was provided on create.
+func (u *EventExposureUpsertOne) UpdateGatewayPublishingURL() *EventExposureUpsertOne {
 	return u.Update(func(s *EventExposureUpsert) {
-		s.UpdateGatewayProviderURL()
+		s.UpdateGatewayPublishingURL()
 	})
 }
 
-// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
-func (u *EventExposureUpsertOne) ClearGatewayProviderURL() *EventExposureUpsertOne {
+// ClearGatewayPublishingURL clears the value of the "gateway_publishing_url" field.
+func (u *EventExposureUpsertOne) ClearGatewayPublishingURL() *EventExposureUpsertOne {
 	return u.Update(func(s *EventExposureUpsert) {
-		s.ClearGatewayProviderURL()
+		s.ClearGatewayPublishingURL()
 	})
 }
 
@@ -1289,24 +1289,24 @@ func (u *EventExposureUpsertBulk) ClearEventScopes() *EventExposureUpsertBulk {
 	})
 }
 
-// SetGatewayProviderURL sets the "gateway_provider_url" field.
-func (u *EventExposureUpsertBulk) SetGatewayProviderURL(v string) *EventExposureUpsertBulk {
+// SetGatewayPublishingURL sets the "gateway_publishing_url" field.
+func (u *EventExposureUpsertBulk) SetGatewayPublishingURL(v string) *EventExposureUpsertBulk {
 	return u.Update(func(s *EventExposureUpsert) {
-		s.SetGatewayProviderURL(v)
+		s.SetGatewayPublishingURL(v)
 	})
 }
 
-// UpdateGatewayProviderURL sets the "gateway_provider_url" field to the value that was provided on create.
-func (u *EventExposureUpsertBulk) UpdateGatewayProviderURL() *EventExposureUpsertBulk {
+// UpdateGatewayPublishingURL sets the "gateway_publishing_url" field to the value that was provided on create.
+func (u *EventExposureUpsertBulk) UpdateGatewayPublishingURL() *EventExposureUpsertBulk {
 	return u.Update(func(s *EventExposureUpsert) {
-		s.UpdateGatewayProviderURL()
+		s.UpdateGatewayPublishingURL()
 	})
 }
 
-// ClearGatewayProviderURL clears the value of the "gateway_provider_url" field.
-func (u *EventExposureUpsertBulk) ClearGatewayProviderURL() *EventExposureUpsertBulk {
+// ClearGatewayPublishingURL clears the value of the "gateway_publishing_url" field.
+func (u *EventExposureUpsertBulk) ClearGatewayPublishingURL() *EventExposureUpsertBulk {
 	return u.Update(func(s *EventExposureUpsert) {
-		s.ClearGatewayProviderURL()
+		s.ClearGatewayPublishingURL()
 	})
 }
 

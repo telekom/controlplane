@@ -223,23 +223,23 @@ func (_u *EventSubscriptionUpdate) ClearCallbackURL() *EventSubscriptionUpdate {
 	return _u
 }
 
-// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
-func (_u *EventSubscriptionUpdate) SetGatewayConsumerURL(v string) *EventSubscriptionUpdate {
-	_u.mutation.SetGatewayConsumerURL(v)
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (_u *EventSubscriptionUpdate) SetGatewaySseURL(v string) *EventSubscriptionUpdate {
+	_u.mutation.SetGatewaySseURL(v)
 	return _u
 }
 
-// SetNillableGatewayConsumerURL sets the "gateway_consumer_url" field if the given value is not nil.
-func (_u *EventSubscriptionUpdate) SetNillableGatewayConsumerURL(v *string) *EventSubscriptionUpdate {
+// SetNillableGatewaySseURL sets the "gateway_sse_url" field if the given value is not nil.
+func (_u *EventSubscriptionUpdate) SetNillableGatewaySseURL(v *string) *EventSubscriptionUpdate {
 	if v != nil {
-		_u.SetGatewayConsumerURL(*v)
+		_u.SetGatewaySseURL(*v)
 	}
 	return _u
 }
 
-// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
-func (_u *EventSubscriptionUpdate) ClearGatewayConsumerURL() *EventSubscriptionUpdate {
-	_u.mutation.ClearGatewayConsumerURL()
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (_u *EventSubscriptionUpdate) ClearGatewaySseURL() *EventSubscriptionUpdate {
+	_u.mutation.ClearGatewaySseURL()
 	return _u
 }
 
@@ -497,11 +497,11 @@ func (_u *EventSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err 
 	if _u.mutation.CallbackURLCleared() {
 		_spec.ClearField(eventsubscription.FieldCallbackURL, field.TypeString)
 	}
-	if value, ok := _u.mutation.GatewayConsumerURL(); ok {
-		_spec.SetField(eventsubscription.FieldGatewayConsumerURL, field.TypeString, value)
+	if value, ok := _u.mutation.GatewaySseURL(); ok {
+		_spec.SetField(eventsubscription.FieldGatewaySseURL, field.TypeString, value)
 	}
-	if _u.mutation.GatewayConsumerURLCleared() {
-		_spec.ClearField(eventsubscription.FieldGatewayConsumerURL, field.TypeString)
+	if _u.mutation.GatewaySseURLCleared() {
+		_spec.ClearField(eventsubscription.FieldGatewaySseURL, field.TypeString)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -841,23 +841,23 @@ func (_u *EventSubscriptionUpdateOne) ClearCallbackURL() *EventSubscriptionUpdat
 	return _u
 }
 
-// SetGatewayConsumerURL sets the "gateway_consumer_url" field.
-func (_u *EventSubscriptionUpdateOne) SetGatewayConsumerURL(v string) *EventSubscriptionUpdateOne {
-	_u.mutation.SetGatewayConsumerURL(v)
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (_u *EventSubscriptionUpdateOne) SetGatewaySseURL(v string) *EventSubscriptionUpdateOne {
+	_u.mutation.SetGatewaySseURL(v)
 	return _u
 }
 
-// SetNillableGatewayConsumerURL sets the "gateway_consumer_url" field if the given value is not nil.
-func (_u *EventSubscriptionUpdateOne) SetNillableGatewayConsumerURL(v *string) *EventSubscriptionUpdateOne {
+// SetNillableGatewaySseURL sets the "gateway_sse_url" field if the given value is not nil.
+func (_u *EventSubscriptionUpdateOne) SetNillableGatewaySseURL(v *string) *EventSubscriptionUpdateOne {
 	if v != nil {
-		_u.SetGatewayConsumerURL(*v)
+		_u.SetGatewaySseURL(*v)
 	}
 	return _u
 }
 
-// ClearGatewayConsumerURL clears the value of the "gateway_consumer_url" field.
-func (_u *EventSubscriptionUpdateOne) ClearGatewayConsumerURL() *EventSubscriptionUpdateOne {
-	_u.mutation.ClearGatewayConsumerURL()
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (_u *EventSubscriptionUpdateOne) ClearGatewaySseURL() *EventSubscriptionUpdateOne {
+	_u.mutation.ClearGatewaySseURL()
 	return _u
 }
 
@@ -1145,11 +1145,11 @@ func (_u *EventSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Event
 	if _u.mutation.CallbackURLCleared() {
 		_spec.ClearField(eventsubscription.FieldCallbackURL, field.TypeString)
 	}
-	if value, ok := _u.mutation.GatewayConsumerURL(); ok {
-		_spec.SetField(eventsubscription.FieldGatewayConsumerURL, field.TypeString, value)
+	if value, ok := _u.mutation.GatewaySseURL(); ok {
+		_spec.SetField(eventsubscription.FieldGatewaySseURL, field.TypeString, value)
 	}
-	if _u.mutation.GatewayConsumerURLCleared() {
-		_spec.ClearField(eventsubscription.FieldGatewayConsumerURL, field.TypeString)
+	if _u.mutation.GatewaySseURLCleared() {
+		_spec.ClearField(eventsubscription.FieldGatewaySseURL, field.TypeString)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

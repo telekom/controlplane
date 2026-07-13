@@ -48,8 +48,8 @@ const (
 	FieldScopes = "scopes"
 	// FieldCallbackURL holds the string denoting the callback_url field in the database.
 	FieldCallbackURL = "callback_url"
-	// FieldGatewayConsumerURL holds the string denoting the gateway_consumer_url field in the database.
-	FieldGatewayConsumerURL = "gateway_consumer_url"
+	// FieldGatewaySseURL holds the string denoting the gateway_sse_url field in the database.
+	FieldGatewaySseURL = "gateway_sse_url"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeTarget holds the string denoting the target edge name in mutations.
@@ -106,7 +106,7 @@ var Columns = []string{
 	FieldDelivery,
 	FieldScopes,
 	FieldCallbackURL,
-	FieldGatewayConsumerURL,
+	FieldGatewaySseURL,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "event_subscriptions"
@@ -266,9 +266,9 @@ func ByCallbackURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCallbackURL, opts...).ToFunc()
 }
 
-// ByGatewayConsumerURL orders the results by the gateway_consumer_url field.
-func ByGatewayConsumerURL(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldGatewayConsumerURL, opts...).ToFunc()
+// ByGatewaySseURL orders the results by the gateway_sse_url field.
+func ByGatewaySseURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGatewaySseURL, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

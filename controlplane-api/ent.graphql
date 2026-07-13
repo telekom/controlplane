@@ -1795,7 +1795,7 @@ type EventExposure implements Node {
   visibility: EventExposureVisibility!
   active: Boolean
   eventScopes: [EventScope]
-  gatewayProviderURL: String
+  gatewayPublishingURL: String
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -2000,23 +2000,23 @@ input EventExposureWhereInput {
   activeIsNil: Boolean
   activeNotNil: Boolean
   """
-  gateway_provider_url field predicates
+  gateway_publishing_url field predicates
   """
-  gatewayProviderURL: String
-  gatewayProviderURLNEQ: String
-  gatewayProviderURLIn: [String!]
-  gatewayProviderURLNotIn: [String!]
-  gatewayProviderURLGT: String
-  gatewayProviderURLGTE: String
-  gatewayProviderURLLT: String
-  gatewayProviderURLLTE: String
-  gatewayProviderURLContains: String
-  gatewayProviderURLHasPrefix: String
-  gatewayProviderURLHasSuffix: String
-  gatewayProviderURLIsNil: Boolean
-  gatewayProviderURLNotNil: Boolean
-  gatewayProviderURLEqualFold: String
-  gatewayProviderURLContainsFold: String
+  gatewayPublishingURL: String
+  gatewayPublishingURLNEQ: String
+  gatewayPublishingURLIn: [String!]
+  gatewayPublishingURLNotIn: [String!]
+  gatewayPublishingURLGT: String
+  gatewayPublishingURLGTE: String
+  gatewayPublishingURLLT: String
+  gatewayPublishingURLLTE: String
+  gatewayPublishingURLContains: String
+  gatewayPublishingURLHasPrefix: String
+  gatewayPublishingURLHasSuffix: String
+  gatewayPublishingURLIsNil: Boolean
+  gatewayPublishingURLNotNil: Boolean
+  gatewayPublishingURLEqualFold: String
+  gatewayPublishingURLContainsFold: String
   """
   owner edge predicates
   """
@@ -2048,7 +2048,7 @@ type EventSubscription implements Node {
   delivery: EventDelivery!
   scopes: [String!]
   callbackURL: String
-  gatewayConsumerURL: String
+  gatewaySseURL: String
   owner: Application!
   approval: Approval
   approvalRequests: [ApprovalRequest!]
@@ -2279,23 +2279,23 @@ input EventSubscriptionWhereInput {
   callbackURLEqualFold: String
   callbackURLContainsFold: String
   """
-  gateway_consumer_url field predicates
+  gateway_sse_url field predicates
   """
-  gatewayConsumerURL: String
-  gatewayConsumerURLNEQ: String
-  gatewayConsumerURLIn: [String!]
-  gatewayConsumerURLNotIn: [String!]
-  gatewayConsumerURLGT: String
-  gatewayConsumerURLGTE: String
-  gatewayConsumerURLLT: String
-  gatewayConsumerURLLTE: String
-  gatewayConsumerURLContains: String
-  gatewayConsumerURLHasPrefix: String
-  gatewayConsumerURLHasSuffix: String
-  gatewayConsumerURLIsNil: Boolean
-  gatewayConsumerURLNotNil: Boolean
-  gatewayConsumerURLEqualFold: String
-  gatewayConsumerURLContainsFold: String
+  gatewaySseURL: String
+  gatewaySseURLNEQ: String
+  gatewaySseURLIn: [String!]
+  gatewaySseURLNotIn: [String!]
+  gatewaySseURLGT: String
+  gatewaySseURLGTE: String
+  gatewaySseURLLT: String
+  gatewaySseURLLTE: String
+  gatewaySseURLContains: String
+  gatewaySseURLHasPrefix: String
+  gatewaySseURLHasSuffix: String
+  gatewaySseURLIsNil: Boolean
+  gatewaySseURLNotNil: Boolean
+  gatewaySseURLEqualFold: String
+  gatewaySseURLContainsFold: String
   """
   owner edge predicates
   """
