@@ -132,8 +132,9 @@ var _ = Describe("EventExposure Repository", func() {
 						},
 					},
 				},
-				AppName:  "my-app",
-				TeamName: "platform--narvi",
+				GatewayProviderUrl: "https://publish.gateway.example.com/de.telekom.eni.quickstart.v1",
+				AppName:            "my-app",
+				TeamName:           "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -159,6 +160,9 @@ var _ = Describe("EventExposure Repository", func() {
 			Expect(exp.EventScopes[0].Trigger.SelectionFilter).NotTo(BeNil())
 			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Attributes).To(Equal(map[string]string{"type": "de.telekom.eni.quickstart.v1"}))
 			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.source","value":"my-app"}`))
+
+			Expect(exp.GatewayPublishingURL).NotTo(BeNil())
+			Expect(*exp.GatewayPublishingURL).To(Equal("https://publish.gateway.example.com/de.telekom.eni.quickstart.v1"))
 		})
 
 		It("should return ErrDependencyMissing when application is missing", func() {

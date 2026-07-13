@@ -43,6 +43,9 @@ func (ApiSubscription) Fields() []ent.Field {
 				"ScopesOnly", "SCOPES_ONLY",
 			).
 			Default("NONE"),
+		field.Text("gateway_url").
+			Optional().
+			Nillable(),
 		field.JSON("approved_scopes", []string{}).
 			Default([]string{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),

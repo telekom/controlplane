@@ -132,6 +132,20 @@ func (_c *ApiSubscriptionCreate) SetNillableM2mAuthMethod(v *apisubscription.M2m
 	return _c
 }
 
+// SetGatewayURL sets the "gateway_url" field.
+func (_c *ApiSubscriptionCreate) SetGatewayURL(v string) *ApiSubscriptionCreate {
+	_c.mutation.SetGatewayURL(v)
+	return _c
+}
+
+// SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
+func (_c *ApiSubscriptionCreate) SetNillableGatewayURL(v *string) *ApiSubscriptionCreate {
+	if v != nil {
+		_c.SetGatewayURL(*v)
+	}
+	return _c
+}
+
 // SetApprovedScopes sets the "approved_scopes" field.
 func (_c *ApiSubscriptionCreate) SetApprovedScopes(v []string) *ApiSubscriptionCreate {
 	_c.mutation.SetApprovedScopes(v)
@@ -393,6 +407,10 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 		_spec.SetField(apisubscription.FieldM2mAuthMethod, field.TypeEnum, value)
 		_node.M2mAuthMethod = value
 	}
+	if value, ok := _c.mutation.GatewayURL(); ok {
+		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
+		_node.GatewayURL = &value
+	}
 	if value, ok := _c.mutation.ApprovedScopes(); ok {
 		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
 		_node.ApprovedScopes = value
@@ -645,6 +663,24 @@ func (u *ApiSubscriptionUpsert) UpdateM2mAuthMethod() *ApiSubscriptionUpsert {
 	return u
 }
 
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ApiSubscriptionUpsert) SetGatewayURL(v string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldGatewayURL, v)
+	return u
+}
+
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateGatewayURL() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldGatewayURL)
+	return u
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ApiSubscriptionUpsert) ClearGatewayURL() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldGatewayURL)
+	return u
+}
+
 // SetApprovedScopes sets the "approved_scopes" field.
 func (u *ApiSubscriptionUpsert) SetApprovedScopes(v []string) *ApiSubscriptionUpsert {
 	u.Set(apisubscription.FieldApprovedScopes, v)
@@ -832,6 +868,27 @@ func (u *ApiSubscriptionUpsertOne) SetM2mAuthMethod(v apisubscription.M2mAuthMet
 func (u *ApiSubscriptionUpsertOne) UpdateM2mAuthMethod() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.UpdateM2mAuthMethod()
+	})
+}
+
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ApiSubscriptionUpsertOne) SetGatewayURL(v string) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetGatewayURL(v)
+	})
+}
+
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateGatewayURL() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateGatewayURL()
+	})
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ApiSubscriptionUpsertOne) ClearGatewayURL() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearGatewayURL()
 	})
 }
 
@@ -1190,6 +1247,27 @@ func (u *ApiSubscriptionUpsertBulk) SetM2mAuthMethod(v apisubscription.M2mAuthMe
 func (u *ApiSubscriptionUpsertBulk) UpdateM2mAuthMethod() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.UpdateM2mAuthMethod()
+	})
+}
+
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ApiSubscriptionUpsertBulk) SetGatewayURL(v string) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetGatewayURL(v)
+	})
+}
+
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateGatewayURL() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateGatewayURL()
+	})
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ApiSubscriptionUpsertBulk) ClearGatewayURL() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearGatewayURL()
 	})
 }
 

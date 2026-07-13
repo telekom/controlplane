@@ -70,6 +70,7 @@ var _ = Describe("EventSubscription Translator", func() {
 					Scopes: []string{"scope-a", "scope-b"},
 				},
 				Status: eventv1.EventSubscriptionStatus{
+					URL: "https://gateway.example.com/events/sse/subscription-1",
 					Conditions: []metav1.Condition{
 						{
 							Type:    "Ready",
@@ -115,6 +116,29 @@ var _ = Describe("EventSubscription Translator", func() {
 
 			// Scopes
 			Expect(data.Scopes).To(Equal([]string{"scope-a", "scope-b"}))
+
+			Expect(data.GatewayConsumerSseUrl).To(Equal("https://gateway.example.com/events/sse/subscription-1"))
+		})
+
+		It("should set GatewayConsumerSseUrl to empty when status has no URL", func() {
+			obj := &eventv1.EventSubscription{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "no-url-sub",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: eventv1.EventSubscriptionSpec{
+					EventType: "de.telekom.test.v1",
+					Requestor: ctypes.TypedObjectRef{
+						ObjectRef: ctypes.ObjectRef{Name: "app"},
+					},
+					Delivery: eventv1.Delivery{Type: eventv1.DeliveryTypeServerSentEvent},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.GatewayConsumerSseUrl).To(BeEmpty())
 		})
 
 		It("should handle ServerSentEvent delivery with no callback", func() {

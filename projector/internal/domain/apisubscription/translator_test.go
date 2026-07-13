@@ -56,6 +56,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 					},
 				},
 				Status: apiv1.ApiSubscriptionStatus{
+					GatewayUrl: "https://gateway.example.com/api/v1/users",
 					Conditions: []metav1.Condition{
 						{
 							Type:    "Ready",
@@ -88,6 +89,26 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(data.TargetBasePath).To(Equal("/api/v1/users"))
 			Expect(data.TargetAppName).To(BeEmpty())
 			Expect(data.TargetTeamName).To(BeEmpty())
+			Expect(data.GatewayUrl).To(Equal("https://gateway.example.com/api/v1/users"))
+		})
+
+		It("should set GatewayUrl to empty when status has no gateway url", func() {
+			obj := &apiv1.ApiSubscription{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sub-no-gw",
+					Namespace: "prod--platform--narvi",
+				},
+				Spec: apiv1.ApiSubscriptionSpec{
+					ApiBasePath: "/api/test",
+					Requestor: apiv1.Requestor{
+						Application: ctypes.ObjectRef{Name: "app"},
+					},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.GatewayUrl).To(BeEmpty())
 		})
 	})
 

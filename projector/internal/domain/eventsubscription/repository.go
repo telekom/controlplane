@@ -94,7 +94,8 @@ func (r *Repository) Upsert(ctx context.Context, data *EventSubscriptionData) er
 		SetNillableDelivery(data.Delivery).
 		SetScopes(data.Scopes).
 		SetOwnerID(ownerAppID).
-		SetNillableTargetID(targetExposureID)
+		SetNillableTargetID(targetExposureID).
+		SetGatewaySseURL(data.GatewayConsumerSseUrl)
 
 	subscriptionID, upsertErr := create.
 		OnConflictColumns(eventsubscription.FieldEventType, eventsubscription.OwnerColumn).

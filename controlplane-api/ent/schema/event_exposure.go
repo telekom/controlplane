@@ -50,6 +50,9 @@ func (EventExposure) Fields() []ent.Field {
 			Optional().
 			Default([]model.EventScope{}).
 			Annotations(entgql.Type("[EventScope]"), entgql.Skip(entgql.SkipWhereInput)),
+		field.Text("gateway_publishing_url").
+			Optional().
+			Nillable(),
 		field.JSON("approval_config", model.ApprovalConfig{}).
 			Default(model.ApprovalConfig{Strategy: "AUTO"}).
 			Annotations(entgql.Type("ApprovalConfig"), entgql.Skip(entgql.SkipWhereInput)),
