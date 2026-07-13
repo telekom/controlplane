@@ -42,4 +42,5 @@ type APISubscriptionData struct {
 	TargetAppName  string // always "" from CR (not known to subscriber)
 	TargetTeamName string // always "" from CR (not known to subscriber)
 	GatewayUrl     string // gateway url from subscription
+	IDPIssuers     string // idp issuers from subscription
 }

@@ -2468,6 +2468,29 @@ func (ec *executionContext) fieldContext_ApiSubscription_gatewayURL(_ context.Co
 	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _ApiSubscription_idpIssuers(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscription_idpIssuers(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.IdpIssuers, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscription_idpIssuers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _ApiSubscription_approvedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9295,7 +9318,7 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "gatewayURL", "gatewayURLNEQ", "gatewayURLIn", "gatewayURLNotIn", "gatewayURLGT", "gatewayURLGTE", "gatewayURLLT", "gatewayURLLTE", "gatewayURLContains", "gatewayURLHasPrefix", "gatewayURLHasSuffix", "gatewayURLIsNil", "gatewayURLNotNil", "gatewayURLEqualFold", "gatewayURLContainsFold", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "gatewayURL", "gatewayURLNEQ", "gatewayURLIn", "gatewayURLNotIn", "gatewayURLGT", "gatewayURLGTE", "gatewayURLLT", "gatewayURLLTE", "gatewayURLContains", "gatewayURLHasPrefix", "gatewayURLHasSuffix", "gatewayURLIsNil", "gatewayURLNotNil", "gatewayURLEqualFold", "gatewayURLContainsFold", "idpIssuers", "idpIssuersNEQ", "idpIssuersIn", "idpIssuersNotIn", "idpIssuersGT", "idpIssuersGTE", "idpIssuersLT", "idpIssuersLTE", "idpIssuersContains", "idpIssuersHasPrefix", "idpIssuersHasSuffix", "idpIssuersIsNil", "idpIssuersNotNil", "idpIssuersEqualFold", "idpIssuersContainsFold", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10149,6 +10172,111 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 				return it, err
 			}
 			it.GatewayURLContainsFold = data
+		case "idpIssuers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuers"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuers = data
+		case "idpIssuersNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersNEQ = data
+		case "idpIssuersIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersIn = data
+		case "idpIssuersNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersNotIn = data
+		case "idpIssuersGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersGT = data
+		case "idpIssuersGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersGTE = data
+		case "idpIssuersLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersLT = data
+		case "idpIssuersLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersLTE = data
+		case "idpIssuersContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersContains = data
+		case "idpIssuersHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersHasPrefix = data
+		case "idpIssuersHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersHasSuffix = data
+		case "idpIssuersIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersIsNil = data
+		case "idpIssuersNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersNotNil = data
+		case "idpIssuersEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersEqualFold = data
+		case "idpIssuersContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idpIssuersContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdpIssuersContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -20584,6 +20712,8 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			}
 		case "gatewayURL":
 			out.Values[i] = ec._ApiSubscription_gatewayURL(ctx, field, obj)
+		case "idpIssuers":
+			out.Values[i] = ec._ApiSubscription_idpIssuers(ctx, field, obj)
 		case "approvedScopes":
 			out.Values[i] = ec._ApiSubscription_approvedScopes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -179,6 +179,26 @@ func (_u *ApiSubscriptionUpdate) ClearGatewayURL() *ApiSubscriptionUpdate {
 	return _u
 }
 
+// SetIdpIssuers sets the "idp_issuers" field.
+func (_u *ApiSubscriptionUpdate) SetIdpIssuers(v string) *ApiSubscriptionUpdate {
+	_u.mutation.SetIdpIssuers(v)
+	return _u
+}
+
+// SetNillableIdpIssuers sets the "idp_issuers" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdate) SetNillableIdpIssuers(v *string) *ApiSubscriptionUpdate {
+	if v != nil {
+		_u.SetIdpIssuers(*v)
+	}
+	return _u
+}
+
+// ClearIdpIssuers clears the value of the "idp_issuers" field.
+func (_u *ApiSubscriptionUpdate) ClearIdpIssuers() *ApiSubscriptionUpdate {
+	_u.mutation.ClearIdpIssuers()
+	return _u
+}
+
 // SetApprovedScopes sets the "approved_scopes" field.
 func (_u *ApiSubscriptionUpdate) SetApprovedScopes(v []string) *ApiSubscriptionUpdate {
 	_u.mutation.SetApprovedScopes(v)
@@ -460,6 +480,12 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if _u.mutation.GatewayURLCleared() {
 		_spec.ClearField(apisubscription.FieldGatewayURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.IdpIssuers(); ok {
+		_spec.SetField(apisubscription.FieldIdpIssuers, field.TypeString, value)
+	}
+	if _u.mutation.IdpIssuersCleared() {
+		_spec.ClearField(apisubscription.FieldIdpIssuers, field.TypeString)
 	}
 	if value, ok := _u.mutation.ApprovedScopes(); ok {
 		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
@@ -808,6 +834,26 @@ func (_u *ApiSubscriptionUpdateOne) ClearGatewayURL() *ApiSubscriptionUpdateOne 
 	return _u
 }
 
+// SetIdpIssuers sets the "idp_issuers" field.
+func (_u *ApiSubscriptionUpdateOne) SetIdpIssuers(v string) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetIdpIssuers(v)
+	return _u
+}
+
+// SetNillableIdpIssuers sets the "idp_issuers" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdateOne) SetNillableIdpIssuers(v *string) *ApiSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetIdpIssuers(*v)
+	}
+	return _u
+}
+
+// ClearIdpIssuers clears the value of the "idp_issuers" field.
+func (_u *ApiSubscriptionUpdateOne) ClearIdpIssuers() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearIdpIssuers()
+	return _u
+}
+
 // SetApprovedScopes sets the "approved_scopes" field.
 func (_u *ApiSubscriptionUpdateOne) SetApprovedScopes(v []string) *ApiSubscriptionUpdateOne {
 	_u.mutation.SetApprovedScopes(v)
@@ -1119,6 +1165,12 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	}
 	if _u.mutation.GatewayURLCleared() {
 		_spec.ClearField(apisubscription.FieldGatewayURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.IdpIssuers(); ok {
+		_spec.SetField(apisubscription.FieldIdpIssuers, field.TypeString, value)
+	}
+	if _u.mutation.IdpIssuersCleared() {
+		_spec.ClearField(apisubscription.FieldIdpIssuers, field.TypeString)
 	}
 	if value, ok := _u.mutation.ApprovedScopes(); ok {
 		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)

@@ -98,6 +98,11 @@ func GatewayURL(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldGatewayURL, v))
 }
 
+// IdpIssuers applies equality check predicate on the "idp_issuers" field. It's identical to IdpIssuersEQ.
+func IdpIssuers(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEQ(FieldIdpIssuers, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -646,6 +651,81 @@ func GatewayURLEqualFold(v string) predicate.ApiSubscription {
 // GatewayURLContainsFold applies the ContainsFold predicate on the "gateway_url" field.
 func GatewayURLContainsFold(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldContainsFold(FieldGatewayURL, v))
+}
+
+// IdpIssuersEQ applies the EQ predicate on the "idp_issuers" field.
+func IdpIssuersEQ(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEQ(FieldIdpIssuers, v))
+}
+
+// IdpIssuersNEQ applies the NEQ predicate on the "idp_issuers" field.
+func IdpIssuersNEQ(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNEQ(FieldIdpIssuers, v))
+}
+
+// IdpIssuersIn applies the In predicate on the "idp_issuers" field.
+func IdpIssuersIn(vs ...string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIn(FieldIdpIssuers, vs...))
+}
+
+// IdpIssuersNotIn applies the NotIn predicate on the "idp_issuers" field.
+func IdpIssuersNotIn(vs ...string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotIn(FieldIdpIssuers, vs...))
+}
+
+// IdpIssuersGT applies the GT predicate on the "idp_issuers" field.
+func IdpIssuersGT(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldGT(FieldIdpIssuers, v))
+}
+
+// IdpIssuersGTE applies the GTE predicate on the "idp_issuers" field.
+func IdpIssuersGTE(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldGTE(FieldIdpIssuers, v))
+}
+
+// IdpIssuersLT applies the LT predicate on the "idp_issuers" field.
+func IdpIssuersLT(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldLT(FieldIdpIssuers, v))
+}
+
+// IdpIssuersLTE applies the LTE predicate on the "idp_issuers" field.
+func IdpIssuersLTE(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldLTE(FieldIdpIssuers, v))
+}
+
+// IdpIssuersContains applies the Contains predicate on the "idp_issuers" field.
+func IdpIssuersContains(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldContains(FieldIdpIssuers, v))
+}
+
+// IdpIssuersHasPrefix applies the HasPrefix predicate on the "idp_issuers" field.
+func IdpIssuersHasPrefix(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldIdpIssuers, v))
+}
+
+// IdpIssuersHasSuffix applies the HasSuffix predicate on the "idp_issuers" field.
+func IdpIssuersHasSuffix(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldIdpIssuers, v))
+}
+
+// IdpIssuersIsNil applies the IsNil predicate on the "idp_issuers" field.
+func IdpIssuersIsNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIsNull(FieldIdpIssuers))
+}
+
+// IdpIssuersNotNil applies the NotNil predicate on the "idp_issuers" field.
+func IdpIssuersNotNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotNull(FieldIdpIssuers))
+}
+
+// IdpIssuersEqualFold applies the EqualFold predicate on the "idp_issuers" field.
+func IdpIssuersEqualFold(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEqualFold(FieldIdpIssuers, v))
+}
+
+// IdpIssuersContainsFold applies the ContainsFold predicate on the "idp_issuers" field.
+func IdpIssuersContainsFold(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldContainsFold(FieldIdpIssuers, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

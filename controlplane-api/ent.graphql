@@ -341,6 +341,7 @@ type ApiSubscription implements Node {
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
+  idpIssuers: String
   approvedScopes: [String!]!
   owner: Application!
   failoverZones: [Zone!]
@@ -574,6 +575,24 @@ input ApiSubscriptionWhereInput {
   gatewayURLNotNil: Boolean
   gatewayURLEqualFold: String
   gatewayURLContainsFold: String
+  """
+  idp_issuers field predicates
+  """
+  idpIssuers: String
+  idpIssuersNEQ: String
+  idpIssuersIn: [String!]
+  idpIssuersNotIn: [String!]
+  idpIssuersGT: String
+  idpIssuersGTE: String
+  idpIssuersLT: String
+  idpIssuersLTE: String
+  idpIssuersContains: String
+  idpIssuersHasPrefix: String
+  idpIssuersHasSuffix: String
+  idpIssuersIsNil: Boolean
+  idpIssuersNotNil: Boolean
+  idpIssuersEqualFold: String
+  idpIssuersContainsFold: String
   """
   owner edge predicates
   """

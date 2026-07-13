@@ -41,6 +41,8 @@ const (
 	FieldM2mAuthMethod = "m2m_auth_method"
 	// FieldGatewayURL holds the string denoting the gateway_url field in the database.
 	FieldGatewayURL = "gateway_url"
+	// FieldIdpIssuers holds the string denoting the idp_issuers field in the database.
+	FieldIdpIssuers = "idp_issuers"
 	// FieldApprovedScopes holds the string denoting the approved_scopes field in the database.
 	FieldApprovedScopes = "approved_scopes"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -105,6 +107,7 @@ var Columns = []string{
 	FieldBasePath,
 	FieldM2mAuthMethod,
 	FieldGatewayURL,
+	FieldIdpIssuers,
 	FieldApprovedScopes,
 }
 
@@ -263,6 +266,11 @@ func ByM2mAuthMethod(opts ...sql.OrderTermOption) OrderOption {
 // ByGatewayURL orders the results by the gateway_url field.
 func ByGatewayURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGatewayURL, opts...).ToFunc()
+}
+
+// ByIdpIssuers orders the results by the idp_issuers field.
+func ByIdpIssuers(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIdpIssuers, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.
