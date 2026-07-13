@@ -88,6 +88,7 @@ type QueryResolver interface {
 	Teams(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) (*ent.TeamConnection, error)
 	Zones(ctx context.Context) ([]*ent.Zone, error)
 	APICategories(ctx context.Context) ([]*model1.APICategory, error)
+	Groups(ctx context.Context, where *ent.GroupWhereInput) ([]*ent.Group, error)
 }
 type TeamResolver interface {
 	TeamToken(ctx context.Context, obj *ent.Team) (*string, error)
@@ -813,6 +814,20 @@ func (ec *executionContext) field_Query_eventTypes_args(ctx context.Context, raw
 		return nil, err
 	}
 	args["where"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_groups_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "where",
+		func(ctx context.Context, v any) (*ent.GroupWhereInput, error) {
+			return ec.unmarshalOGroupWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroupWhereInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg0
 	return args, nil
 }
 
@@ -7329,6 +7344,50 @@ func (ec *executionContext) fieldContext_Query_apiCategories(_ context.Context, 
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_ApiCategory(ctx, field)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_groups(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_groups(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Groups(ctx, fc.Args["where"].(*ent.GroupWhereInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*ent.Group) graphql.Marshaler {
+			return ec.marshalNGroup2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroupᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_groups(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Group(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_groups_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -22816,6 +22875,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "groups":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_groups(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -23883,6 +23964,32 @@ func (ec *executionContext) marshalNEventTypeStatusPhase2githubᚗcomᚋtelekom�
 func (ec *executionContext) unmarshalNEventTypeWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEventTypeWhereInput(ctx context.Context, v any) (*ent.EventTypeWhereInput, error) {
 	res, err := ec.unmarshalInputEventTypeWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGroup2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroupᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Group) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNGroup2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroup(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v *ent.Group) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Group(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNGroupWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroupWhereInput(ctx context.Context, v any) (*ent.GroupWhereInput, error) {

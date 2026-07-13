@@ -57,6 +57,7 @@ updates:
       - notification/api
       - organization
       - organization/api
+      - organization-server
       - permission
       - permission/api
     groups:

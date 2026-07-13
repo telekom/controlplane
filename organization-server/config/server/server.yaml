@@ -1,0 +1,87 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: organization-server
+  namespace: system
+  labels:
+    control-plane: organization-server
+    app.kubernetes.io/name: organization-server
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  selector:
+    matchLabels:
+      control-plane: organization-server
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: server
+      labels:
+        control-plane: organization-server
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - args: []
+          env: []
+          envFrom:
+            - configMapRef:
+                name: organization-server-env
+          image: ghcr.io/telekom/controlplane/organization-server:stable
+          name: server
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "ALL"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          volumeMounts:
+            - name: cpapi-trust-bundle
+              mountPath: /var/run/secrets/trust-bundle
+              readOnly: true
+      volumes:
+        - name: cpapi-trust-bundle
+          configMap:
+            name: controlplane-api-trust-bundle
+      serviceAccountName: organization-server
+      terminationGracePeriodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: organization-server
+    app.kubernetes.io/name: organization-server
+    app.kubernetes.io/managed-by: kustomize
+  name: organization-server-service
+  namespace: system
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    control-plane: organization-server

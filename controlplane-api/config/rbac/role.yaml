@@ -19,6 +19,7 @@ rules:
   - create
   - update
   - patch
+  - delete
 - apiGroups:
   - application.cp.ei.telekom.de
   resources:

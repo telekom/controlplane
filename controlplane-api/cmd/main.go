@@ -80,8 +80,17 @@ func main() {
 			os.Exit(1)
 		}
 		scopedClient := cc.NewScopedClient(k8sClient, cfg.Kubernetes.Environment)
+
+		var resourceChecker service.ResourceChecker
+		if cfg.RoverServer.BaseURL != "" {
+			resourceChecker = service.NewRoverResourceChecker(cfg.RoverServer.BaseURL, cfg.Kubernetes.Environment, cfg.RoverServer.ScopePrefix)
+		} else {
+			resourceChecker = service.NewNoopResourceChecker()
+		}
+
 		services = service.Services{
-			Team:        service.NewTeamK8sService(scopedClient),
+			Team:        service.NewTeamK8sService(scopedClient, resourceChecker),
+			Group:       service.NewGroupK8sService(scopedClient, service.NewEntTeamChecker(client)),
 			Application: service.NewApplicationK8sService(scopedClient),
 			Approval:    service.NewApprovalK8sService(scopedClient),
 		}

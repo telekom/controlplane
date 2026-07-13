@@ -111,3 +111,19 @@ func (r *mutationResolver) resolveApprovalRef(ctx context.Context, approvalID in
 
 	return a, ref, nil
 }
+
+// resolveGroupRef looks up a Group by its ent ID and builds a ResourceRef.
+func (r *mutationResolver) resolveGroupRef(ctx context.Context, groupID int) (*ent.Group, service.ResourceRef, error) {
+	g, err := r.client.Group.Get(ctx, groupID)
+	if err != nil {
+		return nil, service.ResourceRef{}, fmt.Errorf("getting group: %w", err)
+	}
+
+	ref := service.ResourceRef{
+		Namespace: g.Namespace,
+		Name:      g.Name,
+		Group:     g.Name,
+	}
+
+	return g, ref, nil
+}

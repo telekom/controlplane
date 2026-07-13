@@ -26,6 +26,7 @@ type ResourceRef struct {
 // Services groups all mutation services.
 type Services struct {
 	Team        TeamService
+	Group       GroupService
 	Application ApplicationService
 	Approval    ApprovalService
 }
@@ -34,9 +35,17 @@ type Services struct {
 type TeamService interface {
 	CreateTeam(ctx context.Context, input model.CreateTeamInput) (*model.CreateTeamPayload, error)
 	UpdateTeam(ctx context.Context, ref ResourceRef, input model.UpdateTeamInput) (*model.UpdateTeamPayload, error)
+	DeleteTeam(ctx context.Context, ref ResourceRef) (*model.DeleteTeamPayload, error)
 	AddTeamMember(ctx context.Context, ref ResourceRef, member model.MemberInput) (*model.AddTeamMemberPayload, error)
 	RemoveTeamMember(ctx context.Context, ref ResourceRef, memberEmail string) (*model.RemoveTeamMemberPayload, error)
 	RotateTeamToken(ctx context.Context, ref ResourceRef) (*model.RotateTeamTokenPayload, error)
+}
+
+// GroupService defines operations for managing Group resources.
+type GroupService interface {
+	CreateGroup(ctx context.Context, input model.CreateGroupInput) (*model.CreateGroupPayload, error)
+	UpdateGroup(ctx context.Context, ref ResourceRef, input model.UpdateGroupInput) (*model.UpdateGroupPayload, error)
+	DeleteGroup(ctx context.Context, ref ResourceRef) (*model.DeleteGroupPayload, error)
 }
 
 // ApplicationService defines operations for managing Application resources.

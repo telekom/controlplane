@@ -68,6 +68,10 @@ type ApiChangelogController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
+type ResourcesController interface {
+	GetAll(ctx context.Context, params api.GetAllResourcesParams) (*api.ResourceListResponse, error)
+}
+
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--",
@@ -94,6 +98,7 @@ type Server struct {
 	Roadmaps            ApiRoadmapController
 	EventSpecifications EventSpecificationController
 	ApiChangelogs       ApiChangelogController
+	Resources           ResourcesController
 }
 
 func (s *Server) RegisterRoutes(router fiber.Router) {
@@ -188,5 +193,9 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Get("/apichangelogs/:resourceId", checkAccess, s.GetApiChangelog)
 	router.Put("/apichangelogs/:resourceId", checkAccess, s.UpdateApiChangelog)
 	router.Delete("/apichangelogs/:resourceId", checkAccess, s.DeleteApiChangelog)
+
+	s.Log.Info("Registering resources routes")
+
+	router.Get("/resources", checkAccess, s.GetAllResources)
 
 }

@@ -124,6 +124,7 @@ var _ = BeforeSuite(func() {
 		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),
 		ApiChangelogs:       NewApiChangelogController(stores),
+		Resources:           NewResourcesController(stores),
 	}
 
 	s.RegisterRoutes(app)
