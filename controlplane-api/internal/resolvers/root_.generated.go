@@ -155,6 +155,7 @@ type ComplexityRoot struct {
 		CreatedAt        func(childComplexity int) int
 		Environment      func(childComplexity int) int
 		FailoverZones    func(childComplexity int) int
+		GatewayURL       func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		M2mAuthMethod    func(childComplexity int) int
@@ -348,21 +349,22 @@ type ComplexityRoot struct {
 	}
 
 	EventExposure struct {
-		Active         func(childComplexity int) int
-		ApprovalConfig func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		Environment    func(childComplexity int) int
-		EventScopes    func(childComplexity int) int
-		EventType      func(childComplexity int) int
-		EventTypeDef   func(childComplexity int) int
-		ID             func(childComplexity int) int
-		LastModifiedAt func(childComplexity int) int
-		Namespace      func(childComplexity int) int
-		Owner          func(childComplexity int) int
-		StatusMessage  func(childComplexity int) int
-		StatusPhase    func(childComplexity int) int
-		Subscriptions  func(childComplexity int) int
-		Visibility     func(childComplexity int) int
+		Active               func(childComplexity int) int
+		ApprovalConfig       func(childComplexity int) int
+		CreatedAt            func(childComplexity int) int
+		Environment          func(childComplexity int) int
+		EventScopes          func(childComplexity int) int
+		EventType            func(childComplexity int) int
+		EventTypeDef         func(childComplexity int) int
+		GatewayPublishingURL func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		LastModifiedAt       func(childComplexity int) int
+		Namespace            func(childComplexity int) int
+		Owner                func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
+		Subscriptions        func(childComplexity int) int
+		Visibility           func(childComplexity int) int
 	}
 
 	EventExposureConnection struct {
@@ -400,6 +402,7 @@ type ComplexityRoot struct {
 		DeliveryType     func(childComplexity int) int
 		Environment      func(childComplexity int) int
 		EventType        func(childComplexity int) int
+		GatewaySseURL    func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -1158,6 +1161,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.FailoverZones(childComplexity), true
+
+	case "ApiSubscription.gatewayURL":
+		if e.ComplexityRoot.ApiSubscription.GatewayURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.GatewayURL(childComplexity), true
 
 	case "ApiSubscription.id":
 		if e.ComplexityRoot.ApiSubscription.ID == nil {
@@ -2096,6 +2106,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventExposure.EventTypeDef(childComplexity), true
 
+	case "EventExposure.gatewayPublishingURL":
+		if e.ComplexityRoot.EventExposure.GatewayPublishingURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposure.GatewayPublishingURL(childComplexity), true
+
 	case "EventExposure.id":
 		if e.ComplexityRoot.EventExposure.ID == nil {
 			break
@@ -2305,6 +2322,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscription.EventType(childComplexity), true
+
+	case "EventSubscription.gatewaySseURL":
+		if e.ComplexityRoot.EventSubscription.GatewaySseURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.GatewaySseURL(childComplexity), true
 
 	case "EventSubscription.id":
 		if e.ComplexityRoot.EventSubscription.ID == nil {
@@ -4088,6 +4112,7 @@ type ApiSubscription implements Node {
   name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
+  gatewayURL: String
   security: ApiSubscriptionSecurity
   owner: Application!
   failoverZones: [Zone!]
@@ -4303,6 +4328,24 @@ input ApiSubscriptionWhereInput {
   m2mAuthMethodNEQ: ApiSubscriptionM2mAuthMethod
   m2mAuthMethodIn: [ApiSubscriptionM2mAuthMethod!]
   m2mAuthMethodNotIn: [ApiSubscriptionM2mAuthMethod!]
+  """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
   """
   owner edge predicates
   """
@@ -5505,6 +5548,7 @@ type EventExposure implements Node {
   visibility: EventExposureVisibility!
   active: Boolean
   eventScopes: [EventScope]
+  gatewayPublishingURL: String
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -5709,6 +5753,24 @@ input EventExposureWhereInput {
   activeIsNil: Boolean
   activeNotNil: Boolean
   """
+  gateway_publishing_url field predicates
+  """
+  gatewayPublishingURL: String
+  gatewayPublishingURLNEQ: String
+  gatewayPublishingURLIn: [String!]
+  gatewayPublishingURLNotIn: [String!]
+  gatewayPublishingURLGT: String
+  gatewayPublishingURLGTE: String
+  gatewayPublishingURLLT: String
+  gatewayPublishingURLLTE: String
+  gatewayPublishingURLContains: String
+  gatewayPublishingURLHasPrefix: String
+  gatewayPublishingURLHasSuffix: String
+  gatewayPublishingURLIsNil: Boolean
+  gatewayPublishingURLNotNil: Boolean
+  gatewayPublishingURLEqualFold: String
+  gatewayPublishingURLContainsFold: String
+  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -5739,6 +5801,7 @@ type EventSubscription implements Node {
   delivery: EventDelivery!
   scopes: [String!]
   callbackURL: String
+  gatewaySseURL: String
   owner: Application!
   approval: Approval
   approvalRequests: [ApprovalRequest!]
@@ -5968,6 +6031,24 @@ input EventSubscriptionWhereInput {
   callbackURLNotNil: Boolean
   callbackURLEqualFold: String
   callbackURLContainsFold: String
+  """
+  gateway_sse_url field predicates
+  """
+  gatewaySseURL: String
+  gatewaySseURLNEQ: String
+  gatewaySseURLIn: [String!]
+  gatewaySseURLNotIn: [String!]
+  gatewaySseURLGT: String
+  gatewaySseURLGTE: String
+  gatewaySseURLLT: String
+  gatewaySseURLLTE: String
+  gatewaySseURLContains: String
+  gatewaySseURLHasPrefix: String
+  gatewaySseURLHasSuffix: String
+  gatewaySseURLIsNil: Boolean
+  gatewaySseURLNotNil: Boolean
+  gatewaySseURLEqualFold: String
+  gatewaySseURLContainsFold: String
   """
   owner edge predicates
   """
@@ -8014,6 +8095,8 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 	case "m2mAuthMethod":
 		return ec.fieldContext_ApiSubscription_m2mAuthMethod(ctx, field)
+	case "gatewayURL":
+		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
 	case "security":
 		return ec.fieldContext_ApiSubscription_security(ctx, field)
 	case "owner":
@@ -8414,6 +8497,8 @@ func (ec *executionContext) childFields_EventExposure(ctx context.Context, field
 		return ec.fieldContext_EventExposure_active(ctx, field)
 	case "eventScopes":
 		return ec.fieldContext_EventExposure_eventScopes(ctx, field)
+	case "gatewayPublishingURL":
+		return ec.fieldContext_EventExposure_gatewayPublishingURL(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_EventExposure_approvalConfig(ctx, field)
 	case "owner":
@@ -8508,6 +8593,8 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_scopes(ctx, field)
 	case "callbackURL":
 		return ec.fieldContext_EventSubscription_callbackURL(ctx, field)
+	case "gatewaySseURL":
+		return ec.fieldContext_EventSubscription_gatewaySseURL(ctx, field)
 	case "owner":
 		return ec.fieldContext_EventSubscription_owner(ctx, field)
 	case "approval":

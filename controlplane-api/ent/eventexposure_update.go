@@ -182,6 +182,26 @@ func (_u *EventExposureUpdate) ClearEventScopes() *EventExposureUpdate {
 	return _u
 }
 
+// SetGatewayPublishingURL sets the "gateway_publishing_url" field.
+func (_u *EventExposureUpdate) SetGatewayPublishingURL(v string) *EventExposureUpdate {
+	_u.mutation.SetGatewayPublishingURL(v)
+	return _u
+}
+
+// SetNillableGatewayPublishingURL sets the "gateway_publishing_url" field if the given value is not nil.
+func (_u *EventExposureUpdate) SetNillableGatewayPublishingURL(v *string) *EventExposureUpdate {
+	if v != nil {
+		_u.SetGatewayPublishingURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayPublishingURL clears the value of the "gateway_publishing_url" field.
+func (_u *EventExposureUpdate) ClearGatewayPublishingURL() *EventExposureUpdate {
+	_u.mutation.ClearGatewayPublishingURL()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *EventExposureUpdate) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpdate {
 	_u.mutation.SetApprovalConfig(v)
@@ -407,6 +427,12 @@ func (_u *EventExposureUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.EventScopesCleared() {
 		_spec.ClearField(eventexposure.FieldEventScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.GatewayPublishingURL(); ok {
+		_spec.SetField(eventexposure.FieldGatewayPublishingURL, field.TypeString, value)
+	}
+	if _u.mutation.GatewayPublishingURLCleared() {
+		_spec.ClearField(eventexposure.FieldGatewayPublishingURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -680,6 +706,26 @@ func (_u *EventExposureUpdateOne) ClearEventScopes() *EventExposureUpdateOne {
 	return _u
 }
 
+// SetGatewayPublishingURL sets the "gateway_publishing_url" field.
+func (_u *EventExposureUpdateOne) SetGatewayPublishingURL(v string) *EventExposureUpdateOne {
+	_u.mutation.SetGatewayPublishingURL(v)
+	return _u
+}
+
+// SetNillableGatewayPublishingURL sets the "gateway_publishing_url" field if the given value is not nil.
+func (_u *EventExposureUpdateOne) SetNillableGatewayPublishingURL(v *string) *EventExposureUpdateOne {
+	if v != nil {
+		_u.SetGatewayPublishingURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayPublishingURL clears the value of the "gateway_publishing_url" field.
+func (_u *EventExposureUpdateOne) ClearGatewayPublishingURL() *EventExposureUpdateOne {
+	_u.mutation.ClearGatewayPublishingURL()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *EventExposureUpdateOne) SetApprovalConfig(v model.ApprovalConfig) *EventExposureUpdateOne {
 	_u.mutation.SetApprovalConfig(v)
@@ -935,6 +981,12 @@ func (_u *EventExposureUpdateOne) sqlSave(ctx context.Context) (_node *EventExpo
 	}
 	if _u.mutation.EventScopesCleared() {
 		_spec.ClearField(eventexposure.FieldEventScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.GatewayPublishingURL(); ok {
+		_spec.SetField(eventexposure.FieldGatewayPublishingURL, field.TypeString, value)
+	}
+	if _u.mutation.GatewayPublishingURLCleared() {
+		_spec.ClearField(eventexposure.FieldGatewayPublishingURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(eventexposure.FieldApprovalConfig, field.TypeJSON, value)

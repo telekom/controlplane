@@ -167,6 +167,10 @@ func init() {
 	apisubscriptionDescBasePath := apisubscriptionFields[0].Descriptor()
 	// apisubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	apisubscription.BasePathValidator = apisubscriptionDescBasePath.Validators[0].(func(string) error)
+	// apisubscriptionDescApprovedScopes is the schema descriptor for approved_scopes field.
+	apisubscriptionDescApprovedScopes := apisubscriptionFields[3].Descriptor()
+	// apisubscription.DefaultApprovedScopes holds the default value on creation for the approved_scopes field.
+	apisubscription.DefaultApprovedScopes = apisubscriptionDescApprovedScopes.Default.([]string)
 	applicationMixin := schema.Application{}.Mixin()
 	application.Policy = privacy.NewPolicies(applicationMixin[0], schema.Application{})
 	application.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -352,7 +356,7 @@ func init() {
 	// eventexposure.DefaultEventScopes holds the default value on creation for the event_scopes field.
 	eventexposure.DefaultEventScopes = eventexposureDescEventScopes.Default.([]model.EventScope)
 	// eventexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	eventexposureDescApprovalConfig := eventexposureFields[4].Descriptor()
+	eventexposureDescApprovalConfig := eventexposureFields[5].Descriptor()
 	// eventexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	eventexposure.DefaultApprovalConfig = eventexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	eventsubscriptionMixin := schema.EventSubscription{}.Mixin()

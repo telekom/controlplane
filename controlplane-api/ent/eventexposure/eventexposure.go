@@ -42,6 +42,8 @@ const (
 	FieldActive = "active"
 	// FieldEventScopes holds the string denoting the event_scopes field in the database.
 	FieldEventScopes = "event_scopes"
+	// FieldGatewayPublishingURL holds the string denoting the gateway_publishing_url field in the database.
+	FieldGatewayPublishingURL = "gateway_publishing_url"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
 	FieldApprovalConfig = "approval_config"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -88,6 +90,7 @@ var Columns = []string{
 	FieldVisibility,
 	FieldActive,
 	FieldEventScopes,
+	FieldGatewayPublishingURL,
 	FieldApprovalConfig,
 }
 
@@ -242,6 +245,11 @@ func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
 // ByActive orders the results by the active field.
 func ByActive(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActive, opts...).ToFunc()
+}
+
+// ByGatewayPublishingURL orders the results by the gateway_publishing_url field.
+func ByGatewayPublishingURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGatewayPublishingURL, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

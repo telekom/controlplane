@@ -93,6 +93,11 @@ func BasePath(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldBasePath, v))
 }
 
+// GatewayURL applies equality check predicate on the "gateway_url" field. It's identical to GatewayURLEQ.
+func GatewayURL(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEQ(FieldGatewayURL, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -566,6 +571,81 @@ func M2mAuthMethodIn(vs ...M2mAuthMethod) predicate.ApiSubscription {
 // M2mAuthMethodNotIn applies the NotIn predicate on the "m2m_auth_method" field.
 func M2mAuthMethodNotIn(vs ...M2mAuthMethod) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldNotIn(FieldM2mAuthMethod, vs...))
+}
+
+// GatewayURLEQ applies the EQ predicate on the "gateway_url" field.
+func GatewayURLEQ(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEQ(FieldGatewayURL, v))
+}
+
+// GatewayURLNEQ applies the NEQ predicate on the "gateway_url" field.
+func GatewayURLNEQ(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNEQ(FieldGatewayURL, v))
+}
+
+// GatewayURLIn applies the In predicate on the "gateway_url" field.
+func GatewayURLIn(vs ...string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIn(FieldGatewayURL, vs...))
+}
+
+// GatewayURLNotIn applies the NotIn predicate on the "gateway_url" field.
+func GatewayURLNotIn(vs ...string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotIn(FieldGatewayURL, vs...))
+}
+
+// GatewayURLGT applies the GT predicate on the "gateway_url" field.
+func GatewayURLGT(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldGT(FieldGatewayURL, v))
+}
+
+// GatewayURLGTE applies the GTE predicate on the "gateway_url" field.
+func GatewayURLGTE(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldGTE(FieldGatewayURL, v))
+}
+
+// GatewayURLLT applies the LT predicate on the "gateway_url" field.
+func GatewayURLLT(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldLT(FieldGatewayURL, v))
+}
+
+// GatewayURLLTE applies the LTE predicate on the "gateway_url" field.
+func GatewayURLLTE(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldLTE(FieldGatewayURL, v))
+}
+
+// GatewayURLContains applies the Contains predicate on the "gateway_url" field.
+func GatewayURLContains(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldContains(FieldGatewayURL, v))
+}
+
+// GatewayURLHasPrefix applies the HasPrefix predicate on the "gateway_url" field.
+func GatewayURLHasPrefix(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldGatewayURL, v))
+}
+
+// GatewayURLHasSuffix applies the HasSuffix predicate on the "gateway_url" field.
+func GatewayURLHasSuffix(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldGatewayURL, v))
+}
+
+// GatewayURLIsNil applies the IsNil predicate on the "gateway_url" field.
+func GatewayURLIsNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIsNull(FieldGatewayURL))
+}
+
+// GatewayURLNotNil applies the NotNil predicate on the "gateway_url" field.
+func GatewayURLNotNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotNull(FieldGatewayURL))
+}
+
+// GatewayURLEqualFold applies the EqualFold predicate on the "gateway_url" field.
+func GatewayURLEqualFold(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEqualFold(FieldGatewayURL, v))
+}
+
+// GatewayURLContainsFold applies the ContainsFold predicate on the "gateway_url" field.
+func GatewayURLContainsFold(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldContainsFold(FieldGatewayURL, v))
 }
 
 // SecurityIsNil applies the IsNil predicate on the "security" field.

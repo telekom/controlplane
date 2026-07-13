@@ -40,4 +40,5 @@ type APISubscriptionData struct {
 	TargetBasePath string // used to resolve optional target ApiExposure FK
 	TargetAppName  string // always "" from CR (not known to subscriber)
 	TargetTeamName string // always "" from CR (not known to subscriber)
+	GatewayUrl     string // gateway url from subscription
 }
