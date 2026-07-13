@@ -338,6 +338,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.M2mAuthMethod.String()).To(Equal("NONE"))
+			Expect(sub.Security).To(BeNil())
 		})
 
 		It("should update from BASIC_AUTH to OAUTH2_CLIENT on upsert conflict", func() {
