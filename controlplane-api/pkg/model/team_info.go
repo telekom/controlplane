@@ -6,8 +6,10 @@ package model
 
 // TeamInfo provides a reduced cross-tenant safe view of a team.
 type TeamInfo struct {
-	ID        int     `json:"id"`
-	Name      string  `json:"name"`
-	GroupName string  `json:"groupName"`
-	Email     *string `json:"email,omitempty"`
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	GroupName   string  `json:"groupName"`
+	Email       *string `json:"email,omitempty"`
+	DisplayName *string `json:"displayName,omitempty"`
+	Description *string `json:"description,omitempty"`
 }

@@ -86,12 +86,14 @@ var _ = Describe("Application Controller", func() {
 					Name:      "test-gateway-a",
 					Namespace: testNamespace,
 				},
+				IdentityRealm: &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace},
 				Links: adminv1.Links{
 					Url:       "https://gateway.test.local",
 					Issuer:    "https://idp.test.local/realms/test-env",
 					LmsIssuer: "https://idp.test.local/realms/test-env-lms",
 				},
 			}
+			zoneA.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 			Expect(k8sClient.Status().Update(ctx, zoneA)).To(Succeed())
 
 			By("creating the Zone B")
@@ -142,6 +144,7 @@ var _ = Describe("Application Controller", func() {
 					Name:      "test-gateway-b",
 					Namespace: testNamespace,
 				},
+				IdentityRealm: &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace},
 				Links: adminv1.Links{
 					Url:       "https://gateway-b.test.local",
 					Issuer:    "https://idp.test.local/realms/test-env",
@@ -149,6 +152,7 @@ var _ = Describe("Application Controller", func() {
 				},
 			}
 			zoneB.EnableFeature(adminv1.FeatureConsumerFailover)
+			zoneB.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 			Expect(k8sClient.Status().Update(ctx, zoneB)).To(Succeed())
 		})
 

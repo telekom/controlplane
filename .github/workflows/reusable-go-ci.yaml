@@ -132,7 +132,7 @@ jobs:
 
       - name: Run golangci-lint
         if: ${{ inputs.run_lint }}
-        uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.11
           working-directory: ${{ inputs.module }}
@@ -258,7 +258,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Run govulncheck
-        uses: golang/govulncheck-action@31f7c5463448f83528bd771c2d978d940080c9fd # unreleased, includes fix for golang/go#75908
+        uses: golang/govulncheck-action@3fa7bd9cee2cfdf3499a8803b226e43de7b7cdb4 # unreleased, includes fix for golang/go#75908
         with:
           go-package: ./...
           work-dir: ${{ inputs.module }}
@@ -294,7 +294,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -315,7 +315,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           category: "/language:go/${{ inputs.name }}"
 
@@ -353,7 +353,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Setup Ko
-        uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
+        uses: ko-build/setup-ko@61b4d1d396f5b2e7d6bb6fefdce3dc38d1a13445 # v0.10
 
       - name: Inject slug vars
         uses: rlespinasse/github-slug-action@e6f261660910b273384c5c42b17a0217881b217a # v5.6.0

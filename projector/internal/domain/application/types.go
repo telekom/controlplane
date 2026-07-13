@@ -10,6 +10,7 @@ package application
 import (
 	"time"
 
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 )
 
@@ -38,4 +39,10 @@ type ApplicationData struct {
 	CurrentExpiresAt      *time.Time // when the current secret will auto-expire
 	SecretRotationPhase   string     // FSM state: DONE, ROTATING, GRACE_PERIOD_ACTIVE, GRACE_PERIOD_EXPIRING, FAILED
 	SecretRotationMessage *string    // human-readable message (nil when DONE)
+
+	// Security
+	IpRestrictions model.IpRestrictions // optional/nillable — nil when Spec.Security.IpRestrictions is nil
+
+	// ExternalIDs
+	ExternalIds []model.ExternalId // optional — empty slice when Spec.ExternalIds is nil or empty
 }

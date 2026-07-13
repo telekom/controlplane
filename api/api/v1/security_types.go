@@ -13,6 +13,16 @@ const (
 	TokenRequestClientSecretPost  TokenRequestMethod = "client_secret_post"
 )
 
+// GrantType defines the OAuth2 grant type for external IDP token requests.
+// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+type GrantType string
+
+const (
+	GrantTypeClientCredentials GrantType = "client_credentials"
+	GrantTypeAuthorizationCode GrantType = "authorization_code"
+	GrantTypePassword          GrantType = "password"
+)
+
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type Security struct {
@@ -74,13 +84,12 @@ type ExternalIdentityProvider struct {
 	TokenEndpoint string `json:"tokenEndpoint"`
 
 	// TokenRequest configures the token endpoint authentication method (RFC 7591)
-	// +kubebuilder:validation:Optional
-	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
+	// +kubebuilder:validation:Required
+	TokenRequest TokenRequestMethod `json:"tokenRequest"`
 
 	// GrantType defines the OAuth2 grant type to use for the token request
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
-	GrantType string `json:"grantType,omitempty"`
+	// +kubebuilder:validation:Required
+	GrantType GrantType `json:"grantType"`
 
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`

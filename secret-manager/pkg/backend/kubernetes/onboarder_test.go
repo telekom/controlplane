@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,6 +18,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+// retryOnConflict retries an onboard call while it fails. Concurrent onboards
+// on the same object exhaust the backend's bounded optimistic-locking retries
+// and surface a transient TooManyRequests error; a real caller (a reconciler)
+// requeues, so the test does the same.
+func retryOnConflict(fn func() error) error {
+	var err error
+	for attempt := 0; attempt < 50; attempt++ {
+		if err = fn(); err == nil {
+			return nil
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	return err
+}
 
 var _ = Describe("Kubernetes Onboarder", func() {
 	var ctx context.Context
@@ -45,9 +61,12 @@ var _ = Describe("Kubernetes Onboarder", func() {
 				go func(idx int) {
 					defer wg.Done()
 					defer GinkgoRecover()
-					_, err := onboarder.OnboardTeam(ctx, env, teamId,
-						backend.WithSecretValue("teamToken", backend.String(fmt.Sprintf("token-%d", idx))),
-					)
+					err := retryOnConflict(func() error {
+						_, err := onboarder.OnboardTeam(ctx, env, teamId,
+							backend.WithSecretValue("teamToken", backend.String(fmt.Sprintf("token-%d", idx))),
+						)
+						return err
+					})
 					errs <- err
 				}(i)
 			}
@@ -79,7 +98,10 @@ var _ = Describe("Kubernetes Onboarder", func() {
 				go func() {
 					defer wg.Done()
 					defer GinkgoRecover()
-					_, err := onboarder.OnboardApplication(ctx, env, teamId, appId)
+					err := retryOnConflict(func() error {
+						_, err := onboarder.OnboardApplication(ctx, env, teamId, appId)
+						return err
+					})
 					errs <- err
 				}()
 			}
@@ -110,10 +132,13 @@ var _ = Describe("Kubernetes Onboarder", func() {
 				go func(idx int) {
 					defer wg.Done()
 					defer GinkgoRecover()
-					_, err := onboarder.OnboardApplication(ctx, env, teamId, appId,
-						backend.WithSecretValue(fmt.Sprintf("externalSecrets/key%d", idx), backend.String(fmt.Sprintf("val%d", idx))),
-						backend.WithStrategy(backend.StrategyMerge),
-					)
+					err := retryOnConflict(func() error {
+						_, err := onboarder.OnboardApplication(ctx, env, teamId, appId,
+							backend.WithSecretValue(fmt.Sprintf("externalSecrets/key%d", idx), backend.String(fmt.Sprintf("val%d", idx))),
+							backend.WithStrategy(backend.StrategyMerge),
+						)
+						return err
+					})
 					errs <- err
 				}(i)
 			}
@@ -557,6 +582,41 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			Expect(parsed).To(HaveLen(2))
 			Expect(parsed).To(HaveKeyWithValue("key1", "value1"))
 			Expect(parsed).To(HaveKeyWithValue("key2", "value2"))
+		})
+
+		It("should preserve externalSecrets on re-onboard with default replace strategy", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// First onboard with sub-secrets
+			_, err := onboarder.OnboardApplication(ctx, env, teamId, appId,
+				backend.WithSecretValue("externalSecrets/key1", backend.String("value1")),
+				backend.WithSecretValue("externalSecrets/key2", backend.String("value2")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify initial state
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: appId, Namespace: fmt.Sprintf("%s--%s", env, teamId)}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("externalSecrets"))
+			originalClientSecret := secret.Data["clientSecret"]
+
+			// Re-onboard without any options (default replace strategy)
+			_, err = onboarder.OnboardApplication(ctx, env, teamId, appId)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Both clientSecret and externalSecrets must be preserved
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: appId, Namespace: fmt.Sprintf("%s--%s", env, teamId)}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("clientSecret"))
+			Expect(secret.Data["clientSecret"]).To(Equal(originalClientSecret))
+
+			// externalSecrets is preserved — InitialString keys are never overwritten
+			Expect(secret.Data).To(HaveKey("externalSecrets"))
+			var preservedExternalSecrets map[string]string
+			Expect(json.Unmarshal(secret.Data["externalSecrets"], &preservedExternalSecrets)).To(Succeed())
+			Expect(preservedExternalSecrets).To(HaveKeyWithValue("key1", "value1"))
+			Expect(preservedExternalSecrets).To(HaveKeyWithValue("key2", "value2"))
 		})
 	})
 })

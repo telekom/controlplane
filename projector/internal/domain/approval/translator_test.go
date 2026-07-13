@@ -6,6 +6,7 @@ package approval_test
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -298,6 +299,53 @@ var _ = Describe("Approval Translator", func() {
 			Expect(data.Decisions).To(Equal([]model.Decision{}))
 			Expect(data.AvailableTransitions).To(Equal([]model.AvailableTransition{}))
 		})
+
+		It("should translate ExpiresAt when set", func() {
+			expiresTime := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStateGranted,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+				Status: approvalv1.ApprovalStatus{
+					ExpiresAt: &metav1.Time{Time: expiresTime},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.ExpiresAt).NotTo(BeNil())
+			Expect(*data.ExpiresAt).To(Equal(expiresTime))
+		})
+
+		It("should return nil ExpiresAt when status.expiresAt is nil", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.ExpiresAt).To(BeNil())
+		})
 	})
 
 	Describe("Strategy mapping", func() {
@@ -383,6 +431,67 @@ var _ = Describe("Approval Translator", func() {
 			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStateSemigranted))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.State).To(Equal("SEMIGRANTED"))
+		})
+	})
+
+	Describe("AvailableTransitions filtering", func() {
+		newObj := func(transitions approvalv1.AvailableTransitions) *approvalv1.Approval {
+			return &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStateGranted,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+				Status: approvalv1.ApprovalStatus{
+					AvailableTransitions: transitions,
+				},
+			}
+		}
+
+		It("should filter out Expired transitions", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionSuspend, To: approvalv1.ApprovalStateSuspended},
+				{Action: approvalv1.ApprovalActionExpire, To: approvalv1.ApprovalStateExpired},
+				{Action: approvalv1.ApprovalActionDeny, To: approvalv1.ApprovalStateRejected},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(HaveLen(2))
+			Expect(data.AvailableTransitions).To(ConsistOf(
+				model.AvailableTransition{Action: "Suspend", ToState: "Suspended"},
+				model.AvailableTransition{Action: "Deny", ToState: "Rejected"},
+			))
+		})
+
+		It("should return empty slice when only Expired is available", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionExpire, To: approvalv1.ApprovalStateExpired},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(Equal([]model.AvailableTransition{}))
+		})
+
+		It("should pass through non-Expired transitions unchanged", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionSuspend, To: approvalv1.ApprovalStateSuspended},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(HaveLen(1))
+			Expect(data.AvailableTransitions[0]).To(Equal(
+				model.AvailableTransition{Action: "Suspend", ToState: "Suspended"},
+			))
 		})
 	})
 

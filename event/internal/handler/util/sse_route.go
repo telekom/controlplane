@@ -160,7 +160,7 @@ func CreateSSEProxyRoute(
 
 	// Build upstream: points at provider zone's gateway URL for SSE path
 	ssePath := makeSSERoutePath(eventType)
-	upstreamUrl, err := url.JoinPath(providerPreset.Urls[0].GetFullUrl(), ssePath)
+	upstreamUrl, err := url.JoinPath(providerPreset.GetDefaultUrl(), ssePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build upstream URL for SSE proxy route")
 	}
