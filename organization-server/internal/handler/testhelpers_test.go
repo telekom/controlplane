@@ -98,6 +98,14 @@ func makeToken(group, team string, scopes []string) string {
 	return header + "." + payload + "."
 }
 
+// makeTokenWithClaims creates a mock JWT with arbitrary claims.
+func makeTokenWithClaims(claims map[string]any) string {
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
+	claimsJSON, _ := json.Marshal(claims)
+	payload := base64.RawURLEncoding.EncodeToString(claimsJSON)
+	return header + "." + payload + "."
+}
+
 // executeRequest sends an HTTP request through the test Fiber app.
 func executeRequest(app *fiber.App, req *http.Request, token string) (*http.Response, error) {
 	req.Header.Set("Authorization", "Bearer "+token)
