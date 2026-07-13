@@ -2719,7 +2719,6 @@ type ApiSubscriptionMutation struct {
 	base_path                *string
 	m2m_auth_method          *apisubscription.M2mAuthMethod
 	gateway_url              *string
-	idp_issuer               *string
 	approved_scopes          *[]string
 	appendapproved_scopes    []string
 	clearedFields            map[string]struct{}
@@ -3250,55 +3249,6 @@ func (m *ApiSubscriptionMutation) ResetGatewayURL() {
 	delete(m.clearedFields, apisubscription.FieldGatewayURL)
 }
 
-// SetIdpIssuer sets the "idp_issuer" field.
-func (m *ApiSubscriptionMutation) SetIdpIssuer(s string) {
-	m.idp_issuer = &s
-}
-
-// IdpIssuer returns the value of the "idp_issuer" field in the mutation.
-func (m *ApiSubscriptionMutation) IdpIssuer() (r string, exists bool) {
-	v := m.idp_issuer
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldIdpIssuer returns the old "idp_issuer" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldIdpIssuer(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldIdpIssuer is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldIdpIssuer requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIdpIssuer: %w", err)
-	}
-	return oldValue.IdpIssuer, nil
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (m *ApiSubscriptionMutation) ClearIdpIssuer() {
-	m.idp_issuer = nil
-	m.clearedFields[apisubscription.FieldIdpIssuer] = struct{}{}
-}
-
-// IdpIssuerCleared returns if the "idp_issuer" field was cleared in this mutation.
-func (m *ApiSubscriptionMutation) IdpIssuerCleared() bool {
-	_, ok := m.clearedFields[apisubscription.FieldIdpIssuer]
-	return ok
-}
-
-// ResetIdpIssuer resets all changes to the "idp_issuer" field.
-func (m *ApiSubscriptionMutation) ResetIdpIssuer() {
-	m.idp_issuer = nil
-	delete(m.clearedFields, apisubscription.FieldIdpIssuer)
-}
-
 // SetApprovedScopes sets the "approved_scopes" field.
 func (m *ApiSubscriptionMutation) SetApprovedScopes(s []string) {
 	m.approved_scopes = &s
@@ -3609,7 +3559,7 @@ func (m *ApiSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, apisubscription.FieldCreatedAt)
 	}
@@ -3639,9 +3589,6 @@ func (m *ApiSubscriptionMutation) Fields() []string {
 	}
 	if m.gateway_url != nil {
 		fields = append(fields, apisubscription.FieldGatewayURL)
-	}
-	if m.idp_issuer != nil {
-		fields = append(fields, apisubscription.FieldIdpIssuer)
 	}
 	if m.approved_scopes != nil {
 		fields = append(fields, apisubscription.FieldApprovedScopes)
@@ -3674,8 +3621,6 @@ func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.M2mAuthMethod()
 	case apisubscription.FieldGatewayURL:
 		return m.GatewayURL()
-	case apisubscription.FieldIdpIssuer:
-		return m.IdpIssuer()
 	case apisubscription.FieldApprovedScopes:
 		return m.ApprovedScopes()
 	}
@@ -3707,8 +3652,6 @@ func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldM2mAuthMethod(ctx)
 	case apisubscription.FieldGatewayURL:
 		return m.OldGatewayURL(ctx)
-	case apisubscription.FieldIdpIssuer:
-		return m.OldIdpIssuer(ctx)
 	case apisubscription.FieldApprovedScopes:
 		return m.OldApprovedScopes(ctx)
 	}
@@ -3790,13 +3733,6 @@ func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetGatewayURL(v)
 		return nil
-	case apisubscription.FieldIdpIssuer:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetIdpIssuer(v)
-		return nil
 	case apisubscription.FieldApprovedScopes:
 		v, ok := value.([]string)
 		if !ok {
@@ -3846,9 +3782,6 @@ func (m *ApiSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(apisubscription.FieldGatewayURL) {
 		fields = append(fields, apisubscription.FieldGatewayURL)
 	}
-	if m.FieldCleared(apisubscription.FieldIdpIssuer) {
-		fields = append(fields, apisubscription.FieldIdpIssuer)
-	}
 	return fields
 }
 
@@ -3874,9 +3807,6 @@ func (m *ApiSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case apisubscription.FieldGatewayURL:
 		m.ClearGatewayURL()
-		return nil
-	case apisubscription.FieldIdpIssuer:
-		m.ClearIdpIssuer()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription nullable field %s", name)
@@ -3915,9 +3845,6 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case apisubscription.FieldGatewayURL:
 		m.ResetGatewayURL()
-		return nil
-	case apisubscription.FieldIdpIssuer:
-		m.ResetIdpIssuer()
 		return nil
 	case apisubscription.FieldApprovedScopes:
 		m.ResetApprovedScopes()

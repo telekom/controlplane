@@ -146,20 +146,6 @@ func (_c *ApiSubscriptionCreate) SetNillableGatewayURL(v *string) *ApiSubscripti
 	return _c
 }
 
-// SetIdpIssuer sets the "idp_issuer" field.
-func (_c *ApiSubscriptionCreate) SetIdpIssuer(v string) *ApiSubscriptionCreate {
-	_c.mutation.SetIdpIssuer(v)
-	return _c
-}
-
-// SetNillableIdpIssuer sets the "idp_issuer" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableIdpIssuer(v *string) *ApiSubscriptionCreate {
-	if v != nil {
-		_c.SetIdpIssuer(*v)
-	}
-	return _c
-}
-
 // SetApprovedScopes sets the "approved_scopes" field.
 func (_c *ApiSubscriptionCreate) SetApprovedScopes(v []string) *ApiSubscriptionCreate {
 	_c.mutation.SetApprovedScopes(v)
@@ -424,10 +410,6 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 	if value, ok := _c.mutation.GatewayURL(); ok {
 		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
 		_node.GatewayURL = &value
-	}
-	if value, ok := _c.mutation.IdpIssuer(); ok {
-		_spec.SetField(apisubscription.FieldIdpIssuer, field.TypeString, value)
-		_node.IdpIssuer = &value
 	}
 	if value, ok := _c.mutation.ApprovedScopes(); ok {
 		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
@@ -699,24 +681,6 @@ func (u *ApiSubscriptionUpsert) ClearGatewayURL() *ApiSubscriptionUpsert {
 	return u
 }
 
-// SetIdpIssuer sets the "idp_issuer" field.
-func (u *ApiSubscriptionUpsert) SetIdpIssuer(v string) *ApiSubscriptionUpsert {
-	u.Set(apisubscription.FieldIdpIssuer, v)
-	return u
-}
-
-// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateIdpIssuer() *ApiSubscriptionUpsert {
-	u.SetExcluded(apisubscription.FieldIdpIssuer)
-	return u
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (u *ApiSubscriptionUpsert) ClearIdpIssuer() *ApiSubscriptionUpsert {
-	u.SetNull(apisubscription.FieldIdpIssuer)
-	return u
-}
-
 // SetApprovedScopes sets the "approved_scopes" field.
 func (u *ApiSubscriptionUpsert) SetApprovedScopes(v []string) *ApiSubscriptionUpsert {
 	u.Set(apisubscription.FieldApprovedScopes, v)
@@ -925,27 +889,6 @@ func (u *ApiSubscriptionUpsertOne) UpdateGatewayURL() *ApiSubscriptionUpsertOne 
 func (u *ApiSubscriptionUpsertOne) ClearGatewayURL() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.ClearGatewayURL()
-	})
-}
-
-// SetIdpIssuer sets the "idp_issuer" field.
-func (u *ApiSubscriptionUpsertOne) SetIdpIssuer(v string) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.SetIdpIssuer(v)
-	})
-}
-
-// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateIdpIssuer() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.UpdateIdpIssuer()
-	})
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (u *ApiSubscriptionUpsertOne) ClearIdpIssuer() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.ClearIdpIssuer()
 	})
 }
 
@@ -1325,27 +1268,6 @@ func (u *ApiSubscriptionUpsertBulk) UpdateGatewayURL() *ApiSubscriptionUpsertBul
 func (u *ApiSubscriptionUpsertBulk) ClearGatewayURL() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.ClearGatewayURL()
-	})
-}
-
-// SetIdpIssuer sets the "idp_issuer" field.
-func (u *ApiSubscriptionUpsertBulk) SetIdpIssuer(v string) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.SetIdpIssuer(v)
-	})
-}
-
-// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateIdpIssuer() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.UpdateIdpIssuer()
-	})
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (u *ApiSubscriptionUpsertBulk) ClearIdpIssuer() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.ClearIdpIssuer()
 	})
 }
 

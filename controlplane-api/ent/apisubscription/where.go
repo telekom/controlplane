@@ -98,11 +98,6 @@ func GatewayURL(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldGatewayURL, v))
 }
 
-// IdpIssuer applies equality check predicate on the "idp_issuer" field. It's identical to IdpIssuerEQ.
-func IdpIssuer(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldIdpIssuer, v))
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -651,81 +646,6 @@ func GatewayURLEqualFold(v string) predicate.ApiSubscription {
 // GatewayURLContainsFold applies the ContainsFold predicate on the "gateway_url" field.
 func GatewayURLContainsFold(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldContainsFold(FieldGatewayURL, v))
-}
-
-// IdpIssuerEQ applies the EQ predicate on the "idp_issuer" field.
-func IdpIssuerEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldIdpIssuer, v))
-}
-
-// IdpIssuerNEQ applies the NEQ predicate on the "idp_issuer" field.
-func IdpIssuerNEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldIdpIssuer, v))
-}
-
-// IdpIssuerIn applies the In predicate on the "idp_issuer" field.
-func IdpIssuerIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldIdpIssuer, vs...))
-}
-
-// IdpIssuerNotIn applies the NotIn predicate on the "idp_issuer" field.
-func IdpIssuerNotIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldIdpIssuer, vs...))
-}
-
-// IdpIssuerGT applies the GT predicate on the "idp_issuer" field.
-func IdpIssuerGT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldIdpIssuer, v))
-}
-
-// IdpIssuerGTE applies the GTE predicate on the "idp_issuer" field.
-func IdpIssuerGTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldIdpIssuer, v))
-}
-
-// IdpIssuerLT applies the LT predicate on the "idp_issuer" field.
-func IdpIssuerLT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldIdpIssuer, v))
-}
-
-// IdpIssuerLTE applies the LTE predicate on the "idp_issuer" field.
-func IdpIssuerLTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldIdpIssuer, v))
-}
-
-// IdpIssuerContains applies the Contains predicate on the "idp_issuer" field.
-func IdpIssuerContains(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContains(FieldIdpIssuer, v))
-}
-
-// IdpIssuerHasPrefix applies the HasPrefix predicate on the "idp_issuer" field.
-func IdpIssuerHasPrefix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldIdpIssuer, v))
-}
-
-// IdpIssuerHasSuffix applies the HasSuffix predicate on the "idp_issuer" field.
-func IdpIssuerHasSuffix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldIdpIssuer, v))
-}
-
-// IdpIssuerIsNil applies the IsNil predicate on the "idp_issuer" field.
-func IdpIssuerIsNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIsNull(FieldIdpIssuer))
-}
-
-// IdpIssuerNotNil applies the NotNil predicate on the "idp_issuer" field.
-func IdpIssuerNotNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotNull(FieldIdpIssuer))
-}
-
-// IdpIssuerEqualFold applies the EqualFold predicate on the "idp_issuer" field.
-func IdpIssuerEqualFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEqualFold(FieldIdpIssuer, v))
-}
-
-// IdpIssuerContainsFold applies the ContainsFold predicate on the "idp_issuer" field.
-func IdpIssuerContainsFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContainsFold(FieldIdpIssuer, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

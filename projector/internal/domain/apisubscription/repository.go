@@ -104,8 +104,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		SetStatusMessage(data.StatusMessage).
 		SetOwnerID(ownerAppID).
 		SetNillableTargetID(targetExposureID).
-		SetGatewayURL(data.GatewayUrl).
-		SetIdpIssuer(data.IDPIssuer)
+		SetGatewayURL(data.GatewayUrl)
 
 	subscriptionID, upsertErr := create.
 		OnConflictColumns(apisubscription.FieldBasePath, apisubscription.OwnerColumn).

@@ -44,8 +44,6 @@ type ApiSubscription struct {
 	M2mAuthMethod apisubscription.M2mAuthMethod `json:"m2m_auth_method,omitempty"`
 	// GatewayURL holds the value of the "gateway_url" field.
 	GatewayURL *string `json:"gateway_url,omitempty"`
-	// IdpIssuer holds the value of the "idp_issuer" field.
-	IdpIssuer *string `json:"idp_issuer,omitempty"`
 	// ApprovedScopes holds the value of the "approved_scopes" field.
 	ApprovedScopes []string `json:"approved_scopes,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -138,7 +136,7 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case apisubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldName, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod, apisubscription.FieldGatewayURL, apisubscription.FieldIdpIssuer:
+		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldName, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod, apisubscription.FieldGatewayURL:
 			values[i] = new(sql.NullString)
 		case apisubscription.FieldCreatedAt, apisubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -230,13 +228,6 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.GatewayURL = new(string)
 				*_m.GatewayURL = value.String
-			}
-		case apisubscription.FieldIdpIssuer:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field idp_issuer", values[i])
-			} else if value.Valid {
-				_m.IdpIssuer = new(string)
-				*_m.IdpIssuer = value.String
 			}
 		case apisubscription.FieldApprovedScopes:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -356,11 +347,6 @@ func (_m *ApiSubscription) String() string {
 	builder.WriteString(", ")
 	if v := _m.GatewayURL; v != nil {
 		builder.WriteString("gateway_url=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := _m.IdpIssuer; v != nil {
-		builder.WriteString("idp_issuer=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

@@ -467,11 +467,6 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, apisubscription.FieldGatewayURL)
 				fieldSeen[apisubscription.FieldGatewayURL] = struct{}{}
 			}
-		case "idpIssuer":
-			if _, ok := fieldSeen[apisubscription.FieldIdpIssuer]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldIdpIssuer)
-				fieldSeen[apisubscription.FieldIdpIssuer] = struct{}{}
-			}
 		case "approvedScopes":
 			if _, ok := fieldSeen[apisubscription.FieldApprovedScopes]; !ok {
 				selectedFields = append(selectedFields, apisubscription.FieldApprovedScopes)

@@ -110,7 +110,6 @@ var (
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
 		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "idp_issuer", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "approved_scopes", Type: field.TypeJSON},
 		{Name: "api_subscription_target", Type: field.TypeInt, Nullable: true},
 		{Name: "application_subscribed_apis", Type: field.TypeInt},
@@ -123,13 +122,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_subscriptions_api_exposures_target",
-				Columns:    []*schema.Column{APISubscriptionsColumns[13]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[12]},
 				RefColumns: []*schema.Column{APIExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_subscriptions_applications_subscribed_apis",
-				Columns:    []*schema.Column{APISubscriptionsColumns[14]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[13]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -143,7 +142,7 @@ var (
 			{
 				Name:    "apisubscription_base_path_application_subscribed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[14]},
+				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[13]},
 			},
 		},
 	}

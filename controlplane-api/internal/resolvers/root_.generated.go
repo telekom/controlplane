@@ -158,7 +158,6 @@ type ComplexityRoot struct {
 		FailoverZones    func(childComplexity int) int
 		GatewayURL       func(childComplexity int) int
 		ID               func(childComplexity int) int
-		IdpIssuer        func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		M2mAuthMethod    func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -1183,13 +1182,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.ID(childComplexity), true
-
-	case "ApiSubscription.idpIssuer":
-		if e.ComplexityRoot.ApiSubscription.IdpIssuer == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiSubscription.IdpIssuer(childComplexity), true
 
 	case "ApiSubscription.lastModifiedAt":
 		if e.ComplexityRoot.ApiSubscription.LastModifiedAt == nil {
@@ -4121,7 +4113,6 @@ type ApiSubscription implements Node {
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
-  idpIssuer: String
   approvedScopes: [String!]!
   owner: Application!
   failoverZones: [Zone!]
@@ -4355,24 +4346,6 @@ input ApiSubscriptionWhereInput {
   gatewayURLNotNil: Boolean
   gatewayURLEqualFold: String
   gatewayURLContainsFold: String
-  """
-  idp_issuer field predicates
-  """
-  idpIssuer: String
-  idpIssuerNEQ: String
-  idpIssuerIn: [String!]
-  idpIssuerNotIn: [String!]
-  idpIssuerGT: String
-  idpIssuerGTE: String
-  idpIssuerLT: String
-  idpIssuerLTE: String
-  idpIssuerContains: String
-  idpIssuerHasPrefix: String
-  idpIssuerHasSuffix: String
-  idpIssuerIsNil: Boolean
-  idpIssuerNotNil: Boolean
-  idpIssuerEqualFold: String
-  idpIssuerContainsFold: String
   """
   owner edge predicates
   """
@@ -8124,8 +8097,6 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_m2mAuthMethod(ctx, field)
 	case "gatewayURL":
 		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
-	case "idpIssuer":
-		return ec.fieldContext_ApiSubscription_idpIssuer(ctx, field)
 	case "approvedScopes":
 		return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
 	case "owner":
