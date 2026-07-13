@@ -2719,8 +2719,6 @@ type ApiSubscriptionMutation struct {
 	base_path                *string
 	m2m_auth_method          *apisubscription.M2mAuthMethod
 	gateway_url              *string
-	approved_scopes          *[]string
-	appendapproved_scopes    []string
 	security                 **model.ApiSubscriptionSecurity
 	clearedFields            map[string]struct{}
 	owner                    *int
@@ -3589,8 +3587,6 @@ func (m *ApiSubscriptionMutation) Fields() []string {
 	if m.gateway_url != nil {
 		fields = append(fields, apisubscription.FieldGatewayURL)
 	}
-	if m.approved_scopes != nil {
-		fields = append(fields, apisubscription.FieldApprovedScopes)
 	if m.security != nil {
 		fields = append(fields, apisubscription.FieldSecurity)
 	}
@@ -3622,8 +3618,6 @@ func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.M2mAuthMethod()
 	case apisubscription.FieldGatewayURL:
 		return m.GatewayURL()
-	case apisubscription.FieldApprovedScopes:
-		return m.ApprovedScopes()
 	case apisubscription.FieldSecurity:
 		return m.Security()
 	}
@@ -3655,8 +3649,6 @@ func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldM2mAuthMethod(ctx)
 	case apisubscription.FieldGatewayURL:
 		return m.OldGatewayURL(ctx)
-	case apisubscription.FieldApprovedScopes:
-		return m.OldApprovedScopes(ctx)
 	case apisubscription.FieldSecurity:
 		return m.OldSecurity(ctx)
 	}
@@ -3738,8 +3730,6 @@ func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetGatewayURL(v)
 		return nil
-	case apisubscription.FieldApprovedScopes:
-		v, ok := value.([]string)
 	case apisubscription.FieldSecurity:
 		v, ok := value.(*model.ApiSubscriptionSecurity)
 		if !ok {
@@ -3859,8 +3849,6 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 	case apisubscription.FieldGatewayURL:
 		m.ResetGatewayURL()
 		return nil
-	case apisubscription.FieldApprovedScopes:
-		m.ResetApprovedScopes()
 	case apisubscription.FieldSecurity:
 		m.ResetSecurity()
 		return nil

@@ -461,8 +461,6 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if _u.mutation.GatewayURLCleared() {
 		_spec.ClearField(apisubscription.FieldGatewayURL, field.TypeString)
 	}
-	if value, ok := _u.mutation.ApprovedScopes(); ok {
-		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
 	if value, ok := _u.mutation.Security(); ok {
 		_spec.SetField(apisubscription.FieldSecurity, field.TypeJSON, value)
 	}
@@ -1120,8 +1118,6 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	if _u.mutation.GatewayURLCleared() {
 		_spec.ClearField(apisubscription.FieldGatewayURL, field.TypeString)
 	}
-	if value, ok := _u.mutation.ApprovedScopes(); ok {
-		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
 	if value, ok := _u.mutation.Security(); ok {
 		_spec.SetField(apisubscription.FieldSecurity, field.TypeJSON, value)
 	}
