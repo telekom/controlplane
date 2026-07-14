@@ -226,9 +226,9 @@ To issue JWTs compatible with the ControlPlane API, configure Keycloak with the 
 |-------------|-------------|------------------|---------------|
 | `env` | Hardcoded claim | `env` | `production` |
 | `clientId` | User Session Note | `clientId` | `acme--platform--api-gateway` |
-| `scopes` | Hardcoded claim | `scopes` | `tardis:admin:all` |
+| `scope` | Hardcoded claim | `scope` | `tardis:admin:all` |
 
-The `clientId` claim uses the format `<group>--<team>--<service>` and determines team-level access scoping. The `scopes` claim controls the caller type (`tardis:team:all`, `tardis:group:all`, `tardis:admin:all`).
+The `clientId` claim uses the format `<group>--<team>--<service>` and determines team-level access scoping. The `scope` claim controls the caller type (`tardis:team:all`, `tardis:group:all`, `tardis:admin:all`).
 
 #### Example JWT payload
 
@@ -240,7 +240,7 @@ The `clientId` claim uses the format `<group>--<team>--<service>` and determines
   "sub": "service-account-my-client",
   "env": "production",
   "clientId": "acme--platform--api-gateway",
-  "scopes": "tardis:admin:all"
+  "scope": "tardis:admin:all"
 }
 ```
 

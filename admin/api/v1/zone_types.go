@@ -401,7 +401,6 @@ type ZoneStatus struct {
 	InternalIdentityRealm *types.ObjectRef `json:"internalIdentityRealm,omitempty"`
 
 	Gateway            *types.ObjectRef `json:"gateway,omitempty"`
-	GatewayClient      *types.ObjectRef `json:"gatewayClient,omitempty"`
 	GatewayAdminClient *types.ObjectRef `json:"gatewayAdminClient,omitempty"`
 	GatewayConsumer    *types.ObjectRef `json:"gatewayConsumer,omitempty"`
 

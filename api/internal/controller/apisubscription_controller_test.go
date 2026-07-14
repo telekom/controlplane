@@ -24,7 +24,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	identityapi "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -96,37 +95,6 @@ func NewApiSubscription(apiBasePath, zoneName, appName string) *apiapi.ApiSubscr
 	}
 }
 
-func CreateGatewayClient(zone *adminapi.Zone) *identityapi.Client {
-	gwClient := &identityapi.Client{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gateway",
-			Namespace: zone.Status.Namespace,
-			Labels: map[string]string{
-				config.EnvironmentLabelKey: testEnvironment,
-			},
-		},
-		Spec: identityapi.ClientSpec{
-			Realm: &types.ObjectRef{
-				Name:      "test",
-				Namespace: zone.Status.Namespace,
-			},
-			ClientId:     "gateway",
-			ClientSecret: "topsecret",
-		},
-	}
-
-	err := k8sClient.Create(ctx, gwClient)
-	Expect(err).ToNot(HaveOccurred())
-
-	gwClient.Status = identityapi.ClientStatus{
-		IssuerUrl: fmt.Sprintf("http://my-issuer.%s:8080/auth/realms/%s", zone.Name, testEnvironment),
-	}
-	err = k8sClient.Status().Update(ctx, gwClient)
-	Expect(err).ToNot(HaveOccurred())
-
-	return gwClient
-}
-
 func ProgressApprovalRequest(ref *types.ObjectRef, state approvalapi.ApprovalState) *approvalapi.ApprovalRequest {
 	approvalReq := &approvalapi.ApprovalRequest{}
 	err := k8sClient.Get(ctx, ref.K8s(), approvalReq)
@@ -188,7 +156,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 	// Provider/Exposure zone
 	zoneName := "apisub-test"
-	var zone *adminapi.Zone
 
 	// Consumer/Subscription zone
 	otherZoneName := "other-zone"
@@ -207,8 +174,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 		apiSubscription = NewApiSubscription(apiBasePath, zoneName, apiSubAppName)
 
 		By("Creating the Zone")
-		zone = CreateZone(zoneName)
-		CreateGatewayClient(zone)
+		CreateZone(zoneName)
 
 		By("Creating the Application for subscription")
 		apiSubApplication = CreateApplication(apiSubAppName)
@@ -550,8 +516,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			By("Creating the RemoteOrganisation")
 			remoteOrganisation = CreateRemoteOrganisation(remoteOrgId, remoteZoneName)
 			By("Creating the remote zone")
-			zone := CreateZone(remoteZoneName)
-			CreateGatewayClient(zone)
+			CreateZone(remoteZoneName)
 
 			By("Creating the consumer zone")
 			CreateZone(consumerZoneName)

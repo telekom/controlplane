@@ -30,6 +30,7 @@ func MapRequest(req api.EventSpecification, specOrFileId string, id mapper.Resou
 	eventSpec.Spec.Type = req.Type
 	eventSpec.Spec.Version = req.Version
 	eventSpec.Spec.Description = req.Description
+	eventSpec.Spec.Category = strings.ToLower(req.Category)
 
 	// Derive the resource name from the event type (dots → hyphens)
 	eventSpec.Name = strings.ToLower(strings.ReplaceAll(req.Type, ".", "-"))

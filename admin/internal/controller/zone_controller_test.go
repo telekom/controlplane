@@ -121,7 +121,6 @@ var _ = Describe("Zone Controller", func() {
 				g.Expect(got.Status.IdentityRealm).NotTo(BeNil())
 				g.Expect(got.Status.InternalIdentityRealm).NotTo(BeNil())
 				g.Expect(got.Status.Gateway).NotTo(BeNil())
-				g.Expect(got.Status.GatewayClient).NotTo(BeNil())
 				g.Expect(got.Status.GatewayAdminClient).NotTo(BeNil())
 				g.Expect(got.Status.GatewayConsumer).NotTo(BeNil())
 				g.Expect(got.Status.TeamApiIdentityRealm).NotTo(BeNil())

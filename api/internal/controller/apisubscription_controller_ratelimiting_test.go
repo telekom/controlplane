@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
@@ -218,8 +217,6 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 	// Provider/Exposure zone
 	zoneName := "ratelimit-test"
 	secondZoneName := "ratelimit-test-2"
-	var zone *adminapi.Zone
-	var secondZone *adminapi.Zone
 
 	// Consumer side
 	appName := "rate-limit-app"
@@ -236,10 +233,8 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 
 	BeforeAll(func() {
 		By("Creating the Zones")
-		zone = CreateZone(zoneName)
-		CreateGatewayClient(zone)
-		secondZone = CreateZone(secondZoneName)
-		CreateGatewayClient(secondZone)
+		CreateZone(zoneName)
+		CreateZone(secondZoneName)
 
 		By("Creating the Application for ApiExposure")
 		apiExpApplication = CreateApplication(apiExpAppName)

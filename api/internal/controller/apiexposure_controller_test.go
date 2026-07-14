@@ -492,7 +492,6 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 		By("Creating the Gateway Client")
 		// We need this gateway client because the failover-route is also a proxy routes (in non-failover scenarios)
 		// And a proxy-route needs the gateway client for meshing
-		CreateGatewayClient(providerZone)
 
 		By("Initializing the API and APIExposure")
 		api = NewApi(apiBasePath)
