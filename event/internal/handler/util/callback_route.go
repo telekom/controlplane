@@ -20,12 +20,12 @@ import (
 // Subscriber and Provider share the same Zone ("provider" --> "foo" --> "consumer"):
 // 1. Subscriber has deliveryType callback with the callbackUrl "https://my-callback/v1/post"
 // 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://foo-gateway/horizon-foo/callback/v1?callback=https://my-callback/v1/post"
-// 3. Horizon publishes events (auth using mesh-client) which will be proxies to the foo-gateway and then forwarded the the callbackUrl with the correct LMS-token (clientId=mesh-client)
+// 3. Horizon publishes events (auth using mesh-client); the foo-gateway proxies them and then forwards them to the callbackUrl with the correct LMS-token (clientId=mesh-client)
 //
 // Subscriber is on a different zone ("provider" --> "bar" --> "foo" --> "consumer"):
 // 1. Subscriber has deliveryType callback with the callbackUrl "https://my-callback/v1/post"
 // 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://bar-gateway/horizon-foo/callback/v1?callback=https://my-callback/v1/post"
-// 3. Horizon publishes events (auth using mesh-client) to bar-gateway which is proxies to foo-gateway and then forwarded the the callbackUrl with the correct LMS-token (clientId=mesh-client)
+// 3. Horizon publishes events (auth using mesh-client) to bar-gateway, which proxies them to foo-gateway and then forwards them to the callbackUrl with the correct LMS-token (clientId=mesh-client)
 
 func CreateProxyCallbackRoute(
 	ctx context.Context,

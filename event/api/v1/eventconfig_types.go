@@ -233,6 +233,14 @@ func (r *EventConfig) IsProxy() bool {
 	return r.Spec.Proxy != nil
 }
 
+// IsLocal reports whether this EventConfig is for a local zone that runs its
+// own event backend. The CEL XOR rule on the spec guarantees exactly one of
+// local/proxy is set, so IsLocal is the negation of IsProxy for an admitted
+// object; it also guards against a nil Spec.Local when neither is set.
+func (r *EventConfig) IsLocal() bool {
+	return r.Spec.Local != nil
+}
+
 func (r *EventConfig) SupportsZone(zoneName string) bool {
 	if r.Spec.Zone.Name == zoneName {
 		return true

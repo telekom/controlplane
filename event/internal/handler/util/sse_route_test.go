@@ -53,7 +53,7 @@ var _ = Describe("CreateSSERoute", func() {
 	It("should return BlockedError when zone has no default preset", func() {
 		zoneNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
-		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zoneNoPreset, eventConfig, false)
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zoneNoPreset, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
@@ -64,7 +64,7 @@ var _ = Describe("CreateSSERoute", func() {
 	It("should return BlockedError when zone has no gateway reference in status", func() {
 		zoneNoGw := makeZoneNoGateway("zone-a", "zone-a-ns")
 
-		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zoneNoGw, eventConfig, false)
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zoneNoGw, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
@@ -80,7 +80,7 @@ var _ = Describe("CreateSSERoute", func() {
 			},
 		}
 
-		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, badConfig, false)
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, badConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("failed to parse ServerSendEventUrl"))
@@ -94,7 +94,7 @@ var _ = Describe("CreateSSERoute", func() {
 			},
 		}
 
-		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, proxyConfig, false)
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, proxyConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
@@ -110,7 +110,7 @@ var _ = Describe("CreateSSERoute", func() {
 				return controllerutil.OperationResultCreated, err
 			})
 
-		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig, false)
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
 
@@ -158,7 +158,7 @@ var _ = Describe("CreateSSERoute", func() {
 				return controllerutil.OperationResultCreated, err
 			})
 
-		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig, true)
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig, util.WithProxyTarget(true))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
 		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(gatewayapi.GatewayConsumerName))
@@ -173,7 +173,7 @@ var _ = Describe("CreateSSERoute", func() {
 				return controllerutil.OperationResultCreated, err
 			})
 
-		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig, false)
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
 		Expect(route.Spec.Security.DefaultConsumers).To(BeEmpty())
@@ -184,7 +184,7 @@ var _ = Describe("CreateSSERoute", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("create failed"))
 
-		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig, false)
+		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zone, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
@@ -299,7 +299,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("provider zone"))
+		Expect(err.Error()).To(ContainSubstring("target zone"))
 		Expect(err.Error()).To(ContainSubstring("has no default preset"))
 	})
 

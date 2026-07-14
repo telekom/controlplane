@@ -186,7 +186,8 @@ func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *even
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
 	primaryTrustedIssuers := collectPrimaryTrustedIssuers(backendZone, subscriberZones, isProxyTarget)
 
-	route, err := util.CreateSSERoute(ctx, obj.Spec.EventType, backendZone, backendConfig, isProxyTarget,
+	route, err := util.CreateSSERoute(ctx, obj.Spec.EventType, backendZone, backendConfig,
+		util.WithProxyTarget(isProxyTarget),
 		util.WithTrustedIssuers(primaryTrustedIssuers),
 		util.WithRealmName(backendZone.Status.RealmName),
 	)
@@ -221,7 +222,7 @@ func (h *EventExposureHandler) resolveSSEBackendZone(ctx context.Context, zone *
 	if err != nil {
 		return nil, nil, err // BlockedError propagates so the proxy requeues until the target is ready
 	}
-	if targetCfg.IsProxy() || targetCfg.Spec.Local == nil {
+	if !targetCfg.IsLocal() {
 		return nil, nil, ctrlerrors.BlockedErrorf("target zone %q of proxy zone %q must be a local (non-proxy) zone", targetZoneName, zone.Name)
 	}
 

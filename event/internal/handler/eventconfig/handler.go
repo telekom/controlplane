@@ -94,35 +94,8 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	// --- Routes ---
 
-	if err = h.createCallbackRoutes(ctx, obj, myZone, meshCfg); err != nil {
-		return errors.Wrap(err, "failed to create callback Routes")
-	}
-	logger.V(1).Info("Callback Routes created/updated", "count", len(obj.Status.ProxyCallbackRoutes))
-
-	// Voyager Routes: local zones expose their own backend; proxy zones forward their
-	// own-zone Route to the target and still participate in the full mesh.
-	if obj.IsProxy() {
-		if err = h.createProxyVoyagerRoutes(ctx, obj, myZone, meshCfg); err != nil {
-			return errors.Wrap(err, "failed to create proxy voyager Routes")
-		}
-		logger.V(1).Info("Proxy voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
-	} else if obj.Spec.Local.VoyagerApiUrl != "" {
-		if err = h.createVoyagerRoutes(ctx, obj, myZone, meshCfg); err != nil {
-			return errors.Wrap(err, "failed to create voyager Routes")
-		}
-		logger.V(1).Info("Voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
-	}
-
-	if obj.IsProxy() {
-		if err = h.createProxyPublishRoute(ctx, obj, myZone); err != nil {
-			return errors.Wrap(err, "failed to create proxy publish Route")
-		}
-		logger.V(1).Info("Proxy publish Route created/updated")
-	} else {
-		if err = h.createPublishRoute(ctx, obj, myZone); err != nil {
-			return errors.Wrap(err, "failed to create publish Route")
-		}
-		logger.V(1).Info("Publish Route created/updated")
+	if routeErr := h.createRoutes(ctx, obj, myZone, meshCfg); routeErr != nil {
+		return routeErr
 	}
 
 	// --- Finalize status conditions ---
@@ -155,6 +128,45 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 func (h *EventConfigHandler) Delete(ctx context.Context, obj *eventv1.EventConfig) error {
 	// Child resources are cleaned up by the janitor client (ownership tracking).
 	// No additional manual cleanup needed.
+	return nil
+}
+
+// createRoutes provisions the callback, Voyager, and publish gateway Routes for the
+// EventConfig, dispatching to the proxy or local builders based on the zone kind.
+func (h *EventConfigHandler) createRoutes(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone, meshCfg *eventv1.MeshConfig) error {
+	logger := log.FromContext(ctx)
+
+	if err := h.createCallbackRoutes(ctx, obj, myZone, meshCfg); err != nil {
+		return errors.Wrap(err, "failed to create callback Routes")
+	}
+	logger.V(1).Info("Callback Routes created/updated", "count", len(obj.Status.ProxyCallbackRoutes))
+
+	// Voyager Routes: local zones expose their own backend; proxy zones forward their
+	// own-zone Route to the target and still participate in the full mesh.
+	if obj.IsProxy() {
+		if err := h.createProxyVoyagerRoutes(ctx, obj, myZone, meshCfg); err != nil {
+			return errors.Wrap(err, "failed to create proxy voyager Routes")
+		}
+		logger.V(1).Info("Proxy voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
+	} else if obj.IsLocal() && obj.Spec.Local.VoyagerApiUrl != "" {
+		if err := h.createVoyagerRoutes(ctx, obj, myZone, meshCfg); err != nil {
+			return errors.Wrap(err, "failed to create voyager Routes")
+		}
+		logger.V(1).Info("Voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
+	}
+
+	if obj.IsProxy() {
+		if err := h.createProxyPublishRoute(ctx, obj, myZone); err != nil {
+			return errors.Wrap(err, "failed to create proxy publish Route")
+		}
+		logger.V(1).Info("Proxy publish Route created/updated")
+	} else {
+		if err := h.createPublishRoute(ctx, obj, myZone); err != nil {
+			return errors.Wrap(err, "failed to create publish Route")
+		}
+		logger.V(1).Info("Publish Route created/updated")
+	}
+
 	return nil
 }
 
@@ -496,7 +508,7 @@ func (h *EventConfigHandler) createProxyVoyagerRoutes(ctx context.Context, obj *
 	if err != nil {
 		return err // BlockedError propagates so the proxy requeues until the target is ready
 	}
-	if targetCfg.IsProxy() || targetCfg.Spec.Local == nil {
+	if !targetCfg.IsLocal() {
 		return ctrlerrors.BlockedErrorf("target zone %q of proxy EventConfig %q must be a local (non-proxy) zone", targetZoneName, obj.Name)
 	}
 	if targetCfg.Spec.Local.VoyagerApiUrl == "" {
@@ -591,9 +603,12 @@ func (h *EventConfigHandler) createEventStore(ctx context.Context, obj *eventv1.
 	return eventStore, nil
 }
 
-// createProxyEventStore creates a pubsub.EventStore for a proxy zone. Instead of a local
-// admin client, it authenticates to the target zone's configuration backend using the
-// target zone's admin client credentials and admin realm token endpoint.
+// createProxyEventStore creates a pubsub.EventStore for a proxy zone. A proxy zone
+// still needs its own EventStore so the pubsub runtime can provision Subscriptions
+// for consumers in this zone; those Subscriptions are configured against the target
+// zone's backend. Instead of a local admin client, it authenticates to the target
+// zone's configuration backend using the target zone's admin client credentials and
+// admin realm token endpoint.
 func (h *EventConfigHandler) createProxyEventStore(ctx context.Context, obj *eventv1.EventConfig) (*pubsubv1.EventStore, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -603,7 +618,7 @@ func (h *EventConfigHandler) createProxyEventStore(ctx context.Context, obj *eve
 	if err != nil {
 		return nil, err // BlockedError propagates so the proxy requeues until the target is ready
 	}
-	if targetCfg.IsProxy() || targetCfg.Spec.Local == nil {
+	if !targetCfg.IsLocal() {
 		return nil, ctrlerrors.BlockedErrorf("target zone %q of proxy EventConfig %q must be a local (non-proxy) zone", targetZoneName, obj.Name)
 	}
 

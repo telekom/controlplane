@@ -163,6 +163,18 @@ func resolvePreset(zone *adminv1.Zone) (*adminv1.GatewayConfigPreset, error) {
 	return preset, nil
 }
 
+// targetPreset returns a zone's default preset for use as a proxy Route's
+// upstream. Unlike resolvePreset it does NOT require Status.Gateway: the target
+// zone of a cross-zone proxy only contributes its public URL, not a GatewayRef,
+// so its gateway status being unpopulated must not block the proxy Route.
+func targetPreset(zone *adminv1.Zone) (*adminv1.GatewayConfigPreset, error) {
+	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", zone.Name, err)
+	}
+	return preset, nil
+}
+
 // gatewayUpstream builds a proxy Upstream pointing at a target preset's gateway URL,
 // optionally joined with path. path=="" yields the base URL only (publish-proxy relies
 // on the gateway preserving the request path when the upstream carries none).
@@ -232,12 +244,12 @@ func buildCrossZoneProxyRoute(
 		return nil, err
 	}
 
-	targetPreset, err := targetZone.Spec.Gateway.GetDefaultPreset()
+	tgtPreset, err := targetPreset(targetZone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
+		return nil, err
 	}
 
-	upstream, err := gatewayUpstream(targetPreset, path)
+	upstream, err := gatewayUpstream(tgtPreset, path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create upstream for proxy %s Route", kind)
 	}

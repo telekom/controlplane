@@ -41,16 +41,12 @@ func CreateSSERoute(
 	eventType string,
 	zone *adminv1.Zone,
 	eventConfig *eventv1.EventConfig,
-	isTargetOfProxy bool,
 	opts ...Option,
 ) (*gatewayapi.Route, error) {
 	options := &Options{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	// isTargetOfProxy is authoritative for SSE; it drives the mesh-client consumer
-	// via finalizeRoute's o.IsProxyTarget check.
-	options.IsProxyTarget = isTargetOfProxy
 
 	preset, err := resolvePreset(zone)
 	if err != nil {
@@ -58,9 +54,9 @@ func CreateSSERoute(
 	}
 
 	// The primary SSE Route points at the zone's local Horizon backend. A proxy
-	// zone has no local backend (Spec.Local == nil); callers must resolve the
+	// zone has no local backend (Spec.Local is nil); callers must resolve the
 	// target (local) zone and build the primary Route there instead.
-	if eventConfig.Spec.Local == nil {
+	if !eventConfig.IsLocal() {
 		return nil, ctrlerrors.BlockedErrorf("EventConfig %q for zone %q has no local backend; SSE primary Route requires a local (non-proxy) zone", eventConfig.Name, zone.Name)
 	}
 
@@ -145,9 +141,9 @@ func CreateSSEProxyRoute(
 		return nil, err
 	}
 
-	providerPreset, err := providerZone.Spec.Gateway.GetDefaultPreset()
+	providerPreset, err := targetPreset(providerZone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("provider zone %q has no default preset: %s", providerZone.Name, err)
+		return nil, err
 	}
 
 	ssePath := makeSSERoutePath(eventType)

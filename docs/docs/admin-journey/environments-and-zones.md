@@ -328,8 +328,10 @@ spec:
 
 The target zone must be a **local** (non-proxy) zone running Horizon. Because a proxy zone has no backend of its own, it needs no `admin` or backend URLs — those all belong to the target zone.
 
-:::warning
+:::warning Mutually exclusive
+
 `local` and `proxy` are mutually exclusive. Every `EventConfig` must set exactly one of them, and the resource is rejected if both (or neither) are present.
+
 :::
 
 ### Verifying readiness
