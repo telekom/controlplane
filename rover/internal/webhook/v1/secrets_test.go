@@ -2,17 +2,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package v1_test
+package v1
 
 import (
 	"context"
+	"encoding/json"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,6 +24,61 @@ var _ = Describe("Secrets Handling", func() {
 
 	BeforeEach(func() {
 		fakeSecretManager = fake.NewMockSecretManager(GinkgoT())
+	})
+
+	Context("basePathFromJSONPath", func() {
+		It("should return the basePath from a JSON path", func() {
+			rover := roverv1.Rover{
+				Spec: roverv1.RoverSpec{
+					Exposures: []roverv1.Exposure{
+						{
+							Api: &roverv1.ApiExposure{
+								BasePath: "/eni/example/v1",
+							},
+						},
+						{
+							Api: &roverv1.ApiExposure{
+								BasePath: "/eni/example/v2",
+								Security: &roverv1.Security{
+									M2M: &roverv1.Machine2MachineAuthentication{
+										ExternalIDP: &roverv1.ExternalIdentityProvider{
+											Client: &roverv1.OAuth2ClientCredentials{
+												ClientSecret: "test",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Subscriptions: []roverv1.Subscription{
+						{
+							Api: &roverv1.ApiSubscription{
+								BasePath: "/eni/example/v1",
+							},
+						},
+						{
+							Api: &roverv1.ApiSubscription{
+								BasePath: "/eni/example/v2",
+								Security: &roverv1.SubscriberSecurity{
+									M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+										Client: &roverv1.OAuth2ClientCredentials{
+											ClientSecret: "test",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			data, err := json.Marshal(rover)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(basePathFromJSONPath(data, "spec.subscriptions.0.api.basePath")).To(Equal("/eni/example/v1"))
+			Expect(basePathFromJSONPath(data, "spec.subscriptions.1.api.security.m2m.client.clientSecret")).To(Equal("/eni/example/v2"))
+			Expect(basePathFromJSONPath(data, "spec.exposures.0.api.basePath")).To(Equal("/eni/example/v1"))
+			Expect(basePathFromJSONPath(data, "spec.exposures.1.api.security.m2m.externalIdp.client.clientSecret")).To(Equal("/eni/example/v2"))
+		})
 	})
 
 	Context("GetExternalSecrets", func() {
@@ -101,7 +156,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets := webhookv1.GetExternalSecrets(context.Background(), rover)
+			secrets, _ := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(HaveLen(5))
 			Expect(secrets).To(Equal(map[string]string{
 				"externalSecrets/api1/clientSecret":             "topsecret",
@@ -120,7 +175,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets := webhookv1.GetExternalSecrets(context.Background(), rover)
+			secrets, _ := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(BeEmpty())
 		})
 
@@ -146,7 +201,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets := webhookv1.GetExternalSecrets(context.Background(), rover)
+			secrets, _ := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(BeEmpty())
 		})
 	})
@@ -180,7 +235,7 @@ var _ = Describe("Secrets Handling", func() {
 			}
 			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover", mock.Anything).RunAndReturn(runAndReturnApplication)
 
-			err := webhookv1.OnboardApplication(ctx, rover, fakeSecretManager)
+			err := OnboardApplication(ctx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -240,7 +295,7 @@ var _ = Describe("Secrets Handling", func() {
 			onboardingOption := mock.AnythingOfType("api.OnboardingOption")
 			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover", onboardingOption, onboardingOption, onboardingOption).RunAndReturn(runAndReturnApplication)
 
-			err := webhookv1.OnboardApplication(ctx, rover, fakeSecretManager)
+			err := OnboardApplication(ctx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<some:id:clientSecret:checksum>"))
@@ -260,7 +315,7 @@ var _ = Describe("Secrets Handling", func() {
 			}
 			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
 
-			err := webhookv1.OnboardApplication(ctx, rover, fakeSecretManager)
+			err := OnboardApplication(ctx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
@@ -312,7 +367,7 @@ var _ = Describe("Secrets Handling", func() {
 			}
 			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
 
-			err := webhookv1.OnboardApplication(ctx, rover, fakeSecretManager)
+			err := OnboardApplication(ctx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))

@@ -55,8 +55,10 @@ var secretsForKinds = map[string][]string{
 	"Rover": {
 		"spec.clientSecret",
 		"spec.subscriptions.#.api.security.m2m.client.clientSecret",
+		"spec.subscriptions.#.api.security.m2m.client.refreshToken",
 		"spec.subscriptions.#.api.security.m2m.basic.password",
 		"spec.exposures.#.api.security.m2m.externalIDP.client.clientSecret",
+		"spec.exposures.#.api.security.m2m.externalIDP.client.refreshToken",
 		"spec.exposures.#.api.security.m2m.externalIDP.basic.password",
 		"spec.exposures.#.api.security.m2m.basic.password",
 	},
