@@ -21,6 +21,7 @@ const (
 	GrantTypeClientCredentials GrantType = "client_credentials"
 	GrantTypeAuthorizationCode GrantType = "authorization_code"
 	GrantTypePassword          GrantType = "password"
+	GrantTypeRefreshToken      GrantType = "refresh_token"
 )
 
 type Security struct {
@@ -182,4 +183,8 @@ type OAuth2ClientCredentials struct {
 	// clientKey is the private key associated with the client ID
 	// +kubebuilder:validation:Optional
 	ClientKey string `json:"clientKey,omitempty"`
+	// RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+	// without requiring re-authentication. Used with the refresh_token grant type.
+	// +kubebuilder:validation:Optional
+	RefreshToken string `json:"refreshToken,omitempty"`
 }
