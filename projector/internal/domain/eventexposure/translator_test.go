@@ -73,7 +73,8 @@ var _ = Describe("EventExposure Translator", func() {
 					},
 				},
 				Status: eventv1.EventExposureStatus{
-					Active: true,
+					Active:     true,
+					PublishURL: "https://gateway.example.com/events/provider",
 					Conditions: []metav1.Condition{
 						{
 							Type:    "Ready",
@@ -113,6 +114,8 @@ var _ = Describe("EventExposure Translator", func() {
 			Expect(data.Scopes[1].Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.secret"}))
 			Expect(data.Scopes[1].Trigger.ResponseFilter.Mode).To(Equal("Exclude"))
 			Expect(data.Scopes[1].Trigger.SelectionFilter).To(BeNil())
+			Expect(data.GatewayProviderUrl).To(Equal("https://gateway.example.com/events/provider"))
+
 		})
 
 		It("should translate a single scope with only a selection filter", func() {
@@ -230,6 +233,25 @@ var _ = Describe("EventExposure Translator", func() {
 			Expect(data.Scopes[0].Name).To(Equal("bare"))
 			Expect(data.Scopes[0].Trigger.ResponseFilter).To(BeNil())
 			Expect(data.Scopes[0].Trigger.SelectionFilter).To(BeNil())
+		})
+
+		It("should set GatewayProviderUrl to empty when status has no provider url", func() {
+			obj := &eventv1.EventExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "no-provider-url",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: eventv1.EventExposureSpec{
+					EventType:  "de.telekom.test.v1",
+					Visibility: eventv1.VisibilityWorld,
+					Approval:   eventv1.Approval{Strategy: eventv1.ApprovalStrategyAuto},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.GatewayProviderUrl).To(BeEmpty())
 		})
 
 		It("should upper-case Zone visibility", func() {

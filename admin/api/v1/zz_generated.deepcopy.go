@@ -626,10 +626,6 @@ func (in *ZoneStatus) DeepCopyInto(out *ZoneStatus) {
 		in, out := &in.Gateway, &out.Gateway
 		*out = (*in).DeepCopy()
 	}
-	if in.GatewayClient != nil {
-		in, out := &in.GatewayClient, &out.GatewayClient
-		*out = (*in).DeepCopy()
-	}
 	if in.GatewayAdminClient != nil {
 		in, out := &in.GatewayAdminClient, &out.GatewayAdminClient
 		*out = (*in).DeepCopy()

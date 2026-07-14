@@ -61,11 +61,9 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	BeforeAll(func() {
 		By("Creating the provider zone")
 		providerZone = CreateZone(providerZoneName)
-		CreateGatewayClient(providerZone)
 
 		By("Creating the failover zone")
 		failoverZone = CreateZone(failoverZoneName)
-		CreateGatewayClient(failoverZone)
 
 		By("Enabling ConsumerFailover feature on failover zone")
 		failoverZone.Spec.Gateway.Presets = append(failoverZone.Spec.Gateway.Presets, adminapi.GatewayConfigPreset{
@@ -188,13 +186,11 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 	Context("Different Zone than ApiExposure Failover Zone", func() {
 		differentZoneName := "different-zone"
-		var differentZone *adminapi.Zone
 		var differentZoneSubscription *apiapi.ApiSubscription
 
 		BeforeAll(func() {
 			By("Creating a different zone")
-			differentZone = CreateZone(differentZoneName)
-			CreateGatewayClient(differentZone)
+			CreateZone(differentZoneName)
 
 			By("Creating ApiSubscription in a different zone")
 			differentZoneSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -275,8 +271,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating multiple failover zones")
 			multiFailoverZone1 = CreateZone(multiFailoverZoneName1)
 			multiFailoverZone2 = CreateZone(multiFailoverZoneName2)
-			CreateGatewayClient(multiFailoverZone1)
-			CreateGatewayClient(multiFailoverZone2)
 
 			By("Enabling ConsumerFailover feature on failover zones")
 			for _, zone := range []*adminapi.Zone{multiFailoverZone1, multiFailoverZone2} {
@@ -401,7 +395,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 	Context("ApiSubscription with Failover Zone same as ApiExposure Zone", func() {
 		differentZoneName := "another-different-zone"
-		var differentZone *adminapi.Zone
 		var subscription *apiapi.ApiSubscription
 
 		sameZoneAppName := "same-sub-failover-zone-exp-zone"
@@ -409,8 +402,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 		BeforeAll(func() {
 			By("Creating a different zone")
-			differentZone = CreateZone(differentZoneName)
-			CreateGatewayClient(differentZone)
+			CreateZone(differentZoneName)
 
 			By("Creating the Application")
 			sameZoneApplication = CreateApplication(sameZoneAppName)
@@ -489,7 +481,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		BeforeAll(func() {
 			By("Creating zone for approval denial test")
 			denialZone = CreateZone(denialZoneName)
-			CreateGatewayClient(denialZone)
 
 			By("Creating ApiSubscription in cross-zone")
 			denialSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -585,7 +576,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		BeforeAll(func() {
 			By("Creating subscription zone (cross-zone from exposure)")
 			subFailoverToProviderZone = CreateZone(subFailoverToProviderZoneName)
-			CreateGatewayClient(subFailoverToProviderZone)
 
 			By("Creating ApiSubscription with subscriber failover to provider failover zone")
 			subFailoverToProviderSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -739,7 +729,6 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		BeforeAll(func() {
 			By("Creating failover zone for same-zone subscription")
 			sameZoneFailoverZone = CreateZone(sameZoneFailoverZoneName)
-			CreateGatewayClient(sameZoneFailoverZone)
 
 			By("Enabling ConsumerFailover feature on same-zone failover zone")
 			sameZoneFailoverZone.Spec.Gateway.Presets = append(sameZoneFailoverZone.Spec.Gateway.Presets, adminapi.GatewayConfigPreset{
@@ -896,11 +885,9 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		BeforeAll(func() {
 			By("Creating shared zone for both subscriptions")
 			sharedZone = CreateZone(sharedZoneName)
-			CreateGatewayClient(sharedZone)
 
 			By("Creating failover zone for subscription2")
 			sharedFailoverZone = CreateZone(sharedFailoverZoneName)
-			CreateGatewayClient(sharedFailoverZone)
 
 			By("Enabling ConsumerFailover feature on shared failover zone")
 			sharedFailoverZone.Spec.Gateway.Presets = append(sharedFailoverZone.Spec.Gateway.Presets, adminapi.GatewayConfigPreset{
@@ -1093,7 +1080,6 @@ var _ = Describe("ApiSubscription Controller - All Subscriptions Same Zone", Ord
 	BeforeAll(func() {
 		By("Creating the provider zone")
 		providerZone = CreateZone(providerZoneName)
-		CreateGatewayClient(providerZone)
 
 		By("Creating the Application")
 		CreateApplication(appName)
@@ -1279,7 +1265,6 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 	var api *apiapi.Api
 	var apiExposure *apiapi.ApiExposure
 	providerZoneName := "provfailover-main"
-	var providerZone *adminapi.Zone
 	providerFailoverZoneName := "provfailover-secondary"
 	var providerFailoverZone *adminapi.Zone
 	subscriberZoneName := "provfailover-subscriber"
@@ -1290,12 +1275,10 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 
 	BeforeAll(func() {
 		By("Creating the provider main zone")
-		providerZone = CreateZone(providerZoneName)
-		CreateGatewayClient(providerZone)
+		CreateZone(providerZoneName)
 
 		By("Creating the provider failover zone")
 		providerFailoverZone = CreateZone(providerFailoverZoneName)
-		CreateGatewayClient(providerFailoverZone)
 
 		By("Enabling ConsumerFailover feature on provider failover zone")
 		providerFailoverZone.Spec.Gateway.Presets = append(providerFailoverZone.Spec.Gateway.Presets, adminapi.GatewayConfigPreset{
@@ -1314,7 +1297,6 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 
 		By("Creating the subscriber zone")
 		subscriberZone = CreateZone(subscriberZoneName)
-		CreateGatewayClient(subscriberZone)
 
 		By("Creating the Application")
 		CreateApplication(appName)

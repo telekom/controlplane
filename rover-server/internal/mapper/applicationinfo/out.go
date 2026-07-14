@@ -9,10 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -261,9 +259,6 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 	if err := fillAiExposures(ctx, rover, appInfo, stores); err != nil {
 		return err
 	}
-	if err := fillPublishEventURL(ctx, rover, appInfo, stores); err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -314,6 +309,11 @@ func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.
 			WriteStatus(eventExp, appInfo, err)
 		}
 
+		// All event exposures in a zone share the same publish URL.
+		if appInfo.StargatePublishEventUrl == "" && eventExp.Status.PublishURL != "" {
+			appInfo.StargatePublishEventUrl = eventExp.Status.PublishURL
+		}
+
 		expInfo := api.ExposureInfo{}
 		eventExpInfo := mapEventExposureInfo(eventExp)
 		if err := expInfo.FromEventExposureInfo(eventExpInfo); err != nil {
@@ -356,37 +356,6 @@ func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 
 		appInfo.Exposures = append(appInfo.Exposures, expInfo)
 	}
-	return nil
-}
-
-// fillPublishEventURL resolves and sets the publish event URL on appInfo
-// when the Rover has event exposures and the URL is not already populated.
-func fillPublishEventURL(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
-	bCtx, ok := security.FromContext(ctx)
-	if len(rover.Status.EventExposures) == 0 || !ok {
-		return nil
-	}
-
-	zone, err := stores.ZoneStore.Get(ctx, bCtx.Environment, rover.Spec.Zone)
-	if err != nil {
-		return errors.Wrap(err, "failed to get zone")
-	}
-
-	if appInfo.StargatePublishEventUrl == "" {
-		eventCfg, err := stores.EventConfigStore.Get(ctx, zone.Status.Namespace, bCtx.Environment)
-		if err != nil {
-			if problems.IsNotFound(err) {
-				// If the event config is not found, we can skip setting the URL but should log it for visibility
-				// as it may indicate that the event system is not fully set up in this zone/environment.
-				logr.FromContextOrDiscard(ctx).V(0).Info("EventConfig not found, skipping publish event URL",
-					"zone", rover.Spec.Zone, "environment", bCtx.Environment)
-				return nil
-			}
-			return errors.Wrap(err, "failed to get event config")
-		}
-		appInfo.StargatePublishEventUrl = eventCfg.Status.PublishURL
-	}
-
 	return nil
 }
 

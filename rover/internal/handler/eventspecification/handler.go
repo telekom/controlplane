@@ -51,6 +51,7 @@ func (h *EventSpecificationHandler) CreateOrUpdate(ctx context.Context, eventSpe
 			Type:          eventSpec.Spec.Type,
 			Version:       eventSpec.Spec.Version,
 			Description:   eventSpec.Spec.Description,
+			Category:      eventSpec.Spec.Category,
 			Specification: eventSpec.Spec.Specification,
 		}
 

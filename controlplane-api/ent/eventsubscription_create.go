@@ -172,6 +172,20 @@ func (_c *EventSubscriptionCreate) SetNillableCallbackURL(v *string) *EventSubsc
 	return _c
 }
 
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (_c *EventSubscriptionCreate) SetGatewaySseURL(v string) *EventSubscriptionCreate {
+	_c.mutation.SetGatewaySseURL(v)
+	return _c
+}
+
+// SetNillableGatewaySseURL sets the "gateway_sse_url" field if the given value is not nil.
+func (_c *EventSubscriptionCreate) SetNillableGatewaySseURL(v *string) *EventSubscriptionCreate {
+	if v != nil {
+		_c.SetGatewaySseURL(*v)
+	}
+	return _c
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_c *EventSubscriptionCreate) SetOwnerID(id int) *EventSubscriptionCreate {
 	_c.mutation.SetOwnerID(id)
@@ -431,6 +445,10 @@ func (_c *EventSubscriptionCreate) createSpec() (*EventSubscription, *sqlgraph.C
 	if value, ok := _c.mutation.CallbackURL(); ok {
 		_spec.SetField(eventsubscription.FieldCallbackURL, field.TypeString, value)
 		_node.CallbackURL = &value
+	}
+	if value, ok := _c.mutation.GatewaySseURL(); ok {
+		_spec.SetField(eventsubscription.FieldGatewaySseURL, field.TypeString, value)
+		_node.GatewaySseURL = &value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -730,6 +748,24 @@ func (u *EventSubscriptionUpsert) ClearCallbackURL() *EventSubscriptionUpsert {
 	return u
 }
 
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsert) SetGatewaySseURL(v string) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldGatewaySseURL, v)
+	return u
+}
+
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateGatewaySseURL() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldGatewaySseURL)
+	return u
+}
+
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsert) ClearGatewaySseURL() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldGatewaySseURL)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -982,6 +1018,27 @@ func (u *EventSubscriptionUpsertOne) UpdateCallbackURL() *EventSubscriptionUpser
 func (u *EventSubscriptionUpsertOne) ClearCallbackURL() *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.ClearCallbackURL()
+	})
+}
+
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertOne) SetGatewaySseURL(v string) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetGatewaySseURL(v)
+	})
+}
+
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateGatewaySseURL() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateGatewaySseURL()
+	})
+}
+
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertOne) ClearGatewaySseURL() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearGatewaySseURL()
 	})
 }
 
@@ -1403,6 +1460,27 @@ func (u *EventSubscriptionUpsertBulk) UpdateCallbackURL() *EventSubscriptionUpse
 func (u *EventSubscriptionUpsertBulk) ClearCallbackURL() *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.ClearCallbackURL()
+	})
+}
+
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertBulk) SetGatewaySseURL(v string) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetGatewaySseURL(v)
+	})
+}
+
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateGatewaySseURL() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateGatewaySseURL()
+	})
+}
+
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertBulk) ClearGatewaySseURL() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearGatewaySseURL()
 	})
 }
 

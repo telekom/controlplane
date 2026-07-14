@@ -51,7 +51,6 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		createDefaultIdentityRealm,
 		createInternalIdentityRealm,
 		createGatewayAdminClient,
-		createGatewayClient,
 		createGateway,
 		createGatewayConsumer,
 		reconcileAiGateway,
