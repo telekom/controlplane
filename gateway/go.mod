@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/gateway
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/telekom/controlplane/common v0.0.0
