@@ -147,6 +147,68 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(owner.ID).To(Equal(appID))
 		})
 
+		It("should back-link orphaned subscriptions projected before the exposure", func() {
+			// Subscription created first, before its target exposure exists →
+			// stored with a NULL target FK (the create-order race).
+			sub, err := client.ApiSubscription.Create().
+				SetBasePath("/api/v1/orphan").
+				SetEnvironment("prod").
+				SetNamespace("prod--platform--narvi").
+				SetName("orphan-sub").
+				SetOwnerID(appID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = sub.QueryTarget().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+
+			// Exposure appears later → should adopt the orphaned subscription.
+			data := &apiexposure.APIExposureData{
+				Meta:          shared.NewMetadata("prod--platform--narvi", "orphan-exp", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "ok",
+				BasePath:      "/api/v1/orphan",
+				Visibility:    "WORLD",
+				Active:        true,
+				Features:      []string{},
+				Upstreams:     []model.Upstream{{URL: "https://backend.example.com", Weight: 100}},
+				AppName:       "my-app",
+				TeamName:      "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.BasePath).To(Equal("/api/v1/orphan"))
+		})
+
+		It("should not back-link subscriptions when the exposure is inactive", func() {
+			sub, err := client.ApiSubscription.Create().
+				SetBasePath("/api/v1/inactive").
+				SetEnvironment("prod").
+				SetNamespace("prod--platform--narvi").
+				SetName("inactive-sub").
+				SetOwnerID(appID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data := &apiexposure.APIExposureData{
+				Meta:          shared.NewMetadata("prod--platform--narvi", "inactive-exp", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "ok",
+				BasePath:      "/api/v1/inactive",
+				Visibility:    "WORLD",
+				Active:        false,
+				Features:      []string{},
+				Upstreams:     []model.Upstream{{URL: "https://backend.example.com", Weight: 100}},
+				AppName:       "my-app",
+				TeamName:      "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			_, err = sub.QueryTarget().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+		})
+
 		It("should persist security and rate_limit fields", func() {
 			clientSecret := "ext-client-secret"
 			clientKey := "ext-client-key"
