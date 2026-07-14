@@ -117,7 +117,6 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 
 	var api *apiapi.Api
 	var apiExposure *apiapi.ApiExposure
-	var zone *adminapi.Zone
 	var remoteZone *adminapi.Zone
 	var remoteOrg *adminapi.RemoteOrganization
 
@@ -136,8 +135,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 		remoteApiSubscription = NewRemoteApiSubscription(apiBasePath, appName)
 
 		By("Creating the normal Zone")
-		zone = CreateZone(zoneName)
-		CreateGatewayClient(zone)
+		CreateZone(zoneName)
 
 		By("Creating the remote Zone with custom gateway URL")
 		remoteZone = CreateZone(remoteOrgId + "-" + zoneName)
