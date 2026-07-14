@@ -19,6 +19,7 @@ var (
 		Type:        "tardis.horizon.demo.cetus.v1",
 		Version:     "1.0.0",
 		Description: "Horizon demo provider",
+		Category:    "SYSTEM",
 		Specification: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
