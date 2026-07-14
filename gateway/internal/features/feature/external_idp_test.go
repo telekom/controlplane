@@ -282,6 +282,51 @@ var _ = Describe("ExternalIDPFeature", func() {
 				})
 			})
 
+			Context("when provider uses OAuth2 with refreshToken", func() {
+				It("sets RefreshToken in JumperConfig OAuth entry", func() {
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type:    gatewayv1.RouteTypePrimary,
+							Traffic: gatewayv1.Traffic{},
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+										TokenEndpoint: "https://idp.example.com/token",
+										TokenRequest:  gatewayv1.TokenRequestClientSecretBasic,
+										GrantType:     "refresh_token",
+										Client: &gatewayv1.OAuth2ClientCredentials{
+											ClientId:     "my-client-id",
+											ClientSecret: "my-client-secret",
+											RefreshToken: "my-refresh-token",
+										},
+									},
+								},
+							},
+						},
+					}
+					rtpPlugin := plugin.RequestTransformerPluginFromRoute(route)
+					jumperConfig := plugin.NewJumperConfig()
+
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+
+					err := f.Apply(ctx, builder)
+					Expect(err).ToNot(HaveOccurred())
+
+					oauth := jumperConfig.OAuth[feature.DefaultProviderKey]
+					Expect(oauth.ClientId).To(Equal("my-client-id"))
+					Expect(oauth.ClientSecret).To(Equal("my-client-secret"))
+					Expect(oauth.RefreshToken).To(Equal("my-refresh-token"))
+					Expect(oauth.GrantType).To(Equal("refresh_token"))
+				})
+			})
+
 			Context("when provider uses basic auth", func() {
 				It("populates JumperConfig OAuth with username and password", func() {
 					route := &gatewayv1.Route{
@@ -512,6 +557,55 @@ var _ = Describe("ExternalIDPFeature", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("cannot get provider secret for route test-route"))
 					Expect(err.Error()).To(ContainSubstring("secret manager unavailable"))
+				})
+			})
+
+			Context("when secret manager fails for provider refresh token", func() {
+				It("returns a wrapped error", func() {
+					originalGet := secretManagerApi.Get
+					defer func() { secretManagerApi.Get = originalGet }()
+					secretManagerApi.Get = func(_ context.Context, ref string) (string, error) {
+						if ref == "$<refresh-token-ref>" {
+							return "", fmt.Errorf("refresh token fetch failed")
+						}
+						return ref, nil
+					}
+
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type:    gatewayv1.RouteTypePrimary,
+							Traffic: gatewayv1.Traffic{},
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+										TokenEndpoint: "https://idp.example.com/token",
+										TokenRequest:  gatewayv1.TokenRequestClientSecretBasic,
+										GrantType:     "refresh_token",
+										Client: &gatewayv1.OAuth2ClientCredentials{
+											ClientId:     "my-client-id",
+											ClientKey:    "my-key",
+											RefreshToken: "$<refresh-token-ref>",
+										},
+									},
+								},
+							},
+						},
+					}
+					rtpPlugin := plugin.RequestTransformerPluginFromRoute(route)
+					jumperConfig := plugin.NewJumperConfig()
+
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+
+					err := f.Apply(ctx, builder)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("cannot get provider secret for route test-route"))
+					Expect(err.Error()).To(ContainSubstring("refresh token fetch failed"))
 				})
 			})
 
