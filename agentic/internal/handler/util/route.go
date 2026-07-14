@@ -92,9 +92,7 @@ func CreateMcpRoute(
 		if exposure.Spec.Security != nil {
 			route.Spec.Security = MapSecurityToGateway(exposure.Spec.Security)
 		} else {
-			route.Spec.Security = gatewayapi.Security{
-				DisableAccessControl: true,
-			}
+			route.Spec.Security = gatewayapi.Security{}
 		}
 
 		// Set trusted issuers: only add the exposure zone's own IDP issuer when

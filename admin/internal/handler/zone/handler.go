@@ -7,13 +7,13 @@ package zone
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -54,6 +54,7 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		createGatewayClient,
 		createGateway,
 		createGatewayConsumer,
+		reconcileAiGateway,
 		reconcileInternalRoutes,
 		createIdentityRoutes,
 		cleanupStaleRoutes,
@@ -74,16 +75,6 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		return nil
 	}
 
-	// AI Gateway configuration
-	if cconfig.FeatureAiGateway.IsEnabled() && obj.Spec.AiGateway != nil {
-		if err := reconcileAiGateway(ctx, hc, obj); err != nil {
-			return err
-		}
-	} else {
-		obj.Status.AiGateway = nil
-		obj.ManageFeature(adminv1.FeatureAiGateway, false)
-	}
-
 	if !c.AllReady() {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for sub-resources to be ready"))
 		return nil
@@ -95,19 +86,15 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	return nil
 }
 
-func reconcileAiGateway(ctx context.Context, hc *HandlingContext, zone *adminv1.Zone) error {
-	aiGateway, err := createAiGateway(ctx, hc)
-	if err != nil {
-		return err
+// reconcileAiGateway creates the AI Gateway resource for the zone when the
+// feature is enabled and configured, otherwise clears the status and feature flag.
+func reconcileAiGateway(ctx context.Context, hc *HandlingContext) error {
+	if !cconfig.FeatureAiGateway.IsEnabled() || hc.Zone.Spec.AiGateway == nil {
+		hc.Zone.Status.AiGateway = nil
+		hc.Zone.ManageFeature(adminv1.FeatureAiGateway, false)
+		return nil
 	}
-	zone.Status.AiGateway = types.ObjectRefFromObject(aiGateway)
 
-	zone.EnableFeature(adminv1.FeatureAiGateway)
-	return nil
-}
-
-//nolint:dupl // intentional similarity with createGateway for separate AI gateway config
-func createAiGateway(ctx context.Context, hc *HandlingContext) (*gatewayapi.Gateway, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	gateway := &gatewayapi.Gateway{
@@ -157,9 +144,13 @@ func createAiGateway(ctx context.Context, hc *HandlingContext) (*gatewayapi.Gate
 
 	_, err := c.CreateOrUpdate(ctx, gateway, mutator)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create or update AI Gateway in zone %s", hc.Zone.Name)
+		return ctrlerrors.RetryableErrorf("failed to create or update AI Gateway %s in zone %s: %s", gateway.Name, hc.Zone.Name, err)
 	}
-	return gateway, nil
+
+	hc.AiGateway = gateway
+	hc.Zone.Status.AiGateway = types.ObjectRefFromObject(gateway)
+	hc.Zone.EnableFeature(adminv1.FeatureAiGateway)
+	return nil
 }
 
 func (h *ZoneHandler) Delete(ctx context.Context, obj *adminv1.Zone) error {
