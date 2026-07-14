@@ -7,6 +7,8 @@ package zone
 import (
 	"context"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
@@ -18,7 +20,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
