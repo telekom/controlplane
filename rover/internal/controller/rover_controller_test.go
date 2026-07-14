@@ -448,6 +448,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 									Client: &roverv1.OAuth2ClientCredentials{
 										ClientId:     "clientID",
 										ClientSecret: "******",
+										RefreshToken: "refreshToken",
 									},
 									Scopes: []string{"eIDP:scope"},
 								},
@@ -478,6 +479,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 										Client: &roverv1.OAuth2ClientCredentials{
 											ClientId:     "clientID",
 											ClientSecret: "******",
+											RefreshToken: "refreshToken",
 										},
 									},
 									Scopes: []string{"eIDP:scope"},
@@ -512,6 +514,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(apiSubscription.Spec.Security.M2M.Client.ClientId).To(Equal("clientID"))
 				g.Expect(apiSubscription.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
+				g.Expect(apiSubscription.Spec.Security.M2M.Client.RefreshToken).To(Equal("refreshToken"))
 				g.Expect(apiSubscription.Spec.Security.M2M.Scopes[0]).To(Equal("eIDP:scope"))
 
 				apiExposure := &apiapi.ApiExposure{}
@@ -523,6 +526,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("clientID"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.RefreshToken).To(Equal("refreshToken"))
 				g.Expect(apiExposure.Spec.Security.M2M.Scopes[0]).To(Equal("eIDP:scope"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal(apiapi.TokenRequestClientSecretBasic))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://idp.example.com/token"))
