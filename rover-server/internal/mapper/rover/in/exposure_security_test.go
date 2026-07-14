@@ -54,6 +54,7 @@ var _ = Describe("Exposure Security Mapper", func() {
 				ClientId:      "client-id",
 				ClientSecret:  "client-secret",
 				ClientKey:     "client-key",
+				RefreshToken:  "refreshToken",
 			}
 			input.Security = api.Security{}
 			err := input.Security.FromOauth2(oauth2)
@@ -73,6 +74,7 @@ var _ = Describe("Exposure Security Mapper", func() {
 			Expect(output.Security.M2M.ExternalIDP.GrantType).To(Equal(roverv1.GrantTypeClientCredentials))
 			Expect(output.Security.M2M.ExternalIDP.Client).ToNot(BeNil())
 			Expect(output.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("client-id"))
+			Expect(output.Security.M2M.ExternalIDP.Client.RefreshToken).To(Equal("refreshToken"))
 			snaps.MatchSnapshot(GinkgoT(), output.Security)
 		})
 

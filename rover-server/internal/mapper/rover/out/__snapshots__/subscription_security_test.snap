@@ -10,7 +10,7 @@ api.Oauth2{
     ClientSecret:  "client-secret",
     GrantType:     "",
     Password:      "",
-    RefreshToken:  "",
+    RefreshToken:  "refreshToken",
     Scopes:        nil,
     TokenEndpoint: "",
     TokenRequest:  "",

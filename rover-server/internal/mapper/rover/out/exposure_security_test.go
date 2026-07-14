@@ -57,6 +57,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 								ClientId:     "client-id",
 								ClientSecret: "client-secret",
 								ClientKey:    "client-key",
+								RefreshToken: "refreshToken",
 							},
 						},
 					},
@@ -76,6 +77,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			Expect(oauth2.TokenRequest).To(Equal(api.Oauth2TokenRequest("header")))
 			Expect(oauth2.GrantType).To(Equal(api.GrantType("client_credentials")))
 			Expect(oauth2.ClientId).To(Equal("client-id"))
+			Expect(oauth2.RefreshToken).To(Equal("refreshToken"))
 			snaps.MatchSnapshot(GinkgoT(), oauth2)
 		})
 

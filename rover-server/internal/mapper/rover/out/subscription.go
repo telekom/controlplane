@@ -127,6 +127,7 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 		oauth2.ClientId = m2m.Client.ClientId
 		oauth2.ClientSecret = m2m.Client.ClientSecret
 		oauth2.ClientKey = m2m.Client.ClientKey
+		oauth2.RefreshToken = m2m.Client.RefreshToken
 	}
 
 	if len(m2m.Scopes) > 0 {

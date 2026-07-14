@@ -193,6 +193,7 @@ func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) {
 			oauth2.ClientId = m2m.ExternalIDP.Client.ClientId
 			oauth2.ClientSecret = m2m.ExternalIDP.Client.ClientSecret
 			oauth2.ClientKey = m2m.ExternalIDP.Client.ClientKey
+			oauth2.RefreshToken = m2m.ExternalIDP.Client.RefreshToken
 		}
 
 		if m2m.ExternalIDP.Basic != nil {
