@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApiSubscription is the model entity for the ApiSubscription schema.
@@ -42,8 +43,10 @@ type ApiSubscription struct {
 	BasePath string `json:"base_path,omitempty"`
 	// M2mAuthMethod holds the value of the "m2m_auth_method" field.
 	M2mAuthMethod apisubscription.M2mAuthMethod `json:"m2m_auth_method,omitempty"`
-	// ApprovedScopes holds the value of the "approved_scopes" field.
-	ApprovedScopes []string `json:"approved_scopes,omitempty"`
+	// GatewayURL holds the value of the "gateway_url" field.
+	GatewayURL *string `json:"gateway_url,omitempty"`
+	// Security holds the value of the "security" field.
+	Security *model.ApiSubscriptionSecurity `json:"security,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApiSubscriptionQuery when eager-loading is set.
 	Edges                       ApiSubscriptionEdges `json:"edges"`
@@ -130,11 +133,11 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apisubscription.FieldApprovedScopes:
+		case apisubscription.FieldSecurity:
 			values[i] = new([]byte)
 		case apisubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldName, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod:
+		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldName, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod, apisubscription.FieldGatewayURL:
 			values[i] = new(sql.NullString)
 		case apisubscription.FieldCreatedAt, apisubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -220,12 +223,19 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.M2mAuthMethod = apisubscription.M2mAuthMethod(value.String)
 			}
-		case apisubscription.FieldApprovedScopes:
+		case apisubscription.FieldGatewayURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field gateway_url", values[i])
+			} else if value.Valid {
+				_m.GatewayURL = new(string)
+				*_m.GatewayURL = value.String
+			}
+		case apisubscription.FieldSecurity:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field approved_scopes", values[i])
+				return fmt.Errorf("unexpected type %T for field security", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.ApprovedScopes); err != nil {
-					return fmt.Errorf("unmarshal field approved_scopes: %w", err)
+				if err := json.Unmarshal(*value, &_m.Security); err != nil {
+					return fmt.Errorf("unmarshal field security: %w", err)
 				}
 			}
 		case apisubscription.ForeignKeys[0]:
@@ -336,8 +346,13 @@ func (_m *ApiSubscription) String() string {
 	builder.WriteString("m2m_auth_method=")
 	builder.WriteString(fmt.Sprintf("%v", _m.M2mAuthMethod))
 	builder.WriteString(", ")
-	builder.WriteString("approved_scopes=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ApprovedScopes))
+	if v := _m.GatewayURL; v != nil {
+		builder.WriteString("gateway_url=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	builder.WriteString("security=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Security))
 	builder.WriteByte(')')
 	return builder.String()
 }

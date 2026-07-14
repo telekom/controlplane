@@ -99,11 +99,12 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		SetNamespace(data.Meta.Namespace).
 		SetName(data.Meta.Name).
 		SetM2mAuthMethod(apisubscription.M2mAuthMethod(data.M2MAuthMethod)).
-		SetApprovedScopes(data.ApprovedScopes).
+		SetSecurity(data.Security).
 		SetStatusPhase(apisubscription.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
 		SetOwnerID(ownerAppID).
-		SetNillableTargetID(targetExposureID)
+		SetNillableTargetID(targetExposureID).
+		SetGatewayURL(data.GatewayUrl)
 
 	subscriptionID, upsertErr := create.
 		OnConflictColumns(apisubscription.FieldBasePath, apisubscription.OwnerColumn).

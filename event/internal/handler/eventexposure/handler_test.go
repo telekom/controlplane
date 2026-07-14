@@ -130,6 +130,7 @@ func makeReadyEventConfig() eventv1.EventConfig {
 				Namespace: "default",
 			},
 			CallbackURL: "https://callback.example.com/test-zone/callback/v1",
+			PublishURL:  "https://publish.gateway.example.com",
 		},
 	}
 	meta.SetStatusCondition(&ec.Status.Conditions, metav1.Condition{
@@ -608,6 +609,16 @@ var _ = Describe("EventExposureHandler", func() {
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Done"))
+		})
+
+		It("should set PublishURL from EventConfig PublishURL", func() {
+			setupFullHappyPath()
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.PublishURL).To(Equal("https://publish.gateway.example.com"))
 		})
 	})
 

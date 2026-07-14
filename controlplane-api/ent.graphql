@@ -60,6 +60,8 @@ type ApiExposure implements Node {
   active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
+  security: ApiExposureSecurity
+  traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
@@ -338,7 +340,8 @@ type ApiSubscription implements Node {
   name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
-  approvedScopes: [String!]!
+  gatewayURL: String
+  security: ApiSubscriptionSecurity
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
@@ -554,6 +557,24 @@ input ApiSubscriptionWhereInput {
   m2mAuthMethodIn: [ApiSubscriptionM2mAuthMethod!]
   m2mAuthMethodNotIn: [ApiSubscriptionM2mAuthMethod!]
   """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
+  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -768,6 +789,8 @@ type Application implements Node {
   currentExpiresAt: Time
   secretRotationPhase: ApplicationSecretRotationPhase!
   secretRotationMessage: String
+  externalIds: [ExternalId!]
+  ipRestrictions: IpRestrictions
   zone: Zone!
   exposedApis(
     """
@@ -1752,6 +1775,8 @@ type EventExposure implements Node {
   eventType: String!
   visibility: EventExposureVisibility!
   active: Boolean
+  eventScopes: [EventScope]
+  gatewayPublishingURL: String
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -1956,6 +1981,24 @@ input EventExposureWhereInput {
   activeIsNil: Boolean
   activeNotNil: Boolean
   """
+  gateway_publishing_url field predicates
+  """
+  gatewayPublishingURL: String
+  gatewayPublishingURLNEQ: String
+  gatewayPublishingURLIn: [String!]
+  gatewayPublishingURLNotIn: [String!]
+  gatewayPublishingURLGT: String
+  gatewayPublishingURLGTE: String
+  gatewayPublishingURLLT: String
+  gatewayPublishingURLLTE: String
+  gatewayPublishingURLContains: String
+  gatewayPublishingURLHasPrefix: String
+  gatewayPublishingURLHasSuffix: String
+  gatewayPublishingURLIsNil: Boolean
+  gatewayPublishingURLNotNil: Boolean
+  gatewayPublishingURLEqualFold: String
+  gatewayPublishingURLContainsFold: String
+  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -1982,7 +2025,11 @@ type EventSubscription implements Node {
   name: String!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
+  trigger: EventTrigger
+  delivery: EventDelivery!
+  scopes: [String!]
   callbackURL: String
+  gatewaySseURL: String
   owner: Application!
   approval: Approval
   approvalRequests: [ApprovalRequest!]
@@ -2212,6 +2259,24 @@ input EventSubscriptionWhereInput {
   callbackURLNotNil: Boolean
   callbackURLEqualFold: String
   callbackURLContainsFold: String
+  """
+  gateway_sse_url field predicates
+  """
+  gatewaySseURL: String
+  gatewaySseURLNEQ: String
+  gatewaySseURLIn: [String!]
+  gatewaySseURLNotIn: [String!]
+  gatewaySseURLGT: String
+  gatewaySseURLGTE: String
+  gatewaySseURLLT: String
+  gatewaySseURLLTE: String
+  gatewaySseURLContains: String
+  gatewaySseURLHasPrefix: String
+  gatewaySseURLHasSuffix: String
+  gatewaySseURLIsNil: Boolean
+  gatewaySseURLNotNil: Boolean
+  gatewaySseURLEqualFold: String
+  gatewaySseURLContainsFold: String
   """
   owner edge predicates
   """

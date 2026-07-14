@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // EventSubscription holds the schema definition for an event subscription.
@@ -41,7 +42,20 @@ func (EventSubscription) Fields() []ent.Field {
 				"ServerSentEvent", "SERVER_SENT_EVENT",
 			).
 			Default("CALLBACK"),
+		field.JSON("trigger", &model.EventTrigger{}).
+			Optional().
+			Default(&model.EventTrigger{}).
+			Annotations(entgql.Type("EventTrigger"), entgql.Skip(entgql.SkipWhereInput)),
+		field.JSON("delivery", model.EventDelivery{}).
+			Default(model.EventDelivery{}).
+			Annotations(entgql.Type("EventDelivery"), entgql.Skip(entgql.SkipWhereInput)),
+		field.JSON("scopes", []string{}).
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Text("callback_url").
+			Optional().
+			Nillable(),
+		field.Text("gateway_sse_url").
 			Optional().
 			Nillable(),
 	}

@@ -16,7 +16,7 @@ const (
 )
 
 func ForDefaultIdentityRealm(environment *adminv1.Environment) string {
-	return environment.GetName()
+	return environment.GetRealmName()
 }
 
 func ForInternalIdentityRealm() string {
@@ -24,7 +24,7 @@ func ForInternalIdentityRealm() string {
 }
 
 func ForTeamApiIdentityRealm(environment *adminv1.Environment) string {
-	return teamApiIdentityRealmPrefix + environment.GetName()
+	return teamApiIdentityRealmPrefix + environment.GetRealmName()
 }
 
 func ForIdentityProvider(zone *adminv1.Zone) string {
