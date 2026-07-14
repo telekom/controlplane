@@ -126,7 +126,7 @@ func init() {
 	// apiexposure.DefaultUpstreams holds the default value on creation for the upstreams field.
 	apiexposure.DefaultUpstreams = apiexposureDescUpstreams.Default.([]model.Upstream)
 	// apiexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	apiexposureDescApprovalConfig := apiexposureFields[5].Descriptor()
+	apiexposureDescApprovalConfig := apiexposureFields[7].Descriptor()
 	// apiexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	apiexposure.DefaultApprovalConfig = apiexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	apisubscriptionMixin := schema.ApiSubscription{}.Mixin()
@@ -167,10 +167,6 @@ func init() {
 	apisubscriptionDescBasePath := apisubscriptionFields[0].Descriptor()
 	// apisubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	apisubscription.BasePathValidator = apisubscriptionDescBasePath.Validators[0].(func(string) error)
-	// apisubscriptionDescApprovedScopes is the schema descriptor for approved_scopes field.
-	apisubscriptionDescApprovedScopes := apisubscriptionFields[2].Descriptor()
-	// apisubscription.DefaultApprovedScopes holds the default value on creation for the approved_scopes field.
-	apisubscription.DefaultApprovedScopes = apisubscriptionDescApprovedScopes.Default.([]string)
 	applicationMixin := schema.Application{}.Mixin()
 	application.Policy = privacy.NewPolicies(applicationMixin[0], schema.Application{})
 	application.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -351,8 +347,12 @@ func init() {
 	eventexposureDescActive := eventexposureFields[2].Descriptor()
 	// eventexposure.DefaultActive holds the default value on creation for the active field.
 	eventexposure.DefaultActive = eventexposureDescActive.Default.(bool)
+	// eventexposureDescEventScopes is the schema descriptor for event_scopes field.
+	eventexposureDescEventScopes := eventexposureFields[3].Descriptor()
+	// eventexposure.DefaultEventScopes holds the default value on creation for the event_scopes field.
+	eventexposure.DefaultEventScopes = eventexposureDescEventScopes.Default.([]model.EventScope)
 	// eventexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	eventexposureDescApprovalConfig := eventexposureFields[3].Descriptor()
+	eventexposureDescApprovalConfig := eventexposureFields[5].Descriptor()
 	// eventexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	eventexposure.DefaultApprovalConfig = eventexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	eventsubscriptionMixin := schema.EventSubscription{}.Mixin()
@@ -393,6 +393,14 @@ func init() {
 	eventsubscriptionDescEventType := eventsubscriptionFields[0].Descriptor()
 	// eventsubscription.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
 	eventsubscription.EventTypeValidator = eventsubscriptionDescEventType.Validators[0].(func(string) error)
+	// eventsubscriptionDescTrigger is the schema descriptor for trigger field.
+	eventsubscriptionDescTrigger := eventsubscriptionFields[2].Descriptor()
+	// eventsubscription.DefaultTrigger holds the default value on creation for the trigger field.
+	eventsubscription.DefaultTrigger = eventsubscriptionDescTrigger.Default.(*model.EventTrigger)
+	// eventsubscriptionDescDelivery is the schema descriptor for delivery field.
+	eventsubscriptionDescDelivery := eventsubscriptionFields[3].Descriptor()
+	// eventsubscription.DefaultDelivery holds the default value on creation for the delivery field.
+	eventsubscription.DefaultDelivery = eventsubscriptionDescDelivery.Default.(model.EventDelivery)
 	eventtypeMixin := schema.EventType{}.Mixin()
 	eventtype.Policy = privacy.NewPolicies(eventtypeMixin[0], schema.EventType{})
 	eventtype.Hooks[0] = func(next ent.Mutator) ent.Mutator {

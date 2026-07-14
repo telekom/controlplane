@@ -196,6 +196,7 @@ func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *even
 	}
 	obj.Status.Route = types.ObjectRefFromObject(route)
 	obj.Status.SseURLs[backendZone.Name] = util.RouteDownstreamURL(route)
+	obj.Status.PublishURL = eventConfig.Status.PublishURL
 
 	deleted, err := util.CleanupOldSSERoutes(ctx, obj.Spec.EventType)
 	if err != nil {
