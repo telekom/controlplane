@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
@@ -133,11 +134,18 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Name:        "my-subscription",
 				Environment: "prod",
 			},
-			StatusPhase:    "READY",
-			StatusMessage:  "subscription active",
-			BasePath:       "/api/v1/users",
-			M2MAuthMethod:  "OAUTH2_CLIENT",
-			ApprovedScopes: []string{"read", "write"},
+			StatusPhase:   "READY",
+			StatusMessage: "subscription active",
+			BasePath:      "/api/v1/users",
+			M2MAuthMethod: "OAUTH2_CLIENT",
+			Security: &model.ApiSubscriptionSecurity{
+				M2M: &model.SubscriberMachine2MachineAuthentication{
+					Client: &model.OAuth2ClientCredentials{
+						ClientId: "my-client-id",
+					},
+					Scopes: []string{"read", "write"},
+				},
+			},
 			OwnerAppName:   "consumer-app",
 			OwnerTeamName:  "platform--narvi",
 			TargetBasePath: "/api/v1/users",
@@ -161,7 +169,6 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.BasePath).To(Equal("/api/v1/users"))
 			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{"read", "write"}))
 			Expect(sub.StatusPhase.String()).To(Equal("READY"))
 			Expect(*sub.StatusMessage).To(Equal("subscription active"))
 
@@ -280,7 +287,6 @@ var _ = Describe("ApiSubscription Repository", func() {
 			data.StatusPhase = "ERROR"
 			data.StatusMessage = "failed to connect"
 			data.M2MAuthMethod = "BASIC_AUTH"
-			data.ApprovedScopes = []string{}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			sub, err := client.ApiSubscription.Query().
@@ -290,7 +296,88 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(sub.StatusPhase.String()).To(Equal("ERROR"))
 			Expect(*sub.StatusMessage).To(Equal("failed to connect"))
 			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
-			Expect(sub.ApprovedScopes).To(Equal([]string{}))
+		})
+
+		It("should update security-derived fields on upsert conflict", func() {
+			data := baseData()
+			// baseData has M2MAuthMethod=OAUTH2_CLIENT with Security.M2M.Client set — aligned.
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+
+			// Change to BASIC_AUTH — align Security accordingly.
+			data.M2MAuthMethod = "BASIC_AUTH"
+			data.Security = &model.ApiSubscriptionSecurity{
+				M2M: &model.SubscriberMachine2MachineAuthentication{
+					Basic: &model.BasicAuthCredentials{
+						Username: "test-user",
+						Password: "test-dummy-pass",
+					},
+					Scopes: []string{"admin"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err = client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+
+			// Clear security — set to NONE with nil Security.
+			data.M2MAuthMethod = "NONE"
+			data.Security = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err = client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("NONE"))
+			Expect(sub.Security).To(BeNil())
+		})
+
+		It("should update from BASIC_AUTH to OAUTH2_CLIENT on upsert conflict", func() {
+			data := baseData()
+			data.M2MAuthMethod = "BASIC_AUTH"
+			data.Security = &model.ApiSubscriptionSecurity{
+				M2M: &model.SubscriberMachine2MachineAuthentication{
+					Basic: &model.BasicAuthCredentials{
+						Username: "test-user",
+						Password: "test-dummy-pass",
+					},
+					Scopes: []string{"read"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+
+			// Switch to OAUTH2_CLIENT.
+			data.M2MAuthMethod = "OAUTH2_CLIENT"
+			data.Security = &model.ApiSubscriptionSecurity{
+				M2M: &model.SubscriberMachine2MachineAuthentication{
+					Client: &model.OAuth2ClientCredentials{
+						ClientId: "new-client-id",
+					},
+					Scopes: []string{"read", "write"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err = client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
 		})
 
 		It("should maintain meta cache entry", func() {

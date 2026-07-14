@@ -147,6 +147,127 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(owner.ID).To(Equal(appID))
 		})
 
+		It("should persist security and rate_limit fields", func() {
+			clientSecret := "ext-client-secret"
+			clientKey := "ext-client-key"
+			tokenRequest := "client_secret_basic"
+			grantType := "client_credentials"
+			data := &apiexposure.APIExposureData{
+				Meta:          shared.NewMetadata("prod--platform--narvi", "sec-exp", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "ok",
+				BasePath:      "/api/v1/secure",
+				Visibility:    "WORLD",
+				Active:        true,
+				Features:      []string{},
+				Upstreams:     []model.Upstream{{URL: "https://backend.example.com", Weight: 100}},
+				ApprovalConfig: model.ApprovalConfig{
+					Strategy: "AUTO",
+				},
+				AppName:  "my-app",
+				TeamName: "platform--narvi",
+				Security: &model.ApiExposureSecurity{
+					M2M: &model.Machine2MachineAuthentication{
+						ExternalIDP: &model.ExternalIdentityProvider{
+							TokenEndpoint: "https://idp.example.com/token",
+							TokenRequest:  &tokenRequest,
+							GrantType:     &grantType,
+							Basic: &model.BasicAuthCredentials{
+								Username: "ext-user",
+								Password: "ext-pass",
+							},
+							Client: &model.OAuth2ClientCredentials{
+								ClientId:     "ext-client-id",
+								ClientSecret: &clientSecret,
+								ClientKey:    &clientKey,
+							},
+						},
+						Basic: &model.BasicAuthCredentials{
+							Username: "svc-user",
+							Password: "svc-pass",
+						},
+						Scopes: []string{"read", "write"},
+					},
+				},
+				Traffic: &model.Traffic{
+					RateLimit: &model.RateLimit{
+						Provider: &model.RateLimitConfig{
+							Limits: model.Limits{
+								Second: 10,
+								Minute: 100,
+								Hour:   1000,
+							},
+							Options: model.RateLimitOptions{
+								HideClientHeaders: true,
+								FaultTolerant:     true,
+							},
+						},
+						SubscriberRateLimit: &model.SubscriberRateLimits{
+							Default: &model.SubscriberRateLimitDefaults{
+								Limits: model.Limits{
+									Second: 5,
+									Minute: 50,
+									Hour:   500,
+								},
+							},
+							Overrides: []model.RateLimitOverrides{
+								{
+									Subscriber: "sub-a",
+									Limits:     model.Limits{Second: 20, Minute: 200, Hour: 2000},
+								},
+							},
+						},
+					},
+					Failover: &model.Failover{
+						Zones: []string{"zoneA", "zoneB"},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/secure")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Security assertions
+			Expect(exp.Security.M2M).NotTo(BeNil())
+			Expect(exp.Security.M2M.Basic).NotTo(BeNil())
+			Expect(exp.Security.M2M.Basic.Username).To(Equal("svc-user"))
+			Expect(exp.Security.M2M.Basic.Password).To(Equal("svc-pass"))
+			Expect(exp.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
+			Expect(exp.Security.M2M.ExternalIDP).NotTo(BeNil())
+			Expect(exp.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://idp.example.com/token"))
+			Expect(*exp.Security.M2M.ExternalIDP.TokenRequest).To(Equal("client_secret_basic"))
+			Expect(*exp.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
+			Expect(exp.Security.M2M.ExternalIDP.Basic.Username).To(Equal("ext-user"))
+			Expect(exp.Security.M2M.ExternalIDP.Basic.Password).To(Equal("ext-pass"))
+			Expect(exp.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("ext-client-id"))
+			Expect(*exp.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("ext-client-secret"))
+			Expect(*exp.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("ext-client-key"))
+
+			// RateLimit assertions
+			Expect(exp.Traffic.RateLimit.Provider).NotTo(BeNil())
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Second).To(Equal(10))
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Minute).To(Equal(100))
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Hour).To(Equal(1000))
+			Expect(exp.Traffic.RateLimit.Provider.Options.HideClientHeaders).To(BeTrue())
+			Expect(exp.Traffic.RateLimit.Provider.Options.FaultTolerant).To(BeTrue())
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit).NotTo(BeNil())
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Default.Limits.Second).To(Equal(5))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Default.Limits.Minute).To(Equal(50))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Default.Limits.Hour).To(Equal(500))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides).To(HaveLen(1))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Subscriber).To(Equal("sub-a"))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Second).To(Equal(20))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Minute).To(Equal(200))
+			Expect(exp.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Hour).To(Equal(2000))
+
+			// Failover
+			Expect(exp.Traffic.Failover.Zones).To(Equal([]string{"zoneA", "zoneB"}))
+
+		})
+
 		It("should return ErrDependencyMissing when application is missing", func() {
 			data := &apiexposure.APIExposureData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "fail-exp", nil),
@@ -232,6 +353,91 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(*exp.Active).To(BeTrue())
 			Expect(exp.Upstreams[0].URL).To(Equal("https://new.example.com"))
 			Expect(exp.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
+		})
+
+		It("should update features, security and traffic on upsert conflict", func() {
+			data := &apiexposure.APIExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "feat-exp", nil),
+				StatusPhase:    "READY",
+				StatusMessage:  "ok",
+				BasePath:       "/api/v1/features",
+				Visibility:     "WORLD",
+				Active:         true,
+				Features:       []string{"LAST_MILE_SECURITY"},
+				Upstreams:      []model.Upstream{{URL: "https://backend.example.com", Weight: 100}},
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/features")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.Features).To(HaveLen(1))
+			Expect(exp.Features).To(ContainElement("LAST_MILE_SECURITY"))
+			Expect(exp.Security.M2M).To(BeNil())
+			Expect(exp.Traffic.RateLimit).To(BeNil())
+
+			// Update with security, traffic, and expanded features.
+			data.Features = []string{"LAST_MILE_SECURITY", "EXTERNAL_IDP", "CUSTOM_SCOPES", "RATE_LIMIT", "FAILOVER"}
+			data.Security = &model.ApiExposureSecurity{
+				M2M: &model.Machine2MachineAuthentication{
+					Scopes: []string{"read", "write"},
+				},
+			}
+			data.Traffic = &model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+					},
+				},
+				Failover: &model.Failover{
+					Zones: []string{"zone-a"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/features")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.Features).To(HaveLen(5))
+			Expect(exp.Features).To(ContainElements("LAST_MILE_SECURITY", "EXTERNAL_IDP", "CUSTOM_SCOPES", "RATE_LIMIT", "FAILOVER"))
+			Expect(exp.Security.M2M).NotTo(BeNil())
+			Expect(exp.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
+			Expect(exp.Traffic.RateLimit).NotTo(BeNil())
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Second).To(Equal(10))
+			Expect(exp.Traffic.Failover).NotTo(BeNil())
+			Expect(exp.Traffic.Failover.Zones).To(Equal([]string{"zone-a"}))
+
+			// Update again: remove security features, add load balancing.
+			data.Features = []string{"LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING"}
+			data.Security = nil
+			data.Upstreams = []model.Upstream{
+				{URL: "https://primary.example.com", Weight: 80},
+				{URL: "https://secondary.example.com", Weight: 20},
+			}
+			data.Traffic = &model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 50, Minute: 500, Hour: 5000},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/features")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.Features).To(HaveLen(3))
+			Expect(exp.Features).To(ContainElements("LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING"))
+			Expect(exp.Security.M2M).To(BeNil())
+			Expect(exp.Upstreams).To(HaveLen(2))
+			Expect(exp.Traffic.RateLimit.Provider.Limits.Second).To(Equal(50))
+			Expect(exp.Traffic.Failover).To(BeNil())
 		})
 
 		It("should populate the edge cache after upsert", func() {

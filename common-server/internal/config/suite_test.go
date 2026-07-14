@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/internal/config"
 	"github.com/telekom/controlplane/common-server/internal/crd"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
@@ -86,6 +87,9 @@ var _ = Describe("Config Test", func() {
 				Address:        ":8080",
 				BasePath:       "/api",
 				AddGroupToPath: true,
+				Security: config.SecurityConfig{
+					Mode: security.ModeMock,
+				},
 				Resources: []config.ResourceConfig{
 					{
 						Group:    gvr.Group,

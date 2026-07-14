@@ -87,7 +87,9 @@ func (r *Repository) Upsert(ctx context.Context, data *EventExposureData) error 
 		SetNamespace(data.Meta.Namespace).
 		SetOwnerID(appID).
 		SetApprovalConfig(data.ApprovalConfig).
+		SetEventScopes(data.Scopes).
 		SetNillableEventTypeDefID(eventTypeDefID).
+		SetGatewayPublishingURL(data.GatewayProviderUrl).
 		OnConflictColumns(eventexposure.FieldEventType, eventexposure.OwnerColumn).
 		UpdateNewValues().
 		ID(ctx)
