@@ -19,6 +19,7 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -33,7 +34,9 @@ func basePathFromJSONPath(data []byte, path string) string {
 	return ""
 }
 
-var secretJsonPaths = map[string]string{
+// apiSecretJsonPaths: key + value par for secrets within api exposures and subcription.
+// the basepath is appended to distingish between multiple expsures/subscriptions.
+var apiSecretJsonPaths = map[string]string{
 	"clientSecret":             "spec.subscriptions.#.api.security.m2m.client.clientSecret",
 	"refreshToken":             "spec.subscriptions.#.api.security.m2m.client.refreshToken",
 	"password":                 "spec.subscriptions.#.api.security.m2m.basic.password",
@@ -52,13 +55,9 @@ func GetExternalSecrets(_ context.Context, rover *roverv1.Rover) (map[string]str
 	}
 
 	secrets := make(map[string]string)
-	for key, jsonPath := range secretJsonPaths {
+	for key, jsonPath := range apiSecretJsonPaths {
 		result := gjson.GetBytes(b, jsonPath)
-		if !result.Exists() {
-			continue
-		}
 		if result.IsArray() {
-			// Expand array wildcard to concrete paths
 			for _, path := range result.Paths(string(b)) {
 				val := gjson.GetBytes(b, path).String()
 				if val != "" && !secretsapi.IsRef(val) {
@@ -68,74 +67,42 @@ func GetExternalSecrets(_ context.Context, rover *roverv1.Rover) (map[string]str
 			}
 			continue
 		}
-		val := result.String()
-		if val != "" && !secretsapi.IsRef(val) {
-			basePath := basePathFromJSONPath(b, jsonPath)
-			secrets[makeKey(basePath, key)] = val
-		}
 	}
 	return secrets, nil
 }
 
-// TODO: refactor this to make it more generic and reusable
 func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecrets map[string]string) error {
 	log := logr.FromContextOrDiscard(ctx)
 	log.V(1).Info("Setting external secrets for rover", "availableSecrets", availableSecrets)
 
-	for _, subscription := range rover.Spec.Subscriptions {
-		if subscription.Api != nil && subscription.Api.HasM2M() {
-			if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
-				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "clientSecret"))
-				if !ok {
-					log.V(1).Info("clientSecret not found in available secrets")
-				} else {
-					subscription.Api.Security.M2M.Client.ClientSecret = secretRef
-				}
-			}
-			if subscription.Api.Security.M2M.Basic != nil && subscription.Api.Security.M2M.Basic.Password != "" {
-				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "password"))
-				if !ok {
-					log.V(1).Info("password not found in available secrets")
-				} else {
-					subscription.Api.Security.M2M.Basic.Password = secretRef
-				}
-			}
-		}
-
+	b, err := json.Marshal(rover)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal rover")
 	}
 
-	for _, exposure := range rover.Spec.Exposures {
-		if exposure.Api != nil && exposure.Api.HasM2M() {
-			if exposure.Api.Security.M2M.ExternalIDP != nil {
-				if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
-					secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/clientSecret"))
+	for key, jsonPath := range apiSecretJsonPaths {
+		result := gjson.GetBytes(b, jsonPath)
+		//nolint:nestif // sequential guard clauses within array expansion
+		if result.IsArray() {
+			for _, path := range result.Paths(string(b)) {
+				val := gjson.GetBytes(b, path).String()
+				if val != "" {
+					basePath := basePathFromJSONPath(b, path)
+					secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(basePath, key))
 					if !ok {
-						log.V(1).Info("externalIDP clientSecret not found in available secrets")
-					} else {
-						exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret = secretRef
+						log.V(1).Info("secret not found in available secrets", "key", key, "basePath", basePath)
+						continue
 					}
-				}
-				if exposure.Api.Security.M2M.ExternalIDP.Basic != nil && exposure.Api.Security.M2M.ExternalIDP.Basic.Password != "" {
-					secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/password"))
-					if !ok {
-						log.V(1).Info("externalIDP password not found in available secrets")
-					} else {
-						exposure.Api.Security.M2M.ExternalIDP.Basic.Password = secretRef
+					b, err = sjson.SetBytes(b, path, secretRef)
+					if err != nil {
+						return errors.Wrapf(err, "failed to set secret ref at path %s", path)
 					}
-				}
-			}
-			if exposure.Api.Security.M2M.Basic != nil && exposure.Api.Security.M2M.Basic.Password != "" {
-				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "basicAuth/password"))
-				if !ok {
-					log.V(1).Info("basicAuth password not found in available secrets")
-				} else {
-					exposure.Api.Security.M2M.Basic.Password = secretRef
 				}
 			}
 		}
 	}
 
-	return nil
+	return json.Unmarshal(b, rover)
 }
 
 func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager secretsapi.SecretManager) error {
