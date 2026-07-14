@@ -59,7 +59,7 @@ func CreateProxyCallbackRoute(
 
 	// Build upstream: points at target zone's gateway URL for callback path
 	callbackPath := makeCallbackRoutePath(targetZone.Name)
-	upstreamUrl, err := url.JoinPath(targetPreset.Urls[0].GetFullUrl(), callbackPath)
+	upstreamUrl, err := url.JoinPath(targetPreset.GetDefaultUrl(), callbackPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build upstream URL for proxy callback Route")
 	}

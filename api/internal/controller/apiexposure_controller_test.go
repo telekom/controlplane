@@ -74,6 +74,10 @@ func CreateZone(name string) *adminapi.Zone {
 	Expect(err).ToNot(HaveOccurred())
 
 	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.IdentityRealm = &types.ObjectRef{
+		Name:      testEnvironment,
+		Namespace: testEnvironment + "--" + name,
+	}
 	zone.Status.Gateway = &types.ObjectRef{
 		Name:      "test-gateway",
 		Namespace: testEnvironment + "--" + name,

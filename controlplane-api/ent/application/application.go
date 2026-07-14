@@ -49,6 +49,10 @@ const (
 	FieldSecretRotationPhase = "secret_rotation_phase"
 	// FieldSecretRotationMessage holds the string denoting the secret_rotation_message field in the database.
 	FieldSecretRotationMessage = "secret_rotation_message"
+	// FieldExternalIds holds the string denoting the external_ids field in the database.
+	FieldExternalIds = "external_ids"
+	// FieldIPRestrictions holds the string denoting the ip_restrictions field in the database.
+	FieldIPRestrictions = "ip_restrictions"
 	// EdgeZone holds the string denoting the zone edge name in mutations.
 	EdgeZone = "zone"
 	// EdgeOwnerTeam holds the string denoting the owner_team edge name in mutations.
@@ -124,6 +128,8 @@ var Columns = []string{
 	FieldCurrentExpiresAt,
 	FieldSecretRotationPhase,
 	FieldSecretRotationMessage,
+	FieldExternalIds,
+	FieldIPRestrictions,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "applications"

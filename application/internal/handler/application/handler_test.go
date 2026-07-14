@@ -64,6 +64,10 @@ func newZone() *adminv1.Zone {
 				Name:      "test-gateway",
 				Namespace: "zone-ns",
 			},
+			IdentityRealm: &commontypes.ObjectRef{
+				Name:      "test-env",
+				Namespace: "zone-ns",
+			},
 		},
 	}
 }
