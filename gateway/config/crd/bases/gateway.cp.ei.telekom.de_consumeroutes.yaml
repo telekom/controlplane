@@ -149,9 +149,10 @@ spec:
                     - message: Scopes and basic authentication cannot be used together
                       rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
                         : true)'
-                    - message: At least one of client, basic, or scopes must be provided
+                    - message: At least one of client, basic, scopes, or claims must
+                        be provided
                       rule: self == null || has(self.client) || has(self.basic) ||
-                        has(self.scopes)
+                        has(self.scopes) || has(self.claims)
                 type: object
               traffic:
                 properties:
