@@ -48,56 +48,90 @@ spec:
           metadata:
             type: object
           spec:
-            description: EventConfigSpec defines the desired state of EventConfig.
+            description: |-
+              EventConfigSpec defines the desired state of EventConfig.
+              Exactly one of Local or Proxy must be set: Local for a zone running its own
+              event backend (Horizon), Proxy for a zone that forwards all traffic to a target zone.
             properties:
-              admin:
-                description: Admin configures the connection to the configuration
-                  backend.
+              local:
+                description: |-
+                  Local configures a zone that runs its own event backend (Horizon).
+                  Mutually exclusive with Proxy.
                 properties:
-                  client:
-                    description: |-
-                      Client configures the identity client used for admin access to the configuration backend.
-                      If omitted, defaults are applied: clientId and clientSecret are auto-generated,
-                      and the realm is resolved from the Zone's internal identity realm.
+                  admin:
+                    description: Admin configures the connection to the configuration
+                      backend.
                     properties:
-                      clientId:
+                      client:
                         description: |-
-                          ClientId is the OAuth2 client ID for authentication
-                          If empty, a default client ID will be used.
-                        type: string
-                      clientSecret:
-                        description: |-
-                          ClientSecret is the OAuth2 client secret for authentication
-                          If empty, a new secret will be generated and a reference to it will be stored in the EventConfig status.
-                        type: string
-                      realm:
-                        description: |-
-                          Realm references the identity Realm CR used for OAuth2 authentication
-                          If empty, it is assumed that the default realm should be used.
+                          Client configures the identity client used for admin access to the configuration backend.
+                          If omitted, defaults are applied: clientId and clientSecret are auto-generated,
+                          and the realm is resolved from the Zone's internal identity realm.
                         properties:
-                          name:
-                            type: string
-                          namespace:
-                            type: string
-                          uid:
+                          clientId:
                             description: |-
-                              UID is a type that holds unique ID values, including UUIDs.  Because we
-                              don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                              intent and helps make sure that UIDs and names do not get conflated.
+                              ClientId is the OAuth2 client ID for authentication
+                              If empty, a default client ID will be used.
                             type: string
-                        required:
-                        - name
-                        - namespace
+                          clientSecret:
+                            description: |-
+                              ClientSecret is the OAuth2 client secret for authentication
+                              If empty, a new secret will be generated and a reference to it will be stored in the EventConfig status.
+                            type: string
+                          realm:
+                            description: |-
+                              Realm references the identity Realm CR used for OAuth2 authentication
+                              If empty, it is assumed that the default realm should be used.
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                              uid:
+                                description: |-
+                                  UID is a type that holds unique ID values, including UUIDs.  Because we
+                                  don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                                  intent and helps make sure that UIDs and names do not get conflated.
+                                type: string
+                            required:
+                            - name
+                            - namespace
+                            type: object
                         type: object
+                      url:
+                        description: Url is the base URL of the configuration backend
+                          API.
+                        format: uri
+                        minLength: 1
+                        type: string
+                    required:
+                    - url
                     type: object
-                  url:
-                    description: Url is the base URL of the configuration backend
-                      API.
+                  publishEventUrl:
+                    description: |-
+                      PublishEventUrl is the internal URL of the publish backend service
+                      Used as the upstream for the publish gateway Route.
                     format: uri
                     minLength: 1
                     type: string
+                  serverSendEventUrl:
+                    description: |-
+                      ServerSendEventUrl is the internal URL of the SSE backend service
+                      Used as the upstream for the SSE gateway Route.
+                    format: uri
+                    minLength: 1
+                    type: string
+                  voyagerApiUrl:
+                    description: |-
+                      VoyagerApiUrl is the internal URL of the Voyager backend service.
+                      Used as the upstream for the Voyager gateway Route which exposes
+                      event listing and redelivery APIs.
+                    format: uri
+                    type: string
                 required:
-                - url
+                - admin
+                - publishEventUrl
+                - serverSendEventUrl
                 type: object
               mesh:
                 description: |-
@@ -155,25 +189,33 @@ spec:
                 required:
                 - fullMesh
                 type: object
-              publishEventUrl:
+              proxy:
                 description: |-
-                  PublishEventUrl is the internal URL of the publish backend service
-                  Used as the upstream for the publish gateway Route.
-                format: uri
-                type: string
-              serverSendEventUrl:
-                description: |-
-                  ServerSendEventUrl is the internal URL of the SSE backend service
-                  Used as the upstream for the SSE gateway Route.
-                format: uri
-                type: string
-              voyagerApiUrl:
-                description: |-
-                  VoyagerApiUrl is the internal URL of the Voyager backend service.
-                  Used as the upstream for the Voyager gateway Route which exposes
-                  event listing and redelivery APIs.
-                format: uri
-                type: string
+                  Proxy configures a zone that runs no local event backend and forwards
+                  all traffic to a target zone. Mutually exclusive with Local.
+                properties:
+                  targetZone:
+                    description: |-
+                      TargetZone references the local zone whose event backend this proxy zone
+                      forwards all publish, subscribe, and configuration traffic to.
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                required:
+                - targetZone
+                type: object
               zone:
                 description: Zone references the Zone for which this EventConfig applies.
                 properties:
@@ -192,11 +234,11 @@ spec:
                 - namespace
                 type: object
             required:
-            - admin
-            - publishEventUrl
-            - serverSendEventUrl
             - zone
             type: object
+            x-kubernetes-validations:
+            - message: exactly one of spec.local or spec.proxy must be set
+              rule: has(self.local) != has(self.proxy)
           status:
             description: EventConfigStatus defines the observed state of EventConfig.
             properties:
