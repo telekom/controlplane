@@ -6,7 +6,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,61 +24,6 @@ var _ = Describe("Secrets Handling", func() {
 
 	BeforeEach(func() {
 		fakeSecretManager = fake.NewMockSecretManager(GinkgoT())
-	})
-
-	Context("basePathFromJSONPath", func() {
-		It("should return the basePath from a JSON path", func() {
-			rover := roverv1.Rover{
-				Spec: roverv1.RoverSpec{
-					Exposures: []roverv1.Exposure{
-						{
-							Api: &roverv1.ApiExposure{
-								BasePath: "/eni/example/v1",
-							},
-						},
-						{
-							Api: &roverv1.ApiExposure{
-								BasePath: "/eni/example/v2",
-								Security: &roverv1.Security{
-									M2M: &roverv1.Machine2MachineAuthentication{
-										ExternalIDP: &roverv1.ExternalIdentityProvider{
-											Client: &roverv1.OAuth2ClientCredentials{
-												ClientSecret: "test",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-					Subscriptions: []roverv1.Subscription{
-						{
-							Api: &roverv1.ApiSubscription{
-								BasePath: "/eni/example/v1",
-							},
-						},
-						{
-							Api: &roverv1.ApiSubscription{
-								BasePath: "/eni/example/v2",
-								Security: &roverv1.SubscriberSecurity{
-									M2M: &roverv1.SubscriberMachine2MachineAuthentication{
-										Client: &roverv1.OAuth2ClientCredentials{
-											ClientSecret: "test",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-			data, err := json.Marshal(rover)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(basePathFromJSONPath(data, "spec.subscriptions.0.api.basePath")).To(Equal("/eni/example/v1"))
-			Expect(basePathFromJSONPath(data, "spec.subscriptions.1.api.security.m2m.client.clientSecret")).To(Equal("/eni/example/v2"))
-			Expect(basePathFromJSONPath(data, "spec.exposures.0.api.basePath")).To(Equal("/eni/example/v1"))
-			Expect(basePathFromJSONPath(data, "spec.exposures.1.api.security.m2m.externalIdp.client.clientSecret")).To(Equal("/eni/example/v2"))
-		})
 	})
 
 	Context("GetExternalSecrets", func() {
@@ -157,7 +101,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, _ := GetExternalSecrets(context.Background(), rover)
+			secrets := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(HaveLen(5))
 			Expect(secrets).To(Equal(map[string]string{
 				"externalSecrets/api1/clientSecret":             "topsecret",
@@ -176,7 +120,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, _ := GetExternalSecrets(context.Background(), rover)
+			secrets := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(BeEmpty())
 		})
 
@@ -202,7 +146,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, _ := GetExternalSecrets(context.Background(), rover)
+			secrets := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(BeEmpty())
 		})
 
@@ -226,9 +170,9 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, err := GetExternalSecrets(context.Background(), rover)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(secrets).To(BeEmpty())
+			secrets := GetExternalSecrets(context.Background(), rover)
+			Expect(secrets).To(HaveLen(1))
+			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/clientSecret", "$<existing:ref:checksum>"))
 		})
 
 		It("should handle mixed refs and plain values", func() {
@@ -252,9 +196,9 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, err := GetExternalSecrets(context.Background(), rover)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(secrets).To(HaveLen(1))
+			secrets := GetExternalSecrets(context.Background(), rover)
+			Expect(secrets).To(HaveLen(2))
+			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/clientSecret", "$<existing:ref:checksum>"))
 			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/refreshToken", "token"))
 		})
 
@@ -279,8 +223,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, err := GetExternalSecrets(context.Background(), rover)
-			Expect(err).NotTo(HaveOccurred())
+			secrets := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(HaveLen(2))
 			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/clientSecret", "token"))
 			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/refreshToken", "token"))
@@ -309,8 +252,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, err := GetExternalSecrets(context.Background(), rover)
-			Expect(err).NotTo(HaveOccurred())
+			secrets := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(HaveLen(2))
 			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/externalIDP/clientSecret", "token"))
 			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/externalIDP/refreshToken", "token"))
@@ -328,8 +270,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, err := GetExternalSecrets(context.Background(), rover)
-			Expect(err).NotTo(HaveOccurred())
+			secrets := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(BeEmpty())
 		})
 
@@ -354,8 +295,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets, err := GetExternalSecrets(context.Background(), rover)
-			Expect(err).NotTo(HaveOccurred())
+			secrets := GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(HaveLen(1))
 			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/password", "password"))
 		})
