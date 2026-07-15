@@ -73,8 +73,6 @@ type variantSecretTemplate struct {
 var commonVariants = []string{"api", "ai"}
 
 // secretPathTemplates define the secrets relative to a resource variant.
-//
-//nolint:gosec // G101: these are JSON path expressions, not hardcoded credentials
 var secretPathTemplates = []variantSecretTemplate{
 	{"clientSecret", "spec.subscriptions.#.%[1]s.security.m2m.client.clientSecret", commonVariants},
 	{"refreshToken", "spec.subscriptions.#.%[1]s.security.m2m.client.refreshToken", commonVariants},
