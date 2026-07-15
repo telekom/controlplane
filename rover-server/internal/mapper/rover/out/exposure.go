@@ -38,6 +38,11 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 			return errors.Wrap(err, "failed to map event exposure")
 		}
 
+	} else if in.Ai != nil {
+		if err := out.FromAiExposure(mapAiExposure(in.Ai)); err != nil {
+			return errors.Wrap(err, "failed to map ai exposure")
+		}
+
 	} else {
 		return errors.Errorf("unknown exposure type: %s", in.Type())
 	}
@@ -135,6 +140,99 @@ func mapEventTriggerOut(in *roverv1.EventTrigger) api.EventTrigger {
 	}
 
 	return out
+}
+
+func mapAiExposure(in *roverv1.AiExposure) api.AiExposure {
+	aiExposure := api.AiExposure{
+		BasePath:   in.BasePath,
+		Variant:    api.AiExposureVariant(in.Variant),
+		Visibility: toApiVisibility(in.Visibility),
+		Approval:   toApiApprovalStrategy(in.Approval.Strategy),
+		RateLimit:  api.RateLimitContainer{},
+	}
+
+	if in.Approval.TrustedTeams != nil {
+		aiExposure.TrustedTeams = make([]api.TrustedTeam, len(in.Approval.TrustedTeams))
+		for i, team := range in.Approval.TrustedTeams {
+			aiExposure.TrustedTeams[i] = api.TrustedTeam{
+				Team: team.Group + "--" + team.Team,
+			}
+		}
+	}
+
+	if len(in.Upstreams) == 1 {
+		aiExposure.Upstream = in.Upstreams[0].URL
+	} else {
+		aiExposure.LoadBalancing = api.LoadBalancing{
+			Servers: []api.Server{},
+		}
+		for _, upstream := range in.Upstreams {
+			aiExposure.LoadBalancing.Servers = append(aiExposure.LoadBalancing.Servers, api.Server{
+				Upstream: upstream.URL,
+				Weight:   upstream.Weight,
+			})
+		}
+	}
+
+	if in.Security != nil && in.Security.M2M != nil {
+		m2m := in.Security.M2M
+		if m2m.Basic != nil {
+			basicAuth := api.BasicAuth{
+				Username: m2m.Basic.Username,
+				Password: m2m.Basic.Password,
+			}
+			aiExposure.Security = api.Security{}
+			aiExposure.Security.FromBasicAuth(basicAuth)
+		} else if m2m.ExternalIDP != nil {
+			oauth2 := api.Oauth2{
+				TokenEndpoint: m2m.ExternalIDP.TokenEndpoint,
+				TokenRequest:  tokenRequestCRDToAPI(m2m.ExternalIDP.TokenRequest),
+			}
+
+			if grantType := api.GrantType(m2m.ExternalIDP.GrantType); grantType != "" {
+				oauth2.GrantType = grantType
+			}
+			if m2m.ExternalIDP.Client != nil {
+				oauth2.ClientId = m2m.ExternalIDP.Client.ClientId
+				oauth2.ClientSecret = m2m.ExternalIDP.Client.ClientSecret
+				oauth2.ClientKey = m2m.ExternalIDP.Client.ClientKey
+			}
+			if m2m.ExternalIDP.Basic != nil {
+				oauth2.Username = m2m.ExternalIDP.Basic.Username
+				oauth2.Password = m2m.ExternalIDP.Basic.Password
+			}
+			if len(m2m.Scopes) > 0 {
+				oauth2.Scopes = m2m.Scopes
+			}
+			aiExposure.Security = api.Security{}
+			aiExposure.Security.FromOauth2(oauth2)
+		} else if len(m2m.Scopes) > 0 {
+			oauth2 := api.Oauth2{
+				Scopes: m2m.Scopes,
+			}
+			aiExposure.Security = api.Security{}
+			aiExposure.Security.FromOauth2(oauth2)
+		}
+	}
+
+	if in.Transformation != nil && len(in.Transformation.Request.Headers.Remove) > 0 {
+		aiExposure.RemoveHeaders = in.Transformation.Request.Headers.Remove
+	}
+
+	if in.Traffic != nil {
+		if in.Traffic.Failover != nil {
+			aiExposure.Failover = api.Failover{
+				Zones: in.Traffic.Failover.Zones,
+			}
+		}
+		if in.Traffic.CircuitBreaker != nil {
+			aiExposure.CircuitBreaker = api.CircuitBreaker{
+				Enabled: in.Traffic.CircuitBreaker.Enabled,
+			}
+		}
+	}
+
+	return aiExposure
 }
 
 func toApiVisibility(visibility roverv1.Visibility) api.Visibility {

@@ -155,3 +155,38 @@ func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpeci
 		Errors:          result.Problems,
 	}, nil
 }
+
+// MapMcpSpecificationResponse maps the status of a McpSpecification resource to a ResourceStatusResponse.
+func MapMcpSpecificationResponse(ctx context.Context, mcpSpec *v1.McpSpecification, stores *store.Stores) (api.ResourceStatusResponse, error) {
+	if mcpSpec == nil {
+		return api.ResourceStatusResponse{}, errors.New("input mcpSpec is nil")
+	}
+	status := MapStatus(mcpSpec.GetConditions(), mcpSpec.GetGeneration())
+
+	result, err := GetAllMcpSpecificationProblems(ctx, mcpSpec, stores)
+	if err != nil {
+		return api.ResourceStatusResponse{}, err
+	}
+
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
+	}
+
+	processing := meta.FindStatusCondition(mcpSpec.GetConditions(), condition.ConditionTypeProcessing)
+	var processedAtTime time.Time
+	if processing != nil {
+		processedAtTime = processing.LastTransitionTime.Time.UTC()
+	}
+
+	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
+	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
+
+	return api.ResourceStatusResponse{
+		CreatedAt:       mcpSpec.GetCreationTimestamp().Time.UTC(),
+		ProcessedAt:     processedAtTime,
+		State:           status.State,
+		ProcessingState: status.ProcessingState,
+		OverallStatus:   finalOverall,
+		Errors:          result.Problems,
+	}, nil
+}

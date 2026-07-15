@@ -7,13 +7,8 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
-
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -22,33 +17,36 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/telekom/controlplane/rover/internal/controller"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
-
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
+	"github.com/telekom/controlplane/rover/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
-	//+kubebuilder:scaffold:imports
-
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
+
+const disabledEnvValue = "false"
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -64,7 +62,10 @@ func init() {
 	if cconfig.FeaturePermission.IsEnabled() {
 		utilruntime.Must(permissionv1.AddToScheme(scheme))
 	}
-	//+kubebuilder:scaffold:scheme
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		utilruntime.Must(agenticv1.AddToScheme(scheme))
+	}
+	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -217,27 +218,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = webhookv1.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "Rover")
-			os.Exit(1)
-		}
+	if err := setupOptionalControllers(mgr); err != nil {
+		setupLog.Error(err, "unable to create optional controllers")
+		os.Exit(1)
 	}
-	// nolint:goconst
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err := webhookv1.SetupApiSpecificationWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ApiSpecification")
-			os.Exit(1)
-		}
+
+	if err := setupWebhooks(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhooks")
+		os.Exit(1)
 	}
-	// nolint:goconst
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ApiChangelog")
-			os.Exit(1)
-		}
-	}
-	//+kubebuilder:scaffold:builder
+	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -253,4 +243,44 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func setupOptionalControllers(mgr ctrl.Manager) error {
+	if cconfig.FeaturePubSub.IsEnabled() {
+		if err := (&controller.EventSpecificationReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			return fmt.Errorf("create EventSpecification controller: %w", err)
+		}
+	}
+
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		if err := (&controller.McpSpecificationReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			return fmt.Errorf("create McpSpecification controller: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func setupWebhooks(mgr ctrl.Manager) error {
+	if os.Getenv("ENABLE_WEBHOOKS") == disabledEnvValue {
+		return nil
+	}
+
+	if err := webhookv1.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
+		return fmt.Errorf("create Rover webhook: %w", err)
+	}
+	if err := webhookv1.SetupApiSpecificationWebhookWithManager(mgr); err != nil {
+		return fmt.Errorf("create ApiSpecification webhook: %w", err)
+	}
+	if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
+		return fmt.Errorf("create ApiChangelog webhook: %w", err)
+	}
+
+	return nil
 }

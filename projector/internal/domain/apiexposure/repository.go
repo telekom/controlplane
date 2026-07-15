@@ -12,6 +12,7 @@ import (
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -126,6 +127,25 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 
 	et, lk := cachekeys.APIExposure(data.BasePath, data.AppName, data.TeamName)
 	r.cache.Set(et, lk, exposureID)
+
+	// Back-link subscriptions that were projected before this exposure existed.
+	// A subscription targets an active exposure by base path (see
+	// FindAPIExposureByBasePath). If the subscription was reconciled first, it
+	// was stored with a NULL target FK and nothing re-links it when the exposure
+	// later appears — the subscription CR is not re-reconciled. Here we adopt any
+	// such orphaned subscriptions so their target resolves.
+	if data.Active {
+		if err := r.client.ApiSubscription.Update().
+			Where(
+				apisubscription.BasePathEQ(data.BasePath),
+				apisubscription.Not(apisubscription.HasTarget()),
+			).
+			SetTargetID(exposureID).
+			Exec(ctx); err != nil {
+			return fmt.Errorf("back-link subscriptions to api_exposure %q (app %q, team %q): %w",
+				data.BasePath, data.AppName, data.TeamName, err)
+		}
+	}
 	return nil
 }
 

@@ -27,6 +27,72 @@ const (
 	OAuth2Scopes oAuth2ContextKey = "OAuth2.Scopes"
 )
 
+// Defines values for AiExposureVariant.
+const (
+	AiExposureVariantMCP            AiExposureVariant = "MCP"
+	AiExposureVariantTELECONTEXTMCP AiExposureVariant = "TELECONTEXTMCP"
+)
+
+// Valid indicates whether the value is a known member of the AiExposureVariant enum.
+func (e AiExposureVariant) Valid() bool {
+	switch e {
+	case AiExposureVariantMCP:
+		return true
+	case AiExposureVariantTELECONTEXTMCP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AiExposureInfoType.
+const (
+	AiExposureInfoTypeAi AiExposureInfoType = "ai"
+)
+
+// Valid indicates whether the value is a known member of the AiExposureInfoType enum.
+func (e AiExposureInfoType) Valid() bool {
+	switch e {
+	case AiExposureInfoTypeAi:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AiExposureInfoVariant.
+const (
+	AiExposureInfoVariantMCP            AiExposureInfoVariant = "MCP"
+	AiExposureInfoVariantTELECONTEXTMCP AiExposureInfoVariant = "TELECONTEXTMCP"
+)
+
+// Valid indicates whether the value is a known member of the AiExposureInfoVariant enum.
+func (e AiExposureInfoVariant) Valid() bool {
+	switch e {
+	case AiExposureInfoVariantMCP:
+		return true
+	case AiExposureInfoVariantTELECONTEXTMCP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AiSubscriptionInfoType.
+const (
+	AiSubscriptionInfoTypeAi AiSubscriptionInfoType = "ai"
+)
+
+// Valid indicates whether the value is a known member of the AiSubscriptionInfoType enum.
+func (e AiSubscriptionInfoType) Valid() bool {
+	switch e {
+	case AiSubscriptionInfoTypeAi:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ApiExposureInfoType.
 const (
 	ApiExposureInfoTypeApi ApiExposureInfoType = "api"
@@ -419,6 +485,76 @@ func (e GetApplicationsInfoParamsSort) Valid() bool {
 		return false
 	}
 }
+
+// AiExposure defines model for AiExposure.
+type AiExposure struct {
+	Approval       ApprovalStrategy   `json:"approval"`
+	BasePath       string             `json:"basePath"`
+	CircuitBreaker CircuitBreaker     `json:"circuitBreaker,omitempty,omitzero"`
+	Failover       Failover           `json:"failover,omitempty,omitzero"`
+	LoadBalancing  LoadBalancing      `json:"loadBalancing,omitempty,omitzero"`
+	RateLimit      RateLimitContainer `json:"rateLimit,omitempty,omitzero"`
+
+	// RemoveHeaders Allows you to specify a list of header names that will be removed before forwarding the request to the MCP server
+	RemoveHeaders []string      `json:"removeHeaders,omitempty,omitzero"`
+	Security      Security      `json:"security,omitempty,omitzero"`
+	TrustedTeams  []TrustedTeam `json:"trustedTeams,omitempty,omitzero"`
+	Type          string        `json:"type"`
+	Upstream      string        `json:"upstream,omitempty,omitzero"`
+
+	// Variant The MCP exposure variant
+	Variant    AiExposureVariant `json:"variant"`
+	Visibility Visibility        `json:"visibility"`
+}
+
+// AiExposureVariant The MCP exposure variant
+type AiExposureVariant string
+
+// AiExposureInfo defines model for AiExposureInfo.
+type AiExposureInfo struct {
+	Approval       ApprovalStrategy   `json:"approval"`
+	BasePath       string             `json:"basePath"`
+	CircuitBreaker CircuitBreaker     `json:"circuitBreaker,omitempty,omitzero"`
+	Failover       Failover           `json:"failover,omitempty,omitzero"`
+	LoadBalancing  LoadBalancing      `json:"loadBalancing,omitempty,omitzero"`
+	RateLimit      RateLimitContainer `json:"rateLimit,omitempty,omitzero"`
+
+	// RemoveHeaders Allows you to specify a list of header names that will be removed before forwarding the request to the MCP server
+	RemoveHeaders []string           `json:"removeHeaders,omitempty,omitzero"`
+	Security      Security           `json:"security,omitempty,omitzero"`
+	TrustedTeams  []TrustedTeam      `json:"trustedTeams,omitempty,omitzero"`
+	Type          AiExposureInfoType `json:"type"`
+	Upstream      string             `json:"upstream,omitempty,omitzero"`
+
+	// Variant The MCP exposure variant
+	Variant    AiExposureInfoVariant `json:"variant"`
+	Visibility Visibility            `json:"visibility"`
+}
+
+// AiExposureInfoType defines model for AiExposureInfo.Type.
+type AiExposureInfoType string
+
+// AiExposureInfoVariant The MCP exposure variant
+type AiExposureInfoVariant string
+
+// AiSubscription defines model for AiSubscription.
+type AiSubscription struct {
+	BasePath string   `json:"basePath"`
+	Failover Failover `json:"failover,omitempty,omitzero"`
+	Security Security `json:"security,omitempty,omitzero"`
+	Type     string   `json:"type"`
+}
+
+// AiSubscriptionInfo defines model for AiSubscriptionInfo.
+type AiSubscriptionInfo struct {
+	BasePath string                 `json:"basePath"`
+	Failover Failover               `json:"failover,omitempty,omitzero"`
+	Security Security               `json:"security,omitempty,omitzero"`
+	Type     AiSubscriptionInfoType `json:"type"`
+}
+
+// AiSubscriptionInfoType defines model for AiSubscriptionInfo.Type.
+type AiSubscriptionInfoType string
 
 // ApiChangelog defines model for ApiChangelog.
 type ApiChangelog struct {
@@ -1021,6 +1157,35 @@ type LoadBalancing struct {
 	Servers []Server `json:"servers"`
 }
 
+// McpSpecification defines model for McpSpecification.
+type McpSpecification struct {
+	Specification map[string]interface{} `json:"specification"`
+}
+
+// McpSpecificationCreateRequest defines model for McpSpecificationCreateRequest.
+type McpSpecificationCreateRequest = McpSpecification
+
+// McpSpecificationListResponse defines model for McpSpecificationListResponse.
+type McpSpecificationListResponse struct {
+	// UnderscoreLinks HATEOAS links for pagination
+	UnderscoreLinks Links                      `json:"_links"`
+	Items           []McpSpecificationResponse `json:"items"`
+}
+
+// McpSpecificationResponse defines model for McpSpecificationResponse.
+type McpSpecificationResponse struct {
+	Category      string                 `json:"category,omitempty,omitzero"`
+	Id            string                 `json:"id"`
+	Name          string                 `json:"name"`
+	Specification map[string]interface{} `json:"specification"`
+
+	// Status Response resource which contains information about the status of the resource and all its relevant sub-resources
+	Status ResourceStatusResponse `json:"status"`
+}
+
+// McpSpecificationUpdateRequest defines model for McpSpecificationUpdateRequest.
+type McpSpecificationUpdateRequest = McpSpecification
+
 // Oauth2 defines model for Oauth2.
 type Oauth2 struct {
 	// Claims Token claims written into the platform-managed LMS token. Only valid on the LMS token (not with an external IDP tokenEndpoint or basic auth).
@@ -1395,6 +1560,12 @@ type GetAllEventSpecificationsParams struct {
 // GetAllEventSpecificationsParamsSort defines parameters for GetAllEventSpecifications.
 type GetAllEventSpecificationsParamsSort string
 
+// GetAllMcpSpecificationsParams defines parameters for GetAllMcpSpecifications.
+type GetAllMcpSpecificationsParams struct {
+	// Cursor cursor to be used for pagination. If not provided, the first page will be returned. The cursor is a string that points to a page of data.
+	Cursor Cursor `form:"cursor,omitempty" json:"cursor,omitempty,omitzero"`
+}
+
 // GetAllRoversParams defines parameters for GetAllRovers.
 type GetAllRoversParams struct {
 	// Limit page size requested by the consumer; must not be larger than the maximal page size
@@ -1461,6 +1632,12 @@ type CreateEventSpecificationJSONRequestBody = EventSpecificationCreateRequest
 // UpdateEventSpecificationJSONRequestBody defines body for UpdateEventSpecification for application/json ContentType.
 type UpdateEventSpecificationJSONRequestBody = EventSpecificationUpdateRequest
 
+// CreateMcpSpecificationJSONRequestBody defines body for CreateMcpSpecification for application/json ContentType.
+type CreateMcpSpecificationJSONRequestBody = McpSpecificationCreateRequest
+
+// UpdateMcpSpecificationJSONRequestBody defines body for UpdateMcpSpecification for application/json ContentType.
+type UpdateMcpSpecificationJSONRequestBody = McpSpecificationUpdateRequest
+
 // CreateRoverJSONRequestBody defines body for CreateRover for application/json ContentType.
 type CreateRoverJSONRequestBody = RoverCreateRequest
 
@@ -1523,6 +1700,34 @@ func (t *Exposure) MergeEventExposure(v EventExposure) error {
 	return err
 }
 
+// AsAiExposure returns the union data inside the Exposure as a AiExposure
+func (t Exposure) AsAiExposure() (AiExposure, error) {
+	var body AiExposure
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAiExposure overwrites any union data inside the Exposure as the provided AiExposure
+func (t *Exposure) FromAiExposure(v AiExposure) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAiExposure performs a merge with any union data inside the Exposure, using the provided AiExposure
+func (t *Exposure) MergeAiExposure(v AiExposure) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t Exposure) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1537,6 +1742,8 @@ func (t Exposure) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "ai":
+		return t.AsAiExposure()
 	case "api":
 		return t.AsApiExposure()
 	case "event":
@@ -1612,6 +1819,34 @@ func (t *ExposureInfo) MergeEventExposureInfo(v EventExposureInfo) error {
 	return err
 }
 
+// AsAiExposureInfo returns the union data inside the ExposureInfo as a AiExposureInfo
+func (t ExposureInfo) AsAiExposureInfo() (AiExposureInfo, error) {
+	var body AiExposureInfo
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAiExposureInfo overwrites any union data inside the ExposureInfo as the provided AiExposureInfo
+func (t *ExposureInfo) FromAiExposureInfo(v AiExposureInfo) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAiExposureInfo performs a merge with any union data inside the ExposureInfo, using the provided AiExposureInfo
+func (t *ExposureInfo) MergeAiExposureInfo(v AiExposureInfo) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t ExposureInfo) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1626,6 +1861,8 @@ func (t ExposureInfo) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "ai":
+		return t.AsAiExposureInfo()
 	case "api":
 		return t.AsApiExposureInfo()
 	case "event":
@@ -1790,6 +2027,34 @@ func (t *Subscription) MergeEventSubscription(v EventSubscription) error {
 	return err
 }
 
+// AsAiSubscription returns the union data inside the Subscription as a AiSubscription
+func (t Subscription) AsAiSubscription() (AiSubscription, error) {
+	var body AiSubscription
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAiSubscription overwrites any union data inside the Subscription as the provided AiSubscription
+func (t *Subscription) FromAiSubscription(v AiSubscription) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAiSubscription performs a merge with any union data inside the Subscription, using the provided AiSubscription
+func (t *Subscription) MergeAiSubscription(v AiSubscription) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t Subscription) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1804,6 +2069,8 @@ func (t Subscription) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "ai":
+		return t.AsAiSubscription()
 	case "api":
 		return t.AsApiSubscription()
 	case "event":
@@ -1879,6 +2146,34 @@ func (t *SubscriptionInfo) MergeEventSubscriptionInfo(v EventSubscriptionInfo) e
 	return err
 }
 
+// AsAiSubscriptionInfo returns the union data inside the SubscriptionInfo as a AiSubscriptionInfo
+func (t SubscriptionInfo) AsAiSubscriptionInfo() (AiSubscriptionInfo, error) {
+	var body AiSubscriptionInfo
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAiSubscriptionInfo overwrites any union data inside the SubscriptionInfo as the provided AiSubscriptionInfo
+func (t *SubscriptionInfo) FromAiSubscriptionInfo(v AiSubscriptionInfo) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAiSubscriptionInfo performs a merge with any union data inside the SubscriptionInfo, using the provided AiSubscriptionInfo
+func (t *SubscriptionInfo) MergeAiSubscriptionInfo(v AiSubscriptionInfo) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SubscriptionInfo) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1893,6 +2188,8 @@ func (t SubscriptionInfo) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "ai":
+		return t.AsAiSubscriptionInfo()
 	case "api":
 		return t.AsApiSubscriptionInfo()
 	case "event":
