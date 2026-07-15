@@ -1,0 +1,10 @@
+apiVersion: spectre.cp.ei.telekom.de/v1
+kind: SpectreApplication
+metadata:
+  name: spectreapplication-sample
+  namespace: controlplane-system
+spec:
+  application:
+    name: my-app
+    namespace: my-namespace
+  deliveryType: server_sent_event
