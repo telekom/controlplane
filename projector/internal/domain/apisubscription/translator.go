@@ -45,7 +45,6 @@ func (t *Translator) ShouldSkip(_ *apiv1.ApiSubscription) (bool, string) {
 //	len(m2m.Scopes) > 0 → "SCOPES_ONLY"
 //	otherwise           → "NONE"
 //
-// ApprovedScopes comes from security.M2M.Scopes, defaulting to an empty slice.
 // OwnerAppName from Requestor.Application.Name, OwnerTeamName from namespace.
 // TargetBasePath = Spec.ApiBasePath. TargetAppName/TargetTeamName are always "".
 func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*APISubscriptionData, error) {
@@ -74,7 +73,6 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*
 		StatusMessage:  message,
 		BasePath:       obj.Spec.ApiBasePath,
 		M2MAuthMethod:  deriveM2MAuthMethod(obj.Spec.Security),
-		ApprovedScopes: deriveApprovedScopes(obj.Spec.Security),
 		Security:       security,
 		OwnerAppName:   obj.Spec.Requestor.Application.Name,
 		OwnerTeamName:  shared.TeamNameFromNamespace(obj.Namespace),
@@ -137,13 +135,4 @@ func deriveM2MAuthMethod(security *apiv1.SubscriberSecurity) string {
 		return "SCOPES_ONLY"
 	}
 	return "NONE"
-}
-
-// deriveApprovedScopes extracts the M2M scopes from the security config. If
-// security or M2M is nil, returns an empty slice (never nil).
-func deriveApprovedScopes(security *apiv1.SubscriberSecurity) []string {
-	if security == nil || security.M2M == nil || len(security.M2M.Scopes) == 0 {
-		return []string{}
-	}
-	return security.M2M.Scopes
 }

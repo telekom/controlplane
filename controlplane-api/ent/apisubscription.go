@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApiSubscription is the model entity for the ApiSubscription schema.
@@ -44,8 +45,8 @@ type ApiSubscription struct {
 	M2mAuthMethod apisubscription.M2mAuthMethod `json:"m2m_auth_method,omitempty"`
 	// GatewayURL holds the value of the "gateway_url" field.
 	GatewayURL *string `json:"gateway_url,omitempty"`
-	// ApprovedScopes holds the value of the "approved_scopes" field.
-	ApprovedScopes []string `json:"approved_scopes,omitempty"`
+	// Security holds the value of the "security" field.
+	Security *model.ApiSubscriptionSecurity `json:"security,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApiSubscriptionQuery when eager-loading is set.
 	Edges                       ApiSubscriptionEdges `json:"edges"`
@@ -132,7 +133,7 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apisubscription.FieldApprovedScopes:
+		case apisubscription.FieldSecurity:
 			values[i] = new([]byte)
 		case apisubscription.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -229,12 +230,12 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 				_m.GatewayURL = new(string)
 				*_m.GatewayURL = value.String
 			}
-		case apisubscription.FieldApprovedScopes:
+		case apisubscription.FieldSecurity:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field approved_scopes", values[i])
+				return fmt.Errorf("unexpected type %T for field security", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.ApprovedScopes); err != nil {
-					return fmt.Errorf("unmarshal field approved_scopes: %w", err)
+				if err := json.Unmarshal(*value, &_m.Security); err != nil {
+					return fmt.Errorf("unmarshal field security: %w", err)
 				}
 			}
 		case apisubscription.ForeignKeys[0]:
@@ -350,8 +351,8 @@ func (_m *ApiSubscription) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("approved_scopes=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ApprovedScopes))
+	builder.WriteString("security=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Security))
 	builder.WriteByte(')')
 	return builder.String()
 }
