@@ -13,6 +13,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -81,9 +83,10 @@ var _ = Describe("Config", func() {
 			Expect(controller).NotTo(BeNil())
 
 			s := server.NewServer()
-			s.RegisterController(controller, server.ControllerOpts{})
+			s.RegisterController(controller, server.ControllerOpts{Security: security.SecurityOpts{Mode: security.ModeMock}})
 
 			req := httptest.NewRequest("GET", "/config", nil)
+			req.Header.Set("Authorization", "Bearer "+securitymock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}))
 			res, err := s.App.Test(req)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())

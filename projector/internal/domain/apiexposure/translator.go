@@ -12,6 +12,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+	"github.com/telekom/controlplane/projector/internal/util"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -54,6 +55,63 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		}
 	}
 
+	var security *model.ApiExposureSecurity
+	if obj.Spec.Security != nil && obj.Spec.Security.M2M != nil {
+		security = &model.ApiExposureSecurity{}
+		if obj.Spec.Security.M2M != nil {
+			security.M2M = &model.Machine2MachineAuthentication{}
+			if obj.Spec.Security.M2M.Basic != nil {
+				security.M2M.Basic = util.MapCrBasicAuthToCpApi(obj.Spec.Security.M2M.Basic)
+			}
+			if obj.Spec.Security.M2M.ExternalIDP != nil {
+				security.M2M.ExternalIDP = util.MapCrExternalIdpToCpApi(obj.Spec.Security.M2M.ExternalIDP)
+			}
+			if len(obj.Spec.Security.M2M.Scopes) > 0 {
+				security.M2M.Scopes = obj.Spec.Security.M2M.Scopes
+			}
+		}
+	}
+
+	var traffic *model.Traffic
+	if obj.Spec.Traffic.RateLimit != nil || obj.Spec.Traffic.Failover != nil {
+		traffic = &model.Traffic{}
+		if obj.Spec.Traffic.RateLimit != nil {
+			traffic.RateLimit = &model.RateLimit{}
+			if obj.Spec.Traffic.RateLimit.Provider != nil {
+				traffic.RateLimit.Provider = &model.RateLimitConfig{
+					Limits:  model.Limits(obj.Spec.Traffic.RateLimit.Provider.Limits),
+					Options: model.RateLimitOptions(obj.Spec.Traffic.RateLimit.Provider.Options),
+				}
+			}
+			if obj.Spec.Traffic.RateLimit.SubscriberRateLimit != nil {
+				traffic.RateLimit.SubscriberRateLimit = &model.SubscriberRateLimits{
+					Overrides: []model.RateLimitOverrides{},
+				}
+				if obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default != nil {
+					traffic.RateLimit.SubscriberRateLimit.Default = &model.SubscriberRateLimitDefaults{
+						Limits: model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits),
+					}
+				}
+				for i := range obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides {
+					traffic.RateLimit.SubscriberRateLimit.Overrides = append(traffic.RateLimit.SubscriberRateLimit.Overrides,
+						model.RateLimitOverrides{
+							Subscriber: obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Subscriber,
+							Limits:     model.Limits(obj.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Limits),
+						},
+					)
+				}
+			}
+		}
+		if obj.Spec.Traffic.Failover != nil {
+			traffic.Failover = &model.Failover{}
+			for i := range obj.Spec.Traffic.Failover.Zones {
+				traffic.Failover.Zones = append(traffic.Failover.Zones, obj.Spec.Traffic.Failover.Zones[i].Name)
+			}
+		}
+	}
+
+	features := mapFeatures(obj)
+
 	return &APIExposureData{
 		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:   phase,
@@ -61,7 +119,7 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		BasePath:      obj.Spec.ApiBasePath,
 		Visibility:    strings.ToUpper(string(obj.Spec.Visibility)),
 		Active:        obj.Status.Active,
-		Features:      []string{},
+		Features:      features,
 		Upstreams:     upstreams,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     mapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
@@ -70,7 +128,52 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		APIVersion: nil,
 		AppName:    obj.Labels[applicationLabelKey],
 		TeamName:   shared.TeamNameFromNamespace(obj.Namespace),
+		Security:   security,
+		Traffic:    traffic,
 	}, nil
+}
+
+// determineFeatures checks for the feature of a given APIExposures
+func mapFeatures(obj *apiv1.ApiExposure) []string {
+	featureList := []string{}
+
+	// SECURITY RELATED
+	featureList = append(featureList, "LAST_MILE_SECURITY")
+	if obj.Spec.Security != nil {
+		if obj.Spec.Security.M2M != nil {
+			if obj.Spec.Security.M2M.ExternalIDP != nil {
+				featureList = append(featureList, "EXTERNAL_IDP")
+			}
+			if len(obj.Spec.Security.M2M.Scopes) > 0 {
+				featureList = append(featureList, "CUSTOM_SCOPES")
+			}
+			if obj.Spec.Security.M2M.Basic != nil {
+				featureList = append(featureList, "BASIC_AUTH")
+			}
+		}
+	}
+
+	// TRAFFIC RELATED
+	if obj.Spec.Traffic.RateLimit != nil {
+		featureList = append(featureList, "RATE_LIMIT")
+	}
+	if obj.Spec.Traffic.Failover != nil {
+		featureList = append(featureList, "FAILOVER")
+	}
+	if obj.Spec.Traffic.CircuitBreaker != nil {
+		featureList = append(featureList, "CIRCUIT_BREAKER")
+	}
+
+	if len(obj.Spec.Upstreams) > 1 {
+		featureList = append(featureList, "LOAD_BALANCING")
+	}
+
+	// TRANSFORMATION
+	if obj.Spec.Transformation != nil {
+		featureList = append(featureList, "HEADER_TRANSFORMATION")
+	}
+
+	return featureList
 }
 
 // KeyFromObject derives the composite identity key from a live ApiExposure.

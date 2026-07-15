@@ -43,13 +43,13 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		createDefaultIdentityRealm,
 		createInternalIdentityRealm,
 		createGatewayAdminClient,
-		createGatewayClient,
 		createGateway,
 		createGatewayConsumer,
 		reconcileInternalRoutes,
 		createIdentityRoutes,
 		cleanupStaleRoutes,
 		populateLinks,
+		populateRealmName,
 	}
 
 	for _, step := range steps {
@@ -61,16 +61,16 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	if c.AnyChanged() {
-		obj.SetCondition(condition.NewNotReadyCondition("SubResourceProvisioning", "At least one sub-resource has been created or updated"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "At least one sub-resource has been created or updated"))
 		return nil
 	}
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("SubResourceProvisioned", "Waiting for sub-resources to be ready"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for sub-resources to be ready"))
 		return nil
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("ZoneProvisioned", "Zone has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Zone has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("Zone has been provisioned"))
 
 	return nil

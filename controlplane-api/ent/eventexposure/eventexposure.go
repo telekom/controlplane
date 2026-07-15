@@ -40,6 +40,10 @@ const (
 	FieldVisibility = "visibility"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
+	// FieldEventScopes holds the string denoting the event_scopes field in the database.
+	FieldEventScopes = "event_scopes"
+	// FieldGatewayPublishingURL holds the string denoting the gateway_publishing_url field in the database.
+	FieldGatewayPublishingURL = "gateway_publishing_url"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
 	FieldApprovalConfig = "approval_config"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -85,6 +89,8 @@ var Columns = []string{
 	FieldEventType,
 	FieldVisibility,
 	FieldActive,
+	FieldEventScopes,
+	FieldGatewayPublishingURL,
 	FieldApprovalConfig,
 }
 
@@ -130,6 +136,8 @@ var (
 	EventTypeValidator func(string) error
 	// DefaultActive holds the default value on creation for the "active" field.
 	DefaultActive bool
+	// DefaultEventScopes holds the default value on creation for the "event_scopes" field.
+	DefaultEventScopes []model.EventScope
 	// DefaultApprovalConfig holds the default value on creation for the "approval_config" field.
 	DefaultApprovalConfig model.ApprovalConfig
 )
@@ -237,6 +245,11 @@ func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
 // ByActive orders the results by the active field.
 func ByActive(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActive, opts...).ToFunc()
+}
+
+// ByGatewayPublishingURL orders the results by the gateway_publishing_url field.
+func ByGatewayPublishingURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGatewayPublishingURL, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

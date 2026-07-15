@@ -153,7 +153,7 @@ func WithProxyTarget(isProxyTarget bool) CreateRouteOption {
 // These issuers are used by the gateway's JWT plugin to validate incoming tokens.
 func WithTrustedIssuers(issuers []string) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
-		opts.TrustedIssuers = issuers
+		opts.TrustedIssuers = slices.Clone(issuers)
 	}
 }
 
@@ -267,10 +267,15 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 			GatewayRef: *downstreamZone.Status.Gateway,
 			Type:       gatewayapi.RouteTypeProxy,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
-			Hostnames:  slices.Compact(slices.Clip(slices.Concat(hostnames, options.AdditionalHostnames))),
-			Paths:      slices.Compact(slices.Clip(slices.Concat(paths, options.AdditionalPaths))),
 			Traffic:    gatewayapi.Traffic{},
 		}
+		proxyRoute.Spec.Hostnames = slices.Concat(hostnames, options.AdditionalHostnames)
+		slices.Sort(proxyRoute.Spec.Hostnames)
+		proxyRoute.Spec.Hostnames = slices.Compact(slices.Clip(proxyRoute.Spec.Hostnames))
+
+		proxyRoute.Spec.Paths = slices.Concat(paths, options.AdditionalPaths)
+		slices.Sort(proxyRoute.Spec.Paths)
+		proxyRoute.Spec.Paths = slices.Compact(slices.Clip(proxyRoute.Spec.Paths))
 
 		// Set trusted issuers for consumer token validation on the proxy route.
 		// The proxy route lives in the subscriber zone and accepts consumer traffic,
@@ -537,10 +542,15 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 			GatewayRef: *zone.Status.Gateway,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
-			Hostnames:  slices.Compact(slices.Clip(slices.Concat(hostnames, options.AdditionalHostnames))),
-			Paths:      slices.Compact(slices.Clip(slices.Concat(paths, options.AdditionalPaths))),
 			Traffic:    gatewayapi.Traffic{},
 		}
+		route.Spec.Hostnames = slices.Concat(hostnames, options.AdditionalHostnames)
+		route.Spec.Paths = slices.Concat(paths, options.AdditionalPaths)
+		slices.Sort(route.Spec.Hostnames)
+		slices.Sort(route.Spec.Paths)
+		route.Spec.Hostnames = slices.Compact(slices.Clip(route.Spec.Hostnames))
+		route.Spec.Paths = slices.Compact(slices.Clip(route.Spec.Paths))
+
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
 		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
 
@@ -662,7 +672,7 @@ func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.Ex
 	idp := &gatewayapi.ExternalIdentityProvider{
 		TokenEndpoint: externalIDP.TokenEndpoint,
 		TokenRequest:  gatewayapi.TokenRequestMethod(externalIDP.TokenRequest),
-		GrantType:     externalIDP.GrantType,
+		GrantType:     gatewayapi.GrantType(externalIDP.GrantType),
 	}
 
 	if externalIDP.Basic != nil {

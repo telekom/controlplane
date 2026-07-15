@@ -15,7 +15,6 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	identityapi "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -197,43 +196,6 @@ var _ = Describe("Zone Handler Steps", func() {
 	})
 
 	// ─────────────────────────────────────────────────────────────────────────
-	// Step: createGatewayClient
-	// ─────────────────────────────────────────────────────────────────────────
-
-	Describe("createGatewayClient", func() {
-		It("should create client with generated secret", func() {
-			testCtx := newTestContext(zone)
-			hc := newTestHandlingContext(testCtx, zone)
-			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
-			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
-
-			err := createGatewayClient(testCtx, hc)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(hc.GatewayClient).NotTo(BeNil())
-			Expect(hc.GatewayClient.Spec.ClientId).To(Equal("gateway"))
-			Expect(hc.GatewayClient.Spec.ClientSecret).NotTo(BeEmpty())
-		})
-
-		It("should preserve secret on re-reconcile (idempotency)", func() {
-			testCtx := newTestContext(zone)
-			hc := newTestHandlingContext(testCtx, zone)
-			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
-			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
-			firstSecret := hc.GatewayClient.Spec.ClientSecret
-
-			// Second reconcile
-			testCtx2 := newTestContext(zone)
-			hc2 := newTestHandlingContext(testCtx2, zone)
-			hc2.IdentityProvider = hc.IdentityProvider
-			hc2.DefaultIdentityRealm = hc.DefaultIdentityRealm
-
-			Expect(createGatewayClient(testCtx2, hc2)).To(Succeed())
-			Expect(hc2.GatewayClient.Spec.ClientSecret).To(Equal(firstSecret))
-		})
-	})
-
-	// ─────────────────────────────────────────────────────────────────────────
 	// Step: createGateway
 	// ─────────────────────────────────────────────────────────────────────────
 
@@ -323,7 +285,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 
@@ -359,7 +320,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 
@@ -388,7 +348,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 
@@ -411,7 +370,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 			Expect(reconcileInternalRoutes(testCtx, hc)).To(Succeed())
@@ -453,7 +411,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 			Expect(reconcileInternalRoutes(testCtx, hc)).To(Succeed())
@@ -479,7 +436,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 			Expect(reconcileInternalRoutes(testCtx, hc)).To(Succeed())
@@ -512,7 +468,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 			Expect(reconcileInternalRoutes(testCtx, hc)).To(Succeed())
@@ -549,7 +504,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 			Expect(reconcileInternalRoutes(testCtx, hc)).To(Succeed())
@@ -567,7 +521,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			hc2.DefaultIdentityRealm = hc.DefaultIdentityRealm
 			hc2.InternalIdentityRealm = hc.InternalIdentityRealm
 			hc2.GatewayAdminClient = hc.GatewayAdminClient
-			hc2.GatewayClient = hc.GatewayClient
 			hc2.Gateway = hc.Gateway
 			hc2.GatewayConsumer = hc.GatewayConsumer
 			Expect(reconcileInternalRoutes(testCtx2, hc2)).To(Succeed())
@@ -600,7 +553,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 			Expect(reconcileInternalRoutes(testCtx, hc)).To(Succeed())
@@ -623,7 +575,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 			Expect(reconcileInternalRoutes(testCtx, hc)).To(Succeed())
@@ -646,7 +597,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(createDefaultIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 			Expect(createGatewayAdminClient(testCtx, hc)).To(Succeed())
-			Expect(createGatewayClient(testCtx, hc)).To(Succeed())
 			Expect(createGateway(testCtx, hc)).To(Succeed())
 			Expect(createGatewayConsumer(testCtx, hc)).To(Succeed())
 			Expect(reconcileInternalRoutes(testCtx, hc)).To(Succeed())
@@ -656,6 +606,33 @@ var _ = Describe("Zone Handler Steps", func() {
 			err := populateLinks(testCtx, hc)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(zone.Status.Links.PermissionsUrl).To(BeEmpty())
+		})
+	})
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Step: populateRealmName
+	// ─────────────────────────────────────────────────────────────────────────
+
+	Describe("populateRealmName", func() {
+		It("should default realmName to environment name when Spec.RealmName is empty", func() {
+			testCtx := newTestContext(zone)
+			hc := newTestHandlingContext(testCtx, zone)
+
+			Expect(hc.Environment.Spec.RealmName).To(BeEmpty())
+
+			err := populateRealmName(testCtx, hc)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(zone.Status.RealmName).To(Equal(testEnvironment))
+		})
+
+		It("should use Spec.RealmName when it is set", func() {
+			testCtx := newTestContext(zone)
+			hc := newTestHandlingContext(testCtx, zone)
+			hc.Environment.Spec.RealmName = "custom-realm"
+
+			err := populateRealmName(testCtx, hc)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(zone.Status.RealmName).To(Equal("custom-realm"))
 		})
 	})
 
@@ -686,7 +663,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(zone.Status.IdentityProvider).NotTo(BeNil())
 			Expect(zone.Status.IdentityRealm).NotTo(BeNil())
 			Expect(zone.Status.InternalIdentityRealm).NotTo(BeNil())
-			Expect(zone.Status.GatewayClient).NotTo(BeNil())
 			Expect(zone.Status.Gateway).NotTo(BeNil())
 			Expect(zone.Status.GatewayConsumer).NotTo(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).NotTo(BeNil())
@@ -725,11 +701,6 @@ var _ = Describe("Zone Handler Steps", func() {
 			testCtx3 := newTestContext(zone)
 			Expect(handler.CreateOrUpdate(testCtx3, zone)).To(Succeed())
 			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-
-			// Verify the gateway client secret didn't change
-			gatewayClient := &identityapi.Client{}
-			Expect(k8sClient.Get(ctx, zone.Status.GatewayClient.K8s(), gatewayClient)).To(Succeed())
-			Expect(gatewayClient.Spec.ClientSecret).NotTo(BeEmpty())
 		})
 
 		It("should handle Enterprise zone without spacegate prefix", func() {

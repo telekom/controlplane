@@ -6,7 +6,6 @@ package zone
 
 import (
 	"context"
-	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -19,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
-	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 // createIdentityProvider creates the IdentityProvider resource for the zone.
@@ -144,54 +142,6 @@ func createGatewayAdminClient(ctx context.Context, hc *HandlingContext) error {
 
 	hc.GatewayAdminClient = adminClient
 	hc.Zone.Status.GatewayAdminClient = types.ObjectRefFromObject(adminClient)
-	return nil
-}
-
-// createGatewayClient creates the gateway's OAuth2 client in the default identity realm.
-// TODO: This will be removed when the transition to new the mesh-auth logic is complete.
-func createGatewayClient(ctx context.Context, hc *HandlingContext) error {
-	c := cclient.ClientFromContextOrDie(ctx)
-
-	identityClient := &identityapi.Client{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(naming.ForGatewayClient()),
-			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
-		},
-	}
-
-	mutator := func() error {
-		if identityClient.Labels == nil {
-			identityClient.Labels = make(map[string]string)
-		}
-		identityClient.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
-		identityClient.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
-
-		// Assumption is that this will be replaced by the new mesh-auth logic before release,
-		// so we can leave the plain-text secret here for now.
-		clientSecret := identityClient.Spec.ClientSecret
-		if clientSecret == "" {
-			var err error
-			clientSecret, err = secretsapi.GenerateSecret()
-			if err != nil {
-				return fmt.Errorf("failed to generate client secret for Gateway Client in zone %s: %w", hc.Zone.Name, err)
-			}
-		}
-
-		identityClient.Spec = identityapi.ClientSpec{
-			Realm:        types.ObjectRefFromObject(hc.DefaultIdentityRealm),
-			ClientId:     naming.ForGatewayClient(),
-			ClientSecret: clientSecret,
-		}
-		return nil
-	}
-
-	_, err := c.CreateOrUpdate(ctx, identityClient, mutator)
-	if err != nil {
-		return ctrlerrors.RetryableErrorf("failed to create or update Identity Client %s in zone %s: %s", identityClient.Name, hc.Zone.Name, err)
-	}
-
-	hc.GatewayClient = identityClient
-	hc.Zone.Status.GatewayClient = types.ObjectRefFromObject(identityClient)
 	return nil
 }
 

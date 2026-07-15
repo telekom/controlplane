@@ -122,7 +122,7 @@ var _ = BeforeSuite(func() {
 	app = cserver.NewAppWithConfig(appCfg)
 
 	s := server.Server{
-		Config:             &config.ServerConfig{Security: config.SecurityConfig{Enabled: true}},
+		Config:             &config.ServerConfig{Security: config.SecurityConfig{Mode: "mock"}},
 		Log:                log.Log,
 		Applications:       NewApplicationController(stores),
 		ApiExposures:       NewApiExposureController(stores),

@@ -21,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApplicationCreate is the builder for creating a Application entity.
@@ -207,6 +208,26 @@ func (_c *ApplicationCreate) SetSecretRotationMessage(v string) *ApplicationCrea
 func (_c *ApplicationCreate) SetNillableSecretRotationMessage(v *string) *ApplicationCreate {
 	if v != nil {
 		_c.SetSecretRotationMessage(*v)
+	}
+	return _c
+}
+
+// SetExternalIds sets the "external_ids" field.
+func (_c *ApplicationCreate) SetExternalIds(v []model.ExternalId) *ApplicationCreate {
+	_c.mutation.SetExternalIds(v)
+	return _c
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (_c *ApplicationCreate) SetIPRestrictions(v model.IpRestrictions) *ApplicationCreate {
+	_c.mutation.SetIPRestrictions(v)
+	return _c
+}
+
+// SetNillableIPRestrictions sets the "ip_restrictions" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableIPRestrictions(v *model.IpRestrictions) *ApplicationCreate {
+	if v != nil {
+		_c.SetIPRestrictions(*v)
 	}
 	return _c
 }
@@ -491,6 +512,14 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SecretRotationMessage(); ok {
 		_spec.SetField(application.FieldSecretRotationMessage, field.TypeString, value)
 		_node.SecretRotationMessage = &value
+	}
+	if value, ok := _c.mutation.ExternalIds(); ok {
+		_spec.SetField(application.FieldExternalIds, field.TypeJSON, value)
+		_node.ExternalIds = value
+	}
+	if value, ok := _c.mutation.IPRestrictions(); ok {
+		_spec.SetField(application.FieldIPRestrictions, field.TypeJSON, value)
+		_node.IPRestrictions = value
 	}
 	if nodes := _c.mutation.ZoneIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -852,6 +881,42 @@ func (u *ApplicationUpsert) ClearSecretRotationMessage() *ApplicationUpsert {
 	return u
 }
 
+// SetExternalIds sets the "external_ids" field.
+func (u *ApplicationUpsert) SetExternalIds(v []model.ExternalId) *ApplicationUpsert {
+	u.Set(application.FieldExternalIds, v)
+	return u
+}
+
+// UpdateExternalIds sets the "external_ids" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateExternalIds() *ApplicationUpsert {
+	u.SetExcluded(application.FieldExternalIds)
+	return u
+}
+
+// ClearExternalIds clears the value of the "external_ids" field.
+func (u *ApplicationUpsert) ClearExternalIds() *ApplicationUpsert {
+	u.SetNull(application.FieldExternalIds)
+	return u
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (u *ApplicationUpsert) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpsert {
+	u.Set(application.FieldIPRestrictions, v)
+	return u
+}
+
+// UpdateIPRestrictions sets the "ip_restrictions" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateIPRestrictions() *ApplicationUpsert {
+	u.SetExcluded(application.FieldIPRestrictions)
+	return u
+}
+
+// ClearIPRestrictions clears the value of the "ip_restrictions" field.
+func (u *ApplicationUpsert) ClearIPRestrictions() *ApplicationUpsert {
+	u.SetNull(application.FieldIPRestrictions)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1139,6 +1204,48 @@ func (u *ApplicationUpsertOne) UpdateSecretRotationMessage() *ApplicationUpsertO
 func (u *ApplicationUpsertOne) ClearSecretRotationMessage() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearSecretRotationMessage()
+	})
+}
+
+// SetExternalIds sets the "external_ids" field.
+func (u *ApplicationUpsertOne) SetExternalIds(v []model.ExternalId) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetExternalIds(v)
+	})
+}
+
+// UpdateExternalIds sets the "external_ids" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateExternalIds() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateExternalIds()
+	})
+}
+
+// ClearExternalIds clears the value of the "external_ids" field.
+func (u *ApplicationUpsertOne) ClearExternalIds() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearExternalIds()
+	})
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (u *ApplicationUpsertOne) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetIPRestrictions(v)
+	})
+}
+
+// UpdateIPRestrictions sets the "ip_restrictions" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateIPRestrictions() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateIPRestrictions()
+	})
+}
+
+// ClearIPRestrictions clears the value of the "ip_restrictions" field.
+func (u *ApplicationUpsertOne) ClearIPRestrictions() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearIPRestrictions()
 	})
 }
 
@@ -1595,6 +1702,48 @@ func (u *ApplicationUpsertBulk) UpdateSecretRotationMessage() *ApplicationUpsert
 func (u *ApplicationUpsertBulk) ClearSecretRotationMessage() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearSecretRotationMessage()
+	})
+}
+
+// SetExternalIds sets the "external_ids" field.
+func (u *ApplicationUpsertBulk) SetExternalIds(v []model.ExternalId) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetExternalIds(v)
+	})
+}
+
+// UpdateExternalIds sets the "external_ids" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateExternalIds() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateExternalIds()
+	})
+}
+
+// ClearExternalIds clears the value of the "external_ids" field.
+func (u *ApplicationUpsertBulk) ClearExternalIds() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearExternalIds()
+	})
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (u *ApplicationUpsertBulk) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetIPRestrictions(v)
+	})
+}
+
+// UpdateIPRestrictions sets the "ip_restrictions" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateIPRestrictions() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateIPRestrictions()
+	})
+}
+
+// ClearIPRestrictions clears the value of the "ip_restrictions" field.
+func (u *ApplicationUpsertBulk) ClearIPRestrictions() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearIPRestrictions()
 	})
 }
 

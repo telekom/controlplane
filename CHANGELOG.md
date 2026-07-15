@@ -1,3 +1,34 @@
+# [0.20.0](https://github.com/telekom/controlplane/compare/v0.19.0...v0.20.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **admin:** enhance populateRealmName tests for default behavior ([#467](https://github.com/telekom/controlplane/issues/467)) ([edd48fa](https://github.com/telekom/controlplane/commit/edd48fa7fc4235e21383d4a1eb1a4779358a9e7a))
+* **common-server:**  "scopes"  →  "scope"  JWT claim rename ([#488](https://github.com/telekom/controlplane/issues/488)) ([37fb583](https://github.com/telekom/controlplane/commit/37fb5831d227bb5cf78795f69cc0344053a8af70))
+* **file-manager:** allow tls-insecure for buckets ([#436](https://github.com/telekom/controlplane/issues/436)) ([67f5169](https://github.com/telekom/controlplane/commit/67f51693d2323d52a6033152fbb694715b89ac3b))
+* improve failover handling; add mesh-flag to routing-config ([#466](https://github.com/telekom/controlplane/issues/466)) ([bd1134a](https://github.com/telekom/controlplane/commit/bd1134a094ff6a501eb8957f0ecd734f60fdcb98))
+* **organization:** use secure generate-secret function for team-user ([#456](https://github.com/telekom/controlplane/issues/456)) ([64de706](https://github.com/telekom/controlplane/commit/64de7063c533c7271d8865e8f79fde0135f887be))
+* **secret-manager:** harden k8s onboarder ([#438](https://github.com/telekom/controlplane/issues/438)) ([ddee2fc](https://github.com/telekom/controlplane/commit/ddee2fcbb89921021b783268742378d332b2f92f))
+
+
+### Features
+
+* align condition handling and improve rover-server status determination ([#414](https://github.com/telekom/controlplane/issues/414)) ([6242df2](https://github.com/telekom/controlplane/commit/6242df2210bcc20850a095a673d14672f787e905))
+* **cpapi:** add deployment derived Gateway URLs ([#429](https://github.com/telekom/controlplane/issues/429)) ([7e79289](https://github.com/telekom/controlplane/commit/7e79289d987e830da633de38ea312444c8031103))
+* **cpapi:** project and query Approval.Spec.ExpiresAt and Team.Spec.DisplayName + Description ([#443](https://github.com/telekom/controlplane/issues/443)) ([5cddae0](https://github.com/telekom/controlplane/commit/5cddae08d5bbb3a533bf5c9359f46b25de8a96bb))
+* **cpapi:** project and query EventExposure + EventSubscription ([#444](https://github.com/telekom/controlplane/issues/444)) ([218801d](https://github.com/telekom/controlplane/commit/218801d357e43b59fc2f81e76b19e62531e1f802))
+* **cpapi:** project and query missing Application, ApiExposure & ApiSubscription fields ([#431](https://github.com/telekom/controlplane/issues/431)) ([648cc2f](https://github.com/telekom/controlplane/commit/648cc2fed11f94f7179c3ac8458807b62a61628d))
+* **cpapi:** security hardening, disable mock auth, add JWT ([#454](https://github.com/telekom/controlplane/issues/454)) ([996ebaf](https://github.com/telekom/controlplane/commit/996ebaf006e7389cd6d49aec50e78b00fb143334))
+* enforce team api category ([#432](https://github.com/telekom/controlplane/issues/432)) ([923d113](https://github.com/telekom/controlplane/commit/923d1130c0af7fcd05642b8a1f93cb0484af725c))
+* **event:** add category to all event resources ([#468](https://github.com/telekom/controlplane/issues/468)) ([77c5abd](https://github.com/telekom/controlplane/commit/77c5abd7ca3599181195c2a890318b4c10bb81b0))
+* harden deployment config especially securityContext ([#457](https://github.com/telekom/controlplane/issues/457)) ([022acf8](https://github.com/telekom/controlplane/commit/022acf8f5eb71c3caeb69fa04779fb750b132fca))
+* **local-setup:** deploy step of the script can be custom ([#455](https://github.com/telekom/controlplane/issues/455)) ([6b3dd19](https://github.com/telekom/controlplane/commit/6b3dd19cd104685a40138f0f3f7cad0515c036fc))
+* **projector-expired-filter:** internal state Expired is filtered by ([#434](https://github.com/telekom/controlplane/issues/434)) ([132a0fa](https://github.com/telekom/controlplane/commit/132a0faa39e85093d2ac772072f6c9ee922de9d5))
+* restructure gateway integration and admin-bootstrapping; improved failover features ([#435](https://github.com/telekom/controlplane/issues/435)) ([4692c0a](https://github.com/telekom/controlplane/commit/4692c0a3ce94c35b807b04d474071dec4854713f))
+* **rover:** Added Team watch to Rover ([#428](https://github.com/telekom/controlplane/issues/428)) ([0220563](https://github.com/telekom/controlplane/commit/02205633cc20c9d24d07751d7a581ce522e0b457))
+* **security:** require tokenRequest and grantType for external IDP ([#439](https://github.com/telekom/controlplane/issues/439)) ([7e25c80](https://github.com/telekom/controlplane/commit/7e25c80d2bbdec95beb26ca17809590e9f6f7998))
+* **team-user-ns-migration:** team user is now in the same namespace as ([#433](https://github.com/telekom/controlplane/issues/433)) ([e56bb76](https://github.com/telekom/controlplane/commit/e56bb7692b9ffa7964422040dfa69c003a2293e1))
+
 # [0.19.0](https://github.com/telekom/controlplane/compare/v0.18.0...v0.19.0) (2026-06-18)
 
 

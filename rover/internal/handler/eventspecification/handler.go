@@ -51,6 +51,7 @@ func (h *EventSpecificationHandler) CreateOrUpdate(ctx context.Context, eventSpe
 			Type:          eventSpec.Spec.Type,
 			Version:       eventSpec.Spec.Version,
 			Description:   eventSpec.Spec.Description,
+			Category:      eventSpec.Spec.Category,
 			Specification: eventSpec.Spec.Specification,
 		}
 
@@ -63,12 +64,12 @@ func (h *EventSpecificationHandler) CreateOrUpdate(ctx context.Context, eventSpe
 	}
 
 	if c.AnyChanged() {
-		eventSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "EventType updated"))
-		eventSpec.SetCondition(condition.NewNotReadyCondition("Provisioning", "EventType is not ready"))
+		eventSpec.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "EventType updated"))
+		eventSpec.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "EventType is not ready"))
 
 	} else {
 		eventSpec.SetCondition(condition.NewDoneProcessingCondition("EventType created"))
-		eventSpec.SetCondition(condition.NewReadyCondition("Provisioned", "EventType is ready"))
+		eventSpec.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "EventType is ready"))
 	}
 
 	return nil

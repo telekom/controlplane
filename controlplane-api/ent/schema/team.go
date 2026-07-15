@@ -37,6 +37,12 @@ func (Team) Fields() []ent.Field {
 			Annotations(entgql.OrderField("NAME")),
 		field.Text("email").
 			NotEmpty(),
+		field.Text("displayName").
+			Optional().
+			Nillable(),
+		field.Text("description").
+			Optional().
+			Nillable(),
 		field.Enum("category").
 			NamedValues(
 				"Customer", "CUSTOMER",
