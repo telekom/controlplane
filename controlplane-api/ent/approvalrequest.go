@@ -51,7 +51,7 @@ type ApprovalRequest struct {
 	// AvailableTransitions holds the value of the "available_transitions" field.
 	AvailableTransitions []model.AvailableTransition `json:"available_transitions,omitempty"`
 	// If any, the access-scopes requested.
-	RequestedScopes *string `json:"requested_scopes,omitempty"`
+	RequestedScopes []string `json:"requested_scopes,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// State holds the value of the "state" field.
@@ -102,11 +102,11 @@ func (*ApprovalRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case approvalrequest.FieldRequester, approvalrequest.FieldDecider, approvalrequest.FieldDecisions, approvalrequest.FieldAvailableTransitions:
+		case approvalrequest.FieldRequester, approvalrequest.FieldDecider, approvalrequest.FieldDecisions, approvalrequest.FieldAvailableTransitions, approvalrequest.FieldRequestedScopes:
 			values[i] = new([]byte)
 		case approvalrequest.FieldID:
 			values[i] = new(sql.NullInt64)
-		case approvalrequest.FieldStatusPhase, approvalrequest.FieldStatusMessage, approvalrequest.FieldEnvironment, approvalrequest.FieldNamespace, approvalrequest.FieldAction, approvalrequest.FieldStrategy, approvalrequest.FieldDeciderTeamName, approvalrequest.FieldRequestedScopes, approvalrequest.FieldName, approvalrequest.FieldState:
+		case approvalrequest.FieldStatusPhase, approvalrequest.FieldStatusMessage, approvalrequest.FieldEnvironment, approvalrequest.FieldNamespace, approvalrequest.FieldAction, approvalrequest.FieldStrategy, approvalrequest.FieldDeciderTeamName, approvalrequest.FieldName, approvalrequest.FieldState:
 			values[i] = new(sql.NullString)
 		case approvalrequest.FieldCreatedAt, approvalrequest.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -225,11 +225,12 @@ func (_m *ApprovalRequest) assignValues(columns []string, values []any) error {
 				}
 			}
 		case approvalrequest.FieldRequestedScopes:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field requested_scopes", values[i])
-			} else if value.Valid {
-				_m.RequestedScopes = new(string)
-				*_m.RequestedScopes = value.String
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.RequestedScopes); err != nil {
+					return fmt.Errorf("unmarshal field requested_scopes: %w", err)
+				}
 			}
 		case approvalrequest.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -348,10 +349,8 @@ func (_m *ApprovalRequest) String() string {
 	builder.WriteString("available_transitions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AvailableTransitions))
 	builder.WriteString(", ")
-	if v := _m.RequestedScopes; v != nil {
-		builder.WriteString("requested_scopes=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("requested_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RequestedScopes))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)

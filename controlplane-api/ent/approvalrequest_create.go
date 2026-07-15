@@ -155,16 +155,8 @@ func (_c *ApprovalRequestCreate) SetAvailableTransitions(v []model.AvailableTran
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (_c *ApprovalRequestCreate) SetRequestedScopes(v string) *ApprovalRequestCreate {
+func (_c *ApprovalRequestCreate) SetRequestedScopes(v []string) *ApprovalRequestCreate {
 	_c.mutation.SetRequestedScopes(v)
-	return _c
-}
-
-// SetNillableRequestedScopes sets the "requested_scopes" field if the given value is not nil.
-func (_c *ApprovalRequestCreate) SetNillableRequestedScopes(v *string) *ApprovalRequestCreate {
-	if v != nil {
-		_c.SetRequestedScopes(*v)
-	}
 	return _c
 }
 
@@ -442,8 +434,8 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 		_node.AvailableTransitions = value
 	}
 	if value, ok := _c.mutation.RequestedScopes(); ok {
-		_spec.SetField(approvalrequest.FieldRequestedScopes, field.TypeString, value)
-		_node.RequestedScopes = &value
+		_spec.SetField(approvalrequest.FieldRequestedScopes, field.TypeJSON, value)
+		_node.RequestedScopes = value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(approvalrequest.FieldName, field.TypeString, value)
@@ -708,7 +700,7 @@ func (u *ApprovalRequestUpsert) ClearAvailableTransitions() *ApprovalRequestUpse
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (u *ApprovalRequestUpsert) SetRequestedScopes(v string) *ApprovalRequestUpsert {
+func (u *ApprovalRequestUpsert) SetRequestedScopes(v []string) *ApprovalRequestUpsert {
 	u.Set(approvalrequest.FieldRequestedScopes, v)
 	return u
 }
@@ -991,7 +983,7 @@ func (u *ApprovalRequestUpsertOne) ClearAvailableTransitions() *ApprovalRequestU
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (u *ApprovalRequestUpsertOne) SetRequestedScopes(v string) *ApprovalRequestUpsertOne {
+func (u *ApprovalRequestUpsertOne) SetRequestedScopes(v []string) *ApprovalRequestUpsertOne {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.SetRequestedScopes(v)
 	})
@@ -1447,7 +1439,7 @@ func (u *ApprovalRequestUpsertBulk) ClearAvailableTransitions() *ApprovalRequest
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (u *ApprovalRequestUpsertBulk) SetRequestedScopes(v string) *ApprovalRequestUpsertBulk {
+func (u *ApprovalRequestUpsertBulk) SetRequestedScopes(v []string) *ApprovalRequestUpsertBulk {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.SetRequestedScopes(v)
 	})

@@ -6,14 +6,13 @@ package approval
 
 import (
 	"encoding/json"
-	"strings"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 )
 
 type ApprovalProperties struct {
-	// Scopes is a comma-separated list of the access-scopes requested.
-	Scopes string
+	// Scopes is the list of access-scopes requested.
+	Scopes []string
 }
 
 // rawProperties mirrors the JSON shape of Requester.Properties.
@@ -33,7 +32,7 @@ func FromProperties(requester approvalv1.Requester) (props ApprovalProperties, e
 		return props, err
 	}
 
-	props.Scopes = strings.Join(raw.Scopes, ", ")
+	props.Scopes = raw.Scopes
 
 	// ... extract other fields ...
 

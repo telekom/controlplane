@@ -53,6 +53,6 @@ type ApprovalRequestData struct {
 	SubscriptionNamespace string
 	SubscriptionName      string
 
-	// AccessScopes is a comma-separated list of access scopes requested by the approval request.
-	AccessScopes string
+	// AccessScopes is the list of access scopes requested by the approval request.
+	AccessScopes []string
 }

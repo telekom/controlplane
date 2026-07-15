@@ -278,11 +278,6 @@ func ByDeciderTeamName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeciderTeamName, opts...).ToFunc()
 }
 
-// ByRequestedScopes orders the results by the requested_scopes field.
-func ByRequestedScopes(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRequestedScopes, opts...).ToFunc()
-}
-
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()

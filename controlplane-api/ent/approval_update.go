@@ -216,16 +216,14 @@ func (_u *ApprovalUpdate) ClearAvailableTransitions() *ApprovalUpdate {
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (_u *ApprovalUpdate) SetRequestedScopes(v string) *ApprovalUpdate {
+func (_u *ApprovalUpdate) SetRequestedScopes(v []string) *ApprovalUpdate {
 	_u.mutation.SetRequestedScopes(v)
 	return _u
 }
 
-// SetNillableRequestedScopes sets the "requested_scopes" field if the given value is not nil.
-func (_u *ApprovalUpdate) SetNillableRequestedScopes(v *string) *ApprovalUpdate {
-	if v != nil {
-		_u.SetRequestedScopes(*v)
-	}
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *ApprovalUpdate) AppendRequestedScopes(v []string) *ApprovalUpdate {
+	_u.mutation.AppendRequestedScopes(v)
 	return _u
 }
 
@@ -491,10 +489,15 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.RequestedScopes(); ok {
-		_spec.SetField(approval.FieldRequestedScopes, field.TypeString, value)
+		_spec.SetField(approval.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, approval.FieldRequestedScopes, value)
+		})
 	}
 	if _u.mutation.RequestedScopesCleared() {
-		_spec.ClearField(approval.FieldRequestedScopes, field.TypeString)
+		_spec.ClearField(approval.FieldRequestedScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)
@@ -767,16 +770,14 @@ func (_u *ApprovalUpdateOne) ClearAvailableTransitions() *ApprovalUpdateOne {
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (_u *ApprovalUpdateOne) SetRequestedScopes(v string) *ApprovalUpdateOne {
+func (_u *ApprovalUpdateOne) SetRequestedScopes(v []string) *ApprovalUpdateOne {
 	_u.mutation.SetRequestedScopes(v)
 	return _u
 }
 
-// SetNillableRequestedScopes sets the "requested_scopes" field if the given value is not nil.
-func (_u *ApprovalUpdateOne) SetNillableRequestedScopes(v *string) *ApprovalUpdateOne {
-	if v != nil {
-		_u.SetRequestedScopes(*v)
-	}
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *ApprovalUpdateOne) AppendRequestedScopes(v []string) *ApprovalUpdateOne {
+	_u.mutation.AppendRequestedScopes(v)
 	return _u
 }
 
@@ -1072,10 +1073,15 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.RequestedScopes(); ok {
-		_spec.SetField(approval.FieldRequestedScopes, field.TypeString, value)
+		_spec.SetField(approval.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, approval.FieldRequestedScopes, value)
+		})
 	}
 	if _u.mutation.RequestedScopesCleared() {
-		_spec.ClearField(approval.FieldRequestedScopes, field.TypeString)
+		_spec.ClearField(approval.FieldRequestedScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)

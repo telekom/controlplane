@@ -21,13 +21,13 @@ var _ = Describe("FromProperties", func() {
 		Expect(props.Scopes).To(BeEmpty())
 	})
 
-	It("should join multiple scopes with a comma separator", func() {
+	It("should return the list of scopes", func() {
 		req := approvalv1.Requester{}
 		Expect(req.SetProperties(map[string]any{"scopes": []string{"read", "write"}})).To(Succeed())
 
 		props, err := approval.FromProperties(req)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(props.Scopes).To(Equal("read, write"))
+		Expect(props.Scopes).To(Equal([]string{"read", "write"}))
 	})
 
 	It("should handle a single scope", func() {
@@ -36,7 +36,7 @@ var _ = Describe("FromProperties", func() {
 
 		props, err := approval.FromProperties(req)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(props.Scopes).To(Equal("read"))
+		Expect(props.Scopes).To(Equal([]string{"read"}))
 	})
 
 	It("should return empty scopes when the scopes key is absent", func() {

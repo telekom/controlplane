@@ -5863,7 +5863,8 @@ type ApprovalMutation struct {
 	appenddecisions             []model.Decision
 	available_transitions       *[]model.AvailableTransition
 	appendavailable_transitions []model.AvailableTransition
-	requested_scopes            *string
+	requested_scopes            *[]string
+	appendrequested_scopes      []string
 	name                        *string
 	expiresAt                   *time.Time
 	state                       *approval.State
@@ -6527,12 +6528,13 @@ func (m *ApprovalMutation) ResetAvailableTransitions() {
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (m *ApprovalMutation) SetRequestedScopes(s string) {
+func (m *ApprovalMutation) SetRequestedScopes(s []string) {
 	m.requested_scopes = &s
+	m.appendrequested_scopes = nil
 }
 
 // RequestedScopes returns the value of the "requested_scopes" field in the mutation.
-func (m *ApprovalMutation) RequestedScopes() (r string, exists bool) {
+func (m *ApprovalMutation) RequestedScopes() (r []string, exists bool) {
 	v := m.requested_scopes
 	if v == nil {
 		return
@@ -6543,7 +6545,7 @@ func (m *ApprovalMutation) RequestedScopes() (r string, exists bool) {
 // OldRequestedScopes returns the old "requested_scopes" field's value of the Approval entity.
 // If the Approval object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApprovalMutation) OldRequestedScopes(ctx context.Context) (v *string, err error) {
+func (m *ApprovalMutation) OldRequestedScopes(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRequestedScopes is only allowed on UpdateOne operations")
 	}
@@ -6557,9 +6559,23 @@ func (m *ApprovalMutation) OldRequestedScopes(ctx context.Context) (v *string, e
 	return oldValue.RequestedScopes, nil
 }
 
+// AppendRequestedScopes adds s to the "requested_scopes" field.
+func (m *ApprovalMutation) AppendRequestedScopes(s []string) {
+	m.appendrequested_scopes = append(m.appendrequested_scopes, s...)
+}
+
+// AppendedRequestedScopes returns the list of values that were appended to the "requested_scopes" field in this mutation.
+func (m *ApprovalMutation) AppendedRequestedScopes() ([]string, bool) {
+	if len(m.appendrequested_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendrequested_scopes, true
+}
+
 // ClearRequestedScopes clears the value of the "requested_scopes" field.
 func (m *ApprovalMutation) ClearRequestedScopes() {
 	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
 	m.clearedFields[approval.FieldRequestedScopes] = struct{}{}
 }
 
@@ -6572,6 +6588,7 @@ func (m *ApprovalMutation) RequestedScopesCleared() bool {
 // ResetRequestedScopes resets all changes to the "requested_scopes" field.
 func (m *ApprovalMutation) ResetRequestedScopes() {
 	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
 	delete(m.clearedFields, approval.FieldRequestedScopes)
 }
 
@@ -7046,7 +7063,7 @@ func (m *ApprovalMutation) SetField(name string, value ent.Value) error {
 		m.SetAvailableTransitions(v)
 		return nil
 	case approval.FieldRequestedScopes:
-		v, ok := value.(string)
+		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -7329,7 +7346,8 @@ type ApprovalRequestMutation struct {
 	appenddecisions             []model.Decision
 	available_transitions       *[]model.AvailableTransition
 	appendavailable_transitions []model.AvailableTransition
-	requested_scopes            *string
+	requested_scopes            *[]string
+	appendrequested_scopes      []string
 	name                        *string
 	state                       *approvalrequest.State
 	clearedFields               map[string]struct{}
@@ -7992,12 +8010,13 @@ func (m *ApprovalRequestMutation) ResetAvailableTransitions() {
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (m *ApprovalRequestMutation) SetRequestedScopes(s string) {
+func (m *ApprovalRequestMutation) SetRequestedScopes(s []string) {
 	m.requested_scopes = &s
+	m.appendrequested_scopes = nil
 }
 
 // RequestedScopes returns the value of the "requested_scopes" field in the mutation.
-func (m *ApprovalRequestMutation) RequestedScopes() (r string, exists bool) {
+func (m *ApprovalRequestMutation) RequestedScopes() (r []string, exists bool) {
 	v := m.requested_scopes
 	if v == nil {
 		return
@@ -8008,7 +8027,7 @@ func (m *ApprovalRequestMutation) RequestedScopes() (r string, exists bool) {
 // OldRequestedScopes returns the old "requested_scopes" field's value of the ApprovalRequest entity.
 // If the ApprovalRequest object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApprovalRequestMutation) OldRequestedScopes(ctx context.Context) (v *string, err error) {
+func (m *ApprovalRequestMutation) OldRequestedScopes(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRequestedScopes is only allowed on UpdateOne operations")
 	}
@@ -8022,9 +8041,23 @@ func (m *ApprovalRequestMutation) OldRequestedScopes(ctx context.Context) (v *st
 	return oldValue.RequestedScopes, nil
 }
 
+// AppendRequestedScopes adds s to the "requested_scopes" field.
+func (m *ApprovalRequestMutation) AppendRequestedScopes(s []string) {
+	m.appendrequested_scopes = append(m.appendrequested_scopes, s...)
+}
+
+// AppendedRequestedScopes returns the list of values that were appended to the "requested_scopes" field in this mutation.
+func (m *ApprovalRequestMutation) AppendedRequestedScopes() ([]string, bool) {
+	if len(m.appendrequested_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendrequested_scopes, true
+}
+
 // ClearRequestedScopes clears the value of the "requested_scopes" field.
 func (m *ApprovalRequestMutation) ClearRequestedScopes() {
 	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
 	m.clearedFields[approvalrequest.FieldRequestedScopes] = struct{}{}
 }
 
@@ -8037,6 +8070,7 @@ func (m *ApprovalRequestMutation) RequestedScopesCleared() bool {
 // ResetRequestedScopes resets all changes to the "requested_scopes" field.
 func (m *ApprovalRequestMutation) ResetRequestedScopes() {
 	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
 	delete(m.clearedFields, approvalrequest.FieldRequestedScopes)
 }
 
@@ -8455,7 +8489,7 @@ func (m *ApprovalRequestMutation) SetField(name string, value ent.Value) error {
 		m.SetAvailableTransitions(v)
 		return nil
 	case approvalrequest.FieldRequestedScopes:
-		v, ok := value.(string)
+		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

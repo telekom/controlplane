@@ -155,16 +155,8 @@ func (_c *ApprovalCreate) SetAvailableTransitions(v []model.AvailableTransition)
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (_c *ApprovalCreate) SetRequestedScopes(v string) *ApprovalCreate {
+func (_c *ApprovalCreate) SetRequestedScopes(v []string) *ApprovalCreate {
 	_c.mutation.SetRequestedScopes(v)
-	return _c
-}
-
-// SetNillableRequestedScopes sets the "requested_scopes" field if the given value is not nil.
-func (_c *ApprovalCreate) SetNillableRequestedScopes(v *string) *ApprovalCreate {
-	if v != nil {
-		_c.SetRequestedScopes(*v)
-	}
 	return _c
 }
 
@@ -456,8 +448,8 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 		_node.AvailableTransitions = value
 	}
 	if value, ok := _c.mutation.RequestedScopes(); ok {
-		_spec.SetField(approval.FieldRequestedScopes, field.TypeString, value)
-		_node.RequestedScopes = &value
+		_spec.SetField(approval.FieldRequestedScopes, field.TypeJSON, value)
+		_node.RequestedScopes = value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)
@@ -726,7 +718,7 @@ func (u *ApprovalUpsert) ClearAvailableTransitions() *ApprovalUpsert {
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (u *ApprovalUpsert) SetRequestedScopes(v string) *ApprovalUpsert {
+func (u *ApprovalUpsert) SetRequestedScopes(v []string) *ApprovalUpsert {
 	u.Set(approval.FieldRequestedScopes, v)
 	return u
 }
@@ -1027,7 +1019,7 @@ func (u *ApprovalUpsertOne) ClearAvailableTransitions() *ApprovalUpsertOne {
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (u *ApprovalUpsertOne) SetRequestedScopes(v string) *ApprovalUpsertOne {
+func (u *ApprovalUpsertOne) SetRequestedScopes(v []string) *ApprovalUpsertOne {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.SetRequestedScopes(v)
 	})
@@ -1504,7 +1496,7 @@ func (u *ApprovalUpsertBulk) ClearAvailableTransitions() *ApprovalUpsertBulk {
 }
 
 // SetRequestedScopes sets the "requested_scopes" field.
-func (u *ApprovalUpsertBulk) SetRequestedScopes(v string) *ApprovalUpsertBulk {
+func (u *ApprovalUpsertBulk) SetRequestedScopes(v []string) *ApprovalUpsertBulk {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.SetRequestedScopes(v)
 	})

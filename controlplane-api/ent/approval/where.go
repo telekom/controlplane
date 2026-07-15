@@ -93,11 +93,6 @@ func DeciderTeamName(v string) predicate.Approval {
 	return predicate.Approval(sql.FieldEQ(FieldDeciderTeamName, v))
 }
 
-// RequestedScopes applies equality check predicate on the "requested_scopes" field. It's identical to RequestedScopesEQ.
-func RequestedScopes(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldEQ(FieldRequestedScopes, v))
-}
-
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Approval {
 	return predicate.Approval(sql.FieldEQ(FieldName, v))
@@ -593,61 +588,6 @@ func AvailableTransitionsNotNil() predicate.Approval {
 	return predicate.Approval(sql.FieldNotNull(FieldAvailableTransitions))
 }
 
-// RequestedScopesEQ applies the EQ predicate on the "requested_scopes" field.
-func RequestedScopesEQ(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldEQ(FieldRequestedScopes, v))
-}
-
-// RequestedScopesNEQ applies the NEQ predicate on the "requested_scopes" field.
-func RequestedScopesNEQ(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldNEQ(FieldRequestedScopes, v))
-}
-
-// RequestedScopesIn applies the In predicate on the "requested_scopes" field.
-func RequestedScopesIn(vs ...string) predicate.Approval {
-	return predicate.Approval(sql.FieldIn(FieldRequestedScopes, vs...))
-}
-
-// RequestedScopesNotIn applies the NotIn predicate on the "requested_scopes" field.
-func RequestedScopesNotIn(vs ...string) predicate.Approval {
-	return predicate.Approval(sql.FieldNotIn(FieldRequestedScopes, vs...))
-}
-
-// RequestedScopesGT applies the GT predicate on the "requested_scopes" field.
-func RequestedScopesGT(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldGT(FieldRequestedScopes, v))
-}
-
-// RequestedScopesGTE applies the GTE predicate on the "requested_scopes" field.
-func RequestedScopesGTE(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldGTE(FieldRequestedScopes, v))
-}
-
-// RequestedScopesLT applies the LT predicate on the "requested_scopes" field.
-func RequestedScopesLT(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldLT(FieldRequestedScopes, v))
-}
-
-// RequestedScopesLTE applies the LTE predicate on the "requested_scopes" field.
-func RequestedScopesLTE(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldLTE(FieldRequestedScopes, v))
-}
-
-// RequestedScopesContains applies the Contains predicate on the "requested_scopes" field.
-func RequestedScopesContains(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldContains(FieldRequestedScopes, v))
-}
-
-// RequestedScopesHasPrefix applies the HasPrefix predicate on the "requested_scopes" field.
-func RequestedScopesHasPrefix(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldHasPrefix(FieldRequestedScopes, v))
-}
-
-// RequestedScopesHasSuffix applies the HasSuffix predicate on the "requested_scopes" field.
-func RequestedScopesHasSuffix(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldHasSuffix(FieldRequestedScopes, v))
-}
-
 // RequestedScopesIsNil applies the IsNil predicate on the "requested_scopes" field.
 func RequestedScopesIsNil() predicate.Approval {
 	return predicate.Approval(sql.FieldIsNull(FieldRequestedScopes))
@@ -656,16 +596,6 @@ func RequestedScopesIsNil() predicate.Approval {
 // RequestedScopesNotNil applies the NotNil predicate on the "requested_scopes" field.
 func RequestedScopesNotNil() predicate.Approval {
 	return predicate.Approval(sql.FieldNotNull(FieldRequestedScopes))
-}
-
-// RequestedScopesEqualFold applies the EqualFold predicate on the "requested_scopes" field.
-func RequestedScopesEqualFold(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldEqualFold(FieldRequestedScopes, v))
-}
-
-// RequestedScopesContainsFold applies the ContainsFold predicate on the "requested_scopes" field.
-func RequestedScopesContainsFold(v string) predicate.Approval {
-	return predicate.Approval(sql.FieldContainsFold(FieldRequestedScopes, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.

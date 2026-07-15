@@ -348,7 +348,7 @@ var _ = Describe("Approval Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.AccessScopes).To(Equal("read, write"))
+			Expect(data.AccessScopes).To(Equal([]string{"read", "write"}))
 		})
 
 		It("should leave AccessScopes empty when no properties are set", func() {

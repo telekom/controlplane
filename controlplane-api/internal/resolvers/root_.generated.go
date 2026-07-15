@@ -5011,7 +5011,7 @@ type Approval implements Node {
   """
   If any, the access-scopes requested.
   """
-  requestedScopes: String
+  requestedScopes: [String!]
   name: String!
   expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
@@ -5084,7 +5084,7 @@ type ApprovalRequest implements Node {
   """
   If any, the access-scopes requested.
   """
-  requestedScopes: String
+  requestedScopes: [String!]
   name: String!
   state: ApprovalRequestState!
 }
@@ -5306,24 +5306,6 @@ input ApprovalRequestWhereInput {
   deciderTeamNameEqualFold: String
   deciderTeamNameContainsFold: String
   """
-  requested_scopes field predicates
-  """
-  requestedScopes: String
-  requestedScopesNEQ: String
-  requestedScopesIn: [String!]
-  requestedScopesNotIn: [String!]
-  requestedScopesGT: String
-  requestedScopesGTE: String
-  requestedScopesLT: String
-  requestedScopesLTE: String
-  requestedScopesContains: String
-  requestedScopesHasPrefix: String
-  requestedScopesHasSuffix: String
-  requestedScopesIsNil: Boolean
-  requestedScopesNotNil: Boolean
-  requestedScopesEqualFold: String
-  requestedScopesContainsFold: String
-  """
   name field predicates
   """
   name: String
@@ -5526,24 +5508,6 @@ input ApprovalWhereInput {
   deciderTeamNameHasSuffix: String
   deciderTeamNameEqualFold: String
   deciderTeamNameContainsFold: String
-  """
-  requested_scopes field predicates
-  """
-  requestedScopes: String
-  requestedScopesNEQ: String
-  requestedScopesIn: [String!]
-  requestedScopesNotIn: [String!]
-  requestedScopesGT: String
-  requestedScopesGTE: String
-  requestedScopesLT: String
-  requestedScopesLTE: String
-  requestedScopesContains: String
-  requestedScopesHasPrefix: String
-  requestedScopesHasSuffix: String
-  requestedScopesIsNil: Boolean
-  requestedScopesNotNil: Boolean
-  requestedScopesEqualFold: String
-  requestedScopesContainsFold: String
   """
   name field predicates
   """
