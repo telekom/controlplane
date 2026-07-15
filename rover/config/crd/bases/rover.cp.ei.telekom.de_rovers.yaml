@@ -169,6 +169,7 @@ spec:
                                           description: Value is a literal claim value
                                             provided by the user
                                           maxLength: 256
+                                          minLength: 1
                                           type: string
                                         valueFrom:
                                           description: ValueFrom is a predefined source
@@ -615,6 +616,7 @@ spec:
                                           description: Value is a literal claim value
                                             provided by the user
                                           maxLength: 256
+                                          minLength: 1
                                           type: string
                                         valueFrom:
                                           description: ValueFrom is a predefined source
@@ -1287,6 +1289,7 @@ spec:
                                           description: Value is a literal claim value
                                             provided by the user
                                           maxLength: 256
+                                          minLength: 1
                                           type: string
                                         valueFrom:
                                           description: ValueFrom is a predefined source
@@ -1455,6 +1458,7 @@ spec:
                                           description: Value is a literal claim value
                                             provided by the user
                                           maxLength: 256
+                                          minLength: 1
                                           type: string
                                         valueFrom:
                                           description: ValueFrom is a predefined source

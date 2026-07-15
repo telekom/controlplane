@@ -180,6 +180,7 @@ spec:
                           description: |-
                             Claim is a single token claim written into JumperConfig.Claims.
                             Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
+                            Exactly one of value or valueFrom must be set.
                           properties:
                             key:
                               description: Key is the claim name (e.g. "aud")
@@ -187,6 +188,7 @@ spec:
                             value:
                               description: Value is the CP-resolved literal claim
                                 value
+                              minLength: 1
                               type: string
                             valueFrom:
                               description: ValueFrom is a runtime source Jumper resolves
@@ -197,6 +199,9 @@ spec:
                           required:
                           - key
                           type: object
+                          x-kubernetes-validations:
+                          - message: exactly one of value or valueFrom must be set
+                            rule: has(self.value) != has(self.valueFrom)
                         type: array
                       externalIDP:
                         description: ExternalIDP defines external identity provider
@@ -378,6 +383,7 @@ spec:
                                   description: |-
                                     Claim is a single token claim written into JumperConfig.Claims.
                                     Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
+                                    Exactly one of value or valueFrom must be set.
                                   properties:
                                     key:
                                       description: Key is the claim name (e.g. "aud")
@@ -385,6 +391,7 @@ spec:
                                     value:
                                       description: Value is the CP-resolved literal
                                         claim value
+                                      minLength: 1
                                       type: string
                                     valueFrom:
                                       description: ValueFrom is a runtime source Jumper
@@ -395,6 +402,10 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: exactly one of value or valueFrom must
+                                      be set
+                                    rule: has(self.value) != has(self.valueFrom)
                                 type: array
                               externalIDP:
                                 description: ExternalIDP defines external identity

@@ -54,6 +54,7 @@ type Claims struct {
 type Claim struct {
 	// Value is a literal claim value provided by the user
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=256
 	Value string `json:"value,omitempty"`
 	// ValueFrom is a predefined source resolved into the claim value

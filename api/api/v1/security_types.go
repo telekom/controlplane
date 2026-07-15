@@ -62,6 +62,8 @@ type Claims struct {
 type Claim struct {
 	// Value is a CP-resolved literal claim value
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
 	Value string `json:"value,omitempty"`
 	// ValueFrom is a source Jumper resolves at runtime (e.g. ConsumerClientId)
 	// +kubebuilder:validation:Optional

@@ -42,6 +42,11 @@ func (f *ClaimsFeature) IsUsed(ctx context.Context, builder features.FeaturesBui
 	isPrimaryRoute := !route.IsProxy()
 	isFailoverSecondary := route.Spec.Type == gatewayv1.RouteTypeSecondary
 
+	// Claims only apply to the platform-managed LMS token, not an external IDP's token.
+	if route.Spec.Security.M2M != nil && route.Spec.Security.M2M.ExternalIDP != nil {
+		return false
+	}
+
 	return notPassThrough && (isPrimaryRoute || isFailoverSecondary)
 }
 
@@ -50,11 +55,6 @@ func (f *ClaimsFeature) Apply(ctx context.Context, builder features.FeaturesBuil
 	route, ok := builder.GetRoute()
 	if !ok {
 		return features.ErrNoRoute
-	}
-
-	if len(jumperConfig.OAuth) > 0 {
-		// External IDP owns the token; claims only apply to the platform-managed LMS token.
-		return nil
 	}
 
 	// Provider exposure claims -> default bucket (applies to all consumers)

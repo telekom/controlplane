@@ -59,12 +59,15 @@ const (
 
 // Claim is a single token claim written into JumperConfig.Claims.
 // Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
+// Exactly one of value or valueFrom must be set.
+// +kubebuilder:validation:XValidation:rule="has(self.value) != has(self.valueFrom)",message="exactly one of value or valueFrom must be set"
 type Claim struct {
 	// Key is the claim name (e.g. "aud")
 	// +kubebuilder:validation:Required
 	Key string `json:"key"`
 	// Value is the CP-resolved literal claim value
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
 	Value string `json:"value,omitempty"`
 	// ValueFrom is a runtime source Jumper resolves (e.g. ConsumerClientId)
 	// +kubebuilder:validation:Optional

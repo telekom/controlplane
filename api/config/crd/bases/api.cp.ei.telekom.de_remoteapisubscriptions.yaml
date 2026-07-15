@@ -101,6 +101,8 @@ spec:
                               value:
                                 description: Value is a CP-resolved literal claim
                                   value
+                                maxLength: 256
+                                minLength: 1
                                 type: string
                               valueFrom:
                                 description: ValueFrom is a source Jumper resolves

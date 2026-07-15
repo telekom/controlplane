@@ -60,6 +60,21 @@ var _ = Describe("ClaimsFeature", func() {
 			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
 		})
 
+		It("returns false when an external IDP owns the token", func() {
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypePrimary,
+					Security: gatewayv1.Security{
+						M2M: &gatewayv1.Machine2MachineAuthentication{
+							ExternalIDP: &gatewayv1.ExternalIdentityProvider{},
+						},
+					},
+				},
+			}
+			builder.EXPECT().GetRoute().Return(route, true)
+			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+		})
+
 		It("returns false when no route in builder", func() {
 			builder.EXPECT().GetRoute().Return(nil, false)
 			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
@@ -159,14 +174,14 @@ var _ = Describe("ClaimsFeature", func() {
 			Expect(jumperConfig.Claims).To(BeEmpty())
 		})
 
-		It("skips claims when OAuth is already populated (external IDP owns the token)", func() {
+		It("applies claims even when OAuth is populated by scopes (platform-managed token)", func() {
 			jumperConfig := plugin.NewJumperConfig()
 			jumperConfig.OAuth[plugin.ConsumerId(feature.DefaultProviderKey)] = plugin.OauthCredentials{Scopes: "scope-a"}
 			route := &gatewayv1.Route{
 				Spec: gatewayv1.RouteSpec{
 					Security: gatewayv1.Security{
 						M2M: &gatewayv1.Machine2MachineAuthentication{
-							Claims: []gatewayv1.Claim{{Key: "aud", Value: "ignored"}},
+							Claims: []gatewayv1.Claim{{Key: "aud", Value: "applied"}},
 						},
 					},
 				},
@@ -174,9 +189,10 @@ var _ = Describe("ClaimsFeature", func() {
 
 			builder.EXPECT().JumperConfig().Return(jumperConfig)
 			builder.EXPECT().GetRoute().Return(route, true)
+			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
-			Expect(jumperConfig.Claims).To(BeEmpty())
+			Expect(jumperConfig.Claims).To(HaveKey(plugin.ConsumerId(feature.DefaultProviderKey)))
 		})
 
 		It("returns ErrNoRoute when no route in builder", func() {
