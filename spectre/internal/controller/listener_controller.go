@@ -29,9 +29,9 @@ type ListenerReconciler struct {
 	cc.Controller[*spectrev1.Listener]
 }
 
-// +kubebuilder:rbac:groups=spectre.ei.telekom.de.cp.ei.telekom.de,resources=listeners,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=spectre.ei.telekom.de.cp.ei.telekom.de,resources=listeners/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=spectre.ei.telekom.de.cp.ei.telekom.de,resources=listeners/finalizers,verbs=update
+// +kubebuilder:rbac:groups=spectre.cp.ei.telekom.de,resources=listeners,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=spectre.cp.ei.telekom.de,resources=listeners/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=spectre.cp.ei.telekom.de,resources=listeners/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

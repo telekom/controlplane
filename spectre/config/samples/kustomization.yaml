@@ -4,5 +4,5 @@
 
 ## Append samples of your project ##
 resources:
-- spectre.ei.telekom.de_v1_listener.yaml
+- spectre_v1_listener.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
