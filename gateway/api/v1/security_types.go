@@ -14,7 +14,7 @@ const (
 )
 
 // GrantType defines the OAuth2 grant type for external IDP token requests.
-// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+// +kubebuilder:validation:Enum=client_credentials;authorization_code;password;refresh_token
 type GrantType string
 
 const (

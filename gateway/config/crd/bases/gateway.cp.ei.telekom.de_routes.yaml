@@ -232,6 +232,7 @@ spec:
                             - client_credentials
                             - authorization_code
                             - password
+                            - refresh_token
                             type: string
                           tokenEndpoint:
                             description: TokenEndpoint is the URL for the OAuth2 token
@@ -412,6 +413,7 @@ spec:
                                     - client_credentials
                                     - authorization_code
                                     - password
+                                    - refresh_token
                                     type: string
                                   tokenEndpoint:
                                     description: TokenEndpoint is the URL for the
