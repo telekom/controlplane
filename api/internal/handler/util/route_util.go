@@ -26,9 +26,7 @@ import (
 )
 
 const (
-	// GatewayConsumerName is the name of the gateway mesh-client that is used to proxy requests across zones.
-	// It must be added to DefaultConsumers on routes that are the target of a cross-zone proxy.
-	GatewayConsumerName = "gateway"
+	GatewayConsumerName = gatewayapi.GatewayConsumerName
 )
 
 const labelTrue = "true"

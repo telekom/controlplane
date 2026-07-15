@@ -60,18 +60,20 @@ func newEventConfig() *eventv1.EventConfig {
 				Name:      "test-zone",
 				Namespace: "default",
 			},
-			Admin: eventv1.AdminConfig{
-				Url: "https://admin.example.com",
-				Client: eventv1.ClientConfig{
-					Realm: ctypes.ObjectRef{
-						Name:      "test-realm",
-						Namespace: "default",
+			Local: &eventv1.LocalBackend{
+				Admin: eventv1.AdminConfig{
+					Url: "https://admin.example.com",
+					Client: eventv1.ClientConfig{
+						Realm: ctypes.ObjectRef{
+							Name:      "test-realm",
+							Namespace: "default",
+						},
 					},
 				},
+				ServerSendEventUrl: "https://sse.example.com",
+				PublishEventUrl:    "http://publish.internal:8080/publish",
+				VoyagerApiUrl:      "http://voyager.internal:8080/voyager",
 			},
-			ServerSendEventUrl: "https://sse.example.com",
-			PublishEventUrl:    "http://publish.internal:8080/publish",
-			VoyagerApiUrl:      "http://voyager.internal:8080/voyager",
 			Mesh: &eventv1.MeshConfig{
 				FullMesh: false,
 				Client: eventv1.ClientConfig{
@@ -293,7 +295,7 @@ var _ = Describe("EventConfigHandler", func() {
 		mockGetRealm(realm, 2) // admin + mesh
 		mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 		mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
-		mockListEventConfigs([]eventv1.EventConfig{}, 2) // callback + voyager
+		mockListEventConfigs([]eventv1.EventConfig{}, 3) // callback + voyager + publish (proxy-source lookup)
 		mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
 		mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
 		mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)
@@ -449,7 +451,7 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should auto-resolve admin realm from zone when not specified", func() {
-			obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
+			obj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{}
 			zone := makeReadyZone()
 			realm := makeReadyRealm()
 
@@ -458,7 +460,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetRealm(realm, 2)
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
-			mockListEventConfigs([]eventv1.EventConfig{}, 2)
+			mockListEventConfigs([]eventv1.EventConfig{}, 3)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)
@@ -482,7 +484,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetRealm(realm, 2)
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
-			mockListEventConfigs([]eventv1.EventConfig{}, 2)
+			mockListEventConfigs([]eventv1.EventConfig{}, 3)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)
@@ -494,7 +496,7 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should return BlockedError when zone has no InternalIdentityRealm and admin realm is empty", func() {
-			obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
+			obj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{}
 			zone := makeReadyZone()
 			zone.Status.InternalIdentityRealm = nil
 			mockGetZone(zone, 1)
