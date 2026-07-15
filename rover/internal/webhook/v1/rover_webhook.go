@@ -576,8 +576,8 @@ func (r *RoverValidator) ValidateEventExposure(ctx context.Context, valErr *cerr
 // isNonRoutableTarget reports whether the given URL points at an address that is
 // not reachable from outside the cluster and must therefore never be used as
 // an upstream or callback target. This blocks:
-//   - localhost and cluster-internal DNS names (*.cluster.local, bare service
-//     names like "kubernetes.default")
+//   - localhost and cluster-internal DNS names (*.svc, *.cluster.local, and
+//     bare dotless names like "kubernetes" that resolve via search domains)
 //   - loopback IPs (127.0.0.0/8, ::1) and the unspecified address (0.0.0.0, ::)
 //   - link-local addresses (169.254.0.0/16, fe80::/10) — notably the cloud
 //     metadata endpoint 169.254.169.254, which can leak node IAM credentials
@@ -610,6 +610,11 @@ func isNonRoutableTarget(rawURL string) bool {
 		return true
 	}
 	if strings.HasSuffix(lower, ".cluster.local") {
+		return true
+	}
+	// Kubernetes service DNS: my-svc.my-ns.svc[.cluster.local]. The ".svc"
+	// suffix covers the common in-cluster form even without ".cluster.local".
+	if strings.HasSuffix(lower, ".svc") || strings.Contains(lower, ".svc.") {
 		return true
 	}
 	// Bare, dotless hostnames resolve against the cluster's search domains

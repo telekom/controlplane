@@ -465,6 +465,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					"http://0.0.0.0:8080/callback",
 					"http://169.254.169.254/latest/meta-data",
 					"http://my-svc.my-ns.svc.cluster.local:8080/callback",
+					"http://my-svc.my-ns.svc:8080/callback",
 					"http://kubernetes:8080/callback",
 				} {
 					sub := roverv1.Subscription{
@@ -588,6 +589,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					"http://0.0.0.0:8080",
 					"http://169.254.169.254/latest/meta-data",
 					"http://my-svc.my-ns.svc.cluster.local:8080",
+					"http://my-svc.my-ns.svc:8080",
 					"http://kubernetes:8080",
 				} {
 					exposure := roverv1.Exposure{
