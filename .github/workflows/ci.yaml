@@ -27,7 +27,7 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-jobs: 
+jobs:
   common:
     name: Common
     uses: ./.github/workflows/reusable-go-ci.yaml
@@ -39,152 +39,144 @@ jobs:
       coverage_threshold: 55
       lint_fail_on_issues: true
 
-  common-server:
+  common_server:
     name: Common Server
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
       name: common-server
       module: common-server
       run_check_generated_files: false
-      ko_build_path: "cmd/server/server.go"
-      
-  common-server-helm:
-    name: Common Server Helm Chart
-    needs: common-server
-    if: startsWith(github.ref, 'refs/tags/v')
-    uses: ./.github/workflows/helm-release.yaml
-    with: 
-      chart_path: 'common-server/helm'
+      ko_build_path: cmd/server/server.go
 
-  controlplane-api:
-    name: ControlPlane API
+  go_ci:
+    name: Go CI (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - name: controlplane-api
+            module: controlplane-api
+            run_check_generated_files: false
+            ko_build_path: cmd/main.go
+            coverage_threshold: 1
+            lint_fail_on_issues: false
+          - name: secret-manager
+            module: secret-manager
+            run_check_generated_files: false
+            ko_build_path: cmd/server/server.go
+            coverage_threshold: 50
+            lint_fail_on_issues: false
+          - name: approval
+            module: approval
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: file-manager
+            module: file-manager
+            run_check_generated_files: false
+            ko_build_path: cmd/server/server.go
+            coverage_threshold: 61
+            lint_fail_on_issues: true
+          - name: gateway
+            module: gateway
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 56
+            lint_fail_on_issues: false
+          - name: identity
+            module: identity
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: organization
+            module: organization
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: admin
+            module: admin
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: application
+            module: application
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: api
+            module: api
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: rover
+            module: rover
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 66
+            lint_fail_on_issues: false
+          - name: rover-server
+            module: rover-server
+            run_check_generated_files: false
+            ko_build_path: cmd/main.go
+            coverage_threshold: 41
+            lint_fail_on_issues: false
+          - name: rover-ctl
+            module: rover-ctl
+            run_check_generated_files: false
+            ko_build_path: main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: false
+          - name: notification
+            module: notification
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: event
+            module: event
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: discovery-server
+            module: discovery-server
+            run_check_generated_files: false
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: pubsub
+            module: pubsub
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: true
+          - name: projector
+            module: projector
+            run_check_generated_files: false
+            ko_build_path: main.go
+            coverage_threshold: 70
+            lint_fail_on_issues: false
+          - name: permission
+            module: permission
+            run_check_generated_files: true
+            ko_build_path: cmd/main.go
+            coverage_threshold: 66
+            lint_fail_on_issues: true
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
-      name: controlplane-api
-      module: controlplane-api
-      run_check_generated_files: false
-      ko_build_path: "cmd/main.go"
-      coverage_threshold: 1
-
-  secret-manager:
-    name: Secret Manager
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: secret-manager
-      module: secret-manager
-      run_check_generated_files: false
-      ko_build_path: "cmd/server/server.go"
-      coverage_threshold: 50
-
-  approval:
-    name: Approval
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: approval
-      module: approval
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
-
-  file-manager:
-    name: File Manager
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: file-manager
-      module: file-manager
-      run_check_generated_files: false
-      ko_build_path: "cmd/server/server.go"
-      coverage_threshold: 61
-      lint_fail_on_issues: true
-
-  gateway:
-    name: Gateway
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: gateway
-      module: gateway
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      coverage_threshold: 56
-
-  identity:
-    name: Identity
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: identity
-      module: identity
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
-
-  organization:
-    name: Organization
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: organization
-      module: organization
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
-
-  admin:
-    name: Admin
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: admin
-      module: admin
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
-
-  application:
-    name: Application
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: application
-      module: application
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
-
-  api:
-    name: Api
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: api
-      module: api
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
-
-  rover:
-    name: Rover
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: rover
-      module: rover
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      coverage_threshold: 66
-
-  rover-server:
-    name: Rover-Server
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: rover-server
-      module: rover-server
-      run_check_generated_files: false
-      ko_build_path: "cmd/main.go"
-      coverage_threshold: 41
-
-  rover-ctl:
-    name: Rover-CTL
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: rover-ctl
-      module: rover-ctl
-      run_check_generated_files: false
-      ko_build_path: "main.go"
+      name: ${{ matrix.name }}
+      module: ${{ matrix.module }}
+      run_check_generated_files: ${{ matrix.run_check_generated_files }}
+      ko_build_path: ${{ matrix.ko_build_path }}
+      lint_fail_on_issues: ${{ matrix.lint_fail_on_issues }}
+      coverage_threshold: ${{ matrix.coverage_threshold }}
 
   snapshotter:
     name: Snapshotter
@@ -194,65 +186,53 @@ jobs:
       module: tools/snapshotter
       run_check_generated_files: false
       run_lint: false
-      ko_build_path: "main.go"
+      ko_build_path: main.go
       coverage_threshold: 3
 
-  notification:
-    name: Notification
-    uses: ./.github/workflows/reusable-go-ci.yaml
+  common_server_helm:
+    name: Common Server Helm Chart
+    needs: common_server
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/helm-release.yaml
     with:
-      name: notification
-      module: notification
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
+      chart_path: common-server/helm
 
-  event:
-    name: Event
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: event
-      module: event
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
+  ci_summary:
+    name: CI Summary
+    needs:
+      - common
+      - common_server
+      - go_ci
+      - snapshotter
+      - common_server_helm
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarize CI results
+        shell: bash
+        run: |
+          echo "Common result: ${{ needs.common.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Common Server result: ${{ needs.common_server.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Go CI result: ${{ needs.go_ci.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Snapshotter result: ${{ needs.snapshotter.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Common Server Helm Chart result: ${{ needs.common_server_helm.result }}" >> "$GITHUB_STEP_SUMMARY"
 
-  discovery-server:
-    name: Discovery Server
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: discovery-server
-      module: discovery-server
-      run_check_generated_files: false
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
+          if [ "${{ needs.common.result }}" != "success" ]; then
+            exit 1
+          fi
 
-  pubsub:
-    name: PubSub
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: pubsub
-      module: pubsub
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      lint_fail_on_issues: true
+          if [ "${{ needs.common_server.result }}" != "success" ]; then
+            exit 1
+          fi
 
-  projector:
-    name: Projector
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: projector
-      module: projector
-      run_check_generated_files: false
-      ko_build_path: "main.go"
+          if [ "${{ needs.go_ci.result }}" != "success" ]; then
+            exit 1
+          fi
 
-  permission:
-    name: Permission
-    uses: ./.github/workflows/reusable-go-ci.yaml
-    with:
-      name: permission
-      module: permission
-      run_check_generated_files: true
-      ko_build_path: "cmd/main.go"
-      coverage_threshold: 66
-      lint_fail_on_issues: true
+          if [ "${{ needs.snapshotter.result }}" != "success" ]; then
+            exit 1
+          fi
+
+          if [ "${{ needs.common_server_helm.result }}" != "success" ] && [ "${{ needs.common_server_helm.result }}" != "skipped" ]; then
+            exit 1
+          fi
