@@ -42,6 +42,8 @@ type FeaturesBuilder interface {
 	GetGateway() *gatewayv1.Gateway
 	GetAllowedConsumers() []*gatewayv1.ConsumeRoute
 	AddAllowedConsumers(...*gatewayv1.ConsumeRoute)
+	GetRouteListeners() []*gatewayv1.RouteListener
+	AddRouteListeners(...*gatewayv1.RouteListener)
 
 	SetUpstream(client.Upstream)
 	RequestTransformerPlugin() *plugin.RequestTransformerPlugin
@@ -67,6 +69,9 @@ type Builder struct {
 
 	// AllowedConsumers are the consumers that are allowed to consume the passed route
 	AllowedConsumers []*gatewayv1.ConsumeRoute
+
+	// routeListeners are the RouteListeners attached to the route
+	routeListeners []*gatewayv1.RouteListener
 
 	Route    *gatewayv1.Route
 	Consumer *gatewayv1.Consumer
@@ -133,6 +138,14 @@ func (b *Builder) GetAllowedConsumers() []*gatewayv1.ConsumeRoute {
 
 func (b *Builder) AddAllowedConsumers(consumers ...*gatewayv1.ConsumeRoute) {
 	b.AllowedConsumers = append(b.AllowedConsumers, consumers...)
+}
+
+func (b *Builder) GetRouteListeners() []*gatewayv1.RouteListener {
+	return b.routeListeners
+}
+
+func (b *Builder) AddRouteListeners(rls ...*gatewayv1.RouteListener) {
+	b.routeListeners = append(b.routeListeners, rls...)
 }
 
 func (b *Builder) RequestTransformerPlugin() *plugin.RequestTransformerPlugin {
