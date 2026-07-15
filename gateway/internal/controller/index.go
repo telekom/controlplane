@@ -48,6 +48,21 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
+	// Index the routeListener by the route it references
+	filterRouteOnRouteListener := func(obj client.Object) []string {
+		routeListener, ok := obj.(*gatewayv1.RouteListener)
+		if !ok {
+			return nil
+		}
+		return []string{routeListener.Spec.Route.String()}
+	}
+
+	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.RouteListener{}, IndexFieldSpecRoute, filterRouteOnRouteListener)
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for RouteListener", "FieldIndex", IndexFieldSpecRoute)
+		os.Exit(1)
+	}
+
 	err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.Route{})
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create field-indexer")
