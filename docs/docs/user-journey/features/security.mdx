@@ -45,6 +45,28 @@ subscriptions:
       clientSecret: my-consumer-secret
 ```
 
+### OAuth2 Refresh Token (External IDP)
+
+When an external identity provider issues a long-lived refresh token, you can supply it instead of (or in addition to) client credentials. The gateway then uses the `refresh_token` grant to obtain fresh access tokens from the external IDP without re-authenticating. This is useful for identity providers that require a user-consented refresh token rather than pure client credentials.
+
+This is supported for both API providers (exposures) and consumers (subscriptions).
+
+```yaml
+subscriptions:
+  - type: api
+    basePath: /checkout/v1
+    security:
+      type: oauth2
+      tokenEndpoint: https://auth.example.com/oauth/token
+      grantType: REFRESH_TOKEN
+      clientId: my-consumer-client
+      refreshToken: ${MY_REFRESH_TOKEN}
+```
+
+:::note
+When `grantType` is `REFRESH_TOKEN`, provide the `refreshToken` field. Treat it as a secret and inject it via an environment variable placeholder (see the **Handling Secrets** note below).
+:::
+
 ### Basic Authentication (API Exposure)
 
 If your backend service uses basic authentication (username and password), you can configure the gateway to include these credentials when forwarding requests.
@@ -100,17 +122,18 @@ exposures:
 | ----- | ----------- |
 | `security.type` | The authentication method. Use `oauth2` for OAuth2-based authentication or `basicAuth` for username/password authentication. |
 | `security.tokenEndpoint` | The OAuth2 token endpoint URL. Required when using an external identity provider. |
-| `security.grantType` | The OAuth2 grant type. Supported values: `CLIENT_CREDENTIALS`, `PASSWORD`. |
+| `security.grantType` | The OAuth2 grant type. Supported values: `CLIENT_CREDENTIALS`, `PASSWORD`, `REFRESH_TOKEN`. |
 | `security.clientId` | The OAuth2 client identifier. |
 | `security.clientSecret` | The OAuth2 client secret. Cannot be used together with `clientKey`. |
 | `security.clientKey` | An alternative to `clientSecret` for asymmetric authentication. Cannot be used together with `clientSecret`. |
+| `security.refreshToken` | An OAuth2 refresh token used to obtain new access tokens from the external identity provider. Used with the `REFRESH_TOKEN` grant type. |
 | `security.tokenRequest` | How authentication data is sent to the identity provider: `body` or `header`. |
 | `security.username` | Username for basic authentication or the OAuth2 password grant. |
 | `security.password` | Password for basic authentication or the OAuth2 password grant. |
 | `security.scopes` | A list of additional OAuth2 scopes to request. Maximum: 10 scopes. |
 
 :::caution Handling Secrets
-Secrets such as `clientSecret`, `clientKey`, and `password` are sensitive values. **Do not hardcode them in your Rover files.** Instead, use environment variable placeholders. Rover-CTL automatically substitutes `${VARIABLE_NAME}` references with their corresponding environment variable values before sending the file to the server.
+Secrets such as `clientSecret`, `clientKey`, `refreshToken`, and `password` are sensitive values. **Do not hardcode them in your Rover files.** Instead, use environment variable placeholders. Rover-CTL automatically substitutes `${VARIABLE_NAME}` references with their corresponding environment variable values before sending the file to the server.
 
 ```yaml
 security:
