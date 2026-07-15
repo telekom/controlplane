@@ -17,6 +17,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -43,18 +44,18 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Namespace: environment,
 	}
 
-	// Resolve the owning team up front so the provider client-id (<team>--<appName>)
-	// is available for static claim resolution.
+	// Resolve the owning team up front; it is added to the trusted teams below.
+	// The owner team is required here, so block (and requeue) if it cannot be resolved.
 	ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
-	if err != nil && apierrors.IsNotFound(err) {
-		log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-	} else if err != nil {
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrlerrors.BlockedErrorf("owner team not found for application %s", owner.Name)
+		}
 		return err
 	}
-	providerClientId := ownerTeam.GetName() + "--" + owner.Name
 
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(owner, apiExposure, c.Scheme())
+		err = controllerutil.SetControllerReference(owner, apiExposure, c.Scheme())
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
@@ -72,7 +73,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			},
 			Zone:           zoneRef,
 			Upstreams:      make([]apiapi.Upstream, len(exp.Upstreams)),
-			Security:       mapSecurityToApiSecurity(exp.Security, providerClientId, exp.BasePath),
+			Security:       mapSecurityToApiSecurity(exp.Security),
 			Transformation: mapTransformationToApiTransformation(exp.Transformation),
 			Traffic:        mapTrafficToApiTraffic(environment, exp.Traffic),
 		}
@@ -82,16 +83,8 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			return errors.Wrap(err, "failed to map trusted teams")
 		}
 
-		// add owner to trusted teams
-		ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
-		switch {
-		case err != nil && apierrors.IsNotFound(err):
-			logger.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-		case err != nil:
-			return err
-		default:
-			apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
-		}
+		// add owner to trusted teams (already resolved above)
+		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
 
 		for i, upstream := range exp.Upstreams {
 			apiExposure.Spec.Upstreams[i] = apiapi.Upstream{
@@ -138,7 +131,7 @@ func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, teams []rover.Trusted
 	return apiTrustedTeams, nil
 }
 
-func mapSecurityToApiSecurity(roverSecurity *rover.Security, providerClientId, basePath string) *apiapi.Security {
+func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 	if roverSecurity == nil {
 		return nil
 	}
@@ -167,16 +160,16 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security, providerClientId, b
 			}
 		}
 
-		security.M2M.Claims = mapClaimsToApiClaims(roverSecurity.M2M.Claims, providerClientId, basePath)
+		security.M2M.Claims = mapClaimsToApiClaims(roverSecurity.M2M.Claims)
 	}
 
 	return security
 }
 
-// mapClaimsToApiClaims resolves the static claim sources (ProviderClientId, BasePath)
-// into literals. A user-provided literal is copied through; ConsumerClientId stays
-// symbolic for Jumper to resolve per-request at runtime.
-func mapClaimsToApiClaims(roverClaims *rover.Claims, providerClientId, basePath string) *apiapi.Claims {
+// mapClaimsToApiClaims forwards the claim to the api domain. A user-provided literal
+// is copied through; ValueFrom sources (ProviderClientId, BasePath, ConsumerClientId)
+// stay symbolic and are resolved in the api domain (or by Jumper for ConsumerClientId).
+func mapClaimsToApiClaims(roverClaims *rover.Claims) *apiapi.Claims {
 	if roverClaims == nil || roverClaims.Aud == nil {
 		return nil
 	}
@@ -187,12 +180,8 @@ func mapClaimsToApiClaims(roverClaims *rover.Claims, providerClientId, basePath 
 	switch {
 	case aud.Value != "":
 		resolved.Value = aud.Value
-	case aud.ValueFrom == rover.ClaimValueFromProviderClientId:
-		resolved.Value = providerClientId
-	case aud.ValueFrom == rover.ClaimValueFromBasePath:
-		resolved.Value = basePath
-	case aud.ValueFrom == rover.ClaimValueFromConsumerClientId:
-		resolved.ValueFrom = apiapi.ClaimValueFromConsumerClientId
+	case aud.ValueFrom != "":
+		resolved.ValueFrom = apiapi.ClaimValueFrom(aud.ValueFrom)
 	default:
 		return nil
 	}

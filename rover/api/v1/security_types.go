@@ -54,6 +54,7 @@ type Claims struct {
 type Claim struct {
 	// Value is a literal claim value provided by the user
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=256
 	Value string `json:"value,omitempty"`
 	// ValueFrom is a predefined source resolved into the claim value
 	// +kubebuilder:validation:Optional
@@ -84,6 +85,7 @@ type Machine2MachineAuthentication struct {
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:items:MaxLength=256
 	Scopes []string `json:"scopes,omitempty"`
 	// Claims defines token claims that must be present in the token reaching the upstream.
 	// Only valid on the platform-managed LMS token.
@@ -106,6 +108,7 @@ type SubscriberMachine2MachineAuthentication struct {
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:items:MaxLength=256
 	Scopes []string `json:"scopes,omitempty"`
 	// Claims defines per-consumer token claims that override the provider default.
 	// Only valid on the platform-managed LMS token.
@@ -119,6 +122,7 @@ type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
+	// +kubebuilder:validation:MaxLength=2048
 	TokenEndpoint string `json:"tokenEndpoint"`
 
 	// TokenRequest configures the token endpoint authentication method (RFC 7591)
@@ -140,10 +144,12 @@ type BasicAuthCredentials struct {
 	// Username for basic authentication
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
 	Username string `json:"username"`
 	// Password for basic authentication
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
 	Password string `json:"password"`
 }
 
@@ -153,11 +159,14 @@ type BasicAuthCredentials struct {
 type OAuth2ClientCredentials struct {
 	// ClientId identifies the client for OAuth2 client credentials flow
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=256
 	ClientId string `json:"clientId"`
 	// ClientSecret is the secret associated with the client ID
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=512
 	ClientSecret string `json:"clientSecret,omitempty"`
 	// ClientKey is the private key associated with the client ID
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=8192
 	ClientKey string `json:"clientKey,omitempty"`
 }

@@ -145,15 +145,44 @@ spec:
                                   properties:
                                     password:
                                       description: Password for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                     username:
                                       description: Username for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                   required:
                                   - password
                                   - username
+                                  type: object
+                                claims:
+                                  description: |-
+                                    Claims defines token claims that must be present in the token reaching the upstream.
+                                    Only valid on the platform-managed LMS token.
+                                  properties:
+                                    aud:
+                                      description: Aud defines the audience claim
+                                      properties:
+                                        value:
+                                          description: Value is a literal claim value
+                                            provided by the user
+                                          maxLength: 256
+                                          type: string
+                                        valueFrom:
+                                          description: ValueFrom is a predefined source
+                                            resolved into the claim value
+                                          enum:
+                                          - ProviderClientId
+                                          - ConsumerClientId
+                                          - BasePath
+                                          type: string
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: exactly one of value or valueFrom
+                                          must be set
+                                        rule: has(self.value) != has(self.valueFrom)
                                   type: object
                                 externalIDP:
                                   description: ExternalIDP defines external identity
@@ -165,10 +194,12 @@ spec:
                                       properties:
                                         password:
                                           description: Password for basic authentication
+                                          maxLength: 256
                                           minLength: 1
                                           type: string
                                         username:
                                           description: Username for basic authentication
+                                          maxLength: 256
                                           minLength: 1
                                           type: string
                                       required:
@@ -182,14 +213,17 @@ spec:
                                         clientId:
                                           description: ClientId identifies the client
                                             for OAuth2 client credentials flow
+                                          maxLength: 256
                                           type: string
                                         clientKey:
                                           description: ClientKey is the private key
                                             associated with the client ID
+                                          maxLength: 8192
                                           type: string
                                         clientSecret:
                                           description: ClientSecret is the secret
                                             associated with the client ID
+                                          maxLength: 512
                                           type: string
                                       type: object
                                       x-kubernetes-validations:
@@ -213,6 +247,7 @@ spec:
                                       description: TokenEndpoint is the URL for the
                                         OAuth2 token endpoint
                                       format: uri
+                                      maxLength: 2048
                                       type: string
                                     tokenRequest:
                                       description: TokenRequest configures the token
@@ -234,6 +269,7 @@ spec:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
                                   items:
+                                    maxLength: 256
                                     type: string
                                   maxItems: 10
                                   type: array
@@ -247,10 +283,15 @@ spec:
                                   used together
                                 rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
                                   : true)'
-                              - message: At least one of externalIDP, basic, or scopes
-                                  must be provided
+                              - message: At least one of externalIDP, basic, scopes,
+                                  or claims must be provided
                                 rule: self == null || has(self.externalIDP) || has(self.basic)
-                                  || has(self.scopes)
+                                  || has(self.scopes) || has(self.claims)
+                              - message: Claims require the platform-managed token
+                                  and cannot be used with an external IDP or basic
+                                  authentication
+                                rule: self == null || !has(self.claims) || (!has(self.externalIDP)
+                                  && !has(self.basic))
                           type: object
                         traffic:
                           description: Traffic defines optional traffic management
@@ -550,10 +591,12 @@ spec:
                                   properties:
                                     password:
                                       description: Password for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                     username:
                                       description: Username for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                   required:
@@ -571,6 +614,7 @@ spec:
                                         value:
                                           description: Value is a literal claim value
                                             provided by the user
+                                          maxLength: 256
                                           type: string
                                         valueFrom:
                                           description: ValueFrom is a predefined source
@@ -596,10 +640,12 @@ spec:
                                       properties:
                                         password:
                                           description: Password for basic authentication
+                                          maxLength: 256
                                           minLength: 1
                                           type: string
                                         username:
                                           description: Username for basic authentication
+                                          maxLength: 256
                                           minLength: 1
                                           type: string
                                       required:
@@ -613,14 +659,17 @@ spec:
                                         clientId:
                                           description: ClientId identifies the client
                                             for OAuth2 client credentials flow
+                                          maxLength: 256
                                           type: string
                                         clientKey:
                                           description: ClientKey is the private key
                                             associated with the client ID
+                                          maxLength: 8192
                                           type: string
                                         clientSecret:
                                           description: ClientSecret is the secret
                                             associated with the client ID
+                                          maxLength: 512
                                           type: string
                                       type: object
                                       x-kubernetes-validations:
@@ -644,6 +693,7 @@ spec:
                                       description: TokenEndpoint is the URL for the
                                         OAuth2 token endpoint
                                       format: uri
+                                      maxLength: 2048
                                       type: string
                                     tokenRequest:
                                       description: TokenRequest configures the token
@@ -665,6 +715,7 @@ spec:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
                                   items:
+                                    maxLength: 256
                                     type: string
                                   maxItems: 10
                                   type: array
@@ -1048,6 +1099,7 @@ spec:
                       - visibility
                       type: object
                   type: object
+                maxItems: 50
                 type: array
               externalIds:
                 description: |-
@@ -1180,6 +1232,7 @@ spec:
                       && has(self.actions))
                   - message: Cannot specify both entries and actions
                     rule: '!has(self.entries) || !has(self.actions)'
+                maxItems: 50
                 type: array
               subscriptions:
                 description: Subscriptions is a list of APIs and Events that this
@@ -1210,15 +1263,44 @@ spec:
                                   properties:
                                     password:
                                       description: Password for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                     username:
                                       description: Username for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                   required:
                                   - password
                                   - username
+                                  type: object
+                                claims:
+                                  description: |-
+                                    Claims defines per-consumer token claims that override the provider default.
+                                    Only valid on the platform-managed LMS token.
+                                  properties:
+                                    aud:
+                                      description: Aud defines the audience claim
+                                      properties:
+                                        value:
+                                          description: Value is a literal claim value
+                                            provided by the user
+                                          maxLength: 256
+                                          type: string
+                                        valueFrom:
+                                          description: ValueFrom is a predefined source
+                                            resolved into the claim value
+                                          enum:
+                                          - ProviderClientId
+                                          - ConsumerClientId
+                                          - BasePath
+                                          type: string
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: exactly one of value or valueFrom
+                                          must be set
+                                        rule: has(self.value) != has(self.valueFrom)
                                   type: object
                                 client:
                                   description: Client defines client credentials for
@@ -1227,14 +1309,17 @@ spec:
                                     clientId:
                                       description: ClientId identifies the client
                                         for OAuth2 client credentials flow
+                                      maxLength: 256
                                       type: string
                                     clientKey:
                                       description: ClientKey is the private key associated
                                         with the client ID
+                                      maxLength: 8192
                                       type: string
                                     clientSecret:
                                       description: ClientSecret is the secret associated
                                         with the client ID
+                                      maxLength: 512
                                       type: string
                                   type: object
                                   x-kubernetes-validations:
@@ -1250,6 +1335,7 @@ spec:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
                                   items:
+                                    maxLength: 256
                                     type: string
                                   maxItems: 10
                                   type: array
@@ -1259,10 +1345,15 @@ spec:
                                   used together
                                 rule: 'self == null || (has(self.client) ? (!has(self.basic))
                                   : true)'
-                              - message: At least one of client, basic, or scopes
-                                  must be provided
+                              - message: At least one of client, basic, scopes, or
+                                  claims must be provided
                                 rule: self == null || has(self.client) || has(self.basic)
-                                  || has(self.scopes)
+                                  || has(self.scopes) || has(self.claims)
+                              - message: Claims require the platform-managed token
+                                  and cannot be used with an external IDP or basic
+                                  authentication
+                                rule: self == null || !has(self.claims) || (!has(self.client)
+                                  && !has(self.basic))
                           type: object
                         traffic:
                           description: Traffic defines optional traffic management
@@ -1340,10 +1431,12 @@ spec:
                                   properties:
                                     password:
                                       description: Password for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                     username:
                                       description: Username for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                   required:
@@ -1361,6 +1454,7 @@ spec:
                                         value:
                                           description: Value is a literal claim value
                                             provided by the user
+                                          maxLength: 256
                                           type: string
                                         valueFrom:
                                           description: ValueFrom is a predefined source
@@ -1383,14 +1477,17 @@ spec:
                                     clientId:
                                       description: ClientId identifies the client
                                         for OAuth2 client credentials flow
+                                      maxLength: 256
                                       type: string
                                     clientKey:
                                       description: ClientKey is the private key associated
                                         with the client ID
+                                      maxLength: 8192
                                       type: string
                                     clientSecret:
                                       description: ClientSecret is the secret associated
                                         with the client ID
+                                      maxLength: 512
                                       type: string
                                   type: object
                                   x-kubernetes-validations:
@@ -1406,6 +1503,7 @@ spec:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
                                   items:
+                                    maxLength: 256
                                     type: string
                                   maxItems: 10
                                   type: array
@@ -1593,6 +1691,7 @@ spec:
                       - eventType
                       type: object
                   type: object
+                maxItems: 50
                 type: array
               zone:
                 description: Zone identifies the deployment zone for this Rover resource
