@@ -5,7 +5,7 @@
 # This rule is not used by the project spectre itself.
 # It is provided to allow the cluster admin to help manage permissions for users.
 #
-# Grants read-only access to spectre.ei.telekom.de.cp.ei.telekom.de resources.
+# Grants read-only access to spectre.cp.ei.telekom.de resources.
 # This role is intended for users who need visibility into these resources
 # without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
 
@@ -18,7 +18,7 @@ metadata:
   name: listener-viewer-role
 rules:
 - apiGroups:
-  - spectre.ei.telekom.de.cp.ei.telekom.de
+  - spectre.cp.ei.telekom.de
   resources:
   - listeners
   verbs:
@@ -26,7 +26,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - spectre.ei.telekom.de.cp.ei.telekom.de
+  - spectre.cp.ei.telekom.de
   resources:
   - listeners/status
   verbs:

@@ -5,7 +5,7 @@
 # This rule is not used by the project spectre itself.
 # It is provided to allow the cluster admin to help manage permissions for users.
 #
-# Grants permissions to create, update, and delete resources within the spectre.ei.telekom.de.cp.ei.telekom.de.
+# Grants permissions to create, update, and delete resources within the spectre.cp.ei.telekom.de.
 # This role is intended for users who need to manage these resources
 # but should not control RBAC or manage permissions for others.
 
@@ -18,7 +18,7 @@ metadata:
   name: listener-editor-role
 rules:
 - apiGroups:
-  - spectre.ei.telekom.de.cp.ei.telekom.de
+  - spectre.cp.ei.telekom.de
   resources:
   - listeners
   verbs:
@@ -30,7 +30,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - spectre.ei.telekom.de.cp.ei.telekom.de
+  - spectre.cp.ei.telekom.de
   resources:
   - listeners/status
   verbs:

@@ -9,7 +9,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -91,8 +90,5 @@ type ListenerList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(func(s *runtime.Scheme) error {
-		s.AddKnownTypes(SchemeGroupVersion, &Listener{}, &ListenerList{})
-		return nil
-	})
+	SchemeBuilder.Register(&Listener{}, &ListenerList{})
 }

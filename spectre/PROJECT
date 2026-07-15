@@ -14,7 +14,7 @@ resources:
     namespaced: true
   controller: true
   domain: cp.ei.telekom.de
-  group: spectre.ei.telekom.de
+  group: spectre
   kind: Listener
   path: github.com/telekom/controlplane/spectre/api/v1
   version: v1

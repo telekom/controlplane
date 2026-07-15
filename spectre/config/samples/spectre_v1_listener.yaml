@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-apiVersion: spectre.ei.telekom.de.cp.ei.telekom.de/v1
+apiVersion: spectre.cp.ei.telekom.de/v1
 kind: Listener
 metadata:
   labels:
