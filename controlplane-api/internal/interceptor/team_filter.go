@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/privacy"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
@@ -127,6 +128,11 @@ func TeamFilterInterceptor() ent.Interceptor {
 
 			case *entgen.EventSubscriptionQuery:
 				q.Where(eventsubscription.HasOwnerWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
+				))
+
+			case *entgen.PermissionSetQuery:
+				q.Where(permissionset.HasOwnerApplicationWith(
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				))
 

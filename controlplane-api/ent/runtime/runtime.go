@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/schema"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -497,6 +498,40 @@ func init() {
 	memberDescEmail := memberFields[1].Descriptor()
 	// member.EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	member.EmailValidator = memberDescEmail.Validators[0].(func(string) error)
+	permissionsetMixin := schema.PermissionSet{}.Mixin()
+	permissionset.Policy = privacy.NewPolicies(permissionsetMixin[0], schema.PermissionSet{})
+	permissionset.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := permissionset.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	permissionsetMixinFields1 := permissionsetMixin[1].Fields()
+	_ = permissionsetMixinFields1
+	permissionsetMixinFields4 := permissionsetMixin[4].Fields()
+	_ = permissionsetMixinFields4
+	permissionsetFields := schema.PermissionSet{}.Fields()
+	_ = permissionsetFields
+	// permissionsetDescCreatedAt is the schema descriptor for created_at field.
+	permissionsetDescCreatedAt := permissionsetMixinFields1[0].Descriptor()
+	// permissionset.DefaultCreatedAt holds the default value on creation for the created_at field.
+	permissionset.DefaultCreatedAt = permissionsetDescCreatedAt.Default.(func() time.Time)
+	// permissionsetDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	permissionsetDescLastModifiedAt := permissionsetMixinFields1[1].Descriptor()
+	// permissionset.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	permissionset.DefaultLastModifiedAt = permissionsetDescLastModifiedAt.Default.(func() time.Time)
+	// permissionset.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	permissionset.UpdateDefaultLastModifiedAt = permissionsetDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// permissionsetDescNamespace is the schema descriptor for namespace field.
+	permissionsetDescNamespace := permissionsetMixinFields4[0].Descriptor()
+	// permissionset.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	permissionset.NamespaceValidator = permissionsetDescNamespace.Validators[0].(func(string) error)
+	// permissionsetDescPermissions is the schema descriptor for permissions field.
+	permissionsetDescPermissions := permissionsetFields[0].Descriptor()
+	// permissionset.DefaultPermissions holds the default value on creation for the permissions field.
+	permissionset.DefaultPermissions = permissionsetDescPermissions.Default.([]model.Permission)
 	teamMixin := schema.Team{}.Mixin()
 	team.Policy = privacy.NewPolicies(teamMixin[0], schema.Team{})
 	team.Hooks[0] = func(next ent.Mutator) ent.Mutator {

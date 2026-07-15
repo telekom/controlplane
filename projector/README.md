@@ -37,7 +37,11 @@ main.go                          26-line entrypoint → bootstrap.Run()
        ├── apiexposure/          Level 3 — required Application FK
        ├── apisubscription/      Level 3 — required Application FK, optional target ApiExposure FK
        ├── approval/             Level 4 — required ApiSubscription FK
-       └── approvalrequest/      Level 4 — required ApiSubscription FK
+       ├── approvalrequest/      Level 4 — required ApiSubscription FK
+       ├── eventtype/            Level 0 — no FK dependencies (gated behind FeaturePubSub)
+       ├── eventexposure/        Level 3 — required Application FK (gated behind FeaturePubSub)
+       ├── eventsubscription/    Level 3 — required Application FK, optional target EventExposure FK (gated behind FeaturePubSub)
+       └── permissionset/        Level 3 — required Application FK (gated behind FeaturePermission)
 ```
 
 ### Pipeline
@@ -80,12 +84,23 @@ The core interfaces (`runtime/contracts.go`):
 ### Entity Dependency Hierarchy
 
 ```
-Level 0:  Zone    Group
+Level 0:  Zone    Group    EventType
 Level 1:         Team ─────────────┐
 Level 2:  Application ◄────────────┘ (Team FK + Zone FK)
-Level 3:  ApiExposure   ApiSubscription ◄── Application FK
+Level 3:  ApiExposure   ApiSubscription   EventExposure   EventSubscription   PermissionSet ◄── Application FK
 Level 4:  Approval   ApprovalRequest ◄── ApiSubscription FK
 ```
+
+### Feature-Gated Modules
+
+Some modules are only registered (and their CRD scheme only added to the manager) when a feature flag is enabled, via `cconfig.Feature.IsEnabled()` in `internal/bootstrap/bootstrap.go`:
+
+| Feature flag        | Env var                             | Gated modules                                    |
+|----------------------|--------------------------------------|---------------------------------------------------|
+| `FeaturePubSub`      | `FEATURE_PUBSUB_ENABLED`             | `eventtype`, `eventexposure`, `eventsubscription`  |
+| `FeaturePermission`  | `FEATURE_PERMISSION_ENABLED`         | `permissionset`                                    |
+
+When a flag is disabled, its modules are not registered with the controller manager and their CRDs are never watched or reconciled.
 
 ## Adding a New Entity
 

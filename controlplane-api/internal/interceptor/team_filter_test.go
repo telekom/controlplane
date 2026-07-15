@@ -108,6 +108,10 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.EventSubscription.Query().All(ctx)
 				return len(r), e
 			}, 1),
+			Entry("permission sets", func(ctx context.Context) (int, error) {
+				r, e := client.PermissionSet.Query().All(ctx)
+				return len(r), e
+			}, 1),
 		)
 	})
 
@@ -160,6 +164,10 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.EventSubscription.Query().All(ctx)
 				return len(r), e
 			}, 0),
+			Entry("permission sets (team-alpha owns one)", func(ctx context.Context) (int, error) {
+				r, e := client.PermissionSet.Query().All(ctx)
+				return len(r), e
+			}, 1),
 		)
 	})
 
@@ -198,6 +206,10 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			}, 1),
 			Entry("event subscriptions", func(ctx context.Context) (int, error) {
 				r, e := client.EventSubscription.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("permission sets", func(ctx context.Context) (int, error) {
+				r, e := client.PermissionSet.Query().All(ctx)
 				return len(r), e
 			}, 1),
 		)

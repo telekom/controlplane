@@ -113,3 +113,10 @@ func EventTypeDef(eventType, teamName string) (entityType, lookupKey string) {
 func ActiveEventType(eventType string) (entityType, lookupKey string) {
 	return "eventtype_active", eventType
 }
+
+// PermissionSet returns the cache key components for a PermissionSet entity
+// identified by its owning application name and team name. PermissionSet is
+// 1:1 with Application, so the pair uniquely identifies it.
+func PermissionSet(appName, teamName string) (entityType, lookupKey string) {
+	return "permissionset", appName + ":" + teamName
+}

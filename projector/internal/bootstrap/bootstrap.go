@@ -35,6 +35,7 @@ import (
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 
 	"github.com/telekom/controlplane/projector/internal/config"
 	"github.com/telekom/controlplane/projector/internal/domain/api"
@@ -47,6 +48,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
+	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
@@ -71,6 +73,26 @@ var modules = []module.Module{
 	approvalrequest.Module,
 }
 
+// registerSchemesAndModules conditionally registers CR schemes and appends
+// feature-gated modules based on the current feature flag state. It mutates
+// the given scheme and returns the extended module list; extracted from
+// init() so the gating logic can be exercised directly in tests.
+func registerSchemesAndModules(scheme *runtime.Scheme, baseModules []module.Module) []module.Module {
+	result := baseModules
+
+	if cconfig.FeaturePubSub.IsEnabled() {
+		_ = eventv1.AddToScheme(scheme)
+		result = append(result, eventtype.Module, eventexposure.Module, eventsubscription.Module)
+	}
+
+	if cconfig.FeaturePermission.IsEnabled() {
+		_ = permissionv1.AddToScheme(scheme)
+		result = append(result, permissionset.Module)
+	}
+
+	return result
+}
+
 func init() {
 	// Register all CR schemes used by the projector modules.
 	_ = adminv1.AddToScheme(scheme)
@@ -79,10 +101,7 @@ func init() {
 	_ = approvalv1.AddToScheme(scheme)
 	_ = orgv1.AddToScheme(scheme)
 
-	if cconfig.FeaturePubSub.IsEnabled() {
-		_ = eventv1.AddToScheme(scheme)
-		modules = append(modules, eventtype.Module, eventexposure.Module, eventsubscription.Module)
-	}
+	modules = registerSchemesAndModules(scheme, modules)
 }
 
 // Run is the projector entry point. It sets up the database, caches,

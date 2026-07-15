@@ -130,6 +130,15 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
+// PermissionSets is the resolver for the permissionSets field.
+func (r *queryResolver) PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error) {
+	return r.client.PermissionSet.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithPermissionSetOrder(orderBy),
+			ent.WithPermissionSetFilter(where.Filter),
+		)
+}
+
 // Teams is the resolver for the teams field.
 func (r *queryResolver) Teams(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) (*ent.TeamConnection, error) {
 	return r.client.Team.Query().

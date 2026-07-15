@@ -26,6 +26,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
@@ -99,6 +100,7 @@ func checkColumn(t, c string) error {
 			eventtype.Table:         eventtype.ValidColumn,
 			group.Table:             group.ValidColumn,
 			member.Table:            member.ValidColumn,
+			permissionset.Table:     permissionset.ValidColumn,
 			team.Table:              team.ValidColumn,
 			zone.Table:              zone.ValidColumn,
 		})
