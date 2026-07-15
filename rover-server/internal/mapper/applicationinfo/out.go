@@ -161,7 +161,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		return errors.New("input applicationInfo is nil")
 	}
 
-	totalSubs := len(rover.Status.ApiSubscriptions) + len(rover.Status.EventSubscriptions)
+	totalSubs := len(rover.Status.ApiSubscriptions) + len(rover.Status.EventSubscriptions) + len(rover.Status.AiSubscriptions)
 	appInfo.Subscriptions = make([]api.SubscriptionInfo, 0, totalSubs)
 
 	// Map API subscriptions
@@ -213,9 +213,32 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 
 	}
 
+	// Map AI subscriptions
+	for _, sub := range rover.Status.AiSubscriptions {
+		mcpSub, err := stores.McpSubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
+		if err != nil {
+			_, gvk := stores.McpSubscriptionStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, sub.Namespace, sub.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(mcpSub); err != nil {
+			WriteStatus(mcpSub, appInfo, err)
+		}
+
+		subInfo := api.SubscriptionInfo{}
+		aiSubInfo := api.AiSubscriptionInfo{
+			BasePath: mcpSub.Spec.BasePath,
+		}
+		if err := subInfo.FromAiSubscriptionInfo(aiSubInfo); err != nil {
+			return errors.Wrap(err, "failed to convert ai subscription info")
+		}
+
+		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
+	}
+
 	return nil
 }
-
 func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
 	if rover == nil {
 		return errors.New("input rover is nil")
@@ -224,13 +247,16 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 		return errors.New("input applicationInfo is nil")
 	}
 
-	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures)
+	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures) + len(rover.Status.AiExposures)
 	appInfo.Exposures = make([]api.ExposureInfo, 0, totalExps)
 
 	if err := fillAPIExposures(ctx, rover, appInfo, stores); err != nil {
 		return err
 	}
 	if err := fillEventExposures(ctx, rover, appInfo, stores); err != nil {
+		return err
+	}
+	if err := fillAiExposures(ctx, rover, appInfo, stores); err != nil {
 		return err
 	}
 
@@ -292,6 +318,40 @@ func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.
 		eventExpInfo := mapEventExposureInfo(eventExp)
 		if err := expInfo.FromEventExposureInfo(eventExpInfo); err != nil {
 			return errors.Wrap(err, "failed to convert event exposure info")
+		}
+
+		appInfo.Exposures = append(appInfo.Exposures, expInfo)
+	}
+	return nil
+}
+
+// fillAiExposures fetches each AI/MCP exposure referenced by the Rover status,
+// validates its readiness, and appends it to appInfo.Exposures.
+func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+	for _, exp := range rover.Status.AiExposures {
+		mcpExp, err := stores.McpExposureStore.Get(ctx, exp.Namespace, exp.Name)
+		if err != nil {
+			_, gvk := stores.McpExposureStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, exp.Namespace, exp.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(mcpExp); err != nil {
+			WriteStatus(mcpExp, appInfo, err)
+		}
+
+		expInfo := api.ExposureInfo{}
+		aiExpInfo := api.AiExposureInfo{
+			BasePath:   mcpExp.Spec.BasePath,
+			Variant:    api.AiExposureInfoVariant(mcpExp.Spec.Variant),
+			Approval:   api.ApprovalStrategy(mcpExp.Spec.Approval.Strategy),
+			Visibility: api.Visibility(mcpExp.Spec.Visibility),
+		}
+		if len(mcpExp.Spec.Upstreams) > 0 {
+			aiExpInfo.Upstream = mcpExp.Spec.Upstreams[0].Url
+		}
+		if err := expInfo.FromAiExposureInfo(aiExpInfo); err != nil {
+			return errors.Wrap(err, "failed to convert ai exposure info")
 		}
 
 		appInfo.Exposures = append(appInfo.Exposures, expInfo)
