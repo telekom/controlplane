@@ -5,22 +5,22 @@
 package v1
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 
-	"context"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func makeKey(basePath, secretName string) string {
@@ -36,6 +36,8 @@ func basePathFromJSONPath(data []byte, path string) string {
 
 // apiSecretJsonPaths: key + value pair for secrets within api exposures and subscriptions.
 // The basePath is appended to distinguish between multiple exposures/subscriptions.
+//
+//nolint:gosec // G101: these are JSON path expressions, not hardcoded credentials
 var apiSecretJsonPaths = map[string]string{
 	"clientSecret":             "spec.subscriptions.#.api.security.m2m.client.clientSecret",
 	"refreshToken":             "spec.subscriptions.#.api.security.m2m.client.refreshToken",

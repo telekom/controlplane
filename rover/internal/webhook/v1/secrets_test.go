@@ -8,18 +8,19 @@ import (
 	"context"
 	"encoding/json"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Secrets Handling", func() {
-
 	var fakeSecretManager *fake.MockSecretManager
 
 	BeforeEach(func() {
@@ -677,9 +678,8 @@ var _ = Describe("Secrets Handling", func() {
 		})
 
 		It("should onboard an application with no external secrets", func() {
-
 			runAndReturnApplication := func(ctx context.Context, envId, teamId, appId string, opts ...api.OnboardingOption) (map[string]string, error) {
-				Expect(opts).To(HaveLen(0))
+				Expect(opts).To(BeEmpty())
 
 				return map[string]string{
 					"clientSecret": "some:id:clientSecret:checksum",
@@ -759,7 +759,7 @@ var _ = Describe("Secrets Handling", func() {
 			rover.Spec.ClientSecret = "$<existing:clientSecret:checksum>"
 
 			runAndReturnApplication := func(ctx context.Context, envId, teamId, appId string, opts ...api.OnboardingOption) (map[string]string, error) {
-				Expect(opts).To(HaveLen(0)) // the important check is that the secret is not set as value here
+				Expect(opts).To(BeEmpty()) // the important check is that the secret is not set as value here
 
 				return map[string]string{
 					"clientSecret": "existing:clientSecret:checksum", // The SM will return the current value (which should match the existing reference)
@@ -771,7 +771,6 @@ var _ = Describe("Secrets Handling", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
-
 		})
 
 		It("should skip secrets that already are a reference", func() {
@@ -810,7 +809,7 @@ var _ = Describe("Secrets Handling", func() {
 			}
 
 			runAndReturnApplication := func(ctx context.Context, envId, teamId, appId string, opts ...api.OnboardingOption) (map[string]string, error) {
-				Expect(opts).To(HaveLen(0)) // No new secrets should be set
+				Expect(opts).To(BeEmpty()) // No new secrets should be set
 
 				return map[string]string{
 					"clientSecret":    "existing:clientSecret:checksum",
@@ -826,6 +825,5 @@ var _ = Describe("Secrets Handling", func() {
 			Expect(rover.Spec.Subscriptions[0].Api.Security.M2M.Client.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
 			Expect(rover.Spec.Exposures[0].Api.Security.M2M.ExternalIDP.Basic.Password).To(Equal("$<existing:externalIDPPassword:checksum>"))
 		})
-
 	})
 })
