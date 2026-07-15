@@ -6,6 +6,7 @@ package approval
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -85,6 +86,11 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		expiresAt = &t
 	}
 
+	properties, err := FromProperties(obj.Spec.Requester)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode properties of Approval %q: %w", obj.GetName(), err)
+	}
+
 	return &ApprovalData{
 		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:           phase,
@@ -100,6 +106,7 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		SubscriptionNamespace: targetNamespace,
 		SubscriptionName:      obj.Spec.Target.Name,
 		ExpiresAt:             expiresAt,
+		AccessScopes:          properties.Scopes,
 	}, nil
 }
 

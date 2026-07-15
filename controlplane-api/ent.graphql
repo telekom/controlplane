@@ -1220,6 +1220,10 @@ type Approval implements Node {
   deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  """
+  If any, the access-scopes requested.
+  """
+  requestedScopes: [String!]
   name: String!
   expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
@@ -1289,6 +1293,10 @@ type ApprovalRequest implements Node {
   deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  """
+  If any, the access-scopes requested.
+  """
+  requestedScopes: [String!]
   name: String!
   state: ApprovalRequestState!
 }
