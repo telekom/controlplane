@@ -115,7 +115,8 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		SetDecider(data.Decider).
 		SetDeciderTeamName(data.Decider.TeamName).
 		SetDecisions(data.Decisions).
-		SetAvailableTransitions(data.AvailableTransitions)
+		SetAvailableTransitions(data.AvailableTransitions).
+		SetRequestedScopes(data.AccessScopes)
 
 	// Set the correct subscription FK based on target kind.
 	if data.TargetKind == TargetKindEventSubscription {

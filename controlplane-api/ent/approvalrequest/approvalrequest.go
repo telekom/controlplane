@@ -48,6 +48,8 @@ const (
 	FieldDecisions = "decisions"
 	// FieldAvailableTransitions holds the string denoting the available_transitions field in the database.
 	FieldAvailableTransitions = "available_transitions"
+	// FieldRequestedScopes holds the string denoting the requested_scopes field in the database.
+	FieldRequestedScopes = "requested_scopes"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldState holds the string denoting the state field in the database.
@@ -90,6 +92,7 @@ var Columns = []string{
 	FieldDeciderTeamName,
 	FieldDecisions,
 	FieldAvailableTransitions,
+	FieldRequestedScopes,
 	FieldName,
 	FieldState,
 }
