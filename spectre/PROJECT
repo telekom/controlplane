@@ -19,3 +19,12 @@ resources:
   path: github.com/telekom/controlplane/spectre/api/v1
   version: v1
 version: "3"
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: cp.ei.telekom.de
+  group: spectre
+  kind: SpectreApplication
+  path: github.com/telekom/controlplane/spectre/api/v1
+  version: v1
