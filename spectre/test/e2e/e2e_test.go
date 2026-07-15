@@ -23,7 +23,7 @@ import (
 )
 
 // namespace where the project is deployed in
-const namespace = "spectre-system"
+const namespace = "controlplane-system"
 
 // serviceAccountName created for the project
 const serviceAccountName = "spectre-controller-manager"
