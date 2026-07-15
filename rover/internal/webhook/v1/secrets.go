@@ -34,8 +34,8 @@ func basePathFromJSONPath(data []byte, path string) string {
 	return ""
 }
 
-// apiSecretJsonPaths: key + value par for secrets within api exposures and subcription.
-// the basepath is appended to distingish between multiple expsures/subscriptions.
+// apiSecretJsonPaths: key + value pair for secrets within api exposures and subscriptions.
+// The basePath is appended to distinguish between multiple exposures/subscriptions.
 var apiSecretJsonPaths = map[string]string{
 	"clientSecret":             "spec.subscriptions.#.api.security.m2m.client.clientSecret",
 	"refreshToken":             "spec.subscriptions.#.api.security.m2m.client.refreshToken",
@@ -46,7 +46,7 @@ var apiSecretJsonPaths = map[string]string{
 	"basicAuth/password":       "spec.exposures.#.api.security.m2m.basic.password",
 }
 
-// ExtractSecrets generically extracts all non-empty, non-ref secret values
+// GetExtractSecrets generically extracts all non-empty, non-ref secret values
 // from the Rover object using the defined JSON paths.
 func GetExternalSecrets(_ context.Context, rover *roverv1.Rover) (map[string]string, error) {
 	b, err := json.Marshal(rover)
@@ -65,7 +65,6 @@ func GetExternalSecrets(_ context.Context, rover *roverv1.Rover) (map[string]str
 					secrets[makeKey(basePath, key)] = val
 				}
 			}
-			continue
 		}
 	}
 	return secrets, nil
@@ -132,7 +131,11 @@ func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager
 		log.V(1).Info("Setting clientSecret for application")
 		options = append(options, secretsapi.WithSecretValue("clientSecret", rover.Spec.ClientSecret))
 	}
-	externalSecrets, _ := GetExternalSecrets(ctx, rover)
+	externalSecrets, err := GetExternalSecrets(ctx, rover)
+	if err != nil {
+		log.Error(err, "Failed to external secrets", "envName", envName, "teamId", teamId, "appId", appId)
+		return apierrors.NewInternalError(errors.New("failed to load external secrets"))
+	}
 	if len(externalSecrets) > 0 {
 		for key, value := range externalSecrets {
 			if secretsapi.IsRef(value) {
