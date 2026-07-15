@@ -191,6 +191,11 @@ spec:
                                           description: ClientSecret is the secret
                                             associated with the client ID
                                           type: string
+                                        refreshToken:
+                                          description: |-
+                                            RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+                                            without requiring re-authentication. Used with the refresh_token grant type.
+                                          type: string
                                       type: object
                                       x-kubernetes-validations:
                                       - message: ClientSecret and ClientKey cannot
@@ -208,6 +213,7 @@ spec:
                                       - client_credentials
                                       - authorization_code
                                       - password
+                                      - refresh_token
                                       type: string
                                     tokenEndpoint:
                                       description: TokenEndpoint is the URL for the
@@ -1208,6 +1214,11 @@ spec:
                                     clientSecret:
                                       description: ClientSecret is the secret associated
                                         with the client ID
+                                      type: string
+                                    refreshToken:
+                                      description: |-
+                                        RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+                                        without requiring re-authentication. Used with the refresh_token grant type.
                                       type: string
                                   type: object
                                   x-kubernetes-validations:
