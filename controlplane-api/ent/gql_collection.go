@@ -1158,6 +1158,11 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, approval.FieldAvailableTransitions)
 				fieldSeen[approval.FieldAvailableTransitions] = struct{}{}
 			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[approval.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, approval.FieldRequestedScopes)
+				fieldSeen[approval.FieldRequestedScopes] = struct{}{}
+			}
 		case "name":
 			if _, ok := fieldSeen[approval.FieldName]; !ok {
 				selectedFields = append(selectedFields, approval.FieldName)
@@ -1327,6 +1332,11 @@ func (_q *ApprovalRequestQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[approvalrequest.FieldAvailableTransitions]; !ok {
 				selectedFields = append(selectedFields, approvalrequest.FieldAvailableTransitions)
 				fieldSeen[approvalrequest.FieldAvailableTransitions] = struct{}{}
+			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[approvalrequest.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, approvalrequest.FieldRequestedScopes)
+				fieldSeen[approvalrequest.FieldRequestedScopes] = struct{}{}
 			}
 		case "name":
 			if _, ok := fieldSeen[approvalrequest.FieldName]; !ok {

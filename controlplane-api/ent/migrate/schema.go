@@ -211,6 +211,7 @@ var (
 		{Name: "decider_team_name", Type: field.TypeString, Size: 2147483647},
 		{Name: "decisions", Type: field.TypeJSON},
 		{Name: "available_transitions", Type: field.TypeJSON, Nullable: true},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
@@ -225,13 +226,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approvals_api_subscriptions_approval",
-				Columns:    []*schema.Column{ApprovalsColumns[17]},
+				Columns:    []*schema.Column{ApprovalsColumns[18]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "approvals_event_subscriptions_approval",
-				Columns:    []*schema.Column{ApprovalsColumns[18]},
+				Columns:    []*schema.Column{ApprovalsColumns[19]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -240,7 +241,7 @@ var (
 			{
 				Name:    "approval_namespace_name",
 				Unique:  true,
-				Columns: []*schema.Column{ApprovalsColumns[6], ApprovalsColumns[14]},
+				Columns: []*schema.Column{ApprovalsColumns[6], ApprovalsColumns[15]},
 			},
 		},
 	}
@@ -260,6 +261,7 @@ var (
 		{Name: "decider_team_name", Type: field.TypeString, Size: 2147483647},
 		{Name: "decisions", Type: field.TypeJSON},
 		{Name: "available_transitions", Type: field.TypeJSON, Nullable: true},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED"}, Default: "PENDING"},
 		{Name: "api_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
@@ -273,13 +275,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approval_requests_api_subscriptions_approval_requests",
-				Columns:    []*schema.Column{ApprovalRequestsColumns[16]},
+				Columns:    []*schema.Column{ApprovalRequestsColumns[17]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "approval_requests_event_subscriptions_approval_requests",
-				Columns:    []*schema.Column{ApprovalRequestsColumns[17]},
+				Columns:    []*schema.Column{ApprovalRequestsColumns[18]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -288,7 +290,7 @@ var (
 			{
 				Name:    "approvalrequest_namespace_name",
 				Unique:  true,
-				Columns: []*schema.Column{ApprovalRequestsColumns[6], ApprovalRequestsColumns[14]},
+				Columns: []*schema.Column{ApprovalRequestsColumns[6], ApprovalRequestsColumns[15]},
 			},
 		},
 	}
