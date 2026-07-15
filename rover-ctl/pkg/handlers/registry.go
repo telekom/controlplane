@@ -54,12 +54,14 @@ func handlerKey(kind, apiVersion string) string {
 // All handlers should be registered here to be discoverable by the system
 func RegisterHandlers() {
 	apiSpecHandler := v0.NewApiSpecHandlerInstance()
+	mcpSpecHandler := v0.NewMcpSpecHandlerInstance()
 	roverHandler := v0.NewRoverHandlerInstance()
 	eventSpecHandler := v0.NewEventSpecHandlerInstance()
 	apiRoadmapHandler := v0.NewApiRoadmapHandlerInstance()
 	apiChangelogHandler := v0.NewApiChangelogHandlerInstance()
 
 	RegisterHandler(apiSpecHandler.Kind, apiSpecHandler.APIVersion, apiSpecHandler)
+	RegisterHandler(mcpSpecHandler.Kind, mcpSpecHandler.APIVersion, mcpSpecHandler)
 	RegisterHandler(roverHandler.Kind, roverHandler.APIVersion, roverHandler)
 	RegisterHandler(eventSpecHandler.Kind, eventSpecHandler.APIVersion, eventSpecHandler)
 	RegisterHandler(apiRoadmapHandler.Kind, apiRoadmapHandler.APIVersion, apiRoadmapHandler)

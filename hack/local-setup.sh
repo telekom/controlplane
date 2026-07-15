@@ -52,6 +52,7 @@ ALL_CONTROLLERS=(
     "rover:rover/cmd:ghcr.io/telekom/controlplane/rover"
     "rover-server:rover-server/cmd:ghcr.io/telekom/controlplane/rover-server"
     "secret-manager:secret-manager/cmd/server:ghcr.io/telekom/controlplane/secret-manager"
+    "agentic:agentic/cmd:ghcr.io/telekom/controlplane/agentic"
 )
 
 # ── Flags ──────────────────────────────────────────────────────────────

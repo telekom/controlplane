@@ -8,14 +8,15 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // HandlePermission creates or updates PermissionSet resources based on Rover permission configuration
@@ -72,7 +73,8 @@ func normalizePermissions(perms []roverv1.Permission) []permissionv1.Permission 
 	var permissions []permissionv1.Permission
 
 	for _, p := range perms {
-		if p.Resource != "" && p.Role == "" && len(p.Entries) > 0 {
+		switch {
+		case p.Resource != "" && p.Role == "" && len(p.Entries) > 0:
 			// Resource-oriented format: resource + entries (with roles)
 			for _, entry := range p.Entries {
 				permissions = append(permissions, permissionv1.Permission{
@@ -81,7 +83,7 @@ func normalizePermissions(perms []roverv1.Permission) []permissionv1.Permission 
 					Actions:  entry.Actions,
 				})
 			}
-		} else if p.Role != "" && p.Resource == "" && len(p.Entries) > 0 {
+		case p.Role != "" && p.Resource == "" && len(p.Entries) > 0:
 			// Role-oriented format: role + entries (with resources)
 			for _, entry := range p.Entries {
 				permissions = append(permissions, permissionv1.Permission{
@@ -90,7 +92,7 @@ func normalizePermissions(perms []roverv1.Permission) []permissionv1.Permission 
 					Actions:  entry.Actions,
 				})
 			}
-		} else if p.Resource != "" && p.Role != "" && len(p.Actions) > 0 {
+		case p.Resource != "" && p.Role != "" && len(p.Actions) > 0:
 			// Flat format: role + resource + actions directly
 			permissions = append(permissions, permissionv1.Permission{
 				Role:     p.Role,

@@ -141,6 +141,10 @@ func (r *RoverController) Update(ctx context.Context, resourceId string, req api
 		return res, err
 	}
 
+	if err := r.guardAiGatewayFeature(ctx, req, config.FeatureAiGateway.IsEnabled()); err != nil {
+		return res, err
+	}
+
 	err = r.Store.CreateOrReplace(ctx, obj)
 	if err != nil {
 		return res, err
@@ -421,6 +425,47 @@ func (r *RoverController) guardPubSubFeature(ctx context.Context, res api.RoverU
 
 	if len(fields) > 0 {
 		msg := "The request contains Pub/Sub features, but this feature is not enabled on the server."
+		return problems.Builder().Detail(msg).Title("Feature has not been enabled").Status(400).Fields(fields...).Build()
+	}
+
+	return nil
+}
+
+func (r *RoverController) guardAiGatewayFeature(ctx context.Context, res api.RoverUpdateRequest, isEnabled bool) problems.Problem {
+	if isEnabled {
+		return nil
+	}
+
+	fields := []problems.Field{}
+
+	for i, e := range res.Exposures {
+		d, err := e.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "ai" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("exposures[%d]", i),
+				Detail: "AI Gateway features are not enabled, but the request contains an AI exposure",
+			})
+		}
+	}
+
+	for i, s := range res.Subscriptions {
+		d, err := s.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "ai" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("subscriptions[%d]", i),
+				Detail: "AI Gateway features are not enabled, but the request contains an AI subscription",
+			})
+		}
+	}
+
+	if len(fields) > 0 {
+		msg := "The request contains AI Gateway features, but this feature is not enabled on the server."
 		return problems.Builder().Detail(msg).Title("Feature has not been enabled").Status(400).Fields(fields...).Build()
 	}
 

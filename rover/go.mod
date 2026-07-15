@@ -27,6 +27,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/sjson v1.2.5
+	github.com/telekom/controlplane/agentic/api v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.36.2
 	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2
@@ -36,6 +37,7 @@ require (
 
 replace (
 	github.com/telekom/controlplane/admin/api => ../admin/api
+	github.com/telekom/controlplane/agentic/api => ../agentic/api
 	github.com/telekom/controlplane/api/api => ../api/api
 	github.com/telekom/controlplane/application/api => ../application/api
 	github.com/telekom/controlplane/common => ../common
