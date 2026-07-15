@@ -24,7 +24,11 @@ kind: Environment
 metadata:
   name: dev
   namespace: dev
+spec:
+  realmName: dev
 ```
+
+The `realmName` field defines the name used for identity and gateway realms in this environment. It is decoupled from the environment name — for example, you could name your environment `playground` but set `realmName: default` to keep existing realm URLs stable. If omitted, it defaults to the environment's `metadata.name`.
 
 :::tip
 Create the Kubernetes namespace before applying the Environment resource, or use a namespace provisioning tool that handles this automatically.
@@ -220,9 +224,16 @@ When an `EventConfig` is reconciled, the event controller prepares core building
 - **EventStore** connection used by the pub/sub runtime
 - **Gateway routes and URLs** for publishing, callbacks, and (optionally) Voyager APIs
 
-### Creating an `EventConfig`
+### Local and proxy zones
 
-Apply one `EventConfig` per zone:
+Every `EventConfig` describes one of two kinds of zone, and you must set **exactly one** of them:
+
+- **Local zone** (`local:`) — a zone that runs its own event backend (Horizon). This is the common case.
+- **Proxy zone** (`proxy:`) — a zone that runs *no* event backend of its own and forwards all publish, subscribe, and configuration traffic to a target zone. See [Proxy zones](#proxy-zones) below.
+
+### Creating an `EventConfig` for a local zone
+
+Apply one `EventConfig` per zone. For a zone that runs its own event backend, put the backend connection details under a `local:` block:
 
 ```yaml
 apiVersion: event.cp.ei.telekom.de/v1
@@ -234,12 +245,22 @@ spec:
   zone:
     name: dataplane1
     namespace: dev
-  admin:
-    url: https://config-backend.example.com
-  serverSendEventUrl: http://event-backend.dev.svc.cluster.local/sse
-  publishEventUrl: http://event-backend.dev.svc.cluster.local/publish
-  voyagerApiUrl: http://voyager.dev.svc.cluster.local
+  local:
+    admin:
+      url: https://config-backend.example.com
+    serverSendEventUrl: http://event-backend.dev.svc.cluster.local/sse
+    publishEventUrl: http://event-backend.dev.svc.cluster.local/publish
+    voyagerApiUrl: http://voyager.dev.svc.cluster.local
 ```
+
+The `local` block holds the connection to the configuration backend (`admin`) and the internal upstream URLs the gateway routes forward to:
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `admin.url` | Yes | Base URL of the event configuration backend. |
+| `serverSendEventUrl` | Yes | Internal URL of the SSE backend, used as upstream for the SSE route. |
+| `publishEventUrl` | Yes | Internal URL of the publish backend, used as upstream for the publish route. |
+| `voyagerApiUrl` | No | Internal URL of the Voyager backend for event listing and redelivery. |
 
 That's it. Identity clients, secrets, and mesh topology are configured automatically:
 
@@ -262,24 +283,56 @@ mesh:
 
 ### Overriding identity client defaults
 
-In most cases you do not need to specify identity clients. If your setup requires custom client IDs or specific realm references, you can provide them explicitly:
+In most cases you do not need to specify identity clients. If your setup requires custom client IDs or specific realm references, you can provide them explicitly. The `admin` client lives inside the `local` block; the `mesh` client sits at the top level of the spec:
 
 ```yaml
-admin:
-  url: https://config-backend.example.com
-  client:
-    clientId: my-custom-admin-client
-    realm:
-      name: my-realm
-      namespace: dev
-mesh:
-  fullMesh: true
-  client:
-    clientId: my-custom-mesh-client
-    realm:
-      name: my-realm
+spec:
+  local:
+    admin:
+      url: https://config-backend.example.com
+      client:
+        clientId: my-custom-admin-client
+        realm:
+          name: my-realm
+          namespace: dev
+  mesh:
+    fullMesh: true
+    client:
+      clientId: my-custom-mesh-client
+      realm:
+        name: my-realm
+        namespace: dev
+```
+
+### Proxy zones
+
+Not every zone needs to run its own event backend. A **proxy zone** runs no Horizon instance of its own and instead forwards all publish, subscribe, and configuration traffic to a **target zone** — a local zone that does run a backend. Publishers and subscribers in the proxy zone talk only to gateways in their own zone, and the cross-zone hop stays invisible to them.
+
+To configure a proxy zone, set a `proxy:` block instead of `local:` and point it at the target zone:
+
+```yaml
+apiVersion: event.cp.ei.telekom.de/v1
+kind: EventConfig
+metadata:
+  name: dataplane2-event-config
+  namespace: dev
+spec:
+  zone:
+    name: dataplane2
+    namespace: dev
+  proxy:
+    targetZone:
+      name: dataplane1
       namespace: dev
 ```
+
+The target zone must be a **local** (non-proxy) zone running Horizon. Because a proxy zone has no backend of its own, it needs no `admin` or backend URLs — those all belong to the target zone.
+
+:::warning Mutually exclusive
+
+`local` and `proxy` are mutually exclusive. Every `EventConfig` must set exactly one of them, and the resource is rejected if both (or neither) are present.
+
+:::
 
 ### Verifying readiness
 
@@ -291,3 +344,4 @@ If these fields appear and conditions are healthy, your zone is ready for event 
 
 - [Organizations & Teams](./organizations-and-teams.md) — Set up teams within your environments
 - [Architecture: Admin Domain](../architecture/admin.mdx) — Deep dive into the Admin domain
+- [Architecture: Event Domain](../architecture/event.mdx) — Deep dive into the Event domain

@@ -47,10 +47,6 @@ func GetZone(ctx context.Context, scopedClient cclient.ScopedClient, ref client.
 		}
 		return nil, ctrlerrors.BlockedErrorf("zone %q not found", ref.String())
 	}
-	// TODO: figure out if we actually want to check this. Do we really care?
-	// if err := condition.EnsureReady(zone); err != nil {
-	// 	return nil, ctrlerrors.BlockedErrorf("zone %q is not ready", ref.String())
-	// }
 
 	return zone, nil
 }
@@ -327,13 +323,6 @@ func FindAllZonesWithFeatureEnabled(ctx context.Context, featureName adminapi.Fe
 		if controller.IsBeingDeleted(zone) {
 			continue
 		}
-
-		// TODO: Consider whether we should skip zones that are not ready. For now, we will include them in the list, but this may change in the future.
-		// Only consider zones that are ready ...
-		// if err := condition.EnsureReady(zone); err != nil {
-		// 	logger.V(1).Info("Skipping zone that is not ready", "zone", zone.Name)
-		// 	continue
-		// }
 
 		if zone.IsFeatureEnabled(featureName) {
 			zonesWithFeature = append(zonesWithFeature, zone)

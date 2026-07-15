@@ -7,21 +7,21 @@ package controller
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
-	apiapi "github.com/telekom/controlplane/api/api/v1"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
-
 	const (
 		resourceName = "test-resource"
 		BasePath     = "/eni/api/v1"
@@ -37,19 +37,18 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 	}
 
 	BeforeAll(func() {
-
 		By("Creating the environment Namespace")
 		createNamespace(testEnvironment)
 
 		// Note: Namespaces and team are shared with main controller tests
 		// They may already exist, so we handle that gracefully
 		By("Ensuring the Team exists")
-		team = newTeam(teamName, group, testEnvironment, testEnvironment)
+		team = newTeam(teamName, group)
 		err := k8sClient.Create(ctx, team)
 		if err != nil {
 			// Team might already exist from main controller tests, that's OK
-			if err := client.IgnoreAlreadyExists(err); err != nil {
-				Expect(err).NotTo(HaveOccurred())
+			if ignoreErr := client.IgnoreAlreadyExists(err); ignoreErr != nil {
+				Expect(ignoreErr).NotTo(HaveOccurred())
 			}
 		}
 
@@ -78,23 +77,22 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 	})
 
 	Context("Trusted Teams functionality", func() {
-
 		var trustedTeam1, trustedTeam2, trustedTeam3 *organizationv1.Team
 
 		BeforeEach(func() {
 			// Create additional teams for trusted teams testing
 			By("Creating trusted team 1")
-			trustedTeam1 = newTeam("trusted-team-1", "trusted-group-1", testEnvironment, testEnvironment)
+			trustedTeam1 = newTeam("trusted-team-1", "trusted-group-1")
 			err := k8sClient.Create(ctx, trustedTeam1)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating trusted team 2")
-			trustedTeam2 = newTeam("trusted-team-2", "trusted-group-2", testEnvironment, testEnvironment)
+			trustedTeam2 = newTeam("trusted-team-2", "trusted-group-2")
 			err = k8sClient.Create(ctx, trustedTeam2)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating trusted team 3")
-			trustedTeam3 = newTeam("trusted-team-3", "trusted-group-3", testEnvironment, testEnvironment)
+			trustedTeam3 = newTeam("trusted-team-3", "trusted-group-3")
 			err = k8sClient.Create(ctx, trustedTeam3)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -117,7 +115,8 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 							BasePath: BasePath,
 							Upstreams: []roverv1.Upstream{
 								{
-									URL: upstream,
+									URL:    upstream,
+									Weight: 1,
 								},
 							},
 							Visibility: roverv1.VisibilityWorld,
@@ -194,7 +193,8 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 							BasePath: BasePath,
 							Upstreams: []roverv1.Upstream{
 								{
-									URL: upstream,
+									URL:    upstream,
+									Weight: 1,
 								},
 							},
 							Visibility: roverv1.VisibilityWorld,
@@ -248,7 +248,8 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 							BasePath: BasePath,
 							Upstreams: []roverv1.Upstream{
 								{
-									URL: upstream,
+									URL:    upstream,
+									Weight: 1,
 								},
 							},
 							Visibility: roverv1.VisibilityWorld,
@@ -312,7 +313,8 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 							BasePath: BasePath,
 							Upstreams: []roverv1.Upstream{
 								{
-									URL: upstream,
+									URL:    upstream,
+									Weight: 1,
 								},
 							},
 							Visibility: roverv1.VisibilityWorld,
@@ -367,7 +369,8 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 							BasePath: BasePath,
 							Upstreams: []roverv1.Upstream{
 								{
-									URL: upstream,
+									URL:    upstream,
+									Weight: 1,
 								},
 							},
 							Visibility: roverv1.VisibilityWorld,
@@ -417,5 +420,4 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 	})
-
 })

@@ -37,14 +37,21 @@ type ResolverRoot interface {
 	ApprovalConfig() ApprovalConfigResolver
 	ApprovalRequest() ApprovalRequestResolver
 	AvailableTransition() AvailableTransitionResolver
+	BasicAuthCredentials() BasicAuthCredentialsResolver
 	Decision() DecisionResolver
+	EventDelivery() EventDeliveryResolver
 	EventExposure() EventExposureResolver
 	EventExposureInfo() EventExposureInfoResolver
 	EventSubscription() EventSubscriptionResolver
 	EventSubscriptionInfo() EventSubscriptionInfoResolver
 	EventType() EventTypeResolver
+	ExternalId() ExternalIdResolver
+	ExternalIdentityProvider() ExternalIdentityProviderResolver
 	Mutation() MutationResolver
+	OAuth2ClientCredentials() OAuth2ClientCredentialsResolver
 	Query() QueryResolver
+	ResponseFilter() ResponseFilterResolver
+	SelectionFilter() SelectionFilterResolver
 	Team() TeamResolver
 	Zone() ZoneResolver
 }
@@ -104,9 +111,11 @@ type ComplexityRoot struct {
 		LastModifiedAt func(childComplexity int) int
 		Namespace      func(childComplexity int) int
 		Owner          func(childComplexity int) int
+		Security       func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
 		Subscriptions  func(childComplexity int) int
+		Traffic        func(childComplexity int) int
 		Upstreams      func(childComplexity int) int
 		Visibility     func(childComplexity int) int
 	}
@@ -131,23 +140,29 @@ type ComplexityRoot struct {
 		ID                   func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
+		Traffic              func(childComplexity int) int
 		Visibility           func(childComplexity int) int
+	}
+
+	ApiExposureSecurity struct {
+		M2M func(childComplexity int) int
 	}
 
 	ApiSubscription struct {
 		Approval         func(childComplexity int) int
 		ApprovalRequests func(childComplexity int) int
-		ApprovedScopes   func(childComplexity int) int
 		BasePath         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		Environment      func(childComplexity int) int
 		FailoverZones    func(childComplexity int) int
+		GatewayURL       func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		M2mAuthMethod    func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		Security         func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
 		Target           func(childComplexity int) int
@@ -173,6 +188,10 @@ type ComplexityRoot struct {
 		StatusPhase          func(childComplexity int) int
 	}
 
+	ApiSubscriptionSecurity struct {
+		M2M func(childComplexity int) int
+	}
+
 	Application struct {
 		ClientID              func(childComplexity int) int
 		ClientSecret          func(childComplexity int) int
@@ -181,7 +200,9 @@ type ComplexityRoot struct {
 		Environment           func(childComplexity int) int
 		ExposedApis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
 		ExposedEvents         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
+		ExternalIds           func(childComplexity int) int
 		ID                    func(childComplexity int) int
+		IPRestrictions        func(childComplexity int) int
 		LastModifiedAt        func(childComplexity int) int
 		Name                  func(childComplexity int) int
 		Namespace             func(childComplexity int) int
@@ -221,6 +242,7 @@ type ComplexityRoot struct {
 		LastModifiedAt       func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Namespace            func(childComplexity int) int
+		RequestedScopes      func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -258,6 +280,7 @@ type ComplexityRoot struct {
 		LastModifiedAt       func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Namespace            func(childComplexity int) int
+		RequestedScopes      func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -280,6 +303,11 @@ type ComplexityRoot struct {
 	AvailableTransition struct {
 		Action  func(childComplexity int) int
 		ToState func(childComplexity int) int
+	}
+
+	BasicAuthCredentials struct {
+		Password func(childComplexity int) int
+		Username func(childComplexity int) int
 	}
 
 	CreateTeamPayload struct {
@@ -313,21 +341,32 @@ type ComplexityRoot struct {
 		Timestamp      func(childComplexity int) int
 	}
 
+	EventDelivery struct {
+		CircuitBreakerOptOut                      func(childComplexity int) int
+		EnforceGetHttpRequestMethodForHealthCheck func(childComplexity int) int
+		EventRetentionTime                        func(childComplexity int) int
+		Payload                                   func(childComplexity int) int
+		RedeliveriesPerSecond                     func(childComplexity int) int
+		RetryableStatusCodes                      func(childComplexity int) int
+	}
+
 	EventExposure struct {
-		Active         func(childComplexity int) int
-		ApprovalConfig func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		Environment    func(childComplexity int) int
-		EventType      func(childComplexity int) int
-		EventTypeDef   func(childComplexity int) int
-		ID             func(childComplexity int) int
-		LastModifiedAt func(childComplexity int) int
-		Namespace      func(childComplexity int) int
-		Owner          func(childComplexity int) int
-		StatusMessage  func(childComplexity int) int
-		StatusPhase    func(childComplexity int) int
-		Subscriptions  func(childComplexity int) int
-		Visibility     func(childComplexity int) int
+		Active               func(childComplexity int) int
+		ApprovalConfig       func(childComplexity int) int
+		CreatedAt            func(childComplexity int) int
+		Environment          func(childComplexity int) int
+		EventScopes          func(childComplexity int) int
+		EventType            func(childComplexity int) int
+		EventTypeDef         func(childComplexity int) int
+		GatewayPublishingURL func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		LastModifiedAt       func(childComplexity int) int
+		Namespace            func(childComplexity int) int
+		Owner                func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
+		Subscriptions        func(childComplexity int) int
+		Visibility           func(childComplexity int) int
 	}
 
 	EventExposureConnection struct {
@@ -351,22 +390,31 @@ type ComplexityRoot struct {
 		Visibility           func(childComplexity int) int
 	}
 
+	EventScope struct {
+		Name    func(childComplexity int) int
+		Trigger func(childComplexity int) int
+	}
+
 	EventSubscription struct {
 		Approval         func(childComplexity int) int
 		ApprovalRequests func(childComplexity int) int
 		CallbackURL      func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
+		Delivery         func(childComplexity int) int
 		DeliveryType     func(childComplexity int) int
 		Environment      func(childComplexity int) int
 		EventType        func(childComplexity int) int
+		GatewaySseURL    func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		Scopes           func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
 		Target           func(childComplexity int) int
+		Trigger          func(childComplexity int) int
 	}
 
 	EventSubscriptionConnection struct {
@@ -388,6 +436,11 @@ type ComplexityRoot struct {
 		OwnerTeam            func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
 		StatusPhase          func(childComplexity int) int
+	}
+
+	EventTrigger struct {
+		ResponseFilter  func(childComplexity int) int
+		SelectionFilter func(childComplexity int) int
 	}
 
 	EventType struct {
@@ -417,6 +470,19 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ExternalId struct {
+		Id     func(childComplexity int) int
+		Schema func(childComplexity int) int
+	}
+
+	ExternalIdentityProvider struct {
+		Basic         func(childComplexity int) int
+		Client        func(childComplexity int) int
+		GrantType     func(childComplexity int) int
+		TokenEndpoint func(childComplexity int) int
+		TokenRequest  func(childComplexity int) int
+	}
+
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
@@ -425,6 +491,23 @@ type ComplexityRoot struct {
 		Name        func(childComplexity int) int
 		Namespace   func(childComplexity int) int
 		Teams       func(childComplexity int) int
+	}
+
+	IpRestrictions struct {
+		Allow func(childComplexity int) int
+		Deny  func(childComplexity int) int
+	}
+
+	Limits struct {
+		Hour   func(childComplexity int) int
+		Minute func(childComplexity int) int
+		Second func(childComplexity int) int
+	}
+
+	Machine2MachineAuthentication struct {
+		Basic       func(childComplexity int) int
+		ExternalIDP func(childComplexity int) int
+		Scopes      func(childComplexity int) int
 	}
 
 	Member struct {
@@ -452,6 +535,12 @@ type ComplexityRoot struct {
 		Message func(childComplexity int) int
 	}
 
+	OAuth2ClientCredentials struct {
+		ClientId     func(childComplexity int) int
+		ClientKey    func(childComplexity int) int
+		ClientSecret func(childComplexity int) int
+	}
+
 	PageInfo struct {
 		EndCursor       func(childComplexity int) int
 		HasNextPage     func(childComplexity int) int
@@ -476,6 +565,26 @@ type ComplexityRoot struct {
 		Zones              func(childComplexity int) int
 	}
 
+	RateLimit struct {
+		Provider            func(childComplexity int) int
+		SubscriberRateLimit func(childComplexity int) int
+	}
+
+	RateLimitConfig struct {
+		Limits  func(childComplexity int) int
+		Options func(childComplexity int) int
+	}
+
+	RateLimitOptions struct {
+		FaultTolerant     func(childComplexity int) int
+		HideClientHeaders func(childComplexity int) int
+	}
+
+	RateLimitOverrides struct {
+		Limits     func(childComplexity int) int
+		Subscriber func(childComplexity int) int
+	}
+
 	RemoveTeamMemberPayload struct {
 		Errors func(childComplexity int) int
 		Team   func(childComplexity int) int
@@ -488,6 +597,11 @@ type ComplexityRoot struct {
 		TeamName        func(childComplexity int) int
 	}
 
+	ResponseFilter struct {
+		Mode  func(childComplexity int) int
+		Paths func(childComplexity int) int
+	}
+
 	RotateApplicationSecretPayload struct {
 		Accepted    func(childComplexity int) int
 		Application func(childComplexity int) int
@@ -498,6 +612,26 @@ type ComplexityRoot struct {
 		Accepted func(childComplexity int) int
 		Errors   func(childComplexity int) int
 		Team     func(childComplexity int) int
+	}
+
+	SelectionFilter struct {
+		Attributes func(childComplexity int) int
+		Expression func(childComplexity int) int
+	}
+
+	SubscriberMachine2MachineAuthentication struct {
+		Basic  func(childComplexity int) int
+		Client func(childComplexity int) int
+		Scopes func(childComplexity int) int
+	}
+
+	SubscriberRateLimitDefaults struct {
+		Limits func(childComplexity int) int
+	}
+
+	SubscriberRateLimits struct {
+		Default   func(childComplexity int) int
+		Overrides func(childComplexity int) int
 	}
 
 	Team struct {
@@ -539,6 +673,10 @@ type ComplexityRoot struct {
 		GroupName   func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
+	}
+
+	Traffic struct {
+		RateLimit func(childComplexity int) int
 	}
 
 	UpdateTeamPayload struct {
@@ -584,7 +722,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AddTeamMemberPayload.Errors(childComplexity), true
-
 	case "AddTeamMemberPayload.team":
 		if e.ComplexityRoot.AddTeamMemberPayload.Team == nil {
 			break
@@ -598,98 +735,84 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Api.Active(childComplexity), true
-
 	case "Api.activeExposure":
 		if e.ComplexityRoot.Api.ActiveExposure == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.ActiveExposure(childComplexity), true
-
 	case "Api.basePath":
 		if e.ComplexityRoot.Api.BasePath == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.BasePath(childComplexity), true
-
 	case "Api.category":
 		if e.ComplexityRoot.Api.Category == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Category(childComplexity), true
-
 	case "Api.createdAt":
 		if e.ComplexityRoot.Api.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.CreatedAt(childComplexity), true
-
 	case "Api.id":
 		if e.ComplexityRoot.Api.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.ID(childComplexity), true
-
 	case "Api.lastModifiedAt":
 		if e.ComplexityRoot.Api.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.LastModifiedAt(childComplexity), true
-
 	case "Api.namespace":
 		if e.ComplexityRoot.Api.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Namespace(childComplexity), true
-
 	case "Api.oauth2Scopes":
 		if e.ComplexityRoot.Api.Oauth2Scopes == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Oauth2Scopes(childComplexity), true
-
 	case "Api.owner":
 		if e.ComplexityRoot.Api.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Owner(childComplexity), true
-
 	case "Api.specificationUrl":
 		if e.ComplexityRoot.Api.SpecificationURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.SpecificationURL(childComplexity), true
-
 	case "Api.statusMessage":
 		if e.ComplexityRoot.Api.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.StatusMessage(childComplexity), true
-
 	case "Api.statusPhase":
 		if e.ComplexityRoot.Api.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.StatusPhase(childComplexity), true
-
 	case "Api.version":
 		if e.ComplexityRoot.Api.Version == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Api.Version(childComplexity), true
-
 	case "Api.xVendor":
 		if e.ComplexityRoot.Api.XVendor == nil {
 			break
@@ -710,14 +833,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiConnection.Edges(childComplexity), true
-
 	case "ApiConnection.pageInfo":
 		if e.ComplexityRoot.ApiConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiConnection.PageInfo(childComplexity), true
-
 	case "ApiConnection.totalCount":
 		if e.ComplexityRoot.ApiConnection.TotalCount == nil {
 			break
@@ -731,7 +852,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiEdge.Cursor(childComplexity), true
-
 	case "ApiEdge.node":
 		if e.ComplexityRoot.ApiEdge.Node == nil {
 			break
@@ -745,112 +865,108 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposure.API(childComplexity), true
-
 	case "ApiExposure.apiVersion":
 		if e.ComplexityRoot.ApiExposure.APIVersion == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.APIVersion(childComplexity), true
-
 	case "ApiExposure.active":
 		if e.ComplexityRoot.ApiExposure.Active == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Active(childComplexity), true
-
 	case "ApiExposure.approvalConfig":
 		if e.ComplexityRoot.ApiExposure.ApprovalConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.ApprovalConfig(childComplexity), true
-
 	case "ApiExposure.basePath":
 		if e.ComplexityRoot.ApiExposure.BasePath == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.BasePath(childComplexity), true
-
 	case "ApiExposure.createdAt":
 		if e.ComplexityRoot.ApiExposure.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.CreatedAt(childComplexity), true
-
 	case "ApiExposure.environment":
 		if e.ComplexityRoot.ApiExposure.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Environment(childComplexity), true
-
 	case "ApiExposure.features":
 		if e.ComplexityRoot.ApiExposure.Features == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Features(childComplexity), true
-
 	case "ApiExposure.id":
 		if e.ComplexityRoot.ApiExposure.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.ID(childComplexity), true
-
 	case "ApiExposure.lastModifiedAt":
 		if e.ComplexityRoot.ApiExposure.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.LastModifiedAt(childComplexity), true
-
 	case "ApiExposure.namespace":
 		if e.ComplexityRoot.ApiExposure.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Namespace(childComplexity), true
-
 	case "ApiExposure.owner":
 		if e.ComplexityRoot.ApiExposure.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Owner(childComplexity), true
+	case "ApiExposure.security":
+		if e.ComplexityRoot.ApiExposure.Security == nil {
+			break
+		}
 
+		return e.ComplexityRoot.ApiExposure.Security(childComplexity), true
 	case "ApiExposure.statusMessage":
 		if e.ComplexityRoot.ApiExposure.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.StatusMessage(childComplexity), true
-
 	case "ApiExposure.statusPhase":
 		if e.ComplexityRoot.ApiExposure.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.StatusPhase(childComplexity), true
-
 	case "ApiExposure.subscriptions":
 		if e.ComplexityRoot.ApiExposure.Subscriptions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Subscriptions(childComplexity), true
+	case "ApiExposure.traffic":
+		if e.ComplexityRoot.ApiExposure.Traffic == nil {
+			break
+		}
 
+		return e.ComplexityRoot.ApiExposure.Traffic(childComplexity), true
 	case "ApiExposure.upstreams":
 		if e.ComplexityRoot.ApiExposure.Upstreams == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Upstreams(childComplexity), true
-
 	case "ApiExposure.visibility":
 		if e.ComplexityRoot.ApiExposure.Visibility == nil {
 			break
@@ -864,14 +980,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureConnection.Edges(childComplexity), true
-
 	case "ApiExposureConnection.pageInfo":
 		if e.ComplexityRoot.ApiExposureConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureConnection.PageInfo(childComplexity), true
-
 	case "ApiExposureConnection.totalCount":
 		if e.ComplexityRoot.ApiExposureConnection.TotalCount == nil {
 			break
@@ -885,7 +999,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureEdge.Cursor(childComplexity), true
-
 	case "ApiExposureEdge.node":
 		if e.ComplexityRoot.ApiExposureEdge.Node == nil {
 			break
@@ -899,56 +1012,54 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.Active(childComplexity), true
-
 	case "ApiExposureInfo.apiVersion":
 		if e.ComplexityRoot.ApiExposureInfo.ApiVersion == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.ApiVersion(childComplexity), true
-
 	case "ApiExposureInfo.approvalConfig":
 		if e.ComplexityRoot.ApiExposureInfo.ApprovalConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.ApprovalConfig(childComplexity), true
-
 	case "ApiExposureInfo.basePath":
 		if e.ComplexityRoot.ApiExposureInfo.BasePath == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.BasePath(childComplexity), true
-
 	case "ApiExposureInfo.features":
 		if e.ComplexityRoot.ApiExposureInfo.Features == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.Features(childComplexity), true
-
 	case "ApiExposureInfo.id":
 		if e.ComplexityRoot.ApiExposureInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.ID(childComplexity), true
-
 	case "ApiExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.ApiExposureInfo.OwnerApplicationName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.OwnerApplicationName(childComplexity), true
-
 	case "ApiExposureInfo.ownerTeam":
 		if e.ComplexityRoot.ApiExposureInfo.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.OwnerTeam(childComplexity), true
+	case "ApiExposureInfo.traffic":
+		if e.ComplexityRoot.ApiExposureInfo.Traffic == nil {
+			break
+		}
 
+		return e.ComplexityRoot.ApiExposureInfo.Traffic(childComplexity), true
 	case "ApiExposureInfo.visibility":
 		if e.ComplexityRoot.ApiExposureInfo.Visibility == nil {
 			break
@@ -956,111 +1067,109 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposureInfo.Visibility(childComplexity), true
 
+	case "ApiExposureSecurity.m2m":
+		if e.ComplexityRoot.ApiExposureSecurity.M2M == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureSecurity.M2M(childComplexity), true
+
 	case "ApiSubscription.approval":
 		if e.ComplexityRoot.ApiSubscription.Approval == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Approval(childComplexity), true
-
 	case "ApiSubscription.approvalRequests":
 		if e.ComplexityRoot.ApiSubscription.ApprovalRequests == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.ApprovalRequests(childComplexity), true
-
-	case "ApiSubscription.approvedScopes":
-		if e.ComplexityRoot.ApiSubscription.ApprovedScopes == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiSubscription.ApprovedScopes(childComplexity), true
-
 	case "ApiSubscription.basePath":
 		if e.ComplexityRoot.ApiSubscription.BasePath == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.BasePath(childComplexity), true
-
 	case "ApiSubscription.createdAt":
 		if e.ComplexityRoot.ApiSubscription.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.CreatedAt(childComplexity), true
-
 	case "ApiSubscription.environment":
 		if e.ComplexityRoot.ApiSubscription.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Environment(childComplexity), true
-
 	case "ApiSubscription.failoverZones":
 		if e.ComplexityRoot.ApiSubscription.FailoverZones == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.FailoverZones(childComplexity), true
+	case "ApiSubscription.gatewayURL":
+		if e.ComplexityRoot.ApiSubscription.GatewayURL == nil {
+			break
+		}
 
+		return e.ComplexityRoot.ApiSubscription.GatewayURL(childComplexity), true
 	case "ApiSubscription.id":
 		if e.ComplexityRoot.ApiSubscription.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.ID(childComplexity), true
-
 	case "ApiSubscription.lastModifiedAt":
 		if e.ComplexityRoot.ApiSubscription.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.LastModifiedAt(childComplexity), true
-
 	case "ApiSubscription.m2mAuthMethod":
 		if e.ComplexityRoot.ApiSubscription.M2mAuthMethod == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.M2mAuthMethod(childComplexity), true
-
 	case "ApiSubscription.name":
 		if e.ComplexityRoot.ApiSubscription.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Name(childComplexity), true
-
 	case "ApiSubscription.namespace":
 		if e.ComplexityRoot.ApiSubscription.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Namespace(childComplexity), true
-
 	case "ApiSubscription.owner":
 		if e.ComplexityRoot.ApiSubscription.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Owner(childComplexity), true
+	case "ApiSubscription.security":
+		if e.ComplexityRoot.ApiSubscription.Security == nil {
+			break
+		}
 
+		return e.ComplexityRoot.ApiSubscription.Security(childComplexity), true
 	case "ApiSubscription.statusMessage":
 		if e.ComplexityRoot.ApiSubscription.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.StatusMessage(childComplexity), true
-
 	case "ApiSubscription.statusPhase":
 		if e.ComplexityRoot.ApiSubscription.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscription.StatusPhase(childComplexity), true
-
 	case "ApiSubscription.target":
 		if e.ComplexityRoot.ApiSubscription.Target == nil {
 			break
@@ -1074,14 +1183,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionConnection.Edges(childComplexity), true
-
 	case "ApiSubscriptionConnection.pageInfo":
 		if e.ComplexityRoot.ApiSubscriptionConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionConnection.PageInfo(childComplexity), true
-
 	case "ApiSubscriptionConnection.totalCount":
 		if e.ComplexityRoot.ApiSubscriptionConnection.TotalCount == nil {
 			break
@@ -1095,7 +1202,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionEdge.Cursor(childComplexity), true
-
 	case "ApiSubscriptionEdge.node":
 		if e.ComplexityRoot.ApiSubscriptionEdge.Node == nil {
 			break
@@ -1109,35 +1215,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.BasePath(childComplexity), true
-
 	case "ApiSubscriptionInfo.id":
 		if e.ComplexityRoot.ApiSubscriptionInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.ID(childComplexity), true
-
 	case "ApiSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplicationName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplicationName(childComplexity), true
-
 	case "ApiSubscriptionInfo.ownerTeam":
 		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.OwnerTeam(childComplexity), true
-
 	case "ApiSubscriptionInfo.statusMessage":
 		if e.ComplexityRoot.ApiSubscriptionInfo.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.StatusMessage(childComplexity), true
-
 	case "ApiSubscriptionInfo.statusPhase":
 		if e.ComplexityRoot.ApiSubscriptionInfo.StatusPhase == nil {
 			break
@@ -1145,41 +1246,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.StatusPhase(childComplexity), true
 
+	case "ApiSubscriptionSecurity.m2m":
+		if e.ComplexityRoot.ApiSubscriptionSecurity.M2M == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionSecurity.M2M(childComplexity), true
+
 	case "Application.clientID":
 		if e.ComplexityRoot.Application.ClientID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ClientID(childComplexity), true
-
 	case "Application.clientSecret":
 		if e.ComplexityRoot.Application.ClientSecret == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ClientSecret(childComplexity), true
-
 	case "Application.createdAt":
 		if e.ComplexityRoot.Application.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.CreatedAt(childComplexity), true
-
 	case "Application.currentExpiresAt":
 		if e.ComplexityRoot.Application.CurrentExpiresAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.CurrentExpiresAt(childComplexity), true
-
 	case "Application.environment":
 		if e.ComplexityRoot.Application.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.Environment(childComplexity), true
-
 	case "Application.exposedApis":
 		if e.ComplexityRoot.Application.ExposedApis == nil {
 			break
@@ -1191,7 +1294,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.ExposedApis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiExposureOrder), args["where"].(*ent.ApiExposureWhereInput)), true
-
 	case "Application.exposedEvents":
 		if e.ComplexityRoot.Application.ExposedEvents == nil {
 			break
@@ -1203,84 +1305,84 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.ExposedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
+	case "Application.externalIds":
+		if e.ComplexityRoot.Application.ExternalIds == nil {
+			break
+		}
 
+		return e.ComplexityRoot.Application.ExternalIds(childComplexity), true
 	case "Application.id":
 		if e.ComplexityRoot.Application.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.ID(childComplexity), true
+	case "Application.ipRestrictions":
+		if e.ComplexityRoot.Application.IPRestrictions == nil {
+			break
+		}
 
+		return e.ComplexityRoot.Application.IPRestrictions(childComplexity), true
 	case "Application.lastModifiedAt":
 		if e.ComplexityRoot.Application.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.LastModifiedAt(childComplexity), true
-
 	case "Application.name":
 		if e.ComplexityRoot.Application.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.Name(childComplexity), true
-
 	case "Application.namespace":
 		if e.ComplexityRoot.Application.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.Namespace(childComplexity), true
-
 	case "Application.ownerTeam":
 		if e.ComplexityRoot.Application.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.OwnerTeam(childComplexity), true
-
 	case "Application.rotatedClientSecret":
 		if e.ComplexityRoot.Application.RotatedClientSecret == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.RotatedClientSecret(childComplexity), true
-
 	case "Application.rotatedExpiresAt":
 		if e.ComplexityRoot.Application.RotatedExpiresAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.RotatedExpiresAt(childComplexity), true
-
 	case "Application.secretRotationMessage":
 		if e.ComplexityRoot.Application.SecretRotationMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.SecretRotationMessage(childComplexity), true
-
 	case "Application.secretRotationPhase":
 		if e.ComplexityRoot.Application.SecretRotationPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.SecretRotationPhase(childComplexity), true
-
 	case "Application.statusMessage":
 		if e.ComplexityRoot.Application.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.StatusMessage(childComplexity), true
-
 	case "Application.statusPhase":
 		if e.ComplexityRoot.Application.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.StatusPhase(childComplexity), true
-
 	case "Application.subscribedApis":
 		if e.ComplexityRoot.Application.SubscribedApis == nil {
 			break
@@ -1292,7 +1394,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedApis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiSubscriptionOrder), args["where"].(*ent.ApiSubscriptionWhereInput)), true
-
 	case "Application.subscribedEvents":
 		if e.ComplexityRoot.Application.SubscribedEvents == nil {
 			break
@@ -1304,7 +1405,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
-
 	case "Application.zone":
 		if e.ComplexityRoot.Application.Zone == nil {
 			break
@@ -1318,14 +1418,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApplicationConnection.Edges(childComplexity), true
-
 	case "ApplicationConnection.pageInfo":
 		if e.ComplexityRoot.ApplicationConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApplicationConnection.PageInfo(childComplexity), true
-
 	case "ApplicationConnection.totalCount":
 		if e.ComplexityRoot.ApplicationConnection.TotalCount == nil {
 			break
@@ -1339,7 +1437,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApplicationEdge.Cursor(childComplexity), true
-
 	case "ApplicationEdge.node":
 		if e.ComplexityRoot.ApplicationEdge.Node == nil {
 			break
@@ -1353,119 +1450,108 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.Action(childComplexity), true
-
 	case "Approval.availableTransitions":
 		if e.ComplexityRoot.Approval.AvailableTransitions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.AvailableTransitions(childComplexity), true
-
 	case "Approval.createdAt":
 		if e.ComplexityRoot.Approval.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.CreatedAt(childComplexity), true
-
 	case "Approval.decider":
 		if e.ComplexityRoot.Approval.Decider == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Decider(childComplexity), true
-
 	case "Approval.deciderTeamName":
 		if e.ComplexityRoot.Approval.DeciderTeamName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.DeciderTeamName(childComplexity), true
-
 	case "Approval.decisions":
 		if e.ComplexityRoot.Approval.Decisions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Decisions(childComplexity), true
-
 	case "Approval.environment":
 		if e.ComplexityRoot.Approval.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Environment(childComplexity), true
-
 	case "Approval.expiresat":
 		if e.ComplexityRoot.Approval.ExpiresAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.ExpiresAt(childComplexity), true
-
 	case "Approval.id":
 		if e.ComplexityRoot.Approval.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.ID(childComplexity), true
-
 	case "Approval.lastModifiedAt":
 		if e.ComplexityRoot.Approval.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.LastModifiedAt(childComplexity), true
-
 	case "Approval.name":
 		if e.ComplexityRoot.Approval.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Name(childComplexity), true
-
 	case "Approval.namespace":
 		if e.ComplexityRoot.Approval.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Namespace(childComplexity), true
+	case "Approval.requestedScopes":
+		if e.ComplexityRoot.Approval.RequestedScopes == nil {
+			break
+		}
 
+		return e.ComplexityRoot.Approval.RequestedScopes(childComplexity), true
 	case "Approval.requester":
 		if e.ComplexityRoot.Approval.Requester == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Requester(childComplexity), true
-
 	case "Approval.state":
 		if e.ComplexityRoot.Approval.State == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.State(childComplexity), true
-
 	case "Approval.statusMessage":
 		if e.ComplexityRoot.Approval.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.StatusMessage(childComplexity), true
-
 	case "Approval.statusPhase":
 		if e.ComplexityRoot.Approval.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.StatusPhase(childComplexity), true
-
 	case "Approval.strategy":
 		if e.ComplexityRoot.Approval.Strategy == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Approval.Strategy(childComplexity), true
-
 	case "Approval.subscription":
 		if e.ComplexityRoot.Approval.Subscription == nil {
 			break
@@ -1479,7 +1565,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalConfig.Strategy(childComplexity), true
-
 	case "ApprovalConfig.trustedTeams":
 		if e.ComplexityRoot.ApprovalConfig.TrustedTeams == nil {
 			break
@@ -1493,14 +1578,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalConnection.Edges(childComplexity), true
-
 	case "ApprovalConnection.pageInfo":
 		if e.ComplexityRoot.ApprovalConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalConnection.PageInfo(childComplexity), true
-
 	case "ApprovalConnection.totalCount":
 		if e.ComplexityRoot.ApprovalConnection.TotalCount == nil {
 			break
@@ -1514,7 +1597,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalEdge.Cursor(childComplexity), true
-
 	case "ApprovalEdge.node":
 		if e.ComplexityRoot.ApprovalEdge.Node == nil {
 			break
@@ -1528,119 +1610,108 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Action(childComplexity), true
-
 	case "ApprovalRequest.approval":
 		if e.ComplexityRoot.ApprovalRequest.Approval == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Approval(childComplexity), true
-
 	case "ApprovalRequest.availableTransitions":
 		if e.ComplexityRoot.ApprovalRequest.AvailableTransitions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.AvailableTransitions(childComplexity), true
-
 	case "ApprovalRequest.createdAt":
 		if e.ComplexityRoot.ApprovalRequest.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.CreatedAt(childComplexity), true
-
 	case "ApprovalRequest.decider":
 		if e.ComplexityRoot.ApprovalRequest.Decider == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Decider(childComplexity), true
-
 	case "ApprovalRequest.deciderTeamName":
 		if e.ComplexityRoot.ApprovalRequest.DeciderTeamName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.DeciderTeamName(childComplexity), true
-
 	case "ApprovalRequest.decisions":
 		if e.ComplexityRoot.ApprovalRequest.Decisions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Decisions(childComplexity), true
-
 	case "ApprovalRequest.environment":
 		if e.ComplexityRoot.ApprovalRequest.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Environment(childComplexity), true
-
 	case "ApprovalRequest.id":
 		if e.ComplexityRoot.ApprovalRequest.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.ID(childComplexity), true
-
 	case "ApprovalRequest.lastModifiedAt":
 		if e.ComplexityRoot.ApprovalRequest.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.LastModifiedAt(childComplexity), true
-
 	case "ApprovalRequest.name":
 		if e.ComplexityRoot.ApprovalRequest.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Name(childComplexity), true
-
 	case "ApprovalRequest.namespace":
 		if e.ComplexityRoot.ApprovalRequest.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Namespace(childComplexity), true
+	case "ApprovalRequest.requestedScopes":
+		if e.ComplexityRoot.ApprovalRequest.RequestedScopes == nil {
+			break
+		}
 
+		return e.ComplexityRoot.ApprovalRequest.RequestedScopes(childComplexity), true
 	case "ApprovalRequest.requester":
 		if e.ComplexityRoot.ApprovalRequest.Requester == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Requester(childComplexity), true
-
 	case "ApprovalRequest.state":
 		if e.ComplexityRoot.ApprovalRequest.State == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.State(childComplexity), true
-
 	case "ApprovalRequest.statusMessage":
 		if e.ComplexityRoot.ApprovalRequest.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.StatusMessage(childComplexity), true
-
 	case "ApprovalRequest.statusPhase":
 		if e.ComplexityRoot.ApprovalRequest.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.StatusPhase(childComplexity), true
-
 	case "ApprovalRequest.strategy":
 		if e.ComplexityRoot.ApprovalRequest.Strategy == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Strategy(childComplexity), true
-
 	case "ApprovalRequest.subscription":
 		if e.ComplexityRoot.ApprovalRequest.Subscription == nil {
 			break
@@ -1654,14 +1725,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequestConnection.Edges(childComplexity), true
-
 	case "ApprovalRequestConnection.pageInfo":
 		if e.ComplexityRoot.ApprovalRequestConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApprovalRequestConnection.PageInfo(childComplexity), true
-
 	case "ApprovalRequestConnection.totalCount":
 		if e.ComplexityRoot.ApprovalRequestConnection.TotalCount == nil {
 			break
@@ -1675,7 +1744,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequestEdge.Cursor(childComplexity), true
-
 	case "ApprovalRequestEdge.node":
 		if e.ComplexityRoot.ApprovalRequestEdge.Node == nil {
 			break
@@ -1689,7 +1757,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AvailableTransition.Action(childComplexity), true
-
 	case "AvailableTransition.toState":
 		if e.ComplexityRoot.AvailableTransition.ToState == nil {
 			break
@@ -1697,20 +1764,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AvailableTransition.ToState(childComplexity), true
 
+	case "BasicAuthCredentials.password":
+		if e.ComplexityRoot.BasicAuthCredentials.Password == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BasicAuthCredentials.Password(childComplexity), true
+	case "BasicAuthCredentials.username":
+		if e.ComplexityRoot.BasicAuthCredentials.Username == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BasicAuthCredentials.Username(childComplexity), true
+
 	case "CreateTeamPayload.accepted":
 		if e.ComplexityRoot.CreateTeamPayload.Accepted == nil {
 			break
 		}
 
 		return e.ComplexityRoot.CreateTeamPayload.Accepted(childComplexity), true
-
 	case "CreateTeamPayload.errors":
 		if e.ComplexityRoot.CreateTeamPayload.Errors == nil {
 			break
 		}
 
 		return e.ComplexityRoot.CreateTeamPayload.Errors(childComplexity), true
-
 	case "CreateTeamPayload.team":
 		if e.ComplexityRoot.CreateTeamPayload.Team == nil {
 			break
@@ -1724,14 +1802,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DecideApprovalPayload.Accepted(childComplexity), true
-
 	case "DecideApprovalPayload.approval":
 		if e.ComplexityRoot.DecideApprovalPayload.Approval == nil {
 			break
 		}
 
 		return e.ComplexityRoot.DecideApprovalPayload.Approval(childComplexity), true
-
 	case "DecideApprovalPayload.errors":
 		if e.ComplexityRoot.DecideApprovalPayload.Errors == nil {
 			break
@@ -1745,14 +1821,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DecideApprovalRequestPayload.Accepted(childComplexity), true
-
 	case "DecideApprovalRequestPayload.approvalRequest":
 		if e.ComplexityRoot.DecideApprovalRequestPayload.ApprovalRequest == nil {
 			break
 		}
 
 		return e.ComplexityRoot.DecideApprovalRequestPayload.ApprovalRequest(childComplexity), true
-
 	case "DecideApprovalRequestPayload.errors":
 		if e.ComplexityRoot.DecideApprovalRequestPayload.Errors == nil {
 			break
@@ -1766,7 +1840,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DeciderInfo.TeamEmail(childComplexity), true
-
 	case "DeciderInfo.teamName":
 		if e.ComplexityRoot.DeciderInfo.TeamName == nil {
 			break
@@ -1780,28 +1853,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Decision.Comment(childComplexity), true
-
 	case "Decision.email":
 		if e.ComplexityRoot.Decision.Email == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Decision.Email(childComplexity), true
-
 	case "Decision.name":
 		if e.ComplexityRoot.Decision.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Decision.Name(childComplexity), true
-
 	case "Decision.resultingState":
 		if e.ComplexityRoot.Decision.ResultingState == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Decision.ResultingState(childComplexity), true
-
 	case "Decision.timestamp":
 		if e.ComplexityRoot.Decision.Timestamp == nil {
 			break
@@ -1809,97 +1878,133 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Decision.Timestamp(childComplexity), true
 
+	case "EventDelivery.circuitBreakerOptOut":
+		if e.ComplexityRoot.EventDelivery.CircuitBreakerOptOut == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.CircuitBreakerOptOut(childComplexity), true
+	case "EventDelivery.enforceGetHttpRequestMethodForHealthCheck":
+		if e.ComplexityRoot.EventDelivery.EnforceGetHttpRequestMethodForHealthCheck == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.EnforceGetHttpRequestMethodForHealthCheck(childComplexity), true
+	case "EventDelivery.eventRetentionTime":
+		if e.ComplexityRoot.EventDelivery.EventRetentionTime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.EventRetentionTime(childComplexity), true
+	case "EventDelivery.payload":
+		if e.ComplexityRoot.EventDelivery.Payload == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.Payload(childComplexity), true
+	case "EventDelivery.redeliveriesPerSecond":
+		if e.ComplexityRoot.EventDelivery.RedeliveriesPerSecond == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.RedeliveriesPerSecond(childComplexity), true
+	case "EventDelivery.retryableStatusCodes":
+		if e.ComplexityRoot.EventDelivery.RetryableStatusCodes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventDelivery.RetryableStatusCodes(childComplexity), true
+
 	case "EventExposure.active":
 		if e.ComplexityRoot.EventExposure.Active == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Active(childComplexity), true
-
 	case "EventExposure.approvalConfig":
 		if e.ComplexityRoot.EventExposure.ApprovalConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.ApprovalConfig(childComplexity), true
-
 	case "EventExposure.createdAt":
 		if e.ComplexityRoot.EventExposure.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.CreatedAt(childComplexity), true
-
 	case "EventExposure.environment":
 		if e.ComplexityRoot.EventExposure.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Environment(childComplexity), true
+	case "EventExposure.eventScopes":
+		if e.ComplexityRoot.EventExposure.EventScopes == nil {
+			break
+		}
 
+		return e.ComplexityRoot.EventExposure.EventScopes(childComplexity), true
 	case "EventExposure.eventType":
 		if e.ComplexityRoot.EventExposure.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.EventType(childComplexity), true
-
 	case "EventExposure.eventTypeDef":
 		if e.ComplexityRoot.EventExposure.EventTypeDef == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.EventTypeDef(childComplexity), true
+	case "EventExposure.gatewayPublishingURL":
+		if e.ComplexityRoot.EventExposure.GatewayPublishingURL == nil {
+			break
+		}
 
+		return e.ComplexityRoot.EventExposure.GatewayPublishingURL(childComplexity), true
 	case "EventExposure.id":
 		if e.ComplexityRoot.EventExposure.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.ID(childComplexity), true
-
 	case "EventExposure.lastModifiedAt":
 		if e.ComplexityRoot.EventExposure.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.LastModifiedAt(childComplexity), true
-
 	case "EventExposure.namespace":
 		if e.ComplexityRoot.EventExposure.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Namespace(childComplexity), true
-
 	case "EventExposure.owner":
 		if e.ComplexityRoot.EventExposure.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Owner(childComplexity), true
-
 	case "EventExposure.statusMessage":
 		if e.ComplexityRoot.EventExposure.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.StatusMessage(childComplexity), true
-
 	case "EventExposure.statusPhase":
 		if e.ComplexityRoot.EventExposure.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.StatusPhase(childComplexity), true
-
 	case "EventExposure.subscriptions":
 		if e.ComplexityRoot.EventExposure.Subscriptions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposure.Subscriptions(childComplexity), true
-
 	case "EventExposure.visibility":
 		if e.ComplexityRoot.EventExposure.Visibility == nil {
 			break
@@ -1913,14 +2018,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureConnection.Edges(childComplexity), true
-
 	case "EventExposureConnection.pageInfo":
 		if e.ComplexityRoot.EventExposureConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureConnection.PageInfo(childComplexity), true
-
 	case "EventExposureConnection.totalCount":
 		if e.ComplexityRoot.EventExposureConnection.TotalCount == nil {
 			break
@@ -1934,7 +2037,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureEdge.Cursor(childComplexity), true
-
 	case "EventExposureEdge.node":
 		if e.ComplexityRoot.EventExposureEdge.Node == nil {
 			break
@@ -1948,42 +2050,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.Active(childComplexity), true
-
 	case "EventExposureInfo.approvalConfig":
 		if e.ComplexityRoot.EventExposureInfo.ApprovalConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.ApprovalConfig(childComplexity), true
-
 	case "EventExposureInfo.eventType":
 		if e.ComplexityRoot.EventExposureInfo.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.EventType(childComplexity), true
-
 	case "EventExposureInfo.id":
 		if e.ComplexityRoot.EventExposureInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.ID(childComplexity), true
-
 	case "EventExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.EventExposureInfo.OwnerApplicationName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.OwnerApplicationName(childComplexity), true
-
 	case "EventExposureInfo.ownerTeam":
 		if e.ComplexityRoot.EventExposureInfo.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.OwnerTeam(childComplexity), true
-
 	case "EventExposureInfo.visibility":
 		if e.ComplexityRoot.EventExposureInfo.Visibility == nil {
 			break
@@ -1991,110 +2087,133 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventExposureInfo.Visibility(childComplexity), true
 
+	case "EventScope.name":
+		if e.ComplexityRoot.EventScope.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventScope.Name(childComplexity), true
+	case "EventScope.trigger":
+		if e.ComplexityRoot.EventScope.Trigger == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventScope.Trigger(childComplexity), true
+
 	case "EventSubscription.approval":
 		if e.ComplexityRoot.EventSubscription.Approval == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Approval(childComplexity), true
-
 	case "EventSubscription.approvalRequests":
 		if e.ComplexityRoot.EventSubscription.ApprovalRequests == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.ApprovalRequests(childComplexity), true
-
 	case "EventSubscription.callbackURL":
 		if e.ComplexityRoot.EventSubscription.CallbackURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.CallbackURL(childComplexity), true
-
 	case "EventSubscription.createdAt":
 		if e.ComplexityRoot.EventSubscription.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.CreatedAt(childComplexity), true
+	case "EventSubscription.delivery":
+		if e.ComplexityRoot.EventSubscription.Delivery == nil {
+			break
+		}
 
+		return e.ComplexityRoot.EventSubscription.Delivery(childComplexity), true
 	case "EventSubscription.deliveryType":
 		if e.ComplexityRoot.EventSubscription.DeliveryType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.DeliveryType(childComplexity), true
-
 	case "EventSubscription.environment":
 		if e.ComplexityRoot.EventSubscription.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Environment(childComplexity), true
-
 	case "EventSubscription.eventType":
 		if e.ComplexityRoot.EventSubscription.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.EventType(childComplexity), true
+	case "EventSubscription.gatewaySseURL":
+		if e.ComplexityRoot.EventSubscription.GatewaySseURL == nil {
+			break
+		}
 
+		return e.ComplexityRoot.EventSubscription.GatewaySseURL(childComplexity), true
 	case "EventSubscription.id":
 		if e.ComplexityRoot.EventSubscription.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.ID(childComplexity), true
-
 	case "EventSubscription.lastModifiedAt":
 		if e.ComplexityRoot.EventSubscription.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.LastModifiedAt(childComplexity), true
-
 	case "EventSubscription.name":
 		if e.ComplexityRoot.EventSubscription.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Name(childComplexity), true
-
 	case "EventSubscription.namespace":
 		if e.ComplexityRoot.EventSubscription.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Namespace(childComplexity), true
-
 	case "EventSubscription.owner":
 		if e.ComplexityRoot.EventSubscription.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Owner(childComplexity), true
+	case "EventSubscription.scopes":
+		if e.ComplexityRoot.EventSubscription.Scopes == nil {
+			break
+		}
 
+		return e.ComplexityRoot.EventSubscription.Scopes(childComplexity), true
 	case "EventSubscription.statusMessage":
 		if e.ComplexityRoot.EventSubscription.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.StatusMessage(childComplexity), true
-
 	case "EventSubscription.statusPhase":
 		if e.ComplexityRoot.EventSubscription.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.StatusPhase(childComplexity), true
-
 	case "EventSubscription.target":
 		if e.ComplexityRoot.EventSubscription.Target == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscription.Target(childComplexity), true
+	case "EventSubscription.trigger":
+		if e.ComplexityRoot.EventSubscription.Trigger == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.Trigger(childComplexity), true
 
 	case "EventSubscriptionConnection.edges":
 		if e.ComplexityRoot.EventSubscriptionConnection.Edges == nil {
@@ -2102,14 +2221,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscriptionConnection.Edges(childComplexity), true
-
 	case "EventSubscriptionConnection.pageInfo":
 		if e.ComplexityRoot.EventSubscriptionConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionConnection.PageInfo(childComplexity), true
-
 	case "EventSubscriptionConnection.totalCount":
 		if e.ComplexityRoot.EventSubscriptionConnection.TotalCount == nil {
 			break
@@ -2123,7 +2240,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscriptionEdge.Cursor(childComplexity), true
-
 	case "EventSubscriptionEdge.node":
 		if e.ComplexityRoot.EventSubscriptionEdge.Node == nil {
 			break
@@ -2137,42 +2253,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.DeliveryType(childComplexity), true
-
 	case "EventSubscriptionInfo.eventType":
 		if e.ComplexityRoot.EventSubscriptionInfo.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.EventType(childComplexity), true
-
 	case "EventSubscriptionInfo.id":
 		if e.ComplexityRoot.EventSubscriptionInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.ID(childComplexity), true
-
 	case "EventSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.EventSubscriptionInfo.OwnerApplicationName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.OwnerApplicationName(childComplexity), true
-
 	case "EventSubscriptionInfo.ownerTeam":
 		if e.ComplexityRoot.EventSubscriptionInfo.OwnerTeam == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.OwnerTeam(childComplexity), true
-
 	case "EventSubscriptionInfo.statusMessage":
 		if e.ComplexityRoot.EventSubscriptionInfo.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.StatusMessage(childComplexity), true
-
 	case "EventSubscriptionInfo.statusPhase":
 		if e.ComplexityRoot.EventSubscriptionInfo.StatusPhase == nil {
 			break
@@ -2180,90 +2290,91 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventSubscriptionInfo.StatusPhase(childComplexity), true
 
+	case "EventTrigger.responseFilter":
+		if e.ComplexityRoot.EventTrigger.ResponseFilter == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventTrigger.ResponseFilter(childComplexity), true
+	case "EventTrigger.selectionFilter":
+		if e.ComplexityRoot.EventTrigger.SelectionFilter == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventTrigger.SelectionFilter(childComplexity), true
+
 	case "EventType.active":
 		if e.ComplexityRoot.EventType.Active == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.Active(childComplexity), true
-
 	case "EventType.activeExposure":
 		if e.ComplexityRoot.EventType.ActiveExposure == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.ActiveExposure(childComplexity), true
-
 	case "EventType.createdAt":
 		if e.ComplexityRoot.EventType.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.CreatedAt(childComplexity), true
-
 	case "EventType.description":
 		if e.ComplexityRoot.EventType.Description == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.Description(childComplexity), true
-
 	case "EventType.eventType":
 		if e.ComplexityRoot.EventType.EventType == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.EventType(childComplexity), true
-
 	case "EventType.id":
 		if e.ComplexityRoot.EventType.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.ID(childComplexity), true
-
 	case "EventType.lastModifiedAt":
 		if e.ComplexityRoot.EventType.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.LastModifiedAt(childComplexity), true
-
 	case "EventType.namespace":
 		if e.ComplexityRoot.EventType.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.Namespace(childComplexity), true
-
 	case "EventType.owner":
 		if e.ComplexityRoot.EventType.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.Owner(childComplexity), true
-
 	case "EventType.specificationUrl":
 		if e.ComplexityRoot.EventType.SpecificationURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.SpecificationURL(childComplexity), true
-
 	case "EventType.statusMessage":
 		if e.ComplexityRoot.EventType.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.StatusMessage(childComplexity), true
-
 	case "EventType.statusPhase":
 		if e.ComplexityRoot.EventType.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventType.StatusPhase(childComplexity), true
-
 	case "EventType.version":
 		if e.ComplexityRoot.EventType.Version == nil {
 			break
@@ -2277,14 +2388,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventTypeConnection.Edges(childComplexity), true
-
 	case "EventTypeConnection.pageInfo":
 		if e.ComplexityRoot.EventTypeConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.EventTypeConnection.PageInfo(childComplexity), true
-
 	case "EventTypeConnection.totalCount":
 		if e.ComplexityRoot.EventTypeConnection.TotalCount == nil {
 			break
@@ -2298,7 +2407,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventTypeEdge.Cursor(childComplexity), true
-
 	case "EventTypeEdge.node":
 		if e.ComplexityRoot.EventTypeEdge.Node == nil {
 			break
@@ -2306,48 +2414,86 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventTypeEdge.Node(childComplexity), true
 
+	case "ExternalId.Id":
+		if e.ComplexityRoot.ExternalId.Id == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalId.Id(childComplexity), true
+	case "ExternalId.Schema":
+		if e.ComplexityRoot.ExternalId.Schema == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalId.Schema(childComplexity), true
+
+	case "ExternalIdentityProvider.basic":
+		if e.ComplexityRoot.ExternalIdentityProvider.Basic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.Basic(childComplexity), true
+	case "ExternalIdentityProvider.client":
+		if e.ComplexityRoot.ExternalIdentityProvider.Client == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.Client(childComplexity), true
+	case "ExternalIdentityProvider.grantType":
+		if e.ComplexityRoot.ExternalIdentityProvider.GrantType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.GrantType(childComplexity), true
+	case "ExternalIdentityProvider.tokenEndpoint":
+		if e.ComplexityRoot.ExternalIdentityProvider.TokenEndpoint == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.TokenEndpoint(childComplexity), true
+	case "ExternalIdentityProvider.tokenRequest":
+		if e.ComplexityRoot.ExternalIdentityProvider.TokenRequest == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ExternalIdentityProvider.TokenRequest(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.Description(childComplexity), true
-
 	case "Group.displayName":
 		if e.ComplexityRoot.Group.DisplayName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.DisplayName(childComplexity), true
-
 	case "Group.environment":
 		if e.ComplexityRoot.Group.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.Environment(childComplexity), true
-
 	case "Group.id":
 		if e.ComplexityRoot.Group.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.ID(childComplexity), true
-
 	case "Group.name":
 		if e.ComplexityRoot.Group.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.Name(childComplexity), true
-
 	case "Group.namespace":
 		if e.ComplexityRoot.Group.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Group.Namespace(childComplexity), true
-
 	case "Group.teams":
 		if e.ComplexityRoot.Group.Teams == nil {
 			break
@@ -2355,34 +2501,81 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Group.Teams(childComplexity), true
 
+	case "IpRestrictions.Allow":
+		if e.ComplexityRoot.IpRestrictions.Allow == nil {
+			break
+		}
+
+		return e.ComplexityRoot.IpRestrictions.Allow(childComplexity), true
+	case "IpRestrictions.Deny":
+		if e.ComplexityRoot.IpRestrictions.Deny == nil {
+			break
+		}
+
+		return e.ComplexityRoot.IpRestrictions.Deny(childComplexity), true
+
+	case "Limits.hour":
+		if e.ComplexityRoot.Limits.Hour == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Limits.Hour(childComplexity), true
+	case "Limits.minute":
+		if e.ComplexityRoot.Limits.Minute == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Limits.Minute(childComplexity), true
+	case "Limits.second":
+		if e.ComplexityRoot.Limits.Second == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Limits.Second(childComplexity), true
+
+	case "Machine2MachineAuthentication.basic":
+		if e.ComplexityRoot.Machine2MachineAuthentication.Basic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Machine2MachineAuthentication.Basic(childComplexity), true
+	case "Machine2MachineAuthentication.externalIDP":
+		if e.ComplexityRoot.Machine2MachineAuthentication.ExternalIDP == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Machine2MachineAuthentication.ExternalIDP(childComplexity), true
+	case "Machine2MachineAuthentication.scopes":
+		if e.ComplexityRoot.Machine2MachineAuthentication.Scopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Machine2MachineAuthentication.Scopes(childComplexity), true
+
 	case "Member.email":
 		if e.ComplexityRoot.Member.Email == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Member.Email(childComplexity), true
-
 	case "Member.environment":
 		if e.ComplexityRoot.Member.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Member.Environment(childComplexity), true
-
 	case "Member.id":
 		if e.ComplexityRoot.Member.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Member.ID(childComplexity), true
-
 	case "Member.name":
 		if e.ComplexityRoot.Member.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Member.Name(childComplexity), true
-
 	case "Member.team":
 		if e.ComplexityRoot.Member.Team == nil {
 			break
@@ -2401,7 +2594,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddTeamMember(childComplexity, args["teamId"].(int), args["member"].(model.MemberInput)), true
-
 	case "Mutation.createTeam":
 		if e.ComplexityRoot.Mutation.CreateTeam == nil {
 			break
@@ -2413,7 +2605,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateTeam(childComplexity, args["input"].(model.CreateTeamInput)), true
-
 	case "Mutation.decideApproval":
 		if e.ComplexityRoot.Mutation.DecideApproval == nil {
 			break
@@ -2425,7 +2616,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DecideApproval(childComplexity, args["approvalId"].(int), args["input"].(model.DecisionInput)), true
-
 	case "Mutation.decideApprovalRequest":
 		if e.ComplexityRoot.Mutation.DecideApprovalRequest == nil {
 			break
@@ -2437,7 +2627,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DecideApprovalRequest(childComplexity, args["approvalRequestId"].(int), args["input"].(model.DecisionInput)), true
-
 	case "Mutation.removeTeamMember":
 		if e.ComplexityRoot.Mutation.RemoveTeamMember == nil {
 			break
@@ -2449,7 +2638,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RemoveTeamMember(childComplexity, args["teamId"].(int), args["memberEmail"].(string)), true
-
 	case "Mutation.rotateApplicationSecret":
 		if e.ComplexityRoot.Mutation.RotateApplicationSecret == nil {
 			break
@@ -2461,7 +2649,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RotateApplicationSecret(childComplexity, args["applicationId"].(int)), true
-
 	case "Mutation.rotateTeamToken":
 		if e.ComplexityRoot.Mutation.RotateTeamToken == nil {
 			break
@@ -2473,7 +2660,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RotateTeamToken(childComplexity, args["teamId"].(int)), true
-
 	case "Mutation.updateTeam":
 		if e.ComplexityRoot.Mutation.UpdateTeam == nil {
 			break
@@ -2492,14 +2678,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MutationError.Code(childComplexity), true
-
 	case "MutationError.field":
 		if e.ComplexityRoot.MutationError.Field == nil {
 			break
 		}
 
 		return e.ComplexityRoot.MutationError.Field(childComplexity), true
-
 	case "MutationError.message":
 		if e.ComplexityRoot.MutationError.Message == nil {
 			break
@@ -2507,27 +2691,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.MutationError.Message(childComplexity), true
 
+	case "OAuth2ClientCredentials.clientId":
+		if e.ComplexityRoot.OAuth2ClientCredentials.ClientId == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuth2ClientCredentials.ClientId(childComplexity), true
+	case "OAuth2ClientCredentials.clientKey":
+		if e.ComplexityRoot.OAuth2ClientCredentials.ClientKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuth2ClientCredentials.ClientKey(childComplexity), true
+	case "OAuth2ClientCredentials.clientSecret":
+		if e.ComplexityRoot.OAuth2ClientCredentials.ClientSecret == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuth2ClientCredentials.ClientSecret(childComplexity), true
+
 	case "PageInfo.endCursor":
 		if e.ComplexityRoot.PageInfo.EndCursor == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PageInfo.EndCursor(childComplexity), true
-
 	case "PageInfo.hasNextPage":
 		if e.ComplexityRoot.PageInfo.HasNextPage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PageInfo.HasNextPage(childComplexity), true
-
 	case "PageInfo.hasPreviousPage":
 		if e.ComplexityRoot.PageInfo.HasPreviousPage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PageInfo.HasPreviousPage(childComplexity), true
-
 	case "PageInfo.startCursor":
 		if e.ComplexityRoot.PageInfo.StartCursor == nil {
 			break
@@ -2541,7 +2741,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.APICategories(childComplexity), true
-
 	case "Query.apiExposures":
 		if e.ComplexityRoot.Query.APIExposures == nil {
 			break
@@ -2553,7 +2752,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.APIExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiExposureOrder), args["where"].(*ent.ApiExposureWhereInput)), true
-
 	case "Query.apiSubscriptions":
 		if e.ComplexityRoot.Query.APISubscriptions == nil {
 			break
@@ -2565,7 +2763,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.APISubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiSubscriptionOrder), args["where"].(*ent.ApiSubscriptionWhereInput)), true
-
 	case "Query.apis":
 		if e.ComplexityRoot.Query.Apis == nil {
 			break
@@ -2577,7 +2774,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Apis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiOrder), args["where"].(*ent.ApiWhereInput)), true
-
 	case "Query.applications":
 		if e.ComplexityRoot.Query.Applications == nil {
 			break
@@ -2589,7 +2785,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Applications(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApplicationOrder), args["where"].(*ent.ApplicationWhereInput)), true
-
 	case "Query.approvalRequests":
 		if e.ComplexityRoot.Query.ApprovalRequests == nil {
 			break
@@ -2601,7 +2796,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.ApprovalRequests(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApprovalRequestOrder), args["where"].(*ent.ApprovalRequestWhereInput)), true
-
 	case "Query.approvals":
 		if e.ComplexityRoot.Query.Approvals == nil {
 			break
@@ -2613,7 +2807,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Approvals(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApprovalOrder), args["where"].(*ent.ApprovalWhereInput)), true
-
 	case "Query.eventExposures":
 		if e.ComplexityRoot.Query.EventExposures == nil {
 			break
@@ -2625,7 +2818,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
-
 	case "Query.eventSubscriptions":
 		if e.ComplexityRoot.Query.EventSubscriptions == nil {
 			break
@@ -2637,7 +2829,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventSubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
-
 	case "Query.eventTypes":
 		if e.ComplexityRoot.Query.EventTypes == nil {
 			break
@@ -2661,7 +2852,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Node(childComplexity, args["id"].(int)), true
-
 	case "Query.nodes":
 		if e.ComplexityRoot.Query.Nodes == nil {
 			break
@@ -2673,7 +2863,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Nodes(childComplexity, args["ids"].([]int)), true
-
 	case "Query.teams":
 		if e.ComplexityRoot.Query.Teams == nil {
 			break
@@ -2685,7 +2874,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Teams(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.TeamOrder), args["where"].(*ent.TeamWhereInput)), true
-
 	case "Query.zones":
 		if e.ComplexityRoot.Query.Zones == nil {
 			break
@@ -2693,13 +2881,64 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Zones(childComplexity), true
 
+	case "RateLimit.provider":
+		if e.ComplexityRoot.RateLimit.Provider == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimit.Provider(childComplexity), true
+	case "RateLimit.subscriberRateLimit":
+		if e.ComplexityRoot.RateLimit.SubscriberRateLimit == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimit.SubscriberRateLimit(childComplexity), true
+
+	case "RateLimitConfig.limits":
+		if e.ComplexityRoot.RateLimitConfig.Limits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitConfig.Limits(childComplexity), true
+	case "RateLimitConfig.options":
+		if e.ComplexityRoot.RateLimitConfig.Options == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitConfig.Options(childComplexity), true
+
+	case "RateLimitOptions.faultTolerant":
+		if e.ComplexityRoot.RateLimitOptions.FaultTolerant == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitOptions.FaultTolerant(childComplexity), true
+	case "RateLimitOptions.hideClientHeaders":
+		if e.ComplexityRoot.RateLimitOptions.HideClientHeaders == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitOptions.HideClientHeaders(childComplexity), true
+
+	case "RateLimitOverrides.limits":
+		if e.ComplexityRoot.RateLimitOverrides.Limits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitOverrides.Limits(childComplexity), true
+	case "RateLimitOverrides.subscriber":
+		if e.ComplexityRoot.RateLimitOverrides.Subscriber == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RateLimitOverrides.Subscriber(childComplexity), true
+
 	case "RemoveTeamMemberPayload.errors":
 		if e.ComplexityRoot.RemoveTeamMemberPayload.Errors == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RemoveTeamMemberPayload.Errors(childComplexity), true
-
 	case "RemoveTeamMemberPayload.team":
 		if e.ComplexityRoot.RemoveTeamMemberPayload.Team == nil {
 			break
@@ -2713,21 +2952,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RequesterInfo.ApplicationName(childComplexity), true
-
 	case "RequesterInfo.reason":
 		if e.ComplexityRoot.RequesterInfo.Reason == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RequesterInfo.Reason(childComplexity), true
-
 	case "RequesterInfo.teamEmail":
 		if e.ComplexityRoot.RequesterInfo.TeamEmail == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RequesterInfo.TeamEmail(childComplexity), true
-
 	case "RequesterInfo.teamName":
 		if e.ComplexityRoot.RequesterInfo.TeamName == nil {
 			break
@@ -2735,20 +2971,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.RequesterInfo.TeamName(childComplexity), true
 
+	case "ResponseFilter.mode":
+		if e.ComplexityRoot.ResponseFilter.Mode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ResponseFilter.Mode(childComplexity), true
+	case "ResponseFilter.paths":
+		if e.ComplexityRoot.ResponseFilter.Paths == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ResponseFilter.Paths(childComplexity), true
+
 	case "RotateApplicationSecretPayload.accepted":
 		if e.ComplexityRoot.RotateApplicationSecretPayload.Accepted == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RotateApplicationSecretPayload.Accepted(childComplexity), true
-
 	case "RotateApplicationSecretPayload.application":
 		if e.ComplexityRoot.RotateApplicationSecretPayload.Application == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RotateApplicationSecretPayload.Application(childComplexity), true
-
 	case "RotateApplicationSecretPayload.errors":
 		if e.ComplexityRoot.RotateApplicationSecretPayload.Errors == nil {
 			break
@@ -2762,20 +3009,70 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RotateTeamTokenPayload.Accepted(childComplexity), true
-
 	case "RotateTeamTokenPayload.errors":
 		if e.ComplexityRoot.RotateTeamTokenPayload.Errors == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RotateTeamTokenPayload.Errors(childComplexity), true
-
 	case "RotateTeamTokenPayload.team":
 		if e.ComplexityRoot.RotateTeamTokenPayload.Team == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RotateTeamTokenPayload.Team(childComplexity), true
+
+	case "SelectionFilter.attributes":
+		if e.ComplexityRoot.SelectionFilter.Attributes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SelectionFilter.Attributes(childComplexity), true
+	case "SelectionFilter.expression":
+		if e.ComplexityRoot.SelectionFilter.Expression == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SelectionFilter.Expression(childComplexity), true
+
+	case "SubscriberMachine2MachineAuthentication.basic":
+		if e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Basic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Basic(childComplexity), true
+	case "SubscriberMachine2MachineAuthentication.client":
+		if e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Client == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Client(childComplexity), true
+	case "SubscriberMachine2MachineAuthentication.scopes":
+		if e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Scopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberMachine2MachineAuthentication.Scopes(childComplexity), true
+
+	case "SubscriberRateLimitDefaults.limits":
+		if e.ComplexityRoot.SubscriberRateLimitDefaults.Limits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberRateLimitDefaults.Limits(childComplexity), true
+
+	case "SubscriberRateLimits.default":
+		if e.ComplexityRoot.SubscriberRateLimits.Default == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberRateLimits.Default(childComplexity), true
+	case "SubscriberRateLimits.overrides":
+		if e.ComplexityRoot.SubscriberRateLimits.Overrides == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SubscriberRateLimits.Overrides(childComplexity), true
 
 	case "Team.apis":
 		if e.ComplexityRoot.Team.Apis == nil {
@@ -2788,7 +3085,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.Apis(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiOrder), args["where"].(*ent.ApiWhereInput)), true
-
 	case "Team.applications":
 		if e.ComplexityRoot.Team.Applications == nil {
 			break
@@ -2800,49 +3096,42 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.Applications(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ApplicationOrder), args["where"].(*ent.ApplicationWhereInput)), true
-
 	case "Team.category":
 		if e.ComplexityRoot.Team.Category == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Category(childComplexity), true
-
 	case "Team.createdAt":
 		if e.ComplexityRoot.Team.CreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.CreatedAt(childComplexity), true
-
 	case "Team.description":
 		if e.ComplexityRoot.Team.Description == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Description(childComplexity), true
-
 	case "Team.displayname":
 		if e.ComplexityRoot.Team.DisplayName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.DisplayName(childComplexity), true
-
 	case "Team.email":
 		if e.ComplexityRoot.Team.Email == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Email(childComplexity), true
-
 	case "Team.environment":
 		if e.ComplexityRoot.Team.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Environment(childComplexity), true
-
 	case "Team.eventTypes":
 		if e.ComplexityRoot.Team.EventTypes == nil {
 			break
@@ -2854,63 +3143,54 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
-
 	case "Team.group":
 		if e.ComplexityRoot.Team.Group == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Group(childComplexity), true
-
 	case "Team.id":
 		if e.ComplexityRoot.Team.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.ID(childComplexity), true
-
 	case "Team.lastModifiedAt":
 		if e.ComplexityRoot.Team.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.LastModifiedAt(childComplexity), true
-
 	case "Team.members":
 		if e.ComplexityRoot.Team.Members == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Members(childComplexity), true
-
 	case "Team.name":
 		if e.ComplexityRoot.Team.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Name(childComplexity), true
-
 	case "Team.namespace":
 		if e.ComplexityRoot.Team.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.Namespace(childComplexity), true
-
 	case "Team.statusMessage":
 		if e.ComplexityRoot.Team.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.StatusMessage(childComplexity), true
-
 	case "Team.statusPhase":
 		if e.ComplexityRoot.Team.StatusPhase == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Team.StatusPhase(childComplexity), true
-
 	case "Team.teamToken":
 		if e.ComplexityRoot.Team.TeamToken == nil {
 			break
@@ -2924,14 +3204,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamConnection.Edges(childComplexity), true
-
 	case "TeamConnection.pageInfo":
 		if e.ComplexityRoot.TeamConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamConnection.PageInfo(childComplexity), true
-
 	case "TeamConnection.totalCount":
 		if e.ComplexityRoot.TeamConnection.TotalCount == nil {
 			break
@@ -2945,7 +3223,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamEdge.Cursor(childComplexity), true
-
 	case "TeamEdge.node":
 		if e.ComplexityRoot.TeamEdge.Node == nil {
 			break
@@ -2959,35 +3236,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamInfo.Description(childComplexity), true
-
 	case "TeamInfo.displayName":
 		if e.ComplexityRoot.TeamInfo.DisplayName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamInfo.DisplayName(childComplexity), true
-
 	case "TeamInfo.email":
 		if e.ComplexityRoot.TeamInfo.Email == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamInfo.Email(childComplexity), true
-
 	case "TeamInfo.groupName":
 		if e.ComplexityRoot.TeamInfo.GroupName == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamInfo.GroupName(childComplexity), true
-
 	case "TeamInfo.id":
 		if e.ComplexityRoot.TeamInfo.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TeamInfo.ID(childComplexity), true
-
 	case "TeamInfo.name":
 		if e.ComplexityRoot.TeamInfo.Name == nil {
 			break
@@ -2995,20 +3267,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TeamInfo.Name(childComplexity), true
 
+	case "Traffic.rateLimit":
+		if e.ComplexityRoot.Traffic.RateLimit == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Traffic.RateLimit(childComplexity), true
+
 	case "UpdateTeamPayload.accepted":
 		if e.ComplexityRoot.UpdateTeamPayload.Accepted == nil {
 			break
 		}
 
 		return e.ComplexityRoot.UpdateTeamPayload.Accepted(childComplexity), true
-
 	case "UpdateTeamPayload.errors":
 		if e.ComplexityRoot.UpdateTeamPayload.Errors == nil {
 			break
 		}
 
 		return e.ComplexityRoot.UpdateTeamPayload.Errors(childComplexity), true
-
 	case "UpdateTeamPayload.team":
 		if e.ComplexityRoot.UpdateTeamPayload.Team == nil {
 			break
@@ -3022,7 +3299,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Upstream.URL(childComplexity), true
-
 	case "Upstream.weight":
 		if e.ComplexityRoot.Upstream.Weight == nil {
 			break
@@ -3036,49 +3312,42 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.Applications(childComplexity), true
-
 	case "Zone.environment":
 		if e.ComplexityRoot.Zone.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.Environment(childComplexity), true
-
 	case "Zone.gatewayURL":
 		if e.ComplexityRoot.Zone.GatewayURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.GatewayURL(childComplexity), true
-
 	case "Zone.id":
 		if e.ComplexityRoot.Zone.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.ID(childComplexity), true
-
 	case "Zone.issuerURL":
 		if e.ComplexityRoot.Zone.IssuerURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.IssuerURL(childComplexity), true
-
 	case "Zone.name":
 		if e.ComplexityRoot.Zone.Name == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.Name(childComplexity), true
-
 	case "Zone.tokenURL":
 		if e.ComplexityRoot.Zone.TokenURL == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Zone.TokenURL(childComplexity), true
-
 	case "Zone.visibility":
 		if e.ComplexityRoot.Zone.Visibility == nil {
 			break
@@ -3255,6 +3524,8 @@ type ApiExposure implements Node {
   active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
+  security: ApiExposureSecurity
+  traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
@@ -3533,7 +3804,8 @@ type ApiSubscription implements Node {
   name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
-  approvedScopes: [String!]!
+  gatewayURL: String
+  security: ApiSubscriptionSecurity
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
@@ -3749,6 +4021,24 @@ input ApiSubscriptionWhereInput {
   m2mAuthMethodIn: [ApiSubscriptionM2mAuthMethod!]
   m2mAuthMethodNotIn: [ApiSubscriptionM2mAuthMethod!]
   """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
+  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -3963,6 +4253,8 @@ type Application implements Node {
   currentExpiresAt: Time
   secretRotationPhase: ApplicationSecretRotationPhase!
   secretRotationMessage: String
+  externalIds: [ExternalId!]
+  ipRestrictions: IpRestrictions
   zone: Zone!
   exposedApis(
     """
@@ -4392,6 +4684,10 @@ type Approval implements Node {
   deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  """
+  If any, the access-scopes requested.
+  """
+  requestedScopes: [String!]
   name: String!
   expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
@@ -4461,6 +4757,10 @@ type ApprovalRequest implements Node {
   deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  """
+  If any, the access-scopes requested.
+  """
+  requestedScopes: [String!]
   name: String!
   state: ApprovalRequestState!
 }
@@ -4947,6 +5247,8 @@ type EventExposure implements Node {
   eventType: String!
   visibility: EventExposureVisibility!
   active: Boolean
+  eventScopes: [EventScope]
+  gatewayPublishingURL: String
   approvalConfig: ApprovalConfig!
   owner: Application!
   eventTypeDef: EventType
@@ -5151,6 +5453,24 @@ input EventExposureWhereInput {
   activeIsNil: Boolean
   activeNotNil: Boolean
   """
+  gateway_publishing_url field predicates
+  """
+  gatewayPublishingURL: String
+  gatewayPublishingURLNEQ: String
+  gatewayPublishingURLIn: [String!]
+  gatewayPublishingURLNotIn: [String!]
+  gatewayPublishingURLGT: String
+  gatewayPublishingURLGTE: String
+  gatewayPublishingURLLT: String
+  gatewayPublishingURLLTE: String
+  gatewayPublishingURLContains: String
+  gatewayPublishingURLHasPrefix: String
+  gatewayPublishingURLHasSuffix: String
+  gatewayPublishingURLIsNil: Boolean
+  gatewayPublishingURLNotNil: Boolean
+  gatewayPublishingURLEqualFold: String
+  gatewayPublishingURLContainsFold: String
+  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -5177,7 +5497,11 @@ type EventSubscription implements Node {
   name: String!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
+  trigger: EventTrigger
+  delivery: EventDelivery!
+  scopes: [String!]
   callbackURL: String
+  gatewaySseURL: String
   owner: Application!
   approval: Approval
   approvalRequests: [ApprovalRequest!]
@@ -5407,6 +5731,24 @@ input EventSubscriptionWhereInput {
   callbackURLNotNil: Boolean
   callbackURLEqualFold: String
   callbackURLContainsFold: String
+  """
+  gateway_sse_url field predicates
+  """
+  gatewaySseURL: String
+  gatewaySseURLNEQ: String
+  gatewaySseURLIn: [String!]
+  gatewaySseURLNotIn: [String!]
+  gatewaySseURLGT: String
+  gatewaySseURLGTE: String
+  gatewaySseURLLT: String
+  gatewaySseURLLTE: String
+  gatewaySseURLContains: String
+  gatewaySseURLHasPrefix: String
+  gatewaySseURLHasSuffix: String
+  gatewaySseURLIsNil: Boolean
+  gatewaySseURLNotNil: Boolean
+  gatewaySseURLEqualFold: String
+  gatewaySseURLContainsFold: String
   """
   owner edge predicates
   """
@@ -6908,6 +7250,9 @@ type Mutation {
 # The ent-generated schema is in ent.graphql.
 
 # Reduced team information for cross-tenant contexts.
+
+scalar Map
+
 type TeamInfo {
   id: ID!
   name: String!
@@ -6935,6 +7280,16 @@ type RequesterInfo {
   applicationName: String
 }
 
+type ExternalId {
+  Id: String!
+  Schema: String!
+}
+
+type IpRestrictions {
+  Allow: [String!]
+  Deny: [String!]
+}
+
 type DeciderInfo {
   teamName: String!
   teamEmail: String
@@ -6953,20 +7308,55 @@ type AvailableTransition {
   toState: ApprovalState!
 }
 
+type EventScope {
+  name: String!
+  trigger: EventTrigger!
+}
+
+type EventTrigger {
+  responseFilter: ResponseFilter
+  selectionFilter: SelectionFilter
+}
+
+enum ResponseFilterMode {
+  INCLUDE
+  EXCLUDE
+}
+
+type ResponseFilter {
+  paths: [String]!
+  mode: ResponseFilterMode 
+}
+
+type SelectionFilter {
+  attributes: Map
+  expression: String!
+}
+
+type EventDelivery {
+  payload: PayloadType!
+  eventRetentionTime: String!
+  circuitBreakerOptOut: Boolean!
+  retryableStatusCodes: [Int!]
+  redeliveriesPerSecond: Int
+  enforceGetHttpRequestMethodForHealthCheck: Boolean!
+}
+
+enum PayloadType {
+  DATA
+  DATA_REF
+}
+
 enum ApiExposureFeature {
   BASIC_AUTH
   CIRCUIT_BREAKER
   CUSTOM_SCOPES
-  DYNAMIC_UPSTREAM
   EXTERNAL_IDP
   FAILOVER
   HEADER_TRANSFORMATION
-  IP_RESTRICTION
   LAST_MILE_SECURITY
   LOAD_BALANCING
-  PASSTHROUGH
   RATE_LIMIT
-  ACCESS_CONTROL
 }
 
 enum ApprovalAction {
@@ -6989,10 +7379,98 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
+  traffic: Traffic 
   "Application name that owns this exposure"
   ownerApplicationName: String!
   "Owning team (reduced view)"
   ownerTeam: TeamInfo!
+}
+
+# Security
+
+enum TokenRequestMethod {
+  client_secret_basic
+  client_secret_post
+}
+
+type BasicAuthCredentials {
+  username: String!
+  password: String!
+}
+
+type OAuth2ClientCredentials {
+  clientId: String!
+  clientSecret: String
+  clientKey: String
+}
+
+type ExternalIdentityProvider {
+  tokenEndpoint: String!
+  tokenRequest: TokenRequestMethod
+  grantType: String
+  basic: BasicAuthCredentials
+  client: OAuth2ClientCredentials
+}
+
+type Machine2MachineAuthentication {
+  externalIDP: ExternalIdentityProvider
+  basic: BasicAuthCredentials
+  scopes: [String!]
+}
+
+type SubscriberMachine2MachineAuthentication {
+  client: OAuth2ClientCredentials
+  basic: BasicAuthCredentials
+  scopes: [String!]
+}
+
+type ApiExposureSecurity {
+  m2m: Machine2MachineAuthentication
+}
+
+type ApiSubscriptionSecurity {
+  m2m: SubscriberMachine2MachineAuthentication
+}
+
+# Traffic 
+
+type Limits {
+  second: Int
+  minute: Int
+  hour: Int
+}
+
+type RateLimitOptions {
+  hideClientHeaders: Boolean
+  faultTolerant: Boolean
+}
+
+type RateLimitConfig {
+  limits: Limits!
+  options: RateLimitOptions
+}
+
+type SubscriberRateLimitDefaults {
+  limits: Limits!
+}
+
+type RateLimitOverrides {
+  subscriber: String!
+  limits: Limits!
+}
+
+type SubscriberRateLimits {
+  default: SubscriberRateLimitDefaults
+  overrides: [RateLimitOverrides!]
+}
+
+type RateLimit {
+  provider: RateLimitConfig
+  subscriberRateLimit: SubscriberRateLimits
+}
+
+type Traffic {
+  rateLimit: RateLimit
 }
 
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
@@ -7046,8 +7524,8 @@ extend type Zone {
 }
 
 extend type ApiSubscription {
-  "Target exposure (reduced view — cross-tenant boundary)"
-  target: ApiExposureInfo! @goField(forceResolver: true)
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
+  target: ApiExposureInfo @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
@@ -7056,8 +7534,8 @@ extend type ApiExposure {
 }
 
 extend type EventSubscription {
-  "Target exposure (reduced view — cross-tenant boundary)"
-  target: EventExposureInfo! @goField(forceResolver: true)
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target event is not yet exposed."
+  target: EventExposureInfo @goField(forceResolver: true)
 }
 
 extend type EventExposure {
@@ -7221,6 +7699,10 @@ func (ec *executionContext) childFields_ApiExposure(ctx context.Context, field g
 		return ec.fieldContext_ApiExposure_features(ctx, field)
 	case "upstreams":
 		return ec.fieldContext_ApiExposure_upstreams(ctx, field)
+	case "security":
+		return ec.fieldContext_ApiExposure_security(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiExposure_traffic(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_ApiExposure_approvalConfig(ctx, field)
 	case "apiVersion":
@@ -7273,12 +7755,22 @@ func (ec *executionContext) childFields_ApiExposureInfo(ctx context.Context, fie
 		return ec.fieldContext_ApiExposureInfo_features(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_ApiExposureInfo_approvalConfig(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiExposureInfo_traffic(ctx, field)
 	case "ownerApplicationName":
 		return ec.fieldContext_ApiExposureInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_ApiExposureInfo_ownerTeam(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiExposureInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiExposureSecurity(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "m2m":
+		return ec.fieldContext_ApiExposureSecurity_m2m(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiExposureSecurity", field.Name)
 }
 
 func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -7303,8 +7795,10 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 	case "m2mAuthMethod":
 		return ec.fieldContext_ApiSubscription_m2mAuthMethod(ctx, field)
-	case "approvedScopes":
-		return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
+	case "gatewayURL":
+		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
+	case "security":
+		return ec.fieldContext_ApiSubscription_security(ctx, field)
 	case "owner":
 		return ec.fieldContext_ApiSubscription_owner(ctx, field)
 	case "failoverZones":
@@ -7359,6 +7853,14 @@ func (ec *executionContext) childFields_ApiSubscriptionInfo(ctx context.Context,
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionInfo", field.Name)
 }
 
+func (ec *executionContext) childFields_ApiSubscriptionSecurity(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "m2m":
+		return ec.fieldContext_ApiSubscriptionSecurity_m2m(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionSecurity", field.Name)
+}
+
 func (ec *executionContext) childFields_Application(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -7391,6 +7893,10 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_secretRotationPhase(ctx, field)
 	case "secretRotationMessage":
 		return ec.fieldContext_Application_secretRotationMessage(ctx, field)
+	case "externalIds":
+		return ec.fieldContext_Application_externalIds(ctx, field)
+	case "ipRestrictions":
+		return ec.fieldContext_Application_ipRestrictions(ctx, field)
 	case "zone":
 		return ec.fieldContext_Application_zone(ctx, field)
 	case "exposedApis":
@@ -7459,6 +7965,8 @@ func (ec *executionContext) childFields_Approval(ctx context.Context, field grap
 		return ec.fieldContext_Approval_decisions(ctx, field)
 	case "availableTransitions":
 		return ec.fieldContext_Approval_availableTransitions(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_Approval_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_Approval_name(ctx, field)
 	case "expiresat":
@@ -7533,6 +8041,8 @@ func (ec *executionContext) childFields_ApprovalRequest(ctx context.Context, fie
 		return ec.fieldContext_ApprovalRequest_decisions(ctx, field)
 	case "availableTransitions":
 		return ec.fieldContext_ApprovalRequest_availableTransitions(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_ApprovalRequest_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_ApprovalRequest_name(ctx, field)
 	case "state":
@@ -7575,6 +8085,16 @@ func (ec *executionContext) childFields_AvailableTransition(ctx context.Context,
 		return ec.fieldContext_AvailableTransition_toState(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type AvailableTransition", field.Name)
+}
+
+func (ec *executionContext) childFields_BasicAuthCredentials(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "username":
+		return ec.fieldContext_BasicAuthCredentials_username(ctx, field)
+	case "password":
+		return ec.fieldContext_BasicAuthCredentials_password(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type BasicAuthCredentials", field.Name)
 }
 
 func (ec *executionContext) childFields_CreateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -7639,6 +8159,24 @@ func (ec *executionContext) childFields_Decision(ctx context.Context, field grap
 	return nil, fmt.Errorf("no field named %q was found under type Decision", field.Name)
 }
 
+func (ec *executionContext) childFields_EventDelivery(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "payload":
+		return ec.fieldContext_EventDelivery_payload(ctx, field)
+	case "eventRetentionTime":
+		return ec.fieldContext_EventDelivery_eventRetentionTime(ctx, field)
+	case "circuitBreakerOptOut":
+		return ec.fieldContext_EventDelivery_circuitBreakerOptOut(ctx, field)
+	case "retryableStatusCodes":
+		return ec.fieldContext_EventDelivery_retryableStatusCodes(ctx, field)
+	case "redeliveriesPerSecond":
+		return ec.fieldContext_EventDelivery_redeliveriesPerSecond(ctx, field)
+	case "enforceGetHttpRequestMethodForHealthCheck":
+		return ec.fieldContext_EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventDelivery", field.Name)
+}
+
 func (ec *executionContext) childFields_EventExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -7661,6 +8199,10 @@ func (ec *executionContext) childFields_EventExposure(ctx context.Context, field
 		return ec.fieldContext_EventExposure_visibility(ctx, field)
 	case "active":
 		return ec.fieldContext_EventExposure_active(ctx, field)
+	case "eventScopes":
+		return ec.fieldContext_EventExposure_eventScopes(ctx, field)
+	case "gatewayPublishingURL":
+		return ec.fieldContext_EventExposure_gatewayPublishingURL(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_EventExposure_approvalConfig(ctx, field)
 	case "owner":
@@ -7715,6 +8257,16 @@ func (ec *executionContext) childFields_EventExposureInfo(ctx context.Context, f
 	return nil, fmt.Errorf("no field named %q was found under type EventExposureInfo", field.Name)
 }
 
+func (ec *executionContext) childFields_EventScope(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_EventScope_name(ctx, field)
+	case "trigger":
+		return ec.fieldContext_EventScope_trigger(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventScope", field.Name)
+}
+
 func (ec *executionContext) childFields_EventSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -7737,8 +8289,16 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_eventType(ctx, field)
 	case "deliveryType":
 		return ec.fieldContext_EventSubscription_deliveryType(ctx, field)
+	case "trigger":
+		return ec.fieldContext_EventSubscription_trigger(ctx, field)
+	case "delivery":
+		return ec.fieldContext_EventSubscription_delivery(ctx, field)
+	case "scopes":
+		return ec.fieldContext_EventSubscription_scopes(ctx, field)
 	case "callbackURL":
 		return ec.fieldContext_EventSubscription_callbackURL(ctx, field)
+	case "gatewaySseURL":
+		return ec.fieldContext_EventSubscription_gatewaySseURL(ctx, field)
 	case "owner":
 		return ec.fieldContext_EventSubscription_owner(ctx, field)
 	case "approval":
@@ -7791,6 +8351,16 @@ func (ec *executionContext) childFields_EventSubscriptionInfo(ctx context.Contex
 		return ec.fieldContext_EventSubscriptionInfo_ownerTeam(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventSubscriptionInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_EventTrigger(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "responseFilter":
+		return ec.fieldContext_EventTrigger_responseFilter(ctx, field)
+	case "selectionFilter":
+		return ec.fieldContext_EventTrigger_selectionFilter(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type EventTrigger", field.Name)
 }
 
 func (ec *executionContext) childFields_EventType(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -7847,6 +8417,32 @@ func (ec *executionContext) childFields_EventTypeEdge(ctx context.Context, field
 	return nil, fmt.Errorf("no field named %q was found under type EventTypeEdge", field.Name)
 }
 
+func (ec *executionContext) childFields_ExternalId(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "Id":
+		return ec.fieldContext_ExternalId_Id(ctx, field)
+	case "Schema":
+		return ec.fieldContext_ExternalId_Schema(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ExternalId", field.Name)
+}
+
+func (ec *executionContext) childFields_ExternalIdentityProvider(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "tokenEndpoint":
+		return ec.fieldContext_ExternalIdentityProvider_tokenEndpoint(ctx, field)
+	case "tokenRequest":
+		return ec.fieldContext_ExternalIdentityProvider_tokenRequest(ctx, field)
+	case "grantType":
+		return ec.fieldContext_ExternalIdentityProvider_grantType(ctx, field)
+	case "basic":
+		return ec.fieldContext_ExternalIdentityProvider_basic(ctx, field)
+	case "client":
+		return ec.fieldContext_ExternalIdentityProvider_client(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ExternalIdentityProvider", field.Name)
+}
+
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -7865,6 +8461,40 @@ func (ec *executionContext) childFields_Group(ctx context.Context, field graphql
 		return ec.fieldContext_Group_teams(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+}
+
+func (ec *executionContext) childFields_IpRestrictions(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "Allow":
+		return ec.fieldContext_IpRestrictions_Allow(ctx, field)
+	case "Deny":
+		return ec.fieldContext_IpRestrictions_Deny(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type IpRestrictions", field.Name)
+}
+
+func (ec *executionContext) childFields_Limits(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "second":
+		return ec.fieldContext_Limits_second(ctx, field)
+	case "minute":
+		return ec.fieldContext_Limits_minute(ctx, field)
+	case "hour":
+		return ec.fieldContext_Limits_hour(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Limits", field.Name)
+}
+
+func (ec *executionContext) childFields_Machine2MachineAuthentication(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "externalIDP":
+		return ec.fieldContext_Machine2MachineAuthentication_externalIDP(ctx, field)
+	case "basic":
+		return ec.fieldContext_Machine2MachineAuthentication_basic(ctx, field)
+	case "scopes":
+		return ec.fieldContext_Machine2MachineAuthentication_scopes(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Machine2MachineAuthentication", field.Name)
 }
 
 func (ec *executionContext) childFields_Member(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -7895,6 +8525,18 @@ func (ec *executionContext) childFields_MutationError(ctx context.Context, field
 	return nil, fmt.Errorf("no field named %q was found under type MutationError", field.Name)
 }
 
+func (ec *executionContext) childFields_OAuth2ClientCredentials(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "clientId":
+		return ec.fieldContext_OAuth2ClientCredentials_clientId(ctx, field)
+	case "clientSecret":
+		return ec.fieldContext_OAuth2ClientCredentials_clientSecret(ctx, field)
+	case "clientKey":
+		return ec.fieldContext_OAuth2ClientCredentials_clientKey(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type OAuth2ClientCredentials", field.Name)
+}
+
 func (ec *executionContext) childFields_PageInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "hasNextPage":
@@ -7907,6 +8549,46 @@ func (ec *executionContext) childFields_PageInfo(ctx context.Context, field grap
 		return ec.fieldContext_PageInfo_endCursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_RateLimit(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "provider":
+		return ec.fieldContext_RateLimit_provider(ctx, field)
+	case "subscriberRateLimit":
+		return ec.fieldContext_RateLimit_subscriberRateLimit(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RateLimit", field.Name)
+}
+
+func (ec *executionContext) childFields_RateLimitConfig(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "limits":
+		return ec.fieldContext_RateLimitConfig_limits(ctx, field)
+	case "options":
+		return ec.fieldContext_RateLimitConfig_options(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RateLimitConfig", field.Name)
+}
+
+func (ec *executionContext) childFields_RateLimitOptions(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "hideClientHeaders":
+		return ec.fieldContext_RateLimitOptions_hideClientHeaders(ctx, field)
+	case "faultTolerant":
+		return ec.fieldContext_RateLimitOptions_faultTolerant(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RateLimitOptions", field.Name)
+}
+
+func (ec *executionContext) childFields_RateLimitOverrides(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "subscriber":
+		return ec.fieldContext_RateLimitOverrides_subscriber(ctx, field)
+	case "limits":
+		return ec.fieldContext_RateLimitOverrides_limits(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RateLimitOverrides", field.Name)
 }
 
 func (ec *executionContext) childFields_RemoveTeamMemberPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -7933,6 +8615,16 @@ func (ec *executionContext) childFields_RequesterInfo(ctx context.Context, field
 	return nil, fmt.Errorf("no field named %q was found under type RequesterInfo", field.Name)
 }
 
+func (ec *executionContext) childFields_ResponseFilter(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "paths":
+		return ec.fieldContext_ResponseFilter_paths(ctx, field)
+	case "mode":
+		return ec.fieldContext_ResponseFilter_mode(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ResponseFilter", field.Name)
+}
+
 func (ec *executionContext) childFields_RotateApplicationSecretPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "application":
@@ -7955,6 +8647,46 @@ func (ec *executionContext) childFields_RotateTeamTokenPayload(ctx context.Conte
 		return ec.fieldContext_RotateTeamTokenPayload_errors(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type RotateTeamTokenPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_SelectionFilter(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "attributes":
+		return ec.fieldContext_SelectionFilter_attributes(ctx, field)
+	case "expression":
+		return ec.fieldContext_SelectionFilter_expression(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SelectionFilter", field.Name)
+}
+
+func (ec *executionContext) childFields_SubscriberMachine2MachineAuthentication(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "client":
+		return ec.fieldContext_SubscriberMachine2MachineAuthentication_client(ctx, field)
+	case "basic":
+		return ec.fieldContext_SubscriberMachine2MachineAuthentication_basic(ctx, field)
+	case "scopes":
+		return ec.fieldContext_SubscriberMachine2MachineAuthentication_scopes(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SubscriberMachine2MachineAuthentication", field.Name)
+}
+
+func (ec *executionContext) childFields_SubscriberRateLimitDefaults(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "limits":
+		return ec.fieldContext_SubscriberRateLimitDefaults_limits(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SubscriberRateLimitDefaults", field.Name)
+}
+
+func (ec *executionContext) childFields_SubscriberRateLimits(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "default":
+		return ec.fieldContext_SubscriberRateLimits_default(ctx, field)
+	case "overrides":
+		return ec.fieldContext_SubscriberRateLimits_overrides(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SubscriberRateLimits", field.Name)
 }
 
 func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8037,6 +8769,14 @@ func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field grap
 		return ec.fieldContext_TeamInfo_description(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TeamInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_Traffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "rateLimit":
+		return ec.fieldContext_Traffic_rateLimit(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Traffic", field.Name)
 }
 
 func (ec *executionContext) childFields_UpdateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

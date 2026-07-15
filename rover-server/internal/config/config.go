@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
 type ServerConfig struct {
@@ -36,7 +37,8 @@ type OasLintingConfig struct {
 }
 
 type SecurityConfig struct {
-	Enabled        bool `json:"enabled"`
+	// Mode controls authentication behaviour: use security.ModeJWT or security.ModeMock.
+	Mode           security.Mode `json:"mode" yaml:"mode"`
 	LMS            LMSConfig
 	TrustedIssuers []string `yaml:"trustedIssuers" json:"trustedIssuers"`
 	DefaultScope   string   `yaml:"defaultScope" json:"defaultScope"`
@@ -79,7 +81,7 @@ func setDefaults() {
 	viper.SetDefault("log.level", "info")
 
 	// Security
-	viper.SetDefault("security.enabled", true)
+	viper.SetDefault("security.mode", "jwt")
 	viper.SetDefault("security.trustedIssuers", []string{})
 	viper.SetDefault("security.defaultScope", "tardis:team:all")
 	viper.SetDefault("security.scopePrefix", "tardis:")

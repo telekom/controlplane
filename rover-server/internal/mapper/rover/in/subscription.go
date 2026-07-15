@@ -35,6 +35,14 @@ func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 
 		out.Event = mapEventSubscription(eventSub)
 
+	case "ai":
+		aiSub, err := in.AsAiSubscription()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to AiSubscription")
+		}
+
+		out.Ai = mapAiSubscription(aiSub)
+
 	default:
 		return errors.Errorf("unknown subscription type: %s", subType)
 
@@ -170,4 +178,66 @@ func mapEventTriggerForSubscription(in api.EventTrigger) *roverv1.EventTrigger {
 	}
 
 	return out
+}
+
+func mapAiSubscription(in api.AiSubscription) *roverv1.AiSubscription {
+	out := &roverv1.AiSubscription{}
+	out.BasePath = in.BasePath
+
+	mapAiSubscriptionSecurity(in, out)
+
+	if len(in.Failover.Zones) > 0 {
+		out.Traffic.Failover = &roverv1.SubscriberFailover{
+			Enabled: true,
+		}
+	}
+
+	return out
+}
+
+func mapAiSubscriptionSecurity(in api.AiSubscription, out *roverv1.AiSubscription) {
+	m2mSecurity := &roverv1.SubscriberMachine2MachineAuthentication{}
+
+	secType, err := in.Security.Discriminator()
+	if err != nil {
+		return
+	}
+
+	switch secType {
+	case "basicAuth":
+		basicAuth, err := in.Security.AsBasicAuth()
+		if err != nil {
+			return
+		}
+		m2mSecurity.Basic = &roverv1.BasicAuthCredentials{
+			Username: basicAuth.Username,
+			Password: basicAuth.Password,
+		}
+	case "oauth2":
+		oauth2, err := in.Security.AsOauth2()
+		if err != nil {
+			return
+		}
+		if oauth2.ClientId != "" {
+			m2mSecurity.Client = &roverv1.OAuth2ClientCredentials{
+				ClientId:     oauth2.ClientId,
+				ClientSecret: oauth2.ClientSecret,
+				ClientKey:    oauth2.ClientKey,
+			}
+		}
+		if oauth2.Username != "" {
+			m2mSecurity.Basic = &roverv1.BasicAuthCredentials{
+				Username: oauth2.Username,
+				Password: oauth2.Password,
+			}
+		}
+
+		m2mSecurity.Scopes = oauth2.Scopes
+	}
+
+	if m2mSecurity.Basic != nil || m2mSecurity.Client != nil || m2mSecurity.Scopes != nil {
+		out.Security = &roverv1.SubscriberSecurity{
+			M2M: m2mSecurity,
+		}
+	}
 }

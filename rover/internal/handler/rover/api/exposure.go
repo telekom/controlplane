@@ -9,25 +9,24 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Rover, exp *rover.ApiExposure) error {
-
-	log := log.FromContext(ctx)
-	log.V(1).Info("Handle APIExposure", "basePath", exp.BasePath)
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Handle APIExposure", "basePath", exp.BasePath)
 
 	name := MakeName(owner.Name, exp.BasePath, "")
 
@@ -68,19 +67,21 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			Traffic:        mapTrafficToApiTraffic(environment, exp.Traffic),
 		}
 
-		apiExposure.Spec.Approval.TrustedTeams, err = mapTrustedTeamsToApiTrustedTeams(ctx, c, exp.Approval.TrustedTeams)
+		apiExposure.Spec.Approval.TrustedTeams, err = mapTrustedTeamsToApiTrustedTeams(ctx, exp.Approval.TrustedTeams)
 		if err != nil {
 			return errors.Wrap(err, "failed to map trusted teams")
 		}
 
-		//add owner to trusted teams
+		// add owner to trusted teams
 		ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-		} else if err != nil {
+		switch {
+		case err != nil && apierrors.IsNotFound(err):
+			logger.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
+		case err != nil:
 			return err
+		default:
+			apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
 		}
-		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
 
 		for i, upstream := range exp.Upstreams {
 			apiExposure.Spec.Upstreams[i] = apiapi.Upstream{
@@ -101,11 +102,11 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Name:      apiExposure.Name,
 		Namespace: apiExposure.Namespace,
 	})
-	return err
+	return nil
 }
 
-func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClient, teams []rover.TrustedTeam) ([]string, error) {
-	log := log.FromContext(ctx)
+func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, teams []rover.TrustedTeam) ([]string, error) {
+	logger := log.FromContext(ctx)
 	if len(teams) == 0 {
 		return nil, nil
 	}
@@ -114,12 +115,12 @@ func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClien
 	for _, team := range teams {
 		namespace := contextutil.EnvFromContextOrDie(ctx) + "--" + team.Group + "--" + team.Team
 		t, err := organizationv1.FindTeamForNamespace(ctx, namespace)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Trusted team %s/%s not found", team.Group, team.Team))
-
-		} else if err != nil {
+		switch {
+		case err != nil && apierrors.IsNotFound(err):
+			logger.Info(fmt.Sprintf("Trusted team %s/%s not found", team.Group, team.Team))
+		case err != nil:
 			return nil, err
-		} else {
+		default:
 			apiTrustedTeams = append(apiTrustedTeams, t.GetName())
 		}
 	}
@@ -158,7 +159,6 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 	}
 
 	return security
-
 }
 
 func mapTransformationToApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {

@@ -50,6 +50,8 @@ type Approval struct {
 	Decisions []model.Decision `json:"decisions,omitempty"`
 	// AvailableTransitions holds the value of the "available_transitions" field.
 	AvailableTransitions []model.AvailableTransition `json:"available_transitions,omitempty"`
+	// If any, the access-scopes requested.
+	RequestedScopes []string `json:"requested_scopes,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// ExpiresAt holds the value of the "expiresAt" field.
@@ -102,7 +104,7 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case approval.FieldRequester, approval.FieldDecider, approval.FieldDecisions, approval.FieldAvailableTransitions:
+		case approval.FieldRequester, approval.FieldDecider, approval.FieldDecisions, approval.FieldAvailableTransitions, approval.FieldRequestedScopes:
 			values[i] = new([]byte)
 		case approval.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -222,6 +224,14 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &_m.AvailableTransitions); err != nil {
 					return fmt.Errorf("unmarshal field available_transitions: %w", err)
+				}
+			}
+		case approval.FieldRequestedScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field requested_scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.RequestedScopes); err != nil {
+					return fmt.Errorf("unmarshal field requested_scopes: %w", err)
 				}
 			}
 		case approval.FieldName:
@@ -347,6 +357,9 @@ func (_m *Approval) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("available_transitions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AvailableTransitions))
+	builder.WriteString(", ")
+	builder.WriteString("requested_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RequestedScopes))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)

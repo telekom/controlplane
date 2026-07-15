@@ -34,6 +34,10 @@ type RoverStatus struct {
 	EventSubscriptions []types.ObjectRef `json:"eventSubscriptions,omitempty"`
 	// PermissionSets are references to PermissionSet resources created by this Rover
 	PermissionSets []types.ObjectRef `json:"permissionSets,omitempty"`
+	// AiExposures are references to McpExposure resources created by this Rover
+	AiExposures []types.ObjectRef `json:"aiExposures,omitempty"`
+	// AiSubscriptions are references to McpSubscription resources created by this Rover
+	AiSubscriptions []types.ObjectRef `json:"aiSubscriptions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -65,23 +69,30 @@ func (r *Rover) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
+// HasFailoverEnabledOnAnySubscription checks if any of the Rover's subscriptions have failover enabled
 func (r *Rover) HasFailoverEnabledOnAnySubscription() bool {
 	return slices.ContainsFunc(r.Spec.Subscriptions, func(sub Subscription) bool {
-		if sub.Type() == TypeApi && sub.Api != nil && sub.Api.Traffic.Failover != nil {
-			return true
+		switch sub.Type() {
+		case TypeApi:
+			return sub.Api != nil && sub.Api.Traffic.Failover != nil && sub.Api.Traffic.Failover.Enabled
+		default:
+			return false
 		}
-		return false
 	})
 }
 
+// EnableFailoverOnAllSubscriptions enables failover on all API subscriptions of the Rover
 func (r *Rover) EnableFailoverOnAllSubscriptions() {
 	for i := range r.Spec.Subscriptions {
 		sub := &r.Spec.Subscriptions[i]
-		if sub.Type() == TypeApi && sub.Api != nil {
-			if sub.Api.Traffic.Failover == nil {
-				sub.Api.Traffic.Failover = &SubscriberFailover{}
+		switch sub.Type() {
+		case TypeApi:
+			if sub.Api != nil {
+				if sub.Api.Traffic.Failover == nil {
+					sub.Api.Traffic.Failover = &SubscriberFailover{}
+				}
+				sub.Api.Traffic.Failover.Enabled = true
 			}
-			sub.Api.Traffic.Failover.Enabled = true
 		}
 	}
 }
@@ -198,6 +209,8 @@ const (
 	TypeApi Type = "api"
 	// TypeEvent represents an Event type resource
 	TypeEvent Type = "event"
+	// TypeAi represents an AI/MCP type resource
+	TypeAi Type = "ai"
 )
 
 // ApprovalStrategy defines the approval workflow for API exposure
@@ -247,8 +260,8 @@ type RoverM2MAuthentication struct {
 }
 
 // Exposure defines a service that is exposed by this Rover
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event)", message="At least one of api or event must be specified"
-// +kubebuilder:validation:XValidation:rule="self == null || (!has(self.api) && has(self.event)) || (has(self.api) && !has(self.event))", message="Only one of api or event can be specified (XOR relationship)"
+// +kubebuilder:validation:MaxProperties=1
+// +kubebuilder:validation:MinProperties=1
 type Exposure struct {
 	// Api defines an API-based service exposure configuration
 	// +kubebuilder:validation:Optional
@@ -256,6 +269,9 @@ type Exposure struct {
 	// Event defines an Event-based service exposure configuration
 	// +kubebuilder:validation:Optional
 	Event *EventExposure `json:"event,omitempty"`
+	// Ai defines an AI/MCP server exposure configuration
+	// +kubebuilder:validation:Optional
+	Ai *AiExposure `json:"ai,omitempty"`
 }
 
 func (e *Exposure) Type() Type {
@@ -265,12 +281,15 @@ func (e *Exposure) Type() Type {
 	if e.Event != nil {
 		return TypeEvent
 	}
+	if e.Ai != nil {
+		return TypeAi
+	}
 	return ""
 }
 
 // Subscription defines a service that this Rover consumes
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event)", message="At least one of api or event must be specified"
-// +kubebuilder:validation:XValidation:rule="(has(self.api) && !has(self.event)) || (!has(self.api) && has(self.event))", message="Only one of api or event can be specified (XOR relationship)"
+// +kubebuilder:validation:MaxProperties=1
+// +kubebuilder:validation:MinProperties=1
 type Subscription struct {
 	// Api defines an API-based service subscription configuration
 	// +kubebuilder:validation:Optional
@@ -278,6 +297,9 @@ type Subscription struct {
 	// Event defines an Event-based service subscription configuration
 	// +kubebuilder:validation:Optional
 	Event *EventSubscription `json:"event,omitempty"`
+	// Ai defines an AI/MCP server subscription configuration
+	// +kubebuilder:validation:Optional
+	Ai *AiSubscription `json:"ai,omitempty"`
 }
 
 func (s *Subscription) Type() Type {
@@ -286,6 +308,9 @@ func (s *Subscription) Type() Type {
 	}
 	if s.Event != nil {
 		return TypeEvent
+	}
+	if s.Ai != nil {
+		return TypeAi
 	}
 	return ""
 }
@@ -411,6 +436,73 @@ type EventSubscription struct {
 	// Must match scope names defined on the corresponding EventExposure
 	// +kubebuilder:validation:Optional
 	Scopes []string `json:"scopes,omitempty"`
+}
+
+// AiVariant defines the AI exposure variant.
+// +kubebuilder:validation:Enum=MCP;TELECONTEXTMCP
+type AiVariant string
+
+const (
+	// AiVariantMCP exposes a standard MCP server via AI Gateway
+	AiVariantMCP AiVariant = "MCP"
+	// AiVariantTelecontextMCP exposes an MCP server with auto-created Telecontext access
+	AiVariantTelecontextMCP AiVariant = "TELECONTEXTMCP"
+)
+
+// AiExposure defines an AI/MCP server that is exposed by this Rover
+type AiExposure struct {
+	// BasePath is the base path of the MCP server endpoint (must start with /)
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
+	BasePath string `json:"basePath"`
+
+	// Upstreams defines the backend MCP server endpoints
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=12
+	Upstreams []Upstream `json:"upstreams"`
+
+	// Variant defines the MCP exposure variant
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default=MCP
+	Variant AiVariant `json:"variant"`
+
+	// Visibility defines who can see and subscribe to this MCP server
+	// +kubebuilder:validation:Enum=World;Zone;Enterprise
+	// +kubebuilder:default=Enterprise
+	Visibility Visibility `json:"visibility"`
+
+	// Approval defines the approval workflow for subscriptions to this MCP server
+	// +kubebuilder:validation:Required
+	Approval Approval `json:"approval"`
+
+	// Transformation defines optional request/response transformations
+	// +kubebuilder:validation:Optional
+	Transformation *Transformation `json:"transformation,omitempty"`
+	// Traffic defines optional traffic management configuration
+	// +kubebuilder:validation:Optional
+	Traffic *Traffic `json:"traffic,omitempty"`
+	// Security defines optional security configuration
+	// +kubebuilder:validation:Optional
+	Security *Security `json:"security,omitempty"`
+}
+
+// AiSubscription defines an AI/MCP server that this Rover subscribes to
+type AiSubscription struct {
+	// BasePath is the base path of the MCP server to subscribe to (must start with /)
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
+	BasePath string `json:"basePath"`
+
+	// Transformation defines optional request/response transformations
+	// +kubebuilder:validation:Optional
+	Transformation *Transformation `json:"transformation,omitempty"`
+	// Traffic defines optional traffic management configuration
+	// +kubebuilder:validation:Optional
+	Traffic SubscriberTraffic `json:"traffic"`
+	// Security defines optional security configuration
+	// +kubebuilder:validation:Optional
+	Security *SubscriberSecurity `json:"security,omitempty"`
 }
 
 // Approval defines the approval workflow for API exposure

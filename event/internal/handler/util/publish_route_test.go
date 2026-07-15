@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -47,7 +48,7 @@ var _ = Describe("CreatePublishRoute", func() {
 				UID:       k8stypes.UID("ec-uid-1234"),
 			},
 			Spec: eventv1.EventConfigSpec{
-				PublishEventUrl: "http://publish-service:8080/events",
+				Local: &eventv1.LocalBackend{PublishEventUrl: "http://publish-service:8080/events"},
 			},
 		}
 	})
@@ -80,7 +81,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		badConfig := &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-bad", Namespace: "default"},
 			Spec: eventv1.EventConfigSpec{
-				PublishEventUrl: "://bad-url",
+				Local: &eventv1.LocalBackend{PublishEventUrl: "://bad-url"},
 			},
 		}
 
@@ -106,7 +107,7 @@ var _ = Describe("CreatePublishRoute", func() {
 				return controllerutil.OperationResultCreated, err
 			})
 
-		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
+		route, err := util.CreatePublishRoute(ctx, zone, eventConfig, util.WithOwner(eventConfig))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
 
@@ -129,8 +130,9 @@ var _ = Describe("CreatePublishRoute", func() {
 		// Verify hostnames and paths from preset
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
-		Expect(route.Spec.Paths).To(HaveLen(1))
-		Expect(route.Spec.Paths[0]).To(Equal("/zone-a/publish/v1"))
+		Expect(route.Spec.Paths).To(HaveLen(2))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/events/v1"))
+		Expect(route.Spec.Paths[1]).To(Equal("/horizon/publish/v1"))
 
 		// Verify Security
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
@@ -160,7 +162,7 @@ var _ = Describe("CreatePublishRoute", func() {
 				UID:       k8stypes.UID("ec-uid-1234"),
 			},
 			Spec: eventv1.EventConfigSpec{
-				PublishEventUrl: "https://publish-service.internal:9443/api/publish",
+				Local: &eventv1.LocalBackend{PublishEventUrl: "https://publish-service.internal:9443/api/publish"},
 			},
 		}
 
@@ -193,7 +195,128 @@ var _ = Describe("CreatePublishRoute", func() {
 		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update publish Route"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
+		Expect(err.Error()).To(ContainSubstring("create failed"))
+	})
+})
+
+// ---------- CreatePublishProxyRoute ----------
+
+// makeTargetZone builds a target zone whose default preset uses a distinct hostname,
+// so the proxy route's upstream (target gateway) is distinguishable from the source
+// zone's downstream hostnames.
+func makeTargetZone(name, statusNs string) *adminv1.Zone {
+	zone := makeZone(name, statusNs)
+	zone.Spec.Gateway.Presets[0].Urls[0].Hostname = "target-gateway.example.com"
+	return zone
+}
+
+var _ = Describe("CreatePublishProxyRoute", func() {
+	var (
+		ctx        context.Context
+		fakeClient *fakeclient.MockJanitorClient
+		owner      *eventv1.EventConfig
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		ctx = cclient.WithClient(ctx, fakeClient)
+
+		owner = &eventv1.EventConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ec-proxy",
+				Namespace: "zone-a-ns",
+				UID:       k8stypes.UID("ec-uid-proxy"),
+			},
+		}
+	})
+
+	It("should return BlockedError when source zone has no default preset", func() {
+		source := makeZoneNoPreset("zone-a", "zone-a-ns")
+		target := makeTargetZone("zone-b", "zone-b-ns")
+
+		route, err := util.CreatePublishProxyRoute(ctx, source, target)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
+		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+	})
+
+	It("should return BlockedError when target zone has no default preset", func() {
+		source := makeZone("zone-a", "zone-a-ns")
+		target := makeZoneNoPreset("zone-b", "zone-b-ns")
+
+		route, err := util.CreatePublishProxyRoute(ctx, source, target)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
+		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+	})
+
+	It("should create proxy publish route pointing at the target gateway", func() {
+		source := makeZone("zone-a", "zone-a-ns")
+		target := makeTargetZone("zone-b", "zone-b-ns")
+
+		s := runtime.NewScheme()
+		Expect(eventv1.AddToScheme(s)).To(Succeed())
+		Expect(gatewayapi.AddToScheme(s)).To(Succeed())
+		fakeClient.EXPECT().Scheme().Return(s).Maybe()
+
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+				err := mutate()
+				return controllerutil.OperationResultCreated, err
+			})
+
+		route, err := util.CreatePublishProxyRoute(ctx, source, target, util.WithOwner(owner))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(route).ToNot(BeNil())
+
+		// Name/namespace come from the source zone (same as primary publish route).
+		Expect(route.Name).To(Equal("publish"))
+		Expect(route.Namespace).To(Equal("zone-a-ns"))
+
+		// Proxy-specific label + route type.
+		Expect(route.Labels).To(HaveKeyWithValue(config.DomainLabelKey, "event"))
+		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone-a"))
+		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "publish-proxy"))
+		Expect(route.Spec.Type).To(Equal(gatewayapi.RouteTypeProxy))
+
+		// Upstream is the target gateway with the publish-events path.
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
+		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("target-gateway.example.com"))
+		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(443)))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/horizon/events/v1"))
+
+		// Downstream hostnames/paths come from the source preset; two publish paths.
+		Expect(route.Spec.Hostnames).To(HaveLen(1))
+		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
+		Expect(route.Spec.Paths).To(HaveLen(2))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/events/v1"))
+		Expect(route.Spec.Paths[1]).To(Equal("/horizon/publish/v1"))
+
+		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
+		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
+
+		// Owner reference set via SetControllerReference.
+		Expect(route.GetOwnerReferences()).To(HaveLen(1))
+		Expect(route.GetOwnerReferences()[0].UID).To(Equal(k8stypes.UID("ec-uid-proxy")))
+	})
+
+	It("should return error when CreateOrUpdate fails", func() {
+		source := makeZone("zone-a", "zone-a-ns")
+		target := makeTargetZone("zone-b", "zone-b-ns")
+
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Return(controllerutil.OperationResultNone, fmt.Errorf("create failed"))
+
+		route, err := util.CreatePublishProxyRoute(ctx, source, target)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("create failed"))
 	})
 })

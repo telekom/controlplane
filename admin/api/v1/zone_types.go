@@ -5,7 +5,6 @@
 package v1
 
 import (
-	"context"
 	"fmt"
 	"path"
 	"slices"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -272,6 +270,44 @@ const (
 	ManagedRouteTypeProxy ManagedRouteType = "Proxy"
 )
 
+// AiGatewayConfig configures an optional AI Gateway for this zone.
+// When present, the zone supports MCP (Model Context Protocol) exposures
+// that are routed through a dedicated AI Gateway instance with streaming support.
+type AiGatewayConfig struct {
+	// Admin contains the admin credentials for the AI Gateway.
+	Admin GatewayAdminConfig `json:"admin"`
+	// Presets defines a list of gateway configuration presets for the AI Gateway.
+	// Same structure as the regular gateway presets, allowing feature-based preset selection.
+	// +listType=map
+	// +listMapKey=name
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=5
+	Presets []GatewayConfigPreset `json:"presets"`
+}
+
+// GetPresetByName returns the AI gateway preset with the specified name.
+func (g AiGatewayConfig) GetPresetByName(name string) (*GatewayConfigPreset, error) {
+	for _, preset := range g.Presets {
+		if preset.Name == name {
+			return &preset, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: %s", ErrNoPresetFound, name)
+}
+
+// GetDefaultPreset returns the default preset for this AI gateway configuration.
+func (g AiGatewayConfig) GetDefaultPreset() (*GatewayConfigPreset, error) {
+	for _, preset := range g.Presets {
+		if preset.Default {
+			return &preset, nil
+		}
+	}
+	return nil, fmt.Errorf("no default AI gateway preset found: %w", ErrNoPresetFound)
+}
+
 type ManagedRouteConfig struct {
 	// Name is the name of the created route. It must be unique within the zone.
 	// +kubebuilder:validation:Required
@@ -354,6 +390,12 @@ type ZoneSpec struct {
 	// +kubebuilder:validation:Optional
 	Permissions *PermissionsConfig `json:"permissions,omitempty"`
 
+	// AiGateway configures a dedicated AI Gateway for this zone.
+	// When present, the zone supports MCP exposures routed through a separate gateway
+	// with streaming support (buffering disabled).
+	// +kubebuilder:validation:Optional
+	AiGateway *AiGatewayConfig `json:"aiGateway,omitempty"`
+
 	// ExternalIdPolicies configures, per identifier scheme, the format and
 	// presence requirements for externalIds on Rovers and Applications bound to
 	// this zone. Empty means no enforcement for any scheme.
@@ -403,13 +445,19 @@ type ZoneStatus struct {
 	InternalIdentityRealm *types.ObjectRef `json:"internalIdentityRealm,omitempty"`
 
 	Gateway            *types.ObjectRef `json:"gateway,omitempty"`
-	GatewayClient      *types.ObjectRef `json:"gatewayClient,omitempty"`
 	GatewayAdminClient *types.ObjectRef `json:"gatewayAdminClient,omitempty"`
 	GatewayConsumer    *types.ObjectRef `json:"gatewayConsumer,omitempty"`
+
+	// AiGateway references the AI Gateway CR created for this zone.
+	// +optional
+	AiGateway *types.ObjectRef `json:"aiGateway,omitempty"`
 
 	TeamApiIdentityRealm *types.ObjectRef  `json:"teamApiIdentityRealm,omitempty"`
 	ManagedRoutes        []types.ObjectRef `json:"managedRoutes,omitempty"`
 	Links                Links             `json:"links,omitempty"`
+
+	// RealmName as an abstraction layer and is retrieved from Env.Spec.RealmName
+	RealmName string `json:"realmName,omitempty"`
 
 	// Features is a list of features that are enabled or disabled for this zone.
 	// This can be used to control the availability of certain features in the zone
@@ -493,6 +541,9 @@ const (
 	// FeatureSecretRotation indicates that secret rotation is enabled for the zone.
 	FeatureSecretRotation FeatureName = "SecretRotation"
 
+	// FeatureAiGateway indicates that the AI Gateway is configured and available for this zone.
+	FeatureAiGateway FeatureName = "AiGateway"
+
 	// FeaturePermissions indicates that permission service integration is enabled for the zone.
 	FeaturePermissions FeatureName = "Permissions"
 
@@ -531,12 +582,4 @@ func (z *Zone) ManageFeature(featureName FeatureName, enabled bool) {
 		}
 	}
 	z.Status.Features = append(z.Status.Features, Feature{Name: featureName, Enabled: enabled})
-}
-
-// RealmNameFromContext returns the identity realm name for the current environment.
-// By convention, the default identity realm name equals the environment name.
-// This is used to populate Security.RealmName on gateway Routes, which tells the
-// Jumper sidecar which realm to use for Last-Mile-Security token issuance.
-func RealmNameFromContext(ctx context.Context) string {
-	return contextutil.EnvFromContextOrDie(ctx)
 }

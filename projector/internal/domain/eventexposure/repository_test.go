@@ -117,8 +117,24 @@ var _ = Describe("EventExposure Repository", func() {
 					Strategy:     "AUTO",
 					TrustedTeams: []string{"team-a"},
 				},
-				AppName:  "my-app",
-				TeamName: "platform--narvi",
+				Scopes: []model.EventScope{
+					{
+						Name: "my-scope",
+						Trigger: model.EventTrigger{
+							ResponseFilter: &model.ResponseFilter{
+								Paths: []string{"$.data.id", "$.data.name"},
+								Mode:  "Include",
+							},
+							SelectionFilter: &model.SelectionFilter{
+								Attributes: map[string]string{"type": "de.telekom.eni.quickstart.v1"},
+								Expression: `{"op":"eq","path":"$.source","value":"my-app"}`,
+							},
+						},
+					},
+				},
+				GatewayProviderUrl: "https://publish.gateway.example.com/de.telekom.eni.quickstart.v1",
+				AppName:            "my-app",
+				TeamName:           "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -135,6 +151,80 @@ var _ = Describe("EventExposure Repository", func() {
 			owner, err := exp.QueryOwner().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(owner.ID).To(Equal(appID))
+
+			Expect(exp.EventScopes).To(HaveLen(1))
+			Expect(exp.EventScopes[0].Name).To(Equal("my-scope"))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter).NotTo(BeNil())
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.id", "$.data.name"}))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter.Mode).To(Equal("Include"))
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter).NotTo(BeNil())
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Attributes).To(Equal(map[string]string{"type": "de.telekom.eni.quickstart.v1"}))
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.source","value":"my-app"}`))
+
+			Expect(exp.GatewayPublishingURL).NotTo(BeNil())
+			Expect(*exp.GatewayPublishingURL).To(Equal("https://publish.gateway.example.com/de.telekom.eni.quickstart.v1"))
+		})
+
+		It("should back-link orphaned subscriptions projected before the exposure", func() {
+			// Subscription created first, before its target exposure exists →
+			// stored with a NULL target FK (the create-order race).
+			sub, err := client.EventSubscription.Create().
+				SetEventType("de.telekom.orphan.v1").
+				SetEnvironment("prod").
+				SetNamespace("prod--platform--narvi").
+				SetName("orphan-sub").
+				SetOwnerID(appID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = sub.QueryTarget().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+
+			// Exposure appears later → should adopt the orphaned subscription.
+			data := &eventexposure.EventExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "orphan-exp", nil),
+				StatusPhase:    "READY",
+				StatusMessage:  "ok",
+				EventType:      "de.telekom.orphan.v1",
+				Visibility:     "WORLD",
+				Active:         true,
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				Scopes:         []model.EventScope{},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.EventType).To(Equal("de.telekom.orphan.v1"))
+		})
+
+		It("should not back-link subscriptions when the exposure is inactive", func() {
+			sub, err := client.EventSubscription.Create().
+				SetEventType("de.telekom.inactive.v1").
+				SetEnvironment("prod").
+				SetNamespace("prod--platform--narvi").
+				SetName("inactive-sub").
+				SetOwnerID(appID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data := &eventexposure.EventExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "inactive-exp", nil),
+				StatusPhase:    "READY",
+				StatusMessage:  "ok",
+				EventType:      "de.telekom.inactive.v1",
+				Visibility:     "WORLD",
+				Active:         false,
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				Scopes:         []model.EventScope{},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			_, err = sub.QueryTarget().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
 		It("should return ErrDependencyMissing when application is missing", func() {
@@ -215,6 +305,71 @@ var _ = Describe("EventExposure Repository", func() {
 			Expect(found).To(BeTrue())
 			Expect(id).To(BeNumerically(">", 0))
 		})
+
+		It("should replace response filter with selection filter on update", func() {
+			data := &eventexposure.EventExposureData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "replace-exp", nil),
+				StatusPhase: "READY",
+				EventType:   "de.telekom.replace.v1",
+				Visibility:  "WORLD",
+				Active:      true,
+				ApprovalConfig: model.ApprovalConfig{
+					Strategy: "AUTO",
+				},
+				Scopes: []model.EventScope{
+					{
+						Name: "filter-scope",
+						Trigger: model.EventTrigger{
+							ResponseFilter: &model.ResponseFilter{
+								Paths: []string{"$.data.secret"},
+								Mode:  "Exclude",
+							},
+						},
+					},
+				},
+				AppName:  "my-app",
+				TeamName: "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Verify initial state has response filter
+			exp, err := client.EventExposure.Query().
+				Where(enteventexposure.EventTypeEQ("de.telekom.replace.v1")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.EventScopes).To(HaveLen(1))
+			Expect(exp.EventScopes[0].Name).To(Equal("filter-scope"))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter).NotTo(BeNil())
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.secret"}))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter.Mode).To(Equal("Exclude"))
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter).To(BeNil())
+
+			// Update: replace response filter with selection filter
+			data.Scopes = []model.EventScope{
+				{
+					Name: "filter-scope",
+					Trigger: model.EventTrigger{
+						SelectionFilter: &model.SelectionFilter{
+							Attributes: map[string]string{"source": "my-service"},
+							Expression: `{"op":"eq","path":"$.type","value":"order.created"}`,
+						},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.EventExposure.Query().
+				Where(enteventexposure.EventTypeEQ("de.telekom.replace.v1")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.EventScopes).To(HaveLen(1))
+			Expect(exp.EventScopes[0].Name).To(Equal("filter-scope"))
+			Expect(exp.EventScopes[0].Trigger.ResponseFilter).To(BeNil())
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter).NotTo(BeNil())
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Attributes).To(Equal(map[string]string{"source": "my-service"}))
+			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.type","value":"order.created"}`))
+		})
+
 	})
 
 	Describe("Delete", func() {

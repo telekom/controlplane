@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -22,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApiSubscriptionUpdate is the builder for updating ApiSubscription entities.
@@ -159,15 +159,35 @@ func (_u *ApiSubscriptionUpdate) SetNillableM2mAuthMethod(v *apisubscription.M2m
 	return _u
 }
 
-// SetApprovedScopes sets the "approved_scopes" field.
-func (_u *ApiSubscriptionUpdate) SetApprovedScopes(v []string) *ApiSubscriptionUpdate {
-	_u.mutation.SetApprovedScopes(v)
+// SetGatewayURL sets the "gateway_url" field.
+func (_u *ApiSubscriptionUpdate) SetGatewayURL(v string) *ApiSubscriptionUpdate {
+	_u.mutation.SetGatewayURL(v)
 	return _u
 }
 
-// AppendApprovedScopes appends value to the "approved_scopes" field.
-func (_u *ApiSubscriptionUpdate) AppendApprovedScopes(v []string) *ApiSubscriptionUpdate {
-	_u.mutation.AppendApprovedScopes(v)
+// SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdate) SetNillableGatewayURL(v *string) *ApiSubscriptionUpdate {
+	if v != nil {
+		_u.SetGatewayURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (_u *ApiSubscriptionUpdate) ClearGatewayURL() *ApiSubscriptionUpdate {
+	_u.mutation.ClearGatewayURL()
+	return _u
+}
+
+// SetSecurity sets the "security" field.
+func (_u *ApiSubscriptionUpdate) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpdate {
+	_u.mutation.SetSecurity(v)
+	return _u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (_u *ApiSubscriptionUpdate) ClearSecurity() *ApiSubscriptionUpdate {
+	_u.mutation.ClearSecurity()
 	return _u
 }
 
@@ -435,13 +455,17 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.M2mAuthMethod(); ok {
 		_spec.SetField(apisubscription.FieldM2mAuthMethod, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.ApprovedScopes(); ok {
-		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
+	if value, ok := _u.mutation.GatewayURL(); ok {
+		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.AppendedApprovedScopes(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, apisubscription.FieldApprovedScopes, value)
-		})
+	if _u.mutation.GatewayURLCleared() {
+		_spec.ClearField(apisubscription.FieldGatewayURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.Security(); ok {
+		_spec.SetField(apisubscription.FieldSecurity, field.TypeJSON, value)
+	}
+	if _u.mutation.SecurityCleared() {
+		_spec.ClearField(apisubscription.FieldSecurity, field.TypeJSON)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -762,15 +786,35 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableM2mAuthMethod(v *apisubscription.
 	return _u
 }
 
-// SetApprovedScopes sets the "approved_scopes" field.
-func (_u *ApiSubscriptionUpdateOne) SetApprovedScopes(v []string) *ApiSubscriptionUpdateOne {
-	_u.mutation.SetApprovedScopes(v)
+// SetGatewayURL sets the "gateway_url" field.
+func (_u *ApiSubscriptionUpdateOne) SetGatewayURL(v string) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetGatewayURL(v)
 	return _u
 }
 
-// AppendApprovedScopes appends value to the "approved_scopes" field.
-func (_u *ApiSubscriptionUpdateOne) AppendApprovedScopes(v []string) *ApiSubscriptionUpdateOne {
-	_u.mutation.AppendApprovedScopes(v)
+// SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdateOne) SetNillableGatewayURL(v *string) *ApiSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetGatewayURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (_u *ApiSubscriptionUpdateOne) ClearGatewayURL() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearGatewayURL()
+	return _u
+}
+
+// SetSecurity sets the "security" field.
+func (_u *ApiSubscriptionUpdateOne) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetSecurity(v)
+	return _u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (_u *ApiSubscriptionUpdateOne) ClearSecurity() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearSecurity()
 	return _u
 }
 
@@ -1068,13 +1112,17 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	if value, ok := _u.mutation.M2mAuthMethod(); ok {
 		_spec.SetField(apisubscription.FieldM2mAuthMethod, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.ApprovedScopes(); ok {
-		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
+	if value, ok := _u.mutation.GatewayURL(); ok {
+		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.AppendedApprovedScopes(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, apisubscription.FieldApprovedScopes, value)
-		})
+	if _u.mutation.GatewayURLCleared() {
+		_spec.ClearField(apisubscription.FieldGatewayURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.Security(); ok {
+		_spec.SetField(apisubscription.FieldSecurity, field.TypeJSON, value)
+	}
+	if _u.mutation.SecurityCleared() {
+		_spec.ClearField(apisubscription.FieldSecurity, field.TypeJSON)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

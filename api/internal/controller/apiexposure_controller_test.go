@@ -74,6 +74,10 @@ func CreateZone(name string) *adminapi.Zone {
 	Expect(err).ToNot(HaveOccurred())
 
 	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.IdentityRealm = &types.ObjectRef{
+		Name:      testEnvironment,
+		Namespace: testEnvironment + "--" + name,
+	}
 	zone.Status.Gateway = &types.ObjectRef{
 		Name:      "test-gateway",
 		Namespace: testEnvironment + "--" + name,
@@ -486,7 +490,6 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 		By("Creating the Gateway Client")
 		// We need this gateway client because the failover-route is also a proxy routes (in non-failover scenarios)
 		// And a proxy-route needs the gateway client for meshing
-		CreateGatewayClient(providerZone)
 
 		By("Initializing the API and APIExposure")
 		api = NewApi(apiBasePath)

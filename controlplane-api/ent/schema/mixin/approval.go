@@ -41,5 +41,9 @@ func (ApprovalFieldsMixin) Fields() []ent.Field {
 		field.JSON("available_transitions", []model.AvailableTransition{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.JSON("requested_scopes", []string{}).
+			Comment("If any, the access-scopes requested.").
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }

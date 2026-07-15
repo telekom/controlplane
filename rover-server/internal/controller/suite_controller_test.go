@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	cstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/file-manager/api"
@@ -112,7 +113,11 @@ var _ = BeforeSuite(func() {
 
 	// Create a new server
 	s := server.Server{
-		Config:              &config.ServerConfig{},
+		Config: &config.ServerConfig{
+			Security: config.SecurityConfig{
+				Mode: security.ModeMock,
+			},
+		},
 		Log:                 log.Log,
 		ApiSpecifications:   NewApiSpecificationController(stores, oaslint.NewLinter(config.OasLintingConfig{})),
 		Rovers:              NewRoverController(stores),

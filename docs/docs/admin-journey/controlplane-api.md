@@ -61,7 +61,7 @@ kubectl apply -k install/overlays/local
 The local overlay also:
 
 - Includes the `database` component, which deploys a PostgreSQL pod with default credentials into the `controlplane-system` namespace
-- Provides a pre-configured ControlPlane API config with security disabled and the GraphQL Playground enabled
+- Provides a pre-configured ControlPlane API config with security set to `mock` and the GraphQL Playground enabled
 - Sets all images to the `latest` tag with `IfNotPresent` pull policy
 
 ## Enabling in the default overlay
@@ -150,23 +150,99 @@ configMapGenerator:
       disableNameSuffixHash: true
 ```
 
-Then create a `controlplane-api-config.yaml` next to your overlay:
+Then create a `controlplane-api-config.yaml` next to your overlay.
+
+#### Security modes
+
+The `security.mode` field controls how the API authenticates incoming requests:
+
+| Mode | JWT required | Signature validated | Use case |
+|------|-------------|---------------------|----------|
+| `jwt` | Yes | **Yes** | Production — full JWT validation against trusted issuers |
+| `mock` | Yes | **No** | Local development / integration testing — JWT parsed but signature is not checked |
+
+The default mode is `jwt` (secure by default). A deployment with no explicit `security` configuration will **panic at startup** if no `trustedIssuers` are provided.
+
+#### Production configuration
 
 ```yaml
 database:
   url: ${DATABASE_URL}
 
 security:
-  enabled: true
+  mode: jwt
   trustedIssuers:
-    - https://your-idp.example.com/realms/master
+    - https://your-idp.example.com/realms/controlplane
 ```
 
-The `DATABASE_URL` variable is injected from the `controlplane-db` Secret by the deployment manifest. The only setting you **must** configure for production is `security` — without it, the API grants admin-level access to all queries.
+The `DATABASE_URL` variable is injected from the `controlplane-db` Secret by the deployment manifest.
 
 :::caution
-In production, always set `security.enabled: true` and provide at least one trusted issuer. When security is disabled, the API grants unrestricted access — this is intended for local development only.
+`mode: jwt` requires at least one entry in `trustedIssuers`. The application will panic at startup if this is missing — fail-closed by design.
 :::
+
+#### Development / local overlay configuration
+
+```yaml
+database:
+  url: ${DATABASE_URL}
+
+security:
+  mode: mock
+
+graphql:
+  playgroundEnabled: true
+```
+
+:::warning
+`mode: mock` accepts any JWT without validating its signature. Never use this in production.
+:::
+
+#### Testing configuration
+
+```yaml
+security:
+  mode: mock
+  # No trustedIssuers needed — signatures are not validated
+```
+
+:::warning
+`mode: mock` accepts JWTs without validating signatures. Only use for automated integration tests with controlled tokens.
+:::
+
+### Keycloak integration
+
+To issue JWTs compatible with the ControlPlane API, configure Keycloak with the following protocol mappers:
+
+#### Client setup
+
+1. Create a **confidential client** in your Keycloak realm.
+2. Enable **Service Accounts** for machine-to-machine authentication.
+3. Add the protocol mappers below.
+
+#### Required protocol mappers
+
+| Mapper name | Mapper type | Token claim name | Example value |
+|-------------|-------------|------------------|---------------|
+| `env` | Hardcoded claim | `env` | `production` |
+| `clientId` | User Session Note | `clientId` | `acme--platform--api-gateway` |
+| `scope` | Hardcoded claim | `scope` | `tardis:admin:all` |
+
+The `clientId` claim uses the format `<group>--<team>--<service>` and determines team-level access scoping. The `scope` claim controls the caller type (`tardis:team:all`, `tardis:group:all`, `tardis:admin:all`).
+
+#### Example JWT payload
+
+```json
+{
+  "exp": 1719320400,
+  "iat": 1719316800,
+  "iss": "https://keycloak.example.com/realms/controlplane",
+  "sub": "service-account-my-client",
+  "env": "production",
+  "clientId": "acme--platform--api-gateway",
+  "scope": "tardis:admin:all"
+}
+```
 
 ## Verify the deployment
 
@@ -189,6 +265,14 @@ kubectl port-forward svc/controlplane-api 8443:443 -n controlplane-system
 # Open https://localhost:8443/graphql in your browser
 ```
 
+The Playground sends queries to `/graphql/query`, which requires a JWT bearer token regardless of security mode. In the Playground's **Headers** tab, add:
+
+```json
+{ "Authorization": "Bearer <your-token>" }
+```
+
+For local development with `mode: mock`, any JWT with valid claims works — the signature is not validated.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Resolution |
@@ -197,6 +281,7 @@ kubectl port-forward svc/controlplane-api 8443:443 -n controlplane-system
 | Projector logs show `ErrDependencyMissing` | Resources synced out of order | This is normal — the Projector retries automatically when a parent resource has not been synced yet. |
 | ControlPlane API returns empty results | Projector not running, or JWT scoping | Confirm the Projector is syncing. If security is enabled, check that the caller's JWT has the expected team/group claims. |
 | GraphQL Playground not accessible | Playground disabled in config | Set `graphql.playgroundEnabled: true` in the ControlPlane API configuration. |
+| Playground queries return 401 | Missing or invalid Authorization header | Add `{ "Authorization": "Bearer <token>" }` in the Playground Headers tab. With `mode: mock`, any JWT with valid claims works. |
 
 ## Next steps
 

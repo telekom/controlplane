@@ -11,12 +11,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // TODO: this list of secrets is not complete, it should be extended with all secrets that are used in the rover spec
@@ -39,30 +40,11 @@ func GetExternalSecrets(ctx context.Context, rover *roverv1.Rover) map[string]st
 	secretMap := make(map[string]string)
 
 	for _, subscription := range rover.Spec.Subscriptions {
-		if subscription.Api != nil && subscription.Api.HasM2M() {
-			if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
-				secretMap[makeKey(subscription.Api.BasePath, "clientSecret")] = subscription.Api.Security.M2M.Client.ClientSecret
-			}
-			if subscription.Api.Security.M2M.Basic != nil && subscription.Api.Security.M2M.Basic.Password != "" {
-				secretMap[makeKey(subscription.Api.BasePath, "password")] = subscription.Api.Security.M2M.Basic.Password
-			}
-		}
+		addSubscriptionExternalSecrets(secretMap, subscription)
 	}
 
 	for _, exposure := range rover.Spec.Exposures {
-		if exposure.Api != nil && exposure.Api.HasM2M() {
-			if exposure.Api.Security.M2M.ExternalIDP != nil {
-				if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
-					secretMap[makeKey(exposure.Api.BasePath, "externalIDP/clientSecret")] = exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret
-				}
-				if exposure.Api.Security.M2M.ExternalIDP.Basic != nil && exposure.Api.Security.M2M.ExternalIDP.Basic.Password != "" {
-					secretMap[makeKey(exposure.Api.BasePath, "externalIDP/password")] = exposure.Api.Security.M2M.ExternalIDP.Basic.Password
-				}
-			}
-			if exposure.Api.Security.M2M.Basic != nil && exposure.Api.Security.M2M.Basic.Password != "" {
-				secretMap[makeKey(exposure.Api.BasePath, "basicAuth/password")] = exposure.Api.Security.M2M.Basic.Password
-			}
-		}
+		addExposureExternalSecrets(secretMap, exposure)
 	}
 
 	return secretMap
@@ -73,60 +55,93 @@ func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecr
 	log := logr.FromContextOrDiscard(ctx)
 	log.V(1).Info("Setting external secrets for rover", "availableSecrets", availableSecrets)
 
-	for _, subscription := range rover.Spec.Subscriptions {
-		if subscription.Api != nil && subscription.Api.HasM2M() {
-			if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
-				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "clientSecret"))
-				if !ok {
-					log.V(1).Info("clientSecret not found in available secrets")
-				} else {
-					subscription.Api.Security.M2M.Client.ClientSecret = secretRef
-				}
-			}
-			if subscription.Api.Security.M2M.Basic != nil && subscription.Api.Security.M2M.Basic.Password != "" {
-				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "password"))
-				if !ok {
-					log.V(1).Info("password not found in available secrets")
-				} else {
-					subscription.Api.Security.M2M.Basic.Password = secretRef
-				}
-			}
-		}
-
+	for i := range rover.Spec.Subscriptions {
+		setSubscriptionExternalSecrets(log, &rover.Spec.Subscriptions[i], availableSecrets)
 	}
 
-	for _, exposure := range rover.Spec.Exposures {
-		if exposure.Api != nil && exposure.Api.HasM2M() {
-			if exposure.Api.Security.M2M.ExternalIDP != nil {
-				if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
-					secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/clientSecret"))
-					if !ok {
-						log.V(1).Info("externalIDP clientSecret not found in available secrets")
-					} else {
-						exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret = secretRef
-					}
-				}
-				if exposure.Api.Security.M2M.ExternalIDP.Basic != nil && exposure.Api.Security.M2M.ExternalIDP.Basic.Password != "" {
-					secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/password"))
-					if !ok {
-						log.V(1).Info("externalIDP password not found in available secrets")
-					} else {
-						exposure.Api.Security.M2M.ExternalIDP.Basic.Password = secretRef
-					}
-				}
-			}
-			if exposure.Api.Security.M2M.Basic != nil && exposure.Api.Security.M2M.Basic.Password != "" {
-				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "basicAuth/password"))
-				if !ok {
-					log.V(1).Info("basicAuth password not found in available secrets")
-				} else {
-					exposure.Api.Security.M2M.Basic.Password = secretRef
-				}
-			}
-		}
+	for i := range rover.Spec.Exposures {
+		setExposureExternalSecrets(log, &rover.Spec.Exposures[i], availableSecrets)
 	}
 
 	return nil
+}
+
+func addSubscriptionExternalSecrets(secretMap map[string]string, subscription roverv1.Subscription) {
+	if subscription.Api == nil || !subscription.Api.HasM2M() {
+		return
+	}
+	if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
+		secretMap[makeKey(subscription.Api.BasePath, "clientSecret")] = subscription.Api.Security.M2M.Client.ClientSecret
+	}
+	if subscription.Api.Security.M2M.Basic != nil && subscription.Api.Security.M2M.Basic.Password != "" {
+		secretMap[makeKey(subscription.Api.BasePath, "password")] = subscription.Api.Security.M2M.Basic.Password
+	}
+}
+
+func addExposureExternalSecrets(secretMap map[string]string, exposure roverv1.Exposure) {
+	if exposure.Api == nil || !exposure.Api.HasM2M() {
+		return
+	}
+	if exposure.Api.Security.M2M.ExternalIDP != nil {
+		if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
+			secretMap[makeKey(exposure.Api.BasePath, "externalIDP/clientSecret")] = exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret
+		}
+		if exposure.Api.Security.M2M.ExternalIDP.Basic != nil && exposure.Api.Security.M2M.ExternalIDP.Basic.Password != "" {
+			secretMap[makeKey(exposure.Api.BasePath, "externalIDP/password")] = exposure.Api.Security.M2M.ExternalIDP.Basic.Password
+		}
+	}
+	if exposure.Api.Security.M2M.Basic != nil && exposure.Api.Security.M2M.Basic.Password != "" {
+		secretMap[makeKey(exposure.Api.BasePath, "basicAuth/password")] = exposure.Api.Security.M2M.Basic.Password
+	}
+}
+
+func setSubscriptionExternalSecrets(log logr.Logger, subscription *roverv1.Subscription, availableSecrets map[string]string) {
+	if subscription.Api == nil || !subscription.Api.HasM2M() {
+		return
+	}
+	if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
+		updateSecretRef(log, availableSecrets, makeKey(subscription.Api.BasePath, "clientSecret"), "clientSecret not found in available secrets", func(secretRef string) {
+			subscription.Api.Security.M2M.Client.ClientSecret = secretRef
+		})
+	}
+	if subscription.Api.Security.M2M.Basic != nil && subscription.Api.Security.M2M.Basic.Password != "" {
+		updateSecretRef(log, availableSecrets, makeKey(subscription.Api.BasePath, "password"), "password not found in available secrets", func(secretRef string) {
+			subscription.Api.Security.M2M.Basic.Password = secretRef
+		})
+	}
+}
+
+func setExposureExternalSecrets(log logr.Logger, exposure *roverv1.Exposure, availableSecrets map[string]string) {
+	if exposure.Api == nil || !exposure.Api.HasM2M() {
+		return
+	}
+	if exposure.Api.Security.M2M.ExternalIDP != nil {
+		if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
+			updateSecretRef(log, availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/clientSecret"), "externalIDP clientSecret not found in available secrets", func(secretRef string) {
+				exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret = secretRef
+			})
+		}
+		if exposure.Api.Security.M2M.ExternalIDP.Basic != nil && exposure.Api.Security.M2M.ExternalIDP.Basic.Password != "" {
+			updateSecretRef(log, availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/password"), "externalIDP password not found in available secrets", func(secretRef string) {
+				exposure.Api.Security.M2M.ExternalIDP.Basic.Password = secretRef
+			})
+		}
+	}
+	if exposure.Api.Security.M2M.Basic != nil && exposure.Api.Security.M2M.Basic.Password != "" {
+		updateSecretRef(log, availableSecrets, makeKey(exposure.Api.BasePath, "basicAuth/password"), "basicAuth password not found in available secrets", func(secretRef string) {
+			exposure.Api.Security.M2M.Basic.Password = secretRef
+		})
+	}
+}
+
+func updateSecretRef(log logr.Logger, availableSecrets map[string]string, key, missingMessage string, setSecret func(string)) {
+	secretRef, ok := secretsapi.FindSecretId(availableSecrets, key)
+	if !ok {
+		log.V(1).Info(missingMessage)
+		return
+	}
+
+	setSecret(secretRef)
 }
 
 func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager secretsapi.SecretManager) error {

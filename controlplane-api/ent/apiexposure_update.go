@@ -188,6 +188,46 @@ func (_u *ApiExposureUpdate) AppendUpstreams(v []model.Upstream) *ApiExposureUpd
 	return _u
 }
 
+// SetSecurity sets the "security" field.
+func (_u *ApiExposureUpdate) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpdate {
+	_u.mutation.SetSecurity(v)
+	return _u
+}
+
+// SetNillableSecurity sets the "security" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetSecurity(*v)
+	}
+	return _u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (_u *ApiExposureUpdate) ClearSecurity() *ApiExposureUpdate {
+	_u.mutation.ClearSecurity()
+	return _u
+}
+
+// SetTraffic sets the "traffic" field.
+func (_u *ApiExposureUpdate) SetTraffic(v model.Traffic) *ApiExposureUpdate {
+	_u.mutation.SetTraffic(v)
+	return _u
+}
+
+// SetNillableTraffic sets the "traffic" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableTraffic(v *model.Traffic) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetTraffic(*v)
+	}
+	return _u
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (_u *ApiExposureUpdate) ClearTraffic() *ApiExposureUpdate {
+	_u.mutation.ClearTraffic()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *ApiExposureUpdate) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpdate {
 	_u.mutation.SetApprovalConfig(v)
@@ -438,6 +478,18 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, apiexposure.FieldUpstreams, value)
 		})
+	}
+	if value, ok := _u.mutation.Security(); ok {
+		_spec.SetField(apiexposure.FieldSecurity, field.TypeJSON, value)
+	}
+	if _u.mutation.SecurityCleared() {
+		_spec.ClearField(apiexposure.FieldSecurity, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Traffic(); ok {
+		_spec.SetField(apiexposure.FieldTraffic, field.TypeJSON, value)
+	}
+	if _u.mutation.TrafficCleared() {
+		_spec.ClearField(apiexposure.FieldTraffic, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -723,6 +775,46 @@ func (_u *ApiExposureUpdateOne) AppendUpstreams(v []model.Upstream) *ApiExposure
 	return _u
 }
 
+// SetSecurity sets the "security" field.
+func (_u *ApiExposureUpdateOne) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpdateOne {
+	_u.mutation.SetSecurity(v)
+	return _u
+}
+
+// SetNillableSecurity sets the "security" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetSecurity(*v)
+	}
+	return _u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (_u *ApiExposureUpdateOne) ClearSecurity() *ApiExposureUpdateOne {
+	_u.mutation.ClearSecurity()
+	return _u
+}
+
+// SetTraffic sets the "traffic" field.
+func (_u *ApiExposureUpdateOne) SetTraffic(v model.Traffic) *ApiExposureUpdateOne {
+	_u.mutation.SetTraffic(v)
+	return _u
+}
+
+// SetNillableTraffic sets the "traffic" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableTraffic(v *model.Traffic) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetTraffic(*v)
+	}
+	return _u
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (_u *ApiExposureUpdateOne) ClearTraffic() *ApiExposureUpdateOne {
+	_u.mutation.ClearTraffic()
+	return _u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_u *ApiExposureUpdateOne) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpdateOne {
 	_u.mutation.SetApprovalConfig(v)
@@ -1003,6 +1095,18 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, apiexposure.FieldUpstreams, value)
 		})
+	}
+	if value, ok := _u.mutation.Security(); ok {
+		_spec.SetField(apiexposure.FieldSecurity, field.TypeJSON, value)
+	}
+	if _u.mutation.SecurityCleared() {
+		_spec.ClearField(apiexposure.FieldSecurity, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Traffic(); ok {
+		_spec.SetField(apiexposure.FieldTraffic, field.TypeJSON, value)
+	}
+	if _u.mutation.TrafficCleared() {
+		_spec.ClearField(apiexposure.FieldTraffic, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
