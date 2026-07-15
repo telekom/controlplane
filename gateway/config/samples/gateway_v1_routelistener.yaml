@@ -1,0 +1,18 @@
+apiVersion: gateway.cp.ei.telekom.de/v1
+kind: RouteListener
+metadata:
+  name: routelistener-sample
+  namespace: controlplane-system
+spec:
+  route:
+    name: my-api-route
+    namespace: controlplane-system
+  zone:
+    name: aws
+    namespace: controlplane-system
+  consumer: "eni--myteam--myapp"
+  serviceOwner: "eni--otherteam--provider"
+  issue: "/echo/v1"
+  gatewayClient:
+    clientId: "gateway"
+    issuer: "https://iris.example.com/auth/realms/default"
