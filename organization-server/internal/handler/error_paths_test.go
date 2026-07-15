@@ -49,7 +49,7 @@ var _ = Describe("Hub Error Paths", func() {
 			body := `{"name":"test","displayName":"Test","description":"desc"}`
 			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs", strings.NewReader(body))
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusBadGateway)
+			expectStatus(resp, err, http.StatusInternalServerError)
 		})
 
 		It("should map mutation errors correctly", func() {
@@ -283,7 +283,7 @@ var _ = Describe("Team Error Paths", func() {
 			body := `{"name":"newteam","email":"t@test.de","members":[]}`
 			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/eni/teams", strings.NewReader(body))
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusBadGateway)
+			expectStatus(resp, err, http.StatusInternalServerError)
 		})
 
 		It("should map ALREADY_EXISTS mutation errors", func() {
@@ -593,7 +593,7 @@ var _ = Describe("Team Error Paths", func() {
 
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion/resources", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusBadGateway)
+			expectStatus(resp, err, http.StatusInternalServerError)
 		})
 
 		It("should paginate resources", func() {

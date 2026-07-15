@@ -35,13 +35,7 @@ func (h *Handler) CreateHub(c *fiber.Ctx) error {
 		Description: &desc,
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to create group")
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to create hub",
-		})
+		return h.internalError(c, err, "Unable to create hub", "hub", req.Name)
 	}
 
 	if len(resp.CreateGroup.Errors) > 0 {
@@ -65,13 +59,7 @@ func (h *Handler) ListHubs(c *fiber.Ctx) error {
 	ctx := h.contextWithIdentity(c)
 	resp, err := gql.ListGroups(ctx, h.cpapi)
 	if err != nil {
-		h.log.Error(err, "Failed to list groups")
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to list hubs",
-		})
+		return h.internalError(c, err, "Unable to list hubs")
 	}
 
 	hubs := make([]api.HubResponse, 0, len(resp.Groups))
@@ -107,13 +95,7 @@ func (h *Handler) GetHub(c *fiber.Ctx) error {
 		Name: &hubName,
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to get group", "hub", hubName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to get hub",
-		})
+		return h.internalError(c, err, "Unable to get hub", "hub", hubName)
 	}
 
 	if len(resp.Groups) == 0 {
@@ -165,13 +147,7 @@ func (h *Handler) UpdateHub(c *fiber.Ctx) error {
 		Description: &req.Description,
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to update group", "hub", hubName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to update hub",
-		})
+		return h.internalError(c, err, "Unable to update hub", "hub", hubName)
 	}
 
 	if len(resp.UpdateGroup.Errors) > 0 {
@@ -213,13 +189,7 @@ func (h *Handler) DeleteHub(c *fiber.Ctx) error {
 		GroupId: groupID,
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to delete group", "hub", hubName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to delete hub",
-		})
+		return h.internalError(c, err, "Unable to delete hub", "hub", hubName)
 	}
 
 	if len(resp.DeleteGroup.Errors) > 0 {

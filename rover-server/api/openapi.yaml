@@ -1486,13 +1486,24 @@ paths:
       description: >-
         Returns an aggregated list of all resource references (Rovers,
         ApiSpecifications, EventSpecifications, ApiRoadmaps, ApiChangelogs)
-        belonging to the caller's team. Used by the organization facade to
-        provide a unified resource listing.
+        belonging to a specific team. Both group and team parameters are required.
+        The caller's token must have access to the requested group/team combination.
       operationId: getAllResources
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
-        - $ref: '#/components/parameters/ResourcePrefix'
+        - name: group
+          in: query
+          description: The group (hub) name that owns the team.
+          required: true
+          schema:
+            type: string
+        - name: team
+          in: query
+          description: The team name whose resources to list.
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: OK
@@ -1609,17 +1620,6 @@ components:
       schema:
           type: boolean
           default: false
-    ResourcePrefix:
-      name: prefix
-      in: query
-      description: >-
-        Optional prefix filter to narrow results to a specific team or group.
-        Must be encompassed by the caller's token prefix (e.g. an admin with
-        prefix "env--" can request "env--group--team--" but a team token cannot
-        request a different team's prefix). Format: environment--group--team--
-      required: false
-      schema:
-        type: string
   headers:
     XTotalCount:
       description: Total number of items matching criteria.

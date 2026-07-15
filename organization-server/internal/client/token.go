@@ -5,83 +5,39 @@
 package client
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
-	"sync"
-	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 // TokenSource provides an OAuth access token, refreshing it automatically
-// when expired via the client_credentials grant.
+// when expired via the client_credentials grant. It wraps the standard
+// golang.org/x/oauth2/clientcredentials package.
 type TokenSource struct {
-	tokenURL     string
-	clientID     string
-	clientSecret string
-	httpClient   *http.Client
-
-	mu     sync.Mutex
-	token  string
-	expiry time.Time
+	source oauth2.TokenSource
 }
 
 // NewTokenSource creates a TokenSource that fetches tokens from the given
-// OAuth token endpoint using client_credentials grant.
+// OAuth token endpoint using client_credentials grant. Token caching and
+// automatic refresh are handled by the underlying oauth2 library.
 func NewTokenSource(tokenURL, clientID, clientSecret string) *TokenSource {
+	cfg := &clientcredentials.Config{
+		TokenURL:     tokenURL,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+	}
 	return &TokenSource{
-		tokenURL:     tokenURL,
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		httpClient:   &http.Client{Timeout: 10 * time.Second},
+		source: cfg.TokenSource(context.Background()),
 	}
 }
 
 // Token returns a valid access token, fetching a new one if needed.
 func (ts *TokenSource) Token() (string, error) {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-
-	// Return cached token if still valid (with 30s buffer).
-	if ts.token != "" && time.Now().Before(ts.expiry.Add(-30*time.Second)) {
-		return ts.token, nil
-	}
-
-	token, expiry, err := ts.fetchToken()
+	tok, err := ts.source.Token()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("fetching OAuth token: %w", err)
 	}
-	ts.token = token
-	ts.expiry = expiry
-	return ts.token, nil
-}
-
-func (ts *TokenSource) fetchToken() (string, time.Time, error) {
-	data := url.Values{
-		"grant_type":    {"client_credentials"},
-		"client_id":     {ts.clientID},
-		"client_secret": {ts.clientSecret},
-	}
-
-	resp, err := ts.httpClient.Post(ts.tokenURL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode())) //nolint:gosec // tokenURL is from trusted config, not user input
-	if err != nil {
-		return "", time.Time{}, fmt.Errorf("fetching OAuth token: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // best-effort close
-
-	if resp.StatusCode != http.StatusOK {
-		return "", time.Time{}, fmt.Errorf("OAuth token endpoint returned %d", resp.StatusCode)
-	}
-
-	var result struct {
-		AccessToken string `json:"access_token"`
-		ExpiresIn   int    `json:"expires_in"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", time.Time{}, fmt.Errorf("decoding token response: %w", err)
-	}
-
-	expiry := time.Now().Add(time.Duration(result.ExpiresIn) * time.Second)
-	return result.AccessToken, expiry, nil
+	return tok.AccessToken, nil
 }

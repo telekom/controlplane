@@ -246,8 +246,7 @@ func (s *teamK8sService) DeleteTeam(ctx context.Context, ref ResourceRef) (*mode
 	}
 
 	// Pre-check: team must have no resources before deletion.
-	prefix := fmt.Sprintf("%s--%s/", ref.Namespace, ref.TeamName)
-	hasResources, err := s.resourceChecker.HasResources(ctx, prefix)
+	hasResources, err := s.resourceChecker.HasResources(ctx, ref.Group, ref.TeamName)
 	if err != nil {
 		log.Error(err, "Failed to check team resources")
 		return &model.DeleteTeamPayload{
@@ -269,6 +268,10 @@ func (s *teamK8sService) DeleteTeam(ctx context.Context, ref ResourceRef) (*mode
 
 	team := &organizationv1.Team{}
 	if err := s.client.Get(ctx, k8stypes.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, team); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.V(0).Info("Team already deleted")
+			return &model.DeleteTeamPayload{}, nil
+		}
 		log.V(1).Info("Failed to get team resource", "error", err)
 		return &model.DeleteTeamPayload{
 			Errors: []model.MutationError{k8sToMutationError(err)},
@@ -276,6 +279,10 @@ func (s *teamK8sService) DeleteTeam(ctx context.Context, ref ResourceRef) (*mode
 	}
 
 	if err := s.client.Delete(ctx, team); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.V(0).Info("Team already deleted")
+			return &model.DeleteTeamPayload{}, nil
+		}
 		log.Error(err, "Failed to delete team resource")
 		return &model.DeleteTeamPayload{
 			Errors: []model.MutationError{k8sToMutationError(err)},

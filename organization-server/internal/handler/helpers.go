@@ -6,8 +6,10 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
+	"github.com/Khan/genqlient/graphql"
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/telekom/controlplane/organization-server/internal/api"
@@ -126,4 +128,22 @@ func (h *Handler) resolveTeamID(ctx context.Context, hubName, teamName string) (
 		return "", nil
 	}
 	return resp.Teams.Edges[0].Node.Id, nil
+}
+
+// internalError logs an upstream/internal error with structured context and returns
+// a generic 500 to the customer. The keysAndValues follow logr convention (key, value pairs).
+// If err is a genqlient HTTPError, the upstream status code is logged as an extra field.
+func (h *Handler) internalError(c *fiber.Ctx, err error, msg string, keysAndValues ...any) error {
+	var httpErr *graphql.HTTPError
+	if errors.As(err, &httpErr) {
+		keysAndValues = append(keysAndValues, "upstreamStatus", httpErr.StatusCode)
+	}
+	h.log.Error(err, msg, keysAndValues...)
+
+	return c.Status(fiber.StatusInternalServerError).JSON(api.Error{
+		Type:   "about:blank",
+		Title:  "Internal Server Error",
+		Status: float32(500),
+		Detail: msg,
+	})
 }

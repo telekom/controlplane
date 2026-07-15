@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -16,13 +17,13 @@ import (
 
 // ResourceChecker checks whether a team has resources via rover-server.
 type ResourceChecker interface {
-	// HasResources returns true if the team identified by the given prefix
+	// HasResources returns true if the team identified by group and team
 	// has any resources (Rovers, ApiSpecs, EventSpecs, etc.).
-	HasResources(ctx context.Context, prefix string) (bool, error)
+	HasResources(ctx context.Context, group, team string) (bool, error)
 }
 
 // roverResourceChecker implements ResourceChecker by calling rover-server's
-// GET /resources?prefix=<prefix> endpoint.
+// GET /resources?group=<group>&team=<team> endpoint.
 type roverResourceChecker struct {
 	baseURL     string
 	environment string
@@ -45,8 +46,8 @@ func NewRoverResourceChecker(baseURL, environment, scopePrefix string) ResourceC
 	}
 }
 
-func (r *roverResourceChecker) HasResources(ctx context.Context, prefix string) (bool, error) {
-	url := fmt.Sprintf("%s/resources?prefix=%s&limit=1", r.baseURL, prefix)
+func (r *roverResourceChecker) HasResources(ctx context.Context, group, team string) (bool, error) {
+	url := fmt.Sprintf("%s/resources?group=%s&team=%s&limit=1", r.baseURL, group, team)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -63,7 +64,8 @@ func (r *roverResourceChecker) HasResources(ctx context.Context, prefix string) 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("rover-server returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return false, fmt.Errorf("rover-server returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var result struct {
@@ -84,6 +86,6 @@ func NewNoopResourceChecker() ResourceChecker {
 	return &noopResourceChecker{}
 }
 
-func (n *noopResourceChecker) HasResources(_ context.Context, _ string) (bool, error) {
+func (n *noopResourceChecker) HasResources(_ context.Context, _, _ string) (bool, error) {
 	return false, nil
 }

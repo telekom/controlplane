@@ -49,13 +49,7 @@ func (h *Handler) CreateTeam(c *fiber.Ctx) error {
 		Members:     members,
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to create team", "hub", hubName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to create team",
-		})
+		return h.internalError(c, err, "Unable to create team", "hub", hubName)
 	}
 
 	if len(resp.CreateTeam.Errors) > 0 {
@@ -95,13 +89,7 @@ func (h *Handler) ListTeams(c *fiber.Ctx) error {
 		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to list teams", "hub", hubName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to list teams",
-		})
+		return h.internalError(c, err, "Unable to list teams", "hub", hubName)
 	}
 
 	teams := make([]api.TeamResponse, 0, len(resp.Teams.Edges))
@@ -139,13 +127,7 @@ func (h *Handler) GetTeam(c *fiber.Ctx) error {
 		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to get team", "hub", hubName, "team", teamName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to get team",
-		})
+		return h.internalError(c, err, "Unable to get team", "hub", hubName, "team", teamName)
 	}
 
 	if len(resp.Teams.Edges) == 0 {
@@ -196,13 +178,7 @@ func (h *Handler) UpdateTeam(c *fiber.Ctx) error {
 		Email:  &req.Email,
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to update team", "hub", hubName, "team", teamName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to update team",
-		})
+		return h.internalError(c, err, "Unable to update team", "hub", hubName, "team", teamName)
 	}
 
 	if len(resp.UpdateTeam.Errors) > 0 {
@@ -257,13 +233,7 @@ func (h *Handler) DeleteTeam(c *fiber.Ctx) error {
 		TeamId: teamID,
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to delete team", "hub", hubName, "team", teamName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to delete team",
-		})
+		return h.internalError(c, err, "Unable to delete team", "hub", hubName, "team", teamName)
 	}
 
 	if len(resp.DeleteTeam.Errors) > 0 {
@@ -285,13 +255,7 @@ func (h *Handler) GetTeamStatus(c *fiber.Ctx) error {
 		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {
-		h.log.Error(err, "Failed to get team status", "hub", hubName, "team", teamName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to get team status",
-		})
+		return h.internalError(c, err, "Unable to get team status", "hub", hubName, "team", teamName)
 	}
 
 	if len(resp.Teams.Edges) == 0 {
@@ -330,13 +294,7 @@ func (h *Handler) PatchTeamToken(c *fiber.Ctx) error {
 
 	resp, err := gql.RotateTeamToken(ctx, h.cpapi, teamID)
 	if err != nil {
-		h.log.Error(err, "Failed to rotate team token", "hub", hubName, "team", teamName)
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to rotate team token",
-		})
+		return h.internalError(c, err, "Unable to rotate team token", "hub", hubName, "team", teamName)
 	}
 
 	if len(resp.RotateTeamToken.Errors) > 0 {
@@ -360,13 +318,7 @@ func (h *Handler) GetTeamResources(c *fiber.Ctx) error {
 
 	resources, err := h.rover.GetResources(c.UserContext(), id.Environment, hub, team)
 	if err != nil {
-		h.log.Error(err, "Failed to get team resources from rover-server")
-		return c.Status(fiber.StatusBadGateway).JSON(api.Error{
-			Type:   "about:blank",
-			Title:  "Bad Gateway",
-			Status: float32(502),
-			Detail: "Unable to retrieve resources from upstream",
-		})
+		return h.internalError(c, err, "Unable to retrieve team resources", "hub", hub, "team", team)
 	}
 
 	items := resources.Items
