@@ -1,15 +1,35 @@
-# SPDX-FileCopyrightText: 2026 Deutsche Telekom IT GmbH
+# SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
 #
 # SPDX-License-Identifier: Apache-2.0
-
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/name: spectre
-    app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - spectre.cp.ei.telekom.de
+  resources:
+  - listeners
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spectre.cp.ei.telekom.de
+  resources:
+  - listeners/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - spectre.cp.ei.telekom.de
+  resources:
+  - listeners/status
+  verbs:
+  - get
+  - patch
+  - update
