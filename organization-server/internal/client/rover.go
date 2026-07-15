@@ -49,16 +49,18 @@ type ResourceListResponse struct {
 }
 
 // GetResources calls GET /resources on rover-server for a specific team.
-// It constructs a mock admin token and the appropriate prefix from the team identity.
+// It constructs a mock admin token and passes explicit group+team params.
 func (r *RoverClient) GetResources(ctx context.Context, environment, group, team string) (*ResourceListResponse, error) {
-	prefix := fmt.Sprintf("%s--%s--%s/", environment, group, team)
-	url := fmt.Sprintf("%s/resources?prefix=%s", r.baseURL, prefix)
+	url := fmt.Sprintf("%s/resources?group=%s&team=%s", r.baseURL, group, team)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("building request: %w", err)
 	}
 
+	// TODO: This uses a mock token because rover-server currently runs in mock JWT mode.
+	// When rover-server gets real JWT validation, replace with a proper TokenSource
+	// (client_credentials grant) like the CP API transport uses.
 	token := mock.NewMockAccessToken(environment, "org-server", "service", []string{r.scopePrefix + ":admin:all"})
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/json")

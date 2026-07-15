@@ -45,11 +45,13 @@ var resourceKinds = []resourceKind{
 }
 
 func (r *ResourcesControllerImpl) GetAll(ctx context.Context, params api.GetAllResourcesParams) (*api.ResourceListResponse, error) {
+	if params.Group == "" || params.Team == "" {
+		return nil, problems.BadRequest("both 'group' and 'team' query parameters must be provided")
+	}
+
 	tokenPrefix := security.PrefixFromContext(ctx)
 
-	// Determine effective prefix: use the explicit query param if provided,
-	// otherwise fall back to the token-derived prefix.
-	effectivePrefix, err := resolvePrefix(tokenPrefix, params.Prefix)
+	effectivePrefix, err := buildTeamPrefix(tokenPrefix, params.Group, params.Team)
 	if err != nil {
 		return nil, err
 	}
@@ -86,23 +88,26 @@ func (r *ResourcesControllerImpl) GetAll(ctx context.Context, params api.GetAllR
 	}, nil
 }
 
-// resolvePrefix validates and returns the effective prefix to use for filtering.
-// If requestedPrefix is empty, the tokenPrefix is used as-is.
-// If requestedPrefix is provided, it must be encompassed by (start with) the tokenPrefix.
-func resolvePrefix(tokenPrefix any, requestedPrefix string) (string, error) {
-	tp, _ := tokenPrefix.(string)
-
-	if requestedPrefix == "" {
-		return tp, nil
+// buildTeamPrefix constructs the datastore prefix for the given group and team,
+// and validates the caller's token has access to it.
+// Token prefix examples: admin="env--", group="env--group--", team="env--group--team/"
+// Effective prefix is always team-scoped: "env--group--team/"
+func buildTeamPrefix(tokenPrefix string, group, team string) (string, error) {
+	// Extract environment from the token prefix (everything before the first "--")
+	env, _, ok := strings.Cut(tokenPrefix, "--")
+	if !ok || env == "" {
+		return "", problems.Forbidden("access denied", "unable to determine environment from token")
 	}
 
-	// The requested prefix must start with the token prefix — you can only
-	// narrow down, never widen your scope.
-	if !strings.HasPrefix(requestedPrefix, tp) {
-		return "", problems.Forbidden("access denied", "requested prefix is outside your access scope")
+	// Build the full team-level prefix
+	effectivePrefix := fmt.Sprintf("%s--%s--%s/", env, group, team)
+
+	// Verify the requested scope is within the caller's access scope
+	if !strings.HasPrefix(effectivePrefix, tokenPrefix) {
+		return "", problems.Forbidden("access denied", "requested group/team is outside your access scope")
 	}
 
-	return requestedPrefix, nil
+	return effectivePrefix, nil
 }
 
 func collectFromStore[T store.Object](

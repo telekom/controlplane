@@ -21,9 +21,13 @@ func TestGetResources_Success(t *testing.T) {
 		if r.URL.Path != "/resources" {
 			t.Errorf("expected /resources, got %s", r.URL.Path)
 		}
-		prefix := r.URL.Query().Get("prefix")
-		if prefix != "controlplane--eni--hyperion/" {
-			t.Errorf("expected prefix controlplane--eni--hyperion/, got %s", prefix)
+		prefix := r.URL.Query().Get("group")
+		if prefix != "eni" {
+			t.Errorf("expected group eni, got %s", prefix)
+		}
+		team := r.URL.Query().Get("team")
+		if team != "hyperion" {
+			t.Errorf("expected team hyperion, got %s", team)
 		}
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -120,10 +124,11 @@ func TestGetResources_ConnectionRefused(t *testing.T) {
 	}
 }
 
-func TestGetResources_PrefixConstruction(t *testing.T) {
-	var capturedPrefix string
+func TestGetResources_QueryParamConstruction(t *testing.T) {
+	var capturedGroup, capturedTeam string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedPrefix = r.URL.Query().Get("prefix")
+		capturedGroup = r.URL.Query().Get("group")
+		capturedTeam = r.URL.Query().Get("team")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"items":[]}`))
 	}))
@@ -132,9 +137,11 @@ func TestGetResources_PrefixConstruction(t *testing.T) {
 	client := NewRoverClient(server.URL, "tardis")
 	_, _ = client.GetResources(context.Background(), "prod", "my-hub", "my-team")
 
-	expected := "prod--my-hub--my-team/"
-	if capturedPrefix != expected {
-		t.Errorf("prefix: want %s, got %s", expected, capturedPrefix)
+	if capturedGroup != "my-hub" {
+		t.Errorf("group: want my-hub, got %s", capturedGroup)
+	}
+	if capturedTeam != "my-team" {
+		t.Errorf("team: want my-team, got %s", capturedTeam)
 	}
 }
 
