@@ -1,5 +1,4 @@
 // SPDX-FileCopyrightText: 2026 Deutsche Telekom IT GmbH
-// Copyright 2026.
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,11 +11,15 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	spectreeitelekomdev1 "github.com/telekom/controlplane/spectre/api/v1"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
+	"github.com/telekom/controlplane/spectre/internal/handler"
 )
 
 var _ = Describe("Listener Controller", func() {
@@ -32,26 +35,46 @@ var _ = Describe("Listener Controller", func() {
 			Name:      resourceName,
 			Namespace: resourceNamespace,
 		}
-		listener := &spectreeitelekomdev1.Listener{}
+		listener := &spectrev1.Listener{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Listener")
 			err := k8sClient.Get(ctx, typeNamespacedName, listener)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &spectreeitelekomdev1.Listener{
+				resource := &spectrev1.Listener{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: resourceNamespace,
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: spectrev1.ListenerSpec{
+						Consumer: ctypes.TypedObjectRef{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "Application",
+								APIVersion: "application.cp.ei.telekom.de/v1",
+							},
+							ObjectRef: ctypes.ObjectRef{
+								Name:      "consumer-app",
+								Namespace: resourceNamespace,
+							},
+						},
+						Provider: ctypes.TypedObjectRef{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "Application",
+								APIVersion: "application.cp.ei.telekom.de/v1",
+							},
+							ObjectRef: ctypes.ObjectRef{
+								Name:      "provider-app",
+								Namespace: resourceNamespace,
+							},
+						},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &spectreeitelekomdev1.Listener{}
+			resource := &spectrev1.Listener{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -60,17 +83,18 @@ var _ = Describe("Listener Controller", func() {
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
+			recorder := record.NewFakeRecorder(10)
 			controllerReconciler := &ListenerReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
+				Client:   k8sClient,
+				Scheme:   k8sClient.Scheme(),
+				Recorder: recorder,
 			}
+			controllerReconciler.Controller = cc.NewController(&handler.ListenerHandler{}, k8sClient, recorder)
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
 })

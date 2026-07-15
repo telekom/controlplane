@@ -7,20 +7,21 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: listeners.spectre.cp.ei.telekom.de
+  name: spectreapplications.spectre.cp.ei.telekom.de
 spec:
   group: spectre.cp.ei.telekom.de
   names:
-    kind: Listener
-    listKind: ListenerList
-    plural: listeners
-    singular: listener
+    kind: SpectreApplication
+    listKind: SpectreApplicationList
+    plural: spectreapplications
+    singular: spectreapplication
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: Listener is the Schema for the listeners API.
+        description: SpectreApplication is the Schema for the spectreapplications
+          API.
         properties:
           apiVersion:
             description: |-
@@ -40,43 +41,9 @@ spec:
           metadata:
             type: object
           spec:
-            description: ListenerSpec defines the desired state of Listener.
+            description: SpectreApplicationSpec defines the desired state of SpectreApplication.
             properties:
-              apiListener:
-                description: ApiListener configures a listener that proxies API requests.
-                properties:
-                  apiBasePath:
-                    type: string
-                  requestFilter:
-                    description: ListenerFilter defines trigger and payload filtering
-                      rules.
-                    properties:
-                      payload:
-                        items:
-                          type: string
-                        type: array
-                      trigger:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
-                  responseFilter:
-                    description: ListenerFilter defines trigger and payload filtering
-                      rules.
-                    properties:
-                      payload:
-                        items:
-                          type: string
-                        type: array
-                      trigger:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
-                required:
-                - apiBasePath
-                type: object
-              consumer:
+              application:
                 description: |-
                   TypedObjectRef is a reference to a Kubernetes object with type information
                   It is similar to ObjectRef but includes the Kind and APIVersion
@@ -110,68 +77,23 @@ spec:
                 - name
                 - namespace
                 type: object
-              eventListener:
-                description: EventListener configures a listener that subscribes to
-                  events.
-                properties:
-                  eventType:
-                    type: string
-                  filter:
-                    description: ListenerFilter defines trigger and payload filtering
-                      rules.
-                    properties:
-                      payload:
-                        items:
-                          type: string
-                        type: array
-                      trigger:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
-                required:
-                - eventType
-                type: object
-              provider:
-                description: |-
-                  TypedObjectRef is a reference to a Kubernetes object with type information
-                  It is similar to ObjectRef but includes the Kind and APIVersion
-                properties:
-                  apiVersion:
-                    description: |-
-                      APIVersion defines the versioned schema of this representation of an object.
-                      Servers should convert recognized schemas to the latest internal value, and
-                      may reject unrecognized values.
-                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-                    type: string
-                  kind:
-                    description: |-
-                      Kind is a string value representing the REST resource this object represents.
-                      Servers may infer this from the endpoint the client submits requests to.
-                      Cannot be updated.
-                      In CamelCase.
-                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-                    type: string
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    description: |-
-                      UID is a type that holds unique ID values, including UUIDs.  Because we
-                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                      intent and helps make sure that UIDs and names do not get conflated.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
+              callback:
+                type: string
+              deliveryType:
+                default: server_sent_event
+                enum:
+                - callback
+                - server_sent_event
+                type: string
             required:
-            - consumer
-            - provider
+            - application
             type: object
+            x-kubernetes-validations:
+            - message: callback is required when deliveryType is 'callback' and must
+                not be set otherwise
+              rule: 'self.deliveryType == ''callback'' ? has(self.callback) : !has(self.callback)'
           status:
-            description: ListenerStatus defines the observed state of Listener.
+            description: SpectreApplicationStatus defines the observed state of SpectreApplication.
             properties:
               conditions:
                 items:
@@ -232,7 +154,9 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              consumerApproval:
+              id:
+                type: string
+              listenerRoute:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
                   It is similar to types.NamespacedName but has the required json tags for serialization
@@ -251,28 +175,7 @@ spec:
                 - name
                 - namespace
                 type: object
-              eventSubscriptions:
-                items:
-                  description: |-
-                    ObjectRef is a reference to a Kubernetes object
-                    It is similar to types.NamespacedName but has the required json tags for serialization
-                  properties:
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                    uid:
-                      description: |-
-                        UID is a type that holds unique ID values, including UUIDs.  Because we
-                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                        intent and helps make sure that UIDs and names do not get conflated.
-                      type: string
-                  required:
-                  - name
-                  - namespace
-                  type: object
-                type: array
-              providerApproval:
+              proxyRoute:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
                   It is similar to types.NamespacedName but has the required json tags for serialization
@@ -291,7 +194,26 @@ spec:
                 - name
                 - namespace
                 type: object
-              routeListener:
+              publisher:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              subscriber:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
                   It is similar to types.NamespacedName but has the required json tags for serialization

@@ -11,6 +11,7 @@ rules:
   - spectre.cp.ei.telekom.de
   resources:
   - listeners
+  - spectreapplications
   verbs:
   - create
   - delete
@@ -23,12 +24,14 @@ rules:
   - spectre.cp.ei.telekom.de
   resources:
   - listeners/finalizers
+  - spectreapplications/finalizers
   verbs:
   - update
 - apiGroups:
   - spectre.cp.ei.telekom.de
   resources:
   - listeners/status
+  - spectreapplications/status
   verbs:
   - get
   - patch
