@@ -659,9 +659,23 @@ func mapSecurity(apiSecurity *apiapi.Security) gatewayapi.Security {
 				Password: apiSecurity.M2M.Basic.Password,
 			}
 		}
+		security.M2M.Claims = mapClaims(apiSecurity.M2M.Claims)
 	}
 
 	return security
+}
+
+// mapClaims flattens the api Claims (currently only aud) into the gateway's flat
+// []Claim list. Value is the CP-resolved literal; ValueFrom stays symbolic.
+func mapClaims(apiClaims *apiapi.Claims) []gatewayapi.Claim {
+	if apiClaims == nil || apiClaims.Aud == nil {
+		return nil
+	}
+	return []gatewayapi.Claim{{
+		Key:       "aud",
+		Value:     apiClaims.Aud.Value,
+		ValueFrom: gatewayapi.ClaimValueFrom(apiClaims.Aud.ValueFrom),
+	}}
 }
 
 func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.ExternalIdentityProvider {
@@ -714,6 +728,7 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 				Password: apiSecurity.M2M.Basic.Password,
 			}
 		}
+		security.M2M.Claims = mapClaims(apiSecurity.M2M.Claims)
 	}
 
 	return security

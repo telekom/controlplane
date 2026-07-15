@@ -39,11 +39,41 @@ type SubscriberSecurity struct {
 	M2M *SubscriberMachine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
+// ClaimValueFrom is a predefined source that the Control Plane (or Jumper at runtime)
+// resolves into the claim value.
+// +kubebuilder:validation:Enum=ProviderClientId;ConsumerClientId;BasePath
+type ClaimValueFrom string
+
+const (
+	ClaimValueFromProviderClientId ClaimValueFrom = "ProviderClientId"
+	ClaimValueFromConsumerClientId ClaimValueFrom = "ConsumerClientId"
+	ClaimValueFromBasePath         ClaimValueFrom = "BasePath"
+)
+
+// Claims defines the set of token claims. Currently only audience (aud) is supported.
+type Claims struct {
+	// Aud defines the audience claim
+	// +kubebuilder:validation:Optional
+	Aud *Claim `json:"aud,omitempty"`
+}
+
+// Claim defines a single claim value. Exactly one of value or valueFrom must be set.
+// +kubebuilder:validation:XValidation:rule="has(self.value) != has(self.valueFrom)",message="exactly one of value or valueFrom must be set"
+type Claim struct {
+	// Value is a CP-resolved literal claim value
+	// +kubebuilder:validation:Optional
+	Value string `json:"value,omitempty"`
+	// ValueFrom is a source Jumper resolves at runtime (e.g. ConsumerClientId)
+	// +kubebuilder:validation:Optional
+	ValueFrom ClaimValueFrom `json:"valueFrom,omitempty"`
+}
+
 // Machine2MachineAuthentication defines the authentication methods for machine-to-machine communication
 // Either externalIDP, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="ExternalIDP and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes)", message="At least one of externalIDP, basic, or scopes must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes) || has(self.claims)", message="At least one of externalIDP, basic, scopes, or claims must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || !has(self.claims) || (!has(self.externalIDP) && !has(self.basic))", message="Claims require the platform-managed token and cannot be used with an external IDP or basic authentication"
 type Machine2MachineAuthentication struct {
 	// ExternalIDP defines external identity provider configuration
 	// +kubebuilder:validation:Optional
@@ -55,13 +85,18 @@ type Machine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
+	// Claims defines token claims that must be present in the token reaching the upstream.
+	// Only valid on the platform-managed LMS token.
+	// +kubebuilder:validation:Optional
+	Claims *Claims `json:"claims,omitempty"`
 }
 
 // SubscriberMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for subscribers
 // Either client, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes) || has(self.claims)", message="At least one of client, basic, scopes, or claims must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || !has(self.claims) || (!has(self.client) && !has(self.basic))", message="Claims require the platform-managed token and cannot be used with an external IDP or basic authentication"
 type SubscriberMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
 	// +kubebuilder:validation:Optional
@@ -73,6 +108,10 @@ type SubscriberMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
+	// Claims defines per-consumer token claims that override the provider default.
+	// Only valid on the platform-managed LMS token.
+	// +kubebuilder:validation:Optional
+	Claims *Claims `json:"claims,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider

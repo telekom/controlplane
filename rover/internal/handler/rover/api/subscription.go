@@ -100,7 +100,31 @@ func mapSubscriberSecurityToApiSecurity(roverSecurity *rover.SubscriberSecurity)
 			Basic:  toApiBasic(roverSecurity.M2M.Basic),
 			Scopes: roverSecurity.M2M.Scopes,
 		}
+		security.M2M.Claims = mapSubscriberClaimsToApiClaims(roverSecurity.M2M.Claims)
 	}
 
 	return security
+}
+
+// mapSubscriberClaimsToApiClaims maps a per-consumer claim override. A literal value
+// is copied through; ConsumerClientId stays symbolic for Jumper to resolve at runtime.
+// ProviderClientId/BasePath are not resolvable on the subscriber side and are ignored.
+func mapSubscriberClaimsToApiClaims(roverClaims *rover.Claims) *apiapi.Claims {
+	if roverClaims == nil || roverClaims.Aud == nil {
+		return nil
+	}
+
+	aud := roverClaims.Aud
+	resolved := &apiapi.Claim{}
+
+	switch {
+	case aud.Value != "":
+		resolved.Value = aud.Value
+	case aud.ValueFrom == rover.ClaimValueFromConsumerClientId:
+		resolved.ValueFrom = apiapi.ClaimValueFromConsumerClientId
+	default:
+		return nil
+	}
+
+	return &apiapi.Claims{Aud: resolved}
 }

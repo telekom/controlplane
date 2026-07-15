@@ -49,6 +49,28 @@ type Security struct {
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
+// ClaimValueFrom is a source Jumper resolves at runtime into the claim value.
+// +kubebuilder:validation:Enum=ConsumerClientId
+type ClaimValueFrom string
+
+const (
+	ClaimValueFromConsumerClientId ClaimValueFrom = "ConsumerClientId"
+)
+
+// Claim is a single token claim written into JumperConfig.Claims.
+// Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
+type Claim struct {
+	// Key is the claim name (e.g. "aud")
+	// +kubebuilder:validation:Required
+	Key string `json:"key"`
+	// Value is the CP-resolved literal claim value
+	// +kubebuilder:validation:Optional
+	Value string `json:"value,omitempty"`
+	// ValueFrom is a runtime source Jumper resolves (e.g. ConsumerClientId)
+	// +kubebuilder:validation:Optional
+	ValueFrom ClaimValueFrom `json:"valueFrom,omitempty"`
+}
+
 func (s *Security) HasM2M() bool {
 	return s.M2M != nil
 }
@@ -114,6 +136,9 @@ type Machine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
+	// Claims defines token claims applied to all consumers (the "default" bucket)
+	// +kubebuilder:validation:Optional
+	Claims []Claim `json:"claims,omitempty"`
 }
 
 // ConsumerMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for consumers
@@ -132,6 +157,9 @@ type ConsumerMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
+	// Claims defines per-consumer token claims (override the default bucket for this consumer)
+	// +kubebuilder:validation:Optional
+	Claims []Claim `json:"claims,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider

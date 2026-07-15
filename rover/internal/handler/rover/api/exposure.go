@@ -44,6 +44,16 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Namespace: environment,
 	}
 
+	// Resolve the owning team up front so the provider client-id (<team>--<appName>)
+	// is available for static claim resolution.
+	ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
+	if err != nil && apierrors.IsNotFound(err) {
+		log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
+	} else if err != nil {
+		return err
+	}
+	providerClientId := ownerTeam.GetName() + "--" + owner.Name
+
 	mutator := func() error {
 		err := controllerutil.SetControllerReference(owner, apiExposure, c.Scheme())
 		if err != nil {
@@ -63,7 +73,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			},
 			Zone:           zoneRef,
 			Upstreams:      make([]apiapi.Upstream, len(exp.Upstreams)),
-			Security:       mapSecurityToApiSecurity(exp.Security),
+			Security:       mapSecurityToApiSecurity(exp.Security, providerClientId, exp.BasePath),
 			Transformation: mapTransformationToApiTransformation(exp.Transformation),
 			Traffic:        mapTrafficToApiTraffic(environment, exp.Traffic),
 		}
@@ -74,12 +84,6 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		//add owner to trusted teams
-		ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-		} else if err != nil {
-			return err
-		}
 		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
 
 		for i, upstream := range exp.Upstreams {
@@ -92,7 +96,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, apiExposure, mutator)
+	_, err = c.CreateOrUpdate(ctx, apiExposure, mutator)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or update ApiExposure")
 	}
@@ -127,7 +131,7 @@ func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClien
 	return apiTrustedTeams, nil
 }
 
-func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
+func mapSecurityToApiSecurity(roverSecurity *rover.Security, providerClientId, basePath string) *apiapi.Security {
 	if roverSecurity == nil {
 		return nil
 	}
@@ -155,10 +159,39 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 				Password: roverSecurity.M2M.Basic.Password,
 			}
 		}
+
+		security.M2M.Claims = mapClaimsToApiClaims(roverSecurity.M2M.Claims, providerClientId, basePath)
 	}
 
 	return security
 
+}
+
+// mapClaimsToApiClaims resolves the static claim sources (ProviderClientId, BasePath)
+// into literals. A user-provided literal is copied through; ConsumerClientId stays
+// symbolic for Jumper to resolve per-request at runtime.
+func mapClaimsToApiClaims(roverClaims *rover.Claims, providerClientId, basePath string) *apiapi.Claims {
+	if roverClaims == nil || roverClaims.Aud == nil {
+		return nil
+	}
+
+	aud := roverClaims.Aud
+	resolved := &apiapi.Claim{}
+
+	switch {
+	case aud.Value != "":
+		resolved.Value = aud.Value
+	case aud.ValueFrom == rover.ClaimValueFromProviderClientId:
+		resolved.Value = providerClientId
+	case aud.ValueFrom == rover.ClaimValueFromBasePath:
+		resolved.Value = basePath
+	case aud.ValueFrom == rover.ClaimValueFromConsumerClientId:
+		resolved.ValueFrom = apiapi.ClaimValueFromConsumerClientId
+	default:
+		return nil
+	}
+
+	return &apiapi.Claims{Aud: resolved}
 }
 
 func mapTransformationToApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {

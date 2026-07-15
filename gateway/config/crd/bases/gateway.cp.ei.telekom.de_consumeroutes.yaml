@@ -83,6 +83,31 @@ spec:
                         - password
                         - username
                         type: object
+                      claims:
+                        description: Claims defines per-consumer token claims (override
+                          the default bucket for this consumer)
+                        items:
+                          description: |-
+                            Claim is a single token claim written into JumperConfig.Claims.
+                            Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
+                          properties:
+                            key:
+                              description: Key is the claim name (e.g. "aud")
+                              type: string
+                            value:
+                              description: Value is the CP-resolved literal claim
+                                value
+                              type: string
+                            valueFrom:
+                              description: ValueFrom is a runtime source Jumper resolves
+                                (e.g. ConsumerClientId)
+                              enum:
+                              - ConsumerClientId
+                              type: string
+                          required:
+                          - key
+                          type: object
+                        type: array
                       client:
                         description: Client defines client credentials for OAuth2
                         properties:

@@ -225,6 +225,7 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:items:MaxLength=43
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Allow []string `json:"allow,omitempty"`
 	// Deny is a list of IP addresses or CIDR ranges that are denied access
@@ -232,6 +233,7 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:items:MaxLength=43
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Deny []string `json:"deny,omitempty"`
 }

@@ -5,6 +5,7 @@ api.BasicAuth{Password:"testpass", Type:"basicAuth", Username:"testuser"}
 
 [Subscription Security Mapper (Out) mapSubscriptionSecurity must map OAuth2 client credentials correctly - 1]
 api.Oauth2{
+    Claims:        api.Claims{},
     ClientId:      "client-id",
     ClientKey:     "client-key",
     ClientSecret:  "client-secret",
@@ -21,6 +22,7 @@ api.Oauth2{
 
 [Subscription Security Mapper (Out) mapSubscriptionSecurity must map OAuth2 scopes correctly - 1]
 api.Oauth2{
+    Claims:        api.Claims{},
     ClientId:      "",
     ClientKey:     "",
     ClientSecret:  "",
@@ -37,6 +39,7 @@ api.Oauth2{
 
 [Subscription Security Mapper (Out) mapSubscriptionSecurity must map combined client credentials and scopes - 1]
 api.Oauth2{
+    Claims:        api.Claims{},
     ClientId:      "client-id",
     ClientKey:     "",
     ClientSecret:  "client-secret",

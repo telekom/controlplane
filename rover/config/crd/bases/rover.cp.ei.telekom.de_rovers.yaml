@@ -154,6 +154,32 @@ spec:
                                   - password
                                   - username
                                   type: object
+                                claims:
+                                  description: |-
+                                    Claims defines token claims that must be present in the token reaching the upstream.
+                                    Only valid on the platform-managed LMS token.
+                                  properties:
+                                    aud:
+                                      description: Aud defines the audience claim
+                                      properties:
+                                        value:
+                                          description: Value is a literal claim value
+                                            provided by the user
+                                          type: string
+                                        valueFrom:
+                                          description: ValueFrom is a predefined source
+                                            resolved into the claim value
+                                          enum:
+                                          - ProviderClientId
+                                          - ConsumerClientId
+                                          - BasePath
+                                          type: string
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: exactly one of value or valueFrom
+                                          must be set
+                                        rule: has(self.value) != has(self.valueFrom)
+                                  type: object
                                 externalIDP:
                                   description: ExternalIDP defines external identity
                                     provider configuration
@@ -246,10 +272,15 @@ spec:
                                   used together
                                 rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
                                   : true)'
-                              - message: At least one of externalIDP, basic, or scopes
-                                  must be provided
+                              - message: At least one of externalIDP, basic, scopes,
+                                  or claims must be provided
                                 rule: self == null || has(self.externalIDP) || has(self.basic)
-                                  || has(self.scopes)
+                                  || has(self.scopes) || has(self.claims)
+                              - message: Claims require the platform-managed token
+                                  and cannot be used with an external IDP or basic
+                                  authentication
+                                rule: self == null || !has(self.claims) || (!has(self.externalIDP)
+                                  && !has(self.basic))
                           type: object
                         traffic:
                           description: Traffic defines optional traffic management
@@ -657,6 +688,7 @@ spec:
                     description: Allow is a list of IP addresses or CIDR ranges that
                       are allowed access
                     items:
+                      maxLength: 43
                       type: string
                     maxItems: 10
                     minItems: 0
@@ -668,6 +700,7 @@ spec:
                     description: Deny is a list of IP addresses or CIDR ranges that
                       are denied access
                     items:
+                      maxLength: 43
                       type: string
                     maxItems: 10
                     minItems: 0
@@ -791,6 +824,32 @@ spec:
                                   - password
                                   - username
                                   type: object
+                                claims:
+                                  description: |-
+                                    Claims defines per-consumer token claims that override the provider default.
+                                    Only valid on the platform-managed LMS token.
+                                  properties:
+                                    aud:
+                                      description: Aud defines the audience claim
+                                      properties:
+                                        value:
+                                          description: Value is a literal claim value
+                                            provided by the user
+                                          type: string
+                                        valueFrom:
+                                          description: ValueFrom is a predefined source
+                                            resolved into the claim value
+                                          enum:
+                                          - ProviderClientId
+                                          - ConsumerClientId
+                                          - BasePath
+                                          type: string
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: exactly one of value or valueFrom
+                                          must be set
+                                        rule: has(self.value) != has(self.valueFrom)
+                                  type: object
                                 client:
                                   description: Client defines client credentials for
                                     OAuth2
@@ -830,10 +889,15 @@ spec:
                                   used together
                                 rule: 'self == null || (has(self.client) ? (!has(self.basic))
                                   : true)'
-                              - message: At least one of client, basic, or scopes
-                                  must be provided
+                              - message: At least one of client, basic, scopes, or
+                                  claims must be provided
                                 rule: self == null || has(self.client) || has(self.basic)
-                                  || has(self.scopes)
+                                  || has(self.scopes) || has(self.claims)
+                              - message: Claims require the platform-managed token
+                                  and cannot be used with an external IDP or basic
+                                  authentication
+                                rule: self == null || !has(self.claims) || (!has(self.client)
+                                  && !has(self.basic))
                           type: object
                         traffic:
                           description: Traffic defines optional traffic management
