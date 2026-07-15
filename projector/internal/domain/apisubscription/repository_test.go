@@ -53,6 +53,10 @@ func (m *mockSubscriptionDeps) FindAPIExposureByBasePath(_ context.Context, base
 	return 0, fmt.Errorf("api_exposure basePath %q: %w", basePath, infrastructure.ErrEntityNotFound)
 }
 
+func (m *mockSubscriptionDeps) EvictAPIExposureByBasePath(basePath string) {
+	delete(m.exposureIDs, basePath)
+}
+
 var _ = Describe("ApiSubscription Repository", func() {
 	var (
 		client     *ent.Client

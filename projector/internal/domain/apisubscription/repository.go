@@ -111,6 +111,14 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		UpdateNewValues().
 		ID(ctx)
 	if upsertErr != nil {
+		// A FK violation on the target means the cached exposure ID is stale:
+		// the api_exposures row was deleted/re-created after we resolved it.
+		// Evict the stale cache entry and requeue as dependency-missing so the
+		// next reconcile re-resolves (or stores a NULL target).
+		if targetExposureID != nil && infrastructure.IsFKViolation(upsertErr) {
+			r.deps.EvictAPIExposureByBasePath(data.TargetBasePath)
+			return runtime.WrapDependencyMissing("api_exposure", data.TargetBasePath)
+		}
 		return fmt.Errorf("upsert api_subscription (owner %q, basePath %q): %w",
 			data.OwnerAppName, data.BasePath, upsertErr)
 	}
