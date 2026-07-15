@@ -8,6 +8,76 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - zones
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - application.cp.ei.telekom.de
+  resources:
+  - applications
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests
+  - approvals
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.cp.ei.telekom.de
+  resources:
+  - routelisteners
+  - routes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pubsub.cp.ei.telekom.de
+  resources:
+  - publishers
+  - subscribers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - spectre.cp.ei.telekom.de
   resources:
   - listeners
