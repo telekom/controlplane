@@ -35,38 +35,73 @@ func basePathFromJSONPath(data []byte, path string) string {
 }
 
 // secretJsonPath maps a secret name (the key suffix used towards the Secret
-// Manager) to the JSON path where the plaintext value lives in the Rover.
+// Manager) to the concrete JSON path where the plaintext value lives in the
+// Rover.
 type secretJsonPath struct {
 	SecretName string
 	JsonPath   string
+	// AppLevel marks secrets that live directly on the Rover spec
+	// (application scope), outside of any exposure or subscription. Such
+	// secrets have no basePath and use SecretName as their storage key.
+	AppLevel bool
 }
+
+// storageKey returns the Secret Manager key for the secret found at the given
+// concrete JSON path. Application-level secrets use their SecretName directly;
+// all others are namespaced by the basePath of their exposure/subscription.
+func (sp secretJsonPath) storageKey(data []byte, path string) string {
+	if sp.AppLevel {
+		return sp.SecretName
+	}
+	return makeKey(basePathFromJSONPath(data, path), sp.SecretName)
+}
+
+// variantSecretTemplate defines a secret path relative to one or more resource
+// variants. The %[1]s placeholder is replaced with each variant it applies to,
+// so a path shared by several variants only has to be declared once, while a
+// secret that only exists on a specific variant (e.g. a field present on "api"
+// but not "ai", or a future "event" exposure/subscription secret) can be scoped
+// to just the variants that actually carry it.
+type variantSecretTemplate struct {
+	SecretName string
+	JsonPath   string
+	Variants   []string
+}
+
+// commonVariants are the resource variants whose security blocks are
+// structurally identical and therefore share the same secret paths.
+var commonVariants = []string{"api", "ai"}
 
 // secretPathTemplates define the secrets relative to a resource variant.
-// The %[1]s placeholder is replaced with the variant (e.g. "api" or "ai"),
-// so the paths only have to be declared once for all variants.
 //
 //nolint:gosec // G101: these are JSON path expressions, not hardcoded credentials
-var secretPathTemplates = []secretJsonPath{
-	{"clientSecret", "spec.subscriptions.#.%[1]s.security.m2m.client.clientSecret"},
-	{"refreshToken", "spec.subscriptions.#.%[1]s.security.m2m.client.refreshToken"},
-	{"password", "spec.subscriptions.#.%[1]s.security.m2m.basic.password"},
-	{"externalIDP/clientSecret", "spec.exposures.#.%[1]s.security.m2m.externalIDP.client.clientSecret"},
-	{"externalIDP/refreshToken", "spec.exposures.#.%[1]s.security.m2m.externalIDP.client.refreshToken"},
-	{"externalIDP/password", "spec.exposures.#.%[1]s.security.m2m.externalIDP.basic.password"},
-	{"basicAuth/password", "spec.exposures.#.%[1]s.security.m2m.basic.password"},
+var secretPathTemplates = []variantSecretTemplate{
+	{"clientSecret", "spec.subscriptions.#.%[1]s.security.m2m.client.clientSecret", commonVariants},
+	{"refreshToken", "spec.subscriptions.#.%[1]s.security.m2m.client.refreshToken", commonVariants},
+	{"password", "spec.subscriptions.#.%[1]s.security.m2m.basic.password", commonVariants},
+	{"externalIDP/clientSecret", "spec.exposures.#.%[1]s.security.m2m.externalIDP.client.clientSecret", commonVariants},
+	{"externalIDP/refreshToken", "spec.exposures.#.%[1]s.security.m2m.externalIDP.client.refreshToken", commonVariants},
+	{"externalIDP/password", "spec.exposures.#.%[1]s.security.m2m.externalIDP.basic.password", commonVariants},
+	{"basicAuth/password", "spec.exposures.#.%[1]s.security.m2m.basic.password", commonVariants},
 }
 
-// secretVariants are the resource variants that carry secrets.
-var secretVariants = []string{"api", "ai"}
+// secretAppLevelPaths are secrets that live directly on the Rover spec, outside
+// of any exposure or subscription (application scope). This is the extension
+// point for future application-scoped secrets.
+//
+// spec.clientSecret is intentionally not listed here: it is handled separately
+// in OnboardApplication because its Secret Manager value is mandatory.
+var secretAppLevelPaths = []secretJsonPath{}
 
-// secretJsonPaths is the concrete list of secrets across all variants,
-// expanded from secretPathTemplates.
-var secretJsonPaths = buildSecretJsonPaths(secretVariants...)
+// secretJsonPaths is the concrete list of secrets, expanded from the variant
+// templates and combined with the application-level secrets.
+var secretJsonPaths = buildSecretJsonPaths()
 
-func buildSecretJsonPaths(variants ...string) []secretJsonPath {
-	paths := make([]secretJsonPath, 0, len(secretPathTemplates)*len(variants))
-	for _, variant := range variants {
-		for _, tmpl := range secretPathTemplates {
+func buildSecretJsonPaths() []secretJsonPath {
+	paths := make([]secretJsonPath, 0, len(secretAppLevelPaths))
+	paths = append(paths, secretAppLevelPaths...)
+	for _, tmpl := range secretPathTemplates {
+		for _, variant := range tmpl.Variants {
 			paths = append(paths, secretJsonPath{
 				SecretName: tmpl.SecretName,
 				JsonPath:   fmt.Sprintf(tmpl.JsonPath, variant),
@@ -91,10 +126,13 @@ func GetExternalSecrets(_ context.Context, rover *roverv1.Rover) (map[string]str
 			for _, path := range result.Paths(string(b)) {
 				val := gjson.GetBytes(b, path).String()
 				if val != "" && !secretsapi.IsRef(val) {
-					basePath := basePathFromJSONPath(b, path)
-					secrets[makeKey(basePath, sp.SecretName)] = val
+					secrets[sp.storageKey(b, path)] = val
 				}
 			}
+			continue
+		}
+		if val := result.String(); val != "" && !secretsapi.IsRef(val) {
+			secrets[sp.storageKey(b, sp.JsonPath)] = val
 		}
 	}
 	return secrets, nil
@@ -109,25 +147,35 @@ func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecr
 		return errors.Wrap(err, "failed to marshal rover")
 	}
 
+	setSecretRef := func(path, key string) error {
+		val := gjson.GetBytes(b, path).String()
+		if val == "" {
+			return nil
+		}
+		secretRef, ok := secretsapi.FindSecretId(availableSecrets, key)
+		if !ok {
+			log.V(1).Info("secret not found in available secrets", "key", key)
+			return nil
+		}
+		b, err = sjson.SetBytes(b, path, secretRef)
+		if err != nil {
+			return errors.Wrapf(err, "failed to set secret ref at path %s", path)
+		}
+		return nil
+	}
+
 	for _, sp := range secretJsonPaths {
 		result := gjson.GetBytes(b, sp.JsonPath)
-		//nolint:nestif // sequential guard clauses within array expansion
 		if result.IsArray() {
 			for _, path := range result.Paths(string(b)) {
-				val := gjson.GetBytes(b, path).String()
-				if val != "" {
-					basePath := basePathFromJSONPath(b, path)
-					secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(basePath, sp.SecretName))
-					if !ok {
-						log.V(1).Info("secret not found in available secrets", "key", sp.SecretName, "basePath", basePath)
-						continue
-					}
-					b, err = sjson.SetBytes(b, path, secretRef)
-					if err != nil {
-						return errors.Wrapf(err, "failed to set secret ref at path %s", path)
-					}
+				if err := setSecretRef(path, sp.storageKey(b, path)); err != nil {
+					return err
 				}
 			}
+			continue
+		}
+		if err := setSecretRef(sp.JsonPath, sp.storageKey(b, sp.JsonPath)); err != nil {
+			return err
 		}
 	}
 
