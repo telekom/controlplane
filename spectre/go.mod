@@ -9,6 +9,13 @@ go 1.26.5
 require (
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega v1.42.1
+	github.com/telekom/controlplane/admin/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/application/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/approval/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/event/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/gateway/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/identity/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/pubsub/api v0.0.0-00010101000000-000000000000
 	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2
 	sigs.k8s.io/controller-runtime v0.24.1
@@ -67,7 +74,7 @@ require (
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
-	github.com/telekom/controlplane/common v0.0.0-20260619064442-02205633cc20
+	github.com/telekom/controlplane/common v0.0.0
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 // indirect
