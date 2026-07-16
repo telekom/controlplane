@@ -467,6 +467,8 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					"http://my-svc.my-ns.svc.cluster.local:8080/callback",
 					"http://my-svc.my-ns.svc:8080/callback",
 					"http://kubernetes:8080/callback",
+					"http://localhost.:8080/callback",
+					"http://public.example.com@127.0.0.1:8080/callback",
 				} {
 					sub := roverv1.Subscription{
 						Event: &roverv1.EventSubscription{
@@ -634,6 +636,24 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(valErr.HasErrors()).To(BeFalse(), "expected %q to be allowed", allowedURL)
 				}
+			})
+
+			It("should fail when AI exposure upstream URL points at a cluster-internal or local address", func() {
+				exposure := roverv1.Exposure{
+					Ai: &roverv1.AiExposure{
+						BasePath:  "/mcp",
+						Variant:   roverv1.AiVariantMCP,
+						Approval:  roverv1.Approval{},
+						Upstreams: []roverv1.Upstream{{URL: "http://localhost:8080"}},
+					},
+				}
+
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
+				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(valErr.HasErrors()).To(BeTrue())
+				Expect(valErr.Errors[0].Detail).To(ContainSubstring("must not point at a cluster-internal or local address"))
 			})
 
 			It("should validate event exposure", func() {
