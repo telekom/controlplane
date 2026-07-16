@@ -90,33 +90,6 @@ spec:
                         - password
                         - username
                         type: object
-                      claims:
-                        description: |-
-                          Claims defines per-consumer token claims that override the provider default.
-                          Only valid on the platform-managed LMS token.
-                        properties:
-                          aud:
-                            description: Aud defines the audience claim
-                            properties:
-                              value:
-                                description: Value is a CP-resolved literal claim
-                                  value
-                                maxLength: 256
-                                minLength: 1
-                                type: string
-                              valueFrom:
-                                description: ValueFrom is a source Jumper resolves
-                                  at runtime (e.g. ConsumerClientId)
-                                enum:
-                                - ProviderClientId
-                                - ConsumerClientId
-                                - BasePath
-                                type: string
-                            type: object
-                            x-kubernetes-validations:
-                            - message: exactly one of value or valueFrom must be set
-                              rule: has(self.value) != has(self.valueFrom)
-                        type: object
                       client:
                         description: Client defines client credentials for OAuth2
                         properties:
@@ -158,14 +131,9 @@ spec:
                     - message: Scopes and basic authentication cannot be used together
                       rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
                         : true)'
-                    - message: At least one of client, basic, scopes, or claims must
-                        be provided
+                    - message: At least one of client, basic, or scopes must be provided
                       rule: self == null || has(self.client) || has(self.basic) ||
-                        has(self.scopes) || has(self.claims)
-                    - message: Claims require the platform-managed token and cannot
-                        be used with an external IDP or basic authentication
-                      rule: self == null || !has(self.claims) || (!has(self.client)
-                        && !has(self.basic))
+                        has(self.scopes)
                 type: object
               sourceOrganization:
                 type: string

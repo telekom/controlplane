@@ -14,9 +14,9 @@ import (
 
 var _ features.Feature = &ClaimsFeature{}
 
-// ClaimsFeature writes token claims into JumperConfig.Claims. Provider exposure
-// claims land in the "default" bucket (all consumers); per-consumer overrides land
-// under the consumer's client-id key. Modeled on CustomScopesFeature.
+// ClaimsFeature writes provider exposure token claims into JumperConfig.Claims.
+// Claims land in the "default" bucket (applies to all consumers). Modeled on
+// CustomScopesFeature.
 type ClaimsFeature struct {
 	priority int
 }
@@ -42,8 +42,10 @@ func (f *ClaimsFeature) IsUsed(ctx context.Context, builder features.FeaturesBui
 	isPrimaryRoute := !route.IsProxy()
 	isFailoverSecondary := route.Spec.Type == gatewayv1.RouteTypeSecondary
 
-	// Claims only apply to the platform-managed LMS token, not an external IDP's token.
-	if route.Spec.Security.M2M != nil && route.Spec.Security.M2M.ExternalIDP != nil {
+	// Claims only apply to the platform-managed LMS token, not an external IDP's
+	// token or a basic-auth upstream.
+	if route.Spec.Security.M2M != nil &&
+		(route.Spec.Security.M2M.ExternalIDP != nil || route.Spec.Security.M2M.Basic != nil) {
 		return false
 	}
 
@@ -60,13 +62,6 @@ func (f *ClaimsFeature) Apply(ctx context.Context, builder features.FeaturesBuil
 	// Provider exposure claims -> default bucket (applies to all consumers)
 	if route.Spec.Security.M2M != nil && len(route.Spec.Security.M2M.Claims) > 0 {
 		jumperConfig.Claims[plugin.ConsumerId(DefaultProviderKey)] = toPluginClaims(route.Spec.Security.M2M.Claims)
-	}
-
-	// Per-consumer overrides -> consumer's client-id key
-	for _, consumer := range builder.GetAllowedConsumers() {
-		if consumer.Spec.Security != nil && consumer.Spec.Security.M2M != nil && len(consumer.Spec.Security.M2M.Claims) > 0 {
-			jumperConfig.Claims[plugin.ConsumerId(consumer.Spec.ConsumerName)] = toPluginClaims(consumer.Spec.Security.M2M.Claims)
-		}
 	}
 
 	return nil

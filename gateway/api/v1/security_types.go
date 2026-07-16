@@ -62,12 +62,14 @@ const (
 // Exactly one of value or valueFrom must be set.
 // +kubebuilder:validation:XValidation:rule="has(self.value) != has(self.valueFrom)",message="exactly one of value or valueFrom must be set"
 type Claim struct {
-	// Key is the claim name (e.g. "aud")
+	// Key is the claim name. Only "aud" is supported.
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=aud
 	Key string `json:"key"`
 	// Value is the CP-resolved literal claim value
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
 	Value string `json:"value,omitempty"`
 	// ValueFrom is a runtime source Jumper resolves (e.g. ConsumerClientId)
 	// +kubebuilder:validation:Optional
@@ -127,6 +129,7 @@ func (s *ConsumeRouteSecurity) HasBasicAuth() bool {
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="ExternalIDP and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes) || has(self.claims)", message="At least one of externalIDP, basic, scopes, or claims must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || !has(self.claims) || (!has(self.externalIDP) && !has(self.basic))", message="Claims require the platform-managed token and cannot be used with an external IDP or basic authentication"
 type Machine2MachineAuthentication struct {
 	// ExternalIDP defines external identity provider configuration
 	// +kubebuilder:validation:Optional
@@ -148,7 +151,7 @@ type Machine2MachineAuthentication struct {
 // Either client, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes) || has(self.claims)", message="At least one of client, basic, scopes, or claims must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
 type ConsumerMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
 	// +kubebuilder:validation:Optional
@@ -160,9 +163,6 @@ type ConsumerMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
-	// Claims defines per-consumer token claims (override the default bucket for this consumer)
-	// +kubebuilder:validation:Optional
-	Claims []Claim `json:"claims,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider

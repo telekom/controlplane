@@ -83,36 +83,6 @@ spec:
                         - password
                         - username
                         type: object
-                      claims:
-                        description: Claims defines per-consumer token claims (override
-                          the default bucket for this consumer)
-                        items:
-                          description: |-
-                            Claim is a single token claim written into JumperConfig.Claims.
-                            Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
-                            Exactly one of value or valueFrom must be set.
-                          properties:
-                            key:
-                              description: Key is the claim name (e.g. "aud")
-                              type: string
-                            value:
-                              description: Value is the CP-resolved literal claim
-                                value
-                              minLength: 1
-                              type: string
-                            valueFrom:
-                              description: ValueFrom is a runtime source Jumper resolves
-                                (e.g. ConsumerClientId)
-                              enum:
-                              - ConsumerClientId
-                              type: string
-                          required:
-                          - key
-                          type: object
-                          x-kubernetes-validations:
-                          - message: exactly one of value or valueFrom must be set
-                            rule: has(self.value) != has(self.valueFrom)
-                        type: array
                       client:
                         description: Client defines client credentials for OAuth2
                         properties:
@@ -154,10 +124,9 @@ spec:
                     - message: Scopes and basic authentication cannot be used together
                       rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
                         : true)'
-                    - message: At least one of client, basic, scopes, or claims must
-                        be provided
+                    - message: At least one of client, basic, or scopes must be provided
                       rule: self == null || has(self.client) || has(self.basic) ||
-                        has(self.scopes) || has(self.claims)
+                        has(self.scopes)
                 type: object
               traffic:
                 properties:

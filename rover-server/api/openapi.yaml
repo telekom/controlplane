@@ -2239,7 +2239,7 @@ components:
           $ref: '#/components/schemas/Claims'
     Claims:
       type: object
-      description: "Token claims written into the platform-managed LMS token. Only valid on the LMS token (not with an external IDP tokenEndpoint or basic auth)."
+      description: "Token claims written into the platform-managed LMS token. Provider-side only: honored on an API exposure's security and ignored on a subscription's security. Only valid on the LMS token (not with an external IDP tokenEndpoint or basic auth)."
       properties:
         aud:
           $ref: '#/components/schemas/Claim'

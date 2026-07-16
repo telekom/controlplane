@@ -58,26 +58,6 @@ var _ = Describe("mapClaimsToApiClaims (exposure)", func() {
 	})
 })
 
-var _ = Describe("mapSubscriberClaimsToApiClaims (subscription)", func() {
-	It("returns nil for nil claims", func() {
-		Expect(mapSubscriberClaimsToApiClaims(nil)).To(BeNil())
-	})
-
-	It("copies a literal value through", func() {
-		got := mapSubscriberClaimsToApiClaims(&rover.Claims{Aud: &rover.Claim{Value: "consumer-audience"}})
-		Expect(got.Aud.Value).To(Equal("consumer-audience"))
-	})
-
-	It("keeps ConsumerClientId symbolic", func() {
-		got := mapSubscriberClaimsToApiClaims(&rover.Claims{Aud: &rover.Claim{ValueFrom: rover.ClaimValueFromConsumerClientId}})
-		Expect(got.Aud.ValueFrom).To(Equal(apiapi.ClaimValueFromConsumerClientId))
-	})
-
-	It("ignores ProviderClientId (not resolvable on subscriber side)", func() {
-		Expect(mapSubscriberClaimsToApiClaims(&rover.Claims{Aud: &rover.Claim{ValueFrom: rover.ClaimValueFromProviderClientId}})).To(BeNil())
-	})
-})
-
 var _ = Describe("HandleExposure owner team resolution", func() {
 	It("returns a BlockedError when the owner team is not found", func() {
 		ctx := contextutil.WithEnv(context.Background(), "test-env")

@@ -75,6 +75,21 @@ var _ = Describe("ClaimsFeature", func() {
 			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
 		})
 
+		It("returns false when basic auth owns the token", func() {
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypePrimary,
+					Security: gatewayv1.Security{
+						M2M: &gatewayv1.Machine2MachineAuthentication{
+							Basic: &gatewayv1.BasicAuthCredentials{},
+						},
+					},
+				},
+			}
+			builder.EXPECT().GetRoute().Return(route, true)
+			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+		})
+
 		It("returns false when no route in builder", func() {
 			builder.EXPECT().GetRoute().Return(nil, false)
 			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
@@ -98,7 +113,6 @@ var _ = Describe("ClaimsFeature", func() {
 
 			builder.EXPECT().JumperConfig().Return(jumperConfig)
 			builder.EXPECT().GetRoute().Return(route, true)
-			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
 
@@ -125,7 +139,6 @@ var _ = Describe("ClaimsFeature", func() {
 
 			builder.EXPECT().JumperConfig().Return(jumperConfig)
 			builder.EXPECT().GetRoute().Return(route, true)
-			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
 
@@ -135,40 +148,12 @@ var _ = Describe("ClaimsFeature", func() {
 			Expect(def[0].ValueFrom).To(Equal("ConsumerClientId"))
 		})
 
-		It("writes per-consumer overrides under the consumer key", func() {
-			jumperConfig := plugin.NewJumperConfig()
-			route := &gatewayv1.Route{Spec: gatewayv1.RouteSpec{Security: gatewayv1.Security{}}}
-			consumers := []*gatewayv1.ConsumeRoute{
-				{
-					Spec: gatewayv1.ConsumeRouteSpec{
-						ConsumerName: "eni--bar--consumer-a",
-						Security: &gatewayv1.ConsumeRouteSecurity{
-							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
-								Claims: []gatewayv1.Claim{{Key: "aud", Value: "custom-for-consumer-a"}},
-							},
-						},
-					},
-				},
-			}
-
-			builder.EXPECT().JumperConfig().Return(jumperConfig)
-			builder.EXPECT().GetRoute().Return(route, true)
-			builder.EXPECT().GetAllowedConsumers().Return(consumers)
-
-			Expect(f.Apply(ctx, builder)).To(Succeed())
-
-			c := jumperConfig.Claims[plugin.ConsumerId("eni--bar--consumer-a")]
-			Expect(c).To(HaveLen(1))
-			Expect(c[0].Value).To(Equal("custom-for-consumer-a"))
-		})
-
-		It("leaves Claims empty when neither route nor consumers have claims", func() {
+		It("leaves Claims empty when the route has no claims", func() {
 			jumperConfig := plugin.NewJumperConfig()
 			route := &gatewayv1.Route{Spec: gatewayv1.RouteSpec{Security: gatewayv1.Security{}}}
 
 			builder.EXPECT().JumperConfig().Return(jumperConfig)
 			builder.EXPECT().GetRoute().Return(route, true)
-			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
 			Expect(jumperConfig.Claims).To(BeEmpty())
@@ -189,7 +174,6 @@ var _ = Describe("ClaimsFeature", func() {
 
 			builder.EXPECT().JumperConfig().Return(jumperConfig)
 			builder.EXPECT().GetRoute().Return(route, true)
-			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
 			Expect(jumperConfig.Claims).To(HaveKey(plugin.ConsumerId(feature.DefaultProviderKey)))

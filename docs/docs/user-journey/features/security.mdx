@@ -102,13 +102,13 @@ As an API provider, you can require that every token reaching your backend conta
 
 **Applies to:** API Exposure
 
-You define the audience under `security.m2m.claims.aud`. You must set **exactly one** of the following:
+You define the audience under the `oauth2` security block, as `claims.aud`. You must set **exactly one** of the following:
 
 - `value` — a fixed text value that you choose.
 - `valueFrom` — a predefined source that the platform fills in for you.
 
 :::caution
-The audience claim rides only on the platform-managed token. It cannot be combined with an external identity provider (`security.m2m.externalIDP`) or basic authentication (`security.m2m.basic`) — the file is rejected when you apply it. You may use it on its own or alongside `security.m2m.scopes`.
+The audience claim rides only on the platform-managed token. It cannot be combined with an external identity provider (an OAuth2 `tokenEndpoint`) or basic authentication (`type: basicAuth`) — the file is rejected when you apply it. You may use it on its own or alongside `scopes`.
 :::
 
 ```yaml
@@ -119,10 +119,10 @@ exposures:
     approval: SIMPLE
     visibility: ENTERPRISE
     security:
-      m2m:
-        claims:
-          aud:
-            valueFrom: ProviderClientId
+      type: oauth2
+      claims:
+        aud:
+          valueFrom: ProviderClientId
 ```
 
 The following sources are available for `valueFrom`:
@@ -143,18 +143,18 @@ exposures:
     approval: SIMPLE
     visibility: ENTERPRISE
     security:
-      m2m:
-        claims:
-          aud:
-            value: my-checkout-audience
+      type: oauth2
+      claims:
+        aud:
+          value: my-checkout-audience
 ```
 
 #### Audience Claim Settings
 
 | Field | Description |
 | ----- | ----------- |
-| `security.m2m.claims.aud.value` | A fixed audience value that you provide. Cannot be used together with `valueFrom`. |
-| `security.m2m.claims.aud.valueFrom` | A predefined source the platform resolves into the audience value. One of `ProviderClientId`, `BasePath`, or `ConsumerClientId`. Cannot be used together with `value`. |
+| `security.claims.aud.value` | A fixed audience value that you provide. Cannot be used together with `valueFrom`. |
+| `security.claims.aud.valueFrom` | A predefined source the platform resolves into the audience value. One of `ProviderClientId`, `BasePath`, or `ConsumerClientId`. Cannot be used together with `value`. |
 
 :::note
 You must set exactly one of `value` or `valueFrom`. Setting both, or neither, is rejected when you apply the file.
@@ -176,6 +176,7 @@ You must set exactly one of `value` or `valueFrom`. Setting both, or neither, is
 | `security.username` | Username for basic authentication or the OAuth2 password grant. |
 | `security.password` | Password for basic authentication or the OAuth2 password grant. |
 | `security.scopes` | A list of additional OAuth2 scopes to request. Maximum: 10 scopes. |
+| `security.claims` | Token claims written into the platform-managed token (API Exposure only). See [Audience Claims](#audience-claims). |
 
 :::caution Handling Secrets
 Secrets such as `clientSecret`, `clientKey`, and `password` are sensitive values. **Do not hardcode them in your Rover files.** Instead, use environment variable placeholders. Rover-CTL automatically substitutes `${VARIABLE_NAME}` references with their corresponding environment variable values before sending the file to the server.

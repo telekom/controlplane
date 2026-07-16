@@ -3,3 +3,4 @@
 # SPDX-License-Identifier: CC0-1.0
 
 discovery-server/internal/api/server.gen.go:generic-api-key:1587
+rover-server/internal/api/server.gen.go:generic-api-key:2308

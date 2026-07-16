@@ -5,7 +5,6 @@
         Client: (*v1.OAuth2ClientCredentials)(nil),
         Basic:  &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
         Scopes: nil,
-        Claims: (*v1.Claims)(nil),
     },
 }
 ---
@@ -16,7 +15,6 @@
         Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"client-key"},
         Basic:  (*v1.BasicAuthCredentials)(nil),
         Scopes: nil,
-        Claims: (*v1.Claims)(nil),
     },
 }
 ---
@@ -27,7 +25,6 @@
         Client: (*v1.OAuth2ClientCredentials)(nil),
         Basic:  &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
         Scopes: nil,
-        Claims: (*v1.Claims)(nil),
     },
 }
 ---
@@ -38,7 +35,6 @@
         Client: (*v1.OAuth2ClientCredentials)(nil),
         Basic:  (*v1.BasicAuthCredentials)(nil),
         Scopes: {"read", "write"},
-        Claims: (*v1.Claims)(nil),
     },
 }
 ---
@@ -49,7 +45,6 @@
         Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:""},
         Basic:  (*v1.BasicAuthCredentials)(nil),
         Scopes: {"read", "write"},
-        Claims: (*v1.Claims)(nil),
     },
 }
 ---

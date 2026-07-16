@@ -777,7 +777,6 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 				Password: apiSecurity.M2M.Basic.Password,
 			}
 		}
-		security.M2M.Claims = mapClaims(apiSecurity.M2M.Claims)
 	}
 
 	return security
