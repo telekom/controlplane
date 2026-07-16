@@ -31,6 +31,9 @@ func MapCrOAuthToCpApi(oauth *apiv1.OAuth2ClientCredentials) *model.OAuth2Client
 }
 
 func MapCrExternalIdpToCpApi(externalIdp *apiv1.ExternalIdentityProvider) *model.ExternalIdentityProvider {
+	if externalIdp == nil {
+		return nil
+	}
 	tokenRequest := string(externalIdp.TokenRequest)
 	grantType := string(externalIdp.GrantType)
 	return &model.ExternalIdentityProvider{
