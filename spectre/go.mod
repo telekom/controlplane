@@ -9,6 +9,8 @@ go 1.26.5
 require (
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega v1.42.1
+	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.11.1
 	github.com/telekom/controlplane/admin/api v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/application/api v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/approval/api v0.0.0-00010101000000-000000000000
@@ -24,11 +26,11 @@ require (
 require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/viper v1.21.0 // indirect
+	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 )
 
