@@ -22,4 +22,4 @@ snapshots
 allure-report
 allure-results
 debug-results
-*.log
+*.log.superpowers/
