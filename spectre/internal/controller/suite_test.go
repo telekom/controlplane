@@ -15,14 +15,20 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	spectreeitelekomdev1 "github.com/telekom/controlplane/spectre/api/v1"
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/common/pkg/controller/index"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -30,11 +36,13 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	ctx       context.Context
-	cancel    context.CancelFunc
-	testEnv   *envtest.Environment
-	cfg       *rest.Config
-	k8sClient client.Client
+	ctx          context.Context
+	cancel       context.CancelFunc
+	testEnv      *envtest.Environment
+	cfg          *rest.Config
+	k8sClient    client.Client
+	directClient client.Client // uncached client for test assertions
+	testScheme   *runtime.Scheme
 )
 
 func TestControllers(t *testing.T) {
@@ -48,16 +56,25 @@ var _ = BeforeSuite(func() {
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
-	var err error
-	err = spectreeitelekomdev1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
+	testScheme = runtime.NewScheme()
+	RegisterSchemesOrDie(testScheme)
 
 	// +kubebuilder:scaffold:scheme
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "gateway", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "pubsub", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "approval", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "application", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "event", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "identity", "config", "crd", "bases"),
+		},
 		ErrorIfCRDPathMissing: true,
+		Scheme:                testScheme,
 	}
 
 	// Retrieve the first found binary directory to allow running tests from IDEs
@@ -66,13 +83,54 @@ var _ = BeforeSuite(func() {
 	}
 
 	// cfg is defined in this file globally.
+	var err error
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	// Use a manager to get a cached client with field indexes.
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme: testScheme,
+		Metrics: metricsserver.Options{
+			BindAddress: "0", // Disable metrics server in tests
+		},
+	})
 	Expect(err).NotTo(HaveOccurred())
+
+	// Register field index for EventConfig zone lookup.
+	err = mgr.GetFieldIndexer().IndexField(ctx, &eventv1.EventConfig{}, ".spec.zone.name",
+		func(obj client.Object) []string {
+			ec, ok := obj.(*eventv1.EventConfig)
+			if !ok || ec.Spec.Zone.Name == "" {
+				return nil
+			}
+			return []string{ec.Spec.Zone.Name}
+		})
+	Expect(err).NotTo(HaveOccurred())
+
+	// Register owner indexes required by JanitorClient.Cleanup.
+	Expect(index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &approvalv1.ApprovalRequest{})).To(Succeed())
+	Expect(index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &pubsubv1.Subscriber{})).To(Succeed())
+	Expect(index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &pubsubv1.Publisher{})).To(Succeed())
+	Expect(index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.Route{})).To(Succeed())
+	Expect(index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.RouteListener{})).To(Succeed())
+
+	// Start the manager cache in a goroutine.
+	go func() {
+		defer GinkgoRecover()
+		Expect(mgr.Start(ctx)).To(Succeed())
+	}()
+
+	// Wait for the cache to sync.
+	Expect(mgr.GetCache().WaitForCacheSync(ctx)).To(BeTrue())
+
+	// Use the manager's cached client for reconcilers (supports MatchingFields).
+	k8sClient = mgr.GetClient()
 	Expect(k8sClient).NotTo(BeNil())
+
+	// Create a direct (uncached) client for test assertions and CR creation.
+	directClient, err = client.New(cfg, client.Options{Scheme: testScheme})
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
