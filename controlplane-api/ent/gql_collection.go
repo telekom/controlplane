@@ -463,10 +463,15 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, apisubscription.FieldM2mAuthMethod)
 				fieldSeen[apisubscription.FieldM2mAuthMethod] = struct{}{}
 			}
-		case "approvedScopes":
-			if _, ok := fieldSeen[apisubscription.FieldApprovedScopes]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldApprovedScopes)
-				fieldSeen[apisubscription.FieldApprovedScopes] = struct{}{}
+		case "gatewayURL":
+			if _, ok := fieldSeen[apisubscription.FieldGatewayURL]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldGatewayURL)
+				fieldSeen[apisubscription.FieldGatewayURL] = struct{}{}
+			}
+		case "security":
+			if _, ok := fieldSeen[apisubscription.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldSecurity)
+				fieldSeen[apisubscription.FieldSecurity] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -1165,6 +1170,11 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, approval.FieldAvailableTransitions)
 				fieldSeen[approval.FieldAvailableTransitions] = struct{}{}
 			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[approval.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, approval.FieldRequestedScopes)
+				fieldSeen[approval.FieldRequestedScopes] = struct{}{}
+			}
 		case "name":
 			if _, ok := fieldSeen[approval.FieldName]; !ok {
 				selectedFields = append(selectedFields, approval.FieldName)
@@ -1334,6 +1344,11 @@ func (_q *ApprovalRequestQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[approvalrequest.FieldAvailableTransitions]; !ok {
 				selectedFields = append(selectedFields, approvalrequest.FieldAvailableTransitions)
 				fieldSeen[approvalrequest.FieldAvailableTransitions] = struct{}{}
+			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[approvalrequest.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, approvalrequest.FieldRequestedScopes)
+				fieldSeen[approvalrequest.FieldRequestedScopes] = struct{}{}
 			}
 		case "name":
 			if _, ok := fieldSeen[approvalrequest.FieldName]; !ok {
@@ -1506,6 +1521,11 @@ func (_q *EventExposureQuery) collectField(ctx context.Context, oneNode bool, op
 			if _, ok := fieldSeen[eventexposure.FieldEventScopes]; !ok {
 				selectedFields = append(selectedFields, eventexposure.FieldEventScopes)
 				fieldSeen[eventexposure.FieldEventScopes] = struct{}{}
+			}
+		case "gatewayPublishingURL":
+			if _, ok := fieldSeen[eventexposure.FieldGatewayPublishingURL]; !ok {
+				selectedFields = append(selectedFields, eventexposure.FieldGatewayPublishingURL)
+				fieldSeen[eventexposure.FieldGatewayPublishingURL] = struct{}{}
 			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[eventexposure.FieldApprovalConfig]; !ok {
@@ -1695,6 +1715,11 @@ func (_q *EventSubscriptionQuery) collectField(ctx context.Context, oneNode bool
 			if _, ok := fieldSeen[eventsubscription.FieldCallbackURL]; !ok {
 				selectedFields = append(selectedFields, eventsubscription.FieldCallbackURL)
 				fieldSeen[eventsubscription.FieldCallbackURL] = struct{}{}
+			}
+		case "gatewaySseURL":
+			if _, ok := fieldSeen[eventsubscription.FieldGatewaySseURL]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldGatewaySseURL)
+				fieldSeen[eventsubscription.FieldGatewaySseURL] = struct{}{}
 			}
 		case "id":
 		case "__typename":

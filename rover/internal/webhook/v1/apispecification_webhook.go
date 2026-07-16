@@ -9,21 +9,19 @@ import (
 	"fmt"
 	"strings"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
-
-	cclient "github.com/telekom/controlplane/common/pkg/client"
 )
 
 // SetupApiSpecificationWebhookWithManager registers the webhook for ApiSpecification in the manager.
@@ -33,9 +31,9 @@ func SetupApiSpecificationWebhookWithManager(mgr ctrl.Manager) error {
 			client:   mgr.GetClient(),
 			FindTeam: organizationv1.FindTeamForObject,
 			ListApiCategories: func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
-				client := cclient.ClientFromContextOrDie(ctx)
+				janitorClient := cclient.ClientFromContextOrDie(ctx)
 				apiCategories := &apiv1.ApiCategoryList{}
-				err := client.List(ctx, apiCategories)
+				err := janitorClient.List(ctx, apiCategories)
 				return apiCategories, err
 			},
 		}).Complete()
@@ -58,7 +56,7 @@ func (v *ApiSpecificationCustomValidator) ValidateCreate(ctx context.Context, ap
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type ApiSpecification.
-func (v *ApiSpecificationCustomValidator) ValidateUpdate(ctx context.Context, _ *roverv1.ApiSpecification, apispecification *roverv1.ApiSpecification) (admission.Warnings, error) {
+func (v *ApiSpecificationCustomValidator) ValidateUpdate(ctx context.Context, _, apispecification *roverv1.ApiSpecification) (admission.Warnings, error) {
 	return v.ValidateCreateOrUpdate(ctx, apispecification)
 }
 
@@ -68,7 +66,6 @@ func (v *ApiSpecificationCustomValidator) ValidateDelete(ctx context.Context, ap
 }
 
 func (v *ApiSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Context, apispecification *roverv1.ApiSpecification) (admission.Warnings, error) {
-
 	if controller.IsBeingDeleted(apispecification) {
 		return nil, nil
 	}
@@ -105,7 +102,6 @@ func (v *ApiSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Con
 }
 
 func (v *ApiSpecificationCustomValidator) ApiCategoryValidation(ctx context.Context, valErr *cerrors.ValidationError, apispecification *roverv1.ApiSpecification) error {
-
 	apiCategories, err := v.ListApiCategories(ctx)
 	if err != nil {
 		return apierrors.NewInternalError(err)
@@ -121,28 +117,30 @@ func (v *ApiSpecificationCustomValidator) ApiCategoryValidation(ctx context.Cont
 	if !found {
 		allowedLabels := strings.Join(apiCategories.AllowedLabelValues(), ", ")
 		valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, fmt.Sprintf("ApiCategory %q not found. Allowed values are: [%s]", providedCategory, allowedLabels))
-	} else {
-		if !foundApiCategory.Spec.Active {
-			valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, "the provided ApiCategory is not active")
-		}
-		team, err := v.FindTeam(ctx, apispecification)
-		if err != nil {
-			return apierrors.NewInternalError(err)
-		}
+		return nil
+	}
 
-		if !foundApiCategory.IsAllowedForTeamCategory(string(team.Spec.Category)) {
-			valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, fmt.Sprintf("ApiCategory %q is not allowed for team category %q", providedCategory, team.Spec.Category))
-		}
-		if !foundApiCategory.IsAllowedForTeam(team.GetName()) {
-			valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, fmt.Sprintf("ApiCategory %q is not allowed for team name %q", providedCategory, team.GetName()))
-		}
+	if !foundApiCategory.Spec.Active {
+		valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, "the provided ApiCategory is not active")
+	}
 
-		if foundApiCategory.Spec.MustHaveGroupPrefix {
-			expectedPrefix := team.Spec.Group
-			providedPrefix := strings.Split(strings.Trim(apispecification.Spec.BasePath, "/"), "/")[0]
-			if expectedPrefix != providedPrefix {
-				valErr.AddInvalidError(field.NewPath("spec").Child("basePath"), providedPrefix, fmt.Sprintf("basePath must start with the team group prefix %q as ApiCategory %q requires it", expectedPrefix, providedCategory))
-			}
+	team, err := v.FindTeam(ctx, apispecification)
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+
+	if !foundApiCategory.IsAllowedForTeamCategory(string(team.Spec.Category)) {
+		valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, fmt.Sprintf("ApiCategory %q is not allowed for team category %q", providedCategory, team.Spec.Category))
+	}
+	if !foundApiCategory.IsAllowedForTeam(team.GetName()) {
+		valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, fmt.Sprintf("ApiCategory %q is not allowed for team name %q", providedCategory, team.GetName()))
+	}
+
+	if foundApiCategory.Spec.MustHaveGroupPrefix {
+		expectedPrefix := team.Spec.Group
+		providedPrefix := strings.Split(strings.Trim(apispecification.Spec.BasePath, "/"), "/")[0]
+		if expectedPrefix != providedPrefix {
+			valErr.AddInvalidError(field.NewPath("spec").Child("basePath"), providedPrefix, fmt.Sprintf("basePath must start with the team group prefix %q as ApiCategory %q requires it", expectedPrefix, providedCategory))
 		}
 	}
 

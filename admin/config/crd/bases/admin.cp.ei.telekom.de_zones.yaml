@@ -44,6 +44,135 @@ spec:
           spec:
             description: ZoneSpec defines the desired state of Zone
             properties:
+              aiGateway:
+                description: |-
+                  AiGateway configures a dedicated AI Gateway for this zone.
+                  When present, the zone supports MCP exposures routed through a separate gateway
+                  with streaming support (buffering disabled).
+                properties:
+                  admin:
+                    description: Admin contains the admin credentials for the AI Gateway.
+                    properties:
+                      clientId:
+                        description: |-
+                          ClientId of the admin client.
+                          If empty, a managed client with the default name will be used.
+                        type: string
+                      clientSecret:
+                        description: |-
+                          ClientSecret of the admin client
+                          If empty, a managed client secret will be generated.
+                        type: string
+                      url:
+                        description: URL of the gateway admin API.
+                        format: uri
+                        type: string
+                    required:
+                    - url
+                    type: object
+                  presets:
+                    description: |-
+                      Presets defines a list of gateway configuration presets for the AI Gateway.
+                      Same structure as the regular gateway presets, allowing feature-based preset selection.
+                    items:
+                      properties:
+                        default:
+                          default: false
+                          description: |-
+                            Default indicates whether this preset is the default preset for the zone.
+                            If true, this preset will be used if no other preset is explicitly selected.
+                            There must be at least one preset with Default=true in the gateway configuration, otherwise the operator will return an error.
+                          type: boolean
+                        features:
+                          description: |-
+                            Features is a list of features that are enabled on this Preset.
+                            This can be used to enable certain features on the zone when this preset is applied.
+                          items:
+                            properties:
+                              enabled:
+                                type: boolean
+                              name:
+                                type: string
+                            required:
+                            - enabled
+                            - name
+                            type: object
+                          type: array
+                          x-kubernetes-list-map-keys:
+                          - name
+                          x-kubernetes-list-type: map
+                        name:
+                          description: Name of the preset. This is used to reference
+                            the preset in the Zone spec.
+                          pattern: ^[aA-zZ0-9]+(-?[aA-zZ0-9]+)*$
+                          type: string
+                        urls:
+                          description: Urls defines a list of URLs (hostname + base
+                            path) that should be exposed by the gateway for this zone.
+                            At least one URL is required.
+                          items:
+                            description: UrlConfig defines the configuration for a
+                              single URL (hostname + base path) exposed by the gateway
+                              for this zone.
+                            properties:
+                              basePath:
+                                description: |-
+                                  BasePath is the base path part of the URL which will be the prefix of all routes exposed on this URL (e.g. "/v1").
+                                  It is appended to the hostname to construct the full URL (e.g. "https://api.example.com/v1").
+                                pattern: ^/.*$
+                                type: string
+                              hidden:
+                                description: |-
+                                  Hidden controls whether this URL should be hidden from the Links section in the Zone status.
+                                  This can be used to hide internal-only URLs that should not be exposed to API consumers.
+                                type: boolean
+                              hostname:
+                                description: Hostname is the hostname part of the
+                                  URL (e.g. "api.example.com").
+                                maxLength: 253
+                                type: string
+                                x-kubernetes-validations:
+                                - message: hostname must be a valid DNS-1123 subdomain
+                                  rule: '!format.dns1123Subdomain().validate(self).hasValue()'
+                              port:
+                                description: Port is the port number of the URL (e.g.
+                                  8000). If not set, the default port for the scheme
+                                  is used (443 for https, 80 for http).
+                                format: int32
+                                maximum: 65535
+                                minimum: 1
+                                type: integer
+                              scheme:
+                                default: https
+                                description: Scheme is the URL scheme (e.g. "http"
+                                  or "https"). Defaults to "https" if not set.
+                                enum:
+                                - http
+                                - https
+                                type: string
+                            required:
+                            - basePath
+                            - hidden
+                            - hostname
+                            type: object
+                          maxItems: 5
+                          minItems: 1
+                          type: array
+                      required:
+                      - default
+                      - name
+                      - urls
+                      type: object
+                    maxItems: 5
+                    minItems: 1
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
+                required:
+                - admin
+                - presets
+                type: object
               externalIdPolicies:
                 description: |-
                   ExternalIdPolicies configures, per identifier scheme, the format and
@@ -402,6 +531,24 @@ spec:
           status:
             description: ZoneStatus defines the observed state of Zone
             properties:
+              aiGateway:
+                description: AiGateway references the AI Gateway CR created for this
+                  zone.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current
@@ -499,25 +646,6 @@ spec:
                 - namespace
                 type: object
               gatewayAdminClient:
-                description: |-
-                  ObjectRef is a reference to a Kubernetes object
-                  It is similar to types.NamespacedName but has the required json tags for serialization
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    description: |-
-                      UID is a type that holds unique ID values, including UUIDs.  Because we
-                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                      intent and helps make sure that UIDs and names do not get conflated.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
-              gatewayClient:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
                   It is similar to types.NamespacedName but has the required json tags for serialization

@@ -50,7 +50,7 @@ var _ = Describe("CreateVoyagerRoute", func() {
 				UID:       k8stypes.UID("ec-uid-1234"),
 			},
 			Spec: eventv1.EventConfigSpec{
-				VoyagerApiUrl: "http://voyager-service:8080/voyager",
+				Local: &eventv1.LocalBackend{VoyagerApiUrl: "http://voyager-service:8080/voyager"},
 			},
 		}
 	})
@@ -81,7 +81,7 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		badConfig := &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-bad", Namespace: "default"},
 			Spec: eventv1.EventConfigSpec{
-				VoyagerApiUrl: "://bad-url",
+				Local: &eventv1.LocalBackend{VoyagerApiUrl: "://bad-url"},
 			},
 		}
 
@@ -123,19 +123,11 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Paths).To(HaveLen(2))
-		Expect(route.Spec.Paths[0]).To(Equal("/zone-a/voyager/v1"))
-		Expect(route.Spec.Paths[1]).To(Equal("/voyager/v1"))
-
-		// Verify Security
-		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
-		Expect(route.Spec.Security.DefaultConsumers).To(BeEmpty())
-
-		// Verify GatewayRef
-		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
-		Expect(route.Spec.GatewayRef.Namespace).To(Equal("default"))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/voyager/v1"))
+		Expect(route.Spec.Paths[1]).To(Equal("/horizon-zone-a/voyager/v1"))
 	})
 
-	It("should add MeshClientName to DefaultConsumers when IsProxyTarget", func() {
+	It("should add GatewayConsumerName to DefaultConsumers when IsProxyTarget", func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
@@ -146,7 +138,8 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		route, err := util.CreateVoyagerRoute(ctx, zone, eventConfig, util.WithProxyTarget(true))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
-		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement("eventstore"))
+		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(gatewayapi.GatewayConsumerName))
+		Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(util.CallbackClientName))
 	})
 
 	It("should set owner reference when WithOwner is provided", func() {
@@ -180,7 +173,7 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		route, err := util.CreateVoyagerRoute(ctx, zone, eventConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update voyager Route"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
 		Expect(err.Error()).To(ContainSubstring("create failed"))
 	})
 })
@@ -262,13 +255,13 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
 		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(443)))
-		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/zone-b/voyager/v1"))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/horizon-zone-b/voyager/v1"))
 
 		// Verify hostnames and paths from source zone's preset
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Paths).To(HaveLen(1))
-		Expect(route.Spec.Paths[0]).To(Equal("/zone-b/voyager/v1"))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon-zone-b/voyager/v1"))
 
 		// Verify Security
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
@@ -289,8 +282,104 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetZone)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update proxy voyager Route"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
 		Expect(err.Error()).To(ContainSubstring("create failed"))
+	})
+})
+
+// ---------- CreateProxyLocalVoyagerRoute ----------
+
+var _ = Describe("CreateProxyLocalVoyagerRoute", func() {
+	var (
+		ctx        context.Context
+		fakeClient *fakeclient.MockJanitorClient
+		sourceZone *adminv1.Zone
+		targetZone *adminv1.Zone
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		ctx = cclient.WithClient(ctx, fakeClient)
+		sourceZone = makeZone("zone-a", "zone-a-ns")
+		targetZone = makeZone("zone-b", "zone-b-ns")
+	})
+
+	It("should return BlockedError when source zone has no default preset", func() {
+		sourceNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
+
+		route, err := util.CreateProxyLocalVoyagerRoute(ctx, sourceNoPreset, targetZone)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
+		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+	})
+
+	It("should return BlockedError when source zone has no gateway reference", func() {
+		sourceNoGw := makeZoneNoGateway("zone-a", "zone-a-ns")
+
+		route, err := util.CreateProxyLocalVoyagerRoute(ctx, sourceNoGw, targetZone)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
+		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
+	})
+
+	It("should return BlockedError when target zone has no default preset", func() {
+		targetNoPreset := makeZoneNoPreset("zone-b", "zone-b-ns")
+
+		route, err := util.CreateProxyLocalVoyagerRoute(ctx, sourceZone, targetNoPreset)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
+		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+	})
+
+	It("should create the own-zone proxy route with both mesh and local paths", func() {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+				err := mutate()
+				return controllerutil.OperationResultCreated, err
+			})
+
+		route, err := util.CreateProxyLocalVoyagerRoute(ctx, sourceZone, targetZone)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(route).ToNot(BeNil())
+
+		// Name and namespace reference the source (proxy) zone
+		Expect(route.Name).To(Equal("voyager--zone-a"))
+		Expect(route.Namespace).To(Equal("zone-a-ns"))
+
+		// Labels: own voyager route (not the voyager-proxy mesh type)
+		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone-a"))
+		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "voyager"))
+
+		// Proxy route type, forwarding to the target zone's gateway voyager path
+		Expect(route.Spec.Type).To(Equal(gatewayapi.RouteTypeProxy))
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("gateway.example.com"))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/horizon-zone-b/voyager/v1"))
+
+		// Downstream serves both the mesh path (own zone) and the local shortcut
+		Expect(route.Spec.Paths).To(HaveLen(2))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon/voyager/v1"))
+		Expect(route.Spec.Paths[1]).To(Equal("/horizon-zone-a/voyager/v1"))
+
+		// Downstream is served by the source zone's gateway
+		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
+		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
+	})
+
+	It("should return error when CreateOrUpdate fails", func() {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Return(controllerutil.OperationResultNone, fmt.Errorf("create failed"))
+
+		route, err := util.CreateProxyLocalVoyagerRoute(ctx, sourceZone, targetZone)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
 	})
 })
 

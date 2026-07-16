@@ -56,6 +56,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 					},
 				},
 				Status: apiv1.ApiSubscriptionStatus{
+					GatewayUrl: "https://gateway.example.com/api/v1/users",
 					Conditions: []metav1.Condition{
 						{
 							Type:    "Ready",
@@ -76,7 +77,6 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(data.StatusMessage).To(Equal("subscription active"))
 			Expect(data.BasePath).To(Equal("/api/v1/users"))
 			Expect(data.M2MAuthMethod).To(Equal("OAUTH2_CLIENT"))
-			Expect(data.ApprovedScopes).To(Equal([]string{"read", "write"}))
 			Expect(data.Security).NotTo(BeNil())
 			Expect(data.Security.M2M).NotTo(BeNil())
 			Expect(data.Security.M2M.Client).NotTo(BeNil())
@@ -88,6 +88,26 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(data.TargetBasePath).To(Equal("/api/v1/users"))
 			Expect(data.TargetAppName).To(BeEmpty())
 			Expect(data.TargetTeamName).To(BeEmpty())
+			Expect(data.GatewayUrl).To(Equal("https://gateway.example.com/api/v1/users"))
+		})
+
+		It("should set GatewayUrl to empty when status has no gateway url", func() {
+			obj := &apiv1.ApiSubscription{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sub-no-gw",
+					Namespace: "prod--platform--narvi",
+				},
+				Spec: apiv1.ApiSubscriptionSpec{
+					ApiBasePath: "/api/test",
+					Requestor: apiv1.Requestor{
+						Application: ctypes.ObjectRef{Name: "app"},
+					},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.GatewayUrl).To(BeEmpty())
 		})
 	})
 
@@ -112,7 +132,6 @@ var _ = Describe("ApiSubscription Translator", func() {
 			data, err := t.Translate(context.Background(), newObj(nil))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("NONE"))
-			Expect(data.ApprovedScopes).To(Equal([]string{}))
 			Expect(data.Security).To(BeNil())
 		})
 
@@ -120,7 +139,6 @@ var _ = Describe("ApiSubscription Translator", func() {
 			data, err := t.Translate(context.Background(), newObj(&apiv1.SubscriberSecurity{}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("NONE"))
-			Expect(data.ApprovedScopes).To(Equal([]string{}))
 			Expect(data.Security).NotTo(BeNil())
 			Expect(data.Security.M2M).To(BeNil())
 		})
@@ -157,7 +175,6 @@ var _ = Describe("ApiSubscription Translator", func() {
 			}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("SCOPES_ONLY"))
-			Expect(data.ApprovedScopes).To(Equal([]string{"read"}))
 			Expect(data.Security.M2M.Scopes).To(Equal([]string{"read"}))
 			Expect(data.Security.M2M.Client).To(BeNil())
 			Expect(data.Security.M2M.Basic).To(BeNil())
@@ -251,7 +268,6 @@ var _ = Describe("ApiSubscription Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("OAUTH2_CLIENT"))
-			Expect(data.ApprovedScopes).To(Equal([]string{"read", "write"}))
 			Expect(data.Security).NotTo(BeNil())
 			Expect(data.Security.M2M).NotTo(BeNil())
 			Expect(data.Security.M2M.Client).NotTo(BeNil())
@@ -305,7 +321,6 @@ var _ = Describe("ApiSubscription Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("SCOPES_ONLY"))
-			Expect(data.ApprovedScopes).To(Equal([]string{"admin"}))
 			Expect(data.Security).NotTo(BeNil())
 			Expect(data.Security.M2M).NotTo(BeNil())
 			Expect(data.Security.M2M.Client).To(BeNil())

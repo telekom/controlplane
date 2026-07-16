@@ -13,6 +13,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
@@ -89,6 +90,7 @@ func (r *Repository) Upsert(ctx context.Context, data *EventExposureData) error 
 		SetApprovalConfig(data.ApprovalConfig).
 		SetEventScopes(data.Scopes).
 		SetNillableEventTypeDefID(eventTypeDefID).
+		SetGatewayPublishingURL(data.GatewayProviderUrl).
 		OnConflictColumns(eventexposure.FieldEventType, eventexposure.OwnerColumn).
 		UpdateNewValues().
 		ID(ctx)
@@ -99,6 +101,25 @@ func (r *Repository) Upsert(ctx context.Context, data *EventExposureData) error 
 
 	et, lk := cachekeys.EventExposure(data.EventType, data.AppName, data.TeamName)
 	r.cache.Set(et, lk, exposureID)
+
+	// Back-link subscriptions that were projected before this exposure existed.
+	// A subscription targets an active exposure by event type (see
+	// FindEventExposureByEventType). If the subscription was reconciled first, it
+	// was stored with a NULL target FK and nothing re-links it when the exposure
+	// later appears — the subscription CR is not re-reconciled. Here we adopt any
+	// such orphaned subscriptions so their target resolves.
+	if data.Active {
+		if err := r.client.EventSubscription.Update().
+			Where(
+				eventsubscription.EventTypeEQ(data.EventType),
+				eventsubscription.Not(eventsubscription.HasTarget()),
+			).
+			SetTargetID(exposureID).
+			Exec(ctx); err != nil {
+			return fmt.Errorf("back-link subscriptions to event_exposure %q (app %q, team %q): %w",
+				data.EventType, data.AppName, data.TeamName, err)
+		}
+	}
 	return nil
 }
 

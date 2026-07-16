@@ -18,6 +18,16 @@ var Opts = []Option{
 			return ParseApiSpecification(obj)
 		}
 
+		_, hasBasePath := obj.GetContent()["basePath"]
+		_, hasTools := obj.GetContent()["tools"]
+		_, hasPrompts := obj.GetContent()["prompts"]
+		_, hasResources := obj.GetContent()["resources"]
+		if hasBasePath && (hasTools || hasPrompts || hasResources) {
+			obj.SetProperty("kind", "McpSpecification")
+			obj.SetProperty("apiVersion", "tcp.ei.telekom.de/v1")
+			return ParseMcpSpecification(obj)
+		}
+
 		obj.SetProperty("name", obj.GetName())
 		obj.SetProperty("kind", obj.GetKind())
 		obj.SetProperty("apiVersion", obj.GetApiVersion())

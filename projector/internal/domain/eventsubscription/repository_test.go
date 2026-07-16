@@ -136,10 +136,11 @@ var _ = Describe("EventSubscription Repository", func() {
 					RetryableStatusCodes:  []int{429, 503},
 					RedeliveriesPerSecond: &redeliveries,
 				},
-				Scopes:          []string{"scope-a", "scope-b"},
-				OwnerAppName:    "consumer-app",
-				OwnerTeamName:   "platform--narvi",
-				TargetEventType: "de.telekom.eni.quickstart.v1",
+				Scopes:                []string{"scope-a", "scope-b"},
+				GatewayConsumerSseUrl: "https://gateway.example.com/events/sse/sub-1",
+				OwnerAppName:          "consumer-app",
+				OwnerTeamName:         "platform--narvi",
+				TargetEventType:       "de.telekom.eni.quickstart.v1",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -173,6 +174,9 @@ var _ = Describe("EventSubscription Repository", func() {
 			owner, err := sub.QueryOwner().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(owner.ID).To(Equal(appID))
+
+			Expect(sub.GatewaySseURL).NotTo(BeNil())
+			Expect(*sub.GatewaySseURL).To(Equal("https://gateway.example.com/events/sse/sub-1"))
 
 			// Target should be nil (no exposure found).
 			hasTarget, err := sub.QueryTarget().Exist(ctx)

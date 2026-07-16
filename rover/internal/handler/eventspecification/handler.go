@@ -8,6 +8,9 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -15,8 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 var _ handler.Handler[*roverv1.EventSpecification] = (*EventSpecificationHandler)(nil)
@@ -24,7 +25,6 @@ var _ handler.Handler[*roverv1.EventSpecification] = (*EventSpecificationHandler
 type EventSpecificationHandler struct{}
 
 func (h *EventSpecificationHandler) CreateOrUpdate(ctx context.Context, eventSpec *roverv1.EventSpecification) error {
-
 	c := client.ClientFromContextOrDie(ctx)
 	name := roverv1.MakeEventSpecificationName(eventSpec)
 
@@ -51,6 +51,7 @@ func (h *EventSpecificationHandler) CreateOrUpdate(ctx context.Context, eventSpe
 			Type:          eventSpec.Spec.Type,
 			Version:       eventSpec.Spec.Version,
 			Description:   eventSpec.Spec.Description,
+			Category:      eventSpec.Spec.Category,
 			Specification: eventSpec.Spec.Specification,
 		}
 

@@ -80,10 +80,6 @@ type SelectionFilterResolver interface {
 
 // endregion ***************************** args.gotpl *****************************
 
-// region    ************************** directives.gotpl **************************
-
-// endregion ************************** directives.gotpl **************************
-
 // region    **************************** field.gotpl *****************************
 
 func (ec *executionContext) _ApiCategory_name(ctx context.Context, field graphql.CollectedField, obj *model1.APICategory) (ret graphql.Marshaler) {
@@ -2858,7 +2854,8 @@ func (ec *executionContext) _ApiCategory(ctx context.Context, sel ast.SelectionS
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiCategoryImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2877,16 +2874,14 @@ func (ec *executionContext) _ApiCategory(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -2897,7 +2892,8 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiExposureInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2928,19 +2924,21 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -2950,8 +2948,14 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "active":
 			out.Values[i] = ec._ApiExposureInfo_active(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "apiVersion":
 			out.Values[i] = ec._ApiExposureInfo_apiVersion(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "features":
 			field := field
 
@@ -2968,19 +2972,21 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -2995,6 +3001,9 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 			}
 		case "traffic":
 			out.Values[i] = ec._ApiExposureInfo_traffic(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "ownerApplicationName":
 			out.Values[i] = ec._ApiExposureInfo_ownerApplicationName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3014,16 +3023,14 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3034,13 +3041,17 @@ func (ec *executionContext) _ApiExposureSecurity(ctx context.Context, sel ast.Se
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiExposureSecurityImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ApiExposureSecurity")
 		case "m2m":
 			out.Values[i] = ec._ApiExposureSecurity_m2m(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3050,16 +3061,14 @@ func (ec *executionContext) _ApiExposureSecurity(ctx context.Context, sel ast.Se
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3070,7 +3079,8 @@ func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.Se
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3088,29 +3098,34 @@ func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.Se
 		case "statusPhase":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._ApiSubscriptionInfo_statusPhase(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3120,6 +3135,9 @@ func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.Se
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "statusMessage":
 			out.Values[i] = ec._ApiSubscriptionInfo_statusMessage(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "ownerApplicationName":
 			out.Values[i] = ec._ApiSubscriptionInfo_ownerApplicationName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3139,16 +3157,14 @@ func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.Se
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3159,13 +3175,17 @@ func (ec *executionContext) _ApiSubscriptionSecurity(ctx context.Context, sel as
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionSecurityImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ApiSubscriptionSecurity")
 		case "m2m":
 			out.Values[i] = ec._ApiSubscriptionSecurity_m2m(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3175,16 +3195,14 @@ func (ec *executionContext) _ApiSubscriptionSecurity(ctx context.Context, sel as
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3195,7 +3213,8 @@ func (ec *executionContext) _ApprovalConfig(ctx context.Context, sel ast.Selecti
 	fields := graphql.CollectFields(ec.OperationContext, sel, approvalConfigImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3216,19 +3235,21 @@ func (ec *executionContext) _ApprovalConfig(ctx context.Context, sel ast.Selecti
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3250,16 +3271,14 @@ func (ec *executionContext) _ApprovalConfig(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3270,7 +3289,8 @@ func (ec *executionContext) _AvailableTransition(ctx context.Context, sel ast.Se
 	fields := graphql.CollectFields(ec.OperationContext, sel, availableTransitionImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3291,19 +3311,21 @@ func (ec *executionContext) _AvailableTransition(ctx context.Context, sel ast.Se
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3327,19 +3349,21 @@ func (ec *executionContext) _AvailableTransition(ctx context.Context, sel ast.Se
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3356,16 +3380,14 @@ func (ec *executionContext) _AvailableTransition(ctx context.Context, sel ast.Se
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3376,7 +3398,8 @@ func (ec *executionContext) _BasicAuthCredentials(ctx context.Context, sel ast.S
 	fields := graphql.CollectFields(ec.OperationContext, sel, basicAuthCredentialsImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3402,19 +3425,21 @@ func (ec *executionContext) _BasicAuthCredentials(ctx context.Context, sel ast.S
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3431,16 +3456,14 @@ func (ec *executionContext) _BasicAuthCredentials(ctx context.Context, sel ast.S
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3451,7 +3474,8 @@ func (ec *executionContext) _DeciderInfo(ctx context.Context, sel ast.SelectionS
 	fields := graphql.CollectFields(ec.OperationContext, sel, deciderInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3463,6 +3487,9 @@ func (ec *executionContext) _DeciderInfo(ctx context.Context, sel ast.SelectionS
 			}
 		case "teamEmail":
 			out.Values[i] = ec._DeciderInfo_teamEmail(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3472,16 +3499,14 @@ func (ec *executionContext) _DeciderInfo(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3492,7 +3517,8 @@ func (ec *executionContext) _Decision(ctx context.Context, sel ast.SelectionSet,
 	fields := graphql.CollectFields(ec.OperationContext, sel, decisionImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3504,36 +3530,50 @@ func (ec *executionContext) _Decision(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "email":
 			out.Values[i] = ec._Decision_email(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "comment":
 			out.Values[i] = ec._Decision_comment(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "timestamp":
 			out.Values[i] = ec._Decision_timestamp(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "resultingState":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Decision_resultingState(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3550,16 +3590,14 @@ func (ec *executionContext) _Decision(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3570,7 +3608,8 @@ func (ec *executionContext) _EventDelivery(ctx context.Context, sel ast.Selectio
 	fields := graphql.CollectFields(ec.OperationContext, sel, eventDeliveryImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3591,19 +3630,21 @@ func (ec *executionContext) _EventDelivery(ctx context.Context, sel ast.Selectio
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3623,8 +3664,14 @@ func (ec *executionContext) _EventDelivery(ctx context.Context, sel ast.Selectio
 			}
 		case "retryableStatusCodes":
 			out.Values[i] = ec._EventDelivery_retryableStatusCodes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "redeliveriesPerSecond":
 			out.Values[i] = ec._EventDelivery_redeliveriesPerSecond(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "enforceGetHttpRequestMethodForHealthCheck":
 			out.Values[i] = ec._EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3639,16 +3686,14 @@ func (ec *executionContext) _EventDelivery(ctx context.Context, sel ast.Selectio
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3659,7 +3704,8 @@ func (ec *executionContext) _EventExposureInfo(ctx context.Context, sel ast.Sele
 	fields := graphql.CollectFields(ec.OperationContext, sel, eventExposureInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3690,19 +3736,21 @@ func (ec *executionContext) _EventExposureInfo(ctx context.Context, sel ast.Sele
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3712,6 +3760,9 @@ func (ec *executionContext) _EventExposureInfo(ctx context.Context, sel ast.Sele
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "active":
 			out.Values[i] = ec._EventExposureInfo_active(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "approvalConfig":
 			out.Values[i] = ec._EventExposureInfo_approvalConfig(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3736,16 +3787,14 @@ func (ec *executionContext) _EventExposureInfo(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3756,7 +3805,8 @@ func (ec *executionContext) _EventScope(ctx context.Context, sel ast.SelectionSe
 	fields := graphql.CollectFields(ec.OperationContext, sel, eventScopeImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3780,16 +3830,14 @@ func (ec *executionContext) _EventScope(ctx context.Context, sel ast.SelectionSe
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3800,7 +3848,8 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 	fields := graphql.CollectFields(ec.OperationContext, sel, eventSubscriptionInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3831,19 +3880,21 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3854,29 +3905,34 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 		case "statusPhase":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._EventSubscriptionInfo_statusPhase(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -3886,6 +3942,9 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "statusMessage":
 			out.Values[i] = ec._EventSubscriptionInfo_statusMessage(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "ownerApplicationName":
 			out.Values[i] = ec._EventSubscriptionInfo_ownerApplicationName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3905,16 +3964,14 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3925,15 +3982,22 @@ func (ec *executionContext) _EventTrigger(ctx context.Context, sel ast.Selection
 	fields := graphql.CollectFields(ec.OperationContext, sel, eventTriggerImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("EventTrigger")
 		case "responseFilter":
 			out.Values[i] = ec._EventTrigger_responseFilter(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "selectionFilter":
 			out.Values[i] = ec._EventTrigger_selectionFilter(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3943,16 +4007,14 @@ func (ec *executionContext) _EventTrigger(ctx context.Context, sel ast.Selection
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -3963,7 +4025,8 @@ func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSe
 	fields := graphql.CollectFields(ec.OperationContext, sel, externalIdImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3989,19 +4052,21 @@ func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSe
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -4018,16 +4083,14 @@ func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSe
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4038,7 +4101,8 @@ func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel a
 	fields := graphql.CollectFields(ec.OperationContext, sel, externalIdentityProviderImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4051,29 +4115,34 @@ func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel a
 		case "tokenRequest":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._ExternalIdentityProvider_tokenRequest(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -4083,10 +4152,19 @@ func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel a
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "grantType":
 			out.Values[i] = ec._ExternalIdentityProvider_grantType(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "basic":
 			out.Values[i] = ec._ExternalIdentityProvider_basic(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "client":
 			out.Values[i] = ec._ExternalIdentityProvider_client(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4096,16 +4174,14 @@ func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel a
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4116,15 +4192,22 @@ func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.Selecti
 	fields := graphql.CollectFields(ec.OperationContext, sel, ipRestrictionsImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("IpRestrictions")
 		case "Allow":
 			out.Values[i] = ec._IpRestrictions_Allow(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "Deny":
 			out.Values[i] = ec._IpRestrictions_Deny(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4134,16 +4217,14 @@ func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4154,17 +4235,27 @@ func (ec *executionContext) _Limits(ctx context.Context, sel ast.SelectionSet, o
 	fields := graphql.CollectFields(ec.OperationContext, sel, limitsImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Limits")
 		case "second":
 			out.Values[i] = ec._Limits_second(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "minute":
 			out.Values[i] = ec._Limits_minute(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "hour":
 			out.Values[i] = ec._Limits_hour(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4174,16 +4265,14 @@ func (ec *executionContext) _Limits(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4194,17 +4283,27 @@ func (ec *executionContext) _Machine2MachineAuthentication(ctx context.Context, 
 	fields := graphql.CollectFields(ec.OperationContext, sel, machine2MachineAuthenticationImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Machine2MachineAuthentication")
 		case "externalIDP":
 			out.Values[i] = ec._Machine2MachineAuthentication_externalIDP(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "basic":
 			out.Values[i] = ec._Machine2MachineAuthentication_basic(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "scopes":
 			out.Values[i] = ec._Machine2MachineAuthentication_scopes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4214,16 +4313,14 @@ func (ec *executionContext) _Machine2MachineAuthentication(ctx context.Context, 
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4234,7 +4331,8 @@ func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel as
 	fields := graphql.CollectFields(ec.OperationContext, sel, oAuth2ClientCredentialsImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4247,29 +4345,34 @@ func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel as
 		case "clientSecret":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._OAuth2ClientCredentials_clientSecret(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -4280,29 +4383,34 @@ func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel as
 		case "clientKey":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._OAuth2ClientCredentials_clientKey(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -4319,16 +4427,14 @@ func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel as
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4388,15 +4494,22 @@ func (ec *executionContext) _RateLimit(ctx context.Context, sel ast.SelectionSet
 	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("RateLimit")
 		case "provider":
 			out.Values[i] = ec._RateLimit_provider(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "subscriberRateLimit":
 			out.Values[i] = ec._RateLimit_subscriberRateLimit(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4406,16 +4519,14 @@ func (ec *executionContext) _RateLimit(ctx context.Context, sel ast.SelectionSet
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4426,7 +4537,8 @@ func (ec *executionContext) _RateLimitConfig(ctx context.Context, sel ast.Select
 	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitConfigImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4438,6 +4550,9 @@ func (ec *executionContext) _RateLimitConfig(ctx context.Context, sel ast.Select
 			}
 		case "options":
 			out.Values[i] = ec._RateLimitConfig_options(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4447,16 +4562,14 @@ func (ec *executionContext) _RateLimitConfig(ctx context.Context, sel ast.Select
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4467,15 +4580,22 @@ func (ec *executionContext) _RateLimitOptions(ctx context.Context, sel ast.Selec
 	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitOptionsImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("RateLimitOptions")
 		case "hideClientHeaders":
 			out.Values[i] = ec._RateLimitOptions_hideClientHeaders(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "faultTolerant":
 			out.Values[i] = ec._RateLimitOptions_faultTolerant(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4485,16 +4605,14 @@ func (ec *executionContext) _RateLimitOptions(ctx context.Context, sel ast.Selec
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4505,7 +4623,8 @@ func (ec *executionContext) _RateLimitOverrides(ctx context.Context, sel ast.Sel
 	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitOverridesImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4529,16 +4648,14 @@ func (ec *executionContext) _RateLimitOverrides(ctx context.Context, sel ast.Sel
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4549,7 +4666,8 @@ func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.Selectio
 	fields := graphql.CollectFields(ec.OperationContext, sel, requesterInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4566,8 +4684,14 @@ func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.Selectio
 			}
 		case "reason":
 			out.Values[i] = ec._RequesterInfo_reason(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "applicationName":
 			out.Values[i] = ec._RequesterInfo_applicationName(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4577,16 +4701,14 @@ func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.Selectio
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4597,7 +4719,8 @@ func (ec *executionContext) _ResponseFilter(ctx context.Context, sel ast.Selecti
 	fields := graphql.CollectFields(ec.OperationContext, sel, responseFilterImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4610,29 +4733,34 @@ func (ec *executionContext) _ResponseFilter(ctx context.Context, sel ast.Selecti
 		case "mode":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._ResponseFilter_mode(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -4649,16 +4777,14 @@ func (ec *executionContext) _ResponseFilter(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4669,7 +4795,8 @@ func (ec *executionContext) _SelectionFilter(ctx context.Context, sel ast.Select
 	fields := graphql.CollectFields(ec.OperationContext, sel, selectionFilterImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4677,29 +4804,34 @@ func (ec *executionContext) _SelectionFilter(ctx context.Context, sel ast.Select
 		case "attributes":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._SelectionFilter_attributes(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
 				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
 
 				// don't run the out.Concurrently() call below
 				out.Values[i] = graphql.Null
@@ -4721,16 +4853,14 @@ func (ec *executionContext) _SelectionFilter(ctx context.Context, sel ast.Select
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4741,17 +4871,27 @@ func (ec *executionContext) _SubscriberMachine2MachineAuthentication(ctx context
 	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberMachine2MachineAuthenticationImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SubscriberMachine2MachineAuthentication")
 		case "client":
 			out.Values[i] = ec._SubscriberMachine2MachineAuthentication_client(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "basic":
 			out.Values[i] = ec._SubscriberMachine2MachineAuthentication_basic(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "scopes":
 			out.Values[i] = ec._SubscriberMachine2MachineAuthentication_scopes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4761,16 +4901,14 @@ func (ec *executionContext) _SubscriberMachine2MachineAuthentication(ctx context
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4781,7 +4919,8 @@ func (ec *executionContext) _SubscriberRateLimitDefaults(ctx context.Context, se
 	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberRateLimitDefaultsImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4800,16 +4939,14 @@ func (ec *executionContext) _SubscriberRateLimitDefaults(ctx context.Context, se
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4820,15 +4957,22 @@ func (ec *executionContext) _SubscriberRateLimits(ctx context.Context, sel ast.S
 	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberRateLimitsImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SubscriberRateLimits")
 		case "default":
 			out.Values[i] = ec._SubscriberRateLimits_default(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "overrides":
 			out.Values[i] = ec._SubscriberRateLimits_overrides(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4838,16 +4982,14 @@ func (ec *executionContext) _SubscriberRateLimits(ctx context.Context, sel ast.S
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4858,7 +5000,8 @@ func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet,
 	fields := graphql.CollectFields(ec.OperationContext, sel, teamInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4880,10 +5023,19 @@ func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "email":
 			out.Values[i] = ec._TeamInfo_email(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "displayName":
 			out.Values[i] = ec._TeamInfo_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "description":
 			out.Values[i] = ec._TeamInfo_description(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4893,16 +5045,14 @@ func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4913,13 +5063,17 @@ func (ec *executionContext) _Traffic(ctx context.Context, sel ast.SelectionSet, 
 	fields := graphql.CollectFields(ec.OperationContext, sel, trafficImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Traffic")
 		case "rateLimit":
 			out.Values[i] = ec._Traffic_rateLimit(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4929,16 +5083,14 @@ func (ec *executionContext) _Traffic(ctx context.Context, sel ast.SelectionSet, 
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -4949,7 +5101,8 @@ func (ec *executionContext) _Upstream(ctx context.Context, sel ast.SelectionSet,
 	fields := graphql.CollectFields(ec.OperationContext, sel, upstreamImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -4973,16 +5126,14 @@ func (ec *executionContext) _Upstream(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
 
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
 
 	return out
 }
@@ -5028,8 +5179,7 @@ func (ec *executionContext) marshalNApiExposureFeature2githubᚗcomᚋtelekomᚋ
 }
 
 func (ec *executionContext) unmarshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, v any) ([]model1.APIExposureFeature, error) {
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
+	vSlice := graphql.CoerceList(v)
 	var err error
 	res := make([]model1.APIExposureFeature, len(vSlice))
 	for i := range vSlice {
@@ -5056,20 +5206,6 @@ func (ec *executionContext) marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekom
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalNApiExposureInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v model.ApiExposureInfo) graphql.Marshaler {
-	return ec._ApiExposureInfo(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ApiExposureInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ApiSubscriptionInfo) graphql.Marshaler {
@@ -5142,20 +5278,6 @@ func (ec *executionContext) marshalNDecision2ᚕgithubᚗcomᚋtelekomᚋcontrol
 
 func (ec *executionContext) marshalNEventDelivery2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventDelivery(ctx context.Context, sel ast.SelectionSet, v model.EventDelivery) graphql.Marshaler {
 	return ec._EventDelivery(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNEventExposureInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v model.EventExposureInfo) graphql.Marshaler {
-	return ec._EventExposureInfo(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._EventExposureInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNEventSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EventSubscriptionInfo) graphql.Marshaler {
@@ -5267,6 +5389,13 @@ func (ec *executionContext) marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋ
 
 func (ec *executionContext) marshalOApiExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model.ApiExposureSecurity) graphql.Marshaler {
 	return ec._ApiExposureSecurity(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionSecurity) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ApiSubscriptionSecurity(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {

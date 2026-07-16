@@ -97,6 +97,10 @@ func makeReadyZone() *adminv1.Zone {
 				Name:      "gw",
 				Namespace: "default",
 			},
+			Links: adminv1.Links{
+				Issuer:    "https://idp.test-zone.example.com",
+				LmsIssuer: "https://lms.test-zone.example.com",
+			},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -115,14 +119,16 @@ func makeReadyEventConfig() eventv1.EventConfig {
 		},
 		Spec: eventv1.EventConfigSpec{
 			Zone: ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
-			Admin: eventv1.AdminConfig{
-				Url: "https://admin.example.com",
-				Client: eventv1.ClientConfig{
-					Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+			Local: &eventv1.LocalBackend{
+				Admin: eventv1.AdminConfig{
+					Url: "https://admin.example.com",
+					Client: eventv1.ClientConfig{
+						Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+					},
 				},
+				ServerSendEventUrl: "https://sse.example.com",
+				PublishEventUrl:    "http://publish.internal:8080/publish",
 			},
-			ServerSendEventUrl: "https://sse.example.com",
-			PublishEventUrl:    "http://publish.internal:8080/publish",
 		},
 		Status: eventv1.EventConfigStatus{
 			EventStore: &ctypes.ObjectRef{
@@ -130,6 +136,7 @@ func makeReadyEventConfig() eventv1.EventConfig {
 				Namespace: "default",
 			},
 			CallbackURL: "https://callback.example.com/test-zone/callback/v1",
+			PublishURL:  "https://publish.gateway.example.com",
 		},
 	}
 	meta.SetStatusCondition(&ec.Status.Conditions, metav1.Condition{
@@ -180,8 +187,53 @@ func makeReadyApplication() *applicationv1.Application {
 	return app
 }
 
+// makeReadyTargetZone builds the ready local zone that a proxy zone forwards to.
+func makeReadyTargetZone() *adminv1.Zone {
+	z := makeReadyZone()
+	z.Name = "target-zone"
+	z.Status.Namespace = "target-ns"
+	z.Status.Gateway = &ctypes.ObjectRef{Name: "target-gw", Namespace: "default"}
+	z.Status.Links = adminv1.Links{
+		Issuer:    "https://idp.target-zone.example.com",
+		LmsIssuer: "https://lms.target-zone.example.com",
+	}
+	return z
+}
+
+// makeProxyEventConfig builds a ready proxy EventConfig for test-zone that targets target-zone.
+// A proxy config has no Local backend — this is the shape that used to panic CreateSSERoute.
+func makeProxyEventConfig() eventv1.EventConfig {
+	ec := makeReadyEventConfig()
+	ec.Name = "test-eventconfig-proxy"
+	ec.Spec.Zone = ctypes.ObjectRef{Name: "test-zone", Namespace: "default"}
+	ec.Spec.Local = nil
+	ec.Spec.Proxy = &eventv1.ProxyBackend{
+		TargetZone: ctypes.ObjectRef{Name: "target-zone", Namespace: "default"},
+	}
+	return ec
+}
+
+// makeTargetEventConfig builds the ready local EventConfig for target-zone.
+func makeTargetEventConfig() eventv1.EventConfig {
+	ec := makeReadyEventConfig()
+	ec.Name = "target-eventconfig"
+	ec.Spec.Zone = ctypes.ObjectRef{Name: "target-zone", Namespace: "default"}
+	return ec
+}
+
+// zoneFromListOpts extracts the zone name from a MatchingFields list option.
+func zoneFromListOpts(opts []client.ListOption) string {
+	for _, opt := range opts {
+		if mf, ok := opt.(client.MatchingFields); ok {
+			return mf[".spec.zone.name"]
+		}
+	}
+	return ""
+}
+
 var (
 	zoneKey       = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
+	targetZoneKey = k8stypes.NamespacedName{Name: "target-zone", Namespace: "default"}
 	eventStoreKey = k8stypes.NamespacedName{Name: "test-eventstore", Namespace: "default"}
 	appKey        = k8stypes.NamespacedName{Name: "test-app", Namespace: "default"}
 )
@@ -608,6 +660,105 @@ var _ = Describe("EventExposureHandler", func() {
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Done"))
+		})
+
+		It("should not panic and route via backend zone when exposure zone is a proxy zone", func() {
+			// Regression: a proxy exposure zone has EventConfig.Spec.Local == nil.
+			// reconcileSSERoutes must resolve the target (local) zone as the SSE
+			// backend, build the primary Route there, and give the proxy zone its
+			// own-zone proxy Route — never dereference the nil Local backend.
+			et := makeReadyEventType()
+			proxyZone := makeReadyZone() // test-zone (the proxy exposure zone)
+			targetZone := makeReadyTargetZone()
+			proxyCfg := makeProxyEventConfig()
+			targetCfg := makeTargetEventConfig()
+			es := makeReadyEventStore()
+			app := makeReadyApplication()
+
+			mockListEventTypes([]eventv1.EventType{et})
+			mockListEventExposures([]eventv1.EventExposure{})
+			mockGetZone(proxyZone)
+
+			// EventConfig lookups are zone-aware: test-zone -> proxy, target-zone -> local.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, opts ...client.ListOption) {
+					cfg := proxyCfg
+					if zoneFromListOpts(opts) == "target-zone" {
+						cfg = targetCfg
+					}
+					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{cfg}}
+				}).
+				Return(nil) // test-zone x2 (config + eventstore) + target-zone x1
+
+			mockGetEventStore(es)
+			mockGetApplication(app)
+			mockCreateOrUpdatePublisher(controllerutil.OperationResultCreated, nil)
+			mockListEventSubscriptions([]eventv1.EventSubscription{}) // no cross-zone subscribers
+
+			// Resolve target zone as SSE backend.
+			fakeClient.EXPECT().
+				Get(ctx, targetZoneKey, mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*adminv1.Zone) = *targetZone
+				}).
+				Return(nil).Once()
+
+			// Two Routes: own-zone proxy Route (proxy zone) + primary Route (backend zone).
+			// Capture them by namespace so we can assert trusted-issuer wiring.
+			capturedRoutes := map[string]*gatewayv1.Route{}
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					route := obj.(*gatewayv1.Route)
+					capturedRoutes[route.Namespace] = route.DeepCopy()
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Times(2)
+
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			// Primary Route lives in the backend (target) zone's namespace.
+			Expect(obj.Status.Route).ToNot(BeNil())
+			Expect(obj.Status.Route.Namespace).To(Equal("target-ns"))
+
+			// Proxy exposure zone gets its own-zone proxy Route (in its own namespace).
+			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
+			Expect(obj.Status.ProxyRoutes[0].Namespace).To(Equal("default"))
+
+			// SSE URLs are published for both the proxy zone and the backend zone.
+			Expect(obj.Status.SseURLs).To(HaveKey("test-zone"))
+			Expect(obj.Status.SseURLs).To(HaveKey("target-zone"))
+
+			// Own-zone proxy Route: subscribers connect locally with an IDP token, so it
+			// trusts the proxy zone's IDP issuer and NOT its LMS issuer.
+			ownProxyRoute := capturedRoutes["default"]
+			Expect(ownProxyRoute).ToNot(BeNil())
+			Expect(ownProxyRoute.Spec.Security.TrustedIssuers).To(ConsistOf("https://idp.test-zone.example.com"))
+
+			// Primary Route in the backend zone trusts its own IDP issuer plus the mesh
+			// (LMS) issuer of the proxy exposure zone reaching it over the proxy hop.
+			primaryRoute := capturedRoutes["target-ns"]
+			Expect(primaryRoute).ToNot(BeNil())
+			Expect(primaryRoute.Spec.Security.TrustedIssuers).To(ConsistOf(
+				"https://idp.target-zone.example.com",
+				"https://lms.test-zone.example.com",
+			))
+		})
+
+		It("should set PublishURL from EventConfig PublishURL", func() {
+			setupFullHappyPath()
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.PublishURL).To(Equal("https://publish.gateway.example.com"))
 		})
 	})
 
