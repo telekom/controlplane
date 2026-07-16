@@ -1377,14 +1377,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.OwnerTeam(childComplexity), true
-
 	case "Application.permissionSet":
 		if e.ComplexityRoot.Application.PermissionSet == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Application.PermissionSet(childComplexity), true
-
 	case "Application.rotatedClientSecret":
 		if e.ComplexityRoot.Application.RotatedClientSecret == nil {
 			break
@@ -2779,14 +2777,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Permission.Actions(childComplexity), true
-
 	case "Permission.resource":
 		if e.ComplexityRoot.Permission.Resource == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Permission.Resource(childComplexity), true
-
 	case "Permission.role":
 		if e.ComplexityRoot.Permission.Role == nil {
 			break
@@ -2800,49 +2796,42 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.PermissionSet.CreatedAt(childComplexity), true
-
 	case "PermissionSet.environment":
 		if e.ComplexityRoot.PermissionSet.Environment == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PermissionSet.Environment(childComplexity), true
-
 	case "PermissionSet.id":
 		if e.ComplexityRoot.PermissionSet.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PermissionSet.ID(childComplexity), true
-
 	case "PermissionSet.lastModifiedAt":
 		if e.ComplexityRoot.PermissionSet.LastModifiedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PermissionSet.LastModifiedAt(childComplexity), true
-
 	case "PermissionSet.namespace":
 		if e.ComplexityRoot.PermissionSet.Namespace == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PermissionSet.Namespace(childComplexity), true
-
 	case "PermissionSet.permissions":
 		if e.ComplexityRoot.PermissionSet.Permissions == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PermissionSet.Permissions(childComplexity), true
-
 	case "PermissionSet.statusMessage":
 		if e.ComplexityRoot.PermissionSet.StatusMessage == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PermissionSet.StatusMessage(childComplexity), true
-
 	case "PermissionSet.statusPhase":
 		if e.ComplexityRoot.PermissionSet.StatusPhase == nil {
 			break
@@ -2856,14 +2845,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.PermissionSetConnection.Edges(childComplexity), true
-
 	case "PermissionSetConnection.pageInfo":
 		if e.ComplexityRoot.PermissionSetConnection.PageInfo == nil {
 			break
 		}
 
 		return e.ComplexityRoot.PermissionSetConnection.PageInfo(childComplexity), true
-
 	case "PermissionSetConnection.totalCount":
 		if e.ComplexityRoot.PermissionSetConnection.TotalCount == nil {
 			break
@@ -2877,7 +2864,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.PermissionSetEdge.Cursor(childComplexity), true
-
 	case "PermissionSetEdge.node":
 		if e.ComplexityRoot.PermissionSetEdge.Node == nil {
 			break
@@ -3013,7 +2999,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Nodes(childComplexity, args["ids"].([]int)), true
-
 	case "Query.permissionSets":
 		if e.ComplexityRoot.Query.PermissionSets == nil {
 			break
@@ -3025,7 +3010,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.PermissionSets(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.PermissionSetOrder), args["where"].(*ent.PermissionSetWhereInput)), true
-
 	case "Query.teams":
 		if e.ComplexityRoot.Query.Teams == nil {
 			break
