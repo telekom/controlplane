@@ -55,8 +55,10 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 			Approval:   filev1.Approval{Strategy: filev1.ApprovalStrategySimple},
 			Visibility: filev1.Visibility(exp.Visibility.String()),
 			FileType:   exp.FileType,
-			PublicKeys: mapPublicKeys(exp.PublicKeys),
-			Zone:       zoneRef,
+			Sftp: filev1.SftpExposure{
+				PublicKeys: mapPublicKeys(exp.PublicKeys),
+			},
+			Zone: zoneRef,
 		}
 		return nil
 	}

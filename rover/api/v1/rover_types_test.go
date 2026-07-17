@@ -400,14 +400,6 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(sub.Type()).To(Equal(v1.TypeFile))
 		})
 
-		It("should only support file types on the cetus and canis zones", func() {
-			Expect(v1.IsFileTypeZoneSupported("cetus")).To(BeTrue())
-			Expect(v1.IsFileTypeZoneSupported("canis")).To(BeTrue())
-			Expect(v1.IsFileTypeZoneSupported("aws")).To(BeFalse())
-			Expect(v1.IsFileTypeZoneSupported("gaia")).To(BeFalse())
-			Expect(v1.IsFileTypeZoneSupported("")).To(BeFalse())
-		})
-
 		It("should accept a Rover with a file type exposure and subscription", func() {
 			rover := new(v1.Rover)
 			rover.Name = "file-rover"

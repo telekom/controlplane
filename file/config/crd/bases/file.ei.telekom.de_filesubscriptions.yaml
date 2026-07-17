@@ -48,32 +48,45 @@ spec:
                   References the FileType CR via MakeFileTypeName() conversion.
                 minLength: 1
                 type: string
-              publicKeys:
-                description: PublicKeys are the SSH public keys registered for the
-                  consumer's SFTP user.
-                items:
-                  description: PublicKey is a labeled SSH public key registered on
-                    the SFTP user.
-                  properties:
-                    key:
-                      description: Key is the SSH public key value. It must be unique
-                        per file type.
-                      minLength: 1
-                      type: string
-                    label:
-                      description: Label is a human-readable identifier for the key.
-                        It must be unique per file type.
-                      minLength: 1
-                      type: string
-                  required:
-                  - key
-                  - label
-                  type: object
-                minItems: 1
-                type: array
+              sftp:
+                description: |-
+                  Sftp holds the SFTP storage-backend-specific configuration for this subscription.
+                  Backend-specific settings live under their own sub-object (e.g. sftp) so that
+                  additional storage backends can be added without polluting the spec root.
+                properties:
+                  clientId:
+                    description: ClientId identifies the consumer application's client
+                      on the SFTP backend.
+                    type: string
+                  publicKeys:
+                    description: PublicKeys are the SSH public keys registered for
+                      the consumer's SFTP user.
+                    items:
+                      description: PublicKey is a labeled SSH public key registered
+                        on the SFTP user.
+                      properties:
+                        key:
+                          description: Key is the SSH public key value. It must be
+                            unique per file type.
+                          minLength: 1
+                          type: string
+                        label:
+                          description: Label is a human-readable identifier for the
+                            key. It must be unique per file type.
+                          minLength: 1
+                          type: string
+                      required:
+                      - key
+                      - label
+                      type: object
+                    minItems: 1
+                    type: array
+                required:
+                - publicKeys
+                type: object
             required:
             - fileType
-            - publicKeys
+            - sftp
             type: object
           status:
             description: FileSubscriptionStatus defines the observed state of FileSubscription.

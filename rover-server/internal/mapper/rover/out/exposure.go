@@ -38,10 +38,38 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 			return errors.Wrap(err, "failed to map event exposure")
 		}
 
+	} else if in.File != nil {
+		if err := out.FromFileExposure(mapFileExposure(in.File)); err != nil {
+			return errors.Wrap(err, "failed to map file exposure")
+		}
+
 	} else {
 		return errors.Errorf("unknown exposure type: %s", in.Type())
 	}
 	return nil
+}
+
+func mapFileExposure(in *roverv1.FileExposure) api.FileExposure {
+	return api.FileExposure{
+		FileType:   in.FileType,
+		Variant:    api.FileExposureVariant(in.Variant),
+		Visibility: toApiVisibility(in.Visibility),
+		PublicKeys: mapPublicKeys(in.PublicKeys),
+	}
+}
+
+func mapPublicKeys(in []roverv1.PublicKey) []api.PublicKey {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]api.PublicKey, len(in))
+	for i, key := range in {
+		out[i] = api.PublicKey{
+			Label: key.Label,
+			Key:   key.Key,
+		}
+	}
+	return out
 }
 
 func mapApiExposure(in *roverv1.ApiExposure) api.ApiExposure {

@@ -5,8 +5,6 @@
 package v1
 
 import (
-	"slices"
-
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -211,16 +209,6 @@ const (
 	// FileVariantSFTP indicates that the file type is handled via the SFTP backend.
 	FileVariantSFTP FileVariant = "sftp"
 )
-
-// SupportedFileTypeZones lists the zones on which file type (SFTP) exposures and
-// subscriptions are currently supported. CloudWalker has been retired, so SFTP file
-// types are limited to the external zones cetus and canis.
-var SupportedFileTypeZones = []string{"cetus", "canis"}
-
-// IsFileTypeZoneSupported reports whether the given zone supports file types (SFTP).
-func IsFileTypeZoneSupported(zone string) bool {
-	return slices.Contains(SupportedFileTypeZones, zone)
-}
 
 // ApprovalStrategy defines the approval workflow for API exposure
 type ApprovalStrategy string

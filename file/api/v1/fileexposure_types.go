@@ -25,15 +25,24 @@ type FileExposureSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	FileType string `json:"fileType"`
 
-	// PublicKeys are the SSH public keys registered for the provider's SFTP user.
+	// Sftp holds the SFTP storage-backend-specific configuration for this exposure.
+	// Backend-specific settings live under their own sub-object (e.g. sftp) so that
+	// additional storage backends can be added without polluting the spec root.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinItems=1
-	PublicKeys []PublicKey `json:"publicKeys"`
+	Sftp SftpExposure `json:"sftp"`
 
 	// Zone references the Zone CR where this file type is exposed.
 	// On this layer only the Zone ref is passed; the file domain resolves it to
 	// the zone-scoped service configuration for the backend.
 	Zone ctypes.ObjectRef `json:"zone"`
+}
+
+// SftpExposure holds the SFTP storage-backend-specific configuration for a FileExposure.
+type SftpExposure struct {
+	// PublicKeys are the SSH public keys registered for the provider's SFTP user.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	PublicKeys []PublicKey `json:"publicKeys"`
 }
 
 // FileExposureStatus defines the observed state of FileExposure.

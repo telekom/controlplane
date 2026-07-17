@@ -55,6 +55,9 @@ type RoverReconciler struct {
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventexposures,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventsubscriptions,verbs=get;list;watch;create;update;patch;delete
 
+// +kubebuilder:rbac:groups=file.ei.telekom.de,resources=fileexposures,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=file.ei.telekom.de,resources=filesubscriptions,verbs=get;list;watch;create;update;patch;delete
+
 // +kubebuilder:rbac:groups=permission.cp.ei.telekom.de,resources=permissionsets,verbs=get;list;watch;create;update;patch;delete
 
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch;create;update;patch;delete

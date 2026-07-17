@@ -19,6 +19,19 @@ type FileSubscriptionSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	FileType string `json:"fileType"`
 
+	// Sftp holds the SFTP storage-backend-specific configuration for this subscription.
+	// Backend-specific settings live under their own sub-object (e.g. sftp) so that
+	// additional storage backends can be added without polluting the spec root.
+	// +kubebuilder:validation:Required
+	Sftp SftpSubscription `json:"sftp"`
+}
+
+// SftpSubscription holds the SFTP storage-backend-specific configuration for a FileSubscription.
+type SftpSubscription struct {
+	// ClientId identifies the consumer application's client on the SFTP backend.
+	// +optional
+	ClientId string `json:"clientId,omitempty"`
+
 	// PublicKeys are the SSH public keys registered for the consumer's SFTP user.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1

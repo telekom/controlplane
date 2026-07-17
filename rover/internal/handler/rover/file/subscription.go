@@ -45,8 +45,10 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		}
 
 		fileSubscription.Spec = filev1.FileSubscriptionSpec{
-			FileType:   sub.FileType,
-			PublicKeys: mapPublicKeys(sub.PublicKeys),
+			FileType: sub.FileType,
+			Sftp: filev1.SftpSubscription{
+				PublicKeys: mapPublicKeys(sub.PublicKeys),
+			},
 		}
 		return nil
 	}

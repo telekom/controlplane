@@ -106,24 +106,6 @@ var _ = Describe("File Type (SFTP) Validation", func() {
 			}}
 		}
 
-		It("should reject a file exposure on an unsupported zone", func() {
-			// testZone is named "test" and is not in {cetus, canis}.
-			rover := NewRover(testZone)
-			rover.Spec.Exposures = []roverv1.Exposure{fileExposure()}
-			warnings, err := validator.ValidateCreate(ctx, rover)
-			assertValidationFailedWith(warnings, err, "does not support file types")
-		})
-
-		It("should reject a file subscription on an unsupported zone", func() {
-			rover := NewRover(testZone)
-			rover.Spec.Subscriptions = []roverv1.Subscription{{File: &roverv1.FileSubscription{
-				FileType:   "demo-sftp-spec-v1",
-				PublicKeys: []roverv1.PublicKey{{Label: "consumer-key", Key: "ssh-ed25519 BBBB"}},
-			}}}
-			warnings, err := validator.ValidateCreate(ctx, rover)
-			assertValidationFailedWith(warnings, err, "does not support file types")
-		})
-
 		It("should accept a file exposure on a supported zone (cetus)", func() {
 			cetus := NewZone("cetus", testZone.Namespace)
 			CreateZone(ctx, cetus)

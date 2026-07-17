@@ -200,20 +200,6 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		}
 	}
 
-	subscribesToFiles := slices.ContainsFunc(rover.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
-		return sub.Type() == roverv1.TypeFile
-	})
-	exposesFiles := slices.ContainsFunc(rover.Spec.Exposures, func(exp roverv1.Exposure) bool {
-		return exp.Type() == roverv1.TypeFile
-	})
-	if (subscribesToFiles || exposesFiles) && !roverv1.IsFileTypeZoneSupported(rover.Spec.Zone) {
-		valErr.AddInvalidError(
-			field.NewPath("spec").Child("zone"),
-			rover.Spec.Zone,
-			fmt.Sprintf("zone '%s' does not support file types; only %s are supported", rover.Spec.Zone, strings.Join(roverv1.SupportedFileTypeZones, ", ")),
-		)
-	}
-
 	if err := MustNotHaveDuplicates(valErr, rover.Spec.Subscriptions, rover.Spec.Exposures); err != nil {
 		return nil, err
 	}

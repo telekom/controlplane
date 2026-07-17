@@ -62,8 +62,10 @@ var _ = Describe("FileExposure", func() {
 				Approval:   v1.Approval{Strategy: v1.ApprovalStrategySimple},
 				Visibility: v1.VisibilityEnterprise,
 				FileType:   "foo-v1",
-				PublicKeys: []v1.PublicKey{
-					{Label: "provider-key", Key: "ssh-ed25519 AAAA"},
+				Sftp: v1.SftpExposure{
+					PublicKeys: []v1.PublicKey{
+						{Label: "provider-key", Key: "ssh-ed25519 AAAA"},
+					},
 				},
 			},
 			Status: v1.FileExposureStatus{
@@ -76,9 +78,9 @@ var _ = Describe("FileExposure", func() {
 		Expect(clone).To(Equal(orig))
 
 		// Mutating the clone must not affect the original.
-		clone.Spec.PublicKeys[0].Key = "changed"
+		clone.Spec.Sftp.PublicKeys[0].Key = "changed"
 		clone.Status.Subscriptions[0].Name = "other"
-		Expect(orig.Spec.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA"))
+		Expect(orig.Spec.Sftp.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA"))
 		Expect(orig.Status.Subscriptions[0].Name).To(Equal("sub"))
 	})
 
@@ -93,13 +95,15 @@ var _ = Describe("FileSubscription", func() {
 	It("deep-copies public keys without aliasing", func() {
 		orig := &v1.FileSubscription{
 			Spec: v1.FileSubscriptionSpec{
-				FileType:   "foo-v1",
-				PublicKeys: []v1.PublicKey{{Label: "consumer-key", Key: "ssh-ed25519 BBBB"}},
+				FileType: "foo-v1",
+				Sftp: v1.SftpSubscription{
+					PublicKeys: []v1.PublicKey{{Label: "consumer-key", Key: "ssh-ed25519 BBBB"}},
+				},
 			},
 		}
 		clone := orig.DeepCopy()
 		Expect(clone).To(Equal(orig))
-		clone.Spec.PublicKeys[0].Label = "changed"
-		Expect(orig.Spec.PublicKeys[0].Label).To(Equal("consumer-key"))
+		clone.Spec.Sftp.PublicKeys[0].Label = "changed"
+		Expect(orig.Spec.Sftp.PublicKeys[0].Label).To(Equal("consumer-key"))
 	})
 })
