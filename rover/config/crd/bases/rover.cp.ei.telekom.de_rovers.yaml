@@ -1175,6 +1175,103 @@ spec:
                     - message: All items must be valid IP addresses or CIDR notations
                       rule: self.all(x, isCIDR(x) || isIP(x))
                 type: object
+              listenerSubscription:
+                description: ListenerSubscription configures how listener events are
+                  delivered
+                properties:
+                  callback:
+                    description: Callback is the URL where listener events are delivered
+                      when deliveryType is "callback"
+                    format: uri
+                    type: string
+                  deliveryType:
+                    default: server_sent_event
+                    description: DeliveryType defines the delivery mechanism for listener
+                      events
+                    enum:
+                    - callback
+                    - server_sent_event
+                    type: string
+                type: object
+              listeners:
+                description: Listeners is a list of API traffic listeners
+                items:
+                  description: |-
+                    RoverListener defines an API traffic listener that observes requests/responses
+                    between a consumer and provider on a specific API path.
+                  properties:
+                    apiBasePath:
+                      description: ApiBasePath is the base path of the API to listen
+                        on
+                      pattern: ^/.*$
+                      type: string
+                    consumer:
+                      description: Consumer is the ENI of the consuming application
+                        (e.g. "eni--team--app")
+                      minLength: 1
+                      type: string
+                    eventFilter:
+                      description: EventFilter defines filtering for event traffic
+                      properties:
+                        payload:
+                          description: Payload defines the list of fields to include
+                            in the listener output
+                          items:
+                            type: string
+                          type: array
+                        trigger:
+                          additionalProperties:
+                            type: string
+                          description: Trigger defines key-value conditions that must
+                            match for the filter to activate
+                          type: object
+                      type: object
+                    eventType:
+                      description: EventType is the event type to listen on (alternative
+                        to ApiBasePath)
+                      type: string
+                    provider:
+                      description: Provider is the ENI of the providing application
+                        (e.g. "eni--other--provider")
+                      minLength: 1
+                      type: string
+                    requestFilter:
+                      description: RequestFilter defines filtering for request traffic
+                      properties:
+                        payload:
+                          description: Payload defines the list of fields to include
+                            in the listener output
+                          items:
+                            type: string
+                          type: array
+                        trigger:
+                          additionalProperties:
+                            type: string
+                          description: Trigger defines key-value conditions that must
+                            match for the filter to activate
+                          type: object
+                      type: object
+                    responseFilter:
+                      description: ResponseFilter defines filtering for response traffic
+                      properties:
+                        payload:
+                          description: Payload defines the list of fields to include
+                            in the listener output
+                          items:
+                            type: string
+                          type: array
+                        trigger:
+                          additionalProperties:
+                            type: string
+                          description: Trigger defines key-value conditions that must
+                            match for the filter to activate
+                          type: object
+                      type: object
+                  required:
+                  - consumer
+                  - provider
+                  type: object
+                type: array
               permissions:
                 description: Permissions defines role-based access control permissions
                   for this application
@@ -1883,6 +1980,52 @@ spec:
               permissionSets:
                 description: PermissionSets are references to PermissionSet resources
                   created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              spectreApplications:
+                description: SpectreApplications are references to SpectreApplication
+                  CRs created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              spectreListeners:
+                description: SpectreListeners are references to Listener CRs created
+                  by this Rover
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
