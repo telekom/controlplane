@@ -72,14 +72,14 @@ var _ = Describe("HandleListeners", func() {
 		owner = createTestOwner()
 	})
 
-	It("should do nothing when listeners is empty", func() {
+	It("should clear status and return when listeners is empty", func() {
 		owner.Spec.Listeners = nil
 
 		err := spectre.HandleListeners(ctx, fakeClient, owner)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(owner.Status.SpectreApplications).To(BeNil())
-		Expect(owner.Status.SpectreListeners).To(BeNil())
+		Expect(owner.Status.SpectreApplications).To(BeEmpty())
+		Expect(owner.Status.SpectreListeners).To(BeEmpty())
 	})
 
 	It("should create one SpectreApplication and one Listener for a single listener entry", func() {
@@ -133,7 +133,7 @@ var _ = Describe("HandleListeners", func() {
 
 		// Verify Listener
 		Expect(capturedListener).ToNot(BeNil())
-		Expect(capturedListener.Name).To(Equal("my-app--listener--0"))
+		Expect(capturedListener.Name).To(Equal("my-app--eni--team--consumer---echo-v1"))
 		Expect(capturedListener.Namespace).To(Equal(teamNamespace))
 		Expect(capturedListener.Spec.Consumer.Name).To(Equal("eni--team--consumer"))
 		Expect(capturedListener.Spec.Consumer.Kind).To(Equal("Application"))
@@ -152,7 +152,7 @@ var _ = Describe("HandleListeners", func() {
 		Expect(owner.Status.SpectreApplications).To(HaveLen(1))
 		Expect(owner.Status.SpectreApplications[0].Name).To(Equal("my-app--spectre-app"))
 		Expect(owner.Status.SpectreListeners).To(HaveLen(1))
-		Expect(owner.Status.SpectreListeners[0].Name).To(Equal("my-app--listener--0"))
+		Expect(owner.Status.SpectreListeners[0].Name).To(Equal("my-app--eni--team--consumer---echo-v1"))
 	})
 
 	It("should create two Listeners for two listener entries", func() {
@@ -193,12 +193,12 @@ var _ = Describe("HandleListeners", func() {
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedListeners).To(HaveLen(2))
-		Expect(capturedListeners[0].Name).To(Equal("my-app--listener--0"))
+		Expect(capturedListeners[0].Name).To(Equal("my-app--eni--team--consumer1---api-v1"))
 		Expect(capturedListeners[0].Spec.ApiListener).ToNot(BeNil())
 		Expect(capturedListeners[0].Spec.ApiListener.ApiBasePath).To(Equal("/api/v1"))
 		Expect(capturedListeners[0].Spec.EventListener).To(BeNil())
 
-		Expect(capturedListeners[1].Name).To(Equal("my-app--listener--1"))
+		Expect(capturedListeners[1].Name).To(Equal("my-app--eni--team--consumer2--de.telekom.eni.test.v1"))
 		Expect(capturedListeners[1].Spec.EventListener).ToNot(BeNil())
 		Expect(capturedListeners[1].Spec.EventListener.EventType).To(Equal("de.telekom.eni.test.v1"))
 		Expect(capturedListeners[1].Spec.EventListener.Filter).ToNot(BeNil())
@@ -323,5 +323,21 @@ var _ = Describe("HandleListeners", func() {
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("failed to create or update Listener"))
+	})
+
+	It("should return blocked error when status.application is nil", func() {
+		owner.Spec.Listeners = []roverv1.RoverListener{
+			{
+				Consumer:    "eni--team--consumer",
+				Provider:    "eni--team--provider",
+				ApiBasePath: "/echo/v1",
+			},
+		}
+		owner.Status.Application = nil
+
+		err := spectre.HandleListeners(ctx, fakeClient, owner)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("rover status.application is not yet set"))
 	})
 })

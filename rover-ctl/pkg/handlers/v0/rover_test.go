@@ -323,7 +323,8 @@ var _ = Describe("Rover Handler", func() {
 				// Listeners passed through unmodified
 				listeners := content["listeners"].([]any)
 				Expect(listeners).To(HaveLen(1))
-				listener := listeners[0].(map[string]any)
+				listener, ok := listeners[0].(map[string]any)
+				Expect(ok).To(BeTrue(), "listeners[0] should be map[string]any")
 				Expect(listener["consumer"]).To(Equal("eni--team--app"))
 				Expect(listener).NotTo(HaveKey("type"))
 

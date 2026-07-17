@@ -14,7 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
@@ -22,8 +24,15 @@ import (
 // HandleListeners creates or updates SpectreApplication and Listener CRs
 // for each entry in the Rover's spec.listeners list.
 func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1.Rover) error {
+	rover.Status.SpectreApplications = make([]types.ObjectRef, 0)
+	rover.Status.SpectreListeners = make([]types.ObjectRef, 0)
+
 	if len(rover.Spec.Listeners) == 0 {
 		return nil
+	}
+
+	if rover.Status.Application == nil {
+		return ctrlerrors.BlockedErrorf("rover status.application is not yet set")
 	}
 
 	app, err := ensureSpectreApplication(ctx, c, rover)
@@ -35,8 +44,8 @@ func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1
 	}
 
 	rover.Status.SpectreListeners = make([]types.ObjectRef, 0, len(rover.Spec.Listeners))
-	for i, rl := range rover.Spec.Listeners {
-		listener, err := ensureListener(ctx, c, rover, app, rl, i)
+	for _, rl := range rover.Spec.Listeners {
+		listener, err := ensureListener(ctx, c, rover, app, rl)
 		if err != nil {
 			return err
 		}
@@ -72,7 +81,9 @@ func ensureSpectreApplication(ctx context.Context, c client.JanitorClient, rover
 			if rover.Spec.ListenerSubscription.DeliveryType != "" {
 				deliveryType = rover.Spec.ListenerSubscription.DeliveryType
 			}
-			callback = rover.Spec.ListenerSubscription.Callback
+			if rover.Spec.ListenerSubscription.DeliveryType == "callback" {
+				callback = rover.Spec.ListenerSubscription.Callback
+			}
 		}
 
 		app.Spec = spectrev1.SpectreApplicationSpec{
@@ -99,13 +110,13 @@ func ensureSpectreApplication(ctx context.Context, c client.JanitorClient, rover
 }
 
 // ensureListener creates or updates a single Listener CR owned by the Rover.
-func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.Rover, app *spectrev1.SpectreApplication, rl roverv1.RoverListener, index int) (*spectrev1.Listener, error) {
+func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.Rover, app *spectrev1.SpectreApplication, rl roverv1.RoverListener) (*spectrev1.Listener, error) {
 	logger := log.FromContext(ctx)
-	logger.V(1).Info("Ensuring Listener", "rover", rover.Name, "index", index)
+	logger.V(1).Info("Ensuring Listener", "rover", rover.Name, "listener", makeListenerName(rover.Name, rl))
 
 	listener := &spectrev1.Listener{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      makeListenerName(rover.Name, index),
+			Name:      makeListenerName(rover.Name, rl),
 			Namespace: rover.Namespace,
 		},
 	}
@@ -186,7 +197,13 @@ func makeSpectreAppName(roverName string) string {
 	return fmt.Sprintf("%s--spectre-app", roverName)
 }
 
-// makeListenerName generates a deterministic name for a Listener by index.
-func makeListenerName(roverName string, index int) string {
-	return fmt.Sprintf("%s--listener--%d", roverName, index)
+// makeListenerName generates a deterministic name for a Listener based on content identity.
+func makeListenerName(roverName string, rl roverv1.RoverListener) string {
+	var key string
+	if rl.ApiBasePath != "" {
+		key = rl.Consumer + "--" + rl.ApiBasePath
+	} else {
+		key = rl.Consumer + "--" + rl.EventType
+	}
+	return labelutil.NormalizeNameValue(roverName + "--" + key)
 }
