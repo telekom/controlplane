@@ -36,15 +36,17 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 	}
 
 	apiRover := &api.Rover{
-		Authentication:  in.Authentication,
-		Authorization:   in.Authorization,
-		Exposures:       in.Exposures,
-		Icto:            in.Icto,
-		Psiid:           in.Psiid,
-		IpRestrictions:  in.IpRestrictions,
-		Subscriptions:   in.Subscriptions,
-		Zone:            in.Zone,
-		FailoverEnabled: in.FailoverEnabled,
+		Authentication:       in.Authentication,
+		Authorization:        in.Authorization,
+		Exposures:            in.Exposures,
+		Icto:                 in.Icto,
+		Psiid:                in.Psiid,
+		IpRestrictions:       in.IpRestrictions,
+		Subscriptions:        in.Subscriptions,
+		Listeners:            in.Listeners,
+		ListenerSubscription: in.ListenerSubscription,
+		Zone:                 in.Zone,
+		FailoverEnabled:      in.FailoverEnabled,
 	}
 	if err = MapRover(apiRover, res); err != nil {
 		if problems.IsValidationError(err) {
@@ -71,6 +73,9 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 	if err := mapPermissions(in, out); err != nil {
 		return err
 	}
+
+	mapListenersIn(in, out)
+	mapListenerSubscriptionIn(in, out)
 
 	out.Spec.Zone = in.Zone
 	if len(in.IpRestrictions.Allow) > 0 {
