@@ -76,6 +76,24 @@ spec:
                 required:
                 - apiBasePath
                 type: object
+              application:
+                description: Application references the owning SpectreApplication
+                  (set by the rover producer).
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               consumer:
                 description: |-
                   TypedObjectRef is a reference to a Kubernetes object with type information
@@ -167,9 +185,13 @@ spec:
                 - namespace
                 type: object
             required:
+            - application
             - consumer
             - provider
             type: object
+            x-kubernetes-validations:
+            - message: at least one of apiListener or eventListener must be set
+              rule: has(self.apiListener) || has(self.eventListener)
           status:
             description: ListenerStatus defines the observed state of Listener.
             properties:

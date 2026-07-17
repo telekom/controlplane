@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -187,32 +188,19 @@ func (h *ListenerHandler) resolveApplication(ctx context.Context, ref ctypes.Typ
 	return app, nil
 }
 
-// resolveSpectreApplication finds the SpectreApplication that owns this Listener.
-// It looks for a SpectreApplication in the same namespace with a matching owner reference,
-// or falls back to listing SpectreApplications in the namespace.
+// resolveSpectreApplication fetches the SpectreApplication referenced by the Listener.
 func (h *ListenerHandler) resolveSpectreApplication(ctx context.Context, listener *spectrev1.Listener) (*spectrev1.SpectreApplication, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// List SpectreApplications in the same namespace
-	saList := &spectrev1.SpectreApplicationList{}
-	err := c.List(ctx, saList, client.InNamespace(listener.Namespace))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list SpectreApplications in namespace %q", listener.Namespace)
-	}
-
-	if len(saList.Items) == 0 {
-		return nil, ctrlerrors.BlockedErrorf("no SpectreApplication found in namespace %q", listener.Namespace)
-	}
-
-	// Use the first ready SpectreApplication
-	for i := range saList.Items {
-		sa := &saList.Items[i]
-		if sa.Status.Id != "" {
-			return sa, nil
+	sa := &spectrev1.SpectreApplication{}
+	if err := c.Get(ctx, listener.Spec.Application.K8s(), sa); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, ctrlerrors.BlockedErrorf("SpectreApplication %q not found", listener.Spec.Application.String())
 		}
+		return nil, errors.Wrapf(err, "failed to get SpectreApplication %q", listener.Spec.Application.String())
 	}
 
-	return &saList.Items[0], nil
+	return sa, nil
 }
 
 // resolveZone fetches the Zone referenced by the Application and ensures it is ready.
