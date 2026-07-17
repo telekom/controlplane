@@ -150,6 +150,7 @@ func (in *ListenerSpec) DeepCopyInto(out *ListenerSpec) {
 	*out = *in
 	in.Consumer.DeepCopyInto(&out.Consumer)
 	in.Provider.DeepCopyInto(&out.Provider)
+	in.Application.DeepCopyInto(&out.Application)
 	if in.ApiListener != nil {
 		in, out := &in.ApiListener, &out.ApiListener
 		*out = new(ApiListener)

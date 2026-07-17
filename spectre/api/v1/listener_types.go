@@ -11,9 +11,12 @@ import (
 )
 
 // ListenerSpec defines the desired state of Listener.
+// +kubebuilder:validation:XValidation:rule="has(self.apiListener) || has(self.eventListener)",message="at least one of apiListener or eventListener must be set"
 type ListenerSpec struct {
 	Consumer ctypes.TypedObjectRef `json:"consumer"`
 	Provider ctypes.TypedObjectRef `json:"provider"`
+	// Application references the owning SpectreApplication (set by the rover producer).
+	Application ctypes.ObjectRef `json:"application"`
 	// +optional
 	ApiListener *ApiListener `json:"apiListener,omitempty"`
 	// +optional
