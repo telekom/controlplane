@@ -55,6 +55,8 @@ type LoadBalancingServer struct {
 type RouteListenerEntry struct {
 	Issue        string `json:"issue"`
 	ServiceOwner string `json:"serviceOwner"`
+	ClientId     string `json:"clientId,omitempty"`
+	Issuer       string `json:"issuer,omitempty"`
 }
 
 type JumperConfig struct {
