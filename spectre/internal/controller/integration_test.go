@@ -185,6 +185,45 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		}
 		Expect(k8sClient.Create(ctx, eventStore)).To(Succeed())
 
+		By("Creating gateway Route CRs (prerequisites for RouteListener path resolution)")
+		gatewayRoute := &gatewayv1.Route{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "route-orders",
+				Namespace: zoneStatusNs,
+				Labels:    map[string]string{envLabelKey: envName},
+			},
+			Spec: gatewayv1.RouteSpec{
+				GatewayRef: ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
+				Type:       gatewayv1.RouteTypePrimary,
+				Paths:      []string{testBasePath},
+				Backend: gatewayv1.Backend{
+					Upstreams: []gatewayv1.Upstream{
+						{Scheme: "https", Hostname: "api.provider.example.com", Port: 443, Path: testBasePath},
+					},
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, gatewayRoute)).To(Succeed())
+
+		crossRoute := &gatewayv1.Route{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "route-cross",
+				Namespace: zoneStatusNs,
+				Labels:    map[string]string{envLabelKey: envName},
+			},
+			Spec: gatewayv1.RouteSpec{
+				GatewayRef: ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
+				Type:       gatewayv1.RouteTypePrimary,
+				Paths:      []string{"/api/v1/cross"},
+				Backend: gatewayv1.Backend{
+					Upstreams: []gatewayv1.Upstream{
+						{Scheme: "https", Hostname: "api.cross.example.com", Port: 443, Path: "/api/v1/cross"},
+					},
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, crossRoute)).To(Succeed())
+
 		By("Creating the consumer Application CR")
 		consumerApp := &applicationv1.Application{
 			ObjectMeta: metav1.ObjectMeta{
@@ -327,11 +366,11 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(routeList.Items).NotTo(BeEmpty())
 
-				// Find the SSE route for our app.
+				// Find the SSE route for our app (must have DisableAccessControl set).
 				var found *gatewayv1.Route
 				for i := range routeList.Items {
 					r := &routeList.Items[i]
-					if r.Spec.GatewayRef.Name == "gateway-aws" {
+					if r.Spec.GatewayRef.Name == "gateway-aws" && r.Spec.Security.DisableAccessControl {
 						found = r
 						break
 					}

@@ -350,6 +350,27 @@ var _ = Describe("ListenerHandler", func() {
 			Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, ""))
 	}
 
+	mockListRoutes := func() {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.RouteList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*gatewayv1.RouteList) = gatewayv1.RouteList{
+					Items: []gatewayv1.Route{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "route-orders",
+								Namespace: listenerZoneStatus,
+							},
+							Spec: gatewayv1.RouteSpec{
+								Paths: []string{testApiBasePath},
+							},
+						},
+					},
+				}
+			}).
+			Return(nil).Once()
+	}
+
 	mockCreateOrUpdatePublisher := func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
@@ -387,6 +408,7 @@ var _ = Describe("ListenerHandler", func() {
 		mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
 		mockApprovalGranted()
 		mockCreateOrUpdatePublisher()
+		mockListRoutes()
 		mockCreateOrUpdateRouteListener()
 		mockCreateOrUpdateSubscriber()
 		return listener
@@ -430,6 +452,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
+				mockListRoutes()
 
 				// Capture RouteListener
 				var capturedRL *gatewayv1.RouteListener
@@ -453,6 +476,9 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(capturedRL.Spec.ServiceOwner).To(Equal(providerClientId))
 				Expect(capturedRL.Spec.Issue).To(Equal(testApiBasePath))
 				Expect(capturedRL.Spec.Zone.Name).To(Equal(listenerZoneName))
+				// Verify Route reference points to the resolved Route, not to RouteListener itself
+				Expect(capturedRL.Spec.Route.Name).To(Equal("route-orders"))
+				Expect(capturedRL.Spec.Route.Namespace).To(Equal(listenerZoneStatus))
 			})
 
 			It("should create generic Publisher with correct event type", func() {
@@ -475,6 +501,7 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
+				mockListRoutes()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
@@ -498,6 +525,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
+				mockListRoutes()
 				mockCreateOrUpdateRouteListener()
 
 				// Capture both Subscribers

@@ -76,20 +76,19 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		}
 		log.Info("Found consumers", "count", len(builder.GetAllowedConsumers()), "sum", len(routeConsumers.Items))
 
-	}
-
-	// List RouteListeners for this Route
-	routeListeners := &gatewayv1.RouteListenerList{}
-	if err := kubeClient.List(ctx, routeListeners, client.MatchingFields{
-		"spec.route": types.ObjectRefFromObject(route).String(),
-	}); err != nil {
-		return errors.Wrap(err, "failed to list route listeners")
-	}
-	for i := range routeListeners.Items {
-		if controller.IsBeingDeleted(&routeListeners.Items[i]) {
-			continue
+		// List RouteListeners for this Route
+		routeListeners := &gatewayv1.RouteListenerList{}
+		if err := kubeClient.List(ctx, routeListeners, client.MatchingFields{
+			"spec.route": types.ObjectRefFromObject(route).String(),
+		}); err != nil {
+			return errors.Wrap(err, "failed to list route listeners")
 		}
-		builder.AddRouteListeners(&routeListeners.Items[i])
+		for i := range routeListeners.Items {
+			if controller.IsBeingDeleted(&routeListeners.Items[i]) {
+				continue
+			}
+			builder.AddRouteListeners(&routeListeners.Items[i])
+		}
 	}
 
 	if err := builder.Build(ctx); err != nil {

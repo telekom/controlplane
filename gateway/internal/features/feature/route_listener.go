@@ -48,6 +48,8 @@ func (f *RouteListenerFeature) Apply(_ context.Context, builder features.Feature
 		jc.RouteListener[plugin.ConsumerId(rl.Spec.Consumer)] = plugin.RouteListenerEntry{
 			Issue:        rl.Spec.Issue,
 			ServiceOwner: rl.Spec.ServiceOwner,
+			ClientId:     rl.Spec.GatewayClient.ClientId,
+			Issuer:       rl.Spec.GatewayClient.Issuer,
 		}
 	}
 
