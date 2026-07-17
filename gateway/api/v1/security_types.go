@@ -87,6 +87,13 @@ func (s *Security) HasM2MExternalIDP() bool {
 	return s.M2M.ExternalIDP != nil
 }
 
+func (s *Security) HasM2MClaims() bool {
+	if !s.HasM2M() {
+		return false
+	}
+	return len(s.M2M.Claims) > 0
+}
+
 func (s *Security) HasBasicAuth() bool {
 	if !s.HasM2M() {
 		return false

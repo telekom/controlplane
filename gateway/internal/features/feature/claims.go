@@ -38,18 +38,30 @@ func (f *ClaimsFeature) IsUsed(ctx context.Context, builder features.FeaturesBui
 	if !ok {
 		return false
 	}
-	notPassThrough := !route.Spec.PassThrough
-	isPrimaryRoute := !route.IsProxy()
-	isFailoverSecondary := route.Spec.Type == gatewayv1.RouteTypeSecondary
-
-	// Claims only apply to the platform-managed LMS token, not an external IDP's
-	// token or a basic-auth upstream.
-	if route.Spec.Security.M2M != nil &&
-		(route.Spec.Security.M2M.ExternalIDP != nil || route.Spec.Security.M2M.Basic != nil) {
+	if route.Spec.PassThrough {
 		return false
 	}
 
-	return notPassThrough && (isPrimaryRoute || isFailoverSecondary)
+	// The claims are only send to the provider upstream
+	// Therefore, this feature is only relevant for Routes that are primary or failover secondary.
+	// For other routes, the claims are not relevant.
+	isPrimary := route.IsPrimary()
+	isFailoverSecondary := route.IsFailoverSecondary()
+
+	if !isPrimary && !isFailoverSecondary {
+		return false
+	}
+
+	// Check if the route has claims configured in its security configuration
+	isConfigured := false
+	if route.Spec.Security.HasM2MClaims() {
+		isConfigured = true
+	}
+	if isFailoverSecondary && HasFailoverSecurity(route) && route.Spec.Traffic.Failover.Security.HasM2MClaims() {
+		isConfigured = true
+	}
+
+	return isConfigured
 }
 
 func (f *ClaimsFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) error {
@@ -59,9 +71,14 @@ func (f *ClaimsFeature) Apply(ctx context.Context, builder features.FeaturesBuil
 		return features.ErrNoRoute
 	}
 
+	security := route.Spec.Security
+	if route.IsFailoverSecondary() && HasFailoverSecurity(route) {
+		security = route.Spec.Traffic.Failover.Security
+	}
+
 	// Provider exposure claims -> default bucket (applies to all consumers)
-	if route.Spec.Security.M2M != nil && len(route.Spec.Security.M2M.Claims) > 0 {
-		jumperConfig.Claims[plugin.ConsumerId(DefaultProviderKey)] = toPluginClaims(route.Spec.Security.M2M.Claims)
+	if security.M2M != nil && len(security.M2M.Claims) > 0 {
+		jumperConfig.Claims[plugin.ConsumerId(DefaultProviderKey)] = toPluginClaims(security.M2M.Claims)
 	}
 
 	return nil

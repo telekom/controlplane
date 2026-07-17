@@ -11,8 +11,56 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
+
+// validateSubscription rejects subscription input that carries provider-only
+// fields. Claims are honored only on API exposure security; a subscription that
+// sends them is a client error (they would otherwise be silently dropped during
+// mapping).
+func validateSubscription(in *api.Subscription) error {
+	subType, err := in.Discriminator()
+	if err != nil {
+		return errors.Wrap(err, "failed to get subscription type")
+	}
+
+	var security api.Security
+	switch subType {
+	case "api":
+		apiSub, err := in.AsApiSubscription()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to ApiSubscription")
+		}
+		security = apiSub.Security
+	case "ai":
+		aiSub, err := in.AsAiSubscription()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to AiSubscription")
+		}
+		security = aiSub.Security
+	default:
+		return nil
+	}
+
+	secType, err := security.Discriminator()
+	if err != nil {
+		// This only happens if subscription does not have a security field, which is valid. No further validation needed.
+		return nil
+	}
+	if secType == "oauth2" {
+		oauth2, err := security.AsOauth2()
+		if err != nil {
+			return nil
+		}
+		if oauth2.Claims != (api.Claims{}) {
+			return problems.ValidationError("security.claims",
+				"claims are only supported on API exposure security, not on subscription security")
+		}
+	}
+
+	return nil
+}
 
 func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 	subType, err := in.Discriminator()

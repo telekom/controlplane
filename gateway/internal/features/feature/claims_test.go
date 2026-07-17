@@ -44,9 +44,16 @@ var _ = Describe("ClaimsFeature", func() {
 	})
 
 	Describe("IsUsed()", func() {
-		It("returns true for a primary, non-passthrough route", func() {
+		It("returns true for a primary, non-passthrough route with claims", func() {
 			route := &gatewayv1.Route{
-				Spec: gatewayv1.RouteSpec{Type: gatewayv1.RouteTypePrimary},
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypePrimary,
+					Security: gatewayv1.Security{
+						M2M: &gatewayv1.Machine2MachineAuthentication{
+							Claims: []gatewayv1.Claim{{Key: "aud", Value: "some-aud"}},
+						},
+					},
+				},
 			}
 			builder.EXPECT().GetRoute().Return(route, true)
 			Expect(f.IsUsed(ctx, builder)).To(BeTrue())
@@ -96,11 +103,180 @@ var _ = Describe("ClaimsFeature", func() {
 		})
 	})
 
+	Describe("failover routes", func() {
+		It("IsUsed uses failover security and returns false when external IDP owns it", func() {
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypeSecondary,
+					Traffic: gatewayv1.Traffic{
+						Failover: &gatewayv1.Failover{
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									ExternalIDP: &gatewayv1.ExternalIdentityProvider{},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder.EXPECT().GetRoute().Return(route, true)
+			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+		})
+
+		It("IsUsed returns true for a failover route whose failover security owns the LMS token", func() {
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypeSecondary,
+					Traffic: gatewayv1.Traffic{
+						Failover: &gatewayv1.Failover{
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Claims: []gatewayv1.Claim{{Key: "aud", Value: "failover-aud"}},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder.EXPECT().GetRoute().Return(route, true)
+			Expect(f.IsUsed(ctx, builder)).To(BeTrue())
+		})
+
+		It("IsUsed returns false when basic auth owns the failover token", func() {
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypeSecondary,
+					Traffic: gatewayv1.Traffic{
+						Failover: &gatewayv1.Failover{
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Basic: &gatewayv1.BasicAuthCredentials{},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder.EXPECT().GetRoute().Return(route, true)
+			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+		})
+
+		It("IsUsed returns false for a passthrough failover route even with claims configured", func() {
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type:        gatewayv1.RouteTypeSecondary,
+					PassThrough: true,
+					Traffic: gatewayv1.Traffic{
+						Failover: &gatewayv1.Failover{
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Claims: []gatewayv1.Claim{{Key: "aud", Value: "failover-aud"}},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder.EXPECT().GetRoute().Return(route, true)
+			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+		})
+
+		It("Apply prefers failover security over Spec.Security when both carry claims", func() {
+			jumperConfig := plugin.NewJumperConfig()
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypeSecondary,
+					Security: gatewayv1.Security{
+						M2M: &gatewayv1.Machine2MachineAuthentication{
+							Claims: []gatewayv1.Claim{{Key: "aud", Value: "spec-aud"}},
+						},
+					},
+					Traffic: gatewayv1.Traffic{
+						Failover: &gatewayv1.Failover{
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Claims: []gatewayv1.Claim{{Key: "aud", Value: "failover-aud"}},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+			builder.EXPECT().GetRoute().Return(route, true)
+
+			Expect(f.Apply(ctx, builder)).To(Succeed())
+			def := jumperConfig.Claims[plugin.ConsumerId(feature.DefaultProviderKey)]
+			Expect(def).To(HaveLen(1))
+			Expect(def[0].Value).To(Equal("failover-aud"))
+		})
+
+		It("Apply writes claims from failover security, not Spec.Security", func() {
+			jumperConfig := plugin.NewJumperConfig()
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type:     gatewayv1.RouteTypeSecondary,
+					Security: gatewayv1.Security{},
+					Traffic: gatewayv1.Traffic{
+						Failover: &gatewayv1.Failover{
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Claims: []gatewayv1.Claim{{Key: "aud", Value: "failover-aud"}},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+			builder.EXPECT().GetRoute().Return(route, true)
+
+			Expect(f.Apply(ctx, builder)).To(Succeed())
+			def := jumperConfig.Claims[plugin.ConsumerId(feature.DefaultProviderKey)]
+			Expect(def).To(HaveLen(1))
+			Expect(def[0].Value).To(Equal("failover-aud"))
+		})
+
+		// A primary route uses its own Spec.Security. Failover config only
+		// applies to secondary routes, so a primary route never resolves via
+		// Traffic.Failover.Security.
+		It("Apply uses Spec.Security on a primary route regardless of failover config", func() {
+			jumperConfig := plugin.NewJumperConfig()
+			route := &gatewayv1.Route{
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypePrimary,
+					Security: gatewayv1.Security{
+						M2M: &gatewayv1.Machine2MachineAuthentication{
+							Claims: []gatewayv1.Claim{{Key: "aud", Value: "spec-aud"}},
+						},
+					},
+					Traffic: gatewayv1.Traffic{
+						Failover: &gatewayv1.Failover{
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Claims: []gatewayv1.Claim{{Key: "aud", Value: "failover-aud"}},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+			builder.EXPECT().GetRoute().Return(route, true)
+
+			Expect(f.Apply(ctx, builder)).To(Succeed())
+			def := jumperConfig.Claims[plugin.ConsumerId(feature.DefaultProviderKey)]
+			Expect(def).To(HaveLen(1))
+			Expect(def[0].Value).To(Equal("spec-aud"))
+		})
+	})
+
 	Describe("Apply()", func() {
 		It("writes provider exposure claims into the default bucket", func() {
 			jumperConfig := plugin.NewJumperConfig()
 			route := &gatewayv1.Route{
 				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypePrimary,
 					Security: gatewayv1.Security{
 						M2M: &gatewayv1.Machine2MachineAuthentication{
 							Claims: []gatewayv1.Claim{
@@ -127,6 +303,7 @@ var _ = Describe("ClaimsFeature", func() {
 			jumperConfig := plugin.NewJumperConfig()
 			route := &gatewayv1.Route{
 				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypePrimary,
 					Security: gatewayv1.Security{
 						M2M: &gatewayv1.Machine2MachineAuthentication{
 							Claims: []gatewayv1.Claim{
@@ -164,6 +341,7 @@ var _ = Describe("ClaimsFeature", func() {
 			jumperConfig.OAuth[plugin.ConsumerId(feature.DefaultProviderKey)] = plugin.OauthCredentials{Scopes: "scope-a"}
 			route := &gatewayv1.Route{
 				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypePrimary,
 					Security: gatewayv1.Security{
 						M2M: &gatewayv1.Machine2MachineAuthentication{
 							Claims: []gatewayv1.Claim{{Key: "aud", Value: "applied"}},
