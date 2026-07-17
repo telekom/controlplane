@@ -17,6 +17,7 @@ require (
 	github.com/telekom/controlplane/permission/api v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
+	github.com/telekom/controlplane/spectre v0.0.0
 )
 
 require (
@@ -38,13 +39,18 @@ replace (
 	github.com/telekom/controlplane/agentic/api => ../agentic/api
 	github.com/telekom/controlplane/api/api => ../api/api
 	github.com/telekom/controlplane/application/api => ../application/api
+	github.com/telekom/controlplane/approval/api => ../approval/api
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/event/api => ../event/api
+	github.com/telekom/controlplane/gateway/api => ../gateway/api
+	github.com/telekom/controlplane/identity/api => ../identity/api
 	github.com/telekom/controlplane/organization/api => ../organization/api
 	github.com/telekom/controlplane/permission/api => ../permission/api
+	github.com/telekom/controlplane/pubsub/api => ../pubsub/api
 	github.com/telekom/controlplane/rover/api => ./api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
+	github.com/telekom/controlplane/spectre => ../spectre
 )
 
 require (
