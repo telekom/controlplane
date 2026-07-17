@@ -204,23 +204,18 @@ var _ = Describe("RouteHandler", func() {
 		})
 
 		Context("passthrough route", func() {
-			It("skips consumer listing and still calls builder.Build", func() {
+			It("skips consumer listing and route listener listing and still calls builder.Build", func() {
 				route.Spec.PassThrough = true
 
 				setupReadyGatewayGet()
 				setupFeatureBuilderOverrides()
 
 				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
-				mockBuilder.EXPECT().AddRouteListeners(mock.Anything).Maybe()
 				mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
 				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
-				// List is called once for RouteListeners (consumer listing is skipped for passthrough)
-				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
-					Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
-						rlList := list.(*gatewayv1.RouteListenerList)
-						rlList.Items = []gatewayv1.RouteListener{}
-					}).Return(nil)
+				// No List calls expected: both consumer listing and RouteListener listing
+				// are inside the !PassThrough block.
 
 				err := handler.CreateOrUpdate(ctx, route)
 				Expect(err).NotTo(HaveOccurred())

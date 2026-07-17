@@ -249,6 +249,29 @@ func (h *ListenerHandler) findEventStore(ctx context.Context, zoneNamespace stri
 	return &eventStoreList.Items[0], nil
 }
 
+// findRouteByPath lists gateway Routes in the given namespace and returns the first one
+// whose Spec.Paths contains the apiBasePath. This is how we resolve which Route CR
+// the RouteListener should attach to.
+func (h *ListenerHandler) findRouteByPath(ctx context.Context, namespace string, apiBasePath string) (*gatewayv1.Route, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	routeList := &gatewayv1.RouteList{}
+	err := c.List(ctx, routeList, client.InNamespace(namespace))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list Routes in namespace %q", namespace)
+	}
+
+	for i := range routeList.Items {
+		for _, p := range routeList.Items[i].Spec.Paths {
+			if p == apiBasePath {
+				return &routeList.Items[i], nil
+			}
+		}
+	}
+
+	return nil, nil
+}
+
 // ensureRouteListener creates or updates the RouteListener CR for this Listener.
 func (h *ListenerHandler) ensureRouteListener(
 	ctx context.Context,
@@ -260,6 +283,25 @@ func (h *ListenerHandler) ensureRouteListener(
 	apiBasePath string,
 ) (*gatewayv1.RouteListener, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	// Resolve the actual gateway Route for this apiBasePath so the RouteListener
+	// references the correct Route CR (the gateway handler queries by spec.route index).
+	route, err := h.findRouteByPath(ctx, zone.Status.Namespace, apiBasePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find Route for apiBasePath")
+	}
+
+	var routeRef ctypes.ObjectRef
+	if route != nil {
+		routeRef = *ctypes.ObjectRefFromObject(route)
+		logger.V(1).Info("Resolved Route for apiBasePath", "route", routeRef.String(), "apiBasePath", apiBasePath)
+	} else {
+		// Route not yet provisioned — block until it exists so the RouteListener
+		// can be properly linked. The gateway handler uses a field index on spec.route
+		// to discover RouteListeners, so a wrong reference means silent failure.
+		return nil, ctrlerrors.BlockedErrorf("no Route found with path %q in namespace %q", apiBasePath, zone.Status.Namespace)
+	}
 
 	routeListenerName := util.MakeRouteListenerName(appId, apiBasePath, consumerId, providerId)
 	rl := &gatewayv1.RouteListener{
@@ -271,10 +313,7 @@ func (h *ListenerHandler) ensureRouteListener(
 
 	mutator := func() error {
 		rl.Spec = gatewayv1.RouteListenerSpec{
-			Route: ctypes.ObjectRef{
-				Name:      routeListenerName,
-				Namespace: zone.Status.Namespace,
-			},
+			Route: routeRef,
 			Zone: ctypes.ObjectRef{
 				Name:      zone.Name,
 				Namespace: zone.Namespace,
@@ -291,7 +330,7 @@ func (h *ListenerHandler) ensureRouteListener(
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, rl, mutator)
+	_, err = c.CreateOrUpdate(ctx, rl, mutator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create or update RouteListener %q", routeListenerName)
 	}
