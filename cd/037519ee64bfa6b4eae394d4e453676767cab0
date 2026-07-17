@@ -1,0 +1,70 @@
+rover-server/internal/controller/rover.go
+  s_b4a61bcc3af5c2::t_1a1500262e68bd 138
+  s_b4a61bcc3af5c2::t_ff2f45afd1d1e5 135-137
+rover-server/internal/mapper/rover/in/subscription_test.go
+  s_b4a61bcc3af5c2::t_6e65650199ca0e 13
+  s_b4a61bcc3af5c2::t_da6ee5264de0ab 37-48,50-56,60-61,63
+  s_b4a61bcc3af5c2::t_fea0a2f2f1b3b6 49,66
+  s_b4a61bcc3af5c2::t_b82346cefdce84 36,57-59,62,64-65,67-68
+api/internal/handler/util/route_provider_failover_test.go
+  s_b4a61bcc3af5c2::t_39b65f73a3561a 215-265
+  s_b4a61bcc3af5c2::t_78b7fe27a2abed 214
+gateway/internal/features/feature/claims.go
+  s_b4a61bcc3af5c2::t_ec20deab40a1cb 41,81
+  h_0f030e7424553c 45-64,74-78
+  s_b4a61bcc3af5c2::t_019b8673b1ad1f 80
+rover-server/internal/mapper/rover/in/subscription.go
+  s_b4a61bcc3af5c2::t_9d6b8bebd6cbf9 14
+  s_b4a61bcc3af5c2::t_e8048e4a6b8853 18-20,22-47,49-50,60,62-64
+  h_0f030e7424553c 21,48,51-56,59,61
+  s_b4a61bcc3af5c2::t_bf9692ad67a068 57-58
+gateway/internal/features/feature/claims_test.go
+  s_b4a61bcc3af5c2::t_fcaddb40ef07fc 106-125,214-219,253-269,271
+  s_b4a61bcc3af5c2::t_31373ebc079431 279
+  s_b4a61bcc3af5c2::t_3eaf5ab82383f8 240-243,270
+  s_b4a61bcc3af5c2::t_8206821acf825b 272
+  s_b4a61bcc3af5c2::t_337b22b4e09bb6 344
+  s_b4a61bcc3af5c2::t_7e7b52cbb60f69 126-213,220-239,244-252
+  s_d4b7c3439cd391::t_e7a91b03cdad20 47,49-56
+  s_b4a61bcc3af5c2::t_d0c10b7749fb77 306
+  s_b4a61bcc3af5c2::t_6eddece6d98107 273
+gateway/api/v1/security_types.go
+  h_0f030e7424553c 90-96
+rover-server/internal/mapper/rover/in/rover.go
+  s_b4a61bcc3af5c2::t_9901daff6e4944 50
+  s_b4a61bcc3af5c2::t_5a5f9130c18302 14
+  s_b4a61bcc3af5c2::t_a38d0c59afb993 51-52
+  s_b4a61bcc3af5c2::t_80b8edffa52d92 113,115
+  s_b4a61bcc3af5c2::t_163246d3a6c4ed 114
+gateway/api/v1/route_types.go
+  h_0f030e7424553c 144-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "cd037519ee64bfa6b4eae394d4e453676767cab0",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_b4a61bcc3af5c2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_090b5e97effe4XE9qZzRg1dJ2X",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_d4b7c3439cd391": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0906c0c6affec3I6T8L0SeE1vs",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
