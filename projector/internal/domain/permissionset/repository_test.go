@@ -209,6 +209,21 @@ var _ = Describe("PermissionSet Repository", func() {
 			_, found := cache.Get("permissionset", "my-app:platform--narvi")
 			Expect(found).To(BeTrue())
 		})
+
+		It("should propagate a validation error for an invalid StatusPhase enum", func() {
+			data := &permissionset.PermissionSetData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "my-app", nil),
+				StatusPhase: "BOGUS",
+				Permissions: []model.Permission{
+					{Role: "admin", Resource: "orders", Actions: []string{"read"}},
+				},
+				AppName:  "my-app",
+				TeamName: "platform--narvi",
+			}
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("status_phase"))
+		})
 	})
 
 	Describe("Delete", func() {

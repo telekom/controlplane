@@ -501,13 +501,6 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "permissionset_application_permission_set",
-				Unique:  true,
-				Columns: []*schema.Column{PermissionSetsColumns[8]},
-			},
-		},
 	}
 	// TeamsColumns holds the columns for the "teams" table.
 	TeamsColumns = []*schema.Column{

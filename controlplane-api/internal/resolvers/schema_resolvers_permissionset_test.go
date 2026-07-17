@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"entgo.io/contrib/entgql"
+
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
@@ -46,6 +48,51 @@ var _ = Describe("PermissionSet resolver", func() {
 		Expect(conn.Edges[0].Node.ID).To(Equal(s.PermissionSetAlpha.ID))
 	})
 
+	It("should filter permissionSets via the where clause", func() {
+		ctx := testutil.AllowContext()
+
+		matching := &ent.PermissionSetWhereInput{StatusPhaseIsNil: true}
+		conn, err := r.Query().PermissionSets(ctx, nil, nil, nil, nil, nil, matching)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(conn.Edges).To(HaveLen(1))
+		Expect(conn.Edges[0].Node.ID).To(Equal(s.PermissionSetAlpha.ID))
+
+		nonMatching := &ent.PermissionSetWhereInput{StatusPhaseNotNil: true}
+		conn, err = r.Query().PermissionSets(ctx, nil, nil, nil, nil, nil, nonMatching)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(conn.Edges).To(BeEmpty())
+	})
+
+	It("should order permissionSets via the orderBy clause", func() {
+		ctx := testutil.AllowContext()
+
+		order := &ent.PermissionSetOrder{
+			Field:     ent.PermissionSetOrderFieldCreatedAt,
+			Direction: entgql.OrderDirectionAsc,
+		}
+		conn, err := r.Query().PermissionSets(ctx, nil, nil, nil, nil, order, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(conn.Edges).To(HaveLen(1))
+	})
+
+	It("should paginate permissionSets via first/after", func() {
+		ctx := testutil.AllowContext()
+
+		first := 0
+		conn, err := r.Query().PermissionSets(ctx, nil, &first, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(conn.Edges).To(BeEmpty())
+		Expect(conn.TotalCount).To(Equal(1))
+	})
+
+	It("should return an error for a negative first argument", func() {
+		ctx := testutil.AllowContext()
+
+		invalid := -1
+		_, err := r.Query().PermissionSets(ctx, nil, &invalid, nil, nil, nil, nil)
+		Expect(err).To(HaveOccurred())
+	})
+
 	It("should be reachable from Application.permissionSet", func() {
 		ctx := testutil.AllowContext()
 
@@ -61,6 +108,16 @@ var _ = Describe("PermissionSet resolver", func() {
 			Resource: "orders",
 			Actions:  []string{"read", "write"},
 		}))
+	})
+
+	It("should return nil for Application.permissionSet when no PermissionSet exists", func() {
+		ctx := testutil.AllowContext()
+
+		reloaded, err := client.Application.Get(ctx, s.AppBeta.ID)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = reloaded.QueryPermissionSet().Only(ctx)
+		Expect(ent.IsNotFound(err)).To(BeTrue())
 	})
 
 	It("should not expose any create/update/delete mutations for PermissionSet in the GraphQL schema", func() {

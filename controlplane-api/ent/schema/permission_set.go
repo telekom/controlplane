@@ -10,7 +10,6 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -56,11 +55,5 @@ func (PermissionSet) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.QueryField(),
 		entgql.RelayConnection(),
-	}
-}
-
-func (PermissionSet) Indexes() []ent.Index {
-	return []ent.Index{
-		index.Edges("owner_application").Unique(),
 	}
 }

@@ -154,6 +154,5 @@ replace (
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/organization/api => ../organization/api
-	github.com/telekom/controlplane/permission/api => ../permission/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )

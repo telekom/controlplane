@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
@@ -67,4 +68,37 @@ var _ = Describe("registerSchemesAndModules", func() {
 
 		Expect(moduleNames(result)).To(ContainElement(permissionset.Module.Name()))
 	})
+
+	DescribeTable("feature flag matrix",
+		func(pubSubEnabled, permissionEnabled bool) {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, pubSubEnabled)
+			cconfig.SetFeatureEnabled(cconfig.FeaturePermission, permissionEnabled)
+
+			result := registerSchemesAndModules(runtime.NewScheme(), baseModules)
+
+			names := moduleNames(result)
+			Expect(names).To(ContainElements(zone.Module.Name(), group.Module.Name(), team.Module.Name()),
+				"base modules must always be present")
+
+			if pubSubEnabled {
+				Expect(names).To(ContainElement(eventtype.Module.Name()))
+			} else {
+				Expect(names).NotTo(ContainElement(eventtype.Module.Name()))
+			}
+
+			if permissionEnabled {
+				Expect(names).To(ContainElement(permissionset.Module.Name()))
+			} else {
+				Expect(names).NotTo(ContainElement(permissionset.Module.Name()))
+			}
+
+			// baseModules must not be mutated by the append inside registerSchemesAndModules.
+			Expect(baseModules).To(HaveLen(3))
+			Expect(moduleNames(baseModules)).To(Equal([]string{zone.Module.Name(), group.Module.Name(), team.Module.Name()}))
+		},
+		Entry("both disabled", false, false),
+		Entry("pubsub only", true, false),
+		Entry("permission only", false, true),
+		Entry("both enabled", true, true),
+	)
 })

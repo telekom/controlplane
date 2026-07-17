@@ -93,7 +93,7 @@ Level 4:  Approval   ApprovalRequest ◄── ApiSubscription FK
 
 ### Feature-Gated Modules
 
-Some modules are only registered (and their CRD scheme only added to the manager) when a feature flag is enabled, via `cconfig.Feature.IsEnabled()` in `internal/bootstrap/bootstrap.go`:
+Some modules are only registered (and their CRD scheme only added to the manager) when a feature flag is enabled, via `<Feature>.IsEnabled()` (e.g. `cconfig.FeaturePubSub.IsEnabled()`) in `internal/bootstrap/bootstrap.go`:
 
 | Feature flag        | Env var                             | Gated modules                                    |
 |----------------------|--------------------------------------|---------------------------------------------------|

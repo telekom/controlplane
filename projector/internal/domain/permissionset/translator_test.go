@@ -6,6 +6,7 @@ package permissionset_test
 
 import (
 	"context"
+	"errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,14 +16,41 @@ import (
 
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
+	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
 var _ = Describe("PermissionSet Translator", func() {
 	var tr permissionset.Translator
 
 	Describe("ShouldSkip", func() {
-		It("should never skip", func() {
+		It("should skip when the application label is missing", func() {
 			obj := &permissionv1.PermissionSet{}
+			skip, reason := tr.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("cp.ei.telekom.de/application"))
+		})
+
+		It("should skip when the application label is empty", func() {
+			obj := &permissionv1.PermissionSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"cp.ei.telekom.de/application": "",
+					},
+				},
+			}
+			skip, reason := tr.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("cp.ei.telekom.de/application"))
+		})
+
+		It("should not skip when the application label is present", func() {
+			obj := &permissionv1.PermissionSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"cp.ei.telekom.de/application": "my-app",
+					},
+				},
+			}
 			skip, reason := tr.ShouldSkip(obj)
 			Expect(skip).To(BeFalse())
 			Expect(reason).To(BeEmpty())
@@ -145,26 +173,14 @@ var _ = Describe("PermissionSet Translator", func() {
 			}))
 		})
 
-		It("should fall back to convention when lastKnown is nil", func() {
+		It("should return ErrDeleteKeyLost when lastKnown is nil", func() {
 			key, err := tr.KeyFromDelete(k8stypes.NamespacedName{
 				Name:      "my-app",
 				Namespace: "prod--platform--narvi",
 			}, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(key).To(Equal(permissionset.PermissionSetKey{
-				AppName:  "my-app",
-				TeamName: "platform--narvi",
-			}))
-		})
-
-		It("should handle a namespace without a -- separator", func() {
-			key, err := tr.KeyFromDelete(k8stypes.NamespacedName{
-				Name:      "my-app",
-				Namespace: "platform-narvi",
-			}, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(key.AppName).To(Equal("my-app"))
-			Expect(key.TeamName).To(Equal("platform-narvi"))
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, runtime.ErrDeleteKeyLost)).To(BeTrue())
+			Expect(key).To(Equal(permissionset.PermissionSetKey{}))
 		})
 	})
 })

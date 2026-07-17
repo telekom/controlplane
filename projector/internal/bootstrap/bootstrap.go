@@ -15,6 +15,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -78,7 +79,7 @@ var modules = []module.Module{
 // the given scheme and returns the extended module list; extracted from
 // init() so the gating logic can be exercised directly in tests.
 func registerSchemesAndModules(scheme *runtime.Scheme, baseModules []module.Module) []module.Module {
-	result := baseModules
+	result := slices.Clone(baseModules)
 
 	if cconfig.FeaturePubSub.IsEnabled() {
 		_ = eventv1.AddToScheme(scheme)
