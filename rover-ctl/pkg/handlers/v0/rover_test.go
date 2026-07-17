@@ -228,6 +228,111 @@ var _ = Describe("Rover Handler", func() {
 			})
 		})
 
+		Context("when processing listeners and listenerSubscription", func() {
+			It("should preserve listeners and listenerSubscription unchanged", func() {
+				obj := &types.UnstructuredObject{
+					Content: map[string]any{
+						"spec": map[string]any{
+							"listeners": []any{
+								map[string]any{
+									"consumer":    "eni--team--app",
+									"provider":    "eni--other--svc",
+									"apiBasePath": "/echo/v1",
+									"requestFilter": map[string]any{
+										"trigger": map[string]any{"method": "GET"},
+										"payload": []any{"name"},
+									},
+									"responseFilter": map[string]any{
+										"trigger": map[string]any{},
+										"payload": []any{"status"},
+									},
+								},
+							},
+							"listenerSubscription": map[string]any{
+								"deliveryType": "callback",
+								"callback":     "https://example.com/events",
+							},
+						},
+					},
+				}
+
+				err := v0.PatchRoverRequest(context.Background(), obj)
+				Expect(err).NotTo(HaveOccurred())
+
+				content := obj.GetContent()
+
+				// Verify listeners passed through with all fields intact
+				listeners, ok := content["listeners"].([]any)
+				Expect(ok).To(BeTrue())
+				Expect(listeners).To(HaveLen(1))
+
+				listener := listeners[0].(map[string]any)
+				Expect(listener["consumer"]).To(Equal("eni--team--app"))
+				Expect(listener["provider"]).To(Equal("eni--other--svc"))
+				Expect(listener["apiBasePath"]).To(Equal("/echo/v1"))
+				Expect(listener).To(HaveKey("requestFilter"))
+				Expect(listener).To(HaveKey("responseFilter"))
+
+				// Verify listenerSubscription passed through unchanged
+				sub, ok := content["listenerSubscription"].(map[string]any)
+				Expect(ok).To(BeTrue())
+				Expect(sub["deliveryType"]).To(Equal("callback"))
+				Expect(sub["callback"]).To(Equal("https://example.com/events"))
+			})
+
+			It("should preserve listeners alongside exposures and subscriptions", func() {
+				obj := &types.UnstructuredObject{
+					Content: map[string]any{
+						"spec": map[string]any{
+							"exposures": []any{
+								map[string]any{
+									"basePath": "/api/v1",
+								},
+							},
+							"subscriptions": []any{
+								map[string]any{
+									"eventType": "test.event",
+								},
+							},
+							"listeners": []any{
+								map[string]any{
+									"consumer":    "eni--team--app",
+									"provider":    "eni--other--svc",
+									"apiBasePath": "/echo/v1",
+								},
+							},
+							"listenerSubscription": map[string]any{
+								"deliveryType": "server_sent_event",
+							},
+						},
+					},
+				}
+
+				err := v0.PatchRoverRequest(context.Background(), obj)
+				Expect(err).NotTo(HaveOccurred())
+
+				content := obj.GetContent()
+
+				// Exposures and subscriptions were patched (type added)
+				exposures := content["exposures"].([]map[string]any)
+				Expect(exposures[0]).To(HaveKeyWithValue("type", "api"))
+
+				subscriptions := content["subscriptions"].([]map[string]any)
+				Expect(subscriptions[0]).To(HaveKeyWithValue("type", "event"))
+
+				// Listeners passed through unmodified
+				listeners := content["listeners"].([]any)
+				Expect(listeners).To(HaveLen(1))
+				listener := listeners[0].(map[string]any)
+				Expect(listener["consumer"]).To(Equal("eni--team--app"))
+				Expect(listener).NotTo(HaveKey("type"))
+
+				// listenerSubscription passed through unmodified
+				sub := content["listenerSubscription"].(map[string]any)
+				Expect(sub["deliveryType"]).To(Equal("server_sent_event"))
+			})
+		})
+
 		Context("when processing invalid rover spec", func() {
 			It("should return error for invalid spec", func() {
 				// Create a test object with invalid spec
