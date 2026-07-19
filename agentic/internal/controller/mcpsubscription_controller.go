@@ -14,11 +14,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	"github.com/telekom/controlplane/agentic/internal/handler/mcpsubscription"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -43,6 +46,7 @@ type McpSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumeroutes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvals,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvalrequests,verbs=get;list;watch;create;update;patch;delete
@@ -59,12 +63,25 @@ func (r *McpSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&agenticv1.McpSubscription{}).
 		Owns(&gatewayv1.ConsumeRoute{}).
+		Owns(&approvalv1.ApprovalRequest{}).
 		Watches(&agenticv1.McpExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapMcpExposureToMcpSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&approvalv1.Approval{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApprovalToMcpSubscription),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(&applicationv1.Application{},
+			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToMcpSubscription),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(&gatewayv1.Route{},
+			handler.EnqueueRequestsFromMapFunc(r.MapRouteToMcpSubscription),
+			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
+		).
+		Watches(&adminv1.Zone{},
+			handler.EnqueueRequestsFromMapFunc(r.MapZoneToMcpSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
@@ -120,4 +137,98 @@ func (r *McpSubscriptionReconciler) MapApprovalToMcpSubscription(ctx context.Con
 		}
 	}
 	return nil
+}
+
+// MapApplicationToMcpSubscription enqueues McpSubscriptions that reference the changed Application.
+func (r *McpSubscriptionReconciler) MapApplicationToMcpSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+
+	application, ok := obj.(*applicationv1.Application)
+	if !ok {
+		logger.Info("object is not an Application")
+		return nil
+	}
+
+	list := &agenticv1.McpSubscriptionList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
+	}, client.InNamespace(application.Namespace))
+	if err != nil {
+		logger.Error(err, "failed to list McpSubscriptions")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
+	}
+
+	return reqs
+}
+
+// MapRouteToMcpSubscription enqueues McpSubscriptions when a Route they reference is deleted.
+func (r *McpSubscriptionReconciler) MapRouteToMcpSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+
+	route, ok := obj.(*gatewayv1.Route)
+	if !ok {
+		return nil
+	}
+
+	basePathLabel := route.Labels[agenticv1.McpBasePathLabelKey]
+	if basePathLabel == "" {
+		return nil
+	}
+
+	list := &agenticv1.McpSubscriptionList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   route.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.McpBasePathLabelKey: basePathLabel,
+	})
+	if err != nil {
+		logger.Error(err, "failed to list McpSubscriptions for Route")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
+	}
+	return reqs
+}
+
+// MapZoneToMcpSubscription enqueues McpSubscriptions that reference a changed Zone.
+// This ensures subscriptions react to zone feature or visibility changes.
+func (r *McpSubscriptionReconciler) MapZoneToMcpSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+
+	zone, ok := obj.(*adminv1.Zone)
+	if !ok {
+		return nil
+	}
+
+	list := &agenticv1.McpSubscriptionList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+	})
+	if err != nil {
+		logger.Error(err, "failed to list McpSubscriptions for Zone")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		if list.Items[i].Spec.Zone.Name == zone.Name {
+			reqs = append(reqs, reconcile.Request{
+				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+			})
+		}
+	}
+	return reqs
 }
