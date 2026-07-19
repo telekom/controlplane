@@ -10,9 +10,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// McpExposureSpec defines the desired state of McpExposure.
-type McpExposureSpec struct {
-	// BasePath references the McpServer via its basePath.
+// AgenticExposureSpec defines the desired state of AgenticExposure.
+type AgenticExposureSpec struct {
+	// BasePath references the AgenticServer via its basePath.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=`^/.*$`
@@ -38,7 +38,7 @@ type McpExposureSpec struct {
 
 	// Variant defines the exposure variant (MCP or TELECONTEXTMCP).
 	// +kubebuilder:default=MCP
-	Variant McpVariant `json:"variant"`
+	Variant AgenticVariant `json:"variant"`
 
 	// Security configures optional security settings for the route.
 	// +optional
@@ -53,8 +53,8 @@ type McpExposureSpec struct {
 	Transformation *Transformation `json:"transformation,omitempty"`
 }
 
-// McpExposureStatus defines the observed state of McpExposure.
-type McpExposureStatus struct {
+// AgenticExposureStatus defines the observed state of AgenticExposure.
+type AgenticExposureStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge
@@ -62,7 +62,7 @@ type McpExposureStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	// Active indicates whether this McpExposure is the active one for its basePath.
+	// Active indicates whether this AgenticExposure is the active one for its basePath.
 	Active bool `json:"active"`
 
 	// Route references the primary gateway Route CR created for this exposure.
@@ -82,32 +82,32 @@ type McpExposureStatus struct {
 // +kubebuilder:printcolumn:name="Variant",type="string",JSONPath=".spec.variant",description="The exposure variant"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// McpExposure is the Schema for the mcpexposures API.
+// AgenticExposure is the Schema for the agenticexposures API.
 // It represents a declaration that an application exposes an MCP server,
 // making it available for subscription by other applications via the AI Gateway.
-type McpExposure struct {
+type AgenticExposure struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   McpExposureSpec   `json:"spec,omitempty"`
-	Status McpExposureStatus `json:"status,omitempty"`
+	Spec   AgenticExposureSpec   `json:"spec,omitempty"`
+	Status AgenticExposureStatus `json:"status,omitempty"`
 }
 
-var _ ctypes.Object = &McpExposure{}
+var _ ctypes.Object = &AgenticExposure{}
 
-func (r *McpExposure) GetConditions() []metav1.Condition {
+func (r *AgenticExposure) GetConditions() []metav1.Condition {
 	return r.Status.Conditions
 }
 
-func (r *McpExposure) SetCondition(condition metav1.Condition) bool {
+func (r *AgenticExposure) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
-func (r *McpExposure) HasM2M() bool {
+func (r *AgenticExposure) HasM2M() bool {
 	return r.Spec.Security != nil && r.Spec.Security.M2M != nil
 }
 
-func (r *McpExposure) HasExternalIdp() bool {
+func (r *AgenticExposure) HasExternalIdp() bool {
 	if !r.HasM2M() {
 		return false
 	}
@@ -116,16 +116,16 @@ func (r *McpExposure) HasExternalIdp() bool {
 
 // +kubebuilder:object:root=true
 
-// McpExposureList contains a list of McpExposure
-type McpExposureList struct {
+// AgenticExposureList contains a list of AgenticExposure
+type AgenticExposureList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []McpExposure `json:"items"`
+	Items           []AgenticExposure `json:"items"`
 }
 
-var _ ctypes.ObjectList = &McpExposureList{}
+var _ ctypes.ObjectList = &AgenticExposureList{}
 
-func (r *McpExposureList) GetItems() []ctypes.Object {
+func (r *AgenticExposureList) GetItems() []ctypes.Object {
 	items := make([]ctypes.Object, len(r.Items))
 	for i := range r.Items {
 		items[i] = &r.Items[i]
@@ -134,5 +134,5 @@ func (r *McpExposureList) GetItems() []ctypes.Object {
 }
 
 func init() {
-	SchemeBuilder.Register(&McpExposure{}, &McpExposureList{})
+	SchemeBuilder.Register(&AgenticExposure{}, &AgenticExposureList{})
 }

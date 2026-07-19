@@ -12,15 +12,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeMcpServerName generates a Kubernetes resource name from a basePath.
+// MakeAgenticServerName generates a Kubernetes resource name from a basePath.
 // It strips leading slashes and replaces "/" with "-" (e.g. "/mcp/weather/v1" -> "mcp-weather-v1").
-func MakeMcpServerName(basePath string) string {
+func MakeAgenticServerName(basePath string) string {
 	name := strings.TrimPrefix(basePath, "/")
 	return strings.ToLower(strings.ReplaceAll(name, "/", "-"))
 }
 
-// McpServerSpec defines the desired state of McpServer.
-type McpServerSpec struct {
+// AgenticServerSpec defines the desired state of AgenticServer.
+type AgenticServerSpec struct {
 	// BasePath is the base path of the MCP server endpoint.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
@@ -56,8 +56,8 @@ type McpServerSpec struct {
 	Oauth2Scopes []string `json:"scopes,omitempty"`
 }
 
-// McpServerStatus defines the observed state of McpServer.
-type McpServerStatus struct {
+// AgenticServerStatus defines the observed state of AgenticServer.
+type AgenticServerStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge
@@ -65,7 +65,7 @@ type McpServerStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	// Active indicates whether this McpServer is the active singleton for its basePath.
+	// Active indicates whether this AgenticServer is the active singleton for its basePath.
 	Active bool `json:"active"`
 }
 
@@ -75,39 +75,39 @@ type McpServerStatus struct {
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this server registration is active"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// McpServer is the Schema for the mcpservers API.
+// AgenticServer is the Schema for the agenticservers API.
 // It represents a registered MCP server definition, serving as the
-// canonical reference that McpExposure and McpSubscription point to.
-type McpServer struct {
+// canonical reference that AgenticExposure and AgenticSubscription point to.
+type AgenticServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   McpServerSpec   `json:"spec,omitempty"`
-	Status McpServerStatus `json:"status,omitempty"`
+	Spec   AgenticServerSpec   `json:"spec,omitempty"`
+	Status AgenticServerStatus `json:"status,omitempty"`
 }
 
-var _ types.Object = &McpServer{}
+var _ types.Object = &AgenticServer{}
 
-func (r *McpServer) GetConditions() []metav1.Condition {
+func (r *AgenticServer) GetConditions() []metav1.Condition {
 	return r.Status.Conditions
 }
 
-func (r *McpServer) SetCondition(condition metav1.Condition) bool {
+func (r *AgenticServer) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
 // +kubebuilder:object:root=true
 
-// McpServerList contains a list of McpServer
-type McpServerList struct {
+// AgenticServerList contains a list of AgenticServer
+type AgenticServerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []McpServer `json:"items"`
+	Items           []AgenticServer `json:"items"`
 }
 
-var _ types.ObjectList = &McpServerList{}
+var _ types.ObjectList = &AgenticServerList{}
 
-func (r *McpServerList) GetItems() []types.Object {
+func (r *AgenticServerList) GetItems() []types.Object {
 	items := make([]types.Object, len(r.Items))
 	for i := range r.Items {
 		items[i] = &r.Items[i]
@@ -116,5 +116,5 @@ func (r *McpServerList) GetItems() []types.Object {
 }
 
 func init() {
-	SchemeBuilder.Register(&McpServer{}, &McpServerList{})
+	SchemeBuilder.Register(&AgenticServer{}, &AgenticServerList{})
 }

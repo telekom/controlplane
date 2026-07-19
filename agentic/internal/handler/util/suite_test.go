@@ -74,30 +74,30 @@ func makeReadyApplication(name, clientId string) *applicationapi.Application {
 	return a
 }
 
-func makeReadyMcpServer(basePath string) agenticv1.McpServer {
-	s := agenticv1.McpServer{
+func makeReadyAgenticServer(basePath string) agenticv1.AgenticServer {
+	s := agenticv1.AgenticServer{
 		ObjectMeta: metav1.ObjectMeta{Name: "mcp-server", Namespace: "default"},
-		Spec:       agenticv1.McpServerSpec{BasePath: basePath, Version: "1.0.0", Name: "Test"},
-		Status:     agenticv1.McpServerStatus{Active: true},
+		Spec:       agenticv1.AgenticServerSpec{BasePath: basePath, Version: "1.0.0", Name: "Test"},
+		Status:     agenticv1.AgenticServerStatus{Active: true},
 	}
 	setReady(&s.Status.Conditions)
 	return s
 }
 
 //nolint:unparam // test helper designed for reuse with different basePaths
-func makeActiveMcpExposure(basePath, zoneName, uid string) agenticv1.McpExposure {
-	e := agenticv1.McpExposure{
+func makeActiveAgenticExposure(basePath, zoneName, uid string) agenticv1.AgenticExposure {
+	e := agenticv1.AgenticExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "exposure-" + zoneName,
 			Namespace: "default",
 			UID:       k8stypes.UID(uid),
 		},
-		Spec: agenticv1.McpExposureSpec{
+		Spec: agenticv1.AgenticExposureSpec{
 			BasePath: basePath,
 			Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
 			Provider: ctypes.ObjectRef{Name: "app", Namespace: "default"},
 		},
-		Status: agenticv1.McpExposureStatus{Active: true},
+		Status: agenticv1.AgenticExposureStatus{Active: true},
 	}
 	return e
 }

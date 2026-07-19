@@ -28,12 +28,12 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// ---------- MakeMcpRouteName ----------
+// ---------- MakeAgenticRouteName ----------
 
-var _ = Describe("MakeMcpRouteName", func() {
+var _ = Describe("MakeAgenticRouteName", func() {
 	DescribeTable("should produce correct route names",
 		func(basePath, expected string) {
-			Expect(util.MakeMcpRouteName(basePath)).To(Equal(expected))
+			Expect(util.MakeAgenticRouteName(basePath)).To(Equal(expected))
 		},
 		Entry("simple path", "/mcp/weather/v1", "ai-gateway--mcp-weather-v1"),
 		Entry("single segment", "/mcp", "ai-gateway--mcp"),
@@ -178,9 +178,9 @@ var _ = Describe("GetApplication", func() {
 	})
 })
 
-// ---------- FindActiveMcpServer ----------
+// ---------- FindActiveAgenticServer ----------
 
-var _ = Describe("FindActiveMcpServer", func() {
+var _ = Describe("FindActiveAgenticServer", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
@@ -192,19 +192,19 @@ var _ = Describe("FindActiveMcpServer", func() {
 		ctx = cclient.WithClient(ctx, fakeClient)
 	})
 
-	mockList := func(items []agenticv1.McpServer) {
+	mockList := func(items []agenticv1.AgenticServer) {
 		fakeClient.EXPECT().
-			List(ctx, &agenticv1.McpServerList{}, mock.Anything).
+			List(ctx, &agenticv1.AgenticServerList{}, mock.Anything).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{Items: items}
+				*list.(*agenticv1.AgenticServerList) = agenticv1.AgenticServerList{Items: items}
 			}).
 			Return(nil).Once()
 	}
 
 	It("should return false when no servers exist", func() {
-		mockList([]agenticv1.McpServer{})
+		mockList([]agenticv1.AgenticServer{})
 
-		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(server).To(BeNil())
@@ -212,35 +212,35 @@ var _ = Describe("FindActiveMcpServer", func() {
 
 	It("should return error when List fails", func() {
 		fakeClient.EXPECT().
-			List(ctx, &agenticv1.McpServerList{}, mock.Anything).
+			List(ctx, &agenticv1.AgenticServerList{}, mock.Anything).
 			Return(fmt.Errorf("api unavailable")).Once()
 
-		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(err).To(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(server).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to list McpServers"))
+		Expect(err.Error()).To(ContainSubstring("failed to list AgenticServers"))
 	})
 
 	It("should return false when no server is active", func() {
-		inactive := agenticv1.McpServer{
+		inactive := agenticv1.AgenticServer{
 			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
-			Spec:       agenticv1.McpServerSpec{BasePath: "/mcp/weather/v1"},
-			Status:     agenticv1.McpServerStatus{Active: false},
+			Spec:       agenticv1.AgenticServerSpec{BasePath: "/mcp/weather/v1"},
+			Status:     agenticv1.AgenticServerStatus{Active: false},
 		}
-		mockList([]agenticv1.McpServer{inactive})
+		mockList([]agenticv1.AgenticServer{inactive})
 
-		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(server).To(BeNil())
 	})
 
 	It("should return the active server when found", func() {
-		active := makeReadyMcpServer("/mcp/weather/v1")
-		mockList([]agenticv1.McpServer{active})
+		active := makeReadyAgenticServer("/mcp/weather/v1")
+		mockList([]agenticv1.AgenticServer{active})
 
-		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(server).ToNot(BeNil())
@@ -248,20 +248,20 @@ var _ = Describe("FindActiveMcpServer", func() {
 	})
 
 	It("should ignore servers with a different basePath", func() {
-		other := makeReadyMcpServer("/mcp/other/v1")
-		mockList([]agenticv1.McpServer{other})
+		other := makeReadyAgenticServer("/mcp/other/v1")
+		mockList([]agenticv1.AgenticServer{other})
 
-		found, _, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, _, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 	})
 
 	It("should return found=false and the conflicting server when a case-only mismatch exists", func() {
 		// Server is registered as /Mcp/Weather/V1 but caller asks for /mcp/weather/v1
-		conflict := makeReadyMcpServer("/Mcp/Weather/V1")
-		mockList([]agenticv1.McpServer{conflict})
+		conflict := makeReadyAgenticServer("/Mcp/Weather/V1")
+		mockList([]agenticv1.AgenticServer{conflict})
 
-		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(server).ToNot(BeNil())
@@ -269,14 +269,14 @@ var _ = Describe("FindActiveMcpServer", func() {
 	})
 
 	It("should not treat case-only mismatches as a conflict when the server is inactive", func() {
-		inactive := agenticv1.McpServer{
+		inactive := agenticv1.AgenticServer{
 			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
-			Spec:       agenticv1.McpServerSpec{BasePath: "/Mcp/Weather/V1"},
-			Status:     agenticv1.McpServerStatus{Active: false},
+			Spec:       agenticv1.AgenticServerSpec{BasePath: "/Mcp/Weather/V1"},
+			Status:     agenticv1.AgenticServerStatus{Active: false},
 		}
-		mockList([]agenticv1.McpServer{inactive})
+		mockList([]agenticv1.AgenticServer{inactive})
 
-		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		// inactive servers are ignored — no conflict returned
@@ -284,15 +284,15 @@ var _ = Describe("FindActiveMcpServer", func() {
 	})
 
 	It("should return BlockedError when active server is not ready", func() {
-		notReady := agenticv1.McpServer{
+		notReady := agenticv1.AgenticServer{
 			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
-			Spec:       agenticv1.McpServerSpec{BasePath: "/mcp/weather/v1"},
-			Status:     agenticv1.McpServerStatus{Active: true},
+			Spec:       agenticv1.AgenticServerSpec{BasePath: "/mcp/weather/v1"},
+			Status:     agenticv1.AgenticServerStatus{Active: true},
 			// no Ready condition set
 		}
-		mockList([]agenticv1.McpServer{notReady})
+		mockList([]agenticv1.AgenticServer{notReady})
 
-		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(found).To(BeFalse())
 		Expect(server).ToNot(BeNil())
 		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
@@ -300,47 +300,47 @@ var _ = Describe("FindActiveMcpServer", func() {
 
 	It("should return the oldest active server when multiple exist", func() {
 		now := time.Now()
-		older := makeReadyMcpServer("/mcp/weather/v1")
+		older := makeReadyAgenticServer("/mcp/weather/v1")
 		older.Name = "s-oldest"
 		older.CreationTimestamp = metav1.NewTime(now.Add(-time.Hour))
 
-		newer := makeReadyMcpServer("/mcp/weather/v1")
+		newer := makeReadyAgenticServer("/mcp/weather/v1")
 		newer.Name = "s-newer"
 		newer.CreationTimestamp = metav1.NewTime(now)
 
-		mockList([]agenticv1.McpServer{newer, older})
+		mockList([]agenticv1.AgenticServer{newer, older})
 
-		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(server.Name).To(Equal("s-oldest"))
 	})
 })
 
-// ---------- FindActiveMcpExposure ----------
+// ---------- FindActiveAgenticExposure ----------
 
-var _ = Describe("FindActiveMcpExposure", func() {
+var _ = Describe("FindActiveAgenticExposure", func() {
 	It("should return false when list is empty", func() {
-		found, exp, err := util.FindActiveMcpExposure([]agenticv1.McpExposure{})
+		found, exp, err := util.FindActiveAgenticExposure([]agenticv1.AgenticExposure{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(exp).To(BeNil())
 	})
 
 	It("should return false when no exposure is active", func() {
-		inactive := makeActiveMcpExposure("/mcp/weather/v1", "zone-a", "uid-1")
+		inactive := makeActiveAgenticExposure("/mcp/weather/v1", "zone-a", "uid-1")
 		inactive.Status.Active = false
 
-		found, exp, err := util.FindActiveMcpExposure([]agenticv1.McpExposure{inactive})
+		found, exp, err := util.FindActiveAgenticExposure([]agenticv1.AgenticExposure{inactive})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(exp).To(BeNil())
 	})
 
 	It("should return the single active exposure", func() {
-		active := makeActiveMcpExposure("/mcp/weather/v1", "zone-a", "uid-1")
+		active := makeActiveAgenticExposure("/mcp/weather/v1", "zone-a", "uid-1")
 
-		found, exp, err := util.FindActiveMcpExposure([]agenticv1.McpExposure{active})
+		found, exp, err := util.FindActiveAgenticExposure([]agenticv1.AgenticExposure{active})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(exp.UID).To(Equal(k8stypes.UID("uid-1")))
@@ -348,22 +348,22 @@ var _ = Describe("FindActiveMcpExposure", func() {
 
 	It("should return the oldest active exposure when multiple exist", func() {
 		now := time.Now()
-		older := makeActiveMcpExposure("/mcp/weather/v1", "zone-a", "uid-old")
+		older := makeActiveAgenticExposure("/mcp/weather/v1", "zone-a", "uid-old")
 		older.CreationTimestamp = metav1.NewTime(now.Add(-time.Hour))
 
-		newer := makeActiveMcpExposure("/mcp/weather/v1", "zone-b", "uid-new")
+		newer := makeActiveAgenticExposure("/mcp/weather/v1", "zone-b", "uid-new")
 		newer.CreationTimestamp = metav1.NewTime(now)
 
-		found, exp, err := util.FindActiveMcpExposure([]agenticv1.McpExposure{newer, older})
+		found, exp, err := util.FindActiveAgenticExposure([]agenticv1.AgenticExposure{newer, older})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(exp.UID).To(Equal(k8stypes.UID("uid-old")))
 	})
 })
 
-// ---------- AnyOtherMcpExposureExists ----------
+// ---------- AnyOtherAgenticExposureExists ----------
 
-var _ = Describe("AnyOtherMcpExposureExists", func() {
+var _ = Describe("AnyOtherAgenticExposureExists", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
@@ -375,46 +375,46 @@ var _ = Describe("AnyOtherMcpExposureExists", func() {
 		ctx = cclient.WithClient(ctx, fakeClient)
 	})
 
-	mockList := func(items []agenticv1.McpExposure) {
+	mockList := func(items []agenticv1.AgenticExposure) {
 		fakeClient.EXPECT().
-			List(ctx, &agenticv1.McpExposureList{}, mock.Anything).
+			List(ctx, &agenticv1.AgenticExposureList{}, mock.Anything).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*agenticv1.McpExposureList) = agenticv1.McpExposureList{Items: items}
+				*list.(*agenticv1.AgenticExposureList) = agenticv1.AgenticExposureList{Items: items}
 			}).
 			Return(nil).Once()
 	}
 
 	It("should return false when only the excluded exposure exists", func() {
-		self := makeActiveMcpExposure("/mcp/weather/v1", "zone-a", "uid-self")
-		mockList([]agenticv1.McpExposure{self})
+		self := makeActiveAgenticExposure("/mcp/weather/v1", "zone-a", "uid-self")
+		mockList([]agenticv1.AgenticExposure{self})
 
-		exists, err := util.AnyOtherMcpExposureExists(ctx, "/mcp/weather/v1", "uid-self")
+		exists, err := util.AnyOtherAgenticExposureExists(ctx, "/mcp/weather/v1", "uid-self")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(exists).To(BeFalse())
 	})
 
 	It("should return true when another exposure exists", func() {
-		self := makeActiveMcpExposure("/mcp/weather/v1", "zone-a", "uid-self")
-		other := makeActiveMcpExposure("/mcp/weather/v1", "zone-b", "uid-other")
-		mockList([]agenticv1.McpExposure{self, other})
+		self := makeActiveAgenticExposure("/mcp/weather/v1", "zone-a", "uid-self")
+		other := makeActiveAgenticExposure("/mcp/weather/v1", "zone-b", "uid-other")
+		mockList([]agenticv1.AgenticExposure{self, other})
 
-		exists, err := util.AnyOtherMcpExposureExists(ctx, "/mcp/weather/v1", "uid-self")
+		exists, err := util.AnyOtherAgenticExposureExists(ctx, "/mcp/weather/v1", "uid-self")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(exists).To(BeTrue())
 	})
 
 	It("should return false when no exposures exist", func() {
-		mockList([]agenticv1.McpExposure{})
+		mockList([]agenticv1.AgenticExposure{})
 
-		exists, err := util.AnyOtherMcpExposureExists(ctx, "/mcp/weather/v1", "uid-self")
+		exists, err := util.AnyOtherAgenticExposureExists(ctx, "/mcp/weather/v1", "uid-self")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(exists).To(BeFalse())
 	})
 })
 
-// ---------- FindCrossZoneMcpSubscriptionZones ----------
+// ---------- FindCrossZoneAgenticSubscriptionZones ----------
 
-var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
+var _ = Describe("FindCrossZoneAgenticSubscriptionZones", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
@@ -426,19 +426,19 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		ctx = cclient.WithClient(ctx, fakeClient)
 	})
 
-	mockList := func(items []agenticv1.McpSubscription) {
+	mockList := func(items []agenticv1.AgenticSubscription) {
 		fakeClient.EXPECT().
-			List(ctx, &agenticv1.McpSubscriptionList{}, mock.Anything).
+			List(ctx, &agenticv1.AgenticSubscriptionList{}, mock.Anything).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*agenticv1.McpSubscriptionList) = agenticv1.McpSubscriptionList{Items: items}
+				*list.(*agenticv1.AgenticSubscriptionList) = agenticv1.AgenticSubscriptionList{Items: items}
 			}).
 			Return(nil).Once()
 	}
 
-	approvedSub := func(name, basePath, zoneName string) agenticv1.McpSubscription {
-		s := agenticv1.McpSubscription{
+	approvedSub := func(name, basePath, zoneName string) agenticv1.AgenticSubscription {
+		s := agenticv1.AgenticSubscription{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: agenticv1.McpSubscriptionSpec{
+			Spec: agenticv1.AgenticSubscriptionSpec{
 				BasePath: basePath,
 				Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
 			},
@@ -452,10 +452,10 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		return s
 	}
 
-	unapprovedSub := func(name, basePath, zoneName string) agenticv1.McpSubscription {
-		return agenticv1.McpSubscription{
+	unapprovedSub := func(name, basePath, zoneName string) agenticv1.AgenticSubscription {
+		return agenticv1.AgenticSubscription{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: agenticv1.McpSubscriptionSpec{
+			Spec: agenticv1.AgenticSubscriptionSpec{
 				BasePath: basePath,
 				Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
 			},
@@ -464,46 +464,46 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 
 	It("should return error when List fails", func() {
 		fakeClient.EXPECT().
-			List(ctx, &agenticv1.McpSubscriptionList{}, mock.Anything).
+			List(ctx, &agenticv1.AgenticSubscriptionList{}, mock.Anything).
 			Return(fmt.Errorf("api error")).Once()
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).To(HaveOccurred())
 		Expect(zones).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to list McpSubscriptions"))
+		Expect(err.Error()).To(ContainSubstring("failed to list AgenticSubscriptions"))
 	})
 
 	It("should return empty when no subscriptions exist", func() {
-		mockList([]agenticv1.McpSubscription{})
+		mockList([]agenticv1.AgenticSubscription{})
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
 
 	It("should exclude same-zone subscriptions", func() {
 		sameZone := approvedSub("sub-same", "/mcp/weather/v1", "zone-provider")
-		mockList([]agenticv1.McpSubscription{sameZone})
+		mockList([]agenticv1.AgenticSubscription{sameZone})
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
 
 	It("should exclude unapproved cross-zone subscriptions", func() {
 		sub := unapprovedSub("sub-pending", "/mcp/weather/v1", "zone-subscriber")
-		mockList([]agenticv1.McpSubscription{sub})
+		mockList([]agenticv1.AgenticSubscription{sub})
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
 
 	It("should return zone for approved cross-zone subscription", func() {
 		sub := approvedSub("sub-1", "/mcp/weather/v1", "zone-subscriber")
-		mockList([]agenticv1.McpSubscription{sub})
+		mockList([]agenticv1.AgenticSubscription{sub})
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(HaveLen(1))
 		Expect(zones[0].Name).To(Equal("zone-subscriber"))
@@ -512,9 +512,9 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 	It("should deduplicate zones when multiple subscriptions come from the same zone", func() {
 		sub1 := approvedSub("sub-1", "/mcp/weather/v1", "zone-subscriber")
 		sub2 := approvedSub("sub-2", "/mcp/weather/v1", "zone-subscriber")
-		mockList([]agenticv1.McpSubscription{sub1, sub2})
+		mockList([]agenticv1.AgenticSubscription{sub1, sub2})
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(HaveLen(1))
 		Expect(zones[0].Name).To(Equal("zone-subscriber"))
@@ -523,9 +523,9 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 	It("should return multiple unique zones for approved subscriptions", func() {
 		sub1 := approvedSub("sub-1", "/mcp/weather/v1", "zone-a")
 		sub2 := approvedSub("sub-2", "/mcp/weather/v1", "zone-b")
-		mockList([]agenticv1.McpSubscription{sub1, sub2})
+		mockList([]agenticv1.AgenticSubscription{sub1, sub2})
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(HaveLen(2))
 		Expect([]string{zones[0].Name, zones[1].Name}).To(ConsistOf("zone-a", "zone-b"))
@@ -533,9 +533,9 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 
 	It("should exclude subscriptions for a different basePath", func() {
 		otherPath := approvedSub("sub-other", "/mcp/other/v1", "zone-subscriber")
-		mockList([]agenticv1.McpSubscription{otherPath})
+		mockList([]agenticv1.AgenticSubscription{otherPath})
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
@@ -545,9 +545,9 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 		deleting := approvedSub("sub-deleting", "/mcp/weather/v1", "zone-subscriber")
 		deleting.DeletionTimestamp = &now
 		deleting.Finalizers = []string{"some-finalizer"}
-		mockList([]agenticv1.McpSubscription{deleting})
+		mockList([]agenticv1.AgenticSubscription{deleting})
 
-		zones, _, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, _, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(zones).To(BeEmpty())
 	})
@@ -555,9 +555,9 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 	It("should return hasLocalSubs=true when an approved same-zone subscription exists", func() {
 		sameZone := approvedSub("sub-local", "/mcp/weather/v1", "zone-provider")
 		crossZone := approvedSub("sub-cross", "/mcp/weather/v1", "zone-subscriber")
-		mockList([]agenticv1.McpSubscription{sameZone, crossZone})
+		mockList([]agenticv1.AgenticSubscription{sameZone, crossZone})
 
-		zones, hasLocalSubs, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		zones, hasLocalSubs, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(hasLocalSubs).To(BeTrue())
 		// same-zone sub not included in cross-zone zones list
@@ -567,9 +567,9 @@ var _ = Describe("FindCrossZoneMcpSubscriptionZones", func() {
 
 	It("should return hasLocalSubs=false when only cross-zone subscriptions exist", func() {
 		crossZone := approvedSub("sub-cross", "/mcp/weather/v1", "zone-subscriber")
-		mockList([]agenticv1.McpSubscription{crossZone})
+		mockList([]agenticv1.AgenticSubscription{crossZone})
 
-		_, hasLocalSubs, err := util.FindCrossZoneMcpSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
+		_, hasLocalSubs, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, "/mcp/weather/v1", "zone-provider")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(hasLocalSubs).To(BeFalse())
 	})

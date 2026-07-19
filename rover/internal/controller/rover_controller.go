@@ -54,8 +54,8 @@ type RoverReconciler struct {
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventexposures,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventsubscriptions,verbs=get;list;watch;create;update;patch;delete
 
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpexposures,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpsubscriptions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticexposures,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticsubscriptions,verbs=get;list;watch;create;update;patch;delete
 
 // +kubebuilder:rbac:groups=permission.cp.ei.telekom.de,resources=permissionsets,verbs=get;list;watch;create;update;patch;delete
 
@@ -86,8 +86,8 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	if cconfig.FeatureAiGateway.IsEnabled() {
-		b = b.Owns(&agenticv1.McpExposure{}).
-			Owns(&agenticv1.McpSubscription{})
+		b = b.Owns(&agenticv1.AgenticExposure{}).
+			Owns(&agenticv1.AgenticSubscription{})
 	}
 
 	b = b.Watches(&organizationv1.Team{},

@@ -6,9 +6,9 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/agentic.cp.ei.telekom.de_mcpexposures.yaml
-- bases/agentic.cp.ei.telekom.de_mcpservers.yaml
-- bases/agentic.cp.ei.telekom.de_mcpsubscriptions.yaml
+- bases/agentic.cp.ei.telekom.de_agenticexposures.yaml
+- bases/agentic.cp.ei.telekom.de_agenticservers.yaml
+- bases/agentic.cp.ei.telekom.de_agenticsubscriptions.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

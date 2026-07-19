@@ -66,23 +66,23 @@ func GetApplication(ctx context.Context, ref ctypes.ObjectRef) (*applicationapi.
 	return application, nil
 }
 
-// FindActiveMcpServer finds the active McpServer for a given basePath.
+// FindActiveAgenticServer finds the active AgenticServer for a given basePath.
 // Returns (found, mcpServer, error).
 // If found is false and mcpServer is non-nil, a server exists but with a different case
 // (e.g. /MyMcp vs /mymcp) — the caller should treat this as a conflict, not a missing server.
-func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1.McpServer, error) {
+func FindActiveAgenticServer(ctx context.Context, basePath string) (bool, *agenticv1.AgenticServer, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	serverList := &agenticv1.McpServerList{}
+	serverList := &agenticv1.AgenticServerList{}
 	if err := c.List(ctx, serverList, client.MatchingLabels{
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
-		return false, nil, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
+		return false, nil, errors.Wrapf(err, "failed to list AgenticServers for basePath %q", basePath)
 	}
 
 	// Filter to exact basePath match AND active; also detect case-only mismatches.
-	var candidates []agenticv1.McpServer
-	var caseConflict *agenticv1.McpServer
+	var candidates []agenticv1.AgenticServer
+	var caseConflict *agenticv1.AgenticServer
 	for i := range serverList.Items {
 		server := &serverList.Items[i]
 		if !server.Status.Active {
@@ -107,24 +107,24 @@ func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1
 
 	activeServer := &candidates[0]
 	if err := condition.EnsureReady(activeServer); err != nil {
-		return false, activeServer, ctrlerrors.BlockedErrorf("McpServer %q is not ready", basePath)
+		return false, activeServer, ctrlerrors.BlockedErrorf("AgenticServer %q is not ready", basePath)
 	}
 
 	return true, activeServer, nil
 }
 
-// FindMcpExposures lists all McpExposures for a given basePath, regardless of status.
-func FindMcpExposures(ctx context.Context, basePath string) ([]agenticv1.McpExposure, error) {
+// FindAgenticExposures lists all AgenticExposures for a given basePath, regardless of status.
+func FindAgenticExposures(ctx context.Context, basePath string) ([]agenticv1.AgenticExposure, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	exposureList := &agenticv1.McpExposureList{}
+	exposureList := &agenticv1.AgenticExposureList{}
 	if err := c.List(ctx, exposureList, client.MatchingLabels{
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to list McpExposures for basePath %q", basePath)
+		return nil, errors.Wrapf(err, "failed to list AgenticExposures for basePath %q", basePath)
 	}
 
-	var exposures []agenticv1.McpExposure
+	var exposures []agenticv1.AgenticExposure
 	for i := range exposureList.Items {
 		if exposureList.Items[i].Spec.BasePath == basePath {
 			exposures = append(exposures, exposureList.Items[i])
@@ -134,14 +134,14 @@ func FindMcpExposures(ctx context.Context, basePath string) ([]agenticv1.McpExpo
 	return exposures, nil
 }
 
-// FindActiveMcpExposure finds the active McpExposure among a list of exposures.
+// FindActiveAgenticExposure finds the active AgenticExposure among a list of exposures.
 // Uses oldest-wins semantics based on CreationTimestamp.
-func FindActiveMcpExposure(exposures []agenticv1.McpExposure) (bool, *agenticv1.McpExposure, error) {
+func FindActiveAgenticExposure(exposures []agenticv1.AgenticExposure) (bool, *agenticv1.AgenticExposure, error) {
 	if len(exposures) == 0 {
 		return false, nil, nil
 	}
 
-	var candidates []agenticv1.McpExposure
+	var candidates []agenticv1.AgenticExposure
 	for i := range exposures {
 		if exposures[i].Status.Active {
 			candidates = append(candidates, exposures[i])
@@ -160,10 +160,10 @@ func FindActiveMcpExposure(exposures []agenticv1.McpExposure) (bool, *agenticv1.
 	return true, activeExp, nil
 }
 
-// AnyOtherMcpExposureExists checks if any other McpExposure exists for the given basePath,
+// AnyOtherAgenticExposureExists checks if any other AgenticExposure exists for the given basePath,
 // excluding the one with the given UID.
-func AnyOtherMcpExposureExists(ctx context.Context, basePath string, excludeUID k8stypes.UID) (bool, error) {
-	candidates, err := FindMcpExposures(ctx, basePath)
+func AnyOtherAgenticExposureExists(ctx context.Context, basePath string, excludeUID k8stypes.UID) (bool, error) {
+	candidates, err := FindAgenticExposures(ctx, basePath)
 	if err != nil {
 		return false, err
 	}
@@ -180,18 +180,18 @@ func AnyOtherMcpExposureExists(ctx context.Context, basePath string, excludeUID 
 	return false, nil
 }
 
-// FindCrossZoneMcpSubscriptionZones lists all McpSubscriptions for a given basePath
+// FindCrossZoneAgenticSubscriptionZones lists all AgenticSubscriptions for a given basePath
 // and returns unique zone ObjectRefs where approved cross-zone subscriptions exist,
 // plus a boolean indicating whether any approved same-zone subscriptions also exist.
-func FindCrossZoneMcpSubscriptionZones(ctx context.Context, basePath, exposureZoneName string) (zones []ctypes.ObjectRef, hasLocalSubs bool, err error) {
+func FindCrossZoneAgenticSubscriptionZones(ctx context.Context, basePath, exposureZoneName string) (zones []ctypes.ObjectRef, hasLocalSubs bool, err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
-	subList := &agenticv1.McpSubscriptionList{}
+	subList := &agenticv1.AgenticSubscriptionList{}
 	if err := c.List(ctx, subList, client.MatchingLabels{
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
-		return nil, false, errors.Wrapf(err, "failed to list McpSubscriptions for basePath %q", basePath)
+		return nil, false, errors.Wrapf(err, "failed to list AgenticSubscriptions for basePath %q", basePath)
 	}
 
 	seen := make(map[string]bool)

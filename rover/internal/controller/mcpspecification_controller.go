@@ -33,7 +33,7 @@ type McpSpecificationReconciler struct {
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=mcpspecifications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=mcpspecifications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=mcpspecifications/finalizers,verbs=update
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticservers,verbs=get;list;watch;create;update;patch;delete
 
 func (r *McpSpecificationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &rover.McpSpecification{})
@@ -45,7 +45,7 @@ func (r *McpSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rover.McpSpecification{}).
-		Owns(&agenticv1.McpServer{}).
+		Owns(&agenticv1.AgenticServer{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

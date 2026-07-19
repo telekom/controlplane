@@ -7,14 +7,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: mcpsubscriptions.agentic.cp.ei.telekom.de
+  name: agenticsubscriptions.agentic.cp.ei.telekom.de
 spec:
   group: agentic.cp.ei.telekom.de
   names:
-    kind: McpSubscription
-    listKind: McpSubscriptionList
-    plural: mcpsubscriptions
-    singular: mcpsubscription
+    kind: AgenticSubscription
+    listKind: AgenticSubscriptionList
+    plural: agenticsubscriptions
+    singular: agenticsubscription
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -33,9 +33,9 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          McpSubscription is the Schema for the mcpsubscriptions API.
+          AgenticSubscription is the Schema for the agenticsubscriptions API.
           It represents a request by an application to consume an MCP server
-          exposed via McpExposure, with approval and access control.
+          exposed via AgenticExposure, with approval and access control.
         properties:
           apiVersion:
             description: |-
@@ -55,10 +55,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: McpSubscriptionSpec defines the desired state of McpSubscription.
+            description: AgenticSubscriptionSpec defines the desired state of AgenticSubscription.
             properties:
               basePath:
-                description: BasePath references the McpServer/McpExposure via basePath.
+                description: BasePath references the AgenticServer/AgenticExposure
+                  via basePath.
                 minLength: 1
                 pattern: ^/.*$
                 type: string
@@ -196,7 +197,7 @@ spec:
             - zone
             type: object
           status:
-            description: McpSubscriptionStatus defines the observed state of McpSubscription.
+            description: AgenticSubscriptionStatus defines the observed state of AgenticSubscription.
             properties:
               approval:
                 description: Approval references the Approval CR for this subscription.

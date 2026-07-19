@@ -23,14 +23,14 @@ import (
 	rover "github.com/telekom/controlplane/rover/api/v1"
 )
 
-// HandleExposure creates or updates an McpExposure resource owned by the given Rover.
-func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Rover, exp *rover.AiExposure) error {
+// HandleExposure creates or updates an AgenticExposure resource owned by the given Rover.
+func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Rover, exp *rover.AgenticExposure) error {
 	logger := log.FromContext(ctx)
-	logger.V(1).Info("Handle AiExposure", "basePath", exp.BasePath)
+	logger.V(1).Info("Handle AgenticExposure", "basePath", exp.BasePath)
 
 	name := MakeName(owner.Name, exp.BasePath)
 
-	mcpExposure := &agenticv1.McpExposure{
+	agenticExposure := &agenticv1.AgenticExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeNameValue(name),
 			Namespace: owner.Namespace,
@@ -44,13 +44,13 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 	}
 
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(owner, mcpExposure, c.Scheme())
+		err := controllerutil.SetControllerReference(owner, agenticExposure, c.Scheme())
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
-		mcpExposure.Labels = map[string]string{
-			agenticv1.McpBasePathLabelKey:       labelutil.NormalizeLabelValue(exp.BasePath),
+		agenticExposure.Labels = map[string]string{
+			agenticv1.AgenticBasePathLabelKey:   labelutil.NormalizeLabelValue(exp.BasePath),
 			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}
@@ -70,7 +70,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			trustedTeams = append(trustedTeams, ownerTeam.GetName())
 		}
 
-		mcpExposure.Spec = agenticv1.McpExposureSpec{
+		agenticExposure.Spec = agenticv1.AgenticExposureSpec{
 			BasePath:   exp.BasePath,
 			Upstreams:  mapUpstreams(exp.Upstreams),
 			Visibility: agenticv1.Visibility(exp.Visibility.String()),
@@ -80,7 +80,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			},
 			Zone:           zoneRef,
 			Provider:       *owner.Status.Application,
-			Variant:        agenticv1.McpVariant(exp.Variant),
+			Variant:        agenticv1.AgenticVariant(exp.Variant),
 			Security:       mapSecurityToAgenticSecurity(exp.Security),
 			Traffic:        mapTrafficToAgenticTraffic(environment, exp.Traffic),
 			Transformation: mapTransformationToAgenticTransformation(exp.Transformation),
@@ -89,14 +89,14 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, mcpExposure, mutator)
+	_, err := c.CreateOrUpdate(ctx, agenticExposure, mutator)
 	if err != nil {
-		return errors.Wrap(err, "failed to create or update McpExposure")
+		return errors.Wrap(err, "failed to create or update AgenticExposure")
 	}
 
-	owner.Status.AiExposures = append(owner.Status.AiExposures, types.ObjectRef{
-		Name:      mcpExposure.Name,
-		Namespace: mcpExposure.Namespace,
+	owner.Status.AgenticExposures = append(owner.Status.AgenticExposures, types.ObjectRef{
+		Name:      agenticExposure.Name,
+		Namespace: agenticExposure.Namespace,
 	})
 	return nil
 }

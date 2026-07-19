@@ -25,9 +25,9 @@ rules:
 - apiGroups:
   - agentic.cp.ei.telekom.de
   resources:
-  - mcpexposures
-  - mcpservers
-  - mcpsubscriptions
+  - agenticexposures
+  - agenticservers
+  - agenticsubscriptions
   verbs:
   - create
   - delete
@@ -39,17 +39,17 @@ rules:
 - apiGroups:
   - agentic.cp.ei.telekom.de
   resources:
-  - mcpexposures/finalizers
-  - mcpservers/finalizers
-  - mcpsubscriptions/finalizers
+  - agenticexposures/finalizers
+  - agenticservers/finalizers
+  - agenticsubscriptions/finalizers
   verbs:
   - update
 - apiGroups:
   - agentic.cp.ei.telekom.de
   resources:
-  - mcpexposures/status
-  - mcpservers/status
-  - mcpsubscriptions/status
+  - agenticexposures/status
+  - agenticservers/status
+  - agenticsubscriptions/status
   verbs:
   - get
   - patch

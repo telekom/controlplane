@@ -24,53 +24,53 @@ var _ handler.Handler[*roverv1.McpSpecification] = (*McpSpecificationHandler)(ni
 
 type McpSpecificationHandler struct{}
 
-func (h *McpSpecificationHandler) CreateOrUpdate(ctx context.Context, mcpSpec *roverv1.McpSpecification) error {
+func (h *McpSpecificationHandler) CreateOrUpdate(ctx context.Context, spec *roverv1.McpSpecification) error {
 	c := client.ClientFromContextOrDie(ctx)
-	name := roverv1.MakeMcpSpecificationName(mcpSpec.Spec.BasePath)
+	name := roverv1.MakeMcpSpecificationName(spec.Spec.BasePath)
 
-	mcpServer := &agenticv1.McpServer{
+	agenticServer := &agenticv1.AgenticServer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeNameValue(name),
-			Namespace: mcpSpec.Namespace,
+			Namespace: spec.Namespace,
 		},
 	}
 
-	mcpSpec.Status.McpServer = *types.ObjectRefFromObject(mcpServer)
+	spec.Status.AgenticServer = *types.ObjectRefFromObject(agenticServer)
 
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(mcpSpec, mcpServer, c.Scheme())
+		err := controllerutil.SetControllerReference(spec, agenticServer, c.Scheme())
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
-		mcpServer.Labels = map[string]string{
-			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(mcpSpec.Spec.BasePath),
+		agenticServer.Labels = map[string]string{
+			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(spec.Spec.BasePath),
 		}
 
-		mcpServer.Spec = agenticv1.McpServerSpec{
-			BasePath:      mcpSpec.Spec.BasePath,
-			Version:       mcpSpec.Spec.Version,
-			Name:          mcpSpec.Spec.Name,
-			Description:   mcpSpec.Spec.Description,
-			Specification: mcpSpec.Spec.Specification,
-			Category:      mcpSpec.Spec.Category,
-			Oauth2Scopes:  mcpSpec.Spec.Oauth2Scopes,
+		agenticServer.Spec = agenticv1.AgenticServerSpec{
+			BasePath:      spec.Spec.BasePath,
+			Version:       spec.Spec.Version,
+			Name:          spec.Spec.Name,
+			Description:   spec.Spec.Description,
+			Specification: spec.Spec.Specification,
+			Category:      spec.Spec.Category,
+			Oauth2Scopes:  spec.Spec.Oauth2Scopes,
 		}
 
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, mcpServer, mutator)
+	_, err := c.CreateOrUpdate(ctx, agenticServer, mutator)
 	if err != nil {
-		return errors.Wrap(err, "failed to create or update McpServer")
+		return errors.Wrap(err, "failed to create or update AgenticServer")
 	}
 
 	if c.AnyChanged() {
-		mcpSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "McpServer updated"))
-		mcpSpec.SetCondition(condition.NewNotReadyCondition("Provisioning", "McpServer is not ready"))
+		spec.SetCondition(condition.NewProcessingCondition("Provisioning", "AgenticServer updated"))
+		spec.SetCondition(condition.NewNotReadyCondition("Provisioning", "AgenticServer is not ready"))
 	} else {
-		mcpSpec.SetCondition(condition.NewDoneProcessingCondition("McpServer created"))
-		mcpSpec.SetCondition(condition.NewReadyCondition("Provisioned", "McpServer is ready"))
+		spec.SetCondition(condition.NewDoneProcessingCondition("AgenticServer created"))
+		spec.SetCondition(condition.NewReadyCondition("Provisioned", "AgenticServer is ready"))
 	}
 
 	return nil

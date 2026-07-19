@@ -7,14 +7,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: mcpservers.agentic.cp.ei.telekom.de
+  name: agenticservers.agentic.cp.ei.telekom.de
 spec:
   group: agentic.cp.ei.telekom.de
   names:
-    kind: McpServer
-    listKind: McpServerList
-    plural: mcpservers
-    singular: mcpserver
+    kind: AgenticServer
+    listKind: AgenticServerList
+    plural: agenticservers
+    singular: agenticserver
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -33,9 +33,9 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          McpServer is the Schema for the mcpservers API.
+          AgenticServer is the Schema for the agenticservers API.
           It represents a registered MCP server definition, serving as the
-          canonical reference that McpExposure and McpSubscription point to.
+          canonical reference that AgenticExposure and AgenticSubscription point to.
         properties:
           apiVersion:
             description: |-
@@ -55,7 +55,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: McpServerSpec defines the desired state of McpServer.
+            description: AgenticServerSpec defines the desired state of AgenticServer.
             properties:
               basePath:
                 description: BasePath is the base path of the MCP server endpoint.
@@ -95,10 +95,10 @@ spec:
             - version
             type: object
           status:
-            description: McpServerStatus defines the observed state of McpServer.
+            description: AgenticServerStatus defines the observed state of AgenticServer.
             properties:
               active:
-                description: Active indicates whether this McpServer is the active
+                description: Active indicates whether this AgenticServer is the active
                   singleton for its basePath.
                 type: boolean
               conditions:

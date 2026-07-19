@@ -69,14 +69,14 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	}
 
 	if cconfig.FeatureAiGateway.IsEnabled() {
-		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.McpExposure{})
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.AgenticExposure{})
 		if err != nil {
-			ctrl.Log.Error(err, "unable to create ownerIndex for McpExposure")
+			ctrl.Log.Error(err, "unable to create ownerIndex for AgenticExposure")
 			os.Exit(1)
 		}
-		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.McpSubscription{})
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.AgenticSubscription{})
 		if err != nil {
-			ctrl.Log.Error(err, "unable to create ownerIndex for McpSubscription")
+			ctrl.Log.Error(err, "unable to create ownerIndex for AgenticSubscription")
 			os.Exit(1)
 		}
 	}

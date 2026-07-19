@@ -38,8 +38,8 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 			return errors.Wrap(err, "failed to map event exposure")
 		}
 
-	} else if in.Ai != nil {
-		if err := out.FromAiExposure(mapAiExposure(in.Ai)); err != nil {
+	} else if in.Agentic != nil {
+		if err := out.FromAiExposure(mapAiExposure(in.Agentic)); err != nil {
 			return errors.Wrap(err, "failed to map ai exposure")
 		}
 
@@ -142,7 +142,7 @@ func mapEventTriggerOut(in *roverv1.EventTrigger) api.EventTrigger {
 	return out
 }
 
-func mapAiExposure(in *roverv1.AiExposure) api.AiExposure {
+func mapAiExposure(in *roverv1.AgenticExposure) api.AiExposure {
 	aiExposure := api.AiExposure{
 		BasePath:   in.BasePath,
 		Variant:    api.AiExposureVariant(in.Variant),

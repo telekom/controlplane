@@ -77,15 +77,15 @@ func addKnownTypes(c client.JanitorClient) {
 		c.AddKnownTypeToState(&permissionv1.PermissionSet{})
 	}
 	if config.FeatureAiGateway.IsEnabled() {
-		c.AddKnownTypeToState(&agenticv1.McpExposure{})
-		c.AddKnownTypeToState(&agenticv1.McpSubscription{})
+		c.AddKnownTypeToState(&agenticv1.AgenticExposure{})
+		c.AddKnownTypeToState(&agenticv1.AgenticSubscription{})
 	}
 }
 
 func (h *RoverHandler) handleExposures(ctx context.Context, c client.JanitorClient, roverObj *roverv1.Rover, logger logr.Logger) error {
 	roverObj.Status.ApiExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	roverObj.Status.EventExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
-	roverObj.Status.AiExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
+	roverObj.Status.AgenticExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 
 	seenDiscriminators := make(map[string]struct{})
 	for _, exp := range roverObj.Spec.Exposures {
@@ -117,15 +117,15 @@ func (h *RoverHandler) handleExposure(ctx context.Context, c client.JanitorClien
 		if err := event.HandleExposure(ctx, c, roverObj, exp.Event); err != nil {
 			return errors.Wrap(err, "failed to handle event exposure")
 		}
-	case roverv1.TypeAi:
-		if err := recordUniqueDiscriminator(seenDiscriminators, exp.Ai.BasePath, "duplicate AI base path in exposures: %s"); err != nil {
+	case roverv1.TypeAgentic:
+		if err := recordUniqueDiscriminator(seenDiscriminators, exp.Agentic.BasePath, "duplicate AI base path in exposures: %s"); err != nil {
 			return err
 		}
 		if !config.FeatureAiGateway.IsEnabled() {
 			logger.Info("AI exposure skipped, feature has not been enabled")
 			return nil
 		}
-		if err := ai.HandleExposure(ctx, c, roverObj, exp.Ai); err != nil {
+		if err := ai.HandleExposure(ctx, c, roverObj, exp.Agentic); err != nil {
 			return errors.Wrap(err, "failed to handle AI exposure")
 		}
 	default:
@@ -138,7 +138,7 @@ func (h *RoverHandler) handleExposure(ctx context.Context, c client.JanitorClien
 func (h *RoverHandler) handleSubscriptions(ctx context.Context, c client.JanitorClient, roverObj *roverv1.Rover, logger logr.Logger) error {
 	roverObj.Status.ApiSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 	roverObj.Status.EventSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
-	roverObj.Status.AiSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
+	roverObj.Status.AgenticSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 
 	for _, sub := range roverObj.Spec.Subscriptions {
 		if err := h.handleSubscription(ctx, c, roverObj, sub, logger); err != nil {
@@ -163,12 +163,12 @@ func (h *RoverHandler) handleSubscription(ctx context.Context, c client.JanitorC
 		if err := event.HandleSubscription(ctx, c, roverObj, sub.Event); err != nil {
 			return errors.Wrap(err, "failed to handle event subscription")
 		}
-	case roverv1.TypeAi:
+	case roverv1.TypeAgentic:
 		if !config.FeatureAiGateway.IsEnabled() {
 			logger.Info("AI subscription skipped, feature has not been enabled")
 			return nil
 		}
-		if err := ai.HandleSubscription(ctx, c, roverObj, sub.Ai); err != nil {
+		if err := ai.HandleSubscription(ctx, c, roverObj, sub.Agentic); err != nil {
 			return errors.Wrap(err, "failed to handle AI subscription")
 		}
 	default:

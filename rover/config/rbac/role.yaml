@@ -25,9 +25,9 @@ rules:
 - apiGroups:
   - agentic.cp.ei.telekom.de
   resources:
-  - mcpexposures
-  - mcpservers
-  - mcpsubscriptions
+  - agenticexposures
+  - agenticservers
+  - agenticsubscriptions
   verbs:
   - create
   - delete
