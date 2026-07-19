@@ -20,7 +20,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
-	"github.com/telekom/controlplane/agentic/internal/handler/mcpsubscription"
+	"github.com/telekom/controlplane/agentic/internal/handler/agenticsubscription"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -29,21 +29,21 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
 
-// McpSubscriptionReconciler reconciles a McpSubscription object
-type McpSubscriptionReconciler struct {
+// AgenticSubscriptionReconciler reconciles a AgenticSubscription object
+type AgenticSubscriptionReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	cc.Controller[*agenticv1.McpSubscription]
+	cc.Controller[*agenticv1.AgenticSubscription]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpsubscriptions,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpsubscriptions/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpsubscriptions/finalizers,verbs=update
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpexposures,verbs=get;list;watch
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers,verbs=get;list;watch
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticsubscriptions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticsubscriptions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticsubscriptions/finalizers,verbs=update
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticexposures,verbs=get;list;watch
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticservers,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumeroutes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch
@@ -51,25 +51,25 @@ type McpSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvals,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvalrequests,verbs=get;list;watch;create;update;patch;delete
 
-func (r *McpSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	return r.Controller.Reconcile(ctx, req, &agenticv1.McpSubscription{})
+func (r *AgenticSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	return r.Controller.Reconcile(ctx, req, &agenticv1.AgenticSubscription{})
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *McpSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.Recorder = mgr.GetEventRecorderFor("mcpsubscription-controller")
-	r.Controller = cc.NewController(&mcpsubscription.McpSubscriptionHandler{}, r.Client, r.Recorder)
+func (r *AgenticSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.Recorder = mgr.GetEventRecorderFor("agenticsubscription-controller")
+	r.Controller = cc.NewController(&agenticsubscription.AgenticSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&agenticv1.McpSubscription{}).
+		For(&agenticv1.AgenticSubscription{}).
 		Owns(&gatewayv1.ConsumeRoute{}).
 		Owns(&approvalv1.ApprovalRequest{}).
-		Watches(&agenticv1.McpExposure{},
-			handler.EnqueueRequestsFromMapFunc(r.MapMcpExposureToMcpSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		Watches(&agenticv1.AgenticExposure{},
+			handler.EnqueueRequestsFromMapFunc(r.MapAgenticExposureToAgenticSubscription),
+		    builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&approvalv1.Approval{},
-			handler.EnqueueRequestsFromMapFunc(r.MapApprovalToMcpSubscription),
+			handler.EnqueueRequestsFromMapFunc(r.MapApprovalToAgenticSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&applicationv1.Application{},
@@ -91,18 +91,18 @@ func (r *McpSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// MapMcpExposureToMcpSubscription enqueues McpSubscriptions whose basePath matches
-// the changed McpExposure.
-func (r *McpSubscriptionReconciler) MapMcpExposureToMcpSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	exposure, ok := obj.(*agenticv1.McpExposure)
+// MapAgenticExposureToAgenticSubscription enqueues AgenticSubscriptions whose basePath matches
+// the changed AgenticExposure.
+func (r *AgenticSubscriptionReconciler) MapAgenticExposureToAgenticSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+	exposure, ok := obj.(*agenticv1.AgenticExposure)
 	if !ok {
 		return nil
 	}
 
-	list := &agenticv1.McpSubscriptionList{}
+	list := &agenticv1.AgenticSubscriptionList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:   exposure.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
+		cconfig.EnvironmentLabelKey:       exposure.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}
@@ -118,8 +118,8 @@ func (r *McpSubscriptionReconciler) MapMcpExposureToMcpSubscription(ctx context.
 	return reqs
 }
 
-// MapApprovalToMcpSubscription enqueues McpSubscriptions that own the changed Approval.
-func (r *McpSubscriptionReconciler) MapApprovalToMcpSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+// MapApprovalToAgenticSubscription enqueues AgenticSubscriptions that own the changed Approval.
+func (r *AgenticSubscriptionReconciler) MapApprovalToAgenticSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	approval, ok := obj.(*approvalv1.Approval)
 	if !ok {
 		return nil
@@ -127,7 +127,7 @@ func (r *McpSubscriptionReconciler) MapApprovalToMcpSubscription(ctx context.Con
 
 	// Get owner reference
 	for _, ref := range approval.GetOwnerReferences() {
-		if ref.Kind == "McpSubscription" {
+		if ref.Kind == "AgenticSubscription" {
 			return []reconcile.Request{
 				{NamespacedName: client.ObjectKey{
 					Name:      ref.Name,

@@ -7,14 +7,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: mcpexposures.agentic.cp.ei.telekom.de
+  name: agenticexposures.agentic.cp.ei.telekom.de
 spec:
   group: agentic.cp.ei.telekom.de
   names:
-    kind: McpExposure
-    listKind: McpExposureList
-    plural: mcpexposures
-    singular: mcpexposure
+    kind: AgenticExposure
+    listKind: AgenticExposureList
+    plural: agenticexposures
+    singular: agenticexposure
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -37,7 +37,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          McpExposure is the Schema for the mcpexposures API.
+          AgenticExposure is the Schema for the agenticexposures API.
           It represents a declaration that an application exposes an MCP server,
           making it available for subscription by other applications via the AI Gateway.
         properties:
@@ -59,7 +59,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: McpExposureSpec defines the desired state of McpExposure.
+            description: AgenticExposureSpec defines the desired state of AgenticExposure.
             properties:
               approval:
                 description: Approval configures how subscriptions to this MCP server
@@ -85,7 +85,7 @@ spec:
                 - strategy
                 type: object
               basePath:
-                description: BasePath references the McpServer via its basePath.
+                description: BasePath references the AgenticServer via its basePath.
                 minLength: 1
                 pattern: ^/.*$
                 type: string
@@ -471,11 +471,11 @@ spec:
             - zone
             type: object
           status:
-            description: McpExposureStatus defines the observed state of McpExposure.
+            description: AgenticExposureStatus defines the observed state of AgenticExposure.
             properties:
               active:
-                description: Active indicates whether this McpExposure is the active
-                  one for its basePath.
+                description: Active indicates whether this AgenticExposure is the
+                  active one for its basePath.
                 type: boolean
               conditions:
                 items:

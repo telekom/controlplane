@@ -21,14 +21,14 @@ import (
 	rover "github.com/telekom/controlplane/rover/api/v1"
 )
 
-// HandleSubscription creates or updates an McpSubscription resource owned by the given Rover.
-func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rover.Rover, sub *rover.AiSubscription) error {
+// HandleSubscription creates or updates an AgenticSubscription resource owned by the given Rover.
+func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rover.Rover, sub *rover.AgenticSubscription) error {
 	logger := log.FromContext(ctx)
-	logger.V(1).Info("Handle AiSubscription", "basePath", sub.BasePath)
+	logger.V(1).Info("Handle AgenticSubscription", "basePath", sub.BasePath)
 
 	name := MakeName(owner.Name, sub.BasePath)
 
-	mcpSubscription := &agenticv1.McpSubscription{
+	agenticSubscription := &agenticv1.AgenticSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeNameValue(name),
 			Namespace: owner.Namespace,
@@ -42,18 +42,18 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 	}
 
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(owner, mcpSubscription, c.Scheme())
+		err := controllerutil.SetControllerReference(owner, agenticSubscription, c.Scheme())
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
-		mcpSubscription.Labels = map[string]string{
-			agenticv1.McpBasePathLabelKey:       labelutil.NormalizeLabelValue(sub.BasePath),
+		agenticSubscription.Labels = map[string]string{
+			agenticv1.AgenticBasePathLabelKey:   labelutil.NormalizeLabelValue(sub.BasePath),
 			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}
 
-		mcpSubscription.Spec = agenticv1.McpSubscriptionSpec{
+		agenticSubscription.Spec = agenticv1.AgenticSubscriptionSpec{
 			BasePath: sub.BasePath,
 			Zone:     zoneRef,
 			Requestor: agenticv1.Requestor{
@@ -66,14 +66,14 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, mcpSubscription, mutator)
+	_, err := c.CreateOrUpdate(ctx, agenticSubscription, mutator)
 	if err != nil {
-		return errors.Wrap(err, "failed to create or update McpSubscription")
+		return errors.Wrap(err, "failed to create or update AgenticSubscription")
 	}
 
-	owner.Status.AiSubscriptions = append(owner.Status.AiSubscriptions, types.ObjectRef{
-		Name:      mcpSubscription.Name,
-		Namespace: mcpSubscription.Namespace,
+	owner.Status.AgenticSubscriptions = append(owner.Status.AgenticSubscriptions, types.ObjectRef{
+		Name:      agenticSubscription.Name,
+		Namespace: agenticSubscription.Namespace,
 	})
 	return nil
 }

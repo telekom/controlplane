@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mcpexposure
+package agenticexposure
 
 import (
 	"context"
@@ -23,26 +23,26 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
-var _ handler.Handler[*agenticv1.McpExposure] = &McpExposureHandler{}
+var _ handler.Handler[*agenticv1.AgenticExposure] = &AgenticExposureHandler{}
 
-type McpExposureHandler struct {
+type AgenticExposureHandler struct {
 	Config *agenticconfig.AgenticConfig
 }
 
-func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.McpExposure) error {
+func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.AgenticExposure) error {
 	logger := log.FromContext(ctx)
 
-	// 1. Validate McpServer exists and is active
-	found, mcpServer, err := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
+	// 1. Validate AgenticServer exists and is active
+	found, mcpServer, err := util.FindActiveAgenticServer(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return err
 	}
-	obj.SetCondition(NewMcpServerCondition(found))
+	obj.SetCondition(NewAgenticServerCondition(found))
 	if !found {
-		return handleMcpServerNotFound(ctx, obj, mcpServer)
+		return handleAgenticServerNotFound(ctx, obj, mcpServer)
 	}
 
-	// 1b. Validate exposure scopes against McpServer's declared scopes
+	// 1b. Validate exposure scopes against AgenticServer's declared scopes
 	if !validateExposureScopes(ctx, mcpServer, obj) {
 		return nil
 	}
@@ -54,7 +54,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 
 	// This exposure is active
 	obj.Status.Active = true
-	obj.SetCondition(NewMcpExposureActiveCondition(true))
+	obj.SetCondition(NewAgenticExposureActiveCondition(true))
 
 	// 3. Get and validate zone
 	zone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
@@ -73,7 +73,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil
 
-	crossZones, hasLocalSubs, err := util.FindCrossZoneMcpSubscriptionZones(ctx, obj.Spec.BasePath, obj.Spec.Zone.Name)
+	crossZones, hasLocalSubs, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, obj.Spec.BasePath, obj.Spec.Zone.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to find cross-zone MCP subscriptions")
 	}
@@ -90,7 +90,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 			crossZoneLmsIssuers = append(crossZoneLmsIssuers, subscriberZone.Status.Links.LmsIssuer)
 		}
 
-		proxyRoute, routeErr := util.CreateMcpProxyRoute(ctx, obj.Spec.BasePath, subscriberZone, zone)
+		proxyRoute, routeErr := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, subscriberZone, zone)
 		if routeErr != nil {
 			return errors.Wrapf(routeErr, "failed to create MCP proxy Route for zone %q", subscriberZoneRef.Name)
 		}
@@ -110,7 +110,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	if telecontextInfo != nil {
 		telecontextConsumer = telecontextInfo.ConsumerName
 	}
-	route, err := util.CreateMcpRoute(ctx, obj, zone, hasLocalSubs, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
+	route, err := util.CreateAgenticRoute(ctx, obj, zone, hasLocalSubs, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
 	if err != nil {
 		return errors.Wrap(err, "failed to create MCP Route")
 	}
@@ -118,7 +118,7 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 	logger.V(1).Info("MCP Route created/updated", "route", route.Name)
 
 	// 8. Cleanup stale routes
-	deleted, err := util.CleanupOldMcpRoutes(ctx, obj.Spec.BasePath)
+	deleted, err := util.CleanupOldAgenticRoutes(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to cleanup old MCP Routes")
 	}
@@ -135,19 +135,19 @@ func (h *McpExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.
 		return nil
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("McpExposureProvisioned",
-		"McpExposure has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition("AgenticExposureProvisioned",
+		"AgenticExposure has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
-		"McpExposure has been provisioned"))
+		"AgenticExposure has been provisioned"))
 
 	return nil
 }
 
 // resolveTelecontext handles the TELECONTEXTMCP variant: resolves the Telecontext Application,
 // creates a proxy route on the Telecontext zone if needed, and returns the resolved info.
-func (h *McpExposureHandler) resolveTelecontext(
+func (h *AgenticExposureHandler) resolveTelecontext(
 	ctx context.Context,
-	obj *agenticv1.McpExposure,
+	obj *agenticv1.AgenticExposure,
 	crossZones []ctypes.ObjectRef,
 	crossZoneLmsIssuers []string,
 	providerZone *adminv1.Zone,
@@ -182,70 +182,70 @@ func (h *McpExposureHandler) resolveTelecontext(
 	return info, crossZoneLmsIssuers, nil
 }
 
-// checkCompetingExposures verifies that no other active McpExposure exists for the same basePath.
+// checkCompetingExposures verifies that no other active AgenticExposure exists for the same basePath.
 // Returns (true, nil) if this exposure is blocked by an older one, (false, nil) to continue, or (false, err) on failure.
-func checkCompetingExposures(ctx context.Context, obj *agenticv1.McpExposure) (bool, error) {
-	existingExposures, err := util.FindMcpExposures(ctx, obj.Spec.BasePath)
+func checkCompetingExposures(ctx context.Context, obj *agenticv1.AgenticExposure) (bool, error) {
+	existingExposures, err := util.FindAgenticExposures(ctx, obj.Spec.BasePath)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to list McpExposures for basePath %q", obj.Spec.BasePath)
+		return false, errors.Wrapf(err, "failed to list AgenticExposures for basePath %q", obj.Spec.BasePath)
 	}
-	existingFound, existingExposure, err := util.FindActiveMcpExposure(existingExposures)
+	existingFound, existingExposure, err := util.FindActiveAgenticExposure(existingExposures)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to find active McpExposure for basePath %q", obj.Spec.BasePath)
+		return false, errors.Wrapf(err, "failed to find active AgenticExposure for basePath %q", obj.Spec.BasePath)
 	}
 
 	if existingFound && existingExposure.UID != obj.UID {
 		obj.Status.Active = false
-		obj.SetCondition(NewMcpExposureActiveCondition(false))
+		obj.SetCondition(NewAgenticExposureActiveCondition(false))
 		msg := fmt.Sprintf("BasePath %q is already exposed by team %q.", obj.Spec.BasePath, existingExposure.Spec.Provider.Namespace)
-		obj.SetCondition(condition.NewNotReadyCondition("McpExposureAlreadyExists", msg))
-		obj.SetCondition(condition.NewBlockedCondition(msg + " McpExposure will be automatically processed when the existing one is deleted"))
+		obj.SetCondition(condition.NewNotReadyCondition("AgenticExposureAlreadyExists", msg))
+		obj.SetCondition(condition.NewBlockedCondition(msg + " AgenticExposure will be automatically processed when the existing one is deleted"))
 		return true, nil
 	}
 
 	return false, nil
 }
 
-// handleMcpServerNotFound handles the case where no active McpServer was found.
+// handleAgenticServerNotFound handles the case where no active AgenticServer was found.
 // It checks for case-only mismatches, cleans up stale routes, and sets blocking conditions.
-func handleMcpServerNotFound(ctx context.Context, obj *agenticv1.McpExposure, mcpServer *agenticv1.McpServer) error {
+func handleAgenticServerNotFound(ctx context.Context, obj *agenticv1.AgenticExposure, mcpServer *agenticv1.AgenticServer) error {
 	if mcpServer != nil {
-		msg := fmt.Sprintf("McpServer is registered but the case does not match (got=%q, found=%q). "+
-			"Please resolve the conflict by changing the BasePath of either the McpServer or the McpExposure.",
+		msg := fmt.Sprintf("AgenticServer is registered but the case does not match (got=%q, found=%q). "+
+			"Please resolve the conflict by changing the BasePath of either the AgenticServer or the AgenticExposure.",
 			obj.Spec.BasePath, mcpServer.Spec.BasePath)
-		obj.SetCondition(condition.NewNotReadyCondition("McpServerCaseConflict", msg))
+		obj.SetCondition(condition.NewNotReadyCondition("AgenticServerCaseConflict", msg))
 		obj.SetCondition(condition.NewBlockedCondition(msg))
 		return nil
 	}
 
 	if obj.Status.Route != nil {
 		if cleanupErr := util.DeleteRouteIfExists(ctx, obj.Status.Route); cleanupErr != nil {
-			return errors.Wrap(cleanupErr, "failed to cleanup Route after McpServer not found")
+			return errors.Wrap(cleanupErr, "failed to cleanup Route after AgenticServer not found")
 		}
 	}
 	for i := range obj.Status.ProxyRoutes {
 		if cleanupErr := util.DeleteRouteIfExists(ctx, &obj.Status.ProxyRoutes[i]); cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "failed to cleanup proxy Route after McpServer not found")
+			return errors.Wrapf(cleanupErr, "failed to cleanup proxy Route after AgenticServer not found")
 		}
 	}
 
-	obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
-		"No active McpServer found for basePath "+obj.Spec.BasePath))
+	obj.SetCondition(condition.NewNotReadyCondition("AgenticServerNotFound",
+		"No active AgenticServer found for basePath "+obj.Spec.BasePath))
 	obj.SetCondition(condition.NewBlockedCondition(
-		"McpServer " + obj.Spec.BasePath + " does not exist or is not active. " +
-			"McpExposure will be automatically processed when the McpServer is registered"))
+		"AgenticServer " + obj.Spec.BasePath + " does not exist or is not active. " +
+			"AgenticExposure will be automatically processed when the AgenticServer is registered"))
 	return nil
 }
 
-// validateExposureScopes checks that the M2M scopes in the McpExposure are a valid subset of the McpServer's scopes.
+// validateExposureScopes checks that the M2M scopes in the AgenticExposure are a valid subset of the AgenticServer's scopes.
 // It sets blocking conditions on the exposure and returns false if processing should stop.
-func validateExposureScopes(_ context.Context, mcpServer *agenticv1.McpServer, obj *agenticv1.McpExposure) bool {
+func validateExposureScopes(_ context.Context, mcpServer *agenticv1.AgenticServer, obj *agenticv1.AgenticExposure) bool {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil || obj.HasExternalIdp() {
 		return true
 	}
 	if len(mcpServer.Spec.Oauth2Scopes) == 0 {
-		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "McpServer does not define any OAuth2 scopes"))
-		obj.SetCondition(condition.NewBlockedCondition("McpServer does not define any OAuth2 scopes. McpExposure will be automatically processed, if the McpServer will be updated with scopes"))
+		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "AgenticServer does not define any OAuth2 scopes"))
+		obj.SetCondition(condition.NewBlockedCondition("AgenticServer does not define any OAuth2 scopes. AgenticExposure will be automatically processed, if the AgenticServer will be updated with scopes"))
 		return false
 	}
 	scopesExist, invalidScopes := util.IsSubsetOfScopes(mcpServer.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
@@ -254,7 +254,7 @@ func validateExposureScopes(_ context.Context, mcpServer *agenticv1.McpServer, o
 			strings.Join(mcpServer.Spec.Oauth2Scopes, ", "),
 			strings.Join(invalidScopes, ", "),
 		)
-		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in McpExposure are not defined in the McpServer"))
+		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in AgenticExposure are not defined in the AgenticServer"))
 		obj.SetCondition(condition.NewBlockedCondition(message))
 		return false
 	}
@@ -266,7 +266,7 @@ func validateExposureScopes(_ context.Context, mcpServer *agenticv1.McpServer, o
 // Returns the proxy route ObjectRef (nil if not needed), the LMS issuer to trust, and any error.
 func ensureTelecontextProxyRoute(
 	ctx context.Context,
-	obj *agenticv1.McpExposure,
+	obj *agenticv1.AgenticExposure,
 	info *util.TelecontextInfo,
 	crossZones []ctypes.ObjectRef,
 	providerZone *adminv1.Zone,
@@ -286,7 +286,7 @@ func ensureTelecontextProxyRoute(
 		return nil, "", errors.Wrapf(err, "failed to get Telecontext zone %q", info.Zone.Name)
 	}
 
-	proxyRoute, err := util.CreateMcpProxyRoute(ctx, obj.Spec.BasePath, telecontextZone, providerZone)
+	proxyRoute, err := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, telecontextZone, providerZone)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to create MCP proxy Route for Telecontext zone %q", info.Zone.Name)
 	}
@@ -294,17 +294,17 @@ func ensureTelecontextProxyRoute(
 	return ctypes.ObjectRefFromObject(proxyRoute), telecontextZone.Status.Links.LmsIssuer, nil
 }
 
-func (h *McpExposureHandler) Delete(ctx context.Context, obj *agenticv1.McpExposure) error {
+func (h *AgenticExposureHandler) Delete(ctx context.Context, obj *agenticv1.AgenticExposure) error {
 	logger := log.FromContext(ctx)
 
-	// Check if another McpExposure exists for the same basePath.
-	otherExists, err := util.AnyOtherMcpExposureExists(ctx, obj.Spec.BasePath, obj.UID)
+	// Check if another AgenticExposure exists for the same basePath.
+	otherExists, err := util.AnyOtherAgenticExposureExists(ctx, obj.Spec.BasePath, obj.UID)
 	if err != nil {
-		return errors.Wrap(err, "failed to check for other McpExposures")
+		return errors.Wrap(err, "failed to check for other AgenticExposures")
 	}
 
 	if otherExists {
-		logger.Info("Skipping Route deletion — another McpExposure exists for this basePath",
+		logger.Info("Skipping Route deletion — another AgenticExposure exists for this basePath",
 			"basePath", obj.Spec.BasePath)
 		return nil
 	}

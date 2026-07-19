@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeMcpSpecificationName generates a name for the McpServer resource based on the BasePath.
+// MakeMcpSpecificationName generates a name for the AgenticServer resource based on the BasePath.
 // It normalizes the BasePath by removing leading slashes and replacing slashes with hyphens.
 func MakeMcpSpecificationName(basePath string) string {
 	name := strings.TrimPrefix(basePath, "/")
@@ -65,8 +65,8 @@ type McpSpecificationStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	// McpServer reference
-	McpServer types.ObjectRef `json:"mcpServer,omitempty"`
+	// AgenticServer reference
+	AgenticServer types.ObjectRef `json:"agenticServer,omitempty"`
 }
 
 //+kubebuilder:object:root=true

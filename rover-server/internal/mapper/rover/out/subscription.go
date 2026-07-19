@@ -24,8 +24,8 @@ func mapSubscription(in *roverv1.Subscription, out *api.Subscription) error {
 		if err := out.FromEventSubscription(mapEventSubscription(in.Event)); err != nil {
 			return errors.Wrap(err, "failed to map event subscription")
 		}
-	} else if in.Ai != nil {
-		if err := out.FromAiSubscription(mapAiSubscription(in.Ai)); err != nil {
+	} else if in.Agentic != nil {
+		if err := out.FromAiSubscription(mapAiSubscription(in.Agentic)); err != nil {
 			return errors.Wrap(err, "failed to map ai subscription")
 		}
 	} else {
@@ -75,7 +75,7 @@ func mapEventSubscription(in *roverv1.EventSubscription) api.EventSubscription {
 	return out
 }
 
-func mapAiSubscription(in *roverv1.AiSubscription) api.AiSubscription {
+func mapAiSubscription(in *roverv1.AgenticSubscription) api.AiSubscription {
 	out := api.AiSubscription{
 		BasePath: in.BasePath,
 	}
