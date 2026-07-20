@@ -207,6 +207,7 @@ type ComplexityRoot struct {
 		Name                  func(childComplexity int) int
 		Namespace             func(childComplexity int) int
 		OwnerTeam             func(childComplexity int) int
+		PermissionSet         func(childComplexity int) int
 		RotatedClientSecret   func(childComplexity int) int
 		RotatedExpiresAt      func(childComplexity int) int
 		SecretRotationMessage func(childComplexity int) int
@@ -548,6 +549,34 @@ type ComplexityRoot struct {
 		StartCursor     func(childComplexity int) int
 	}
 
+	Permission struct {
+		Actions  func(childComplexity int) int
+		Resource func(childComplexity int) int
+		Role     func(childComplexity int) int
+	}
+
+	PermissionSet struct {
+		CreatedAt      func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		Permissions    func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
+	}
+
+	PermissionSetConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	PermissionSetEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Query struct {
 		APICategories      func(childComplexity int) int
 		APIExposures       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
@@ -561,6 +590,7 @@ type ComplexityRoot struct {
 		EventTypes         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
 		Node               func(childComplexity int, id int) int
 		Nodes              func(childComplexity int, ids []int) int
+		PermissionSets     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) int
 		Teams              func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) int
 		Zones              func(childComplexity int) int
 	}
@@ -1347,6 +1377,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.OwnerTeam(childComplexity), true
+	case "Application.permissionSet":
+		if e.ComplexityRoot.Application.PermissionSet == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.PermissionSet(childComplexity), true
 	case "Application.rotatedClientSecret":
 		if e.ComplexityRoot.Application.RotatedClientSecret == nil {
 			break
@@ -2735,6 +2771,106 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.PageInfo.StartCursor(childComplexity), true
 
+	case "Permission.actions":
+		if e.ComplexityRoot.Permission.Actions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Permission.Actions(childComplexity), true
+	case "Permission.resource":
+		if e.ComplexityRoot.Permission.Resource == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Permission.Resource(childComplexity), true
+	case "Permission.role":
+		if e.ComplexityRoot.Permission.Role == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Permission.Role(childComplexity), true
+
+	case "PermissionSet.createdAt":
+		if e.ComplexityRoot.PermissionSet.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.CreatedAt(childComplexity), true
+	case "PermissionSet.environment":
+		if e.ComplexityRoot.PermissionSet.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.Environment(childComplexity), true
+	case "PermissionSet.id":
+		if e.ComplexityRoot.PermissionSet.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.ID(childComplexity), true
+	case "PermissionSet.lastModifiedAt":
+		if e.ComplexityRoot.PermissionSet.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.LastModifiedAt(childComplexity), true
+	case "PermissionSet.namespace":
+		if e.ComplexityRoot.PermissionSet.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.Namespace(childComplexity), true
+	case "PermissionSet.permissions":
+		if e.ComplexityRoot.PermissionSet.Permissions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.Permissions(childComplexity), true
+	case "PermissionSet.statusMessage":
+		if e.ComplexityRoot.PermissionSet.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.StatusMessage(childComplexity), true
+	case "PermissionSet.statusPhase":
+		if e.ComplexityRoot.PermissionSet.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.StatusPhase(childComplexity), true
+
+	case "PermissionSetConnection.edges":
+		if e.ComplexityRoot.PermissionSetConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetConnection.Edges(childComplexity), true
+	case "PermissionSetConnection.pageInfo":
+		if e.ComplexityRoot.PermissionSetConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetConnection.PageInfo(childComplexity), true
+	case "PermissionSetConnection.totalCount":
+		if e.ComplexityRoot.PermissionSetConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetConnection.TotalCount(childComplexity), true
+
+	case "PermissionSetEdge.cursor":
+		if e.ComplexityRoot.PermissionSetEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetEdge.Cursor(childComplexity), true
+	case "PermissionSetEdge.node":
+		if e.ComplexityRoot.PermissionSetEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetEdge.Node(childComplexity), true
+
 	case "Query.apiCategories":
 		if e.ComplexityRoot.Query.APICategories == nil {
 			break
@@ -2863,6 +2999,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Nodes(childComplexity, args["ids"].([]int)), true
+	case "Query.permissionSets":
+		if e.ComplexityRoot.Query.PermissionSets == nil {
+			break
+		}
+
+		args, err := ec.field_Query_permissionSets_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.PermissionSets(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.PermissionSetOrder), args["where"].(*ent.PermissionSetWhereInput)), true
 	case "Query.teams":
 		if e.ComplexityRoot.Query.Teams == nil {
 			break
@@ -3386,6 +3533,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
+		ec.unmarshalInputPermissionSetOrder,
+		ec.unmarshalInputPermissionSetWhereInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
 		ec.unmarshalInputUpdateTeamInput,
@@ -4380,6 +4529,7 @@ type Application implements Node {
     """
     where: EventSubscriptionWhereInput
   ): EventSubscriptionConnection!
+  permissionSet: PermissionSet
 }
 """
 A connection to a list of items.
@@ -4668,6 +4818,11 @@ input ApplicationWhereInput {
   """
   hasSubscribedEvents: Boolean
   hasSubscribedEventsWith: [EventSubscriptionWhereInput!]
+  """
+  permission_set edge predicates
+  """
+  hasPermissionSet: Boolean
+  hasPermissionSetWith: [PermissionSetWhereInput!]
 }
 type Approval implements Node {
   id: ID!
@@ -6252,6 +6407,183 @@ type PageInfo {
   """
   endCursor: Cursor
 }
+type PermissionSet implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: PermissionSetStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  permissions: [Permission]
+}
+"""
+A connection to a list of items.
+"""
+type PermissionSetConnection {
+  """
+  A list of edges.
+  """
+  edges: [PermissionSetEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type PermissionSetEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: PermissionSet
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for PermissionSet connections
+"""
+input PermissionSetOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order PermissionSets.
+  """
+  field: PermissionSetOrderField!
+}
+"""
+Properties by which PermissionSet connections can be ordered.
+"""
+enum PermissionSetOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+PermissionSetStatusPhase is enum for the field status_phase
+"""
+enum PermissionSetStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/permissionset.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+PermissionSetWhereInput is used for filtering PermissionSet objects.
+Input was generated by ent.
+"""
+input PermissionSetWhereInput {
+  not: PermissionSetWhereInput
+  and: [PermissionSetWhereInput!]
+  or: [PermissionSetWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: PermissionSetStatusPhase
+  statusPhaseNEQ: PermissionSetStatusPhase
+  statusPhaseIn: [PermissionSetStatusPhase!]
+  statusPhaseNotIn: [PermissionSetStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  owner_application edge predicates
+  """
+  hasOwnerApplication: Boolean
+  hasOwnerApplicationWith: [ApplicationWhereInput!]
+}
 type Query {
   """
   Fetches an object given its ID.
@@ -6550,6 +6882,37 @@ type Query {
     """
     where: EventTypeWhereInput
   ): EventTypeConnection!
+  permissionSets(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for PermissionSets returned from the connection.
+    """
+    orderBy: PermissionSetOrder
+
+    """
+    Filtering options for PermissionSets returned from the connection.
+    """
+    where: PermissionSetWhereInput
+  ): PermissionSetConnection!
   teams(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -7268,6 +7631,13 @@ type Upstream {
   weight: Int!
 }
 
+"A single role-resource-actions grant within a PermissionSet."
+type Permission {
+  role: String!
+  resource: String!
+  actions: [String!]!
+}
+
 type ApprovalConfig {
   strategy: ApprovalStrategy!
   trustedTeams: [String!]!
@@ -7907,6 +8277,8 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_exposedEvents(ctx, field)
 	case "subscribedEvents":
 		return ec.fieldContext_Application_subscribedEvents(ctx, field)
+	case "permissionSet":
+		return ec.fieldContext_Application_permissionSet(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_Application_ownerTeam(ctx, field)
 	}
@@ -8549,6 +8921,62 @@ func (ec *executionContext) childFields_PageInfo(ctx context.Context, field grap
 		return ec.fieldContext_PageInfo_endCursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_Permission(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "role":
+		return ec.fieldContext_Permission_role(ctx, field)
+	case "resource":
+		return ec.fieldContext_Permission_resource(ctx, field)
+	case "actions":
+		return ec.fieldContext_Permission_actions(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Permission", field.Name)
+}
+
+func (ec *executionContext) childFields_PermissionSet(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_PermissionSet_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_PermissionSet_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_PermissionSet_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_PermissionSet_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_PermissionSet_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_PermissionSet_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_PermissionSet_namespace(ctx, field)
+	case "permissions":
+		return ec.fieldContext_PermissionSet_permissions(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PermissionSet", field.Name)
+}
+
+func (ec *executionContext) childFields_PermissionSetConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_PermissionSetConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_PermissionSetConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_PermissionSetConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PermissionSetConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_PermissionSetEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_PermissionSetEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_PermissionSetEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PermissionSetEdge", field.Name)
 }
 
 func (ec *executionContext) childFields_RateLimit(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -78,11 +79,13 @@ type ApplicationEdges struct {
 	ExposedEvents []*EventExposure `json:"exposed_events,omitempty"`
 	// SubscribedEvents holds the value of the subscribed_events edge.
 	SubscribedEvents []*EventSubscription `json:"subscribed_events,omitempty"`
+	// PermissionSet holds the value of the permission_set edge.
+	PermissionSet *PermissionSet `json:"permission_set,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [5]map[string]int
+	totalCount [6]map[string]int
 
 	namedExposedApis      map[string][]*ApiExposure
 	namedSubscribedApis   map[string][]*ApiSubscription
@@ -146,6 +149,17 @@ func (e ApplicationEdges) SubscribedEventsOrErr() ([]*EventSubscription, error) 
 		return e.SubscribedEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "subscribed_events"}
+}
+
+// PermissionSetOrErr returns the PermissionSet value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApplicationEdges) PermissionSetOrErr() (*PermissionSet, error) {
+	if e.PermissionSet != nil {
+		return e.PermissionSet, nil
+	} else if e.loadedTypes[6] {
+		return nil, &NotFoundError{label: permissionset.Label}
+	}
+	return nil, &NotLoadedError{edge: "permission_set"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -350,6 +364,11 @@ func (_m *Application) QueryExposedEvents() *EventExposureQuery {
 // QuerySubscribedEvents queries the "subscribed_events" edge of the Application entity.
 func (_m *Application) QuerySubscribedEvents() *EventSubscriptionQuery {
 	return NewApplicationClient(_m.config).QuerySubscribedEvents(_m)
+}
+
+// QueryPermissionSet queries the "permission_set" edge of the Application entity.
+func (_m *Application) QueryPermissionSet() *PermissionSetQuery {
+	return NewApplicationClient(_m.config).QueryPermissionSet(_m)
 }
 
 // Update returns a builder for updating this Application.

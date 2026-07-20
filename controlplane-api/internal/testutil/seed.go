@@ -35,6 +35,8 @@ type SeedData struct {
 
 	EventExposureAlpha *ent.EventExposure
 	EventSubscription  *ent.EventSubscription
+
+	PermissionSetAlpha *ent.PermissionSet
 }
 
 // SeedStandard creates a standard set of test data covering all entity types.
@@ -117,6 +119,15 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetEventType("order.created").
 		SetOwner(s.AppBeta).
 		SetTarget(s.EventExposureAlpha).
+		Save(ctx))
+
+	// Permission Set owned by app-alpha
+	s.PermissionSetAlpha = must(client.PermissionSet.Create().
+		SetNamespace("default").
+		SetPermissions([]model.Permission{
+			{Role: "admin", Resource: "orders", Actions: []string{"read", "write"}},
+		}).
+		SetOwnerApplication(s.AppAlpha).
 		Save(ctx))
 
 	return s

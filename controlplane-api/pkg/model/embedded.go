@@ -106,6 +106,14 @@ type ExternalId struct {
 	Scheme string `json:"scheme"`
 }
 
+// Permission represents a single role-resource-actions grant within a
+// PermissionSet.
+type Permission struct {
+	Role     string   `json:"role"`
+	Resource string   `json:"resource"`
+	Actions  []string `json:"actions"`
+}
+
 // Security
 
 // ApiExposureSecurity represents the security config

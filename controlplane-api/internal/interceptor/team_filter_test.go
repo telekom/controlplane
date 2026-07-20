@@ -108,6 +108,10 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.EventSubscription.Query().All(ctx)
 				return len(r), e
 			}, 1),
+			Entry("permission sets", func(ctx context.Context) (int, error) {
+				r, e := client.PermissionSet.Query().All(ctx)
+				return len(r), e
+			}, 1),
 		)
 	})
 
@@ -160,7 +164,34 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.EventSubscription.Query().All(ctx)
 				return len(r), e
 			}, 0),
+			Entry("permission sets (team-alpha owns one)", func(ctx context.Context) (int, error) {
+				r, e := client.PermissionSet.Query().All(ctx)
+				return len(r), e
+			}, 1),
 		)
+
+		// PermissionSet exposes access-control data, so beyond the row-count
+		// checks above, verify the actual returned row and owner-team to
+		// guard against leakage of another team's permissions.
+		It("should return only team-alpha's own permission set, scoped correctly", func() {
+			ctx := alphaCtx()
+			result, err := client.PermissionSet.Query().
+				WithOwnerApplication(func(q *entgen.ApplicationQuery) {
+					q.WithOwnerTeam()
+				}).
+				All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].Edges.OwnerApplication.Edges.OwnerTeam.Name).To(Equal("team-alpha"))
+		})
+
+		It("should not leak team-beta's permission sets to a team-alpha-only viewer", func() {
+			// team-beta viewer must not see team-alpha's permission set.
+			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-beta"}})
+			result, err := client.PermissionSet.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(BeEmpty())
+		})
 	})
 
 	Context("when viewer belongs to both teams", func() {
@@ -198,6 +229,10 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			}, 1),
 			Entry("event subscriptions", func(ctx context.Context) (int, error) {
 				r, e := client.EventSubscription.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("permission sets", func(ctx context.Context) (int, error) {
+				r, e := client.PermissionSet.Query().All(ctx)
 				return len(r), e
 			}, 1),
 		)

@@ -28,6 +28,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"golang.org/x/sync/semaphore"
@@ -92,6 +93,11 @@ var memberImplementors = []string{"Member", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Member) IsNode() {}
+
+var permissionsetImplementors = []string{"PermissionSet", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*PermissionSet) IsNode() {}
 
 var teamImplementors = []string{"Team", "Node"}
 
@@ -256,6 +262,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(member.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, memberImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case permissionset.Table:
+		query := c.PermissionSet.Query().
+			Where(permissionset.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, permissionsetImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -515,6 +530,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.Member.Query().
 			Where(member.IDIn(ids...))
 		query, err := query.CollectFields(ctx, memberImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case permissionset.Table:
+		query := c.PermissionSet.Query().
+			Where(permissionset.IDIn(ids...))
+		query, err := query.CollectFields(ctx, permissionsetImplementors...)
 		if err != nil {
 			return nil, err
 		}

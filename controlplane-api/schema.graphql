@@ -24,6 +24,13 @@ type Upstream {
   weight: Int!
 }
 
+"A single role-resource-actions grant within a PermissionSet."
+type Permission {
+  role: String!
+  resource: String!
+  actions: [String!]!
+}
+
 type ApprovalConfig {
   strategy: ApprovalStrategy!
   trustedTeams: [String!]!

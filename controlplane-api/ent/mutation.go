@@ -25,6 +25,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -51,6 +52,7 @@ const (
 	TypeEventType         = "EventType"
 	TypeGroup             = "Group"
 	TypeMember            = "Member"
+	TypePermissionSet     = "PermissionSet"
 	TypeTeam              = "Team"
 	TypeZone              = "Zone"
 )
@@ -4060,6 +4062,8 @@ type ApplicationMutation struct {
 	subscribed_events        map[int]struct{}
 	removedsubscribed_events map[int]struct{}
 	clearedsubscribed_events bool
+	permission_set           *int
+	clearedpermission_set    bool
 	done                     bool
 	oldValue                 func(context.Context) (*Application, error)
 	predicates               []predicate.Application
@@ -5192,6 +5196,45 @@ func (m *ApplicationMutation) ResetSubscribedEvents() {
 	m.removedsubscribed_events = nil
 }
 
+// SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by id.
+func (m *ApplicationMutation) SetPermissionSetID(id int) {
+	m.permission_set = &id
+}
+
+// ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
+func (m *ApplicationMutation) ClearPermissionSet() {
+	m.clearedpermission_set = true
+}
+
+// PermissionSetCleared reports if the "permission_set" edge to the PermissionSet entity was cleared.
+func (m *ApplicationMutation) PermissionSetCleared() bool {
+	return m.clearedpermission_set
+}
+
+// PermissionSetID returns the "permission_set" edge ID in the mutation.
+func (m *ApplicationMutation) PermissionSetID() (id int, exists bool) {
+	if m.permission_set != nil {
+		return *m.permission_set, true
+	}
+	return
+}
+
+// PermissionSetIDs returns the "permission_set" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PermissionSetID instead. It exists only for internal usage by the builders.
+func (m *ApplicationMutation) PermissionSetIDs() (ids []int) {
+	if id := m.permission_set; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPermissionSet resets all changes to the "permission_set" edge.
+func (m *ApplicationMutation) ResetPermissionSet() {
+	m.permission_set = nil
+	m.clearedpermission_set = false
+}
+
 // Where appends a list predicates to the ApplicationMutation builder.
 func (m *ApplicationMutation) Where(ps ...predicate.Application) {
 	m.predicates = append(m.predicates, ps...)
@@ -5649,7 +5692,7 @@ func (m *ApplicationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApplicationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.zone != nil {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -5667,6 +5710,9 @@ func (m *ApplicationMutation) AddedEdges() []string {
 	}
 	if m.subscribed_events != nil {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.permission_set != nil {
+		edges = append(edges, application.EdgePermissionSet)
 	}
 	return edges
 }
@@ -5707,13 +5753,17 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgePermissionSet:
+		if id := m.permission_set; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApplicationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.removedexposed_apis != nil {
 		edges = append(edges, application.EdgeExposedApis)
 	}
@@ -5763,7 +5813,7 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApplicationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.clearedzone {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -5781,6 +5831,9 @@ func (m *ApplicationMutation) ClearedEdges() []string {
 	}
 	if m.clearedsubscribed_events {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.clearedpermission_set {
+		edges = append(edges, application.EdgePermissionSet)
 	}
 	return edges
 }
@@ -5801,6 +5854,8 @@ func (m *ApplicationMutation) EdgeCleared(name string) bool {
 		return m.clearedexposed_events
 	case application.EdgeSubscribedEvents:
 		return m.clearedsubscribed_events
+	case application.EdgePermissionSet:
+		return m.clearedpermission_set
 	}
 	return false
 }
@@ -5814,6 +5869,9 @@ func (m *ApplicationMutation) ClearEdge(name string) error {
 		return nil
 	case application.EdgeOwnerTeam:
 		m.ClearOwnerTeam()
+		return nil
+	case application.EdgePermissionSet:
+		m.ClearPermissionSet()
 		return nil
 	}
 	return fmt.Errorf("unknown Application unique edge %s", name)
@@ -5840,6 +5898,9 @@ func (m *ApplicationMutation) ResetEdge(name string) error {
 		return nil
 	case application.EdgeSubscribedEvents:
 		m.ResetSubscribedEvents()
+		return nil
+	case application.EdgePermissionSet:
+		m.ResetPermissionSet()
 		return nil
 	}
 	return fmt.Errorf("unknown Application edge %s", name)
@@ -13675,6 +13736,819 @@ func (m *MemberMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Member edge %s", name)
+}
+
+// PermissionSetMutation represents an operation that mutates the PermissionSet nodes in the graph.
+type PermissionSetMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	last_modified_at         *time.Time
+	status_phase             *permissionset.StatusPhase
+	status_message           *string
+	environment              *string
+	namespace                *string
+	permissions              *[]model.Permission
+	appendpermissions        []model.Permission
+	clearedFields            map[string]struct{}
+	owner_application        *int
+	clearedowner_application bool
+	done                     bool
+	oldValue                 func(context.Context) (*PermissionSet, error)
+	predicates               []predicate.PermissionSet
+}
+
+var _ ent.Mutation = (*PermissionSetMutation)(nil)
+
+// permissionsetOption allows management of the mutation configuration using functional options.
+type permissionsetOption func(*PermissionSetMutation)
+
+// newPermissionSetMutation creates new mutation for the PermissionSet entity.
+func newPermissionSetMutation(c config, op Op, opts ...permissionsetOption) *PermissionSetMutation {
+	m := &PermissionSetMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePermissionSet,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPermissionSetID sets the ID field of the mutation.
+func withPermissionSetID(id int) permissionsetOption {
+	return func(m *PermissionSetMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PermissionSet
+		)
+		m.oldValue = func(ctx context.Context) (*PermissionSet, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PermissionSet.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPermissionSet sets the old PermissionSet of the mutation.
+func withPermissionSet(node *PermissionSet) permissionsetOption {
+	return func(m *PermissionSetMutation) {
+		m.oldValue = func(context.Context) (*PermissionSet, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PermissionSetMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PermissionSetMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PermissionSetMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PermissionSetMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().PermissionSet.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *PermissionSetMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *PermissionSetMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *PermissionSetMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *PermissionSetMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *PermissionSetMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *PermissionSetMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *PermissionSetMutation) SetStatusPhase(pp permissionset.StatusPhase) {
+	m.status_phase = &pp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *PermissionSetMutation) StatusPhase() (r permissionset.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldStatusPhase(ctx context.Context) (v *permissionset.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *PermissionSetMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[permissionset.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *PermissionSetMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[permissionset.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *PermissionSetMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, permissionset.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *PermissionSetMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *PermissionSetMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *PermissionSetMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[permissionset.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *PermissionSetMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[permissionset.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *PermissionSetMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, permissionset.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *PermissionSetMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *PermissionSetMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *PermissionSetMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[permissionset.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *PermissionSetMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[permissionset.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *PermissionSetMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, permissionset.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *PermissionSetMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *PermissionSetMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *PermissionSetMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetPermissions sets the "permissions" field.
+func (m *PermissionSetMutation) SetPermissions(value []model.Permission) {
+	m.permissions = &value
+	m.appendpermissions = nil
+}
+
+// Permissions returns the value of the "permissions" field in the mutation.
+func (m *PermissionSetMutation) Permissions() (r []model.Permission, exists bool) {
+	v := m.permissions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPermissions returns the old "permissions" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldPermissions(ctx context.Context) (v []model.Permission, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPermissions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPermissions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPermissions: %w", err)
+	}
+	return oldValue.Permissions, nil
+}
+
+// AppendPermissions adds value to the "permissions" field.
+func (m *PermissionSetMutation) AppendPermissions(value []model.Permission) {
+	m.appendpermissions = append(m.appendpermissions, value...)
+}
+
+// AppendedPermissions returns the list of values that were appended to the "permissions" field in this mutation.
+func (m *PermissionSetMutation) AppendedPermissions() ([]model.Permission, bool) {
+	if len(m.appendpermissions) == 0 {
+		return nil, false
+	}
+	return m.appendpermissions, true
+}
+
+// ClearPermissions clears the value of the "permissions" field.
+func (m *PermissionSetMutation) ClearPermissions() {
+	m.permissions = nil
+	m.appendpermissions = nil
+	m.clearedFields[permissionset.FieldPermissions] = struct{}{}
+}
+
+// PermissionsCleared returns if the "permissions" field was cleared in this mutation.
+func (m *PermissionSetMutation) PermissionsCleared() bool {
+	_, ok := m.clearedFields[permissionset.FieldPermissions]
+	return ok
+}
+
+// ResetPermissions resets all changes to the "permissions" field.
+func (m *PermissionSetMutation) ResetPermissions() {
+	m.permissions = nil
+	m.appendpermissions = nil
+	delete(m.clearedFields, permissionset.FieldPermissions)
+}
+
+// SetOwnerApplicationID sets the "owner_application" edge to the Application entity by id.
+func (m *PermissionSetMutation) SetOwnerApplicationID(id int) {
+	m.owner_application = &id
+}
+
+// ClearOwnerApplication clears the "owner_application" edge to the Application entity.
+func (m *PermissionSetMutation) ClearOwnerApplication() {
+	m.clearedowner_application = true
+}
+
+// OwnerApplicationCleared reports if the "owner_application" edge to the Application entity was cleared.
+func (m *PermissionSetMutation) OwnerApplicationCleared() bool {
+	return m.clearedowner_application
+}
+
+// OwnerApplicationID returns the "owner_application" edge ID in the mutation.
+func (m *PermissionSetMutation) OwnerApplicationID() (id int, exists bool) {
+	if m.owner_application != nil {
+		return *m.owner_application, true
+	}
+	return
+}
+
+// OwnerApplicationIDs returns the "owner_application" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerApplicationID instead. It exists only for internal usage by the builders.
+func (m *PermissionSetMutation) OwnerApplicationIDs() (ids []int) {
+	if id := m.owner_application; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwnerApplication resets all changes to the "owner_application" edge.
+func (m *PermissionSetMutation) ResetOwnerApplication() {
+	m.owner_application = nil
+	m.clearedowner_application = false
+}
+
+// Where appends a list predicates to the PermissionSetMutation builder.
+func (m *PermissionSetMutation) Where(ps ...predicate.PermissionSet) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the PermissionSetMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *PermissionSetMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.PermissionSet, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *PermissionSetMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *PermissionSetMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (PermissionSet).
+func (m *PermissionSetMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PermissionSetMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.created_at != nil {
+		fields = append(fields, permissionset.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, permissionset.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, permissionset.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, permissionset.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, permissionset.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, permissionset.FieldNamespace)
+	}
+	if m.permissions != nil {
+		fields = append(fields, permissionset.FieldPermissions)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PermissionSetMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case permissionset.FieldCreatedAt:
+		return m.CreatedAt()
+	case permissionset.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case permissionset.FieldStatusPhase:
+		return m.StatusPhase()
+	case permissionset.FieldStatusMessage:
+		return m.StatusMessage()
+	case permissionset.FieldEnvironment:
+		return m.Environment()
+	case permissionset.FieldNamespace:
+		return m.Namespace()
+	case permissionset.FieldPermissions:
+		return m.Permissions()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PermissionSetMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case permissionset.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case permissionset.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case permissionset.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case permissionset.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case permissionset.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case permissionset.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case permissionset.FieldPermissions:
+		return m.OldPermissions(ctx)
+	}
+	return nil, fmt.Errorf("unknown PermissionSet field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PermissionSetMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case permissionset.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case permissionset.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case permissionset.FieldStatusPhase:
+		v, ok := value.(permissionset.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case permissionset.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case permissionset.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case permissionset.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case permissionset.FieldPermissions:
+		v, ok := value.([]model.Permission)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPermissions(v)
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PermissionSetMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PermissionSetMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PermissionSetMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PermissionSet numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PermissionSetMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(permissionset.FieldStatusPhase) {
+		fields = append(fields, permissionset.FieldStatusPhase)
+	}
+	if m.FieldCleared(permissionset.FieldStatusMessage) {
+		fields = append(fields, permissionset.FieldStatusMessage)
+	}
+	if m.FieldCleared(permissionset.FieldEnvironment) {
+		fields = append(fields, permissionset.FieldEnvironment)
+	}
+	if m.FieldCleared(permissionset.FieldPermissions) {
+		fields = append(fields, permissionset.FieldPermissions)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PermissionSetMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PermissionSetMutation) ClearField(name string) error {
+	switch name {
+	case permissionset.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case permissionset.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case permissionset.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case permissionset.FieldPermissions:
+		m.ClearPermissions()
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PermissionSetMutation) ResetField(name string) error {
+	switch name {
+	case permissionset.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case permissionset.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case permissionset.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case permissionset.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case permissionset.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case permissionset.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case permissionset.FieldPermissions:
+		m.ResetPermissions()
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PermissionSetMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.owner_application != nil {
+		edges = append(edges, permissionset.EdgeOwnerApplication)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PermissionSetMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case permissionset.EdgeOwnerApplication:
+		if id := m.owner_application; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PermissionSetMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PermissionSetMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PermissionSetMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedowner_application {
+		edges = append(edges, permissionset.EdgeOwnerApplication)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PermissionSetMutation) EdgeCleared(name string) bool {
+	switch name {
+	case permissionset.EdgeOwnerApplication:
+		return m.clearedowner_application
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PermissionSetMutation) ClearEdge(name string) error {
+	switch name {
+	case permissionset.EdgeOwnerApplication:
+		m.ClearOwnerApplication()
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PermissionSetMutation) ResetEdge(name string) error {
+	switch name {
+	case permissionset.EdgeOwnerApplication:
+		m.ResetOwnerApplication()
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet edge %s", name)
 }
 
 // TeamMutation represents an operation that mutates the Team nodes in the graph.
