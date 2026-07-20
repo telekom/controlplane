@@ -133,6 +133,69 @@ var _ = Describe("Exposure Security Mapper", func() {
 			snaps.MatchSnapshot(GinkgoT(), output.Security)
 		})
 
+		It("must map OAuth2 claims-only (LMS default) correctly", func() {
+			// Given
+			input := api.ApiExposure{BasePath: "/test"}
+			oauth2 := api.Oauth2{
+				Claims: api.Claims{Aud: api.Claim{Value: "my-audience"}},
+			}
+			input.Security = api.Security{}
+			Expect(input.Security.FromOauth2(oauth2)).To(Succeed())
+
+			output := &roverv1.ApiExposure{}
+
+			// When
+			mapExposureSecurity(input, output)
+
+			// Then
+			Expect(output.Security).ToNot(BeNil())
+			Expect(output.Security.M2M).ToNot(BeNil())
+			Expect(output.Security.M2M.Claims).ToNot(BeNil())
+			Expect(output.Security.M2M.Claims.Aud.Value).To(Equal("my-audience"))
+			Expect(output.Security.M2M.Claims.Aud.ValueFrom).To(BeEmpty())
+			snaps.MatchSnapshot(GinkgoT(), output.Security)
+		})
+
+		It("must keep a symbolic valueFrom claim", func() {
+			// Given
+			input := api.ApiExposure{BasePath: "/test"}
+			oauth2 := api.Oauth2{
+				Scopes: []string{"read"},
+				Claims: api.Claims{Aud: api.Claim{ValueFrom: api.ProviderClientId}},
+			}
+			input.Security = api.Security{}
+			Expect(input.Security.FromOauth2(oauth2)).To(Succeed())
+
+			output := &roverv1.ApiExposure{}
+
+			// When
+			mapExposureSecurity(input, output)
+
+			// Then
+			Expect(output.Security).ToNot(BeNil())
+			Expect(output.Security.M2M.Claims).ToNot(BeNil())
+			Expect(output.Security.M2M.Claims.Aud.Value).To(BeEmpty())
+			Expect(output.Security.M2M.Claims.Aud.ValueFrom).To(Equal(roverv1.ClaimValueFromProviderClientId))
+			snaps.MatchSnapshot(GinkgoT(), output.Security)
+		})
+
+		It("must not set claims when aud is empty", func() {
+			// Given
+			input := api.ApiExposure{BasePath: "/test"}
+			oauth2 := api.Oauth2{Scopes: []string{"read"}}
+			input.Security = api.Security{}
+			Expect(input.Security.FromOauth2(oauth2)).To(Succeed())
+
+			output := &roverv1.ApiExposure{}
+
+			// When
+			mapExposureSecurity(input, output)
+
+			// Then
+			Expect(output.Security).ToNot(BeNil())
+			Expect(output.Security.M2M.Claims).To(BeNil())
+		})
+
 		It("must handle invalid security discriminator", func() {
 			// Given
 			input := api.ApiExposure{

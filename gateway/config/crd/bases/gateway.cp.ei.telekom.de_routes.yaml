@@ -173,6 +173,39 @@ spec:
                         - password
                         - username
                         type: object
+                      claims:
+                        description: Claims defines token claims applied to all consumers
+                          (the "default" bucket)
+                        items:
+                          description: |-
+                            Claim is a single token claim written into JumperConfig.Claims.
+                            Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
+                            Exactly one of value or valueFrom must be set.
+                          properties:
+                            key:
+                              description: Key is the claim name. Only "aud" is supported.
+                              enum:
+                              - aud
+                              type: string
+                            value:
+                              description: Value is the CP-resolved literal claim
+                                value
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            valueFrom:
+                              description: ValueFrom is a runtime source Jumper resolves
+                                (e.g. ConsumerClientId)
+                              enum:
+                              - ConsumerClientId
+                              type: string
+                          required:
+                          - key
+                          type: object
+                          x-kubernetes-validations:
+                          - message: exactly one of value or valueFrom must be set
+                            rule: has(self.value) != has(self.valueFrom)
+                        type: array
                       externalIDP:
                         description: ExternalIDP defines external identity provider
                           configuration
@@ -271,10 +304,14 @@ spec:
                     - message: Scopes and basic authentication cannot be used together
                       rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
                         : true)'
-                    - message: At least one of externalIDP, basic, or scopes must
-                        be provided
+                    - message: At least one of externalIDP, basic, scopes, or claims
+                        must be provided
                       rule: self == null || has(self.externalIDP) || has(self.basic)
-                        || has(self.scopes)
+                        || has(self.scopes) || has(self.claims)
+                    - message: Claims require the platform-managed token and cannot
+                        be used with an external IDP or basic authentication
+                      rule: self == null || !has(self.claims) || (!has(self.externalIDP)
+                        && !has(self.basic))
                   realmName:
                     description: RealmName defines the realm name for this route,
                       which is used in the Jumper sidecar to determine the Last-Mile-Token
@@ -352,6 +389,41 @@ spec:
                                 - password
                                 - username
                                 type: object
+                              claims:
+                                description: Claims defines token claims applied to
+                                  all consumers (the "default" bucket)
+                                items:
+                                  description: |-
+                                    Claim is a single token claim written into JumperConfig.Claims.
+                                    Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
+                                    Exactly one of value or valueFrom must be set.
+                                  properties:
+                                    key:
+                                      description: Key is the claim name. Only "aud"
+                                        is supported.
+                                      enum:
+                                      - aud
+                                      type: string
+                                    value:
+                                      description: Value is the CP-resolved literal
+                                        claim value
+                                      maxLength: 256
+                                      minLength: 1
+                                      type: string
+                                    valueFrom:
+                                      description: ValueFrom is a runtime source Jumper
+                                        resolves (e.g. ConsumerClientId)
+                                      enum:
+                                      - ConsumerClientId
+                                      type: string
+                                  required:
+                                  - key
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: exactly one of value or valueFrom must
+                                      be set
+                                    rule: has(self.value) != has(self.valueFrom)
+                                type: array
                               externalIDP:
                                 description: ExternalIDP defines external identity
                                   provider configuration
@@ -453,10 +525,14 @@ spec:
                                 together
                               rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
                                 : true)'
-                            - message: At least one of externalIDP, basic, or scopes
-                                must be provided
+                            - message: At least one of externalIDP, basic, scopes,
+                                or claims must be provided
                               rule: self == null || has(self.externalIDP) || has(self.basic)
-                                || has(self.scopes)
+                                || has(self.scopes) || has(self.claims)
+                            - message: Claims require the platform-managed token and
+                                cannot be used with an external IDP or basic authentication
+                              rule: self == null || !has(self.claims) || (!has(self.externalIDP)
+                                && !has(self.basic))
                           realmName:
                             description: RealmName defines the realm name for this
                               route, which is used in the Jumper sidecar to determine

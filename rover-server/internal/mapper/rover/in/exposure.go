@@ -179,12 +179,27 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 			// scopes
 			m2mSecurity.Scopes = oauth2.Scopes
 		}
+		m2mSecurity.Claims = mapExposureClaims(oauth2.Claims)
 	}
 
-	if m2mSecurity.Basic != nil || m2mSecurity.ExternalIDP != nil || m2mSecurity.Scopes != nil {
+	if m2mSecurity.Basic != nil || m2mSecurity.ExternalIDP != nil || m2mSecurity.Scopes != nil || m2mSecurity.Claims != nil {
 		out.Security = &roverv1.Security{
 			M2M: m2mSecurity,
 		}
+	}
+}
+
+// mapExposureClaims maps the rover-server Oauth2 claims (only aud is supported) into
+// the CRD Claims shape. value is copied through; valueFrom stays symbolic.
+func mapExposureClaims(in api.Claims) *roverv1.Claims {
+	if in.Aud.Value == "" && in.Aud.ValueFrom == "" {
+		return nil
+	}
+	return &roverv1.Claims{
+		Aud: &roverv1.Claim{
+			Value:     in.Aud.Value,
+			ValueFrom: roverv1.ClaimValueFrom(in.Aud.ValueFrom),
+		},
 	}
 }
 

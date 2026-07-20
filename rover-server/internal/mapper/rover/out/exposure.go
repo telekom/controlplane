@@ -308,12 +308,26 @@ func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) {
 		return
 	}
 
-	if len(m2m.Scopes) > 0 {
+	if len(m2m.Scopes) > 0 || m2m.Claims != nil {
 		oauth2 := api.Oauth2{
 			Scopes: m2m.Scopes,
 		}
+		oauth2.Claims = mapExposureClaimsOut(m2m.Claims)
 		out.Security = api.Security{}
 		out.Security.FromOauth2(oauth2)
+	}
+}
+
+// mapExposureClaimsOut echoes CRD claims back into the rover-server Oauth2 shape.
+func mapExposureClaimsOut(in *roverv1.Claims) api.Claims {
+	if in == nil || in.Aud == nil {
+		return api.Claims{}
+	}
+	return api.Claims{
+		Aud: api.Claim{
+			Value:     in.Aud.Value,
+			ValueFrom: api.ClaimValueFrom(in.Aud.ValueFrom),
+		},
 	}
 }
 

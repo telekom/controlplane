@@ -132,7 +132,10 @@ func (r *RoverController) Update(ctx context.Context, resourceId string, req api
 
 	obj, err := in.MapRequest(&req, id)
 	if err != nil {
-		return res, err
+		if problems.IsValidationError(err) {
+			return res, err
+		}
+		return res, problems.BadRequest(err.Error())
 	}
 	EnsureLabelsOrDie(ctx, obj)
 	obj.Labels[config.BuildLabelKey("application")] = id.Name

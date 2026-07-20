@@ -63,6 +63,11 @@ type routingState struct {
 	// Used to read the zone's IDP issuer and to identify which zone is "self" in the failover loop.
 	exposureZone *adminv1.Zone
 
+	// resolvedClaims holds the exposure's M2M claims after static ValueFrom sources
+	// (ProviderClientId, BasePath) have been resolved to literals using the application's
+	// client id. Applied to the real route and provider failover routes.
+	resolvedClaims *apiapi.Claims
+
 	// ──────────────────────────────────────────────────────────────────────────
 	// Consumer failover enrichment — produced by manageProxyRoutes
 	// Applied to ALL proxy routes AND the real route.

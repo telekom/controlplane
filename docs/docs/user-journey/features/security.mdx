@@ -118,6 +118,74 @@ exposures:
         - write:orders
 ```
 
+### Audience Claims
+
+When a request reaches your backend service, it carries a security token. An **audience claim** (`aud`) tells the backend which service the token was intended for, so the backend can confirm it is the correct recipient before trusting the request.
+
+As an API provider, you can require that every token reaching your backend contains a specific audience value. The claim applies to **all** consumers of the exposed API.
+
+**Applies to:** API Exposure
+
+You define the audience under the `oauth2` security block, as `claims.aud`. You must set **exactly one** of the following:
+
+- `value` — a fixed text value that you choose.
+- `valueFrom` — a predefined source that the platform fills in for you.
+
+:::caution
+The audience claim rides only on the platform-managed token. It cannot be combined with an external identity provider (an OAuth2 `tokenEndpoint`) or basic authentication (`type: basicAuth`) — the file is rejected when you apply it. You may use it on its own or alongside `scopes`.
+:::
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    security:
+      type: oauth2
+      claims:
+        aud:
+          valueFrom: ProviderClientId
+```
+
+The following sources are available for `valueFrom`:
+
+| Source | Meaning | When it is filled in |
+| ------ | ------- | -------------------- |
+| `ProviderClientId` | The identifier of your application (the API provider). | Automatically, by the platform. |
+| `BasePath` | The base path of the exposed API. | Automatically, by the platform. |
+| `ConsumerClientId` | The identifier of whichever application is calling the API. | At the moment of each request, because it is different for every consumer. |
+
+Alternatively, you can provide a fixed value directly:
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    security:
+      type: oauth2
+      claims:
+        aud:
+          value: my-checkout-audience
+```
+
+#### Audience Claim Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `security.claims.aud.value` | A fixed audience value that you provide. Cannot be used together with `valueFrom`. |
+| `security.claims.aud.valueFrom` | A predefined source the platform resolves into the audience value. One of `ProviderClientId`, `BasePath`, or `ConsumerClientId`. Cannot be used together with `value`. |
+
+:::note
+You must set exactly one of `value` or `valueFrom`. Setting both, or neither, is rejected when you apply the file.
+:::
+
+---
+
 ### Security Settings
 
 | Field | Description |
@@ -133,6 +201,7 @@ exposures:
 | `security.username` | Username for basic authentication or the OAuth2 password grant. |
 | `security.password` | Password for basic authentication or the OAuth2 password grant. |
 | `security.scopes` | A list of additional OAuth2 scopes to request. Maximum: 10 scopes. |
+| `security.claims` | Token claims written into the platform-managed token (API Exposure only). See [Audience Claims](#audience-claims). |
 
 :::caution Handling Secrets
 Secrets such as `clientSecret`, `clientKey`, `refreshToken`, and `password` are sensitive values. **Do not hardcode them in your Rover files.** Instead, use environment variable placeholders. Rover-CTL automatically substitutes `${VARIABLE_NAME}` references with their corresponding environment variable values before sending the file to the server.

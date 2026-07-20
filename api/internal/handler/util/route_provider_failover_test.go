@@ -212,6 +212,58 @@ var _ = Describe("Route Provider Failover", func() {
 			Expect(proxyRoute.Spec.Traffic.Failover.Security.M2M.Basic.Password).To(Equal("secret"))
 		})
 
+		It("should copy resolved aud claims onto the failover security", func() {
+			options := &CreateRouteOptions{
+				FailoverUpstreams: []apiapi.Upstream{
+					{Url: "http://real-backend:8080/my/api/v1", Weight: 100},
+				},
+				FailoverSecurity: &apiapi.Security{
+					M2M: &apiapi.Machine2MachineAuthentication{
+						// Raw (unresolved) claim on the exposure security; the
+						// resolved literal in ResolvedClaims must take precedence.
+						Claims: &apiapi.Claims{
+							Aud: &apiapi.Claim{ValueFrom: apiapi.ClaimValueFromProviderClientId},
+						},
+					},
+				},
+				ResolvedClaims: &apiapi.Claims{
+					Aud: &apiapi.Claim{Value: "eni--foo--api-provider-rover"},
+				},
+			}
+
+			err := configureAsFailoverTarget(ctx, proxyRoute, options, "provider-zone")
+			Expect(err).ToNot(HaveOccurred())
+
+			claims := proxyRoute.Spec.Traffic.Failover.Security.M2M.Claims
+			Expect(claims).To(HaveLen(1))
+			Expect(claims[0].Key).To(Equal("aud"))
+			Expect(claims[0].Value).To(Equal("eni--foo--api-provider-rover"))
+			Expect(claims[0].ValueFrom).To(BeEmpty())
+		})
+
+		It("should keep a symbolic ConsumerClientId aud claim on the failover security", func() {
+			options := &CreateRouteOptions{
+				FailoverUpstreams: []apiapi.Upstream{
+					{Url: "http://real-backend:8080/my/api/v1", Weight: 100},
+				},
+				FailoverSecurity: &apiapi.Security{
+					M2M: &apiapi.Machine2MachineAuthentication{},
+				},
+				ResolvedClaims: &apiapi.Claims{
+					Aud: &apiapi.Claim{ValueFrom: apiapi.ClaimValueFromConsumerClientId},
+				},
+			}
+
+			err := configureAsFailoverTarget(ctx, proxyRoute, options, "provider-zone")
+			Expect(err).ToNot(HaveOccurred())
+
+			claims := proxyRoute.Spec.Traffic.Failover.Security.M2M.Claims
+			Expect(claims).To(HaveLen(1))
+			Expect(claims[0].Key).To(Equal("aud"))
+			Expect(claims[0].Value).To(BeEmpty())
+			Expect(string(claims[0].ValueFrom)).To(Equal(string(apiapi.ClaimValueFromConsumerClientId)))
+		})
+
 		It("should not set failover security when nil", func() {
 			options := &CreateRouteOptions{
 				FailoverUpstreams: []apiapi.Upstream{
