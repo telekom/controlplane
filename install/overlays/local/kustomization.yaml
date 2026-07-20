@@ -16,6 +16,7 @@ resources:
   - ../../bundle
   - ../../../controlplane-api/config/default
   - ../../../projector/config/default
+  - ../../../spectre/config/default
 
 components:
   - ../../components/eventing
