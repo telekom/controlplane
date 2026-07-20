@@ -26,7 +26,6 @@ import (
 	"github.com/telekom/controlplane/agentic/internal/controller"
 	"github.com/telekom/controlplane/common/pkg/config"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -140,7 +139,7 @@ func main() {
 				&gatewayv1.Route{}: {
 					Label: selector,
 				},
-				&identityv1.Client{}: {
+				&gatewayv1.ConsumeRoute{}: {
 					Label: selector,
 				},
 			},
