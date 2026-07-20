@@ -163,8 +163,9 @@ func NewApiExposure(apiBasePath, zoneName, appName string) *apiv1.ApiExposure {
 						TokenRequest:  apiv1.TokenRequestClientSecretBasic,
 						GrantType:     "client_credentials",
 						Client: &apiv1.OAuth2ClientCredentials{
-							ClientId:  "client-id",
-							ClientKey: "******",
+							ClientId:     "client-id",
+							ClientKey:    "******",
+							RefreshToken: "refreshToken",
 						},
 					},
 
@@ -405,6 +406,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 					Client: &apiv1.OAuth2ClientCredentials{
 						ClientId:     "team",
 						ClientSecret: "******",
+						RefreshToken: "refreshToken",
 					},
 				},
 				Scopes: []string{"team:scope", "api:scope"},
@@ -423,8 +425,8 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("team"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.RefreshToken).To(Equal("refreshToken"))
 				g.Expect(route.Spec.Security.M2M.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
-
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal(gatewayapi.TokenRequestClientSecretBasic))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal(gatewayapi.GrantTypeClientCredentials))
@@ -577,6 +579,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(realRoute.Spec.Backend.Upstreams[0].Scheme).To(Equal("http"))
 				Expect(realRoute.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("client-id"))
 				Expect(realRoute.Spec.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("******"))
+				Expect(realRoute.Spec.Security.M2M.ExternalIDP.Client.RefreshToken).To(Equal("refreshToken"))
 
 				Expect(realRoute.Spec.Traffic.Failover).To(BeNil())
 

@@ -20,6 +20,7 @@ type OauthCredentials struct {
 	ClientId     string `json:"clientId,omitempty"`
 	ClientSecret string `json:"clientSecret,omitempty"`
 	ClientKey    string `json:"clientKey,omitempty"`
+	RefreshToken string `json:"refreshToken,omitempty"`
 	// Password flow
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`

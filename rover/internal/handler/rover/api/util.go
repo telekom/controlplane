@@ -28,6 +28,7 @@ func toApiClient(client *rover.OAuth2ClientCredentials) *apiapi.OAuth2ClientCred
 		ClientId:     client.ClientId,
 		ClientSecret: client.ClientSecret,
 		ClientKey:    client.ClientKey,
+		RefreshToken: client.RefreshToken,
 	}
 }
 

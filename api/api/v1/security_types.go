@@ -14,13 +14,14 @@ const (
 )
 
 // GrantType defines the OAuth2 grant type for external IDP token requests.
-// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+// +kubebuilder:validation:Enum=client_credentials;authorization_code;password;refresh_token
 type GrantType string
 
 const (
 	GrantTypeClientCredentials GrantType = "client_credentials"
 	GrantTypeAuthorizationCode GrantType = "authorization_code"
 	GrantTypePassword          GrantType = "password"
+	GrantTypeRefreshToken      GrantType = "refresh_token"
 )
 
 // Security defines the security configuration for the Rover
@@ -124,4 +125,8 @@ type OAuth2ClientCredentials struct {
 	// ClientKey is the private key associated with the client ID
 	// +kubebuilder:validation:Optional
 	ClientKey string `json:"clientKey,omitempty"`
+	// RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+	// without requiring re-authentication. Used with the refresh_token grant type.
+	// +kubebuilder:validation:Optional
+	RefreshToken string `json:"refreshToken,omitempty"`
 }

@@ -683,6 +683,7 @@ func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.Ex
 			ClientId:     externalIDP.Client.ClientId,
 			ClientSecret: externalIDP.Client.ClientSecret,
 			ClientKey:    externalIDP.Client.ClientKey,
+			RefreshToken: externalIDP.Client.RefreshToken,
 		}
 	}
 
@@ -705,6 +706,7 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 				ClientId:     apiSecurity.M2M.Client.ClientId,
 				ClientSecret: apiSecurity.M2M.Client.ClientSecret,
 				ClientKey:    apiSecurity.M2M.Client.ClientKey,
+				RefreshToken: apiSecurity.M2M.Client.RefreshToken,
 			}
 		} else if apiSecurity.M2M.Basic != nil {
 			security.M2M.Basic = &gatewayapi.BasicAuthCredentials{

@@ -165,6 +165,7 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 					ClientId:     oauth2.ClientId,
 					ClientSecret: oauth2.ClientSecret,
 					ClientKey:    oauth2.ClientKey,
+					RefreshToken: oauth2.RefreshToken,
 				}
 			}
 			if oauth2.Username != "" {

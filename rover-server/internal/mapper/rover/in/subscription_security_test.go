@@ -51,6 +51,7 @@ var _ = Describe("Subscription Security Mapper", func() {
 				ClientId:     "client-id",
 				ClientSecret: "client-secret",
 				ClientKey:    "client-key",
+				RefreshToken: "refreshToken",
 			}
 			input.Security = api.Security{}
 			err := input.Security.FromOauth2(oauth2)
@@ -68,6 +69,7 @@ var _ = Describe("Subscription Security Mapper", func() {
 			Expect(output.Security.M2M.Client.ClientId).To(Equal("client-id"))
 			Expect(output.Security.M2M.Client.ClientSecret).To(Equal("client-secret"))
 			Expect(output.Security.M2M.Client.ClientKey).To(Equal("client-key"))
+			Expect(output.Security.M2M.Client.RefreshToken).To(Equal("refreshToken"))
 			snaps.MatchSnapshot(GinkgoT(), output.Security)
 		})
 

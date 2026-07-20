@@ -76,6 +76,7 @@ func NewApiSubscription(apiBasePath, zoneName, appName string) *apiapi.ApiSubscr
 					Client: &apiapi.OAuth2ClientCredentials{
 						ClientId:     "client_id",
 						ClientSecret: "******",
+						RefreshToken: "refreshToken",
 					},
 					Scopes: []string{"scope1", "scope2"},
 				},
@@ -448,6 +449,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 					Client: &apiapi.OAuth2ClientCredentials{
 						ClientId:     "custom-client-id",
 						ClientSecret: "******",
+						RefreshToken: "refreshToken",
 					},
 					Scopes: []string{"scope1", "scope2"},
 				}
@@ -487,6 +489,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientId).To(Equal("custom-client-id"))
 					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
+					g.Expect(consumeRoute.Spec.Security.M2M.Client.RefreshToken).To(Equal("refreshToken"))
 					g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(Equal([]string{"scope1", "scope2"}))
 					g.Expect(consumeRoute.Spec.Route).To(Equal(*apiSubscription.Status.Route))
 				}, timeout, interval).Should(Succeed())
