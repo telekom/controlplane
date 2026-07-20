@@ -438,8 +438,8 @@ type EventSubscription struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
 
-// AgenticVariant defines the AI exposure variant.
-// +kubebuilder:validation:Enum=MCP;TELECONTEXTMCP
+// AgenticVariant defines the agentic exposure variant.
+// +kubebuilder:validation:Enum=MCP;TELECONTEXTMCP;AGENT
 type AgenticVariant string
 
 const (
@@ -447,6 +447,8 @@ const (
 	AgenticVariantMCP AgenticVariant = "MCP"
 	// AgenticVariantTelecontextMCP exposes an MCP server with auto-created Telecontext access
 	AgenticVariantTelecontextMCP AgenticVariant = "TELECONTEXTMCP"
+	// AgenticVariantAgent exposes an A2A agent via AI Gateway
+	AgenticVariantAgent AgenticVariant = "AGENT"
 )
 
 // AgenticExposure defines an AI/MCP server that is exposed by this Rover

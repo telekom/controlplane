@@ -521,6 +521,45 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to create ConsumeRoute"))
 		})
+
+		It("should use AGENT display type in approval reason for AGENT variant", func() {
+			agentExposure := makeReadyAgenticExposure("/mcp/weather/v1", "test-zone")
+			agentExposure.Spec.Variant = agenticv1.AgenticVariantAgent
+
+			server := makeReadyAgenticServer("/mcp/weather/v1")
+			zone := makeReadyZoneWithAiGateway("test-zone")
+			requestorApp := makeReadyApplication("requestor-app", "requestor-team", "req@example.com", "req-client-id")
+			providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
+
+			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{agentExposure})
+			mockGetZone(subscriberZoneKey, zone)
+			mockGetApplication(requestorAppKey, requestorApp)
+			mockGetApplication(providerAppKey, providerApp)
+			mockScheme()
+
+			// Capture the ApprovalRequest to verify the reason
+			var capturedRequest approvalv1.ApprovalRequest
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedRequest = *obj.(*approvalv1.ApprovalRequest)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+
+			fakeClient.EXPECT().
+				Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(0, nil).Once()
+
+			fakeClient.EXPECT().
+				Get(ctx, mock.Anything, mock.AnythingOfType("*v1.Approval")).
+				Return(apierrors.NewNotFound(schema.GroupResource{}, "")).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(capturedRequest.Spec.Requester.Reason).To(ContainSubstring("AGENT subscription"))
+		})
 	})
 
 	Describe("Delete", func() {

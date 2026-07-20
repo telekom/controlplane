@@ -470,6 +470,7 @@ spec:
                           enum:
                           - MCP
                           - TELECONTEXTMCP
+                          - AGENT
                           type: string
                         visibility:
                           default: Enterprise

@@ -650,6 +650,38 @@ var _ = Describe("AgenticExposureHandler", func() {
 			// No local subs → the provider zone's own IDP issuer is NOT added
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).NotTo(ContainElement("https://issuer.provider.example.com"))
 		})
+
+		It("should create Route for AGENT variant without triggering Telecontext logic", func() {
+			obj.Spec.Variant = agenticv1.AgenticVariantAgent
+
+			server := makeReadyAgenticServer("/mcp/weather/v1")
+			zone := makeReadyZoneWithAiGateway()
+
+			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
+			mockGetZone(zone)
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
+
+			var capturedRoute gatewayv1.Route
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedRoute = *obj.(*gatewayv1.Route)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.Active).To(BeTrue())
+			Expect(obj.Status.Route).ToNot(BeNil())
+			// Route should have no DefaultConsumers (no Telecontext consumer)
+			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(BeEmpty())
+		})
 	}) // end Describe("CreateOrUpdate")
 
 	Describe("Delete", func() {

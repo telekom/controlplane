@@ -1944,7 +1944,8 @@ components:
           enum:
             - MCP
             - TELECONTEXTMCP
-          description: "The MCP exposure variant"
+            - AGENT
+          description: "The agentic exposure variant"
         upstream:
           type: string
         security:

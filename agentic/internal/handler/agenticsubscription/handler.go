@@ -119,8 +119,8 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		TeamName:       requestorApp.Spec.Team,
 		TeamEmail:      requestorApp.Spec.TeamEmail,
 		ApplicationRef: types.TypedObjectRefFromObject(requestorApp, c.Scheme()),
-		Reason: fmt.Sprintf("Team %s requested MCP subscription to %s from zone %s",
-			requestorApp.Spec.Team, obj.Spec.BasePath, obj.Spec.Zone.Name),
+		Reason: fmt.Sprintf("Team %s requested %s subscription to %s from zone %s",
+			requestorApp.Spec.Team, exposure.Spec.Variant.DisplayType(), obj.Spec.BasePath, obj.Spec.Zone.Name),
 	}
 
 	properties := map[string]any{
