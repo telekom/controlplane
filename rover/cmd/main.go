@@ -31,6 +31,7 @@ import (
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/rover/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
@@ -64,6 +65,9 @@ func init() {
 	}
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		utilruntime.Must(agenticv1.AddToScheme(scheme))
+	}
+	if cconfig.FeatureSpectre.IsEnabled() {
+		utilruntime.Must(spectrev1.AddToScheme(scheme))
 	}
 	// +kubebuilder:scaffold:scheme
 }

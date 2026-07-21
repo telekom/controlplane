@@ -102,6 +102,16 @@ patches:
         value:
           - configMapRef:
               name: notification-smtp-config
+  # Enable Spectre feature in rover controller.
+  - target:
+      kind: Deployment
+      name: rover-controller-manager
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: FEATURE_SPECTRE_ENABLED
+          value: "true"
 
 images:
   - name: ghcr.io/telekom/controlplane/approval
@@ -135,4 +145,6 @@ images:
   - name: ghcr.io/telekom/controlplane/pubsub
     newTag: latest
   - name: ghcr.io/telekom/controlplane/controlplane-api
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/spectre
     newTag: latest
