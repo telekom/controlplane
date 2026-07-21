@@ -225,12 +225,12 @@ var _ = Describe("HTTPServiceFactory", func() {
 
 		factory := NewHTTPServiceFactory()
 
-		cached := factory.IsServiceCached(client.ObjectKeyFromObject(sftpServiceConfig))
+		cached := factory.ExistClient(client.ObjectKeyFromObject(sftpServiceConfig))
 		Expect(cached).To(BeFalse())
 
 		Expect(factory.CreateOrUpdate(ctx, sftpServiceConfig)).To(Succeed())
 
-		cached = factory.IsServiceCached(client.ObjectKeyFromObject(sftpServiceConfig))
+		cached = factory.ExistClient(client.ObjectKeyFromObject(sftpServiceConfig))
 		Expect(cached).To(BeTrue())
 
 		svc, err := factory.ServiceFor(ctx, client.ObjectKeyFromObject(sftpServiceConfig))
@@ -254,7 +254,7 @@ var _ = Describe("HTTPServiceFactory", func() {
 
 		factory.Delete(sftpServiceConfig)
 
-		cached = factory.IsServiceCached(client.ObjectKeyFromObject(sftpServiceConfig))
+		cached = factory.ExistClient(client.ObjectKeyFromObject(sftpServiceConfig))
 		Expect(cached).To(BeFalse())
 	})
 })

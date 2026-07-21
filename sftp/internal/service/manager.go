@@ -50,7 +50,7 @@ func (f *HTTPServiceFactory) ServiceFor(ctx context.Context, sftpServiceConfig c
 	return cached.service, nil
 }
 
-func (f *HTTPServiceFactory) IsServiceCached(sftpServiceConfig client.ObjectKey) bool {
+func (f *HTTPServiceFactory) ExistClient(sftpServiceConfig client.ObjectKey) bool {
 	cacheKey := sftpServiceConfigCacheKey(sftpServiceConfig)
 
 	f.mu.RLock()

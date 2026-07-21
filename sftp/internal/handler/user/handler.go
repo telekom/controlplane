@@ -7,23 +7,30 @@ package user
 import (
 	"context"
 	"fmt"
+	"strconv"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
+	"github.com/telekom/controlplane/sftp/internal/service"
 )
 
 var _ handler.Handler[*sftpv1.User] = &UserHandler{}
 
-type UserHandler struct{}
+type UserHandler struct {
+	serviceFactory service.Factory
+}
 
-func New() *UserHandler {
-	return &UserHandler{}
+func New(serviceFactory service.Factory) (*UserHandler, error) {
+	if serviceFactory == nil {
+		return nil, fmt.Errorf("service factory is required")
+	}
+
+	return &UserHandler{serviceFactory: serviceFactory}, nil
 }
 
 func (h *UserHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.User) error {
@@ -36,51 +43,87 @@ func (h *UserHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.User) erro
 		return fmt.Errorf("getting Instance %q for User %q: %w", obj.Spec.InstanceRef.String(), obj.Name, err)
 	}
 
-	processing := processingConditionFromInstance(instance, obj)
-	processing.LastTransitionTime = metav1.Time{}
+	if instance.Spec.SFTPServiceConfigRef.IsEmpty() {
+		return ctrlerrors.BlockedErrorf("SFTPServiceConfig reference is required")
+	}
+
+	if !condition.IsReady(instance) {
+		obj.SetCondition(condition.NewNotReadyCondition("WaitingForInstance", "Waiting for Instance to be ready"))
+		return nil
+	}
+
+	obj.SetCondition(condition.NewProcessingCondition("UpdatingPublicKeys", "Updating SSH public keys in external service"))
+
+	sftpService, err := h.serviceFactory.ServiceFor(ctx, instance.Spec.SFTPServiceConfigRef.K8s())
+	if err != nil {
+		return err
+	}
+
+	sshPublicKeys := getRoverPublicKeys(obj.Spec.SSHPublicKeys, instance.Name, userClientID(obj))
+
+	err = sftpService.UpdatePublicKeysForSFTPUser(ctx, instance.Name, userClientID(obj), sshPublicKeys)
+	if err != nil {
+		return fmt.Errorf("updating public keys for User %q on SFTP user %q: %w", obj.Name, instance.Name, err)
+	}
+
+	processing := condition.NewDoneProcessingCondition("SSH public keys were processed")
 	obj.SetCondition(processing)
-	obj.SetCondition(readyConditionFromProcessing(&processing))
+	obj.SetCondition(condition.NewReadyCondition("SSHPublicKeysUpdated", "SSH public keys have been updated in service"))
 	return nil
 }
 
-func (h *UserHandler) Delete(context.Context, *sftpv1.User) error {
-	return nil
-}
-
-func processingConditionFromInstance(instance *sftpv1.Instance, user *sftpv1.User) metav1.Condition {
-	if !isInstanceReady(instance) {
-		return condition.NewProcessingCondition("WaitingForInstance", "Waiting for Instance to be ready")
+func (h *UserHandler) Delete(ctx context.Context, obj *sftpv1.User) error {
+	if obj.Spec.InstanceRef.IsEmpty() {
+		return nil
 	}
 
-	userStatus := findInstanceUserStatus(instance, user)
-	if userStatus == nil || userStatus.ProcessingCondition.ObservedGeneration != user.Generation {
-		return condition.NewProcessingCondition("WaitingForInstance", "Waiting for Instance to process SSH public keys")
-	}
-
-	return userStatus.ProcessingCondition
-}
-
-func isInstanceReady(instance *sftpv1.Instance) bool {
-	ready := meta.FindStatusCondition(instance.GetConditions(), condition.ConditionTypeReady)
-	return ready != nil &&
-		ready.Status == metav1.ConditionTrue &&
-		ready.ObservedGeneration == instance.Generation
-}
-
-func findInstanceUserStatus(instance *sftpv1.Instance, user *sftpv1.User) *sftpv1.InstanceUserStatus {
-	for i := range instance.Status.Users {
-		userStatus := &instance.Status.Users[i]
-		if userStatus.Namespace == user.Namespace && userStatus.Name == user.Name {
-			return userStatus
+	instance := &sftpv1.Instance{}
+	err := cclient.ClientFromContextOrDie(ctx).Get(ctx, obj.Spec.InstanceRef.K8s(), instance)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
 		}
+		return fmt.Errorf("getting Instance %q for User %q: %w", obj.Spec.InstanceRef.String(), obj.Name, err)
 	}
+
+	if instance.Spec.SFTPServiceConfigRef.IsEmpty() {
+		return nil
+	}
+
+	sftpService, err := h.serviceFactory.ServiceFor(ctx, instance.Spec.SFTPServiceConfigRef.K8s())
+	if err != nil {
+		return err
+	}
+
+	clientID := userClientID(obj)
+
+	err = sftpService.UpdatePublicKeysForSFTPUser(ctx, instance.Name, clientID, getRoverPublicKeys(nil, instance.Name, clientID))
+	if err != nil {
+		return fmt.Errorf("removing public keys for User %q on SFTP user %q: %w", obj.Name, instance.Name, err)
+	}
+
 	return nil
 }
 
-func readyConditionFromProcessing(processing *metav1.Condition) metav1.Condition {
-	if processing.Status == metav1.ConditionFalse && processing.Reason == "Done" {
-		return condition.NewReadyCondition(sftpv1.ConditionReadyReasonSSHPublicKeyProvided, "SSH public keys are ready")
+func getRoverPublicKeys(keys []string, instanceName, clientID string) service.ClientPublicKeyMap {
+	const keyItems string = "items"
+	if len(keys) == 0 {
+		return service.ClientPublicKeyMap{keyItems: []service.RoverPublicKeyModel{}}
 	}
 
-	return condition.NewNotReadyCondition(processing.Reason, processing.Message)
+	publicKeys := make([]service.RoverPublicKeyModel, 0, len(keys))
+	for index, sshPublicKey := range keys {
+		description := clientID + "/" + strconv.FormatInt(int64(index), 10)
+		publicKeys = append(publicKeys, service.RoverPublicKeyModel{
+			PublicKey:    sshPublicKey,
+			SftpUserName: instanceName,
+			Description:  &description,
+		})
+	}
+
+	return service.ClientPublicKeyMap{keyItems: publicKeys}
+}
+
+func userClientID(user *sftpv1.User) string {
+	return user.Namespace + "/" + user.Name
 }

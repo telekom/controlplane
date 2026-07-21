@@ -42,7 +42,6 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=instances/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=instances/finalizers,verbs=update
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=sftpserviceconfigs,verbs=get;list;watch
-// +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=users,verbs=get;list;watch
 
 func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &sftpv1.Instance{})
@@ -63,10 +62,6 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&sftpv1.SFTPServiceConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.MapSFTPServiceConfigToInstance),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-		).
-		Watches(&sftpv1.User{},
-			handler.EnqueueRequestsFromMapFunc(r.MapUserToInstance),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
@@ -94,13 +89,4 @@ func (r *InstanceReconciler) MapSFTPServiceConfigToInstance(ctx context.Context,
 		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
 	}
 	return reqs
-}
-
-func (r *InstanceReconciler) MapUserToInstance(_ context.Context, obj client.Object) []reconcile.Request {
-	user, ok := obj.(*sftpv1.User)
-	if !ok || user.Spec.InstanceRef.IsEmpty() {
-		return nil
-	}
-
-	return []reconcile.Request{{NamespacedName: user.Spec.InstanceRef.K8s()}}
 }

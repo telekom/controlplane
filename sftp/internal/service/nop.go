@@ -39,7 +39,7 @@ func (NopClientManager) ServiceFor(context.Context, client.ObjectKey) (Service, 
 	return NopService{}, nil
 }
 
-func (NopClientManager) IsServiceCached(client.ObjectKey) bool {
+func (NopClientManager) ExistClient(client.ObjectKey) bool {
 	return true
 }
 

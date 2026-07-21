@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -22,13 +23,15 @@ import (
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 	user_handler "github.com/telekom/controlplane/sftp/internal/handler/user"
+	"github.com/telekom/controlplane/sftp/internal/service"
 )
 
 // UserReconciler reconciles a User object.
 type UserReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Scheme         *runtime.Scheme
+	Recorder       record.EventRecorder
+	ServiceFactory service.Factory
 
 	cc.Controller[*sftpv1.User]
 }
@@ -46,8 +49,13 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	userHandler, err := user_handler.New(r.ServiceFactory)
+	if err != nil {
+		return fmt.Errorf("creating user handler: %w", err)
+	}
+
 	r.Recorder = mgr.GetEventRecorderFor("user-controller")
-	r.Controller = cc.NewController(user_handler.New(), r.Client, r.Recorder)
+	r.Controller = cc.NewController(userHandler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sftpv1.User{}).
