@@ -28,6 +28,8 @@ configMapGenerator:
   - name: controlplane-env
     envs:
       - global-config.env
+    literals:
+      - FEATURE_SPECTRE_ENABLED=true
   - name: secret-manager-config
     behavior: replace
     files:
@@ -129,4 +131,6 @@ images:
   - name: ghcr.io/telekom/controlplane/pubsub
     newTag: latest
   - name: ghcr.io/telekom/controlplane/controlplane-api
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/spectre
     newTag: latest

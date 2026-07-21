@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -15,13 +16,20 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/common/pkg/controller/index"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/controller"
+	"github.com/telekom/controlplane/spectre/internal/handler/util"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -135,6 +143,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	setupIndexes(mgr)
+
 	if err := (&controller.ListenerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -165,5 +175,36 @@ func main() {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "Failed to run manager")
 		os.Exit(1)
+	}
+}
+
+func setupIndexes(mgr ctrl.Manager) {
+	ctx := context.Background()
+	indexer := mgr.GetFieldIndexer()
+
+	err := indexer.IndexField(ctx, &eventv1.EventConfig{}, util.EventConfigZoneIndex,
+		func(obj client.Object) []string {
+			ec, ok := obj.(*eventv1.EventConfig)
+			if !ok || ec.Spec.Zone.Name == "" {
+				return nil
+			}
+			return []string{ec.Spec.Zone.Name}
+		})
+	if err != nil {
+		setupLog.Error(err, "Failed to create field index", "index", util.EventConfigZoneIndex)
+		os.Exit(1)
+	}
+
+	for _, obj := range []client.Object{
+		&approvalv1.ApprovalRequest{},
+		&pubsubv1.Subscriber{},
+		&pubsubv1.Publisher{},
+		&gatewayv1.Route{},
+		&gatewayv1.RouteListener{},
+	} {
+		if err := index.SetOwnerIndex(ctx, indexer, obj); err != nil {
+			setupLog.Error(err, "Failed to create owner index", "type", obj.GetObjectKind().GroupVersionKind().Kind)
+			os.Exit(1)
+		}
 	}
 }

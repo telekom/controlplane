@@ -67,6 +67,7 @@ rules:
 - apiGroups:
   - pubsub.cp.ei.telekom.de
   resources:
+  - eventstores
   - publishers
   - subscribers
   verbs:
