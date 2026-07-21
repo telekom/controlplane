@@ -7,7 +7,7 @@ package instance
 import (
 	"context"
 
-	"github.com/go-logr/logr"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +40,7 @@ func (h *InstanceHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.Instan
 		return ctrlerrors.BlockedErrorf("SFTPServiceConfig reference is required")
 	}
 
-	log := logr.FromContextOrDiscard(ctx)
+	log := logf.FromContext(ctx)
 
 	sftpService, err := h.serviceFactory.ServiceFor(ctx, obj.Spec.SFTPServiceConfigRef.K8s())
 	if err != nil {

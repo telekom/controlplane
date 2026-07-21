@@ -8,10 +8,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -36,7 +36,7 @@ func New(clientManager service.ClientManager) (*SFTPServiceConfigHandler, error)
 }
 
 func (h *SFTPServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.SFTPServiceConfig) error {
-	log := logr.FromContextOrDiscard(ctx)
+	log := logf.FromContext(ctx)
 	existClient := h.clientManager.ExistClient(client.ObjectKeyFromObject(obj))
 
 	conditionReady := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
