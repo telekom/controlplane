@@ -61,6 +61,9 @@ type RoverReconciler struct {
 
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch;create;update;patch;delete
 
+// +kubebuilder:rbac:groups=spectre.cp.ei.telekom.de,resources=spectreapplications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=spectre.cp.ei.telekom.de,resources=listeners,verbs=get;list;watch;create;update;patch;delete
+
 func (r *RoverReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &rover.Rover{})
 }
