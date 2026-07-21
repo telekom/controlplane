@@ -421,6 +421,10 @@ type Links struct {
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	LmsIssuer string `json:"gatewayLmsIssuer"`
+	// InternalIssuer is the expected issuer of downstream tokens for internal services in this zone
+	// +kubebuilder:validation:Format=uri
+	// +optional
+	InternalIssuer string `json:"internalIssuer,omitempty"`
 
 	// PermissionsUrl for permission queries (dynamically built from gateway URL)
 	// Format: https://<gateway>/eni/chevron/v2/permission

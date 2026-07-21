@@ -44,6 +44,12 @@ func populateLinks(ctx context.Context, hc *HandlingContext) error {
 	}
 	zone.Status.Links.LmsIssuer = lmsIssuer
 
+	internalIssuer, err := url.JoinPath(zone.Spec.IdentityProvider.Url, "auth/realms/", hc.InternalIdentityRealm.Name)
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("cannot combine identityProviderBaseUrl %s with realm name %s: %s", zone.Spec.IdentityProvider.Url, hc.InternalIdentityRealm.Name, err)
+	}
+	zone.Status.Links.InternalIssuer = internalIssuer
+
 	// Permissions URL (if configured and feature enabled)
 	if cconfig.FeaturePermission.IsEnabled() && zone.Spec.Permissions != nil {
 		permissionsUrl, err := url.JoinPath(zone.Status.Links.Url, zone.Spec.Permissions.ApiBasePath)
