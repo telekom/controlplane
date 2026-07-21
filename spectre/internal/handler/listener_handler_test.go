@@ -81,6 +81,10 @@ func newListener() *spectrev1.Listener {
 					Namespace: listenerNamespace,
 				},
 			},
+			Application: ctypes.ObjectRef{
+				Name:      spectreAppName,
+				Namespace: listenerNamespace,
+			},
 			ApiListener: &spectrev1.ApiListener{
 				ApiBasePath: testApiBasePath,
 			},
@@ -154,6 +158,11 @@ func makeSpectreApp() spectrev1.SpectreApplication {
 		},
 	}
 	return sa
+}
+
+func makeSpectreAppPtr() *spectrev1.SpectreApplication {
+	sa := makeSpectreApp()
+	return &sa
 }
 
 func makeListenerZone() *adminv1.Zone {
@@ -262,11 +271,11 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 	}
 
-	mockListSpectreApps := func(items []spectrev1.SpectreApplication) {
+	mockGetSpectreApp := func(sa *spectrev1.SpectreApplication) {
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.SpectreApplicationList"), mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*spectrev1.SpectreApplicationList) = spectrev1.SpectreApplicationList{Items: items}
+			Get(ctx, k8stypes.NamespacedName{Name: spectreAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.SpectreApplication")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				*out.(*spectrev1.SpectreApplication) = *sa
 			}).
 			Return(nil).Once()
 	}
@@ -402,7 +411,7 @@ var _ = Describe("ListenerHandler", func() {
 		listener := newListener()
 		mockGetConsumerApp(makeConsumerApp())
 		mockGetProviderApp(makeProviderApp())
-		mockListSpectreApps([]spectrev1.SpectreApplication{makeSpectreApp()})
+		mockGetSpectreApp(makeSpectreAppPtr())
 		mockGetZone()
 		mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 		mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
@@ -420,7 +429,7 @@ var _ = Describe("ListenerHandler", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
-				mockListSpectreApps([]spectrev1.SpectreApplication{makeSpectreApp()})
+				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
@@ -446,7 +455,7 @@ var _ = Describe("ListenerHandler", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
-				mockListSpectreApps([]spectrev1.SpectreApplication{makeSpectreApp()})
+				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
@@ -485,7 +494,7 @@ var _ = Describe("ListenerHandler", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
-				mockListSpectreApps([]spectrev1.SpectreApplication{makeSpectreApp()})
+				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
@@ -519,7 +528,7 @@ var _ = Describe("ListenerHandler", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
-				mockListSpectreApps([]spectrev1.SpectreApplication{makeSpectreApp()})
+				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
