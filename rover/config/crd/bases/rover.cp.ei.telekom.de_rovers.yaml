@@ -1113,7 +1113,7 @@ spec:
                       - visibility
                       type: object
                   type: object
-                maxItems: 50
+                maxItems: 150
                 type: array
               externalIds:
                 description: |-
@@ -1246,7 +1246,7 @@ spec:
                       && has(self.actions))
                   - message: Cannot specify both entries and actions
                     rule: '!has(self.entries) || !has(self.actions)'
-                maxItems: 50
+                maxItems: 150
                 type: array
               subscriptions:
                 description: Subscriptions is a list of APIs and Events that this
@@ -1651,7 +1651,7 @@ spec:
                       - eventType
                       type: object
                   type: object
-                maxItems: 50
+                maxItems: 150
                 type: array
               zone:
                 description: Zone identifies the deployment zone for this Rover resource
