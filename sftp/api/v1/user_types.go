@@ -22,6 +22,7 @@ type UserSpec struct {
 
 	// SSHPublicKeys contains the unique SSH public keys that should be assigned to this User.
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=1
 	SSHPublicKeys []string `json:"sshPublicKeys,omitempty"`
 }
 

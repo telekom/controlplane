@@ -33,14 +33,14 @@ The sftp-operator manages three main CRD types:
 - Scoped to a specific Kubernetes namespace
 - References its SFTP instance via `spec.instanceRef`
 - Manages SSH public keys under `spec.sshPublicKeys[]`
-- Public keys are canonicalized and deduplicated by fingerprint during Instance reconciliation
-- Status is projected from the referenced Instance after public key synchronization
+- Public keys are synchronized by the User controller using a per-User client ID
+- Status is set directly by User reconciliation after key synchronization
 
 ### Instance
 
 - Represents an SFTP instance used by one or more users
 - References its `SFTPServiceConfig` via `spec.sftpServiceConfigRef`
-- Carries the service-instance description, readiness conditions, and per-User processing status
+- Carries the service-instance description and readiness conditions
 
 ### SFTPServiceConfig
 

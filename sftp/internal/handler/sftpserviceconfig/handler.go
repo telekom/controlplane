@@ -37,10 +37,10 @@ func New(clientManager service.ClientManager) (*SFTPServiceConfigHandler, error)
 
 func (h *SFTPServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.SFTPServiceConfig) error {
 	log := logr.FromContextOrDiscard(ctx)
-	isServiceCached := h.clientManager.IsServiceCached(client.ObjectKeyFromObject(obj))
+	existClient := h.clientManager.ExistClient(client.ObjectKeyFromObject(obj))
 
 	conditionReady := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
-	if isServiceCached && conditionReady != nil && conditionReady.ObservedGeneration == obj.Generation && conditionReady.Status == v1.ConditionTrue {
+	if existClient && conditionReady != nil && conditionReady.ObservedGeneration == obj.Generation && conditionReady.Status == v1.ConditionTrue {
 		log.V(1).Info("SFTPServiceConfig already reconciled")
 		return nil
 	}

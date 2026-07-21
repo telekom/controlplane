@@ -174,5 +174,4 @@ func VerifyInstance(ctx context.Context, g Gomega, namespacedName client.ObjectK
 	g.Expect(ready.ObservedGeneration).To(Equal(instance.Generation))
 	g.Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
 	g.Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-	g.Expect(meta.IsStatusConditionTrue(instance.Status.Conditions, sftpv1.ConditionTypePublicKeysUpdatedInService)).To(BeTrue())
 }

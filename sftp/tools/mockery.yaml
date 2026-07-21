@@ -6,7 +6,7 @@ with-expecter: True
 mockname: "Mock{{.InterfaceName}}"
 dir: "../test/mocks"
 outpkg: "mocks"
-filename: "mock_{{.InterfaceName}}.go"
+filename: "{{.InterfaceName | camelcase | firstLower }}.go"
 boilerplate-file: ../../hack/boilerplate.go.txt
 packages:
   github.com/telekom/controlplane/sftp/internal/service:

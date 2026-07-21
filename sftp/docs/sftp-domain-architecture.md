@@ -26,7 +26,7 @@ flowchart TB
 
         SFTPServiceConfig -. "referenced by" .-> Instance
         Instance -. "referenced by" .-> User
-        User -. "triggers reconcile" .-> Instance
+        Instance -. "triggers reconcile" .-> User
     end
 
     %% External services
@@ -78,19 +78,15 @@ The instance controller provisions and maintains the external SFTP service user 
 | Target | Relationship | Purpose |
 |---|---|---|
 | **SFTPServiceConfig** | watches/uses | Uses `spec.sftpServiceConfigRef` to resolve the cached SFTP Tardis client |
-| **User** | watches/reads | Lists Users in the Instance namespace and selects Users whose `spec.instanceRef` points to the Instance |
-| **SFTP Tardis API** | creates/updates/deletes | Creates or updates the SFTP service user, deletes it during finalization, and synchronizes its public keys |
+| **SFTP Tardis API** | creates/updates/deletes | Creates or updates the SFTP service user and deletes it during finalization |
 
 When an Instance spec changes, the controller creates or updates the SFTP user in the external service.
-On every reconciliation, it collects SSH public keys from all matching Users, canonicalizes them, deduplicates them by fingerprint, and sends the resulting key list to the SFTP Tardis API.
-
-After a successful public key sync, the controller stores one `Processing` condition per matching User in `Instance.status.users`.
-This keeps the key-processing result next to the external sync result that produced it.
 
 ### User Resource
 
 The User controller watches User resources and Instance status changes.
-A User contributes SSH public keys to the Instance referenced by `spec.instanceRef`, while its status is projected from the per-User processing condition stored on the referenced Instance.
+A User manages its own SSH public keys for the referenced Instance.
+On reconciliation, the controller canonicalizes only the keys from that User and updates the external service using a per-User client ID. It does not aggregate keys from other Users.
 
 Invalid SSH public keys are skipped during payload generation. Valid keys are sent with the target SFTP user name set to the Instance name and a description based on the User namespace/name.
 

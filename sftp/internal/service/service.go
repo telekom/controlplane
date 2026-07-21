@@ -12,8 +12,6 @@ import (
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 )
 
-//go:generate go tool oapi-codegen -config oapi-codegen.yaml ../../api/service/api.yaml
-
 // Service provides the operations exposed by the SFTP Tardis API.
 type Service interface {
 	CreateOrUpdateSFTPUser(ctx context.Context, user RoverSftpUserModel) error
@@ -27,10 +25,15 @@ type Factory interface {
 }
 
 // ClientManager manages SFTP API clients configured by SFTPServiceConfig resources.
+// It provides reusability of clients and ensures that the clients are initialized only once per SFTPServiceConfig.
 type ClientManager interface {
 	Factory
-	IsServiceCached(sftpServiceConfig client.ObjectKey) bool
+	// ExistClient returns true if a client for the given SFTPServiceConfig is already initialized and available to use.
+	ExistClient(sftpServiceConfig client.ObjectKey) bool
+	// CreateOrUpdate creates or updates the SFTP API client for the given SFTPServiceConfig in client manager
+	// It initialize oauth2 client credentials and creates a new SFTP API client if it does not exist yet.
 	CreateOrUpdate(ctx context.Context, sftpServiceConfig *sftpv1.SFTPServiceConfig) error
+	// Delete removes the client for the given SFTPServiceConfig from the client manager.
 	Delete(sftpServiceConfig *sftpv1.SFTPServiceConfig)
 }
 

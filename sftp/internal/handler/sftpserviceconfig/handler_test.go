@@ -103,7 +103,7 @@ func (m *recordingClientManager) ServiceFor(context.Context, client.ObjectKey) (
 	return service.NopService{}, nil
 }
 
-func (m *recordingClientManager) IsServiceCached(key client.ObjectKey) bool {
+func (m *recordingClientManager) ExistClient(key client.ObjectKey) bool {
 	m.cacheChecks = append(m.cacheChecks, key)
 	return m.serviceCached
 }
