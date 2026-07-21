@@ -7,10 +7,10 @@ package instance
 import (
 	"context"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
