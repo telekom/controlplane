@@ -33,13 +33,6 @@ type InstanceStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-	// Users contains the processing status observed for each User that references this Instance.
-	// +listType=map
-	// +listMapKey=namespace
-	// +listMapKey=name
-	// +optional
-	Users []InstanceUserStatus `json:"users,omitempty"`
 }
 
 // InstanceUserStatus contains the Instance-observed status for a User.
