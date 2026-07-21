@@ -124,7 +124,9 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	}
 
 	properties := map[string]any{
-		"mcpBasePath": obj.Spec.BasePath,
+		"mcpBasePath":   obj.Spec.BasePath,
+		"resource_type": "MCP",
+		"resource_name": obj.Spec.BasePath,
 	}
 	if err = requester.SetProperties(properties); err != nil {
 		return errors.Wrapf(err, "unable to set approvalRequest properties for McpSubscription %q", obj.Name)

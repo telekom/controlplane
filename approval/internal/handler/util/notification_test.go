@@ -28,9 +28,11 @@ var _ = Describe("Notification Utilities", func() {
 		Context("when requester has properties with scopes and basePath", func() {
 			It("should extract all properties including scopes array and basePath", func() {
 				requesterProperties := map[string]any{
-					"basePath": "foo/bar/myapi/v1",
-					"scopes":   []string{"admin:read", "admin:write"},
-					"email":    "user@example.com",
+					"basePath":      "foo/bar/myapi/v1",
+					"scopes":        []string{"admin:read", "admin:write"},
+					"email":         "user@example.com",
+					"resource_type": "API",
+					"resource_name": "foo/bar/myapi/v1",
 				}
 
 				propertiesJSON, err := json.Marshal(requesterProperties)
@@ -127,6 +129,8 @@ var _ = Describe("Notification Utilities", func() {
 						"rateLimit": 1000,
 						"quota":     50000,
 					},
+					"resource_type": "API",
+					"resource_name": "api/v2/users",
 				}
 
 				propertiesJSON, err := json.Marshal(requesterProperties)
@@ -202,6 +206,8 @@ var _ = Describe("Notification Utilities", func() {
 						"rateLimit": 1000,
 						"quota":     50000,
 					},
+					"resource_type": "event",
+					"resource_name": "some-event-type",
 				}
 
 				propertiesJSON, err := json.Marshal(requesterProperties)
