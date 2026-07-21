@@ -21,9 +21,11 @@ type UserSpec struct {
 	InstanceRef types.ObjectRef `json:"instanceRef"`
 
 	// SSHPublicKeys contains the unique SSH public keys that should be assigned to this User.
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
-	SSHPublicKeys []string `json:"sshPublicKeys,omitempty"`
+	// +kubebuilder:validation:uniqueItems=true
+	// +kubebuilder:validation:MinItems=1
+	SSHPublicKeys []string `json:"sshPublicKeys"`
 }
 
 // UserStatus defines the observed state of User

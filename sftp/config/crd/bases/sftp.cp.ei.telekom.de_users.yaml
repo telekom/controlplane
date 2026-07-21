@@ -76,6 +76,7 @@ spec:
                 type: array
             required:
             - instanceRef
+            - sshPublicKeys
             type: object
           status:
             description: UserStatus defines the observed state of User
