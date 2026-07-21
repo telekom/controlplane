@@ -98,7 +98,7 @@ var _ = Describe("UserHandler", func() {
 		var capturedClientID string
 		var capturedKeys service.ClientPublicKeyMap
 		mockService.EXPECT().UpdatePublicKeysForSFTPUser(mock.Anything, instance.Name, mock.Anything, mock.Anything).
-			Run(func(_ context.Context, _ string, clientID string, keys service.ClientPublicKeyMap) {
+			Run(func(_ context.Context, _, clientID string, keys service.ClientPublicKeyMap) {
 				capturedClientID = clientID
 				capturedKeys = keys
 			}).
@@ -140,7 +140,7 @@ var _ = Describe("UserHandler", func() {
 
 		var capturedKeys service.ClientPublicKeyMap
 		mockService.EXPECT().UpdatePublicKeysForSFTPUser(mock.Anything, instance.Name, user.Namespace+"/"+user.Name, mock.Anything).
-			Run(func(_ context.Context, _ string, _ string, keys service.ClientPublicKeyMap) {
+			Run(func(_ context.Context, _, _ string, keys service.ClientPublicKeyMap) {
 				capturedKeys = keys
 			}).
 			Return(nil).

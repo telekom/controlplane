@@ -148,14 +148,13 @@ var _ = Describe("InstanceHandler", func() {
 		Expect(err).To(MatchError(ContainSubstring("deleting SFTP user")))
 		Expect(err).To(MatchError(ContainSubstring("delete failed")))
 	})
-
 })
 
-func newTestHandler(objects ...client.Object) (*InstanceHandler, context.Context, *sftpv1.Instance, *sftpmocks.MockService) {
-	return newTestHandlerWithFactory(nil, objects...)
+func newTestHandler() (*InstanceHandler, context.Context, *sftpv1.Instance, *sftpmocks.MockService) {
+	return newTestHandlerWithFactory(nil)
 }
 
-func newTestHandlerWithFactory(factory service.Factory, objects ...client.Object) (*InstanceHandler, context.Context, *sftpv1.Instance, *sftpmocks.MockService) {
+func newTestHandlerWithFactory(factory service.Factory) (*InstanceHandler, context.Context, *sftpv1.Instance, *sftpmocks.MockService) {
 	instance := testInstance()
 	mockService := sftpmocks.NewMockService(GinkgoT())
 
