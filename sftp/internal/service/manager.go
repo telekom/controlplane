@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-logr/logr"
 	"golang.org/x/oauth2/clientcredentials"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
@@ -113,7 +113,7 @@ func clientConfigFor(ctx context.Context, sftpServiceConfig *sftpv1.SFTPServiceC
 		return Config{}, err
 	}
 
-	log := logr.FromContextOrDiscard(ctx)
+	log := logf.FromContext(ctx)
 	log.V(1).Info("Fetching SFTP Tardis access token")
 	_, err = oauth2Config.Token(ctx)
 	if err != nil {
