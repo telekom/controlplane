@@ -1,0 +1,72 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+imagePullSecrets: []
+
+xds:
+  # DNS name and port of the separately deployed xDS server.
+  host: gateway-controller-manager-xds-service.controlplane-system.svc.cluster.local
+  port: 18000
+
+lmsIssuer:
+  replicaCount: 1
+  image:
+    repository: trusted.artifactory.devops.telekom.de/mcicd-internal-oci/tardis/components/gateway/research
+    tag: lms-issuer-8818f7c7
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+envoy:
+  replicaCount: 1
+  image:
+    repository: envoyproxy/envoy
+    tag: v1.37-latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 10000
+  resources:
+    limits:
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+valkey:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: valkey/valkey
+    tag: 8.1-alpine
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,90 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if .Values.valkey.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "xdsdemo.componentName" (dict "root" . "component" "valkey") }}
+  labels:
+    {{- include "xdsdemo.labels" . | nindent 4 }}
+    {{- include "xdsdemo.selectorLabels" (dict "root" . "component" "valkey") | nindent 4 }}
+spec:
+  replicas: {{ .Values.valkey.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "xdsdemo.selectorLabels" (dict "root" . "component" "valkey") | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "xdsdemo.selectorLabels" (dict "root" . "component" "valkey") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: valkey
+          image: {{ include "xdsdemo.image" .Values.valkey.image | quote }}
+          imagePullPolicy: {{ .Values.valkey.image.pullPolicy }}
+          args:
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: valkey
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command:
+                - valkey-cli
+                - ping
+          livenessProbe:
+            tcpSocket:
+              port: valkey
+          resources:
+            {{- toYaml .Values.valkey.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # Keep this stable for the future Envoy rate-limit service configuration.
+  name: valkey
+  labels:
+    {{- include "xdsdemo.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "xdsdemo.selectorLabels" (dict "root" . "component" "valkey") | nindent 4 }}
+  ports:
+    - name: valkey
+      port: 6379
+      targetPort: valkey
+{{- end }}
