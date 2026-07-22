@@ -7,6 +7,8 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -294,7 +296,7 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.V
 	case roverv1.TypeEvent:
 		return r.ValidateEventExposure(ctx, valErr, environment, exposure, zoneRef, idx)
 	case roverv1.TypeAi:
-		return nil // AI exposures have no special validation at this time
+		return r.ValidateAiExposure(ctx, valErr, environment, exposure, zoneRef, idx)
 	default:
 		valErr.AddInvalidError(
 			field.NewPath("spec").Child("exposures").Index(idx).Child("type"),
@@ -571,6 +573,82 @@ func (r *RoverValidator) ValidateEventExposure(ctx context.Context, valErr *cerr
 	return nil
 }
 
+// isNonRoutableTarget reports whether the given URL points at an address that is
+// not reachable from outside the cluster and must therefore never be used as
+// an upstream or callback target. This blocks:
+//   - localhost and cluster-internal DNS names (*.svc, *.cluster.local, and
+//     bare dotless names like "kubernetes" that resolve via search domains)
+//   - loopback IPs (127.0.0.0/8, ::1) and the unspecified address (0.0.0.0, ::)
+//   - link-local addresses (169.254.0.0/16, fe80::/10) — notably the cloud
+//     metadata endpoint 169.254.169.254, which can leak node IAM credentials
+//
+// Private ranges (10/8, 172.16/12, 192.168/16) are deliberately NOT blocked:
+// legitimate corporate/on-prem backends may live there, so blocking them is a
+// deployment-specific policy decision rather than a universal safety rule.
+//
+// This is a best-effort, syntactic check only. It does NOT resolve hostnames,
+// so DNS names that resolve to blocked IPs (e.g. 127.0.0.1.nip.io) are not
+// caught here — that is left to runtime egress controls. The goal is to catch
+// obvious misconfigurations at admission time, not to be a complete SSRF guard.
+func isNonRoutableTarget(rawURL string) bool {
+	if rawURL == "" {
+		// Empty is handled by other validation (e.g. required-field / CRD rules).
+		return false
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		// Unparseable URLs fail other validation; don't flag them here.
+		return false
+	}
+	// Reject userinfo (user@host): it invites parser-differential confusion
+	// across downstream components (e.g. "http://public.example.com@127.0.0.1/").
+	if u.User != nil {
+		return true
+	}
+	// Strip a trailing dot so the FQDN form "localhost." is treated as "localhost".
+	host := strings.TrimSuffix(u.Hostname(), ".")
+
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback() ||
+			ip.IsUnspecified() ||
+			ip.IsLinkLocalUnicast() ||
+			ip.IsLinkLocalMulticast()
+	}
+
+	// Not a literal IP: block localhost and cluster-internal DNS names.
+	lower := strings.ToLower(host)
+	if lower == "localhost" || strings.HasSuffix(lower, ".localhost") {
+		return true
+	}
+	if strings.HasSuffix(lower, ".cluster.local") {
+		return true
+	}
+	// Kubernetes service DNS: my-svc.my-ns.svc[.cluster.local]. The ".svc"
+	// suffix covers the common in-cluster form even without ".cluster.local".
+	if strings.HasSuffix(lower, ".svc") || strings.Contains(lower, ".svc.") {
+		return true
+	}
+	// Bare, dotless hostnames resolve against the cluster's search domains
+	// (e.g. "kubernetes" -> kubernetes.default.svc.cluster.local).
+	if !strings.Contains(lower, ".") {
+		return true
+	}
+	return false
+}
+
+// validateExternalURL runs the full validation policy for any user-supplied
+// URL: it must be http(s) and must not point at a cluster-internal or local
+// address. Errors are added under the given field path.
+func validateExternalURL(valErr *cerrors.ValidationError, path *field.Path, rawURL string) {
+	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
+		valErr.AddInvalidError(path, rawURL, "URL must start with http:// or https://")
+	}
+	if isNonRoutableTarget(rawURL) {
+		valErr.AddInvalidError(path, rawURL,
+			"URL must not point at a cluster-internal or local address (e.g. localhost, a loopback/link-local IP, or a *.cluster.local name)")
+	}
+}
+
 func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
 	if exposure.Api == nil {
 		return nil
@@ -585,18 +663,9 @@ func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerror
 			// Skip further URL validation if it's empty
 			continue
 		}
-		if !strings.HasPrefix(upstream.URL, "http://") && !strings.HasPrefix(upstream.URL, "https://") {
-			valErr.AddInvalidError(
-				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
-				upstream.URL, "upstream URL must start with http:// or https://",
-			)
-		}
-		if strings.Contains(upstream.URL, "localhost") {
-			valErr.AddInvalidError(
-				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
-				upstream.URL, "upstream URL must not contain 'localhost'",
-			)
-		}
+		validateExternalURL(valErr,
+			field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
+			upstream.URL)
 	}
 
 	// Validate rate limits if they are set
@@ -623,6 +692,25 @@ func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerror
 	return nil
 }
 
+func (r *RoverValidator) ValidateAiExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
+	if exposure.Ai == nil {
+		return nil
+	}
+	for i, upstream := range exposure.Ai.Upstreams {
+		if upstream.URL == "" {
+			valErr.AddRequiredError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("upstreams").Index(i).Child("url"),
+				"upstream URL must not be empty",
+			)
+			continue
+		}
+		validateExternalURL(valErr,
+			field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("upstreams").Index(i).Child("url"),
+			upstream.URL)
+	}
+	return nil
+}
+
 func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerrors.ValidationError, environment string, sub roverv1.Subscription, idx int) error {
 	switch sub.Type() {
 	case roverv1.TypeApi:
@@ -645,7 +733,11 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerro
 		return nil
 
 	case roverv1.TypeEvent:
-		// There is no special validation needed at this time.
+		if sub.Event.Delivery.Callback != "" {
+			validateExternalURL(valErr,
+				field.NewPath("spec").Child("subscriptions").Index(idx).Child("event").Child("delivery").Child("callback"),
+				sub.Event.Delivery.Callback)
+		}
 		return nil
 	case roverv1.TypeAi:
 		return nil // AI subscriptions have no special validation at this time
