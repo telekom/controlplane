@@ -2774,6 +2774,49 @@ EOF
         errors=$((errors + 1))
     fi
 
+    # Verify JumperConfig fields on the cross-zone RouteListener
+    info "Verifying RouteListener JumperConfig fields (cross-zone)..."
+    local cz_rl_name
+    cz_rl_name=$(kc get routelistener -n "${ZONE_NS}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | grep "cross-zone" || true)
+    if [ -n "${cz_rl_name}" ]; then
+        local cz_rl_client_id cz_rl_issuer cz_rl_route_name cz_rl_zone_name
+        cz_rl_client_id=$(kc get routelistener "${cz_rl_name}" -n "${ZONE_NS}" -o jsonpath='{.spec.gatewayClient.clientId}' 2>/dev/null)
+        cz_rl_issuer=$(kc get routelistener "${cz_rl_name}" -n "${ZONE_NS}" -o jsonpath='{.spec.gatewayClient.issuer}' 2>/dev/null)
+        cz_rl_route_name=$(kc get routelistener "${cz_rl_name}" -n "${ZONE_NS}" -o jsonpath='{.spec.route.name}' 2>/dev/null)
+        cz_rl_zone_name=$(kc get routelistener "${cz_rl_name}" -n "${ZONE_NS}" -o jsonpath='{.spec.zone.name}' 2>/dev/null)
+
+        if [ "${cz_rl_client_id}" = "eni--pandora--echo-consumer-client" ]; then
+            success "RouteListener GatewayClient.clientId = consumer clientId (correct for jumper token minting)"
+        else
+            warn "RouteListener GatewayClient.clientId = '${cz_rl_client_id}', expected 'eni--pandora--echo-consumer-client'"
+            errors=$((errors + 1))
+        fi
+
+        if [ -n "${cz_rl_issuer}" ]; then
+            success "RouteListener GatewayClient.issuer = '${cz_rl_issuer}' (jumper will use for token endpoint)"
+        else
+            warn "RouteListener GatewayClient.issuer is empty"
+            errors=$((errors + 1))
+        fi
+
+        if echo "${cz_rl_route_name}" | grep -q "cross-zone"; then
+            success "RouteListener spec.route points to Route in listening zone (${cz_rl_route_name})"
+        else
+            warn "RouteListener spec.route = '${cz_rl_route_name}', expected Route with 'cross-zone' in name"
+            errors=$((errors + 1))
+        fi
+
+        if [ "${cz_rl_zone_name}" = "dataplane1" ]; then
+            success "RouteListener spec.zone = dataplane1 (listening zone, where Kong runs)"
+        else
+            warn "RouteListener spec.zone = '${cz_rl_zone_name}', expected 'dataplane1'"
+            errors=$((errors + 1))
+        fi
+    else
+        warn "Could not find cross-zone RouteListener for JumperConfig verification"
+        errors=$((errors + 1))
+    fi
+
     # Summary
     echo ""
     if [ "${errors}" -eq 0 ]; then
