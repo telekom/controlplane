@@ -6,6 +6,7 @@ package instance
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -74,7 +75,7 @@ func (h *InstanceHandler) Delete(ctx context.Context, obj *sftpv1.Instance) erro
 
 	err = sftpService.DeleteSFTPUser(ctx, obj.Name)
 	if err != nil {
-		return errors.Wrapf(err, "deleting SFTP user %q", obj.Name)
+		return fmt.Errorf("deleting SFTP user %q: %w", obj.Name, err)
 	}
 
 	return nil
@@ -88,13 +89,11 @@ func (h *InstanceHandler) createOrUpdateServiceUser(ctx context.Context, sftpSer
 		// nil creates invalid user in an external service
 		HorizonNotificationEvents: &events,
 	}
-	if instance.Spec.Description != "" {
-		description := instance.Spec.Description
-		sftpUser.Description = &description
-	}
+
+	sftpUser.Description = &instance.Spec.Description
 
 	if err := sftpService.CreateOrUpdateSFTPUser(ctx, sftpUser); err != nil {
-		return errors.Wrapf(err, "creating or updating SFTP user %q", instance.Name)
+		return fmt.Errorf("creating or updating SFTP user %q: %w", instance.Name, err)
 	}
 
 	return nil
