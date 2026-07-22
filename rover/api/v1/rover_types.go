@@ -145,16 +145,16 @@ type RoverSpec struct {
 
 	// Exposures is a list of APIs and Events that this Rover exposes to consumers
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:MaxItems=150
 	Exposures []Exposure `json:"exposures,omitempty"`
 	// Subscriptions is a list of APIs and Events that this Rover consumes from providers
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:MaxItems=150
 	Subscriptions []Subscription `json:"subscriptions,omitempty"`
 
 	// Permissions defines role-based access control permissions for this application
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:MaxItems=150
 	Permissions []Permission `json:"permissions,omitempty"`
 
 	// ExternalIds carries business identifiers (e.g. PSI, ICTO) attached to this
