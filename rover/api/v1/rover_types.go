@@ -499,6 +499,34 @@ type PublicKey struct {
 	Key string `json:"key"`
 }
 
+// SSHKeyType identifies the algorithm prefix of an SSH public key registered on
+// a SFTP user. Only these algorithms are accepted for file exposures and subscriptions.
+type SSHKeyType string
+
+const (
+	SSHKeyTypeRSA           SSHKeyType = "ssh-rsa"
+	SSHKeyTypeECDSANistP521 SSHKeyType = "ecdsa-sha2-nistp521"
+	SSHKeyTypeED25519       SSHKeyType = "ssh-ed25519"
+)
+
+var AllSSHKeyTypes = []SSHKeyType{
+	SSHKeyTypeRSA,
+	SSHKeyTypeECDSANistP521,
+	SSHKeyTypeED25519,
+}
+
+func (t SSHKeyType) String() string {
+	return string(t)
+}
+
+func (t SSHKeyType) IsValid() bool {
+	switch t {
+	case SSHKeyTypeRSA, SSHKeyTypeECDSANistP521, SSHKeyTypeED25519:
+		return true
+	}
+	return false
+}
+
 // Approval defines the approval workflow for API exposure
 type Approval struct {
 	// Strategy defines the approval process required for this API

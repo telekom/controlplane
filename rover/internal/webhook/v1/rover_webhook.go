@@ -20,6 +20,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"golang.org/x/crypto/ssh"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -651,5 +652,33 @@ func validateFilePublicKeys(valErr *cerrors.ValidationError, keys []roverv1.Publ
 			)
 		}
 		seenKeys[key.Key] = struct{}{}
+
+		validateSSHPublicKeyFormat(valErr, key, keyPath)
+	}
+}
+
+// validateSSHPublicKeyFormat verifies that a public key value is a well-formed
+// SSH authorized-keys entry ("<type> <base64-key> [comment]") whose algorithm is
+// one of the supported SSHKeyTypes.
+func validateSSHPublicKeyFormat(valErr *cerrors.ValidationError, key roverv1.PublicKey, keyPath *field.Path) {
+	pub, _, _, _, err := ssh.ParseAuthorizedKey([]byte(strings.TrimSpace(key.Key)))
+	if err != nil {
+		valErr.AddInvalidError(
+			keyPath.Child("key"),
+			key.Key,
+			fmt.Sprintf("invalid SSH public key for label '%s': %v", key.Label, err),
+		)
+		return
+	}
+
+	if !roverv1.SSHKeyType(pub.Type()).IsValid() {
+		valErr.AddInvalidError(
+			keyPath.Child("key"),
+			key.Key,
+			fmt.Sprintf(
+				"unsupported key type '%s' for key labelled '%s'; must be one of %v",
+				pub.Type(), key.Label, roverv1.AllSSHKeyTypes,
+			),
+		)
 	}
 }
