@@ -10,6 +10,8 @@ import (
 	"strconv"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -17,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 	"github.com/telekom/controlplane/sftp/internal/service"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*sftpv1.User] = &UserHandler{}
@@ -51,6 +54,15 @@ func (h *UserHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.User) erro
 		obj.SetCondition(condition.NewNotReadyCondition("WaitingForInstance", "Waiting for Instance to be ready"))
 		return nil
 	}
+
+	log := logf.FromContext(ctx)
+	conditionReady := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+	if conditionReady != nil && conditionReady.ObservedGeneration == obj.Generation && conditionReady.Status == v1.ConditionTrue {
+		log.Info("User spec didn't change, skipping updating of SSH Public keys in external service")
+		return nil
+	}
+
+	log.Info("User spec has changed, updating SSH Public keys in external service")
 
 	obj.SetCondition(condition.NewProcessingCondition("UpdatingPublicKeys", "Updating SSH public keys in external service"))
 
