@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/internal/features/envoy"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
@@ -27,12 +28,28 @@ import (
 
 var _ handler.Handler[*gatewayv1.Route] = &RouteHandler{}
 
-type RouteHandler struct{}
+type RouteHandler struct {
+	xdsClient envoy.XdsClient
+}
+
+func WithXdsClient(xdsClient envoy.XdsClient) func(*RouteHandler) {
+	return func(h *RouteHandler) {
+		h.xdsClient = xdsClient
+	}
+}
+
+func NewRouteHandler(opts ...func(*RouteHandler)) *RouteHandler {
+	h := &RouteHandler{}
+	for _, opt := range opts {
+		opt(h)
+	}
+	return h
+}
 
 func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Route) error {
 	log := log.FromContext(ctx)
 	kubeClient := cc.ClientFromContextOrDie(ctx)
-	builder, err := NewFeatureBuilder(ctx, route)
+	builder, err := NewFeatureBuilder(ctx, route, h.xdsClient)
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
@@ -126,7 +143,7 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 	return nil
 }
 
-func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, error) {
+func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route, xdsClient envoy.XdsClient) (features.FeatureBuilder, error) {
 
 	ready, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
@@ -134,6 +151,13 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	}
 	if !ready {
 		return nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
+	}
+
+	if gateway.Spec.Type == gatewayv1.GatewayTypeEnvoy {
+		builder := envoy.NewFeatureBuilder(xdsClient, route, nil, gateway)
+		builder.EnableFeature(envoy.InstanceAccessControlFeature)
+		builder.EnableFeature(envoy.InstanceLastMileSecurityFeature)
+		return builder, nil
 	}
 
 	kc, err := kongutil.GetClientFor(gateway)

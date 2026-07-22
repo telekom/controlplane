@@ -41,8 +41,6 @@ type EnvoyFeatureBuilder interface {
 	features.FeatureBuilder
 
 	EnableFeature(f EnvoyFeature)
-	Build(context.Context) error
-	BuildForConsumer(context.Context) error
 
 	// RequireJWT declares that incoming tokens must be validated and their
 	// issuer must be one of the given trusted issuers.
@@ -188,8 +186,16 @@ func (b *Builder) Build(ctx context.Context) error {
 		}
 	}
 
+	// Default the upstream to the route's first configured backend when no
+	// feature set one (e.g. LMS/Failover point it at the sidecar proxy). This
+	// mirrors the Kong PassThrough feature's SetUpstream(Upstreams[0]).
+	// ponytail: first upstream only — load balancing across Upstreams[1:] by
+	// weight is deferred. Upgrade path: emit a weighted-cluster RouteAction.
 	if b.upstream == nil {
-		return fmt.Errorf("upstream is not set")
+		if len(b.route.Spec.Backend.Upstreams) == 0 {
+			return fmt.Errorf("upstream is not set")
+		}
+		b.upstream = b.route.Spec.Backend.Upstreams[0]
 	}
 
 	bundle, err := b.render()

@@ -44,6 +44,9 @@ type Feature interface {
 // A feature's IsUsed only needs this base; its Apply takes the backend-specific
 // builder that embeds it.
 type FeatureBuilder interface {
+	Build(context.Context) error
+	BuildForConsumer(context.Context) error
+
 	GetRoute() (*gatewayv1.Route, bool)
 	GetConsumer() (*gatewayv1.Consumer, bool)
 	GetGateway() *gatewayv1.Gateway
@@ -59,10 +62,7 @@ type FeatureBuilder interface {
 // use.
 type FeaturesBuilder interface {
 	FeatureBuilder
-
 	EnableFeature(f Feature)
-	Build(context.Context) error
-	BuildForConsumer(context.Context) error
 
 	RequestTransformerPlugin() *plugin.RequestTransformerPlugin
 	AclPlugin() *plugin.AclPlugin

@@ -20,14 +20,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features/envoy"
 	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
 )
 
 // RouteReconciler reconciles a Route object
 type RouteReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Scheme    *runtime.Scheme
+	Recorder  record.EventRecorder
+	XdsClient envoy.XdsClient
 
 	cc.Controller[*gatewayv1.Route]
 }
@@ -44,7 +46,7 @@ func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("route-controller")
-	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(routehandler.NewRouteHandler(routehandler.WithXdsClient(r.XdsClient)), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Route{}).

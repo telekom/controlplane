@@ -24,8 +24,19 @@ type AdminConfig struct {
 	Url          string `json:"url"`
 }
 
+// GatewayType defines the type of the gateway (e.g., Kong, Envoy)
+// +kubebuilder:validation:Enum=kong;envoy
+type GatewayType string
+
+const (
+	GatewayTypeKong  GatewayType = "kong"
+	GatewayTypeEnvoy GatewayType = "envoy"
+)
+
 // GatewaySpec defines the desired state of Gateway
 type GatewaySpec struct {
+	Type GatewayType `json:"type"`
+
 	Redis *RedisConfig `json:"redis,omitempty"`
 	Admin AdminConfig  `json:"admin"`
 

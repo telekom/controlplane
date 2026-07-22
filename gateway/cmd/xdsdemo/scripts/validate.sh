@@ -123,6 +123,9 @@ lms_token="${upstream_auth#Bearer }"
 if [[ -z "$lms_token" ]]; then
   check "LMS token present upstream" "present" "absent"
 else
+  echo "  ${dim}lms-token=${lms_token}${reset}"
+  echo "  ${dim}lms-token claims:${reset}"
+  decode_jwt_payload "$lms_token" | jq .
   lms_iss=$(decode_jwt_payload "$lms_token" | jq -r '.iss // empty')
   echo "  ${dim}upstream token iss=${lms_iss}${reset}"
   check "LMS token issued by issuer" "lms-issuer-poc" "$lms_iss"

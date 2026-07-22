@@ -201,6 +201,7 @@ func newGateway(name, namespace string) *gatewayv1.Gateway {
 			},
 		},
 		Spec: gatewayv1.GatewaySpec{
+			Type: gatewayv1.GatewayTypeKong,
 			Admin: gatewayv1.AdminConfig{
 				Url:          "http://kong-admin:8001",
 				ClientId:     "test-client-id",

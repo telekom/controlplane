@@ -7,6 +7,7 @@ package envoy
 import (
 	"context"
 
+	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	httprbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
@@ -248,5 +249,28 @@ var _ = Describe("Builder.Build", func() {
 		b := NewFeatureBuilder(xds, newRoute(), nil, nil)
 		b.EnableFeature(InstanceAccessControlFeature)
 		Expect(b.Build(ctx)).To(MatchError(ContainSubstring("upstream")))
+	})
+
+	It("defaults the upstream from route.Spec.Backend.Upstreams[0]", func() {
+		route := newRoute()
+		route.Spec.Backend.Upstreams = []gatewayv1.Upstream{
+			{Scheme: "https", Hostname: "backend.svc.local", Port: 8080, Path: "/api"},
+			// second upstream is ignored: load balancing is out of scope.
+			{Scheme: "https", Hostname: "other.svc.local", Port: 9090, Path: "/other"},
+		}
+		b := NewFeatureBuilder(xds, route, nil, nil)
+		b.EnableFeature(InstanceAccessControlFeature)
+
+		Expect(b.Build(ctx)).To(Succeed())
+
+		snap, err := cache.GetSnapshot(PocNodeID)
+		Expect(err).NotTo(HaveOccurred())
+		res := snap.GetResources(resource.ClusterType)
+		Expect(res).To(HaveKey("my-route"))
+		cl := res["my-route"].(*clusterv3.Cluster)
+		sa := cl.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].
+			GetEndpoint().GetAddress().GetSocketAddress()
+		Expect(sa.GetAddress()).To(Equal("backend.svc.local"))
+		Expect(sa.GetPortValue()).To(Equal(uint32(8080)))
 	})
 })
