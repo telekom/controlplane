@@ -7,9 +7,12 @@ package envoy
 import (
 	"strings"
 
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 )
+
+const forwardedPathHeader = "X-Forwarded-Path"
 
 // routeDomains maps the route's hostnames to VirtualHost.domains (RT-02). With
 // no hostnames configured the vhost matches any Host/:authority via "*",
@@ -43,6 +46,13 @@ func routeEntries(clusterName string, paths []string, upstreamPath string) []*ro
 		routes = append(routes, &routev3.Route{
 			Match:  &routev3.RouteMatch{PathSpecifier: &routev3.RouteMatch_Prefix{Prefix: p}},
 			Action: &routev3.Route_Route{Route: action},
+			RequestHeadersToAdd: []*corev3.HeaderValueOption{{
+				Header: &corev3.HeaderValue{
+					Key:   forwardedPathHeader,
+					Value: "%PATH(NQ:ORIG_OR_PATH)%",
+				},
+				AppendAction: corev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+			}},
 		})
 	}
 	return routes
