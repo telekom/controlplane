@@ -1,0 +1,167 @@
+gateway/internal/features/envoy/routing.go
+  s_c98a9407697a75::t_3499adc59a28ff 1-72
+.opencode/README.md
+  s_1557dcd58182f7::t_65dd6b57e9f851 1-20,22-41,49-54
+  s_27267cfe644f41::t_3d5d7adebb21ba 21
+  s_27267cfe644f41::t_623b662f244f61 42-48
+gateway/internal/features/envoy/routing_test.go
+  s_c98a9407697a75::t_a324b39ee9cd97 1-52,55-56
+  s_c98a9407697a75::t_a4a9e47361b5d7 53-54
+.opencode/skills/map-logic/SKILL.md
+  s_1557dcd58182f7::t_0e3a539a121d41 1-90
+gateway/cmd/xdsdemo/README.md
+  s_e7c717da840680::t_1f0725764f7f1d 15-41,43-44,46-49,52
+  s_e7c717da840680::t_9773508ee9024e 45,55-57,59,64,68-72
+  s_e7c717da840680::t_3143583cbb3ece 1-14,42,50-51,53-54,65-67,75-76
+  s_e7c717da840680::t_25519e2f5810e0 58,60-63,73-74
+gateway/cmd/xdsdemo/Dockerfile
+  s_e7c717da840680::t_55200899d53bf5 1-23
+gateway/cmd/xdsdemo/main.go
+  s_e7c717da840680::t_b16b6b2b66bd29 44-45
+  s_e7c717da840680::t_5fe203354a7035 21
+  s_e7c717da840680::t_e1fa256d05dbf2 56-58,63-64
+  s_e7c717da840680::t_0e32a180dcb562 103,112-126
+  h_0f030e7424553c 61-62
+  s_e7c717da840680::t_5080334d2406f8 1-20,22-43,46-55,59-60,65-102
+  s_e7c717da840680::t_2cbab9fdbc5e4f 104-111
+gateway/internal/features/envoy/access_control_test.go
+  s_9318644cfdc2d8::t_0ac2a0a516fb12 152
+  s_9318644cfdc2d8::t_b9b71398086294 16
+  s_9318644cfdc2d8::t_c8baa393df3a2d 1-15,17-20,23-37,46-49,54-62,64-75,80-84,89-112,114,118-127,132-144,147,149-151,153-161,170-185,187-188,193-194,204,213,218-219,230
+  s_9318644cfdc2d8::t_cd785b9fc17b24 21-22
+  s_e7c717da840680::t_afaab07757f76b 244-246
+  s_e7c717da840680::t_d88efc0a2fc293 76-79
+  s_9318644cfdc2d8::t_8046d269a682a9 38-45,50-53,63,85-88,113,115-117,128-131,145-146,148,162-169,186,189-192,195-203,205-212,214-217,220-229,231-243,247-254
+gateway/internal/features/envoy/suite_test.go
+  s_9318644cfdc2d8::t_4f0fac05721a24 1-17
+gateway/cmd/xdsdemo/.env.example
+  h_0f030e7424553c 6
+  s_e7c717da840680::t_5f9af0b880f317 1-5,7-9
+.opencode/skills/gateway-expert/SKILL.md
+  s_69281849fd426d::t_40e5874ee6b22f 60,62,64-75
+  s_1557dcd58182f7::t_224066d5635a05 1-43,61,63,76-138
+  s_69281849fd426d::t_460349fcabf90b 44-59
+gateway/internal/features/envoy/client.go
+  s_9318644cfdc2d8::t_1a48d42e7bc158 65-71
+  s_9318644cfdc2d8::t_ca43da2ee16154 1-18,20-61,63-64,72-92,95-99
+  s_9318644cfdc2d8::t_364fb3232ae785 19
+  s_9318644cfdc2d8::t_a8aca9bb4a81c9 62,93-94
+gateway/internal/features/envoy/builder.go
+  s_9318644cfdc2d8::t_ac21ec860402d7 1-9,11,14-20,36,62-68,71,74-75,87,90-94,96-98,100,102-107,109-114,116-118,120-122,124-126,128-130,132,135-136,140,148,151-153,155-157,170,172-175,177,179-188,190-192,195-197,199-202,205-209,211,222-223,225-227,234,239
+  s_c98a9407697a75::t_3fcea44079510f 203-204
+  s_e7c717da840680::t_3a9258841713d7 210,212-218,224
+  s_9318644cfdc2d8::t_ceb3e5bf1f2172 219-221
+  s_9318644cfdc2d8::t_baf0a40d762a60 10,21-35,37-61,69-70,72-73,76-86,88-89,95,99,101,108,115,119,123,127,131,133-134,137-139,141-147,149-150,154,158-169,171,176,178,189,193-194,198,228-233,235-238
+  s_9318644cfdc2d8::t_7b94241335500c 12-13
+gateway/internal/features/builder.go
+  s_9318644cfdc2d8::t_bdcf7b7df7b63f 38-39,43-46,54-56,60-61,66
+  s_9318644cfdc2d8::t_d4ae585a94d3c0 40-42,57-59,62-65
+gateway/cmd/xdsdemo/envoy-bootstrap.yaml
+  s_e7c717da840680::t_ebd5279468fc9c 1-46,49
+  s_e7c717da840680::t_034c7a2f3eeafc 47-48
+.opencode/skills/implement-envoy/SKILL.md
+  s_27267cfe644f41::t_3d9ed735260bbe 1-3,8-44,47-48,72-101,106-118
+  s_72482c0ee82cc9::t_e9b2e175d064de 4-7
+  s_69281849fd426d::t_16cc93df17b7e3 45-46,49-71
+  s_69281849fd426d::t_43a873cff10cda 102-105
+gateway/go.mod
+  s_e7c717da840680::t_c94c3494f328da 29-30,32,39,41-42,63
+  s_9318644cfdc2d8::t_aa4eb019579d02 59,64,101
+gateway/internal/features/envoy/access_control.go
+  s_e7c717da840680::t_f7791b6b898dd9 172-175,185-193
+  s_e7c717da840680::t_2c493e9c59808c 330
+  s_c98a9407697a75::t_c80e4704a40f7c 285-287,290,295-296
+  s_e7c717da840680::t_c1ab14547c6294 20,24-25
+  s_9318644cfdc2d8::t_6ba40dbe8147f0 1-7,10-19,21-23,26-30,34,108-132,135-138,140-149,152-171,176-184,194-284,288-289,291-294,297-329,331-349
+  s_9318644cfdc2d8::t_310b1e649b5ae2 8-9,31-33,35-107
+  s_e7c717da840680::t_56c564e0f219d3 350-413
+  s_9318644cfdc2d8::t_7eaf08176af0e8 133-134,139,150-151
+gateway/cmd/xdsdemo/docker-compose.yaml
+  s_e7c717da840680::t_27d47cd19ab493 18-22
+  s_e7c717da840680::t_264e5c2d963ba5 1-4,12,26-34,36-37,40-45
+  s_e7c717da840680::t_6cd5973471f8f5 5-11,13-17,23-25,35,38-39
+gateway/cmd/xdsdemo/scripts/validate.sh
+  s_c98a9407697a75::t_0dc3ce2e20f07e 69,100
+  s_c98a9407697a75::t_308cfc7684fd2c 16-18
+  s_c98a9407697a75::t_fda3f90df69a0d 13-15
+  s_c98a9407697a75::t_930c1a9c84d363 50-59,61-62,64-66,77,81,90,101
+  s_c98a9407697a75::t_e75c3419a73336 91-98
+  s_e7c717da840680::t_26d279b00928be 1-12,19-34,36-37,45,48-49,67-68,70-76,78-80,82-89,99,102-103,109
+  s_c98a9407697a75::t_08d0af5e6082ae 104-108
+  s_c98a9407697a75::t_c3fa2c2fd7a7c7 60,63
+  s_c98a9407697a75::t_b9d67449affaca 35
+  s_c98a9407697a75::t_90dbc336d0616c 38-44,46-47
+gateway/.gitignore
+  s_e7c717da840680::t_9d5de672fbed5a 33
+gateway/go.sum
+  s_e7c717da840680::t_e1b944f9a519fe 24-25,40-47,209-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6549f6b5549ec0a6ce34c63b75979b8e973d1cf4",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_1557dcd58182f7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077572523ffe57fjuKzcyySU52",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_27267cfe644f41": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0773b5133ffewm9aPNfO6I4In4",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_69281849fd426d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077071c3bffel2kT4YlNeAah9x",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_72482c0ee82cc9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077161f55ffeJJmaOtsq9DYqyP",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9318644cfdc2d8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07722da6affeXdRCUU7kk1BJj7",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c98a9407697a75": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_076dbbc1cffeVUYjZNSGlm7cgb",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e7c717da840680": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07704488effeB2tjqGE2N2J0We",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
