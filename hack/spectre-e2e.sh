@@ -61,6 +61,13 @@ LISTENER_NOROUTE_NAME="noroute-listener--consumer--nonexistent-v1"
 LISTENER_EVENTLISTENER_NAME="eventlistener-only--consumer--test"
 SPECTRE_APP_EVENTLISTENER="spectre-echo-consumer-eventlistener"
 
+# Scenario 14: Cross-zone placement
+CROSS_ZONE_NS="controlplane--dataplane2"
+CROSS_ZONE_NAME="dataplane2"
+CROSS_ZONE_PROVIDER="eni--hyperion--cross-zone-provider"
+SPECTRE_APP_CROSS_ZONE="spectre-cross-zone-consumer"
+LISTENER_CROSS_ZONE_NAME="cross-zone--consumer--cross-zone-v1"
+
 # ── Helpers ────────────────────────────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -172,6 +179,14 @@ cleanup() {
     kc delete eventstore "dataplane1-store" -n "${ZONE_NS}" --ignore-not-found 2>/dev/null || true
     kc delete eventconfig "controlplane" -n "${ZONE_NS}" --ignore-not-found 2>/dev/null || true
     kc delete ns "${ZONE_NS}" --ignore-not-found 2>/dev/null || true
+    # Scenario 14: Cross-zone resources
+    kc delete listener "${LISTENER_CROSS_ZONE_NAME}" -n "${NAMESPACE}" --ignore-not-found 2>/dev/null || true
+    kc delete spectreapplication "${SPECTRE_APP_CROSS_ZONE}" -n "${NAMESPACE}" --ignore-not-found 2>/dev/null || true
+    kc delete application "${CROSS_ZONE_PROVIDER}" -n "${NAMESPACE}" --ignore-not-found 2>/dev/null || true
+    kc delete eventstore "dataplane2-store" -n "${CROSS_ZONE_NS}" --ignore-not-found 2>/dev/null || true
+    kc delete eventconfig "controlplane-dp2" -n "${CROSS_ZONE_NS}" --ignore-not-found 2>/dev/null || true
+    kc delete zone "${CROSS_ZONE_NAME}" -n controlplane --ignore-not-found 2>/dev/null || true
+    kc delete ns "${CROSS_ZONE_NS}" --ignore-not-found 2>/dev/null || true
     success "Cleanup complete."
 }
 
@@ -2298,6 +2313,483 @@ EOF
     return "${errors}"
 }
 
+# ── Scenario 14: Cross-zone placement ─────────────────────────────────
+test_cross_zone() {
+    local errors=0
+
+    echo ""
+    info "════════════════════════════════════════════════════════════════"
+    info "  Scenario 14: Cross-zone GetListeningZone placement"
+    info "════════════════════════════════════════════════════════════════"
+    echo ""
+
+    # ── Setup: Create second zone (dataplane2) ────────────────────────
+
+    info "Creating cross-zone namespace..."
+    kc create namespace "${CROSS_ZONE_NS}" --dry-run=client -o yaml | kc apply -f -
+
+    info "Applying Zone dataplane2..."
+    kc apply -f - <<'EOF'
+apiVersion: admin.cp.ei.telekom.de/v1
+kind: Zone
+metadata:
+  name: dataplane2
+  namespace: controlplane
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+spec:
+  identityProvider:
+    admin:
+      clientId: admin-cli
+      userName: admin
+      password: test-password
+    url: https://idp2.local.test/
+  gateway:
+    admin:
+      url: https://gateway-admin2.local.test/admin-api
+    presets:
+      - name: default
+        default: true
+        urls:
+          - hostname: gateway2.local.test
+            basePath: /
+            hidden: false
+  redis:
+    host: redis-host-2
+    port: 6379
+    password: test-redis-password-2
+  visibility: Enterprise
+EOF
+
+    info "Patching Zone dataplane2 status..."
+    local zone2_gen
+    zone2_gen=$(kc get zone dataplane2 -n controlplane -o jsonpath='{.metadata.generation}')
+    kc patch zone dataplane2 -n controlplane --type=merge --subresource=status -p "$(cat <<EOF
+{
+  "status": {
+    "namespace": "${CROSS_ZONE_NS}",
+    "gateway": {
+      "name": "dataplane2",
+      "namespace": "controlplane"
+    },
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "Zone is ready (test)",
+        "lastTransitionTime": "2026-01-01T00:00:00Z",
+        "observedGeneration": ${zone2_gen}
+      }
+    ]
+  }
+}
+EOF
+)"
+
+    info "Creating EventConfig for dataplane2..."
+    kc apply -f - <<EOF
+apiVersion: event.cp.ei.telekom.de/v1
+kind: EventConfig
+metadata:
+  name: controlplane-dp2
+  namespace: ${CROSS_ZONE_NS}
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+spec:
+  zone:
+    name: dataplane2
+    namespace: controlplane
+  local:
+    admin:
+      url: https://quasar-admin2.local.test/
+    serverSendEventUrl: https://tasse2.local.test/v1/poc/events
+    publishEventUrl: https://producer2.local.test/v1/poc/events
+EOF
+
+    info "Patching EventConfig for dataplane2 status..."
+    local ec2_gen
+    ec2_gen=$(kc get eventconfig controlplane-dp2 -n "${CROSS_ZONE_NS}" -o jsonpath='{.metadata.generation}')
+    kc patch eventconfig controlplane-dp2 -n "${CROSS_ZONE_NS}" --type=merge --subresource=status -p "$(cat <<EOF
+{
+  "status": {
+    "callbackUrl": "https://callback-gateway2.local.test",
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "EventConfig is ready (test)",
+        "lastTransitionTime": "2026-01-01T00:00:00Z",
+        "observedGeneration": ${ec2_gen}
+      }
+    ]
+  }
+}
+EOF
+)"
+
+    info "Creating EventStore in dataplane2..."
+    kc apply -f - <<EOF
+apiVersion: pubsub.cp.ei.telekom.de/v1
+kind: EventStore
+metadata:
+  name: dataplane2-store
+  namespace: ${CROSS_ZONE_NS}
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+spec:
+  url: https://quasar-admin2.local.test/
+  tokenUrl: https://idp2.local.test/realms/master/protocol/openid-connect/token
+  clientId: event-store-client-2
+  clientSecret: event-store-secret-2
+EOF
+
+    info "Patching EventStore dataplane2 status..."
+    local es2_gen
+    es2_gen=$(kc get eventstore dataplane2-store -n "${CROSS_ZONE_NS}" -o jsonpath='{.metadata.generation}')
+    kc patch eventstore dataplane2-store -n "${CROSS_ZONE_NS}" --type=merge --subresource=status -p "$(cat <<EOF
+{
+  "status": {
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "EventStore is ready (test)",
+        "lastTransitionTime": "2026-01-01T00:00:00Z",
+        "observedGeneration": ${es2_gen}
+      }
+    ]
+  }
+}
+EOF
+)"
+
+    info "Creating cross-zone provider Application (zone: dataplane2)..."
+    kc apply -f - <<EOF
+apiVersion: application.cp.ei.telekom.de/v1
+kind: Application
+metadata:
+  name: ${CROSS_ZONE_PROVIDER}
+  namespace: ${NAMESPACE}
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+spec:
+  team: hyperion--rockets
+  teamEmail: rockets@example.com
+  secret: cross-zone-provider-secret
+  zone:
+    name: dataplane2
+    namespace: controlplane
+  failover:
+    enabled: false
+  needsClient: true
+EOF
+
+    info "Patching cross-zone provider Application status..."
+    local czp_gen
+    czp_gen=$(kc get application "${CROSS_ZONE_PROVIDER}" -n "${NAMESPACE}" -o jsonpath='{.metadata.generation}')
+    kc patch application "${CROSS_ZONE_PROVIDER}" -n "${NAMESPACE}" --type=merge --subresource=status -p "$(cat <<EOF
+{
+  "status": {
+    "clientId": "eni--hyperion--cross-zone-provider-client",
+    "clientSecret": "dummy-cross-zone-secret",
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "Application is ready (test)",
+        "lastTransitionTime": "2026-01-01T00:00:00Z",
+        "observedGeneration": ${czp_gen}
+      }
+    ]
+  }
+}
+EOF
+)"
+
+    # Route must be in the LISTENING zone (dataplane1) namespace, because
+    # ensureRouteListener calls findRouteByPath(ctx, listeningZone.Status.Namespace, apiBasePath).
+    # GetListeningZone returns dataplane1 (consumer zone with fullMesh EventConfig).
+    info "Creating Route for cross-zone provider in consumer zone namespace..."
+    kc apply -f - <<EOF
+apiVersion: gateway.cp.ei.telekom.de/v1
+kind: Route
+metadata:
+  name: eni--hyperion--cross-zone-provider--cross-zone-v1
+  namespace: ${ZONE_NS}
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+spec:
+  gatewayRef:
+    name: dataplane1
+    namespace: controlplane
+  backend:
+    upstreams:
+      - scheme: https
+        hostname: cross-zone-api.example.com
+        port: 443
+        path: /cross-zone/api/v1
+  paths:
+    - /cross-zone/api/v1
+  passThrough: false
+  traffic: {}
+EOF
+
+    info "Patching cross-zone Route status..."
+    local czr_gen
+    czr_gen=$(kc get route "eni--hyperion--cross-zone-provider--cross-zone-v1" -n "${ZONE_NS}" -o jsonpath='{.metadata.generation}')
+    kc patch route "eni--hyperion--cross-zone-provider--cross-zone-v1" -n "${ZONE_NS}" --type=merge --subresource=status -p "$(cat <<EOF
+{
+  "status": {
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "Route is ready (test)",
+        "lastTransitionTime": "2026-01-01T00:00:00Z",
+        "observedGeneration": ${czr_gen}
+      }
+    ]
+  }
+}
+EOF
+)"
+
+    # ── Create Spectre CRs ────────────────────────────────────────────
+
+    info "Creating cross-zone SpectreApplication..."
+    kc apply -f - <<EOF
+apiVersion: spectre.cp.ei.telekom.de/v1
+kind: SpectreApplication
+metadata:
+  name: ${SPECTRE_APP_CROSS_ZONE}
+  namespace: ${NAMESPACE}
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+spec:
+  application:
+    apiVersion: application.cp.ei.telekom.de/v1
+    kind: Application
+    name: ${CONSUMER_APP}
+    namespace: ${NAMESPACE}
+  deliveryType: server_sent_event
+EOF
+
+    info "Waiting 5s for SpectreApplication to settle..."
+    sleep 5
+
+    local sa_cz_uid
+    sa_cz_uid=$(kc get spectreapplication "${SPECTRE_APP_CROSS_ZONE}" -n "${NAMESPACE}" -o jsonpath='{.metadata.uid}')
+    if [ -z "${sa_cz_uid}" ]; then
+        warn "Could not get cross-zone SpectreApplication UID."
+        errors=$((errors + 1))
+        return "${errors}"
+    fi
+
+    info "Creating cross-zone Listener (consumer=dataplane1, provider=dataplane2)..."
+    kc apply -f - <<EOF
+apiVersion: spectre.cp.ei.telekom.de/v1
+kind: Listener
+metadata:
+  name: ${LISTENER_CROSS_ZONE_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+  ownerReferences:
+    - apiVersion: spectre.cp.ei.telekom.de/v1
+      kind: SpectreApplication
+      name: ${SPECTRE_APP_CROSS_ZONE}
+      uid: "${sa_cz_uid}"
+      controller: true
+      blockOwnerDeletion: true
+spec:
+  consumer:
+    apiVersion: application.cp.ei.telekom.de/v1
+    kind: Application
+    name: ${CONSUMER_APP}
+    namespace: ${NAMESPACE}
+  provider:
+    apiVersion: application.cp.ei.telekom.de/v1
+    kind: Application
+    name: ${CROSS_ZONE_PROVIDER}
+    namespace: ${NAMESPACE}
+  application:
+    name: ${SPECTRE_APP_CROSS_ZONE}
+    namespace: ${NAMESPACE}
+  apiListener:
+    apiBasePath: /cross-zone/api/v1
+EOF
+
+    # ── Grant Approval ────────────────────────────────────────────────
+
+    info "Waiting 10s for Listener initial reconciliation..."
+    sleep 10
+
+    local cz_approval_name="listener--${LISTENER_CROSS_ZONE_NAME}"
+    info "Granting Approval for cross-zone Listener..."
+    kc apply -f - <<EOF
+apiVersion: approval.cp.ei.telekom.de/v1
+kind: Approval
+metadata:
+  name: ${cz_approval_name}
+  namespace: ${NAMESPACE}
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+spec:
+  action: listen-provider
+  target:
+    apiVersion: spectre.cp.ei.telekom.de/v1
+    kind: Listener
+    name: ${LISTENER_CROSS_ZONE_NAME}
+    namespace: ${NAMESPACE}
+  requester:
+    teamName: pandora--firebirds
+    teamEmail: firebirds@example.com
+    reason: "Cross-zone listener E2E test"
+  decider:
+    teamName: hyperion--rockets
+    teamEmail: rockets@example.com
+  decisions:
+    - name: Provider
+      comment: "Approved by provider team"
+      resultingState: Granted
+  strategy: Simple
+  state: Granted
+EOF
+
+    local cz_approval_gen
+    cz_approval_gen=$(kc get approval "${cz_approval_name}" -n "${NAMESPACE}" -o jsonpath='{.metadata.generation}')
+    kc patch approval "${cz_approval_name}" -n "${NAMESPACE}" --type=merge --subresource=status -p "$(cat <<EOF
+{
+  "status": {
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "Approval granted (test)",
+        "lastTransitionTime": "2026-01-01T00:00:00Z",
+        "observedGeneration": ${cz_approval_gen}
+      }
+    ]
+  }
+}
+EOF
+)"
+
+    info "Triggering cross-zone Listener re-reconciliation..."
+    kc annotate listener "${LISTENER_CROSS_ZONE_NAME}" -n "${NAMESPACE}" trigger="$(date +%s)" --overwrite 2>/dev/null || true
+
+    info "Waiting 15s for cross-zone Listener reconciliation..."
+    sleep 15
+
+    # ── Verification ──────────────────────────────────────────────────
+    # With fullMesh EventConfig on dataplane1:
+    #   GetListeningZone(consumerZone=dp1, providerZone=dp2, consumerZone=dp1)
+    #   → dp1 EventConfig.SupportsZone("dataplane2") = true (fullMesh)
+    #   → returns dp1 as listeningZone
+    # Therefore: RouteListener, Publisher, Subscribers all in controlplane--dataplane1
+
+    info "Verifying cross-zone Listener reached Ready..."
+    local cz_ready
+    cz_ready=$(kc get listener "${LISTENER_CROSS_ZONE_NAME}" -n "${NAMESPACE}" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)
+    if [ "${cz_ready}" = "True" ]; then
+        success "Cross-zone Listener is Ready."
+    else
+        warn "Cross-zone Listener not Ready (status=${cz_ready:-unset})"
+        kc get listener "${LISTENER_CROSS_ZONE_NAME}" -n "${NAMESPACE}" -o yaml | grep -A10 "conditions:" || true
+        errors=$((errors + 1))
+    fi
+
+    info "Verifying RouteListener placed in consumer zone (${ZONE_NS})..."
+    local cz_rl_count
+    cz_rl_count=$(kc get routelistener -n "${ZONE_NS}" -l "cp.ei.telekom.de/environment=controlplane" --no-headers 2>/dev/null | grep -c "cross-zone" || true)
+    cz_rl_count=${cz_rl_count:-0}
+    if [ "${cz_rl_count}" -eq 0 ]; then
+        # Try broader search — name might not contain "cross-zone"
+        local cz_rl_all
+        cz_rl_all=$(kc get routelistener -n "${ZONE_NS}" -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.issue}{"\n"}{end}' 2>/dev/null)
+        if echo "${cz_rl_all}" | grep -q "/cross-zone/api/v1"; then
+            success "RouteListener with apiBasePath=/cross-zone/api/v1 found in ${ZONE_NS} (consumer zone)."
+        else
+            warn "No RouteListener for /cross-zone/api/v1 found in ${ZONE_NS}"
+            info "RouteListeners in ${ZONE_NS}:"
+            kc get routelistener -n "${ZONE_NS}" -o wide 2>/dev/null || true
+            info "RouteListeners in ${CROSS_ZONE_NS} (should be empty for this scenario):"
+            kc get routelistener -n "${CROSS_ZONE_NS}" -o wide 2>/dev/null || true
+            errors=$((errors + 1))
+        fi
+    else
+        success "RouteListener for cross-zone found in ${ZONE_NS} (consumer zone)."
+    fi
+
+    info "Verifying RouteListener NOT in provider zone (${CROSS_ZONE_NS})..."
+    local cz_rl_dp2
+    cz_rl_dp2=$(kc get routelistener -n "${CROSS_ZONE_NS}" -o jsonpath='{range .items[*]}{.spec.issue}{"\n"}{end}' 2>/dev/null | grep -c "/cross-zone/api/v1" || true)
+    cz_rl_dp2=${cz_rl_dp2:-0}
+    if [ "${cz_rl_dp2}" -eq 0 ]; then
+        success "No RouteListener for /cross-zone/api/v1 in provider zone ${CROSS_ZONE_NS} (correct)."
+    else
+        warn "RouteListener unexpectedly placed in provider zone ${CROSS_ZONE_NS}"
+        errors=$((errors + 1))
+    fi
+
+    info "Verifying bridge Subscribers placed in consumer zone (${ZONE_NS})..."
+    local cz_sub_count
+    cz_sub_count=$(kc get subscriber -n "${ZONE_NS}" -o jsonpath='{range .items[*]}{.spec.trigger.selectionFilter.attributes.issue}{"\n"}{end}' 2>/dev/null | grep -c "/cross-zone/api/v1" || true)
+    cz_sub_count=${cz_sub_count:-0}
+    if [ "${cz_sub_count}" -ge 2 ]; then
+        success "Bridge Subscribers (rq+rp) for /cross-zone/api/v1 found in ${ZONE_NS} (${cz_sub_count} total)."
+    elif [ "${cz_sub_count}" -eq 1 ]; then
+        warn "Only 1 bridge Subscriber for /cross-zone/api/v1 in ${ZONE_NS} (expected 2)"
+        errors=$((errors + 1))
+    else
+        warn "No bridge Subscribers for /cross-zone/api/v1 in ${ZONE_NS}"
+        info "Subscribers in ${ZONE_NS}:"
+        kc get subscriber -n "${ZONE_NS}" -o wide 2>/dev/null || true
+        errors=$((errors + 1))
+    fi
+
+    info "Verifying Subscribers NOT in provider zone (${CROSS_ZONE_NS})..."
+    local cz_sub_dp2
+    cz_sub_dp2=$(kc get subscriber -n "${CROSS_ZONE_NS}" --no-headers 2>/dev/null | wc -l)
+    if [ "${cz_sub_dp2}" -eq 0 ]; then
+        success "No Subscribers in provider zone ${CROSS_ZONE_NS} (correct)."
+    else
+        warn "Subscribers unexpectedly placed in provider zone ${CROSS_ZONE_NS} (count=${cz_sub_dp2})"
+        errors=$((errors + 1))
+    fi
+
+    info "Verifying generic Publisher in consumer zone (${ZONE_NS})..."
+    local cz_pub
+    cz_pub=$(kc get publisher -n "${ZONE_NS}" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null | tr ' ' '\n' | grep "de\.telekom\.ei\.listener" || true)
+    if [ -n "${cz_pub}" ]; then
+        success "Generic Publisher found in ${ZONE_NS} (consumer zone)."
+    else
+        warn "Generic Publisher not found in ${ZONE_NS}"
+        errors=$((errors + 1))
+    fi
+
+    # Summary
+    echo ""
+    if [ "${errors}" -eq 0 ]; then
+        success "════════════════════════════════════════════════════════════════"
+        success "  Scenario 14 (cross-zone placement) passed!"
+        success "════════════════════════════════════════════════════════════════"
+    else
+        warn "════════════════════════════════════════════════════════════════"
+        warn "  ${errors} cross-zone check(s) failed."
+        warn "════════════════════════════════════════════════════════════════"
+    fi
+    echo ""
+
+    return "${errors}"
+}
+
 # ── Main ───────────────────────────────────────────────────────────────
 main() {
     case "${1:-}" in
@@ -2353,6 +2845,14 @@ main() {
 
     if [ "${edge_result}" -ne 0 ]; then
         fail "Edge case scenarios failed with ${edge_result} error(s)."
+    fi
+
+    info "Running Scenario 14 (cross-zone placement)..."
+    test_cross_zone
+    local cross_zone_result=$?
+
+    if [ "${cross_zone_result}" -ne 0 ]; then
+        fail "Scenario 14 (cross-zone placement) failed with ${cross_zone_result} error(s)."
     fi
 
     success "All E2E scenarios passed."
