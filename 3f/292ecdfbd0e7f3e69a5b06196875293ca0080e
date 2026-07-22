@@ -1,0 +1,77 @@
+gateway/internal/features/envoy/last_mile_security_test.go
+  s_58ae69a5d6576a::t_43f35d60ad82ea 74-93,96
+  s_58ae69a5d6576a::t_2e65415d11199c 1-73,94-95,97-170
+.opencode/skills/map-logic/lms-token-issuing.md
+  s_58ae69a5d6576a::t_05492687403ff3 1-60
+  s_58ae69a5d6576a::t_6811276580e88c 61-88
+gateway/cmd/xdsdemo/envoy-bootstrap.yaml
+  s_58ae69a5d6576a::t_298bf506c68d37 50-69
+gateway/internal/features/envoy/access_control_test.go
+  s_58ae69a5d6576a::t_2cb0b160d642df 49,56
+gateway/cmd/xdsdemo/main.go
+  s_58ae69a5d6576a::t_0bc695db70aec5 39-40
+  s_58ae69a5d6576a::t_712b702fee5444 53-54
+  s_58ae69a5d6576a::t_f3062b2972b26f 66
+  s_58ae69a5d6576a::t_8486a7ce1213ce 69,73
+gateway/cmd/xdsdemo/docker-compose.yaml
+  s_58ae69a5d6576a::t_1366d7820b1a47 37-49
+gateway/cmd/xdsdemo/scripts/validate.sh
+  s_58ae69a5d6576a::t_717f8a43512241 107-136
+  h_0f030e7424553c 37
+  s_58ae69a5d6576a::t_c1383d2bf281ba 16-18
+gateway/internal/features/envoy/builder.go
+  s_58ae69a5d6576a::t_b5d01f7430c693 248-252
+  s_58ae69a5d6576a::t_1725bd12207e0c 162-167
+  s_58ae69a5d6576a::t_6a86768897a152 78-86
+  s_58ae69a5d6576a::t_f32f422b5dd109 53-56
+  s_58ae69a5d6576a::t_98239ec3a7c95f 223-231
+  s_58ae69a5d6576a::t_b9433426f13a63 246-247,253-254
+  s_58ae69a5d6576a::t_0fa282881d98a6 217
+gateway/internal/features/envoy/access_control.go
+  s_58ae69a5d6576a::t_d7a7505fcb1f23 125-129,141
+  s_58ae69a5d6576a::t_8ab38800324b33 279,282-285,288-297,299-300
+gateway/cmd/lms-issuer/main_test.go
+  s_58ae69a5d6576a::t_00241f391bf799 36-48,51-53
+  s_58ae69a5d6576a::t_ec94ff0a16a0ea 1-13,16,18-31,49-50,54-91,95
+  s_58ae69a5d6576a::t_99f130f4390112 14,17
+  s_58ae69a5d6576a::t_741b89594ceb3d 92-94
+  s_58ae69a5d6576a::t_ea1ea17a4f7898 15
+  s_58ae69a5d6576a::t_981564411bff01 32-35
+gateway/go.mod
+  s_58ae69a5d6576a::t_12c0294f20f8d4 33,42
+gateway/cmd/lms-issuer/main.go
+  s_58ae69a5d6576a::t_7f6affb718c3b8 1-29,38-46,49,62-68,75-124
+  s_58ae69a5d6576a::t_0c3c7357427aab 47-48,50-53,69-70
+  s_58ae69a5d6576a::t_71c5e01a34af14 30-37
+  s_58ae69a5d6576a::t_df6fdaf0ba2ab6 54-61,71-74
+gateway/internal/features/envoy/last_mile_security.go
+  s_58ae69a5d6576a::t_88e1954000a18e 71-73
+  s_58ae69a5d6576a::t_d7fdd00a1b7af2 1-14,16,18-22,24-70,74-152,181-183,188-189,202,204,206
+  s_58ae69a5d6576a::t_907ab3016a3ccf 187,190-201,203,205
+  s_58ae69a5d6576a::t_8e8f225ff0276f 153-157,161-165,174-176,178
+  s_58ae69a5d6576a::t_0a1cb5ee1086af 158-160,166-173,177,179-180,184-186
+  s_58ae69a5d6576a::t_54f7110eec4f6a 15,17,23
+gateway/cmd/xdsdemo/Dockerfile
+  s_58ae69a5d6576a::t_2d2ba032072e64 16-17,21,24-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3f292ecdfbd0e7f3e69a5b06196875293ca0080e",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_58ae69a5d6576a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0768b23c7ffeEu6rvSwk8qs0gS",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
