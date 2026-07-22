@@ -34,6 +34,19 @@ services:
     depends_on:
       - operator
       - upstream
+      - lms-issuer
+
+  # LMS token issuer (Envoy ext_authz gRPC PoC). Envoy calls it per request via
+  # the ext_authz filter (emitted by the operator over ADS); it mints an LMS JWT
+  # and returns it as the Authorization header. See ../lms-issuer/main.go.
+  lms-issuer:
+    build:
+      context: ../../..
+      dockerfile: gateway/cmd/xdsdemo/Dockerfile
+      args:
+        CMD: lms-issuer
+    expose:
+      - "9002" # ext_authz gRPC (matches lms_ext_authz cluster in bootstrap)
 
   # Dummy upstream. The operator's default -upstream is http://upstream:80, so
   # the emitted cluster resolves to this service.

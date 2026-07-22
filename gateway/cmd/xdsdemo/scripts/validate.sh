@@ -13,6 +13,9 @@
 #   - no token                    -> 401 (jwt_authn rejects)
 #   - valid token, wrong Host     -> 404 (host-based routing, RT-02)
 #   - valid client_credentials    -> 200 (JWT verified, azp allowed, proxied)
+#   - LMS token issued + injected -> upstream sees a new JWT (iss=lms-issuer-poc)
+#                                    minted by the ext_authz issuer, not the
+#                                    original consumer token
 #
 # The demo route matches Host "demo-route.local" and path prefix "/", so every
 # proxied request must carry that Host header.
@@ -31,7 +34,7 @@ set -a; source "$env_file"; set +a
 : "${CLIENT_ID:?CLIENT_ID must be set in .env}"
 : "${CLIENT_SECRET:?CLIENT_SECRET must be set in .env}"
 : "${TOKEN_URL:?TOKEN_URL must be set in .env}"
-: "${ENVOY_URL:=http://localhost:10000/get}"
+: "${ENVOY_URL:=http://localhost:10000/foo}"
 : "${ROUTE_HOST:=demo-route.local}"
 
 pass=0; fail=0
@@ -100,6 +103,36 @@ check "wrong host" 404 "$code"
 echo "== case 3: valid token -> 200 =="
 code=$(req "$ROUTE_HOST" "$token")
 check "valid token" 200 "$code"
+
+# decode_jwt_payload BASE64URL_JWT -> pretty JSON payload (adds base64 padding).
+decode_jwt_payload() {
+  local payload="${1#*.}"; payload="${payload%%.*}"
+  payload="${payload//-/+}"; payload="${payload//_/\/}"
+  case $(( ${#payload} % 4 )) in 2) payload+="==";; 3) payload+="=";; esac
+  printf '%s' "$payload" | base64 -d 2>/dev/null
+}
+
+echo "== case 4: LMS token issued and injected upstream =="
+# The upstream (/get) echoes the headers it received. ext_authz calls the LMS
+# issuer, which mints a new JWT; Envoy replaces Authorization before proxying.
+# We assert the upstream saw a DIFFERENT token, issued by the LMS issuer.
+upstream_auth=$(curl -s -H "Host: ${ROUTE_HOST}" -H "Authorization: Bearer ${token}" "$ENVOY_URL" \
+  | jq -r '.headers.Authorization[0]? // .headers.Authorization // empty')
+lms_token="${upstream_auth#Bearer }"
+
+if [[ -z "$lms_token" ]]; then
+  check "LMS token present upstream" "present" "absent"
+else
+  lms_iss=$(decode_jwt_payload "$lms_token" | jq -r '.iss // empty')
+  echo "  ${dim}upstream token iss=${lms_iss}${reset}"
+  check "LMS token issued by issuer" "lms-issuer-poc" "$lms_iss"
+  # The minted token must not be the consumer token that came in.
+  if [[ "$lms_token" != "$token" ]]; then
+    echo "${green}${bold}PASS${reset}: LMS token replaced consumer token upstream"; pass=$((pass+1))
+  else
+    echo "${red}${bold}FAIL${reset}: upstream still carries the original consumer token"; fail=$((fail+1))
+  fi
+fi
 
 if [[ "$fail" -gt 0 ]]; then
   echo "== summary: ${green}$pass passed${reset}, ${red}${bold}$fail failed${reset} =="

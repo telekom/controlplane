@@ -47,3 +47,23 @@ static_resources:
                       # The operator (xDS server) runs as a compose service.
                       address: operator
                       port_value: 18000
+
+    # ext_authz target for the LMS token issuer. Static here so the
+    # operator-emitted ext_authz filter has a cluster to call. http2 = gRPC.
+    - name: lms_ext_authz
+      type: STRICT_DNS
+      connect_timeout: 1s
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: lms_ext_authz
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: lms-issuer
+                      port_value: 9002

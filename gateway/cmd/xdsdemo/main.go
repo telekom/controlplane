@@ -36,6 +36,8 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features/envoy"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 func main() {
@@ -48,6 +50,8 @@ func main() {
 	zl, _ := zap.NewDevelopment()
 	log := zapr.NewLogger(zl)
 	ctx := logr.NewContext(context.Background(), log)
+	// LMS reads the environment from context, like the Kong path.
+	ctx = contextutil.WithEnv(ctx, envOr("ENVIRONMENT", "poc"))
 
 	// Shared cache: the builder writes snapshots into it, the ADS server reads.
 	cache := cachev3.NewSnapshotCache(false, cachev3.IDHash{}, nil)
@@ -59,12 +63,14 @@ func main() {
 	route := &gatewayv1.Route{}
 	route.Name = "demo-route"
 	route.Spec.Hostnames = []string{"demo-route.local"}
-	route.Spec.Paths = []string{"/foo"}
+	route.Spec.Paths = []string{"/get"}
 	route.Spec.Security.TrustedIssuers = splitCSV(*issuers)
 	route.Spec.Security.DefaultConsumers = splitCSV(*consumers)
+	route.Spec.Security.RealmName = envOr("REALM", "poc-realm")
 
 	builder := envoy.NewFeatureBuilder(xds, route, nil, &gatewayv1.Gateway{})
 	builder.EnableFeature(envoy.InstanceAccessControlFeature)
+	builder.EnableFeature(envoy.InstanceLastMileSecurityFeature)
 	builder.SetUpstream(client.NewUpstreamOrDie(*upstreamURL))
 
 	if err := builder.Build(ctx); err != nil {

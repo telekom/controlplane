@@ -15,7 +15,6 @@ import (
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	httprbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
-	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -123,9 +122,11 @@ const jwtPayloadMetadataKey = "jwt_payload"
 // (pkg/kong/client/plugin/jwt.go:17): the consumer identity lives in "azp".
 const consumerMatchClaim = "azp"
 
-// buildAccessControlFilters emits the ordered HTTP filter chain for the
-// AccessControl feature: jwt_authn (issuer allowlist + azp -> metadata), then
-// rbac (consumer allow-list, empty => deny-all), then the terminal router.
+// buildAccessControlFilters emits the AccessControl HTTP filters (no terminal
+// router): jwt_authn (issuer allowlist + azp -> metadata) when trusted issuers
+// exist, then rbac (consumer allow-list, empty => deny-all) when access control
+// is enabled. The caller (buildFilters) appends any other feature filters and
+// the terminal router, preserving ordering.
 //
 // Behavioral parity with the Kong path:
 //   - JWT validation is only added when trusted issuers exist
@@ -137,7 +138,7 @@ const consumerMatchClaim = "azp"
 //     of Kong's DenyAllGroup sentinel (access_control.go:73-75), without the
 //     sentinel.
 func buildAccessControlFilters(in accessControlIntent) ([]*hcmv3.HttpFilter, error) {
-	filters := make([]*hcmv3.HttpFilter, 0, 3)
+	filters := make([]*hcmv3.HttpFilter, 0, 2)
 
 	if len(in.trustedIssuers) > 0 {
 		f, err := mkFilter(filterJwtAuthn, buildJwtAuthn(in.trustedIssuers))
@@ -154,12 +155,6 @@ func buildAccessControlFilters(in accessControlIntent) ([]*hcmv3.HttpFilter, err
 		}
 		filters = append(filters, f)
 	}
-
-	router, err := mkFilter(filterRouter, &routerv3.Router{})
-	if err != nil {
-		return nil, err
-	}
-	filters = append(filters, router)
 
 	return filters, nil
 }
@@ -281,20 +276,28 @@ func mkFilter(name string, msg proto.Message) (*hcmv3.HttpFilter, error) {
 	}, nil
 }
 
-// buildListener assembles the HCM listener carrying the AccessControl filter
+// buildListener assembles the HCM listener carrying the given HTTP filter
 // chain and an inline route to the given cluster. hostnames and paths select
 // the request (RT-02 / RT-01); upstreamPath, when non-trivial, is prepended to
-// the forwarded path (RV-04).
+// the forwarded path (RV-04). vhostPerFilterConfig, when non-empty, is attached
+// as the VirtualHost typed_per_filter_config (keyed by filter name) — the
+// generic seam features use to attach per-route filter overrides without this
+// listener code knowing which feature they belong to.
 //
 // ponytail: fixed 0.0.0.0:10000 bind + inline RouteConfig; POC single-listener.
-func buildListener(routeName, clusterName string, filters []*hcmv3.HttpFilter, hostnames, paths []string, upstreamPath string) (*listenerv3.Listener, *routev3.RouteConfiguration, error) {
+func buildListener(routeName, clusterName string, filters []*hcmv3.HttpFilter, hostnames, paths []string, upstreamPath string, vhostPerFilterConfig map[string]*anypb.Any) (*listenerv3.Listener, *routev3.RouteConfiguration, error) {
+	vhost := &routev3.VirtualHost{
+		Name:    routeName,
+		Domains: routeDomains(hostnames),
+		Routes:  routeEntries(clusterName, paths, upstreamPath),
+	}
+	if len(vhostPerFilterConfig) > 0 {
+		vhost.TypedPerFilterConfig = vhostPerFilterConfig
+	}
+
 	routeConfig := &routev3.RouteConfiguration{
-		Name: routeName,
-		VirtualHosts: []*routev3.VirtualHost{{
-			Name:    routeName,
-			Domains: routeDomains(hostnames),
-			Routes:  routeEntries(clusterName, paths, upstreamPath),
-		}},
+		Name:         routeName,
+		VirtualHosts: []*routev3.VirtualHost{vhost},
 	}
 
 	manager := &hcmv3.HttpConnectionManager{

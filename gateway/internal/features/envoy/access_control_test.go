@@ -46,17 +46,16 @@ func pathKeys(md *matcherv3.MetadataMatcher) []string {
 var _ = Describe("buildAccessControlFilters", func() {
 
 	Context("with trusted issuers and a consumer allow-list", func() {
-		It("emits jwt_authn, rbac, and router in order", func() {
+		It("emits jwt_authn and rbac in order (router added by buildFilters)", func() {
 			filters, err := buildAccessControlFilters(accessControlIntent{
 				trustedIssuers: []string{"https://iss-a", "https://iss-b"},
 				accessControl:  true,
 				allowConsumers: []string{"client-a", "client-b"},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(filters).To(HaveLen(3))
+			Expect(filters).To(HaveLen(2))
 			Expect(filters[0].GetName()).To(Equal(filterJwtAuthn))
 			Expect(filters[1].GetName()).To(Equal(filterRBAC))
-			Expect(filters[2].GetName()).To(Equal(filterRouter))
 		})
 
 		It("configures one JWT provider per trusted issuer with azp exported to metadata", func() {
@@ -119,7 +118,6 @@ var _ = Describe("buildAccessControlFilters", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filterByName(filters, filterRBAC)).To(BeNil())
 			Expect(filterByName(filters, filterJwtAuthn)).NotTo(BeNil())
-			Expect(filterByName(filters, filterRouter)).NotTo(BeNil())
 		})
 	})
 

@@ -50,6 +50,10 @@ type EnvoyFeatureBuilder interface {
 	// AllowConsumers declares the consumer allow-list matched against the JWT
 	// azp claim. An empty (non-nil) slice means deny-all.
 	AllowConsumers(names []string)
+	// RequireLMSToken declares that a LastMileSecurity token must be minted per
+	// request by the external issuer (ext_authz) and injected upstream. realm
+	// and environment identify the token context (which signing realm applies).
+	RequireLMSToken(realm, environment string)
 }
 
 var _ EnvoyFeatureBuilder = &Builder{}
@@ -71,6 +75,15 @@ type Builder struct {
 
 	// accumulated intent (set by feature Apply)
 	intent accessControlIntent
+	lms    lmsIntent
+}
+
+// lmsIntent is the intent accumulated by the LastMileSecurity feature's Apply:
+// mint an LMS token per request via the external issuer and inject it upstream.
+type lmsIntent struct {
+	enabled     bool
+	realm       string
+	environment string
 }
 
 // accessControlIntent is the backend-agnostic intent accumulated by the
@@ -146,6 +159,12 @@ func (b *Builder) AllowConsumers(names []string) {
 	b.intent.allowConsumers = names
 }
 
+func (b *Builder) RequireLMSToken(realm, environment string) {
+	b.lms.enabled = true
+	b.lms.realm = realm
+	b.lms.environment = environment
+}
+
 // Build runs the enabled features, then renders the accumulated intent into an
 // xDS snapshot and publishes it.
 //
@@ -195,13 +214,21 @@ func (b *Builder) render() (ResourceBundle, error) {
 	routeName := b.route.Name
 	clusterName := routeName
 
-	filters, err := buildAccessControlFilters(b.intent)
+	filters, err := buildFilters(b.intent, b.lms)
 	if err != nil {
 		return ResourceBundle{}, err
 	}
 
 	r := b.route
-	listener, _, err := buildListener(routeName, clusterName, filters, r.GetHostnames(), r.GetPaths(), b.upstream.GetPath())
+
+	// Features may contribute per-route filter overrides (vhost
+	// typed_per_filter_config). LMS attaches its issuer context here.
+	vhostPerFilterConfig, err := lmsVhostPerFilterConfig(b.lms)
+	if err != nil {
+		return ResourceBundle{}, err
+	}
+
+	listener, _, err := buildListener(routeName, clusterName, filters, r.GetHostnames(), r.GetPaths(), b.upstream.GetPath(), vhostPerFilterConfig)
 	if err != nil {
 		return ResourceBundle{}, err
 	}
@@ -215,6 +242,15 @@ func (b *Builder) render() (ResourceBundle, error) {
 		return ResourceBundle{}, err
 	}
 	clusters = append(clusters, jwksClusters...)
+
+	// ext_authz needs the LMS issuer cluster (http2/gRPC) in the same snapshot.
+	if b.lms.enabled {
+		issuerCluster, err := buildLMSIssuerCluster()
+		if err != nil {
+			return ResourceBundle{}, err
+		}
+		clusters = append(clusters, issuerCluster)
+	}
 
 	// ponytail: RouteConfig is inlined in the HCM, so it is not published as a
 	// standalone RDS resource. Upgrade path: switch to RDS (Rds{RouteConfigName})
