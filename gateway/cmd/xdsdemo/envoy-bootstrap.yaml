@@ -1,0 +1,49 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Minimal Envoy bootstrap for the xDS demo. The node id MUST match
+# envoy.PocNodeID ("poc-gateway-node"); the SnapshotCache keys on it.
+# Listeners + clusters are delivered dynamically over ADS from the demo server.
+node:
+  id: poc-gateway-node
+  cluster: poc-gateway-cluster
+
+admin:
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }
+
+dynamic_resources:
+  ads_config:
+    api_type: GRPC
+    transport_api_version: V3
+    grpc_services:
+      - envoy_grpc:
+          cluster_name: xds_cluster
+  cds_config:
+    resource_api_version: V3
+    ads: {}
+  lds_config:
+    resource_api_version: V3
+    ads: {}
+
+static_resources:
+  clusters:
+    - name: xds_cluster
+      type: STRICT_DNS
+      connect_timeout: 1s
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: xds_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      # The operator (xDS server) runs as a compose service.
+                      address: operator
+                      port_value: 18000

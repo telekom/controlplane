@@ -1,0 +1,45 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Full local stack for validating the Envoy AccessControl feature:
+#   operator  - the xDS server (our "operator"), builds + serves the snapshot
+#   envoy      - real Envoy, pulls config from operator over ADS
+#   upstream   - dummy backend Envoy proxies to
+#
+#   docker compose up -d --build      # (re)build the operator and start all
+#   ../../scripts/validate.sh          # run the validation pipeline (host)
+services:
+  operator:
+    build:
+      # Build context is the repo root (see Dockerfile: sibling module deps).
+      context: ../../..
+      dockerfile: gateway/cmd/xdsdemo/Dockerfile
+    # The allowed consumer must equal the token's azp claim, which is the
+    # client id. Sourced from .env (CLIENT_ID) so it stays the single source
+    # of truth for both the operator allow-list and the validate script.
+    environment:
+      - CONSUMERS=${CLIENT_ID}
+    ports:
+      - "18000:18000" # ADS (exposed so the host validate script can inspect)
+
+  envoy:
+    image: envoyproxy/envoy:v1.37-latest
+    command: ["-c", "/etc/envoy/envoy-bootstrap.yaml", "--service-node", "poc-gateway-node"]
+    volumes:
+      - ./envoy-bootstrap.yaml:/etc/envoy/envoy-bootstrap.yaml:ro
+    ports:
+      - "10000:10000" # proxy listener (from the emitted xDS listener)
+      - "9901:9901"   # envoy admin
+    depends_on:
+      - operator
+      - upstream
+
+  # Dummy upstream. The operator's default -upstream is http://upstream:80, so
+  # the emitted cluster resolves to this service.
+  upstream:
+    image: mccutchen/go-httpbin:latest
+    expose:
+      - "80"
+    environment:
+      - PORT=80

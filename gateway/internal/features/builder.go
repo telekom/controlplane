@@ -35,8 +35,15 @@ type Feature interface {
 	Apply(ctx context.Context, builder FeaturesBuilder) error
 }
 
-type FeaturesBuilder interface {
-	EnableFeature(f Feature)
+// FeatureBuilder is the backend-agnostic base of a feature builder. It exposes
+// only the neutral inputs a feature reads (route, consumer, gateway, allowed
+// consumers) plus upstream selection. Backend-specific builders (Kong, Envoy)
+// embed it and add their own feature-registration, write accessors and build
+// lifecycle.
+//
+// A feature's IsUsed only needs this base; its Apply takes the backend-specific
+// builder that embeds it.
+type FeatureBuilder interface {
 	GetRoute() (*gatewayv1.Route, bool)
 	GetConsumer() (*gatewayv1.Consumer, bool)
 	GetGateway() *gatewayv1.Gateway
@@ -44,6 +51,19 @@ type FeaturesBuilder interface {
 	AddAllowedConsumers(...*gatewayv1.ConsumeRoute)
 
 	SetUpstream(client.Upstream)
+}
+
+// FeaturesBuilder is the Kong-specific feature builder. It embeds the neutral
+// FeatureBuilder base and adds feature registration, the build lifecycle and
+// the Kong-plugin write accessors that the Kong feature Apply implementations
+// use.
+type FeaturesBuilder interface {
+	FeatureBuilder
+
+	EnableFeature(f Feature)
+	Build(context.Context) error
+	BuildForConsumer(context.Context) error
+
 	RequestTransformerPlugin() *plugin.RequestTransformerPlugin
 	AclPlugin() *plugin.AclPlugin
 	JwtPlugin() *plugin.JwtPlugin
@@ -52,9 +72,6 @@ type FeaturesBuilder interface {
 	JumperConfig() *plugin.JumperConfig
 	RoutingConfigs() *plugin.RoutingConfigs
 	IpRestrictionPlugin() *plugin.IpRestrictionPlugin
-
-	Build(context.Context) error
-	BuildForConsumer(context.Context) error
 
 	GetKongClient() client.KongClient
 }

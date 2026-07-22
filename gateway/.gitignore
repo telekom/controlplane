@@ -30,3 +30,4 @@ go.work*
 *.swp
 *.swo
 *~
+/cmd/xdsdemo/.env
