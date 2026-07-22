@@ -515,7 +515,7 @@ var _ = Describe("FindActiveEventType", func() {
 		Expect(result.Name).To(Equal("test-type"))
 	})
 
-	It("should return BlockedError when active EventType is not ready", func() {
+	It("should return active EventType even when it is not ready (readiness is not checked)", func() {
 		et := eventv1.EventType{
 			ObjectMeta: metav1.ObjectMeta{Name: "test-type", CreationTimestamp: metav1.Now()},
 			Spec:       eventv1.EventTypeSpec{Type: "de.telekom.test.v1"},
@@ -531,12 +531,37 @@ var _ = Describe("FindActiveEventType", func() {
 			Return(nil)
 
 		found, result, err := util.FindActiveEventType(ctx, "de.telekom.test.v1")
-		Expect(err).To(HaveOccurred())
-		Expect(found).To(BeFalse())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeTrue())
 		Expect(result).ToNot(BeNil())
-		rootCause := unwrapAll(err)
-		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not ready"))
+		Expect(result.Name).To(Equal("test-type"))
+	})
+
+	It("should return the oldest when multiple active EventTypes of the same type exist", func() {
+		older := eventv1.EventType{
+			ObjectMeta: metav1.ObjectMeta{Name: "older", CreationTimestamp: metav1.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			Spec:       eventv1.EventTypeSpec{Type: "de.telekom.test.v1"},
+			Status:     eventv1.EventTypeStatus{Active: true},
+		}
+		newer := eventv1.EventType{
+			ObjectMeta: metav1.ObjectMeta{Name: "newer", CreationTimestamp: metav1.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+			Spec:       eventv1.EventTypeSpec{Type: "de.telekom.test.v1"},
+			Status:     eventv1.EventTypeStatus{Active: true},
+		}
+
+		fakeClient.EXPECT().
+			List(ctx, &eventv1.EventTypeList{}).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				// Newest first to prove sorting, not input order, picks the winner.
+				*list.(*eventv1.EventTypeList) = eventv1.EventTypeList{Items: []eventv1.EventType{newer, older}}
+			}).
+			Return(nil)
+
+		found, result, err := util.FindActiveEventType(ctx, "de.telekom.test.v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeTrue())
+		Expect(result).ToNot(BeNil())
+		Expect(result.Name).To(Equal("older"))
 	})
 })
 

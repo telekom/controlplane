@@ -7,7 +7,6 @@ package util
 import (
 	"context"
 	"slices"
-	"sort"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -114,8 +113,10 @@ func GetEventStoreForZone(ctx context.Context, zoneName string) (*pubsubv1.Event
 }
 
 // FindActiveEventType finds the active EventType for a given event type string.
+// It only checks the Status.Active field and does not check readiness. A returned EventType may not be ready.
 // Returns (found, eventType, error). If found is false, there is no active EventType.
 func FindActiveEventType(ctx context.Context, eventType string) (bool, *eventv1.EventType, error) {
+	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	eventTypeList := &eventv1.EventTypeList{}
@@ -123,7 +124,7 @@ func FindActiveEventType(ctx context.Context, eventType string) (bool, *eventv1.
 		return false, nil, errors.Wrapf(err, "failed to list EventTypes for type %q", eventType)
 	}
 
-	// Filter to matching type and sort by creation timestamp (oldest first)
+	// Filter to matching, active EventTypes
 	var candidates []eventv1.EventType
 	for i := range eventTypeList.Items {
 		if eventTypeList.Items[i].Spec.Type == eventType && eventTypeList.Items[i].Status.Active {
@@ -131,21 +132,22 @@ func FindActiveEventType(ctx context.Context, eventType string) (bool, *eventv1.
 		}
 	}
 
-	if len(candidates) == 0 {
+	logger.V(1).Info("found active EventTypes", "eventType", eventType, "count", len(candidates))
+
+	switch len(candidates) {
+	case 0:
 		return false, nil, nil
+	case 1:
+		return true, &candidates[0], nil
+	default:
+		// This should never happen as the EventType-Handler ensures uniqueness of active EventTypes per type
+		// sort the list by creation timestamp and get the oldest one
+		slices.SortStableFunc(candidates, func(a, b eventv1.EventType) int {
+			return a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
+		})
+		logger.Info("⚠️  Multiple active EventTypes found for the same type. Using the oldest one.", "eventType", eventType, "eventTypeName", candidates[0].Name)
+		return true, &candidates[0], nil
 	}
-
-	// Sort by CreationTimestamp ascending and return the oldest active one
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].CreationTimestamp.Before(&candidates[j].CreationTimestamp)
-	})
-
-	activeET := &candidates[0]
-	if err := condition.EnsureReady(activeET); err != nil {
-		return false, activeET, ctrlerrors.BlockedErrorf("EventType %q is not ready", eventType)
-	}
-
-	return true, activeET, nil
 }
 
 // GetApplication retrieves an Application object by ObjectRef and ensures it is ready.
@@ -275,16 +277,17 @@ func FindActiveEventExposure(exposures []eventv1.EventExposure) (bool, *eventv1.
 		}
 	}
 
-	if len(candidates) == 0 {
+	switch len(candidates) {
+	case 0:
 		return false, nil, nil
+	case 1:
+		return true, &candidates[0], nil
+	default:
+		slices.SortStableFunc(candidates, func(a, b eventv1.EventExposure) int {
+			return a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
+		})
+		return true, &candidates[0], nil
 	}
-
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].CreationTimestamp.Before(&candidates[j].CreationTimestamp)
-	})
-
-	activeExp := &candidates[0]
-	return true, activeExp, nil
 }
 
 func FindCrossZoneCallbackSubscriptions(ctx context.Context, eventType, exposureZoneName string) ([]eventv1.EventSubscription, error) {

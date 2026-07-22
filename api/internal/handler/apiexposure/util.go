@@ -49,9 +49,10 @@ func setAlreadyExposedConditions(existing, candidate *apiv1.ApiExposure) {
 // If there is, it sets appropriate conditions on the new ApiExposure.
 func ApiExposureMustNotAlreadyExist(ctx context.Context, candidate *apiv1.ApiExposure) error {
 	found, existingApiExp, err := util.FindActiveAPIExposure(ctx, candidate.Spec.ApiBasePath)
-	if existingApiExp == nil && err != nil {
-		return err
+	if err != nil {
+		return fmt.Errorf("failed to find active ApiExposure for %q: %w", candidate.Spec.ApiBasePath, err)
 	}
+
 	if !found {
 		// no other active apiExposure found with same basepath
 		candidate.Status.Active = true
