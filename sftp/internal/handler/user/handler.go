@@ -12,6 +12,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -19,7 +20,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 	"github.com/telekom/controlplane/sftp/internal/service"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*sftpv1.User] = &UserHandler{}
