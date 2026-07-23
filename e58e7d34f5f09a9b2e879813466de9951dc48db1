@@ -1,0 +1,19 @@
+admin/internal/handler/zone/routes.go
+  s_7c333e744b2273::t_ec709b2a12d655 167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e58e7d34f5f09a9b2e879813466de9951dc48db1",
+  "prompts": {},
+  "sessions": {
+    "s_7c333e744b2273": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_071a45944ffeA0fJy3HpDIa879",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
