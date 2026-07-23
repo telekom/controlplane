@@ -1,0 +1,12 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This kustomization.yaml is not intended to be run by itself,
+# since it depends on service name and namespace that are out of this kustomize package.
+# It should be run by config/default
+resources:
+- bases/sftp.cp.ei.telekom.de_instances.yaml
+- bases/sftp.cp.ei.telekom.de_users.yaml
+- bases/sftp.cp.ei.telekom.de_sftpserviceconfigs.yaml
+# +kubebuilder:scaffold:crdkustomizeresource

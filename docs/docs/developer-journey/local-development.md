@@ -151,7 +151,7 @@ Every operator directory exposes a consistent set of Make targets:
 
 | Target | Description |
 |--------|-------------|
-| `manifests` | Generate CRDs, RBAC, and webhook manifests |
+| `manifests` | Generate CRDs, RBAC, and webhook manifests where configured |
 | `generate` | Generate DeepCopy methods |
 | `fmt` | Run `go fmt` |
 | `vet` | Run `go vet` |
