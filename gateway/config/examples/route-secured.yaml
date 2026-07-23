@@ -1,0 +1,36 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Secured Route: exercises the Envoy AccessControl feature.
+# TrustedIssuers -> jwt_authn (remote_jwks against {issuer}/protocol/openid-connect/certs)
+# DefaultConsumers -> RBAC allow-list matched against the token azp claim.
+# Mirrors the xdsdemo harness (gateway/cmd/xdsdemo/main.go).
+apiVersion: gateway.cp.ei.telekom.de/v1
+kind: Route
+metadata:
+  name: secured-route
+  namespace: default
+  labels:
+    cp.ei.telekom.de/environment: poc
+spec:
+  gatewayRef:
+    name: envoy-gateway
+    namespace: default
+  type: primary
+  paths:
+    - /get
+  passThrough: false
+  security:
+    realmName: poc-realm
+    trustedIssuers:
+      - https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/rover
+    defaultConsumers:
+      - eni--system--dev-luminary
+  traffic: {}
+  backend:
+    upstreams:
+      - scheme: http
+        hostname: cosmoparrot.cosmoparrot.svc.cluster.local
+        port: 8080
+        path: /

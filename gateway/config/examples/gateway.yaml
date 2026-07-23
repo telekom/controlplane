@@ -1,0 +1,21 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Gateway backed by the Envoy xDS feature builder (internal/features/envoy).
+# The Routes below reference this Gateway and drive the Envoy AccessControl
+# (jwt_authn + RBAC) and LastMileSecurity features.
+apiVersion: gateway.cp.ei.telekom.de/v1
+kind: Gateway
+metadata:
+  name: envoy-gateway
+  namespace: default
+  labels:
+    cp.ei.telekom.de/environment: poc
+spec:
+  type: envoy
+  admin:
+    clientId: rover
+    clientSecret: topsecret
+    issuerUrl: https://auth.cp.ei.telekom.de/auth/realms/poc
+    url: https://stargate.cp.ei.telekom.de
