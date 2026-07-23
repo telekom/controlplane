@@ -14,6 +14,7 @@ import (
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -156,19 +157,46 @@ func buildExtAuthz() *extauthzv3.ExtAuthz {
 // AttributeContext.context_extensions, letting the issuer mint a realm-scoped
 // token. Returns nil when LMS is disabled (no override attached).
 //
-// Citation (envoy-expert): ExtAuthzPerRoute.CheckSettings.context_extensions
-// https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-checksettings-context-extensions
-func lmsVhostPerFilterConfig(lms lmsIntent) (map[string]*anypb.Any, error) {
+// CustomScopes folds its resolved scope map into the same context_extensions:
+//   - "defaultScopes": space-separated scopes for consumers without an entry.
+//   - "consumerScopes": a JSON object {consumerName: "space separated scopes"}.
+//
+// context_extensions is map<string,string> and opaque to Envoy, so the
+// per-consumer sub-map is JSON-encoded into a single value; the issuer parses
+// it and selects the scope set by the incoming clientId/azp. Scopes are only
+// attached when LMS is enabled (the LMS token is what carries them).
+//
+// Citations (envoy-expert):
+//   - ExtAuthzPerRoute.CheckSettings.context_extensions (map<string,string>)
+//     https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-checksettings-context-extensions
+//   - context_extensions is opaque ("maps to the internal opaque context"),
+//     so JSON-in-a-value is passed through unparsed
+//     https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/auth/v3/attribute_context.proto#envoy-v3-api-field-service-auth-v3-attributecontext-context-extensions
+func lmsVhostPerFilterConfig(lms lmsIntent, scopes customScopesIntent) (map[string]*anypb.Any, error) {
 	if !lms.enabled {
 		return nil, nil
 	}
+
+	ctxExt := map[string]string{
+		"realm":       lms.realm,
+		"environment": lms.environment,
+	}
+
+	if scopes.defaultScopes != "" {
+		ctxExt["defaultScopes"] = scopes.defaultScopes
+	}
+	if len(scopes.perConsumer) > 0 {
+		encoded, err := json.Marshal(scopes.perConsumer)
+		if err != nil {
+			return nil, fmt.Errorf("marshalling per-consumer scopes: %w", err)
+		}
+		ctxExt["consumerScopes"] = string(encoded)
+	}
+
 	perRoute, err := anypb.New(&extauthzv3.ExtAuthzPerRoute{
 		Override: &extauthzv3.ExtAuthzPerRoute_CheckSettings{
 			CheckSettings: &extauthzv3.CheckSettings{
-				ContextExtensions: map[string]string{
-					"realm":       lms.realm,
-					"environment": lms.environment,
-				},
+				ContextExtensions: ctxExt,
 			},
 		},
 	})

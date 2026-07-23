@@ -52,6 +52,12 @@ type EnvoyFeatureBuilder interface {
 	// request by the external issuer (ext_authz) and injected upstream. realm
 	// and environment identify the token context (which signing realm applies).
 	RequireLMSToken(realm, environment string)
+	// AddCustomScopes declares the OAuth2 scopes the issuer must add to the
+	// minted LMS token. defaultScopes (space-separated) apply to any consumer
+	// without an explicit entry; perConsumer maps a consumer name to its
+	// space-separated scopes. The issuer selects the per-consumer set by the
+	// incoming clientId/azp claim.
+	AddCustomScopes(defaultScopes string, perConsumer map[string]string)
 }
 
 var _ EnvoyFeatureBuilder = &Builder{}
@@ -72,8 +78,9 @@ type Builder struct {
 	features map[gatewayv1.FeatureType]EnvoyFeature
 
 	// accumulated intent (set by feature Apply)
-	intent accessControlIntent
-	lms    lmsIntent
+	intent       accessControlIntent
+	lms          lmsIntent
+	customScopes customScopesIntent
 }
 
 // lmsIntent is the intent accumulated by the LastMileSecurity feature's Apply:
@@ -82,6 +89,16 @@ type lmsIntent struct {
 	enabled     bool
 	realm       string
 	environment string
+}
+
+// customScopesIntent is the intent accumulated by the CustomScopes feature's
+// Apply: the OAuth2 scopes the external issuer adds to the minted LMS token.
+// defaultScopes (space-separated) apply to any consumer without an explicit
+// entry; perConsumer maps consumer name -> space-separated scopes. Carried to
+// the issuer as ext_authz context_extensions.
+type customScopesIntent struct {
+	defaultScopes string
+	perConsumer   map[string]string
 }
 
 // accessControlIntent is the backend-agnostic intent accumulated by the
@@ -163,6 +180,11 @@ func (b *Builder) RequireLMSToken(realm, environment string) {
 	b.lms.environment = environment
 }
 
+func (b *Builder) AddCustomScopes(defaultScopes string, perConsumer map[string]string) {
+	b.customScopes.defaultScopes = defaultScopes
+	b.customScopes.perConsumer = perConsumer
+}
+
 // Build runs the enabled features, then renders the accumulated intent into an
 // xDS snapshot and publishes it.
 //
@@ -228,8 +250,9 @@ func (b *Builder) render() (ResourceBundle, error) {
 	r := b.route
 
 	// Features may contribute per-route filter overrides (vhost
-	// typed_per_filter_config). LMS attaches its issuer context here.
-	vhostPerFilterConfig, err := lmsVhostPerFilterConfig(b.lms)
+	// typed_per_filter_config). LMS attaches its issuer context here, and
+	// CustomScopes folds the resolved scope map into the same context_extensions.
+	vhostPerFilterConfig, err := lmsVhostPerFilterConfig(b.lms, b.customScopes)
 	if err != nil {
 		return ResourceBundle{}, err
 	}

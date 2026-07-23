@@ -14,6 +14,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/json"
 	"log"
 	"net"
 	"time"
@@ -60,6 +61,7 @@ func (s *issuer) Check(ctx context.Context, req *authv3.CheckRequest) (*authv3.C
 
 	// Claim sources are context + verified consumer-token claims — no body.
 	now := time.Now()
+	azp := consumer["azp"].GetStringValue()
 	claims := jwt.MapClaims{
 		"iss":         "lms-issuer-poc",
 		"iat":         now.Unix(),
@@ -71,7 +73,15 @@ func (s *issuer) Check(ctx context.Context, req *authv3.CheckRequest) (*authv3.C
 		// Derived from the incoming consumer-token's verified claims.
 		"sub":      consumer["sub"].GetStringValue(),
 		"clientId": consumer["clientId"].GetStringValue(),
-		"azp":      consumer["azp"].GetStringValue(),
+		"azp":      azp,
+	}
+
+	// CustomScopes: the gateway delivers the per-consumer scope map (and a
+	// default) as context_extensions (see internal/features/envoy/
+	// last_mile_security.go lmsVhostPerFilterConfig). Select the scope set by
+	// the verified azp; fall back to the default when the consumer has none.
+	if scope := scopesFor(ext, azp); scope != "" {
+		claims["scope"] = scope
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
@@ -81,7 +91,7 @@ func (s *issuer) Check(ctx context.Context, req *authv3.CheckRequest) (*authv3.C
 		return denied("token signing failed"), nil
 	}
 
-	log.Printf("issued LMS token realm=%q env=%q path=%q", claims["realm"], claims["env"], claims["requestPath"])
+	log.Printf("issued LMS token realm=%q env=%q path=%q azp=%q scope=%q", claims["realm"], claims["env"], claims["requestPath"], azp, claims["scope"])
 
 	return &authv3.CheckResponse{
 		Status: &status.Status{Code: 0}, // OK
@@ -101,6 +111,26 @@ func (s *issuer) Check(ctx context.Context, req *authv3.CheckRequest) (*authv3.C
 func denied(msg string) *authv3.CheckResponse {
 	// Code 7 = PERMISSION_DENIED; fail closed (plan P2.8).
 	return &authv3.CheckResponse{Status: &status.Status{Code: 7, Message: msg}}
+}
+
+// scopesFor resolves the OAuth2 scope string the LMS token should carry for the
+// given consumer (azp). The gateway delivers scopes as context_extensions:
+//   - "consumerScopes": a JSON object {consumerName: "space separated scopes"}.
+//   - "defaultScopes": applied when the consumer has no explicit entry.
+//
+// context_extensions is opaque map<string,string>, so consumerScopes is a
+// JSON-encoded value. A malformed value is treated as "no per-consumer scopes"
+// and falls back to the default (fail-open on config, not on auth).
+func scopesFor(ext map[string]string, azp string) string {
+	if raw := ext["consumerScopes"]; raw != "" && azp != "" {
+		perConsumer := map[string]string{}
+		if err := json.Unmarshal([]byte(raw), &perConsumer); err != nil {
+			log.Printf("malformed consumerScopes context_extension: %v", err)
+		} else if s, ok := perConsumer[azp]; ok {
+			return s
+		}
+	}
+	return ext["defaultScopes"]
 }
 
 func main() {

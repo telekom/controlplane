@@ -61,9 +61,21 @@ Operator flags (also settable via env for the compose service):
   realm. Empty disables JWT/RBAC entirely (plain proxy).
 - `-consumers` / `CONSUMERS` — comma-separated allowed consumers matched against
   the token `azp` claim. Compose sets this from `.env` `CLIENT_ID`.
+- `-default-scopes` / `DEFAULT_SCOPES` — comma-separated OAuth2 scopes added to
+  every consumer's LMS token (the route-default scope bucket). Empty by default.
+- `-consumer-scopes` / `CONSUMER_SCOPES` — per-consumer scopes as
+  `name=scope[ scope...]` entries, comma-separated
+  (e.g. `"foo=read,bar=write admin"`). The LMS issuer selects the entry by the
+  verified `azp` and adds it as the `scope` claim; consumers without an entry
+  get `DEFAULT_SCOPES`. Default: `dev-luminary=read`.
 - `-upstream` — upstream URL Envoy proxies to. Default: `http://upstream:80`.
 
 ## Notes
+
+- CustomScopes is delivered to the LMS issuer as ext_authz `context_extensions`:
+  `defaultScopes` (string) and `consumerScopes` (a JSON `{consumer: "scopes"}`
+  object, since `context_extensions` is an opaque `map<string,string>`). The
+  issuer keys the per-consumer lookup on the verified `azp` claim.
 
 - JWKS is fetched live via `remote_jwks` from `{issuer}/protocol/openid-connect/certs`
   (Keycloak convention) through a per-issuer-host TLS cluster (`jwks_<host>`,

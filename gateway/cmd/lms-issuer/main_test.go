@@ -93,3 +93,25 @@ func TestCheckIssuesVerifiableToken(t *testing.T) {
 		t.Fatalf("consumer claims not derived from jwt metadata: %#v", claims)
 	}
 }
+
+// TestScopesFor covers the CustomScopes context_extensions selection: the
+// per-consumer scope wins by azp; otherwise the default applies; a malformed
+// consumerScopes value falls back to the default.
+func TestScopesFor(t *testing.T) {
+	cases := []struct {
+		name string
+		ext  map[string]string
+		azp  string
+		want string
+	}{
+		{"per-consumer wins", map[string]string{"consumerScopes": `{"foo":"read","bar":"write admin"}`, "defaultScopes": "base"}, "bar", "write admin"},
+		{"falls back to default", map[string]string{"consumerScopes": `{"foo":"read"}`, "defaultScopes": "base"}, "bar", "base"},
+		{"no scopes at all", map[string]string{}, "foo", ""},
+		{"malformed json -> default", map[string]string{"consumerScopes": "{not json", "defaultScopes": "base"}, "foo", "base"},
+	}
+	for _, tc := range cases {
+		if got := scopesFor(tc.ext, tc.azp); got != tc.want {
+			t.Errorf("%s: scopesFor(%v, %q) = %q, want %q", tc.name, tc.ext, tc.azp, got, tc.want)
+		}
+	}
+}

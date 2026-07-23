@@ -20,6 +20,7 @@ services:
     # of truth for both the operator allow-list and the validate script.
     environment:
       - CONSUMERS=${CLIENT_ID}
+      - CONSUMER_SCOPES=eni--system--dev-luminary=write
     ports:
       - "18000:18000" # ADS (exposed so the host validate script can inspect)
 

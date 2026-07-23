@@ -73,13 +73,13 @@ var _ = Describe("buildFilters (ext_authz ordering)", func() {
 
 var _ = Describe("lmsVhostPerFilterConfig", func() {
 	It("returns nil when LMS is disabled", func() {
-		m, err := lmsVhostPerFilterConfig(lmsIntent{enabled: false})
+		m, err := lmsVhostPerFilterConfig(lmsIntent{enabled: false}, customScopesIntent{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(m).To(BeNil())
 	})
 
 	It("carries realm and environment as ext_authz context_extensions", func() {
-		m, err := lmsVhostPerFilterConfig(lmsIntent{enabled: true, realm: "realm1", environment: "prod"})
+		m, err := lmsVhostPerFilterConfig(lmsIntent{enabled: true, realm: "realm1", environment: "prod"}, customScopesIntent{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(m).To(HaveKey(filterExtAuthz))
 

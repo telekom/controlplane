@@ -45,6 +45,8 @@ func main() {
 	upstreamURL := flag.String("upstream", "http://upstream:80", "upstream URL Envoy proxies to")
 	issuers := flag.String("issuers", envOr("ISSUERS", "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/rover"), "comma-separated trusted token issuers (empty => no JWT/RBAC)")
 	consumers := flag.String("consumers", envOr("CONSUMERS", "dev-luminary"), "comma-separated allowed consumers matched against the token azp claim")
+	defaultScopes := flag.String("default-scopes", envOr("DEFAULT_SCOPES", ""), "comma-separated OAuth2 scopes added to every consumer's LMS token")
+	consumerScopes := flag.String("consumer-scopes", envOr("CONSUMER_SCOPES", "dev-luminary=read"), "per-consumer scopes as name=scope[ scope...] entries, comma-separated (e.g. \"foo=read,bar=write admin\")")
 	flag.Parse()
 
 	zl, _ := zap.NewDevelopment()
@@ -62,15 +64,27 @@ func main() {
 	// JWT (remote_jwks) + RBAC (azp allow-list) filter chain.
 	route := &gatewayv1.Route{}
 	route.Name = "demo-route"
+	route.Spec.Type = gatewayv1.RouteTypePrimary
 	route.Spec.Hostnames = []string{"demo-route.local"}
 	route.Spec.Paths = []string{"/get"}
 	route.Spec.Security.TrustedIssuers = splitCSV(*issuers)
 	route.Spec.Security.DefaultConsumers = splitCSV(*consumers)
 	route.Spec.Security.RealmName = envOr("REALM", "poc-realm")
 
+	// CustomScopes source fields (same as the Kong path): route default scopes
+	// live on the route's M2M security; per-consumer scopes live on each
+	// allowed ConsumeRoute's M2M security. The LMS issuer selects the scope set
+	// by the verified azp claim and adds it to the minted token.
+	if def := splitCSV(*defaultScopes); len(def) > 0 {
+		route.Spec.Security.M2M = &gatewayv1.Machine2MachineAuthentication{Scopes: def}
+	}
+	allowedConsumers := consumeRoutesFor(route, *consumerScopes)
+
 	builder := envoy.NewFeatureBuilder(xds, route, nil, &gatewayv1.Gateway{})
 	builder.EnableFeature(envoy.InstanceAccessControlFeature)
 	builder.EnableFeature(envoy.InstanceLastMileSecurityFeature)
+	builder.EnableFeature(envoy.InstanceCustomScopesFeature)
+	builder.AddAllowedConsumers(allowedConsumers...)
 	builder.SetUpstream(client.NewUpstreamOrDie(*upstreamURL))
 
 	if err := builder.Build(ctx); err != nil {
@@ -127,6 +141,34 @@ func splitCSV(s string) []string {
 		if p = strings.TrimSpace(p); p != "" {
 			out = append(out, p)
 		}
+	}
+	return out
+}
+
+// consumeRoutesFor parses the per-consumer scopes flag ("name=scope[ scope...]"
+// entries, comma-separated) into ConsumeRoutes carrying M2M scopes, which is
+// the source field CustomScopesFeature reads via GetAllowedConsumers. Entries
+// without "=" or with empty scopes are skipped.
+func consumeRoutesFor(route *gatewayv1.Route, consumerScopes string) []*gatewayv1.ConsumeRoute {
+	out := make([]*gatewayv1.ConsumeRoute, 0)
+	for _, entry := range splitCSV(consumerScopes) {
+		name, scopeStr, ok := strings.Cut(entry, "=")
+		name = strings.TrimSpace(name)
+		if !ok || name == "" {
+			continue
+		}
+		scopes := strings.Fields(scopeStr)
+		if len(scopes) == 0 {
+			continue
+		}
+		cr := &gatewayv1.ConsumeRoute{}
+		cr.Spec.ConsumerName = name
+		cr.Spec.Route.Name = route.Name
+		cr.Spec.Route.Namespace = route.Namespace
+		cr.Spec.Security = &gatewayv1.ConsumeRouteSecurity{
+			M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{Scopes: scopes},
+		}
+		out = append(out, cr)
 	}
 	return out
 }
