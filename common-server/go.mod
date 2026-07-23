@@ -28,7 +28,7 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	go.uber.org/zap v1.28.0
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93
-	golang.org/x/text v0.38.0
+	golang.org/x/text v0.39.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apiextensions-apiserver v0.36.2
 	k8s.io/apimachinery v0.36.2
