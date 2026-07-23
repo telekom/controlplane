@@ -105,7 +105,6 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // MapTeamToRovers maps a Team to all Rovers in the team's namespace.
 // This enables re-reconciliation of Rovers when Team.Spec (e.g. Email) changes.
 func (r *RoverReconciler) MapTeamToRovers(ctx context.Context, obj client.Object) []reconcile.Request {
-
 	logger := log.FromContext(ctx)
 
 	team, ok := obj.(*organizationv1.Team)

@@ -60,7 +60,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 				Application: *owner.Status.Application,
 			},
 			Security: mapSubscriberSecurityToAgenticSecurity(sub.Security),
-			Traffic:  mapSubscriberTrafficToAgenticTraffic(environment, sub.Traffic),
+			Traffic:  mapSubscriberTrafficToAgenticTraffic(sub.Traffic),
 		}
 
 		return nil
@@ -111,7 +111,7 @@ func mapSubscriberSecurityToAgenticSecurity(roverSecurity *rover.SubscriberSecur
 }
 
 // mapSubscriberTrafficToAgenticTraffic converts rover SubscriberTraffic to agentic SubscriberTraffic.
-func mapSubscriberTrafficToAgenticTraffic(env string, traffic rover.SubscriberTraffic) agenticv1.SubscriberTraffic {
+func mapSubscriberTrafficToAgenticTraffic(traffic rover.SubscriberTraffic) agenticv1.SubscriberTraffic {
 	agenticTraffic := agenticv1.SubscriberTraffic{}
 
 	if traffic.Failover != nil && traffic.Failover.Enabled {
