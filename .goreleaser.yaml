@@ -154,6 +154,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: agentic
+    dir: agentic
+    main: cmd/main.go
+    binary: agentic
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
   - id: pubsub
     dir: pubsub
     main: cmd/main.go
@@ -505,6 +514,25 @@ kos:
     working_dir: rover-ctl
     repositories:
       - ghcr.io/telekom/controlplane/rover-ctl
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: agentic
+    build: agentic
+    main: .
+    working_dir: agentic/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/agentic
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"
