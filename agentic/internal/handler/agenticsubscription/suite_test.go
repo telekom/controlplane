@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mcpsubscription_test
+package agenticsubscription_test
 
 import (
 	"testing"
@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestMcpSubscriptionHandler(t *testing.T) {
+func TestAgenticSubscriptionHandler(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "McpSubscription Handler Suite")
+	RunSpecs(t, "AgenticSubscription Handler Suite")
 }

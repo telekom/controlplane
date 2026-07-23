@@ -89,7 +89,7 @@ func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 			return errors.Wrap(err, "failed to convert to AiSubscription")
 		}
 
-		out.Ai = mapAiSubscription(aiSub)
+		out.Agentic = mapAiSubscription(aiSub)
 
 	default:
 		return errors.Errorf("unknown subscription type: %s", subType)
@@ -229,8 +229,8 @@ func mapEventTriggerForSubscription(in api.EventTrigger) *roverv1.EventTrigger {
 	return out
 }
 
-func mapAiSubscription(in api.AiSubscription) *roverv1.AiSubscription {
-	out := &roverv1.AiSubscription{}
+func mapAiSubscription(in api.AiSubscription) *roverv1.AgenticSubscription {
+	out := &roverv1.AgenticSubscription{}
 	out.BasePath = in.BasePath
 
 	mapAiSubscriptionSecurity(in, out)
@@ -244,7 +244,7 @@ func mapAiSubscription(in api.AiSubscription) *roverv1.AiSubscription {
 	return out
 }
 
-func mapAiSubscriptionSecurity(in api.AiSubscription, out *roverv1.AiSubscription) {
+func mapAiSubscriptionSecurity(in api.AiSubscription, out *roverv1.AgenticSubscription) {
 	m2mSecurity := &roverv1.SubscriberMachine2MachineAuthentication{}
 
 	secType, err := in.Security.Discriminator()

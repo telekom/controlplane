@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mcpserver_test
+package agenticserver_test
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
-	"github.com/telekom/controlplane/agentic/internal/handler/mcpserver"
+	"github.com/telekom/controlplane/agentic/internal/handler/agenticserver"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -25,18 +25,18 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func newMcpServer(name, basePath string, uid types.UID, creationTime time.Time) *agenticv1.McpServer {
-	return &agenticv1.McpServer{
+func newAgenticServer(name, basePath string, uid types.UID, creationTime time.Time) *agenticv1.AgenticServer {
+	return &agenticv1.AgenticServer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              name,
 			Namespace:         "default",
 			UID:               uid,
 			CreationTimestamp: metav1.NewTime(creationTime),
 			Labels: map[string]string{
-				agenticv1.McpBasePathLabelKey: basePath,
+				agenticv1.AgenticBasePathLabelKey: basePath,
 			},
 		},
-		Spec: agenticv1.McpServerSpec{
+		Spec: agenticv1.AgenticServerSpec{
 			BasePath: basePath,
 			Version:  "1.0.0",
 			Name:     "Test MCP Server",
@@ -44,43 +44,43 @@ func newMcpServer(name, basePath string, uid types.UID, creationTime time.Time) 
 	}
 }
 
-var _ = Describe("McpServerHandler", func() {
+var _ = Describe("AgenticServerHandler", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
-		h          *mcpserver.McpServerHandler
+		h          *agenticserver.AgenticServerHandler
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
-		h = &mcpserver.McpServerHandler{}
+		h = &agenticserver.AgenticServerHandler{}
 	})
 
 	Describe("CreateOrUpdate", func() {
 		It("should return an error when List fails", func() {
-			obj := newMcpServer("mcp-1", "/mcp/weather/v1", "uid-1", time.Now())
+			obj := newAgenticServer("mcp-1", "/mcp/weather/v1", "uid-1", time.Now())
 
 			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+				List(ctx, mock.AnythingOfType("*v1.AgenticServerList"), mock.Anything).
 				Return(fmt.Errorf("connection refused"))
 
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("failed to list McpServers"))
+			Expect(err.Error()).To(ContainSubstring("failed to list AgenticServers"))
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 
-		It("should set Active=true when no other McpServer exists for basePath", func() {
-			obj := newMcpServer("mcp-1", "/mcp/weather/v1", "uid-1", time.Now())
+		It("should set Active=true when no other AgenticServer exists for basePath", func() {
+			obj := newAgenticServer("mcp-1", "/mcp/weather/v1", "uid-1", time.Now())
 
 			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+				List(ctx, mock.AnythingOfType("*v1.AgenticServerList"), mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{
-						Items: []agenticv1.McpServer{*obj},
+					*list.(*agenticv1.AgenticServerList) = agenticv1.AgenticServerList{
+						Items: []agenticv1.AgenticServer{*obj},
 					}
 				}).
 				Return(nil)
@@ -95,16 +95,16 @@ var _ = Describe("McpServerHandler", func() {
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
 		})
 
-		It("should set Active=false when another older McpServer exists for same basePath", func() {
+		It("should set Active=false when another older AgenticServer exists for same basePath", func() {
 			now := time.Now()
-			existing := newMcpServer("mcp-existing", "/mcp/weather/v1", "uid-existing", now.Add(-time.Hour))
-			obj := newMcpServer("mcp-new", "/mcp/weather/v1", "uid-new", now)
+			existing := newAgenticServer("mcp-existing", "/mcp/weather/v1", "uid-existing", now.Add(-time.Hour))
+			obj := newAgenticServer("mcp-new", "/mcp/weather/v1", "uid-new", now)
 
 			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+				List(ctx, mock.AnythingOfType("*v1.AgenticServerList"), mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{
-						Items: []agenticv1.McpServer{*existing, *obj},
+					*list.(*agenticv1.AgenticServerList) = agenticv1.AgenticServerList{
+						Items: []agenticv1.AgenticServer{*existing, *obj},
 					}
 				}).
 				Return(nil)
@@ -117,19 +117,19 @@ var _ = Describe("McpServerHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
 			Expect(readyCond).NotTo(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("McpServerNotActive"))
+			Expect(readyCond.Reason).To(Equal("AgenticServerNotActive"))
 		})
 
-		It("should set Active=true when it is the oldest McpServer for basePath", func() {
+		It("should set Active=true when it is the oldest AgenticServer for basePath", func() {
 			now := time.Now()
-			obj := newMcpServer("mcp-oldest", "/mcp/weather/v1", "uid-oldest", now.Add(-time.Hour))
-			newer := newMcpServer("mcp-newer", "/mcp/weather/v1", "uid-newer", now)
+			obj := newAgenticServer("mcp-oldest", "/mcp/weather/v1", "uid-oldest", now.Add(-time.Hour))
+			newer := newAgenticServer("mcp-newer", "/mcp/weather/v1", "uid-newer", now)
 
 			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+				List(ctx, mock.AnythingOfType("*v1.AgenticServerList"), mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{
-						Items: []agenticv1.McpServer{*newer, *obj},
+					*list.(*agenticv1.AgenticServerList) = agenticv1.AgenticServerList{
+						Items: []agenticv1.AgenticServer{*newer, *obj},
 					}
 				}).
 				Return(nil)
@@ -140,17 +140,17 @@ var _ = Describe("McpServerHandler", func() {
 			Expect(obj.Status.Active).To(BeTrue())
 		})
 
-		It("should ignore McpServers with different basePaths", func() {
+		It("should ignore AgenticServers with different basePaths", func() {
 			now := time.Now()
-			obj := newMcpServer("mcp-1", "/mcp/weather/v1", "uid-1", now)
-			different := newMcpServer("mcp-other", "/mcp/other/v1", "uid-other", now.Add(-time.Hour))
+			obj := newAgenticServer("mcp-1", "/mcp/weather/v1", "uid-1", now)
+			different := newAgenticServer("mcp-other", "/mcp/other/v1", "uid-other", now.Add(-time.Hour))
 			different.Spec.BasePath = "/mcp/other/v1"
 
 			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+				List(ctx, mock.AnythingOfType("*v1.AgenticServerList"), mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{
-						Items: []agenticv1.McpServer{*different, *obj},
+					*list.(*agenticv1.AgenticServerList) = agenticv1.AgenticServerList{
+						Items: []agenticv1.AgenticServer{*different, *obj},
 					}
 				}).
 				Return(nil)
@@ -164,7 +164,7 @@ var _ = Describe("McpServerHandler", func() {
 
 	Describe("Delete", func() {
 		It("should succeed without errors", func() {
-			obj := newMcpServer("mcp-1", "/mcp/weather/v1", "uid-1", time.Now())
+			obj := newAgenticServer("mcp-1", "/mcp/weather/v1", "uid-1", time.Now())
 
 			err := h.Delete(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())

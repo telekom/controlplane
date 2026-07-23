@@ -7,22 +7,24 @@ package apispecification_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	handler "github.com/telekom/controlplane/rover/internal/handler/apispecification"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func newApiSpec(hash, category string) *roverv1.ApiSpecification {
+func newApiSpec(category string) *roverv1.ApiSpecification {
 	return &roverv1.ApiSpecification{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-spec",
@@ -36,7 +38,7 @@ func newApiSpec(hash, category string) *roverv1.ApiSpecification {
 			Specification: "file-id-123",
 			Category:      category,
 			BasePath:      "/eni/test/v1",
-			Hash:          hash,
+			Hash:          "hash1",
 			Version:       "1.0.0",
 		},
 	}
@@ -91,7 +93,7 @@ var _ = Describe("ApiSpecification Handler", func() {
 		It("should create Api resource successfully", func() {
 			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "other")
+			apiSpec := newApiSpec("other")
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
@@ -102,7 +104,7 @@ var _ = Describe("ApiSpecification Handler", func() {
 		It("should create Api resource regardless of failing lint result", func() {
 			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "warn-cat")
+			apiSpec := newApiSpec("warn-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: false, Message: "found 2 warnings"}
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
@@ -114,7 +116,7 @@ var _ = Describe("ApiSpecification Handler", func() {
 		It("should create Api resource when linting passed", func() {
 			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
-			apiSpec := newApiSpec("hash1", "other")
+			apiSpec := newApiSpec("other")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: true, Message: "no errors"}
 
 			err := h.CreateOrUpdate(mockCtx, apiSpec)
@@ -127,7 +129,7 @@ var _ = Describe("ApiSpecification Handler", func() {
 	Context("Delete", func() {
 		It("should return nil", func() {
 			h := &handler.ApiSpecificationHandler{}
-			err := h.Delete(ctx, newApiSpec("hash1", "other"))
+			err := h.Delete(ctx, newApiSpec("other"))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

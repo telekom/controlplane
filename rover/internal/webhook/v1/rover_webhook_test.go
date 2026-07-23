@@ -640,9 +640,9 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 			It("should fail when AI exposure upstream URL points at a cluster-internal or local address", func() {
 				exposure := roverv1.Exposure{
-					Ai: &roverv1.AiExposure{
+					Agentic: &roverv1.AgenticExposure{
 						BasePath:  "/mcp",
-						Variant:   roverv1.AiVariantMCP,
+						Variant:   roverv1.AgenticVariantMCP,
 						Approval:  roverv1.Approval{},
 						Upstreams: []roverv1.Upstream{{URL: "http://localhost:8080"}},
 					},

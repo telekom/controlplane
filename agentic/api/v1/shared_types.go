@@ -6,18 +6,18 @@ package v1
 
 import "github.com/telekom/controlplane/common/pkg/config"
 
-// McpVariant defines the MCP exposure variant.
+// AgenticVariant defines the MCP exposure variant.
 // +kubebuilder:validation:Enum=MCP;TELECONTEXTMCP
-type McpVariant string
+type AgenticVariant string
 
 const (
-	McpVariantMCP            McpVariant = "MCP"
-	McpVariantTelecontextMCP McpVariant = "TELECONTEXTMCP"
+	AgenticVariantMCP            AgenticVariant = "MCP"
+	AgenticVariantTelecontextMCP AgenticVariant = "TELECONTEXTMCP"
 )
 
 // IsTelecontextVariant returns true if the variant requires automatic Telecontext integration.
-func (v McpVariant) IsTelecontextVariant() bool {
-	return v == McpVariantTelecontextMCP
+func (v AgenticVariant) IsTelecontextVariant() bool {
+	return v == AgenticVariantTelecontextMCP
 }
 
 // Visibility defines who can see and subscribe to an exposed MCP server.
@@ -55,5 +55,5 @@ type Approval struct {
 
 // Label keys used for agentic domain resources.
 var (
-	McpBasePathLabelKey = config.BuildLabelKey("mcpbasepath")
+	AgenticBasePathLabelKey = config.BuildLabelKey("mcpbasepath")
 )

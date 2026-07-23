@@ -83,7 +83,7 @@ spec:
                   maxProperties: 1
                   minProperties: 1
                   properties:
-                    ai:
+                    agentic:
                       description: Ai defines an AI/MCP server exposure configuration
                       properties:
                         approval:
@@ -1256,7 +1256,7 @@ spec:
                   maxProperties: 1
                   minProperties: 1
                   properties:
-                    ai:
+                    agentic:
                       description: Ai defines an AI/MCP server subscription configuration
                       properties:
                         basePath:
@@ -1664,8 +1664,8 @@ spec:
             description: Status contains the observed state of the Rover resource
             properties:
               aiExposures:
-                description: AiExposures are references to McpExposure resources created
-                  by this Rover
+                description: AgenticExposures are references to AgenticExposure resources
+                  created by this Rover
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
@@ -1687,8 +1687,8 @@ spec:
                   type: object
                 type: array
               aiSubscriptions:
-                description: AiSubscriptions are references to McpSubscription resources
-                  created by this Rover
+                description: AgenticSubscriptions are references to AgenticSubscription
+                  resources created by this Rover
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object

@@ -15,8 +15,8 @@ const (
 	GatewayConsumerName = "gateway"
 )
 
-// MakeMcpRouteName creates the route name for an MCP exposure.
+// MakeAgenticRouteName creates the route name for an MCP exposure.
 // Format: "ai-gateway--<normalized-basepath>"
-func MakeMcpRouteName(basePath string) string {
+func MakeAgenticRouteName(basePath string) string {
 	return AiGatewayRoutePrefix + "--" + labelutil.NormalizeNameValue(basePath)
 }

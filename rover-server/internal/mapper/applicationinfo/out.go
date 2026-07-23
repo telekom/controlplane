@@ -161,7 +161,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		return errors.New("input applicationInfo is nil")
 	}
 
-	totalSubs := len(rover.Status.ApiSubscriptions) + len(rover.Status.EventSubscriptions) + len(rover.Status.AiSubscriptions)
+	totalSubs := len(rover.Status.ApiSubscriptions) + len(rover.Status.EventSubscriptions) + len(rover.Status.AgenticSubscriptions)
 	appInfo.Subscriptions = make([]api.SubscriptionInfo, 0, totalSubs)
 
 	// Map API subscriptions
@@ -214,21 +214,21 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 	}
 
 	// Map AI subscriptions
-	for _, sub := range rover.Status.AiSubscriptions {
-		mcpSub, err := stores.McpSubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
+	for _, sub := range rover.Status.AgenticSubscriptions {
+		agenticSub, err := stores.AgenticSubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
 		if err != nil {
-			_, gvk := stores.McpSubscriptionStore.Info()
+			_, gvk := stores.AgenticSubscriptionStore.Info()
 			WriteStatusWithRef(ResourceRefFromGVK(gvk, sub.Namespace, sub.Name), appInfo, err)
 			continue
 		}
 
-		if err := condition.EnsureReady(mcpSub); err != nil {
-			WriteStatus(mcpSub, appInfo, err)
+		if err := condition.EnsureReady(agenticSub); err != nil {
+			WriteStatus(agenticSub, appInfo, err)
 		}
 
 		subInfo := api.SubscriptionInfo{}
 		aiSubInfo := api.AiSubscriptionInfo{
-			BasePath: mcpSub.Spec.BasePath,
+			BasePath: agenticSub.Spec.BasePath,
 		}
 		if err := subInfo.FromAiSubscriptionInfo(aiSubInfo); err != nil {
 			return errors.Wrap(err, "failed to convert ai subscription info")
@@ -247,7 +247,7 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 		return errors.New("input applicationInfo is nil")
 	}
 
-	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures) + len(rover.Status.AiExposures)
+	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures) + len(rover.Status.AgenticExposures)
 	appInfo.Exposures = make([]api.ExposureInfo, 0, totalExps)
 
 	if err := fillAPIExposures(ctx, rover, appInfo, stores); err != nil {
@@ -328,27 +328,27 @@ func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.
 // fillAiExposures fetches each AI/MCP exposure referenced by the Rover status,
 // validates its readiness, and appends it to appInfo.Exposures.
 func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
-	for _, exp := range rover.Status.AiExposures {
-		mcpExp, err := stores.McpExposureStore.Get(ctx, exp.Namespace, exp.Name)
+	for _, exp := range rover.Status.AgenticExposures {
+		agenticExp, err := stores.AgenticExposureStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
-			_, gvk := stores.McpExposureStore.Info()
+			_, gvk := stores.AgenticExposureStore.Info()
 			WriteStatusWithRef(ResourceRefFromGVK(gvk, exp.Namespace, exp.Name), appInfo, err)
 			continue
 		}
 
-		if err := condition.EnsureReady(mcpExp); err != nil {
-			WriteStatus(mcpExp, appInfo, err)
+		if err := condition.EnsureReady(agenticExp); err != nil {
+			WriteStatus(agenticExp, appInfo, err)
 		}
 
 		expInfo := api.ExposureInfo{}
 		aiExpInfo := api.AiExposureInfo{
-			BasePath:   mcpExp.Spec.BasePath,
-			Variant:    api.AiExposureInfoVariant(mcpExp.Spec.Variant),
-			Approval:   api.ApprovalStrategy(mcpExp.Spec.Approval.Strategy),
-			Visibility: api.Visibility(mcpExp.Spec.Visibility),
+			BasePath:   agenticExp.Spec.BasePath,
+			Variant:    api.AiExposureInfoVariant(agenticExp.Spec.Variant),
+			Approval:   api.ApprovalStrategy(agenticExp.Spec.Approval.Strategy),
+			Visibility: api.Visibility(agenticExp.Spec.Visibility),
 		}
-		if len(mcpExp.Spec.Upstreams) > 0 {
-			aiExpInfo.Upstream = mcpExp.Spec.Upstreams[0].Url
+		if len(agenticExp.Spec.Upstreams) > 0 {
+			aiExpInfo.Upstream = agenticExp.Spec.Upstreams[0].Url
 		}
 		if err := expInfo.FromAiExposureInfo(aiExpInfo); err != nil {
 			return errors.Wrap(err, "failed to convert ai exposure info")

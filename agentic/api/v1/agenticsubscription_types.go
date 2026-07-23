@@ -10,9 +10,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// McpSubscriptionSpec defines the desired state of McpSubscription.
-type McpSubscriptionSpec struct {
-	// BasePath references the McpServer/McpExposure via basePath.
+// AgenticSubscriptionSpec defines the desired state of AgenticSubscription.
+type AgenticSubscriptionSpec struct {
+	// BasePath references the AgenticServer/AgenticExposure via basePath.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=`^/.*$`
@@ -41,8 +41,8 @@ type Requestor struct {
 	Application ctypes.ObjectRef `json:"application"`
 }
 
-// McpSubscriptionStatus defines the observed state of McpSubscription.
-type McpSubscriptionStatus struct {
+// AgenticSubscriptionStatus defines the observed state of AgenticSubscription.
+type AgenticSubscriptionStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge
@@ -69,43 +69,43 @@ type McpSubscriptionStatus struct {
 // +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone.name",description="The subscriber zone"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// McpSubscription is the Schema for the mcpsubscriptions API.
+// AgenticSubscription is the Schema for the agenticsubscriptions API.
 // It represents a request by an application to consume an MCP server
-// exposed via McpExposure, with approval and access control.
-type McpSubscription struct {
+// exposed via AgenticExposure, with approval and access control.
+type AgenticSubscription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   McpSubscriptionSpec   `json:"spec,omitempty"`
-	Status McpSubscriptionStatus `json:"status,omitempty"`
+	Spec   AgenticSubscriptionSpec   `json:"spec,omitempty"`
+	Status AgenticSubscriptionStatus `json:"status,omitempty"`
 }
 
-var _ ctypes.Object = &McpSubscription{}
+var _ ctypes.Object = &AgenticSubscription{}
 
-func (r *McpSubscription) GetConditions() []metav1.Condition {
+func (r *AgenticSubscription) GetConditions() []metav1.Condition {
 	return r.Status.Conditions
 }
 
-func (r *McpSubscription) SetCondition(condition metav1.Condition) bool {
+func (r *AgenticSubscription) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
-func (r *McpSubscription) HasM2M() bool {
+func (r *AgenticSubscription) HasM2M() bool {
 	return r.Spec.Security != nil && r.Spec.Security.M2M != nil
 }
 
 // +kubebuilder:object:root=true
 
-// McpSubscriptionList contains a list of McpSubscription
-type McpSubscriptionList struct {
+// AgenticSubscriptionList contains a list of AgenticSubscription
+type AgenticSubscriptionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []McpSubscription `json:"items"`
+	Items           []AgenticSubscription `json:"items"`
 }
 
-var _ ctypes.ObjectList = &McpSubscriptionList{}
+var _ ctypes.ObjectList = &AgenticSubscriptionList{}
 
-func (r *McpSubscriptionList) GetItems() []ctypes.Object {
+func (r *AgenticSubscriptionList) GetItems() []ctypes.Object {
 	items := make([]ctypes.Object, len(r.Items))
 	for i := range r.Items {
 		items[i] = &r.Items[i]
@@ -114,5 +114,5 @@ func (r *McpSubscriptionList) GetItems() []ctypes.Object {
 }
 
 func init() {
-	SchemeBuilder.Register(&McpSubscription{}, &McpSubscriptionList{})
+	SchemeBuilder.Register(&AgenticSubscription{}, &AgenticSubscriptionList{})
 }

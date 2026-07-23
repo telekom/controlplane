@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mcpsubscription
+package agenticsubscription
 
 import (
 	"context"
@@ -30,56 +30,56 @@ import (
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
-var _ handler.Handler[*agenticv1.McpSubscription] = &McpSubscriptionHandler{}
+var _ handler.Handler[*agenticv1.AgenticSubscription] = &AgenticSubscriptionHandler{}
 
-type McpSubscriptionHandler struct{}
+type AgenticSubscriptionHandler struct{}
 
 //nolint:gocyclo // reconciler with sequential validation, approval, and provisioning steps
-func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.McpSubscription) error {
+func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.AgenticSubscription) error {
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// 1. Validate McpServer exists and is active
-	found, mcpServer, findErr := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
+	// 1. Validate AgenticServer exists and is active
+	found, mcpServer, findErr := util.FindActiveAgenticServer(ctx, obj.Spec.BasePath)
 	if findErr != nil {
 		return findErr
 	}
 	if !found {
-		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
-			"No active McpServer found for basePath "+obj.Spec.BasePath))
+		obj.SetCondition(condition.NewNotReadyCondition("AgenticServerNotFound",
+			"No active AgenticServer found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
-			"McpServer " + obj.Spec.BasePath + " does not exist or is not active. " +
-				"McpSubscription will be automatically processed when the McpServer is registered"))
+			"AgenticServer " + obj.Spec.BasePath + " does not exist or is not active. " +
+				"AgenticSubscription will be automatically processed when the AgenticServer is registered"))
 		return nil
 	}
 
-	// 1b. Validate subscription scopes against McpServer's declared scopes
+	// 1b. Validate subscription scopes against AgenticServer's declared scopes
 	if !validateSubscriptionScopes(mcpServer, obj) {
 		return nil
 	}
 
-	// 2. Find active McpExposure
-	exposures, err := util.FindMcpExposures(ctx, obj.Spec.BasePath)
+	// 2. Find active AgenticExposure
+	exposures, err := util.FindAgenticExposures(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return err
 	}
-	exposureFound, exposure, err := util.FindActiveMcpExposure(exposures)
+	exposureFound, exposure, err := util.FindActiveAgenticExposure(exposures)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find active McpExposure for basePath %q", obj.Spec.BasePath)
+		return errors.Wrapf(err, "failed to find active AgenticExposure for basePath %q", obj.Spec.BasePath)
 	}
 	if !exposureFound {
-		obj.SetCondition(condition.NewNotReadyCondition("McpExposureNotFound",
-			"No active McpExposure found for basePath "+obj.Spec.BasePath))
+		obj.SetCondition(condition.NewNotReadyCondition("AgenticExposureNotFound",
+			"No active AgenticExposure found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
-			"McpExposure for " + obj.Spec.BasePath + " does not exist or is not active. " +
-				"McpSubscription will be automatically processed when the McpExposure is registered"))
+			"AgenticExposure for " + obj.Spec.BasePath + " does not exist or is not active. " +
+				"AgenticSubscription will be automatically processed when the AgenticExposure is registered"))
 		return nil
 	}
 	if err = condition.EnsureReady(exposure); err != nil {
-		obj.SetCondition(condition.NewNotReadyCondition("McpExposureNotReady",
-			fmt.Sprintf("McpExposure %q is not ready", exposure.Name)))
+		obj.SetCondition(condition.NewNotReadyCondition("AgenticExposureNotReady",
+			fmt.Sprintf("AgenticExposure %q is not ready", exposure.Name)))
 		obj.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("McpExposure %q is not ready. McpSubscription will be automatically processed when the McpExposure is ready", exposure.Name)))
+			fmt.Sprintf("AgenticExposure %q is not ready. AgenticSubscription will be automatically processed when the AgenticExposure is ready", exposure.Name)))
 		return nil
 	}
 
@@ -98,8 +98,8 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	valid := validateVisibility(exposure, obj, subscriberZone)
 	if !valid {
 		obj.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation",
-			"McpExposure and McpSubscription visibility combination is not allowed"))
-		return ctrlerrors.BlockedErrorf("McpSubscription is blocked. Subscriptions from zone %q are not allowed due to exposure visibility constraints", obj.Spec.Zone.Name)
+			"AgenticExposure and AgenticSubscription visibility combination is not allowed"))
+		return ctrlerrors.BlockedErrorf("AgenticSubscription is blocked. Subscriptions from zone %q are not allowed due to exposure visibility constraints", obj.Spec.Zone.Name)
 	}
 
 	// 5. Get requestor application
@@ -111,7 +111,7 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	// 6. Get provider application
 	providerApp, err := util.GetApplication(ctx, exposure.Spec.Provider)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get application from McpExposure provider %q", exposure.Spec.Provider.Name)
+		return errors.Wrapf(err, "unable to get application from AgenticExposure provider %q", exposure.Spec.Provider.Name)
 	}
 
 	// 7. Build and evaluate approval
@@ -129,7 +129,7 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		"resource_name": obj.Spec.BasePath,
 	}
 	if err = requester.SetProperties(properties); err != nil {
-		return errors.Wrapf(err, "unable to set approvalRequest properties for McpSubscription %q", obj.Name)
+		return errors.Wrapf(err, "unable to set approvalRequest properties for AgenticSubscription %q", obj.Name)
 	}
 
 	decider := &approvalapi.Decider{
@@ -176,7 +176,7 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 
 		deleted, cleanupErr := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(obj))
 		if cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "unable to cleanup ConsumeRoute for McpSubscription %q", obj.Name)
+			return errors.Wrapf(cleanupErr, "unable to cleanup ConsumeRoute for AgenticSubscription %q", obj.Name)
 		}
 		if deleted > 0 {
 			logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
@@ -212,21 +212,21 @@ func (h *McpSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		return nil
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("McpSubscriptionProvisioned",
-		"McpSubscription has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition("AgenticSubscriptionProvisioned",
+		"AgenticSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
-		"McpSubscription has been provisioned"))
+		"AgenticSubscription has been provisioned"))
 
 	return nil
 }
 
-func (h *McpSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.McpSubscription) error {
+func (h *AgenticSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.AgenticSubscription) error {
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	deleted, err := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(obj))
 	if err != nil {
-		return errors.Wrapf(err, "failed to cleanup ConsumeRoute for McpSubscription %q", obj.Name)
+		return errors.Wrapf(err, "failed to cleanup ConsumeRoute for AgenticSubscription %q", obj.Name)
 	}
 	if deleted > 0 {
 		logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
@@ -240,8 +240,8 @@ func (h *McpSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.McpS
 // Returns nil if the route isn't ready yet — a blocking condition is set on obj.
 func resolveRouteRef(
 	ctx context.Context,
-	obj *agenticv1.McpSubscription,
-	exposure *agenticv1.McpExposure,
+	obj *agenticv1.AgenticSubscription,
+	exposure *agenticv1.AgenticExposure,
 	subscriberZone *adminv1.Zone,
 ) *types.ObjectRef {
 	logger := log.FromContext(ctx)
@@ -250,11 +250,11 @@ func resolveRouteRef(
 		// Same zone: reference the primary route directly
 		if exposure.Status.Route == nil {
 			obj.SetCondition(condition.NewNotReadyCondition("RouteNotReady",
-				"McpExposure does not have a Route reference yet"))
-			obj.SetCondition(condition.NewBlockedCondition("Waiting for McpExposure to create the route"))
+				"AgenticExposure does not have a Route reference yet"))
+			obj.SetCondition(condition.NewBlockedCondition("Waiting for AgenticExposure to create the route"))
 			return nil
 		}
-		logger.V(1).Info("Referencing primary route from McpExposure", "route", exposure.Status.Route.String())
+		logger.V(1).Info("Referencing primary route from AgenticExposure", "route", exposure.Status.Route.String())
 		return exposure.Status.Route
 	}
 
@@ -262,22 +262,22 @@ func resolveRouteRef(
 	for i := range exposure.Status.ProxyRoutes {
 		proxyRoute := &exposure.Status.ProxyRoutes[i]
 		if proxyRoute.Namespace == subscriberZone.Status.Namespace {
-			logger.V(1).Info("Referencing proxy route from McpExposure", "zone", obj.Spec.Zone.Name, "route", proxyRoute.String())
+			logger.V(1).Info("Referencing proxy route from AgenticExposure", "zone", obj.Spec.Zone.Name, "route", proxyRoute.String())
 			return proxyRoute
 		}
 	}
 
 	obj.SetCondition(condition.NewNotReadyCondition("ProxyRouteNotReady",
-		"McpExposure has not created a proxy route for zone "+obj.Spec.Zone.Name+" yet"))
+		"AgenticExposure has not created a proxy route for zone "+obj.Spec.Zone.Name+" yet"))
 	obj.SetCondition(condition.NewBlockedCondition(
-		"Waiting for McpExposure to create the proxy route for zone " + obj.Spec.Zone.Name))
+		"Waiting for AgenticExposure to create the proxy route for zone " + obj.Spec.Zone.Name))
 	return nil
 }
 
 // createConsumeRoute creates a ConsumeRoute granting the subscriber access to the MCP route.
-func (h *McpSubscriptionHandler) createConsumeRoute(
+func (h *AgenticSubscriptionHandler) createConsumeRoute(
 	ctx context.Context,
-	obj *agenticv1.McpSubscription,
+	obj *agenticv1.AgenticSubscription,
 	routeRef types.ObjectRef,
 	application *applicationv1.Application,
 ) (*gatewayapi.ConsumeRoute, error) {
@@ -298,10 +298,10 @@ func (h *McpSubscriptionHandler) createConsumeRoute(
 		}
 
 		consumeRoute.Labels = map[string]string{
-			config.DomainLabelKey:         "agentic",
-			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
-			config.BuildLabelKey("zone"):  obj.Spec.Zone.Name,
-			config.BuildLabelKey("type"):  "mcp-subscription",
+			config.DomainLabelKey:             "agentic",
+			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
+			config.BuildLabelKey("zone"):      obj.Spec.Zone.Name,
+			config.BuildLabelKey("type"):      "mcp-subscription",
 		}
 
 		consumeRoute.Spec = gatewayapi.ConsumeRouteSpec{
@@ -321,7 +321,7 @@ func (h *McpSubscriptionHandler) createConsumeRoute(
 }
 
 // validateVisibility checks if the subscription is allowed given the exposure's visibility.
-func validateVisibility(exposure *agenticv1.McpExposure, sub *agenticv1.McpSubscription, _ *adminv1.Zone) bool {
+func validateVisibility(exposure *agenticv1.AgenticExposure, sub *agenticv1.AgenticSubscription, _ *adminv1.Zone) bool {
 	switch exposure.Spec.Visibility {
 	case agenticv1.VisibilityZone:
 		// Only same-zone subscriptions
@@ -336,15 +336,15 @@ func validateVisibility(exposure *agenticv1.McpExposure, sub *agenticv1.McpSubsc
 	}
 }
 
-// validateSubscriptionScopes checks that the M2M scopes in the McpSubscription are a valid subset of the McpServer's scopes.
+// validateSubscriptionScopes checks that the M2M scopes in the AgenticSubscription are a valid subset of the AgenticServer's scopes.
 // It sets blocking conditions on the subscription and returns false if processing should stop.
-func validateSubscriptionScopes(mcpServer *agenticv1.McpServer, obj *agenticv1.McpSubscription) bool {
+func validateSubscriptionScopes(mcpServer *agenticv1.AgenticServer, obj *agenticv1.AgenticSubscription) bool {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil {
 		return true
 	}
 	if len(mcpServer.Spec.Oauth2Scopes) == 0 {
-		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "McpServer does not define any OAuth2 scopes"))
-		obj.SetCondition(condition.NewBlockedCondition("McpServer does not define any OAuth2 scopes. McpSubscription will be automatically processed, if the McpServer will be updated with scopes"))
+		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "AgenticServer does not define any OAuth2 scopes"))
+		obj.SetCondition(condition.NewBlockedCondition("AgenticServer does not define any OAuth2 scopes. AgenticSubscription will be automatically processed, if the AgenticServer will be updated with scopes"))
 		return false
 	}
 	scopesExist, invalidScopes := util.IsSubsetOfScopes(mcpServer.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
@@ -353,7 +353,7 @@ func validateSubscriptionScopes(mcpServer *agenticv1.McpServer, obj *agenticv1.M
 			strings.Join(mcpServer.Spec.Oauth2Scopes, ", "),
 			strings.Join(invalidScopes, ", "),
 		)
-		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in McpSubscription are not defined in the McpServer"))
+		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in AgenticSubscription are not defined in the AgenticServer"))
 		obj.SetCondition(condition.NewBlockedCondition(message))
 		return false
 	}

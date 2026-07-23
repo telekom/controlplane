@@ -11,5 +11,5 @@ import (
 // MakeName generates a deterministic resource name for an AI exposure or subscription.
 // It combines the owner (application) name with the normalized MCP server name.
 func MakeName(ownerName, basePath string) string {
-	return ownerName + "--" + agenticv1.MakeMcpServerName(basePath)
+	return ownerName + "--" + agenticv1.MakeAgenticServerName(basePath)
 }

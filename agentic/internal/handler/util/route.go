@@ -23,12 +23,12 @@ import (
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
-// CreateMcpRoute creates the primary gateway Route for an MCP exposure.
+// CreateAgenticRoute creates the primary gateway Route for an MCP exposure.
 // The Route is created in the zone's namespace with buffering disabled for streaming.
 // Follows the same preset-based routing pattern as the API domain's CreateRealRoute.
-func CreateMcpRoute(
+func CreateAgenticRoute(
 	ctx context.Context,
-	exposure *agenticv1.McpExposure,
+	exposure *agenticv1.AgenticExposure,
 	zone *adminv1.Zone,
 	hasLocalSubs bool,
 	isTargetOfProxy bool,
@@ -61,17 +61,17 @@ func CreateMcpRoute(
 	// 4. Create or update the Route
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      MakeMcpRouteName(exposure.Spec.BasePath),
+			Name:      MakeAgenticRouteName(exposure.Spec.BasePath),
 			Namespace: zone.Status.Namespace,
 		},
 	}
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:         "agentic",
-			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
-			config.BuildLabelKey("zone"):  zone.Name,
-			config.BuildLabelKey("type"):  "mcp",
+			config.DomainLabelKey:             "agentic",
+			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
+			config.BuildLabelKey("zone"):      zone.Name,
+			config.BuildLabelKey("type"):      "mcp",
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
@@ -133,11 +133,11 @@ func CreateMcpRoute(
 	return route, nil
 }
 
-// CreateMcpProxyRoute creates a cross-zone proxy Route for MCP delivery.
+// CreateAgenticProxyRoute creates a cross-zone proxy Route for MCP delivery.
 // The Route is created in the subscriber zone's namespace and points upstream
 // to the provider zone's AI Gateway.
 // Follows the same preset-based routing pattern as the API domain's CreateProxyRoute.
-func CreateMcpProxyRoute(
+func CreateAgenticProxyRoute(
 	ctx context.Context,
 	basePath string,
 	subscriberZone *adminv1.Zone,
@@ -182,17 +182,17 @@ func CreateMcpProxyRoute(
 	// 5. Create or update the proxy Route in the subscriber zone's namespace
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      MakeMcpRouteName(basePath),
+			Name:      MakeAgenticRouteName(basePath),
 			Namespace: subscriberZone.Status.Namespace,
 		},
 	}
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:         "agentic",
-			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
-			config.BuildLabelKey("zone"):  subscriberZone.Name,
-			config.BuildLabelKey("type"):  "mcp-proxy",
+			config.DomainLabelKey:             "agentic",
+			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+			config.BuildLabelKey("zone"):      subscriberZone.Name,
+			config.BuildLabelKey("type"):      "mcp-proxy",
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
@@ -228,14 +228,14 @@ func CreateMcpProxyRoute(
 	return route, nil
 }
 
-// CleanupOldMcpRoutes uses the JanitorClient's Cleanup() to delete stale MCP Routes
+// CleanupOldAgenticRoutes uses the JanitorClient's Cleanup() to delete stale MCP Routes
 // for the given basePath that were NOT created/updated in this reconciliation cycle.
-func CleanupOldMcpRoutes(ctx context.Context, basePath string) (int, error) {
+func CleanupOldAgenticRoutes(ctx context.Context, basePath string) (int, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	deleted, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, []client.ListOption{
 		client.MatchingLabels{
-			agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 		},
 	})
 	if err != nil {
