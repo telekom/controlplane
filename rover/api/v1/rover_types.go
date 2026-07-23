@@ -456,6 +456,10 @@ type FileExposure struct {
 	// +kubebuilder:default=Enterprise
 	Visibility Visibility `json:"visibility"`
 
+	// Approval defines the approval workflow required for subscriptions to this file type
+	// +kubebuilder:validation:Required
+	Approval Approval `json:"approval"`
+
 	// PublicKeys are the SSH public keys registered for the producer's SFTP user.
 	// At least one key is required. Both label and key value must be unique per fileType.
 	// +kubebuilder:validation:Required

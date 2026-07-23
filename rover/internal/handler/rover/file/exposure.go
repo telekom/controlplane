@@ -52,7 +52,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 		}
 
 		fileExposure.Spec = filev1.FileExposureSpec{
-			Approval:   filev1.Approval{Strategy: filev1.ApprovalStrategySimple},
+			Approval:   filev1.Approval{Strategy: filev1.ApprovalStrategy(exp.Approval.Strategy)},
 			Visibility: filev1.Visibility(exp.Visibility.String()),
 			FileType:   exp.FileType,
 			Sftp: filev1.SftpExposure{
