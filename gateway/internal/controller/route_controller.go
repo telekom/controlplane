@@ -46,7 +46,10 @@ func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("route-controller")
-	r.Controller = cc.NewController(routehandler.NewRouteHandler(routehandler.WithXdsClient(r.XdsClient)), r.Client, r.Recorder)
+	r.Controller = cc.NewController(routehandler.NewRouteHandler(
+		routehandler.WithXdsClient(r.XdsClient),
+		routehandler.WithLocalClient(r.Client),
+	), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Route{}).

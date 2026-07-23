@@ -24,14 +24,28 @@ type AdminConfig struct {
 	Url          string `json:"url"`
 }
 
-// GatewayType defines the type of the gateway (e.g., Kong, Envoy)
-// +kubebuilder:validation:Enum=kong;envoy
+// GatewayType defines the type of the gateway (e.g., Kong, Envoy, kgateway)
+// +kubebuilder:validation:Enum=kong;envoy;kgateway
 type GatewayType string
 
 const (
-	GatewayTypeKong  GatewayType = "kong"
-	GatewayTypeEnvoy GatewayType = "envoy"
+	GatewayTypeKong     GatewayType = "kong"
+	GatewayTypeEnvoy    GatewayType = "envoy"
+	GatewayTypeKGateway GatewayType = "kgateway"
 )
+
+// RemoteClusterConfig points at the cluster a kgateway Gateway provisions its
+// Gateway-API resources on. It references a Secret holding a kubeconfig for the
+// target cluster. When nil, the operator's local (in-cluster) client is used.
+type RemoteClusterConfig struct {
+	// SecretRef references the Secret containing the target-cluster kubeconfig.
+	// +kubebuilder:validation:Required
+	SecretRef types.ObjectRef `json:"secretRef"`
+
+	// Key is the Secret data key holding the kubeconfig.
+	// +kubebuilder:default=kubeconfig
+	Key string `json:"key,omitempty"`
+}
 
 // GatewaySpec defines the desired state of Gateway
 type GatewaySpec struct {
@@ -39,6 +53,11 @@ type GatewaySpec struct {
 
 	Redis *RedisConfig `json:"redis,omitempty"`
 	Admin AdminConfig  `json:"admin"`
+
+	// RemoteCluster configures a target cluster for kgateway resource
+	// provisioning. When empty, resources are applied to the local cluster.
+	// +optional
+	RemoteCluster *RemoteClusterConfig `json:"remoteCluster,omitempty"`
 
 	Features []FeatureType `json:"features,omitempty"`
 }

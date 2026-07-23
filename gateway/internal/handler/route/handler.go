@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/envoy"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
+	"github.com/telekom/controlplane/gateway/internal/features/kgateway"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,11 +31,23 @@ var _ handler.Handler[*gatewayv1.Route] = &RouteHandler{}
 
 type RouteHandler struct {
 	xdsClient envoy.XdsClient
+	// localClient is the operator's own cluster client, used as the default
+	// kgateway target and to read remote-cluster kubeconfig secrets.
+	localClient client.Client
 }
 
 func WithXdsClient(xdsClient envoy.XdsClient) func(*RouteHandler) {
 	return func(h *RouteHandler) {
 		h.xdsClient = xdsClient
+	}
+}
+
+// WithLocalClient injects the operator's own cluster client. It is the default
+// target for kgateway resources and the source for remote-cluster kubeconfig
+// secrets.
+func WithLocalClient(cl client.Client) func(*RouteHandler) {
+	return func(h *RouteHandler) {
+		h.localClient = cl
 	}
 }
 
@@ -49,7 +62,7 @@ func NewRouteHandler(opts ...func(*RouteHandler)) *RouteHandler {
 func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Route) error {
 	log := log.FromContext(ctx)
 	kubeClient := cc.ClientFromContextOrDie(ctx)
-	builder, err := NewFeatureBuilder(ctx, route, h.xdsClient)
+	builder, err := NewFeatureBuilder(ctx, route, h.xdsClient, h.localClient)
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
@@ -143,7 +156,7 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 	return nil
 }
 
-func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route, xdsClient envoy.XdsClient) (features.FeatureBuilder, error) {
+func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route, xdsClient envoy.XdsClient, localClient client.Client) (features.FeatureBuilder, error) {
 
 	ready, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
@@ -158,6 +171,20 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route, xdsClient en
 		builder.EnableFeature(envoy.InstanceAccessControlFeature)
 		builder.EnableFeature(envoy.InstanceLastMileSecurityFeature)
 		builder.EnableFeature(envoy.InstanceCustomScopesFeature)
+		return builder, nil
+	}
+
+	if gateway.Spec.Type == gatewayv1.GatewayTypeKGateway {
+		// The builder emits an HTTPRoute + Backend, plus a TrafficPolicy +
+		// GatewayExtension when AccessControl applies. The client targets the
+		// Gateway's remote cluster, or the local cluster when no RemoteCluster
+		// is configured.
+		kgatewayClient, err := kgateway.GetClientFor(ctx, localClient, gateway)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get kgateway client")
+		}
+		builder := kgateway.NewFeatureBuilder(kgatewayClient, route, nil, gateway)
+		builder.EnableFeature(kgateway.InstanceAccessControlFeature)
 		return builder, nil
 	}
 

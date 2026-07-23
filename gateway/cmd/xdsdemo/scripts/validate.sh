@@ -34,7 +34,7 @@ set -a; source "$env_file"; set +a
 : "${CLIENT_ID:?CLIENT_ID must be set in .env}"
 : "${CLIENT_SECRET:?CLIENT_SECRET must be set in .env}"
 : "${TOKEN_URL:?TOKEN_URL must be set in .env}"
-: "${ENVOY_URL:=http://localhost:10000/foo}"
+: "${ENVOY_URL:=http://localhost:8080/foo}"
 : "${ROUTE_HOST:=demo-route.local}"
 
 pass=0; fail=0

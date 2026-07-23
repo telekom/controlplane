@@ -1,0 +1,27 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Kustomize overlay that provisions a kgateway-type Gateway pointing at a remote
+# cluster. It generates the kubeconfig Secret from the kubeconfig.yaml in this
+# directory and a Gateway CR referencing that Secret.
+#
+#   kubectl apply -k config/samples/kgateway
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: default
+
+resources:
+- gateway.yaml
+
+# Build the Secret from the kubeconfig file. The Gateway.spec.remoteCluster
+# reference is a fixed name, so the name-suffix hash must be disabled.
+secretGenerator:
+- name: kgateway-remote-kubeconfig
+  files:
+  - kubeconfig=kubeconfig.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true

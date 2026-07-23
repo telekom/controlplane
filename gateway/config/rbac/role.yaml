@@ -10,10 +10,218 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  - events.k8s.io
+  resources:
   - events
   verbs:
   - create
   - patch
+- apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - environments
+  - remoteorganizations
+  - zones
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - environments/finalizers
+  - remoteorganizations/finalizers
+  - zones/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - environments/status
+  - remoteorganizations/status
+  - zones/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpexposures
+  - mcpservers
+  - mcpsubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpexposures/finalizers
+  - mcpservers/finalizers
+  - mcpsubscriptions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpexposures/status
+  - mcpservers/status
+  - mcpsubscriptions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - api.cp.ei.telekom.de
+  resources:
+  - apicategories
+  - apiexposures
+  - apis
+  - apisubscriptions
+  - remoteapisubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - api.cp.ei.telekom.de
+  resources:
+  - apicategories/finalizers
+  - apiexposures/finalizers
+  - apis/finalizers
+  - apisubscriptions/finalizers
+  - remoteapisubscriptions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - api.cp.ei.telekom.de
+  resources:
+  - apicategories/status
+  - apiexposures/status
+  - apis/status
+  - apisubscriptions/status
+  - remoteapisubscriptions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - application.cp.ei.telekom.de
+  resources:
+  - applications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - application.cp.ei.telekom.de
+  resources:
+  - applications/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - application.cp.ei.telekom.de
+  resources:
+  - applications/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalexpirations
+  - approvalrequests
+  - approvals
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalexpirations/finalizers
+  - approvalrequests/finalizers
+  - approvals/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalexpirations/status
+  - approvalrequests/status
+  - approvals/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventconfigs
+  - eventexposures
+  - eventsubscriptions
+  - eventtypes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventconfigs/finalizers
+  - eventexposures/finalizers
+  - eventsubscriptions/finalizers
+  - eventtypes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventconfigs/status
+  - eventexposures/status
+  - eventsubscriptions/status
+  - eventtypes/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - gateway.cp.ei.telekom.de
   resources:
@@ -45,6 +253,208 @@ rules:
   - consumers/status
   - gateways/status
   - routes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - identity.cp.ei.telekom.de
+  resources:
+  - clients
+  - identityproviders
+  - realms
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - identity.cp.ei.telekom.de
+  resources:
+  - clients/finalizers
+  - identityproviders/finalizers
+  - realms/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - identity.cp.ei.telekom.de
+  resources:
+  - clients/status
+  - identityproviders/status
+  - realms/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels
+  - notifications
+  - notificationtemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels/finalizers
+  - notifications/finalizers
+  - notificationtemplates/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels/status
+  - notifications/status
+  - notificationtemplates/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - groups
+  - teams
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - groups/finalizers
+  - teams/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - groups/status
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - teams/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - pcp.ei.telekom.de
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - pubsub.cp.ei.telekom.de
+  resources:
+  - eventstores
+  - publishers
+  - subscribers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pubsub.cp.ei.telekom.de
+  resources:
+  - eventstores/finalizers
+  - publishers/finalizers
+  - subscribers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - pubsub.cp.ei.telekom.de
+  resources:
+  - eventstores/status
+  - publishers/status
+  - subscribers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rover.cp.ei.telekom.de
+  resources:
+  - apichangelogs
+  - apispecifications
+  - eventspecifications
+  - mcpspecifications
+  - roadmaps
+  - rovers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rover.cp.ei.telekom.de
+  resources:
+  - apichangelogs/finalizers
+  - apispecifications/finalizers
+  - eventspecifications/finalizers
+  - mcpspecifications/finalizers
+  - roadmaps/finalizers
+  - rovers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rover.cp.ei.telekom.de
+  resources:
+  - apichangelogs/status
+  - apispecifications/status
+  - eventspecifications/status
+  - mcpspecifications/status
+  - roadmaps/status
+  - rovers/status
   verbs:
   - get
   - patch

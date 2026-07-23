@@ -38,6 +38,7 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/controller"
 	"github.com/telekom/controlplane/gateway/internal/features/envoy"
+	"github.com/telekom/controlplane/gateway/internal/features/kgateway"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 	// +kubebuilder:scaffold:imports
 )
@@ -51,6 +52,9 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(gatewayv1.AddToScheme(scheme))
+	// kgateway FeatureBuilder emits Gateway-API + kgateway CRs; the target
+	// cluster client must understand those types.
+	utilruntime.Must(kgateway.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
