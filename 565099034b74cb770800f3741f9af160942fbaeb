@@ -1,0 +1,50 @@
+gateway/cmd/xdsdemo/helm/templates/envoy-configmap.yaml
+  s_e36533b3721d0f::t_b3f8beec752d34 13
+  h_052be7cb63ce69 1-7,9-12
+  s_e36533b3721d0f::t_3a13065547d4f8 8
+gateway/cmd/xdsdemo/helm/templates/valkey.yaml
+  s_e36533b3721d0f::t_8b34960be49f58 1-90
+gateway/cmd/xdsdemo/helm/templates/envoy.yaml
+  h_052be7cb63ce69 1-54,56-93
+  s_e36533b3721d0f::t_7004953d8ad7c5 55
+gateway/cmd/xdsdemo/helm/values.yaml
+  s_e36533b3721d0f::t_48fb6a49176c95 16
+  s_e36533b3721d0f::t_77fdd6e6f53cba 9
+  s_e36533b3721d0f::t_28b6b0593a9f2a 18-23,34-39,58-61,65
+  s_e36533b3721d0f::t_b3f8beec752d34 7-8,10
+  h_052be7cb63ce69 1-6,11-12,14,17,24-25,27-33,40,55-57,69-72
+  s_e36533b3721d0f::t_3f6fd4884ec162 15
+  s_e36533b3721d0f::t_3a13065547d4f8 13,26,62-64,66-68
+  s_e36533b3721d0f::t_8b34960be49f58 41-54
+gateway/cmd/xdsdemo/helm/templates/lms-issuer.yaml
+  h_052be7cb63ce69 1-75
+gateway/cmd/xdsdemo/helm/files/envoy-bootstrap.yaml
+  s_e36533b3721d0f::t_b3f8beec752d34 44-45
+  h_052be7cb63ce69 1-43,46-63
+gateway/cmd/xdsdemo/helm/Chart.yaml
+  h_052be7cb63ce69 1-10
+gateway/cmd/xdsdemo/helm/templates/_helpers.tpl
+  h_052be7cb63ce69 1-21
+  s_e36533b3721d0f::t_3a13065547d4f8 22-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "565099034b74cb770800f3741f9af160942fbaeb",
+  "prompts": {},
+  "humans": {
+    "h_052be7cb63ce69": {
+      "author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_e36533b3721d0f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "2802bf4f-172e-4ef8-ad13-36c5ea47e334",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}

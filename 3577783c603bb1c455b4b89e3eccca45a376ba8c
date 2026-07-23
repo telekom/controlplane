@@ -1,0 +1,22 @@
+gateway/internal/features/envoy/routing_test.go
+  s_e36533b3721d0f::t_d2faa80629836d 45-56
+  s_e36533b3721d0f::t_a68c30595ab2f1 30-31
+gateway/internal/features/envoy/routing.go
+  s_e36533b3721d0f::t_d2faa80629836d 10,15-16,49-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "3577783c603bb1c455b4b89e3eccca45a376ba8c",
+  "prompts": {},
+  "sessions": {
+    "s_e36533b3721d0f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "2802bf4f-172e-4ef8-ad13-36c5ea47e334",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}
