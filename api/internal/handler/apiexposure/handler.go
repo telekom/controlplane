@@ -94,6 +94,10 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return err
 	}
 
+	// Resolve static ValueFrom claim sources (ProviderClientId, BasePath) into literals
+	// using the application's client id. ConsumerClientId stays symbolic for Jumper.
+	state.resolvedClaims = util.ResolveExposureClaims(apiExp, apiExpApplication.Status.ClientId)
+
 	// 2. Create proxy routes (also collects consumer failover enrichment into state)
 	if manageErr := h.manageProxyRoutes(ctx, apiExp, state); manageErr != nil {
 		return manageErr
@@ -302,6 +306,7 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 		options = append(options,
 			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
 			util.WithFailoverSecurity(apiExp.Spec.Security),
+			util.WithResolvedClaims(state.resolvedClaims),
 			util.AddTrustedIssuers(state.CrossZoneLmsIssuers(failoverZone)...),
 		)
 
@@ -390,6 +395,7 @@ func (h *ApiExposureHandler) createRealRoute(ctx context.Context, apiExp *apiapi
 	options := []util.CreateRouteOption{
 		util.WithRealmName(state.realmName),
 		util.WithProxyTarget(state.hasCrossZoneSubs),
+		util.WithResolvedClaims(state.resolvedClaims),
 	}
 
 	// The exposure zone only participates in the consumer failover pool if it has the

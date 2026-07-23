@@ -130,7 +130,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 		UpdateNewValues().
 		ID(ctx)
 	if upsertErr != nil {
-		if infrastructure.IsFKViolation(upsertErr) {
+		if infrastructure.IsFKViolation(upsertErr, "") {
 			r.evictSubscriptionCache(data)
 			return runtime.WrapDependencyMissing("api_subscription",
 				data.SubscriptionNamespace+"/"+data.SubscriptionName)
@@ -152,7 +152,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 		update = update.SetAPISubscriptionID(subID).ClearEventSubscription()
 	}
 	if err := update.Exec(ctx); err != nil {
-		if infrastructure.IsFKViolation(err) {
+		if infrastructure.IsFKViolation(err, "") {
 			r.evictSubscriptionCache(data)
 			return runtime.WrapDependencyMissing("api_subscription",
 				data.SubscriptionNamespace+"/"+data.SubscriptionName)

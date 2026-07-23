@@ -6,17 +6,16 @@ package application
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -27,7 +26,6 @@ import (
 )
 
 func HandleApplication(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
-	log := log.FromContext(ctx)
 	environment := contextutil.EnvFromContextOrDie(ctx)
 	zoneRef := types.ObjectRef{
 		Name:      owner.Spec.Zone,
@@ -42,9 +40,10 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	}
 
 	team, err := organizationv1.FindTeamForObject(ctx, owner)
-	if err != nil && apierrors.IsNotFound(err) {
-		log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-	} else if err != nil {
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrlerrors.BlockedErrorf("team not found for application %s", owner.Name)
+		}
 		return err
 	}
 

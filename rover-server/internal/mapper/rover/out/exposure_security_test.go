@@ -139,6 +139,60 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			snaps.MatchSnapshot(GinkgoT(), oauth2)
 		})
 
+		It("must map claims-only (LMS default) correctly", func() {
+			// Given
+			input := &roverv1.ApiExposure{
+				BasePath: "/test",
+				Security: &roverv1.Security{
+					M2M: &roverv1.Machine2MachineAuthentication{
+						Claims: &roverv1.Claims{
+							Aud: &roverv1.Claim{Value: "my-audience"},
+						},
+					},
+				},
+			}
+
+			output := &api.ApiExposure{}
+
+			// When
+			mapExposureSecurity(input, output)
+
+			// Then
+			Expect(output.Security).ToNot(BeZero())
+			oauth2, err := output.Security.AsOauth2()
+			Expect(err).To(BeNil())
+			Expect(oauth2.Claims.Aud.Value).To(Equal("my-audience"))
+			Expect(oauth2.Claims.Aud.ValueFrom).To(BeEmpty())
+			snaps.MatchSnapshot(GinkgoT(), oauth2)
+		})
+
+		It("must echo scopes with a symbolic claim", func() {
+			// Given
+			input := &roverv1.ApiExposure{
+				BasePath: "/test",
+				Security: &roverv1.Security{
+					M2M: &roverv1.Machine2MachineAuthentication{
+						Scopes: []string{"read"},
+						Claims: &roverv1.Claims{
+							Aud: &roverv1.Claim{ValueFrom: roverv1.ClaimValueFromProviderClientId},
+						},
+					},
+				},
+			}
+
+			output := &api.ApiExposure{}
+
+			// When
+			mapExposureSecurity(input, output)
+
+			// Then
+			oauth2, err := output.Security.AsOauth2()
+			Expect(err).To(BeNil())
+			Expect(oauth2.Scopes).To(ContainElement("read"))
+			Expect(oauth2.Claims.Aud.ValueFrom).To(Equal(api.ProviderClientId))
+			snaps.MatchSnapshot(GinkgoT(), oauth2)
+		})
+
 		It("must handle nil security", func() {
 			// Given
 			input := &roverv1.ApiExposure{

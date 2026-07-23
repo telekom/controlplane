@@ -65,6 +65,11 @@ type CreateRouteOptions struct {
 	AdditionalHostnames []string
 	// AdditionalPaths are used to add extra paths to the route's Paths list.
 	AdditionalPaths []string
+
+	// ResolvedClaims holds the exposure's M2M claims after static ValueFrom sources
+	// (ProviderClientId, BasePath) have been resolved to literals in the handler.
+	// When set, it overrides the claims mapped from the exposure's own security spec.
+	ResolvedClaims *apiapi.Claims
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
@@ -94,6 +99,14 @@ func WithFailoverUpstreams(failoverUpstreams ...apiapi.Upstream) CreateRouteOpti
 func WithFailoverZones(failoverZones []types.ObjectRef) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.FailoverZones = failoverZones
+	}
+}
+
+// WithResolvedClaims sets the exposure's M2M claims after static ValueFrom sources
+// (ProviderClientId, BasePath) have been resolved to literals in the handler.
+func WithResolvedClaims(claims *apiapi.Claims) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.ResolvedClaims = claims
 	}
 }
 
@@ -361,7 +374,7 @@ func configureAsFailoverTarget(_ context.Context, proxyRoute *gatewayapi.Route, 
 	// Add the provided security config (mostly copied from primary-route)
 	// to the failover config of the secondary route
 	if options.FailoverSecurity != nil {
-		proxyRoute.Spec.Traffic.Failover.Security = mapSecurity(options.FailoverSecurity)
+		proxyRoute.Spec.Traffic.Failover.Security = mapSecurity(options.FailoverSecurity, options.ResolvedClaims)
 	}
 
 	if options.RealmName != "" {
@@ -550,7 +563,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		route.Spec.Paths = slices.Compact(slices.Clip(route.Spec.Paths))
 
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
-		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
+		route.Spec.Security = mapSecurity(apiExposure.Spec.Security, options.ResolvedClaims)
 
 		if options.IsProxyTarget {
 			// If this Route is the target of a cross-zone proxy Route,
@@ -639,7 +652,39 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 	return routeConsumer, nil
 }
 
-func mapSecurity(apiSecurity *apiapi.Security) gatewayapi.Security {
+// ResolveExposureClaims resolves the static ValueFrom claim sources of an exposure's
+// M2M claims into literals: ProviderClientId -> the application's client id,
+// BasePath -> the exposure base path. ConsumerClientId stays symbolic for Jumper to
+// resolve per-request. A user-provided literal is copied through unchanged. Returns nil
+// when there are no M2M claims to resolve.
+func ResolveExposureClaims(apiExp *apiapi.ApiExposure, clientId string) *apiapi.Claims {
+	if apiExp.Spec.Security == nil || apiExp.Spec.Security.M2M == nil {
+		return nil
+	}
+	claims := apiExp.Spec.Security.M2M.Claims
+	if claims == nil || claims.Aud == nil {
+		return nil
+	}
+
+	aud := claims.Aud
+	resolved := &apiapi.Claim{}
+	switch {
+	case aud.Value != "":
+		resolved.Value = aud.Value
+	case aud.ValueFrom == apiapi.ClaimValueFromProviderClientId:
+		resolved.Value = clientId
+	case aud.ValueFrom == apiapi.ClaimValueFromBasePath:
+		resolved.Value = apiExp.Spec.ApiBasePath
+	case aud.ValueFrom == apiapi.ClaimValueFromConsumerClientId:
+		resolved.ValueFrom = apiapi.ClaimValueFromConsumerClientId
+	default:
+		return nil
+	}
+
+	return &apiapi.Claims{Aud: resolved}
+}
+
+func mapSecurity(apiSecurity *apiapi.Security, resolvedClaims *apiapi.Claims) gatewayapi.Security {
 	if apiSecurity == nil {
 		return gatewayapi.Security{}
 	}
@@ -657,9 +702,27 @@ func mapSecurity(apiSecurity *apiapi.Security) gatewayapi.Security {
 				Password: apiSecurity.M2M.Basic.Password,
 			}
 		}
+		claims := apiSecurity.M2M.Claims
+		if resolvedClaims != nil {
+			claims = resolvedClaims
+		}
+		security.M2M.Claims = mapClaims(claims)
 	}
 
 	return security
+}
+
+// mapClaims flattens the api Claims (currently only aud) into the gateway's flat
+// []Claim list. Value is the CP-resolved literal; ValueFrom stays symbolic.
+func mapClaims(apiClaims *apiapi.Claims) []gatewayapi.Claim {
+	if apiClaims == nil || apiClaims.Aud == nil {
+		return nil
+	}
+	return []gatewayapi.Claim{{
+		Key:       "aud",
+		Value:     apiClaims.Aud.Value,
+		ValueFrom: gatewayapi.ClaimValueFrom(apiClaims.Aud.ValueFrom),
+	}}
 }
 
 func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.ExternalIdentityProvider {

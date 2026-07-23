@@ -35,6 +35,14 @@ type BasicAuthCredentials struct {
 	Password string `json:"password"`
 }
 
+// Claim is a single token claim. Value is a CP-resolved literal; ValueFrom is a
+// runtime source (e.g. "ConsumerClientId") that Jumper resolves from the consumer-token.
+type Claim struct {
+	Key       string `json:"key"`
+	Value     string `json:"value,omitempty"`
+	ValueFrom string `json:"valueFrom,omitempty"`
+}
+
 type LoadBalancing struct {
 	Servers []LoadBalancingServer `json:"servers"`
 }
@@ -47,6 +55,7 @@ type LoadBalancingServer struct {
 type JumperConfig struct {
 	OAuth         map[ConsumerId]OauthCredentials     `json:"oauth,omitempty"`
 	BasicAuth     map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
+	Claims        map[ConsumerId][]Claim              `json:"claims,omitempty"`
 	LoadBalancing *LoadBalancing                      `json:"loadBalancing,omitempty"`
 	// Mesh indicates whether the Jumper should operate in mesh mode.
 	Mesh bool `json:"mesh,omitempty"`
@@ -56,6 +65,7 @@ func NewJumperConfig() *JumperConfig {
 	return &JumperConfig{
 		OAuth:     map[ConsumerId]OauthCredentials{},
 		BasicAuth: map[ConsumerId]BasicAuthCredentials{},
+		Claims:    map[ConsumerId][]Claim{},
 	}
 }
 

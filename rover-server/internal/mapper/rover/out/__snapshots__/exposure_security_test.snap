@@ -5,6 +5,7 @@ api.BasicAuth{Password:"testpass", Type:"basicAuth", Username:"testuser"}
 
 [Exposure Security Mapper (Out) mapExposureSecurity must map OAuth2 ExternalIDP security correctly - 1]
 api.Oauth2{
+    Claims:        api.Claims{},
     ClientId:      "client-id",
     ClientKey:     "client-key",
     ClientSecret:  "client-secret",
@@ -21,6 +22,7 @@ api.Oauth2{
 
 [Exposure Security Mapper (Out) mapExposureSecurity must map OAuth2 with username/password correctly - 1]
 api.Oauth2{
+    Claims:        api.Claims{},
     ClientId:      "",
     ClientKey:     "",
     ClientSecret:  "",
@@ -37,6 +39,7 @@ api.Oauth2{
 
 [Exposure Security Mapper (Out) mapExposureSecurity must map OAuth2 scopes correctly - 1]
 api.Oauth2{
+    Claims:        api.Claims{},
     ClientId:      "",
     ClientKey:     "",
     ClientSecret:  "",
@@ -53,6 +56,7 @@ api.Oauth2{
 
 [Exposure Security Mapper (Out) mapExposureSecurity must map combined scopes with ExternalIDP - 1]
 api.Oauth2{
+    Claims:        api.Claims{},
     ClientId:      "",
     ClientKey:     "",
     ClientSecret:  "",
@@ -61,6 +65,44 @@ api.Oauth2{
     RefreshToken:  "",
     Scopes:        {"read", "write"},
     TokenEndpoint: "https://test.com/token",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "",
+}
+---
+
+[Exposure Security Mapper (Out) mapExposureSecurity must map claims-only (LMS default) correctly - 1]
+api.Oauth2{
+    Claims: api.Claims{
+        Aud: api.Claim{Value:"my-audience", ValueFrom:""},
+    },
+    ClientId:      "",
+    ClientKey:     "",
+    ClientSecret:  "",
+    GrantType:     "",
+    Password:      "",
+    RefreshToken:  "",
+    Scopes:        nil,
+    TokenEndpoint: "",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "",
+}
+---
+
+[Exposure Security Mapper (Out) mapExposureSecurity must echo scopes with a symbolic claim - 1]
+api.Oauth2{
+    Claims: api.Claims{
+        Aud: api.Claim{Value:"", ValueFrom:"ProviderClientId"},
+    },
+    ClientId:      "",
+    ClientKey:     "",
+    ClientSecret:  "",
+    GrantType:     "",
+    Password:      "",
+    RefreshToken:  "",
+    Scopes:        {"read"},
+    TokenEndpoint: "",
     TokenRequest:  "",
     Type:          "oauth2",
     Username:      "",
