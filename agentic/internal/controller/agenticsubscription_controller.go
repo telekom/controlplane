@@ -66,22 +66,22 @@ func (r *AgenticSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error
 		Owns(&approvalv1.ApprovalRequest{}).
 		Watches(&agenticv1.AgenticExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticExposureToAgenticSubscription),
-		    builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&approvalv1.Approval{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApprovalToAgenticSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&applicationv1.Application{},
-			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToMcpSubscription),
+			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToAgenticSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&gatewayv1.Route{},
-			handler.EnqueueRequestsFromMapFunc(r.MapRouteToMcpSubscription),
+			handler.EnqueueRequestsFromMapFunc(r.MapRouteToAgenticSubscription),
 			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
 		).
 		Watches(&adminv1.Zone{},
-			handler.EnqueueRequestsFromMapFunc(r.MapZoneToMcpSubscription),
+			handler.EnqueueRequestsFromMapFunc(r.MapZoneToAgenticSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
@@ -139,8 +139,8 @@ func (r *AgenticSubscriptionReconciler) MapApprovalToAgenticSubscription(ctx con
 	return nil
 }
 
-// MapApplicationToMcpSubscription enqueues McpSubscriptions that reference the changed Application.
-func (r *McpSubscriptionReconciler) MapApplicationToMcpSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+// MapApplicationToAgenticSubscription enqueues AgenticSubscriptions that reference the changed Application.
+func (r *AgenticSubscriptionReconciler) MapApplicationToAgenticSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 
 	application, ok := obj.(*applicationv1.Application)
@@ -149,13 +149,13 @@ func (r *McpSubscriptionReconciler) MapApplicationToMcpSubscription(ctx context.
 		return nil
 	}
 
-	list := &agenticv1.McpSubscriptionList{}
+	list := &agenticv1.AgenticSubscriptionList{}
 	err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
 	}, client.InNamespace(application.Namespace))
 	if err != nil {
-		logger.Error(err, "failed to list McpSubscriptions")
+		logger.Error(err, "failed to list AgenticSubscriptions")
 		return nil
 	}
 
@@ -169,8 +169,8 @@ func (r *McpSubscriptionReconciler) MapApplicationToMcpSubscription(ctx context.
 	return reqs
 }
 
-// MapRouteToMcpSubscription enqueues McpSubscriptions when a Route they reference is deleted.
-func (r *McpSubscriptionReconciler) MapRouteToMcpSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+// MapRouteToAgenticSubscription enqueues AgenticSubscriptions when a Route they reference is deleted.
+func (r *AgenticSubscriptionReconciler) MapRouteToAgenticSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 
 	route, ok := obj.(*gatewayv1.Route)
@@ -178,18 +178,18 @@ func (r *McpSubscriptionReconciler) MapRouteToMcpSubscription(ctx context.Contex
 		return nil
 	}
 
-	basePathLabel := route.Labels[agenticv1.McpBasePathLabelKey]
+	basePathLabel := route.Labels[agenticv1.AgenticBasePathLabelKey]
 	if basePathLabel == "" {
 		return nil
 	}
 
-	list := &agenticv1.McpSubscriptionList{}
+	list := &agenticv1.AgenticSubscriptionList{}
 	err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:   route.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.McpBasePathLabelKey: basePathLabel,
+		cconfig.EnvironmentLabelKey:       route.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.AgenticBasePathLabelKey: basePathLabel,
 	})
 	if err != nil {
-		logger.Error(err, "failed to list McpSubscriptions for Route")
+		logger.Error(err, "failed to list AgenticSubscriptions for Route")
 		return nil
 	}
 
@@ -202,9 +202,9 @@ func (r *McpSubscriptionReconciler) MapRouteToMcpSubscription(ctx context.Contex
 	return reqs
 }
 
-// MapZoneToMcpSubscription enqueues McpSubscriptions that reference a changed Zone.
+// MapZoneToAgenticSubscription enqueues AgenticSubscriptions that reference a changed Zone.
 // This ensures subscriptions react to zone feature or visibility changes.
-func (r *McpSubscriptionReconciler) MapZoneToMcpSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+func (r *AgenticSubscriptionReconciler) MapZoneToAgenticSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 
 	zone, ok := obj.(*adminv1.Zone)
@@ -212,13 +212,13 @@ func (r *McpSubscriptionReconciler) MapZoneToMcpSubscription(ctx context.Context
 		return nil
 	}
 
-	list := &agenticv1.McpSubscriptionList{}
+	list := &agenticv1.AgenticSubscriptionList{}
 	err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
 	})
 	if err != nil {
-		logger.Error(err, "failed to list McpSubscriptions for Zone")
+		logger.Error(err, "failed to list AgenticSubscriptions for Zone")
 		return nil
 	}
 

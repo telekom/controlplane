@@ -693,10 +693,10 @@ func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerror
 }
 
 func (r *RoverValidator) ValidateAiExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
-	if exposure.Ai == nil {
+	if exposure.Agentic == nil {
 		return nil
 	}
-	for i, upstream := range exposure.Ai.Upstreams {
+	for i, upstream := range exposure.Agentic.Upstreams {
 		if upstream.URL == "" {
 			valErr.AddRequiredError(
 				field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("upstreams").Index(i).Child("url"),
