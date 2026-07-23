@@ -8,8 +8,6 @@ import (
 	"context"
 	"errors"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -19,6 +17,9 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Builder", func() {
@@ -148,7 +149,7 @@ var _ = Describe("Builder", func() {
 				// so a nil route causes a panic rather than returning ErrNoRoute.
 				builder := features.NewFeatureBuilder(mockKC, nil, nil, gateway)
 				Expect(func() {
-					_ = builder.Build(ctx) //nolint:errcheck
+					_ = builder.Build(ctx)
 				}).To(Panic())
 			})
 		})
@@ -390,7 +391,7 @@ var _ = Describe("Builder", func() {
 				// before the nil check, so a nil consumer causes a panic.
 				builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
 				Expect(func() {
-					_ = builder.BuildForConsumer(ctx) //nolint:errcheck
+					_ = builder.BuildForConsumer(ctx)
 				}).To(Panic())
 			})
 		})

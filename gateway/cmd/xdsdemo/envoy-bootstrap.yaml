@@ -1,13 +1,7 @@
-# Copyright 2025 Deutsche Telekom IT GmbH
-#
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
 # SPDX-License-Identifier: Apache-2.0
 
-# Minimal Envoy bootstrap for the xDS demo. The node id MUST match
-# envoy.PocNodeID ("poc-gateway-node"); the SnapshotCache keys on it.
-# Listeners + clusters are delivered dynamically over ADS from the demo server.
-node:
-  id: poc-gateway-node
-  cluster: poc-gateway-cluster
+# Node identity is supplied by each Compose service's --service-node flag.
 
 admin:
   address:
@@ -44,26 +38,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      # The operator (xDS server) runs as a compose service.
-                      address: operator
+                      address: management
                       port_value: 18000
-
-    # ext_authz target for the LMS token issuer. Static here so the
-    # operator-emitted ext_authz filter has a cluster to call. http2 = gRPC.
-    - name: lms_ext_authz
-      type: STRICT_DNS
-      connect_timeout: 1s
-      typed_extension_protocol_options:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          explicit_http_config:
-            http2_protocol_options: {}
-      load_assignment:
-        cluster_name: lms_ext_authz
-        endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: lms-issuer
-                      port_value: 9002

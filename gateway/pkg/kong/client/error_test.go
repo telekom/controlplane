@@ -30,12 +30,12 @@ func (f *fakeResponse) StatusCode() int {
 var _ = Describe("CheckStatusCode", func() {
 	It("returns nil for an OK status code", func() {
 		err := CheckStatusCode(&fakeResponse{code: 200}, 200)
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("returns nil when status matches one of multiple OK codes", func() {
 		err := CheckStatusCode(&fakeResponse{code: 204}, 200, 204, 404)
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("429 Too Many Requests", func() {
@@ -43,7 +43,7 @@ var _ = Describe("CheckStatusCode", func() {
 
 		BeforeEach(func() {
 			apiErr = CheckStatusCode(&fakeResponse{code: 429}, 200)
-			Expect(apiErr).NotTo(BeNil())
+			Expect(apiErr).To(HaveOccurred())
 		})
 
 		It("is retryable", func() {
@@ -69,7 +69,7 @@ var _ = Describe("CheckStatusCode", func() {
 
 		BeforeEach(func() {
 			apiErr = CheckStatusCode(&fakeResponse{code: 502}, 200)
-			Expect(apiErr).NotTo(BeNil())
+			Expect(apiErr).To(HaveOccurred())
 		})
 
 		It("is retryable", func() {
@@ -94,7 +94,7 @@ var _ = Describe("CheckStatusCode", func() {
 
 		BeforeEach(func() {
 			apiErr = CheckStatusCode(&fakeResponse{code: 400}, 200)
-			Expect(apiErr).NotTo(BeNil())
+			Expect(apiErr).To(HaveOccurred())
 		})
 
 		It("is not retryable", func() {

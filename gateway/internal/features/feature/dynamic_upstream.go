@@ -56,7 +56,6 @@ func (d *DynamicUpstreamFeature) IsUsed(ctx context.Context, builder features.Fe
 	}
 
 	return HasDynamicUpstream(route)
-
 }
 
 // Apply implements features.Feature.

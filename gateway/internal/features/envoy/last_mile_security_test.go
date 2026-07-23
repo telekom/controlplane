@@ -11,19 +11,17 @@ import (
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	cachev3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("buildFilters (ext_authz ordering)", func() {
-
 	Context("with LMS enabled after access control", func() {
 		It("orders jwt_authn -> rbac -> ext_authz -> router", func() {
 			filters, err := buildFilters(
@@ -72,10 +70,13 @@ var _ = Describe("buildFilters (ext_authz ordering)", func() {
 })
 
 var _ = Describe("lmsVhostPerFilterConfig", func() {
-	It("returns nil when LMS is disabled", func() {
+	It("disables ext_authz when LMS is disabled", func() {
 		m, err := lmsVhostPerFilterConfig(lmsIntent{enabled: false})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(m).To(BeNil())
+		Expect(m).To(HaveKey(filterExtAuthz))
+		perRoute := &extauthzv3.ExtAuthzPerRoute{}
+		Expect(m[filterExtAuthz].UnmarshalTo(perRoute)).To(Succeed())
+		Expect(perRoute.GetDisabled()).To(BeTrue())
 	})
 
 	It("carries realm and environment as ext_authz context_extensions", func() {

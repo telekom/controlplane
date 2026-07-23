@@ -24,16 +24,29 @@ type AdminConfig struct {
 	Url          string `json:"url"`
 }
 
+type GatewayType string
+
+const (
+	GatewayTypeEnvoy GatewayType = "envoy"
+	GatewayTypeKong  GatewayType = "kong"
+)
+
 // GatewaySpec defines the desired state of Gateway
 type GatewaySpec struct {
 	Redis *RedisConfig `json:"redis,omitempty"`
 	Admin AdminConfig  `json:"admin"`
+	// +kubebuilder:validation:Enum=kong;envoy
+	// +kubebuilder:default=kong
+	Type GatewayType `json:"type"`
 
 	Features []FeatureType `json:"features,omitempty"`
 }
 
 // GatewayStatus defines the observed state of Gateway
 type GatewayStatus struct {
+	// XDSTargetID is the immutable management-server target assigned before first publication.
+	XDSTargetID string `json:"xdsTargetId,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

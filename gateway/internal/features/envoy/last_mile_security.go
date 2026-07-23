@@ -6,6 +6,8 @@ package envoy
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -13,10 +15,6 @@ import (
 	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	upstreamsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-
-	"fmt"
-	"time"
-
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -101,11 +99,10 @@ func buildFilters(ac accessControlIntent, lms lmsIntent) ([]*hcmv3.HttpFilter, e
 	if err != nil {
 		return nil, err
 	}
-
 	if lms.enabled {
-		f, err := mkFilter(filterExtAuthz, buildExtAuthz())
-		if err != nil {
-			return nil, err
+		f, filterErr := mkFilter(filterExtAuthz, buildExtAuthz())
+		if filterErr != nil {
+			return nil, filterErr
 		}
 		filters = append(filters, f)
 	}
@@ -154,15 +151,22 @@ func buildExtAuthz() *extauthzv3.ExtAuthz {
 // for the LMS ext_authz filter, carrying the route's realm and environment as
 // context_extensions. These arrive in the gRPC Check at
 // AttributeContext.context_extensions, letting the issuer mint a realm-scoped
-// token. Returns nil when LMS is disabled (no override attached).
+// token. Disabled routes receive an explicit override because the aggregate
+// listener installs ext_authz whenever any route requires LMS.
 //
 // Citation (envoy-expert): ExtAuthzPerRoute.CheckSettings.context_extensions
 // https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-checksettings-context-extensions
 func lmsVhostPerFilterConfig(lms lmsIntent) (map[string]*anypb.Any, error) {
 	if !lms.enabled {
-		return nil, nil
+		disabled, err := anyForMessage(&extauthzv3.ExtAuthzPerRoute{
+			Override: &extauthzv3.ExtAuthzPerRoute_Disabled{Disabled: true},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("marshalling disabled lms ext_authz config: %w", err)
+		}
+		return map[string]*anypb.Any{filterExtAuthz: disabled}, nil
 	}
-	perRoute, err := anypb.New(&extauthzv3.ExtAuthzPerRoute{
+	perRoute, err := anyForMessage(&extauthzv3.ExtAuthzPerRoute{
 		Override: &extauthzv3.ExtAuthzPerRoute_CheckSettings{
 			CheckSettings: &extauthzv3.CheckSettings{
 				ContextExtensions: map[string]string{
@@ -187,7 +191,7 @@ func lmsVhostPerFilterConfig(lms lmsIntent) (map[string]*anypb.Any, error) {
 func buildLMSIssuerCluster() (*clusterv3.Cluster, error) {
 	c := buildCluster(lmsIssuerCluster, lmsIssuerHost, lmsIssuerPort)
 	// gRPC requires HTTP/2 to the upstream.
-	h2, err := anypb.New(&upstreamsv3.HttpProtocolOptions{
+	h2, err := anyForMessage(&upstreamsv3.HttpProtocolOptions{
 		UpstreamProtocolOptions: &upstreamsv3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &upstreamsv3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &upstreamsv3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{

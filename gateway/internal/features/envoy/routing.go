@@ -5,6 +5,7 @@
 package envoy
 
 import (
+	"sort"
 	"strings"
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -18,7 +19,9 @@ func routeDomains(hostnames []string) []string {
 	if len(hostnames) == 0 {
 		return []string{"*"}
 	}
-	return hostnames
+	domains := append([]string(nil), hostnames...)
+	sort.Strings(domains)
+	return domains
 }
 
 // routeEntries emits one Route per configured path prefix, all pointing at the
@@ -29,6 +32,9 @@ func routeDomains(hostnames []string) []string {
 func routeEntries(clusterName string, paths []string, upstreamPath string) []*routev3.Route {
 	if len(paths) == 0 {
 		paths = []string{"/"}
+	} else {
+		paths = append([]string(nil), paths...)
+		sort.Strings(paths)
 	}
 	rewrite := basePathRewrite(upstreamPath)
 

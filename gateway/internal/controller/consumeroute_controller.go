@@ -7,11 +7,6 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/types"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	consumeroute_handler "github.com/telekom/controlplane/gateway/internal/handler/consumeroute"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,6 +16,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	consumeroute_handler "github.com/telekom/controlplane/gateway/internal/handler/consumeroute"
 )
 
 // ConsumeRouteReconciler reconciles a ConsumeRoute object
@@ -83,7 +84,8 @@ func (r *ConsumeRouteReconciler) mapRouteToConsumeRoute(ctx context.Context, obj
 	}
 
 	requests := make([]reconcile.Request, len(list.Items))
-	for i, item := range list.Items {
+	for i := range list.Items {
+		item := &list.Items[i]
 		if item.Spec.Route.Equals(route) {
 			requests[i] = reconcile.Request{NamespacedName: client.ObjectKey{Name: item.Name, Namespace: item.Namespace}}
 		}

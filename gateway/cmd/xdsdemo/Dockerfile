@@ -1,25 +1,35 @@
-# Copyright 2025 Deutsche Telekom IT GmbH
-#
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
 # SPDX-License-Identifier: Apache-2.0
 
-# Build context is the REPO ROOT (gateway depends on sibling modules via
-# local replace directives: ../common, ../common-server, ../secret-manager).
+# Build context is the controlplane repository root because gateway uses local
+# module replacements for sibling modules.
 FROM golang:1.26 AS build
 WORKDIR /src
 
-# Copy the modules the gateway build needs (replace targets in gateway/go.mod).
 COPY common/ common/
 COPY common-server/ common-server/
 COPY secret-manager/ secret-manager/
 COPY gateway/ gateway/
 
-# CMD selects which command under gateway/cmd to build (xdsdemo | lms-issuer).
-ARG CMD=xdsdemo
 WORKDIR /src/gateway
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -o /out/app ./cmd/${CMD}
+    CGO_ENABLED=0 go build -o /out/xdsdemo ./cmd/xdsdemo && \
+    CGO_ENABLED=0 go build -o /out/xds-management-server ./cmd/xds-management-server && \
+    CGO_ENABLED=0 go build -o /out/lms-issuer ./cmd/lms-issuer
 
-FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=build /out/app /app
-ENTRYPOINT ["/app"]
+# setup-envtest is pinned, and the Kubernetes version matches gateway/Makefile.
+RUN --mount=type=cache,target=/go/pkg/mod \
+    GOBIN=/tools go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.19 && \
+    /tools/setup-envtest use 1.32.0 --bin-dir /envtest
+
+FROM debian:bookworm-slim
+RUN groupadd --system --gid 65532 nonroot && \
+    useradd --system --uid 65532 --gid nonroot --home-dir /home/nonroot --create-home nonroot && \
+    install -d -o nonroot -g nonroot -m 0750 /state /data
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /out/ /
+COPY --from=build /envtest/k8s/1.32.0-linux-amd64/ /envtest/
+COPY gateway/config/crd/bases/ /crds/
+USER nonroot:nonroot
+ENTRYPOINT ["/xdsdemo"]

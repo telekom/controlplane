@@ -47,8 +47,13 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 	$(CONTROLLER_GEN) rbac:roleName=manager-role,headerFile="../hack/boilerplate.yaml.txt" crd:headerFile="../hack/boilerplate.yaml.txt" paths="./..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: controller-gen generate-xds-api ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="../hack/boilerplate.go.txt" paths="./..."
+
+.PHONY: generate-xds-api
+generate-xds-api: buf protoc-gen-go protoc-gen-go-grpc addlicense ## Generate the internal xDS publication API.
+	cd internal/xds/api && PATH="$(LOCALBIN):$$PATH" $(BUF) generate
+	$(ADDLICENSE) -c "Deutsche Telekom AG" -y 2026 internal/xds/api/v1/*.pb.go
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -64,8 +69,24 @@ TEST_PACKAGES = ./internal/... ./pkg/kong/client/...
 COVER_PACKAGES = ./internal/controller/...,./internal/features,./internal/features/feature,./internal/features/feature/config,./internal/handler/...,./pkg/kong/client,./pkg/kong/client/plugin
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" gotestsum --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
+test: manifests generate fmt vet envtest gotestsum ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" $(GOTESTSUM) --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
+
+.PHONY: test-xds
+test-xds: generate-xds-api gotestsum ## Run focused xDS management tests.
+	go fmt ./internal/xds/... ./cmd/xds-management-server/...
+	go vet ./internal/xds/... ./cmd/xds-management-server/...
+	$(GOTESTSUM) --format pkgname -- ./internal/xds/... ./cmd/xds-management-server/... -race
+
+.PHONY: test-xdsdemo
+test-xdsdemo: gotestsum ## Run focused durable xDS demo tests.
+	go fmt ./cmd/xdsdemo/...
+	go vet ./cmd/xdsdemo/...
+	$(GOTESTSUM) --format pkgname -- ./cmd/xdsdemo/... -race
+
+.PHONY: tidy
+tidy: ## Update module metadata.
+	go mod tidy
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.
@@ -80,11 +101,39 @@ lint: golangci-lint ## Run golangci-lint linter
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 	$(GOLANGCI_LINT) run --fix
 
+.PHONY: lint-xds
+lint-xds: golangci-lint ## Run golangci-lint for the xDS management implementation.
+	$(GOLANGCI_LINT) run ./internal/xds/... ./cmd/xds-management-server/...
+
 ##@ Build
 
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
+
+.PHONY: build-xds-management-server
+build-xds-management-server: generate-xds-api ## Build the xDS management server.
+	go fmt ./internal/xds/... ./cmd/xds-management-server/...
+	go vet ./internal/xds/... ./cmd/xds-management-server/...
+	CGO_ENABLED=0 go build -o bin/xds-management-server ./cmd/xds-management-server
+
+.PHONY: build-xdsdemo
+build-xdsdemo: ## Build the envtest-backed durable xDS demo command.
+	go fmt ./cmd/xdsdemo/...
+	go vet ./cmd/xdsdemo/...
+	CGO_ENABLED=0 go build -o bin/xdsdemo ./cmd/xdsdemo
+
+.PHONY: xdsdemo-compose-config
+xdsdemo-compose-config: ## Validate the durable xDS demo Compose model.
+	docker compose -f cmd/xdsdemo/docker-compose.yaml config --quiet
+
+.PHONY: xdsdemo-up
+xdsdemo-up: ## Build and start the durable xDS demo.
+	docker compose -f cmd/xdsdemo/docker-compose.yaml up -d --build
+
+.PHONY: xdsdemo-validate
+xdsdemo-validate: ## Run the durable xDS demo validation pipeline.
+	bash cmd/xdsdemo/scripts/validate.sh
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -134,12 +183,22 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
+BUF ?= $(LOCALBIN)/buf
+PROTOC_GEN_GO ?= $(LOCALBIN)/protoc-gen-go
+PROTOC_GEN_GO_GRPC ?= $(LOCALBIN)/protoc-gen-go-grpc
+ADDLICENSE ?= $(LOCALBIN)/addlicense
+GOTESTSUM ?= $(LOCALBIN)/gotestsum
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.20.1
 ENVTEST_VERSION ?= release-0.19
 GOLANGCI_LINT_VERSION ?= v2.11.2
+BUF_VERSION ?= v1.50.1
+PROTOC_GEN_GO_VERSION ?= v1.36.11
+PROTOC_GEN_GO_GRPC_VERSION ?= v1.6.1
+ADDLICENSE_VERSION ?= v1.1.1
+GOTESTSUM_VERSION ?= v1.12.3
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
@@ -159,7 +218,32 @@ $(ENVTEST): $(LOCALBIN)
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+
+.PHONY: buf
+buf: $(BUF)
+$(BUF): $(LOCALBIN)
+	$(call go-install-tool,$(BUF),github.com/bufbuild/buf/cmd/buf,$(BUF_VERSION))
+
+.PHONY: protoc-gen-go
+protoc-gen-go: $(PROTOC_GEN_GO)
+$(PROTOC_GEN_GO): $(LOCALBIN)
+	$(call go-install-tool,$(PROTOC_GEN_GO),google.golang.org/protobuf/cmd/protoc-gen-go,$(PROTOC_GEN_GO_VERSION))
+
+.PHONY: protoc-gen-go-grpc
+protoc-gen-go-grpc: $(PROTOC_GEN_GO_GRPC)
+$(PROTOC_GEN_GO_GRPC): $(LOCALBIN)
+	$(call go-install-tool,$(PROTOC_GEN_GO_GRPC),google.golang.org/grpc/cmd/protoc-gen-go-grpc,$(PROTOC_GEN_GO_GRPC_VERSION))
+
+.PHONY: addlicense
+addlicense: $(ADDLICENSE)
+$(ADDLICENSE): $(LOCALBIN)
+	$(call go-install-tool,$(ADDLICENSE),github.com/google/addlicense,$(ADDLICENSE_VERSION))
+
+.PHONY: gotestsum
+gotestsum: $(GOTESTSUM)
+$(GOTESTSUM): $(LOCALBIN)
+	$(call go-install-tool,$(GOTESTSUM),gotest.tools/gotestsum,$(GOTESTSUM_VERSION))
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary

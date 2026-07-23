@@ -9,5 +9,4 @@ import (
 )
 
 var _ = Describe("KongAdminAPI testing", Ordered, func() {
-
 })

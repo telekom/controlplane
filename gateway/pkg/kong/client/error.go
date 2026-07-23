@@ -13,8 +13,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/telekom/controlplane/common-server/pkg/client"
 	"golang.org/x/oauth2"
+
+	"github.com/telekom/controlplane/common-server/pkg/client"
 )
 
 type ApiResponse interface {
@@ -171,7 +172,7 @@ func HandleClientError(err error) error {
 		return nil
 	}
 
-	if _, ok := errors.AsType[*apiError](err); ok {
+	if _, ok := errors.AsType[*apiError](err); ok { //nolint:errcheck // Only the type match is needed.
 		return err
 	}
 

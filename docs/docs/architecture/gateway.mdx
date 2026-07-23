@@ -4,7 +4,7 @@ sidebar_position: 9
 
 # Gateway Domain
 
-The Gateway domain configures the API Gateway at runtime. It manages routes, consumers, and their access relationships. While the architecture is designed to be gateway-agnostic, the current implementation uses Kong as the underlying gateway technology.
+The Gateway domain configures the API Gateway at runtime. It manages routes, consumers, and their access relationships. `Gateway.spec.type` selects the backend: `kong` is the default, while `envoy` enables the experimental durable xDS path.
 
 ## Custom Resources
 
@@ -13,6 +13,29 @@ The Gateway domain configures the API Gateway at runtime. It manages routes, con
 ## Feature Architecture
 
 The Gateway operator uses a plugin-based feature system for configuring route behavior. Each feature is implemented as a separate plugin that can be enabled or disabled per route, allowing fine-grained control over how requests are processed.
+
+### Durable xDS POC
+
+For an Envoy Gateway, the operator watches the Gateway and its Route, Consumer, and ConsumeRoute aggregate. It deterministically compiles one complete LDS/RDS/CDS/EDS bundle and publishes it to a separate management server. The management server never reads Gateway CRDs; it owns bundle validation, SQLite persistence, activation, SotW ADS, and per-node ACK/NACK observations.
+
+```mermaid
+flowchart LR
+    CRD["Gateway aggregate"] --> Compiler["Gateway operator<br/>xDS compiler"]
+    Compiler -->|"PublishBundle gRPC"| Server["xDS management server"]
+    Server <--> DB[("SQLite WAL")]
+    Server -->|"SotW ADS"| Envoy["Envoy nodes"]
+    Envoy -.->|"ACK / NACK"| Server
+```
+
+The target key contains environment, Gateway namespace, name, and UID. The UID prevents a recreated same-name Gateway from receiving an older incarnation's configuration. Node-to-target mappings are static process configuration in the POC and are loaded when the management server starts.
+
+SQLite stores canonical immutable protobuf envelopes, one atomic active pointer per target, a bounded history of ten generations by default, and the latest delivery observation per node and resource type. The file uses WAL mode, `0600` permissions, and one database connection; this is a single-writer POC, not an HA design. Startup verifies every active digest and restores the in-memory snapshot cache before readiness succeeds. The POC accepts only its current schema version and fails startup on legacy schemas rather than performing a lossy migration that could forget pruned digest history.
+
+Publication succeeds after durable persistence and cache activation. It does not wait for Envoy. `XDSProgrammed` distinguishes compilation/publication failure from persisted and activated outcomes; convergence is queried separately and means all currently connected mapped nodes ACKed LDS, RDS, CDS, and EDS for the active generation. A NACK is recorded without automatic rollback.
+
+The POC transport is plaintext gRPC and trusts configured node IDs. Production requires authenticated publication and ADS transport plus an authorization model. Gateway API, SDS/secrets, Delta xDS, PostgreSQL, active-active management-server HA, custom processing extensions, and full Kong feature parity remain out of scope.
+
+The local end-to-end harness is documented in `gateway/cmd/xdsdemo/README.md`. It validates route lifecycle, rejection, idempotency, two-node convergence, SQLite restoration, and Envoy recovery while the operator is unavailable.
 
 ### Audience Claim Resolution
 

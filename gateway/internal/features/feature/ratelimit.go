@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
@@ -61,7 +62,7 @@ func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.Features
 	return HasRateLimit(route) || anyConsumerHasRateLimiting
 }
 
-func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
+func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) error {
 	route, ok := builder.GetRoute()
 	if !ok {
 		return features.ErrNoRoute
@@ -71,7 +72,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 		// If this is a primary-route, we need to apply the rate-limiting plugin for the provider-side
 
 		rateLimitPlugin := builder.RateLimitPluginRoute()
-		if err = setCommonConfigs(ctx, rateLimitPlugin, builder.GetGateway()); err != nil {
+		if err := setCommonConfigs(ctx, rateLimitPlugin, builder.GetGateway()); err != nil {
 			return err
 		}
 		rateLimitPlugin.Config.Limits = plugin.Limits{
@@ -81,7 +82,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 				Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
 			},
 		}
-		rateLimitPlugin = setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
+		setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
 	}
 
 	for _, allowedConsumer := range builder.GetAllowedConsumers() {
@@ -94,7 +95,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 		if allowedConsumer.HasTrafficRateLimit() {
 			// If the consumer has a rate-limiting configuration, we need to apply the rate-limiting plugin for the consumer-side
 			rateLimitPlugin := builder.RateLimitPluginConsumeRoute(allowedConsumer)
-			if err = setCommonConfigs(ctx, rateLimitPlugin, builder.GetGateway()); err != nil {
+			if err := setCommonConfigs(ctx, rateLimitPlugin, builder.GetGateway()); err != nil {
 				return err
 			}
 
@@ -113,11 +114,11 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 					Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
 				}
 
-				rateLimitPlugin = setOptions(rateLimitPlugin,
+				setOptions(rateLimitPlugin,
 					&route.Spec.Traffic.RateLimit.Options,
 				)
 			} else if HasRateLimit(route) {
-				rateLimitPlugin = setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
+				setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
 			}
 		}
 	}
@@ -146,7 +147,7 @@ func setCommonConfigs(ctx context.Context, rateLimitPlugin *plugin.RateLimitPlug
 
 // setOptions applies additional options to the rate limit plugin configuration.
 // Options should be in order of precedence, with the last one having the highest priority.
-func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options ...*gatewayv1.RateLimitOptions) *plugin.RateLimitPlugin {
+func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options ...*gatewayv1.RateLimitOptions) {
 	for _, option := range options {
 		if option == nil {
 			continue
@@ -154,5 +155,4 @@ func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options ...*gatewayv1.R
 		rateLimitPlugin.Config.HideClientHeaders = option.HideClientHeaders
 		rateLimitPlugin.Config.FaultTolerant = option.FaultTolerant
 	}
-	return rateLimitPlugin
 }

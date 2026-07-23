@@ -6,6 +6,7 @@ package plugin
 
 import (
 	"github.com/emirpasic/gods/sets/hashset"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 )
@@ -30,7 +31,6 @@ func (c *IpRestrictionPluginConfig) AddDeny(deny string) {
 type IpRestrictionPlugin struct {
 	Id       string                    `json:"id,omitempty"`
 	Config   IpRestrictionPluginConfig `json:"config,omitempty"`
-	route    *gatewayv1.Route
 	consumer *gatewayv1.Consumer
 }
 

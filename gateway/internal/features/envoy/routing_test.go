@@ -32,7 +32,7 @@ var _ = Describe("routeEntries", func() {
 	It("emits one route per path prefix, all to the same cluster (RT-01)", func() {
 		routes := routeEntries("cluster-x", []string{"/api", "/v2"}, "")
 		Expect(routes).To(HaveLen(2))
-		prefixes := []string{}
+		prefixes := make([]string, 0, len(routes))
 		for _, r := range routes {
 			prefixes = append(prefixes, r.GetMatch().GetPrefix())
 			Expect(r.GetRoute().GetCluster()).To(Equal("cluster-x"))
@@ -45,7 +45,7 @@ var _ = Describe("routeEntries", func() {
 		rw := routes[0].GetRoute().GetRegexRewrite()
 		Expect(rw).NotTo(BeNil())
 		Expect(rw.GetPattern().GetRegex()).To(Equal("^/"))
-		Expect(rw.GetPattern().GetGoogleRe2()).NotTo(BeNil())
+		Expect(rw.GetPattern().GetGoogleRe2()).NotTo(BeNil()) //nolint:staticcheck // Verifies the emitted legacy RE2 marker.
 		Expect(rw.GetSubstitution()).To(Equal("/backend/"))
 	})
 

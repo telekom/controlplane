@@ -109,7 +109,7 @@ func main() {
 		log.Fatalf("generating stub key: %v", err)
 	}
 
-	lis, err := net.Listen("tcp", listenAddr)
+	lis, err := net.Listen("tcp", listenAddr) //nolint:gosec // The containerized PoC must accept external connections.
 	if err != nil {
 		log.Fatalf("listen %s: %v", listenAddr, err)
 	}

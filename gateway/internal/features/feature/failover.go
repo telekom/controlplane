@@ -94,8 +94,8 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 		if hasLoadbalancing {
 			routingCfg.LoadBalancing = mapFailoverTargetsToLoadBalancingServers(failover.Targets)
 		} else {
-			routingCfg.RemoteApiUrl = failover.Targets[0].Upstream.Url()
-			routingCfg.ApiBasePath = failover.Targets[0].Upstream.Path
+			routingCfg.RemoteApiUrl = failover.Targets[0].Url()
+			routingCfg.ApiBasePath = failover.Targets[0].Path
 		}
 
 		// Because (per default) the ExternalIDP feature will set this header, we need to remove it here
@@ -112,8 +112,8 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 			routingCfg := &plugin.RoutingConfig{
 				Realm:          failoverRealm,
 				Environment:    envName,
-				RemoteApiUrl:   target.Upstream.Url(),
-				ApiBasePath:    target.Upstream.Path,
+				RemoteApiUrl:   target.Url(),
+				ApiBasePath:    target.Path,
 				TargetZoneName: target.ZoneName,
 				JumperConfig:   nil,  // JumperConfig is not needed for the failover target routing config
 				Mesh:           true, // proxy to upstream

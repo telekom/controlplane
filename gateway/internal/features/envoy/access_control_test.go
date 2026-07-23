@@ -14,15 +14,14 @@ import (
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	cachev3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // filterByName finds an HTTP filter by its canonical name.
@@ -44,7 +43,6 @@ func pathKeys(md *matcherv3.MetadataMatcher) []string {
 }
 
 var _ = Describe("buildAccessControlFilters", func() {
-
 	Context("with trusted issuers and a consumer allow-list", func() {
 		It("emits jwt_authn and rbac in order (router added by buildFilters)", func() {
 			filters, err := buildAccessControlFilters(accessControlIntent{
@@ -68,7 +66,7 @@ var _ = Describe("buildAccessControlFilters", func() {
 			Expect(filterByName(filters, filterJwtAuthn).GetTypedConfig().UnmarshalTo(jwt)).To(Succeed())
 
 			Expect(jwt.GetProviders()).To(HaveLen(2))
-			issuers := []string{}
+			issuers := make([]string, 0, len(jwt.GetProviders()))
 			for _, p := range jwt.GetProviders() {
 				issuers = append(issuers, p.GetIssuer())
 				Expect(p.GetPayloadInMetadata()).To(Equal(jwtPayloadMetadataKey))
@@ -98,9 +96,9 @@ var _ = Describe("buildAccessControlFilters", func() {
 			Expect(policy).NotTo(BeNil())
 			Expect(policy.GetPrincipals()).To(HaveLen(2))
 
-			matched := []string{}
+			matched := make([]string, 0, len(policy.GetPrincipals()))
 			for _, pr := range policy.GetPrincipals() {
-				md := pr.GetMetadata()
+				md := pr.GetMetadata() //nolint:staticcheck // Envoy still exposes metadata principals for this filter.
 				Expect(md.GetFilter()).To(Equal(filterJwtAuthn))
 				Expect(pathKeys(md)).To(Equal([]string{jwtPayloadMetadataKey, consumerMatchClaim}))
 				matched = append(matched, md.GetValue().GetStringMatch().GetExact())
@@ -239,6 +237,8 @@ var _ = Describe("Builder.Build", func() {
 		// SetSnapshotFor already asserts Consistent() before publishing; confirm
 		// the published snapshot carries the expected resource kinds.
 		Expect(snap.GetResources(resource.ListenerType)).To(HaveLen(1))
+		Expect(snap.GetResources(resource.RouteType)).To(HaveLen(1))
+		Expect(snap.GetResources(resource.EndpointType)).To(HaveLen(1))
 		// upstream cluster + one jwks cluster for the issuer host.
 		Expect(snap.GetResources(resource.ClusterType)).To(HaveLen(2))
 		Expect(snap.GetResources(resource.ClusterType)).To(HaveKey(jwksClusterName("iss-a")))

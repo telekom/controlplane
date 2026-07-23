@@ -6,26 +6,31 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/client"
+	"k8s.io/apimachinery/pkg/api/meta"
+
+	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
-	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 func GetGatewayByRef(ctx context.Context, ref types.ObjectRef, resolveSecrets bool) (bool, *gatewayv1.Gateway, error) {
-	client := client.ClientFromContextOrDie(ctx)
+	kubeClient := cc.ClientFromContextOrDie(ctx)
 
 	gateway := &gatewayv1.Gateway{}
-	err := client.Get(ctx, ref.K8s(), gateway)
+	err := kubeClient.Get(ctx, ref.K8s(), gateway)
 	if err != nil {
 		return false, nil, errors.Wrapf(err, "failed to get gateway %s", ref.String())
 	}
+	if ref.UID != "" && ref.UID != gateway.UID {
+		return false, nil, fmt.Errorf("gateway %s UID does not match reference", ref.String())
+	}
 	if !meta.IsStatusConditionTrue(gateway.GetConditions(), condition.ConditionTypeReady) {
-		return false, nil, nil
+		return false, gateway, nil
 	}
 
 	if resolveSecrets {

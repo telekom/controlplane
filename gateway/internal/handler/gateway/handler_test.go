@@ -7,18 +7,18 @@ package gateway_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	gwhandler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("GatewayHandler", func() {
-
 	Describe("CreateOrUpdate()", func() {
 		It("sets DoneProcessing and Ready conditions", func() {
 			handler := &gwhandler.GatewayHandler{}

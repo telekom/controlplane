@@ -9,9 +9,8 @@ import (
 	"errors"
 	"net/http"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -19,11 +18,12 @@ import (
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("CircuitBreakerFeature", func() {
-
 	var (
 		ctx     context.Context
 		f       *feature.CircuitBreakerFeature

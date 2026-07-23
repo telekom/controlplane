@@ -75,7 +75,9 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	if !ok {
 		logger.V(0).Info("Environment label is missing")
 		c.Event(ctx, object, "Warning", "Processing", "Environment label is missing")
-		if object.SetCondition(condition.NewBlockedCondition("Environment label is missing")) {
+		processingChanged := object.SetCondition(condition.NewBlockedCondition("Environment label is missing"))
+		readyChanged := object.SetCondition(condition.NewNotReadyCondition("EnvironmentMissing", "Environment label is missing"))
+		if processingChanged || readyChanged {
 			StampObservedGeneration(object)
 			if updateErr := c.Client.Status().Update(ctx, object); updateErr != nil {
 				return HandleError(ctx, updateErr, object, c.Recorder), nil
@@ -112,7 +114,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 
 	// Success
 
-	logger.V(1).Info("Created or updated", "resource", object)
+	logger.V(1).Info("Created or updated")
 	// Enforce that at least the ready condition is set in the handler. If not, log a warning.
 	if meta.IsStatusConditionPresentAndEqual(object.GetConditions(), condition.ConditionTypeReady, metav1.ConditionUnknown) {
 		c.Event(ctx, object, "Warning", "UnknownReady", "Resource has an unknown ready status")
@@ -159,7 +161,7 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 		}
 	}
 
-	logger.V(1).Info("Deleted", "resource", object)
+	logger.V(1).Info("Deleted")
 	return reconcile.Result{}, nil
 }
 
@@ -189,7 +191,7 @@ func GetEnvironment(object metav1.Object) (string, bool) {
 		return "", false
 	}
 	e, ok := labels[config.EnvironmentLabelKey]
-	return e, ok
+	return e, ok && e != ""
 }
 
 func FirstSetup(ctx context.Context, c client.Client, object common_types.Object) (bool, error) {

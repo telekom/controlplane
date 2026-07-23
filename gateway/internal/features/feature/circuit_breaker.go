@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -101,7 +102,7 @@ func handleDeletion(ctx context.Context, builder features.FeaturesBuilder, route
 
 func isDeleteScenario(route *gatewayv1.Route) bool {
 	// completely removed or turned to false
-	if (route.Spec.Traffic.CircuitBreaker != nil && route.Spec.Traffic.CircuitBreaker.Enabled == false) && route.GetUpstreamId() != "" {
+	if (route.Spec.Traffic.CircuitBreaker != nil && !route.Spec.Traffic.CircuitBreaker.Enabled) && route.GetUpstreamId() != "" {
 		return true
 	} else {
 		return false

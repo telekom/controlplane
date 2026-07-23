@@ -1,58 +1,110 @@
-# Copyright 2025 Deutsche Telekom IT GmbH
-#
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
 # SPDX-License-Identifier: Apache-2.0
 
-# Full local stack for validating the Envoy AccessControl feature:
-#   operator  - the xDS server (our "operator"), builds + serves the snapshot
-#   envoy      - real Envoy, pulls config from operator over ADS
-#   upstream   - dummy backend Envoy proxies to
-#
-#   docker compose up -d --build      # (re)build the operator and start all
-#   ../../scripts/validate.sh          # run the validation pipeline (host)
 services:
   operator:
     build:
-      # Build context is the repo root (see Dockerfile: sibling module deps).
       context: ../../..
       dockerfile: gateway/cmd/xdsdemo/Dockerfile
-    # The allowed consumer must equal the token's azp claim, which is the
-    # client id. Sourced from .env (CLIENT_ID) so it stays the single source
-    # of truth for both the operator allow-list and the validate script.
+    command:
+      - operator
+      - -management-address=management:18000
+      - -target-file=/state/target-id
     environment:
-      - CONSUMERS=${CLIENT_ID}
+      NO_PROXY: management
+      no_proxy: management
+    volumes:
+      - target-state:/state
     ports:
-      - "18000:18000" # ADS (exposed so the host validate script can inspect)
+      - "${CONTROL_PORT:-18081}:18081"
+    healthcheck:
+      test: ["CMD", "/xdsdemo", "health", "http://127.0.0.1:18081/targetz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
 
-  envoy:
+  management:
+    build:
+      context: ../../..
+      dockerfile: gateway/cmd/xdsdemo/Dockerfile
+    command:
+      - management
+      - -target-file=/state/target-id
+      - --
+      - -database=/data/xds.db
+      - -grpc-address=:18000
+      - -health-address=:8080
+    volumes:
+      - target-state:/state:ro
+      - xds-data:/data
+    ports:
+      - "${MANAGEMENT_GRPC_PORT:-18000}:18000"
+      - "${MANAGEMENT_HEALTH_PORT:-18080}:8080"
+    depends_on:
+      operator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/xdsdemo", "health", "http://127.0.0.1:8080/readyz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  envoy-a:
     image: envoyproxy/envoy:v1.37-latest
-    command: ["-c", "/etc/envoy/envoy-bootstrap.yaml", "--service-node", "poc-gateway-node"]
+    command: ["-c", "/etc/envoy/envoy-bootstrap.yaml", "--service-node", "demo-envoy-a", "--service-cluster", "xdsdemo"]
     volumes:
       - ./envoy-bootstrap.yaml:/etc/envoy/envoy-bootstrap.yaml:ro
     ports:
-      - "10000:10000" # proxy listener (from the emitted xDS listener)
-      - "9901:9901"   # envoy admin
+      - "${ENVOY_A_PORT:-10000}:10000"
+      - "${ENVOY_A_ADMIN_PORT:-9901}:9901"
     depends_on:
-      - operator
-      - upstream
-      - lms-issuer
+      management:
+        condition: service_healthy
+      upstream:
+        condition: service_started
+      lms-issuer:
+        condition: service_started
 
-  # LMS token issuer (Envoy ext_authz gRPC PoC). Envoy calls it per request via
-  # the ext_authz filter (emitted by the operator over ADS); it mints an LMS JWT
-  # and returns it as the Authorization header. See ../lms-issuer/main.go.
+  envoy-b:
+    image: envoyproxy/envoy:v1.37-latest
+    command: ["-c", "/etc/envoy/envoy-bootstrap.yaml", "--service-node", "demo-envoy-b", "--service-cluster", "xdsdemo"]
+    volumes:
+      - ./envoy-bootstrap.yaml:/etc/envoy/envoy-bootstrap.yaml:ro
+    ports:
+      - "${ENVOY_B_PORT:-10001}:10000"
+      - "${ENVOY_B_ADMIN_PORT:-9902}:9901"
+    depends_on:
+      management:
+        condition: service_healthy
+      upstream:
+        condition: service_started
+      lms-issuer:
+        condition: service_started
+
   lms-issuer:
     build:
       context: ../../..
       dockerfile: gateway/cmd/xdsdemo/Dockerfile
-      args:
-        CMD: lms-issuer
+    entrypoint: ["/lms-issuer"]
     expose:
-      - "9002" # ext_authz gRPC (matches lms_ext_authz cluster in bootstrap)
+      - "9002"
 
-  # Dummy upstream. The operator's default -upstream is http://upstream:80, so
-  # the emitted cluster resolves to this service.
   upstream:
     image: mccutchen/go-httpbin:latest
+    networks:
+      default:
+        ipv4_address: 172.30.0.10
     expose:
       - "80"
     environment:
       - PORT=80
+
+volumes:
+  target-state:
+  xds-data:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

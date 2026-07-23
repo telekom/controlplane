@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
@@ -110,7 +111,8 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 }
 
 func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, client *gatewayv1.OAuth2ClientCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string) error {
-	oauth, err := extendOauth(ctx, jumperConfig.OAuth[key], providerSettings, client, scopes)
+	oauth := jumperConfig.OAuth[key]
+	err := extendOauth(ctx, &oauth, providerSettings, client, scopes)
 	if err != nil {
 		return err
 	}
@@ -119,7 +121,7 @@ func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin
 	return nil
 }
 
-func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, scopes []string) (plugin.OauthCredentials, error) {
+func extendOauth(ctx context.Context, in *plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, scopes []string) error {
 	var err error
 
 	in.ClientId = client.ClientId
@@ -130,7 +132,7 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	if clientKey != "" {
 		clientKey, err = secretManagerApi.Get(ctx, clientKey)
 		if err != nil {
-			return in, err
+			return err
 		}
 
 		in.ClientKey = clientKey
@@ -138,7 +140,7 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	} else if secret != "" {
 		secret, err = secretManagerApi.Get(ctx, secret)
 		if err != nil {
-			return in, err
+			return err
 		}
 
 		in.ClientSecret = secret
@@ -147,7 +149,7 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	if refreshToken != "" {
 		refreshToken, err = secretManagerApi.Get(ctx, refreshToken)
 		if err != nil {
-			return in, err
+			return err
 		}
 
 		in.RefreshToken = refreshToken
@@ -159,16 +161,17 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 
 	tokenRequest, err := tokenRequestToJumper(providerSettings.TokenRequest)
 	if err != nil {
-		return in, err
+		return err
 	}
 	in.TokenRequest = tokenRequest
 	in.GrantType = string(providerSettings.GrantType)
 
-	return in, nil
+	return nil
 }
 
 func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, basic *gatewayv1.BasicAuthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string) error {
-	basicAuth, err := extendBasic(ctx, jumperConfig.OAuth[key], providerSettings, basic, scopes)
+	basicAuth := jumperConfig.OAuth[key]
+	err := extendBasic(ctx, &basicAuth, providerSettings, basic, scopes)
 	if err != nil {
 		return err
 	}
@@ -176,7 +179,7 @@ func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin
 	return nil
 }
 
-func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, basic *gatewayv1.BasicAuthCredentials, scopes []string) (plugin.OauthCredentials, error) {
+func extendBasic(ctx context.Context, in *plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, basic *gatewayv1.BasicAuthCredentials, scopes []string) error {
 	var err error
 
 	in.Username = basic.Username
@@ -184,7 +187,7 @@ func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	if password != "" {
 		password, err = secretManagerApi.Get(ctx, password)
 		if err != nil {
-			return in, err
+			return err
 		}
 	}
 
@@ -195,7 +198,7 @@ func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	in.Password = password
 	in.GrantType = string(providerSettings.GrantType)
 
-	return in, nil
+	return nil
 }
 
 // tokenRequestToJumper converts CRD tokenRequest values to the values expected by the Jumper plugin.

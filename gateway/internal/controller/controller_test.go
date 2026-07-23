@@ -6,21 +6,24 @@ package controller
 
 import (
 	"context"
+	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features/envoy"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Controller Integration", Ordered, func() {
-
 	const (
 		gatewayName = "smoke-gateway"
 		namespace   = testEnvironment
@@ -193,4 +196,199 @@ var _ = Describe("Controller Integration", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 	})
+
+	Describe("Gateway aggregate compilation", func() {
+		const envoyGatewayName = "envoy-gateway"
+
+		var (
+			envoyGateway *gatewayv1.Gateway
+			route        *gatewayv1.Route
+			consumer     *gatewayv1.Consumer
+		)
+
+		BeforeEach(func() {
+			publicationActive.Store(true)
+			for len(compiledBundles) > 0 {
+				<-compiledBundles
+			}
+			envoyGateway = newGateway(envoyGatewayName, namespace)
+			envoyGateway.Spec.Type = gatewayv1.GatewayTypeEnvoy
+			Expect(k8sClient.Create(ctx, envoyGateway)).To(Succeed())
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(envoyGateway), envoyGateway)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(meta.IsStatusConditionTrue(envoyGateway.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+
+			route = &gatewayv1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "aggregate-route", Namespace: namespace,
+					Labels: map[string]string{config.EnvironmentLabelKey: testEnvironment},
+				},
+				Spec: gatewayv1.RouteSpec{
+					GatewayRef: types.ObjectRef{Name: envoyGatewayName, Namespace: namespace},
+					Type:       gatewayv1.RouteTypePrimary,
+					Paths:      []string{"/created"},
+					Backend: gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{{
+						Scheme: "http", Hostname: "aggregate.internal", Port: 8080,
+					}}},
+				},
+			}
+		})
+
+		AfterEach(func() {
+			if consumer != nil {
+				_ = k8sClient.Delete(ctx, consumer)
+				Eventually(func() bool {
+					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(consumer), &gatewayv1.Consumer{})
+					return errors.IsNotFound(err)
+				}, timeout, interval).Should(BeTrue())
+			}
+			_ = k8sClient.Delete(ctx, route)
+			_ = k8sClient.Delete(ctx, envoyGateway)
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(envoyGateway), &gatewayv1.Gateway{})
+				return errors.IsNotFound(err)
+			}, timeout, interval).Should(BeTrue())
+		})
+
+		It("recompiles complete bundles for create, update, and deletion omission", func() {
+			Expect(k8sClient.Create(ctx, route)).To(Succeed())
+			Eventually(compiledBundles, timeout, interval).Should(Receive(Satisfy(func(bundle envoy.ResourceBundle) bool {
+				return bundleHasPath(&bundle, "/created")
+			})))
+
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
+			route.Spec.Paths = []string{"/updated"}
+			Expect(k8sClient.Update(ctx, route)).To(Succeed())
+			Eventually(compiledBundles, timeout, interval).Should(Receive(Satisfy(func(bundle envoy.ResourceBundle) bool {
+				return bundleHasPath(&bundle, "/updated")
+			})))
+
+			Expect(k8sClient.Delete(ctx, route)).To(Succeed())
+			Eventually(compiledBundles, timeout, interval).Should(Receive(Satisfy(func(bundle envoy.ResourceBundle) bool {
+				return !bundleHasRoute(&bundle, "test/aggregate-route")
+			})))
+		})
+
+		It("rejects environment changes while preserving the active xDS target", func() {
+			Expect(k8sClient.Create(ctx, route)).To(Succeed())
+			Eventually(compiledBundles, timeout, interval).Should(Receive(Satisfy(func(bundle envoy.ResourceBundle) bool {
+				return bundleHasPath(&bundle, "/created")
+			})))
+			for len(compiledBundles) > 0 {
+				<-compiledBundles
+			}
+
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(envoyGateway), envoyGateway)).To(Succeed())
+			envoyGateway.Labels[config.EnvironmentLabelKey] = "test-migrated"
+			Expect(k8sClient.Update(ctx, envoyGateway)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(envoyGateway), envoyGateway)).To(Succeed())
+				condition := meta.FindStatusCondition(envoyGateway.Status.Conditions, conditionTypeXDSProgrammed)
+				g.Expect(condition).NotTo(BeNil())
+				g.Expect(condition.Reason).To(Equal("XDSTargetImmutable"))
+			}, timeout, interval).Should(Succeed())
+			Consistently(compiledBundles, time.Second, interval).ShouldNot(Receive())
+		})
+
+		It("does not mark a superseded publication as programmed", func() {
+			Expect(k8sClient.Create(ctx, route)).To(Succeed())
+			Eventually(compiledBundles, timeout, interval).Should(Receive(Satisfy(func(bundle envoy.ResourceBundle) bool {
+				return bundleHasPath(&bundle, "/created")
+			})))
+			publicationActive.Store(false)
+
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
+			route.Spec.Paths = []string{"/superseded"}
+			Expect(k8sClient.Update(ctx, route)).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(envoyGateway), envoyGateway)).To(Succeed())
+				condition := meta.FindStatusCondition(envoyGateway.Status.Conditions, conditionTypeXDSProgrammed)
+				g.Expect(condition).NotTo(BeNil())
+				g.Expect(condition.Status).To(Equal(metav1.ConditionFalse))
+				g.Expect(condition.Reason).To(Equal("XDSSuperseded"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("deactivates xDS and re-reconciles routes when switching back to Kong", func() {
+			Expect(k8sClient.Create(ctx, route)).To(Succeed())
+			Eventually(compiledBundles, timeout, interval).Should(Receive(Satisfy(func(bundle envoy.ResourceBundle) bool {
+				return bundleHasPath(&bundle, "/created")
+			})))
+
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(envoyGateway), envoyGateway)).To(Succeed())
+			envoyGateway.Spec.Type = gatewayv1.GatewayTypeKong
+			Expect(k8sClient.Update(ctx, envoyGateway)).To(Succeed())
+
+			Eventually(compiledBundles, timeout, interval).Should(Receive(Satisfy(func(bundle envoy.ResourceBundle) bool {
+				return len(bundle.Listeners) == 0 && len(bundle.Routes) == 0 &&
+					len(bundle.Clusters) == 0 && len(bundle.Endpoints) == 0
+			})))
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
+				g.Expect(route.Status.Properties).NotTo(BeEmpty())
+			}, timeout, interval).Should(Succeed())
+			consumer = &gatewayv1.Consumer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "aggregate-consumer", Namespace: namespace,
+					Labels: map[string]string{config.EnvironmentLabelKey: testEnvironment},
+				},
+				Spec: gatewayv1.ConsumerSpec{
+					Gateway: types.ObjectRef{Name: envoyGatewayName, Namespace: namespace}, Name: "consumer-a",
+				},
+			}
+			Expect(k8sClient.Create(ctx, consumer)).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consumer), consumer)).To(Succeed())
+				g.Expect(consumer.Status.Properties).NotTo(BeEmpty())
+			}, timeout, interval).Should(Succeed())
+			deletedRoutes.Store(0)
+			deletedConsumers.Store(0)
+
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(envoyGateway), envoyGateway)).To(Succeed())
+			envoyGateway.Spec.Type = gatewayv1.GatewayTypeEnvoy
+			Expect(k8sClient.Update(ctx, envoyGateway)).To(Succeed())
+			Eventually(compiledBundles, timeout, interval).Should(Receive(Satisfy(func(bundle envoy.ResourceBundle) bool {
+				return bundleHasPath(&bundle, "/created")
+			})))
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(envoyGateway), envoyGateway)).To(Succeed())
+				g.Expect(meta.IsStatusConditionTrue(envoyGateway.Status.Conditions, conditionTypeXDSProgrammed)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
+				g.Expect(route.Status.Properties).To(BeEmpty())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consumer), consumer)).To(Succeed())
+				g.Expect(consumer.Status.Properties).To(BeEmpty())
+			}, timeout, interval).Should(Succeed())
+			Expect(deletedRoutes.Load()).To(BeNumerically(">=", 1))
+			Expect(deletedConsumers.Load()).To(BeNumerically(">=", 1))
+		})
+	})
 })
+
+func bundleHasPath(bundle *envoy.ResourceBundle, path string) bool {
+	for _, routeConfig := range bundle.Routes {
+		for _, virtualHost := range routeConfig.VirtualHosts {
+			for _, route := range virtualHost.Routes {
+				if route.GetMatch().GetPrefix() == path {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func bundleHasRoute(bundle *envoy.ResourceBundle, name string) bool {
+	for _, routeConfig := range bundle.Routes {
+		for _, virtualHost := range routeConfig.VirtualHosts {
+			if virtualHost.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}

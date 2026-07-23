@@ -5,14 +5,18 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -26,6 +30,9 @@ import (
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/controller"
+	"github.com/telekom/controlplane/gateway/internal/features/envoy"
+	xdsapi "github.com/telekom/controlplane/gateway/internal/xds/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/xds/publication"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 	// +kubebuilder:scaffold:imports
 )
@@ -48,6 +55,7 @@ func main() {
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
+	var xdsManagementAddress string
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -59,6 +67,7 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.StringVar(&xdsManagementAddress, "xds-management-address", "", "plaintext xDS management server address")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -139,9 +148,34 @@ func main() {
 	rootCtx := ctrl.SetupSignalHandler()
 	controller.RegisterIndecesOrDie(rootCtx, mgr)
 
+	var onCompiled func(context.Context, envoy.ResourceBundle) (controller.XDSPublicationResult, error)
+	if xdsManagementAddress != "" {
+		conn, dialErr := grpc.NewClient(xdsManagementAddress,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithConnectParams(grpc.ConnectParams{MinConnectTimeout: 5 * time.Second}))
+		if dialErr != nil {
+			setupLog.Error(dialErr, "unable to create xDS management client")
+			os.Exit(1)
+		}
+		publisher := publication.New(xdsapi.NewPublicationServiceClient(conn))
+		onCompiled = func(ctx context.Context, resources envoy.ResourceBundle) (controller.XDSPublicationResult, error) {
+			bundle, bundleErr := publication.BundleFromResources(&resources)
+			if bundleErr != nil {
+				return controller.XDSPublicationResult{}, bundleErr
+			}
+			response, publishErr := publisher.Publish(ctx, bundle)
+			if publishErr != nil {
+				return controller.XDSPublicationResult{}, publishErr
+			}
+			return controller.XDSPublicationResult{
+				PersistedGeneration: response.PersistedGeneration,
+				Digest:              response.Digest, Activated: response.Activated, Idempotent: response.Idempotent,
+			}, nil
+		}
+	}
+
 	if err = (&controller.GatewayReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client: mgr.GetClient(), Scheme: mgr.GetScheme(), OnCompiled: onCompiled,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
 		os.Exit(1)

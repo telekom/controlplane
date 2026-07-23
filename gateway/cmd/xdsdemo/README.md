@@ -1,76 +1,57 @@
 <!--
-SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
-
+SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
 SPDX-License-Identifier: CC0-1.0
 -->
 
-# xDS demo harness
+# Durable xDS demo
 
-Runs the Envoy feature builder end to end with no operator and no Kubernetes:
-the demo builds an xDS snapshot for one fake `Route`, serves it over ADS, and a
-real Envoy connects, fetches the config, and proxies to a dummy upstream.
+The Compose stack runs these separate processes:
+
+- `operator`: controller-runtime envtest API server and etcd, the real `GatewayReconciler`, and a demo-only HTTP control API.
+- `management`: the existing durable xDS management command with SQLite on the `xds-data` volume.
+- `envoy-a` and `envoy-b`: independent nodes mapped to the same Gateway target.
+- `upstream`: dummy HTTP backend.
+- `lms-issuer`: optional live JWT scenario's last-mile token issuer.
+
+The operator creates a real `gateway.cp.ei.telekom.de/v1` `Gateway` with `spec.type: envoy`. Control API route operations create, update, and delete a real `Route`; only `GatewayReconciler` compiles and publishes bundles. The Kubernetes-assigned Gateway UID is handed to management through the `target-state` volume so node mappings retain the complete target identity.
 
 ## Run
 
-The whole stack (operator/xDS server + Envoy + dummy upstream) runs in compose:
+From `gateway`:
 
 ```bash
-cd gateway/cmd/xdsdemo
-
-# 1. Configure the client secret (gitignored):
-cp .env.example .env        # then edit .env, set CLIENT_ID + CLIENT_SECRET
-
-# 2. Build the operator and start the stack:
-docker compose up -d --build
-
-# 3. Run the validation pipeline (host):
-./scripts/validate.sh
+make xdsdemo-up
+make xdsdemo-validate
+docker compose -f cmd/xdsdemo/docker-compose.yaml down
 ```
 
-`validate.sh` asserts:
+`xdsdemo-validate` proves:
 
-- **no token → 401** (jwt_authn rejects)
-- **valid client_credentials token → 200** (JWT signature + issuer verified
-  against the live JWKS, `azp` matched the RBAC allow-list, proxied upstream)
+- route create, update, and delete without restarting Envoy;
+- invalid candidate rejection and idempotent republishing;
+- independent ACK and NACK status for two nodes, including last-accepted routing and recovery;
+- management restart and SQLite restoration;
+- management and both Envoys restart while the operator is stopped.
 
-The allowed consumer must equal the token's `azp` claim (the client id). It is
-sourced from `.env` `CLIENT_ID` and passed to the operator as `CONSUMERS`, so
-`.env` is the single source of truth for both sides.
+The script intentionally leaves the operator stopped after the outage test. Use `make xdsdemo-up` to recreate the stack. Use `docker compose ... down -v` for a clean database.
 
-Manual check with a minted token:
+Host ports can be overridden in `.env` with `CONTROL_PORT`, `MANAGEMENT_GRPC_PORT`, `MANAGEMENT_HEALTH_PORT`, `ENVOY_A_PORT`, `ENVOY_A_ADMIN_PORT`, `ENVOY_B_PORT`, and `ENVOY_B_ADMIN_PORT`. Compose and the validation script use the same values.
 
-```bash
-set -a; source .env; set +a
-TOKEN=$(curl -s -X POST "$TOKEN_URL" \
-  -d grant_type=client_credentials \
-  -d "client_id=$CLIENT_ID" -d "client_secret=$CLIENT_SECRET" | jq -r .access_token)
+## Optional JWT scenario
 
-curl -H "Authorization: Bearer $TOKEN" http://localhost:10000/get   # 200
-curl http://localhost:10000/get                                     # 401
-```
+Copy `.env.example` to `.env` and provide `CLIENT_SECRET`. The validation script then also updates the real Route with the live issuer and consumer, verifies JWT/JWKS and RBAC, and confirms LMS replaces the upstream Authorization token. No secret is built into an image or committed.
 
-A valid token whose `azp` is not in the allow-list gets **403** (RBAC deny).
+## Control API
 
-Envoy admin (config dump, clusters, stats): http://localhost:9901
+The demo-only API listens on `http://localhost:18081`:
 
-## Configuration
+- `PUT /routes/demo` with `{"path":"/v1","host":"demo-route.local"}`
+- `DELETE /routes/demo`
+- `GET /status`
+- `POST /publish/idempotent`
+- `POST /publish/invalid`
+- `POST /publish/nack`
 
-Operator flags (also settable via env for the compose service):
+The API is deliberately fixed to one demo Gateway, Route, and upstream. It does not accept arbitrary Kubernetes objects or xDS payloads.
 
-- `-issuers` / `ISSUERS` — comma-separated trusted issuers. Default: the rover
-  realm. Empty disables JWT/RBAC entirely (plain proxy).
-- `-consumers` / `CONSUMERS` — comma-separated allowed consumers matched against
-  the token `azp` claim. Compose sets this from `.env` `CLIENT_ID`.
-- `-upstream` — upstream URL Envoy proxies to. Default: `http://upstream:80`.
-
-## Notes
-
-- JWKS is fetched live via `remote_jwks` from `{issuer}/protocol/openid-connect/certs`
-  (Keycloak convention) through a per-issuer-host TLS cluster (`jwks_<host>`,
-  port 443, default public-CA trust). **Envoy must have network egress to the
-  issuer host** (VPN as needed).
-- The consumer identity is the token `azp` claim; for a `client_credentials`
-  token that is the full client id (e.g. `eni--system--dev-luminary`), which is
-  why `CONSUMERS` must equal `CLIENT_ID`.
-- Single node id `poc-gateway-node` (`envoy.PocNodeID`); the bootstrap `node.id`
-  must match it.
+Compose starts management only after the operator has replaced the target handoff file with the current Gateway UID. Node mappings are static after management startup; recreating the envtest operator separately therefore requires restarting management before publishing to the new target.

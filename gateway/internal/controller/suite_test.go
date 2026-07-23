@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	testmock "github.com/telekom/controlplane/common/pkg/test/mock"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features/envoy"
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	kongmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
@@ -52,7 +54,11 @@ var (
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	mockKongClient *kongmock.MockKongClient
+	mockKongClient    *kongmock.MockKongClient
+	compiledBundles   chan envoy.ResourceBundle
+	publicationActive atomic.Bool
+	deletedRoutes     atomic.Int64
+	deletedConsumers  atomic.Int64
 )
 
 func TestControllers(t *testing.T) {
@@ -115,10 +121,16 @@ var _ = BeforeSuite(func() {
 	}
 
 	// Setup controllers
+	compiledBundles = make(chan envoy.ResourceBundle, 32)
+	publicationActive.Store(true)
 	err = (&GatewayReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &testmock.EventRecorder{},
+		OnCompiled: func(_ context.Context, bundle envoy.ResourceBundle) (XDSPublicationResult, error) {
+			compiledBundles <- bundle
+			return XDSPublicationResult{PersistedGeneration: 1, Activated: publicationActive.Load()}, nil
+		},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -167,12 +179,24 @@ var _ = AfterSuite(func() {
 // setupKongMockExpectations configures the MockKongClient to accept all calls
 // and allow reconciliation loops to proceed without error.
 func setupKongMockExpectations() {
-	mockKongClient.On("CreateOrReplaceRoute", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockKongClient.On("CreateOrReplaceRoute", mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			if typed, ok := args.Get(1).(*gatewayv1.Route); ok {
+				typed.SetRouteId("test-route-id")
+			}
+		}).Return(nil).Maybe()
 	mockKongClient.On("CreateOrReplacePlugin", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
 	mockKongClient.On("CleanupPlugins", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
-	mockKongClient.On("DeleteRoute", mock.Anything, mock.Anything).Return(nil).Maybe()
-	mockKongClient.On("CreateOrReplaceConsumer", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
-	mockKongClient.On("DeleteConsumer", mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockKongClient.On("DeleteRoute", mock.Anything, mock.Anything).
+		Run(func(mock.Arguments) { deletedRoutes.Add(1) }).Return(nil).Maybe()
+	mockKongClient.On("CreateOrReplaceConsumer", mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			if typed, ok := args.Get(1).(*gatewayv1.Consumer); ok {
+				typed.SetId("test-consumer-id")
+			}
+		}).Return(nil, nil).Maybe()
+	mockKongClient.On("DeleteConsumer", mock.Anything, mock.Anything).
+		Run(func(mock.Arguments) { deletedConsumers.Add(1) }).Return(nil).Maybe()
 	mockKongClient.On("LoadPlugin", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
 	mockKongClient.On("DeleteUpstream", mock.Anything, mock.Anything).Return(nil).Maybe()
 }
@@ -201,6 +225,7 @@ func newGateway(name, namespace string) *gatewayv1.Gateway {
 			},
 		},
 		Spec: gatewayv1.GatewaySpec{
+			Type: gatewayv1.GatewayTypeKong,
 			Admin: gatewayv1.AdminConfig{
 				Url:          "http://kong-admin:8001",
 				ClientId:     "test-client-id",

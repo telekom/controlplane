@@ -7,18 +7,17 @@ package feature_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("HeaderTransformationFeature", func() {
-
 	var (
 		ctx     context.Context
 		f       *feature.HeaderTransformationFeature

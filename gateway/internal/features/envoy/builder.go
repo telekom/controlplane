@@ -8,9 +8,12 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/go-logr/logr"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -43,6 +46,7 @@ type EnvoyFeatureBuilder interface {
 	EnableFeature(f EnvoyFeature)
 	Build(context.Context) error
 	BuildForConsumer(context.Context) error
+	Render(context.Context) (ResourceBundle, error)
 
 	// RequireJWT declares that incoming tokens must be validated and their
 	// issuer must be one of the given trusted issuers.
@@ -59,9 +63,7 @@ type EnvoyFeatureBuilder interface {
 var _ EnvoyFeatureBuilder = &Builder{}
 
 // Builder is the go-control-plane counterpart to features.Builder. It reads the
-// same Route/Consumer source fields, runs each enabled EnvoyFeature's
-// IsUsed/Apply to accumulate intent, then renders and publishes an xDS
-// snapshot.
+// same Route/Consumer source fields and renders xDS resources without side effects.
 type Builder struct {
 	xds XdsClient
 
@@ -148,7 +150,8 @@ func (b *Builder) EnableFeature(f EnvoyFeature) {
 }
 
 func (b *Builder) RequireJWT(issuers []string) {
-	b.intent.trustedIssuers = issuers
+	b.intent.trustedIssuers = append([]string(nil), issuers...)
+	sort.Strings(b.intent.trustedIssuers)
 }
 
 func (b *Builder) AllowConsumers(names []string) {
@@ -156,7 +159,8 @@ func (b *Builder) AllowConsumers(names []string) {
 	if names == nil {
 		names = []string{}
 	}
-	b.intent.allowConsumers = names
+	b.intent.allowConsumers = append([]string(nil), names...)
+	sort.Strings(b.intent.allowConsumers)
 }
 
 func (b *Builder) RequireLMSToken(realm, environment string) {
@@ -171,9 +175,26 @@ func (b *Builder) RequireLMSToken(realm, environment string) {
 // ponytail: single PocNodeID + whole-snapshot overwrite → one route at a time.
 // Upgrade path: per-node accumulation of a node's routes.
 func (b *Builder) Build(ctx context.Context) error {
+	bundle, err := b.Render(ctx)
+	if err != nil {
+		return err
+	}
+	if b.xds == nil {
+		// Gateway reconciliation publishes the complete aggregate. Route
+		// reconciliation only validates that this individual route renders.
+		return nil
+	}
+	if err := b.xds.Publish(ctx, bundle.Target, bundle.Source, &bundle); err != nil {
+		return fmt.Errorf("publishing snapshot for route %s: %w", b.route.Name, err)
+	}
+	return nil
+}
+
+// Render applies enabled features and returns a deterministic bundle without publishing it.
+func (b *Builder) Render(ctx context.Context) (ResourceBundle, error) {
 	log := logr.FromContextOrDiscard(ctx).WithName("envoy.builder")
 	if b.route == nil {
-		return features.ErrNoRoute
+		return ResourceBundle{}, features.ErrNoRoute
 	}
 	log = log.WithValues("route", b.route.Name)
 
@@ -181,7 +202,7 @@ func (b *Builder) Build(ctx context.Context) error {
 		if f.IsUsed(ctx, b) {
 			log.V(1).Info("Applying feature", "name", f.Name())
 			if err := f.Apply(ctx, b); err != nil {
-				return fmt.Errorf("applying feature %s: %w", f.Name(), err)
+				return ResourceBundle{}, fmt.Errorf("applying feature %s: %w", f.Name(), err)
 			}
 		} else {
 			log.V(1).Info("Feature is not used", "name", f.Name())
@@ -189,18 +210,15 @@ func (b *Builder) Build(ctx context.Context) error {
 	}
 
 	if b.upstream == nil {
-		return fmt.Errorf("upstream is not set")
+		return ResourceBundle{}, fmt.Errorf("upstream is not set")
 	}
 
 	bundle, err := b.render()
 	if err != nil {
-		return fmt.Errorf("rendering xDS bundle for route %s: %w", b.route.Name, err)
+		return ResourceBundle{}, fmt.Errorf("rendering xDS bundle for route %s: %w", b.route.Name, err)
 	}
-
-	if err := b.xds.SetSnapshotFor(ctx, PocNodeID, bundle); err != nil {
-		return fmt.Errorf("publishing snapshot for route %s: %w", b.route.Name, err)
-	}
-	return nil
+	bundle.Sort()
+	return bundle, nil
 }
 
 // BuildForConsumer is not yet implemented for the Envoy path. Consumer-scoped
@@ -211,7 +229,7 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 
 // render turns the accumulated intent into xDS resources.
 func (b *Builder) render() (ResourceBundle, error) {
-	routeName := b.route.Name
+	routeName := resourceName(b.route.Namespace, b.route.Name)
 	clusterName := routeName
 
 	filters, err := buildFilters(b.intent, b.lms)
@@ -221,19 +239,30 @@ func (b *Builder) render() (ResourceBundle, error) {
 
 	r := b.route
 
-	// Features may contribute per-route filter overrides (vhost
-	// typed_per_filter_config). LMS attaches its issuer context here.
-	vhostPerFilterConfig, err := lmsVhostPerFilterConfig(b.lms)
+	perFilterConfig, err := namedAccessControlPerFilterConfig(b.intent, routeName)
+	if err != nil {
+		return ResourceBundle{}, err
+	}
+	lmsConfig, err := lmsVhostPerFilterConfig(b.lms)
+	if err != nil {
+		return ResourceBundle{}, err
+	}
+	for name, config := range lmsConfig {
+		perFilterConfig[name] = config
+	}
+
+	vhost := &routev3.VirtualHost{
+		Name: routeName, Domains: routeDomains(r.GetHostnames()),
+		Routes:               routeEntries(clusterName, r.GetPaths(), b.upstream.GetPath()),
+		TypedPerFilterConfig: perFilterConfig,
+	}
+	routeConfigName := routeName + "-routes"
+	listener, err := buildListener(routeName+"-listener", routeConfigName, filters)
 	if err != nil {
 		return ResourceBundle{}, err
 	}
 
-	listener, _, err := buildListener(routeName, clusterName, filters, r.GetHostnames(), r.GetPaths(), b.upstream.GetPath(), vhostPerFilterConfig)
-	if err != nil {
-		return ResourceBundle{}, err
-	}
-
-	cluster := buildCluster(clusterName, b.upstream.GetHostname(), uint32(b.upstream.GetPort()))
+	cluster := buildEDSCluster(clusterName)
 	clusters := []*clusterv3.Cluster{cluster}
 
 	// remote_jwks needs a TLS cluster per issuer host in the same snapshot.
@@ -245,19 +274,116 @@ func (b *Builder) render() (ResourceBundle, error) {
 
 	// ext_authz needs the LMS issuer cluster (http2/gRPC) in the same snapshot.
 	if b.lms.enabled {
-		issuerCluster, err := buildLMSIssuerCluster()
-		if err != nil {
-			return ResourceBundle{}, err
+		issuerCluster, issuerErr := buildLMSIssuerCluster()
+		if issuerErr != nil {
+			return ResourceBundle{}, issuerErr
 		}
 		clusters = append(clusters, issuerCluster)
 	}
 
-	// ponytail: RouteConfig is inlined in the HCM, so it is not published as a
-	// standalone RDS resource. Upgrade path: switch to RDS (Rds{RouteConfigName})
-	// and populate ResourceBundle.Routes when routes go dynamic.
+	port, err := upstreamPort(b.upstream)
+	if err != nil {
+		return ResourceBundle{}, err
+	}
 	return ResourceBundle{
+		Target:    b.targetIdentity(),
+		Source:    b.sourceMetadata(),
 		Listeners: []*listenerv3.Listener{listener},
 		Clusters:  clusters,
+		Routes:    []*routev3.RouteConfiguration{buildRouteConfiguration(routeConfigName, []*routev3.VirtualHost{vhost})},
+		Endpoints: []*endpointv3.ClusterLoadAssignment{
+			buildEndpoint(clusterName, b.upstream.GetHostname(), port),
+		},
+	}, nil
+}
+
+func (b *Builder) targetIdentity() TargetIdentity {
+	if b.gateway != nil && b.gateway.Name != "" {
+		return TargetIdentity{Namespace: b.gateway.Namespace, Name: b.gateway.Name, UID: b.gateway.UID}
+	}
+	if b.route != nil && !b.route.Spec.GatewayRef.IsEmpty() {
+		return TargetIdentity{
+			Namespace: b.route.Spec.GatewayRef.Namespace, Name: b.route.Spec.GatewayRef.Name, UID: b.route.Spec.GatewayRef.UID,
+		}
+	}
+	if b.route != nil {
+		return TargetIdentity{Namespace: b.route.Namespace, Name: b.route.Name, UID: b.route.UID}
+	}
+	return TargetIdentity{}
+}
+
+func (b *Builder) sourceMetadata() SourceMetadata {
+	metadata := SourceMetadata{}
+	if b.gateway != nil && b.gateway.Name != "" {
+		metadata.Resources = append(metadata.Resources, sourceReference("Gateway", b.gateway))
+	}
+	if b.route != nil {
+		metadata.Resources = append(metadata.Resources, sourceReference("Route", b.route))
+	}
+	return metadata
+}
+
+type routeRender struct {
+	name     string
+	vhost    *routev3.VirtualHost
+	cluster  *clusterv3.Cluster
+	endpoint *endpointv3.ClusterLoadAssignment
+	clusters []*clusterv3.Cluster
+	access   accessControlIntent
+	lms      lmsIntent
+}
+
+func (b *Builder) renderRoute(ctx context.Context) (routeRender, error) {
+	if b.route == nil {
+		return routeRender{}, features.ErrNoRoute
+	}
+	for _, f := range sortFeatures(b.features) {
+		if f.IsUsed(ctx, b) {
+			if err := f.Apply(ctx, b); err != nil {
+				return routeRender{}, fmt.Errorf("applying feature %s: %w", f.Name(), err)
+			}
+		}
+	}
+	if b.upstream == nil {
+		return routeRender{}, fmt.Errorf("upstream is not set")
+	}
+	port, err := upstreamPort(b.upstream)
+	if err != nil {
+		return routeRender{}, err
+	}
+	name := resourceName(b.route.Namespace, b.route.Name)
+	perFilterConfig, err := namedAccessControlPerFilterConfig(b.intent, name)
+	if err != nil {
+		return routeRender{}, err
+	}
+	lmsConfig, err := lmsVhostPerFilterConfig(b.lms)
+	if err != nil {
+		return routeRender{}, err
+	}
+	for filterName, config := range lmsConfig {
+		perFilterConfig[filterName] = config
+	}
+	additionalClusters, err := jwksClustersFor(b.intent.trustedIssuers)
+	if err != nil {
+		return routeRender{}, err
+	}
+	if b.lms.enabled {
+		issuerCluster, err := buildLMSIssuerCluster()
+		if err != nil {
+			return routeRender{}, err
+		}
+		additionalClusters = append(additionalClusters, issuerCluster)
+	}
+	return routeRender{
+		name: name,
+		vhost: &routev3.VirtualHost{
+			Name: name, Domains: routeDomains(b.route.GetHostnames()),
+			Routes:               routeEntries(name, b.route.GetPaths(), b.upstream.GetPath()),
+			TypedPerFilterConfig: perFilterConfig,
+		},
+		cluster:  buildEDSCluster(name),
+		endpoint: buildEndpoint(name, b.upstream.GetHostname(), port),
+		clusters: additionalClusters, access: b.intent, lms: b.lms,
 	}, nil
 }
 
@@ -269,7 +395,22 @@ func sortFeatures(m map[gatewayv1.FeatureType]EnvoyFeature) []EnvoyFeature {
 		list = append(list, f)
 	}
 	sort.Slice(list, func(i, j int) bool {
-		return list[i].Priority() < list[j].Priority()
+		if list[i].Priority() != list[j].Priority() {
+			return list[i].Priority() < list[j].Priority()
+		}
+		return list[i].Name() < list[j].Name()
 	})
 	return list
+}
+
+func resourceName(namespace, name string) string {
+	return strings.TrimPrefix(namespace+"/"+name, "/")
+}
+
+func upstreamPort(upstream client.Upstream) (uint32, error) {
+	port := upstream.GetPort()
+	if port < 1 || port > 65535 {
+		return 0, fmt.Errorf("upstream port %d is outside the valid range", port)
+	}
+	return uint32(port), nil
 }

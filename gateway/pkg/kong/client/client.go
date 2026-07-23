@@ -16,8 +16,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
 
@@ -50,7 +50,7 @@ type KongAdminApi interface {
 	UpsertUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.UpsertUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertUpstreamResponse, error)
 	CreateTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.CreateTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error)
 	DeleteUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamResponse, error)
-	DeleteUpstreamTargetWithResponse(ctx context.Context, upstreamIdOrName string, targetIdOrTarget string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamTargetResponse, error)
+	DeleteUpstreamTargetWithResponse(ctx context.Context, upstreamIdOrName, targetIdOrTarget string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamTargetResponse, error)
 
 	UpsertServiceWithResponse(ctx context.Context, serviceIdOrName string, body kong.UpsertServiceJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertServiceResponse, error)
 
@@ -68,7 +68,7 @@ type KongAdminApi interface {
 var _ KongClient = &kongClient{}
 
 type kongClient struct {
-	//client     kong.ClientWithResponsesInterface
+	// client     kong.ClientWithResponsesInterface
 	client     KongAdminApi
 	commonTags []string
 }
@@ -85,8 +85,8 @@ var NewKongClient = func(client KongAdminApi, commonTags ...string) KongClient {
 }
 
 func (c *kongClient) LoadPlugin(
-	ctx context.Context, plugin CustomPlugin, copyConfig bool) (kongPlugin *kong.Plugin, err error) {
-
+	ctx context.Context, plugin CustomPlugin, copyConfig bool,
+) (*kong.Plugin, error) {
 	log := logr.FromContextOrDiscard(ctx).WithValues("plugin", plugin.GetName())
 	pluginId := plugin.GetId()
 	envName := contextutil.EnvFromContextOrDie(ctx)
@@ -107,34 +107,18 @@ func (c *kongClient) LoadPlugin(
 
 	if pluginId != "" {
 		log.V(1).Info("loading plugin by id", "id", pluginId)
-		response, err := c.client.GetPluginWithResponse(ctx, pluginId)
+		kongPlugin, err := c.loadPluginByID(ctx, plugin, pluginId, copyConfig)
 		if err != nil {
-			return nil, HandleClientError(err)
+			return nil, err
 		}
-		if err := CheckStatusCode(response, 200, 404); err != nil {
-			return nil, fmt.Errorf("failed to get plugin (%d): %s: %w", response.StatusCode(), string(response.Body), err)
+		if kongPlugin != nil {
+			return kongPlugin, nil
 		}
-		if response.StatusCode() == 404 {
-			log.V(1).Info("plugin not found", "id", pluginId)
-			goto loadByTags
-		}
-
-		if copyConfig {
-			err = json.Unmarshal(response.Body, &plugin)
-			if err != nil {
-				return nil, fmt.Errorf("failed to unmarshal plugin response: %w", err)
-			}
-		}
-
-		kongPlugin = response.JSON200
-		pluginId = *kongPlugin.Id
-		plugin.SetId(pluginId)
-		return kongPlugin, nil
+		log.V(1).Info("plugin not found", "id", pluginId)
 	}
 
-loadByTags:
 	log.V(1).Info("loading plugin by tags", "tags", tags)
-	kongPlugin, err = c.getPluginMatchingTags(ctx, tags)
+	kongPlugin, err := c.getPluginMatchingTags(ctx, tags)
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +137,35 @@ loadByTags:
 	return kongPlugin, nil
 }
 
-func (c *kongClient) CreateOrReplacePlugin(
-	ctx context.Context, plugin CustomPlugin) (kongPlugin *kong.Plugin, err error) {
+func (c *kongClient) loadPluginByID(
+	ctx context.Context, plugin CustomPlugin, pluginID string, copyConfig bool,
+) (*kong.Plugin, error) {
+	response, err := c.client.GetPluginWithResponse(ctx, pluginID)
+	if err != nil {
+		return nil, HandleClientError(err)
+	}
+	if err := CheckStatusCode(response, 200, 404); err != nil {
+		return nil, fmt.Errorf(
+			"failed to get plugin (%d): %s: %w", response.StatusCode(), string(response.Body), err,
+		)
+	}
+	if response.StatusCode() == 404 {
+		return nil, nil
+	}
+	if copyConfig {
+		if err := json.Unmarshal(response.Body, &plugin); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal plugin response: %w", err)
+		}
+	}
 
+	kongPlugin := response.JSON200
+	plugin.SetId(*kongPlugin.Id)
+	return kongPlugin, nil
+}
+
+func (c *kongClient) CreateOrReplacePlugin(
+	ctx context.Context, plugin CustomPlugin,
+) (kongPlugin *kong.Plugin, err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	envName := contextutil.EnvFromContextOrDie(ctx)
 
@@ -230,7 +240,8 @@ func (c *kongClient) CreateOrReplacePlugin(
 	// 1. If a consumer is set on the plugin, then the plugin is created for that consumer.
 	// 2. If a route and a consumer are set on the plugin, then the plugin is created for that consumer on that route.
 	// 3. If a route is set on the plugin, then the plugin is created for that route.
-	if isConsumerSpecific {
+	switch {
+	case isConsumerSpecific:
 		// If a consumer is set on the plugin, then the plugin is created for that consumer.
 		// It is also possible to define a route in addition to the consumer.
 		// In that case, the plugin is created for the consumer on that route.
@@ -241,7 +252,7 @@ func (c *kongClient) CreateOrReplacePlugin(
 			return nil, fmt.Errorf("failed to create plugin: %w", HandleClientError(err))
 		}
 
-	} else if isRouteSpecific {
+	case isRouteSpecific:
 		// If a route is set on the plugin, then the plugin is created for that route.
 		// This means, it is applied for all consumers of that route.
 
@@ -251,7 +262,7 @@ func (c *kongClient) CreateOrReplacePlugin(
 			return nil, fmt.Errorf("failed to upsert plugin for route: %w", HandleClientError(err))
 		}
 
-	} else {
+	default:
 		// global plugin
 		log.V(1).Info("upserting global plugin", "id", pluginId)
 		response, err = client.UpsertPlugin(ctx, pluginId, body)
@@ -261,11 +272,14 @@ func (c *kongClient) CreateOrReplacePlugin(
 	}
 
 	apiResponse := WrapApiResponse(response)
-	responseBody, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+	responseBody, readErr := io.ReadAll(response.Body)
+	closeErr := response.Body.Close()
+	if readErr != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", readErr)
 	}
-	response.Body.Close() //nolint:errcheck
+	if closeErr != nil {
+		log.Error(closeErr, "failed to close response body")
+	}
 
 	if err := CheckStatusCode(apiResponse, 200); err != nil {
 		return nil, fmt.Errorf("failed to create plugin (%d): %s: %w", apiResponse.StatusCode(), string(responseBody), err)
@@ -279,7 +293,7 @@ func (c *kongClient) CreateOrReplacePlugin(
 	return kongPlugin, nil
 }
 
-func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) (err error) {
+func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) error {
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	pluginId := plugin.GetId()
 	tags := []string{
@@ -369,8 +383,8 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 }
 
 func (c *kongClient) getPluginsMatchingTags(
-	ctx context.Context, tags []string) ([]kong.Plugin, error) {
-
+	ctx context.Context, tags []string,
+) ([]kong.Plugin, error) {
 	// ListPluginsForRouteWithResponse does not work correctly with tags
 	response, err := c.client.ListPluginWithResponse(ctx, &kong.ListPluginParams{
 		Tags: encodeTags(tags),
@@ -397,8 +411,8 @@ func (c *kongClient) getPluginsMatchingTags(
 }
 
 func (c *kongClient) getPluginMatchingTags(
-	ctx context.Context, tags []string) (*kong.Plugin, error) {
-
+	ctx context.Context, tags []string,
+) (*kong.Plugin, error) {
 	plugins, err := c.getPluginsMatchingTags(ctx, tags)
 	if err != nil {
 		return nil, err

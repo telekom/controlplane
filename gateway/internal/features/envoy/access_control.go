@@ -6,6 +6,11 @@ package envoy
 
 import (
 	"context"
+	"fmt"
+	"net/url"
+	"sort"
+	"strings"
+	"time"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -18,12 +23,6 @@ import (
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-
-	"fmt"
-	"net/url"
-	"strings"
-	"time"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -169,6 +168,8 @@ func buildAccessControlFilters(in accessControlIntent) ([]*hcmv3.HttpFilter, err
 // per-host TLS cluster named jwksClusterName(host). Those clusters are emitted
 // by jwksClustersFor and must be present in the same snapshot.
 func buildJwtAuthn(trustedIssuers []string) *jwtauthnv3.JwtAuthentication {
+	trustedIssuers = append([]string(nil), trustedIssuers...)
+	sort.Strings(trustedIssuers)
 	providers := make(map[string]*jwtauthnv3.JwtProvider, len(trustedIssuers))
 	providerNames := make([]*jwtauthnv3.JwtRequirement, 0, len(trustedIssuers))
 
@@ -207,12 +208,68 @@ func buildJwtAuthn(trustedIssuers []string) *jwtauthnv3.JwtAuthentication {
 
 	return &jwtauthnv3.JwtAuthentication{
 		Providers: providers,
-		Rules: []*jwtauthnv3.RequirementRule{{
-			Match: &routev3.RouteMatch{PathSpecifier: &routev3.RouteMatch_Prefix{Prefix: "/"}},
-			RequirementType: &jwtauthnv3.RequirementRule_Requires{
-				Requires: requirement,
-			},
-		}},
+		RequirementMap: map[string]*jwtauthnv3.JwtRequirement{
+			"route": requirement,
+		},
+	}
+}
+
+func namedAccessControlPerFilterConfig(in accessControlIntent, requirementName string) (map[string]*anypb.Any, error) {
+	configs := map[string]*anypb.Any{}
+	if len(in.trustedIssuers) > 0 {
+		jwt, err := anyForMessage(&jwtauthnv3.PerRouteConfig{
+			RequirementSpecifier: &jwtauthnv3.PerRouteConfig_RequirementName{RequirementName: requirementName},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("marshalling jwt per-route config: %w", err)
+		}
+		configs[filterJwtAuthn] = jwt
+	}
+	if in.accessControl {
+		rbac, err := anyForMessage(&httprbacv3.RBACPerRoute{Rbac: buildRBAC(in.allowConsumers)})
+		if err != nil {
+			return nil, fmt.Errorf("marshalling rbac per-route config: %w", err)
+		}
+		configs[filterRBAC] = rbac
+	}
+	return configs, nil
+}
+
+func buildAggregateJwtAuthn(intents map[string]accessControlIntent) *jwtauthnv3.JwtAuthentication {
+	aggregate := &jwtauthnv3.JwtAuthentication{
+		Providers:      map[string]*jwtauthnv3.JwtProvider{},
+		RequirementMap: map[string]*jwtauthnv3.JwtRequirement{},
+	}
+	names := make([]string, 0, len(intents))
+	for name := range intents {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		config := buildJwtAuthn(intents[name].trustedIssuers)
+		providerNames := make([]string, 0, len(config.Providers))
+		for providerName := range config.Providers {
+			providerNames = append(providerNames, providerName)
+		}
+		sort.Strings(providerNames)
+		for _, providerName := range providerNames {
+			uniqueName := name + "-" + providerName
+			aggregate.Providers[uniqueName] = config.Providers[providerName]
+		}
+		requirement := config.RequirementMap["route"]
+		rewriteRequirementProviders(requirement, name+"-")
+		aggregate.RequirementMap[name] = requirement
+	}
+	return aggregate
+}
+
+func rewriteRequirementProviders(requirement *jwtauthnv3.JwtRequirement, prefix string) {
+	if providerName := requirement.GetProviderName(); providerName != "" {
+		requirement.RequiresType = &jwtauthnv3.JwtRequirement_ProviderName{ProviderName: prefix + providerName}
+		return
+	}
+	for _, nested := range requirement.GetRequiresAny().GetRequirements() {
+		rewriteRequirementProviders(nested, prefix)
 	}
 }
 
@@ -266,7 +323,7 @@ func azpPrincipal(consumerName string) *rbacv3.Principal {
 
 // mkFilter wraps an HTTP filter config message into an HttpFilter.
 func mkFilter(name string, msg proto.Message) (*hcmv3.HttpFilter, error) {
-	typed, err := anypb.New(msg)
+	typed, err := anyForMessage(msg)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling %s config: %w", name, err)
 	}
@@ -285,33 +342,27 @@ func mkFilter(name string, msg proto.Message) (*hcmv3.HttpFilter, error) {
 // listener code knowing which feature they belong to.
 //
 // ponytail: fixed 0.0.0.0:10000 bind + inline RouteConfig; POC single-listener.
-func buildListener(routeName, clusterName string, filters []*hcmv3.HttpFilter, hostnames, paths []string, upstreamPath string, vhostPerFilterConfig map[string]*anypb.Any) (*listenerv3.Listener, *routev3.RouteConfiguration, error) {
-	vhost := &routev3.VirtualHost{
-		Name:    routeName,
-		Domains: routeDomains(hostnames),
-		Routes:  routeEntries(clusterName, paths, upstreamPath),
-	}
-	if len(vhostPerFilterConfig) > 0 {
-		vhost.TypedPerFilterConfig = vhostPerFilterConfig
-	}
-
-	routeConfig := &routev3.RouteConfiguration{
-		Name:         routeName,
-		VirtualHosts: []*routev3.VirtualHost{vhost},
-	}
-
+func buildListener(listenerName, routeConfigName string, filters []*hcmv3.HttpFilter) (*listenerv3.Listener, error) {
 	manager := &hcmv3.HttpConnectionManager{
-		StatPrefix:     "ingress_http",
-		HttpFilters:    filters,
-		RouteSpecifier: &hcmv3.HttpConnectionManager_RouteConfig{RouteConfig: routeConfig},
+		StatPrefix:  "ingress_http",
+		HttpFilters: filters,
+		RouteSpecifier: &hcmv3.HttpConnectionManager_Rds{Rds: &hcmv3.Rds{
+			RouteConfigName: routeConfigName,
+			ConfigSource: &corev3.ConfigSource{
+				ResourceApiVersion: corev3.ApiVersion_V3,
+				ConfigSourceSpecifier: &corev3.ConfigSource_Ads{
+					Ads: &corev3.AggregatedConfigSource{},
+				},
+			},
+		}},
 	}
-	hcmAny, err := anypb.New(manager)
+	hcmAny, err := anyForMessage(manager)
 	if err != nil {
-		return nil, nil, fmt.Errorf("marshalling hcm config: %w", err)
+		return nil, fmt.Errorf("marshalling hcm config: %w", err)
 	}
 
 	listener := &listenerv3.Listener{
-		Name: routeName,
+		Name: listenerName,
 		Address: &corev3.Address{Address: &corev3.Address_SocketAddress{SocketAddress: &corev3.SocketAddress{
 			Address:       "0.0.0.0",
 			PortSpecifier: &corev3.SocketAddress_PortValue{PortValue: 10000},
@@ -323,7 +374,11 @@ func buildListener(routeName, clusterName string, filters []*hcmv3.HttpFilter, h
 			}},
 		}},
 	}
-	return listener, routeConfig, nil
+	return listener, nil
+}
+
+func buildRouteConfiguration(name string, virtualHosts []*routev3.VirtualHost) *routev3.RouteConfiguration {
+	return &routev3.RouteConfiguration{Name: name, VirtualHosts: virtualHosts}
 }
 
 // buildCluster creates a STRICT_DNS cluster to the upstream host:port.
@@ -348,6 +403,38 @@ func buildCluster(name, host string, port uint32) *clusterv3.Cluster {
 				}},
 			}},
 		},
+	}
+}
+
+func buildEDSCluster(name string) *clusterv3.Cluster {
+	return &clusterv3.Cluster{
+		Name:                 name,
+		ConnectTimeout:       durationpb.New(5 * time.Second),
+		ClusterDiscoveryType: &clusterv3.Cluster_Type{Type: clusterv3.Cluster_EDS},
+		EdsClusterConfig: &clusterv3.Cluster_EdsClusterConfig{
+			EdsConfig: &corev3.ConfigSource{
+				ResourceApiVersion: corev3.ApiVersion_V3,
+				ConfigSourceSpecifier: &corev3.ConfigSource_Ads{
+					Ads: &corev3.AggregatedConfigSource{},
+				},
+			},
+		},
+		LbPolicy: clusterv3.Cluster_ROUND_ROBIN,
+	}
+}
+
+func buildEndpoint(name, host string, port uint32) *endpointv3.ClusterLoadAssignment {
+	return &endpointv3.ClusterLoadAssignment{
+		ClusterName: name,
+		Endpoints: []*endpointv3.LocalityLbEndpoints{{
+			LbEndpoints: []*endpointv3.LbEndpoint{{
+				HostIdentifier: &endpointv3.LbEndpoint_Endpoint{Endpoint: &endpointv3.Endpoint{
+					Address: &corev3.Address{Address: &corev3.Address_SocketAddress{SocketAddress: &corev3.SocketAddress{
+						Address: host, PortSpecifier: &corev3.SocketAddress_PortValue{PortValue: port},
+					}}},
+				}},
+			}},
+		}},
 	}
 }
 
@@ -379,9 +466,11 @@ func jwksClusterName(host string) string {
 // jwksClustersFor returns the TLS clusters backing remote_jwks for the given
 // issuers, one per distinct host, deduplicated. Empty when there are none.
 func jwksClustersFor(trustedIssuers []string) ([]*clusterv3.Cluster, error) {
+	sortedIssuers := append([]string(nil), trustedIssuers...)
+	sort.Strings(sortedIssuers)
 	seen := map[string]struct{}{}
 	clusters := make([]*clusterv3.Cluster, 0, len(trustedIssuers))
-	for _, issuer := range trustedIssuers {
+	for _, issuer := range sortedIssuers {
 		host := issuerHost(issuer)
 		if _, ok := seen[host]; ok {
 			continue
@@ -403,7 +492,7 @@ func jwksClustersFor(trustedIssuers []string) ([]*clusterv3.Cluster, error) {
 // ponytail: fixed 443 + default trust. Upgrade path: configurable port and an
 // explicit CA bundle for internal issuers.
 func buildJwksCluster(host string) (*clusterv3.Cluster, error) {
-	tlsCtx, err := anypb.New(&tlsv3.UpstreamTlsContext{Sni: host})
+	tlsCtx, err := anyForMessage(&tlsv3.UpstreamTlsContext{Sni: host})
 	if err != nil {
 		return nil, fmt.Errorf("marshalling jwks tls context: %w", err)
 	}

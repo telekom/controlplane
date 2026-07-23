@@ -10,14 +10,16 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
-var ErrNoRoute = errors.New("no route found in builder context")
-var ErrNoConsumer = errors.New("no consumer found in builder context")
+var (
+	ErrNoRoute    = errors.New("no route found in builder context")
+	ErrNoConsumer = errors.New("no consumer found in builder context")
+)
 
 type Feature interface {
 	// Name of the feature
@@ -44,6 +46,9 @@ type Feature interface {
 // A feature's IsUsed only needs this base; its Apply takes the backend-specific
 // builder that embeds it.
 type FeatureBuilder interface {
+	Build(context.Context) error
+	BuildForConsumer(context.Context) error
+
 	GetRoute() (*gatewayv1.Route, bool)
 	GetConsumer() (*gatewayv1.Consumer, bool)
 	GetGateway() *gatewayv1.Gateway
@@ -61,8 +66,6 @@ type FeaturesBuilder interface {
 	FeatureBuilder
 
 	EnableFeature(f Feature)
-	Build(context.Context) error
-	BuildForConsumer(context.Context) error
 
 	RequestTransformerPlugin() *plugin.RequestTransformerPlugin
 	AclPlugin() *plugin.AclPlugin
@@ -133,6 +136,7 @@ func (b *Builder) GetRoute() (*gatewayv1.Route, bool) {
 	}
 	return b.Route, true
 }
+
 func (b *Builder) GetConsumer() (*gatewayv1.Consumer, bool) {
 	if b.Consumer == nil {
 		return nil, false
@@ -359,7 +363,6 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 	}
 
 	return nil
-
 }
 
 // sort features based on their priority

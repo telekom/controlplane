@@ -7,8 +7,6 @@ package feature_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -17,10 +15,12 @@ import (
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("LoadBalancingFeature", func() {
-
 	var (
 		ctx     context.Context
 		f       *feature.LoadBalancingFeature

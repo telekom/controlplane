@@ -55,32 +55,32 @@ type CustomUpstream struct {
 }
 
 func NewUpstream(rawUrl string) (Upstream, error) {
-	url, err := url.Parse(rawUrl)
+	parsedURL, err := url.Parse(rawUrl)
 	if err != nil {
 		return nil, err
 	}
-	return FromURL(url)
+	return FromURL(parsedURL)
 }
 
 func NewUpstreamOrDie(rawUrl string) Upstream {
-	url, err := url.Parse(rawUrl)
+	parsedURL, err := url.Parse(rawUrl)
 	if err != nil {
 		panic(err)
 	}
-	upstream, err := FromURL(url)
+	upstream, err := FromURL(parsedURL)
 	if err != nil {
 		panic(err)
 	}
 	return upstream
 }
 
-func FromURL(url *url.URL) (Upstream, error) {
-	intPort, err := strconv.Atoi(url.Port())
+func FromURL(parsedURL *url.URL) (Upstream, error) {
+	intPort, err := strconv.Atoi(parsedURL.Port())
 	return &CustomUpstream{
-		Scheme: url.Scheme,
-		Host:   url.Hostname(),
+		Scheme: parsedURL.Scheme,
+		Host:   parsedURL.Hostname(),
 		Port:   intPort,
-		Path:   url.Path,
+		Path:   parsedURL.Path,
 	}, err
 }
 

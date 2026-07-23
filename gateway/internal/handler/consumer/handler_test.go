@@ -8,8 +8,6 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +26,9 @@ import (
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ConsumerHandler", func() {

@@ -14,11 +14,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
+
 	metrics "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 )
 
 type GatewayAdminConfig interface {
@@ -51,7 +52,7 @@ func (g *gatewayAdminConfig) AdminIssuer() string {
 	return g.issuer
 }
 
-func NewGatewayConfig(rawUrl string, clientId, clientSecret, issuer string) GatewayAdminConfig {
+func NewGatewayConfig(rawUrl, clientId, clientSecret, issuer string) GatewayAdminConfig {
 	return &gatewayAdminConfig{
 		url:          rawUrl,
 		clientId:     clientId,
@@ -74,9 +75,14 @@ var (
 // causing an automatic cache miss and fresh client creation.
 func cacheKey(gwCfg GatewayAdminConfig) string {
 	h := sha256.New()
-	_, _ = fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s",
-		gwCfg.AdminUrl(), gwCfg.AdminClientId(),
-		gwCfg.AdminClientSecret(), gwCfg.AdminIssuer())
+	for i, value := range []string{
+		gwCfg.AdminUrl(), gwCfg.AdminClientId(), gwCfg.AdminClientSecret(), gwCfg.AdminIssuer(),
+	} {
+		if i > 0 {
+			_, _ = h.Write([]byte{0})
+		}
+		_, _ = h.Write([]byte(value))
+	}
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 

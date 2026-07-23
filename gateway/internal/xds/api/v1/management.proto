@@ -1,0 +1,100 @@
+// SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package telekom.controlplane.gateway.xds.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/telekom/controlplane/gateway/internal/xds/api/v1;xdsapi";
+
+message SourceReference {
+  string kind = 1;
+  string namespace = 2;
+  string name = 3;
+  string uid = 4;
+  int64 generation = 5;
+}
+
+message Bundle {
+  string target_id = 1;
+  string publisher_generation = 2;
+  string schema_version = 3;
+  string compiler_version = 4;
+  string envoy_version = 5;
+  repeated SourceReference sources = 6;
+  string digest = 7;
+  repeated google.protobuf.Any listeners = 8;
+  repeated google.protobuf.Any routes = 9;
+  repeated google.protobuf.Any clusters = 10;
+  repeated google.protobuf.Any endpoints = 11;
+}
+
+enum ValidationCode {
+  VALIDATION_CODE_UNSPECIFIED = 0;
+  VALIDATION_CODE_REQUIRED = 1;
+  VALIDATION_CODE_DIGEST_MISMATCH = 2;
+  VALIDATION_CODE_UNSUPPORTED_TYPE = 3;
+  VALIDATION_CODE_MALFORMED_RESOURCE = 4;
+  VALIDATION_CODE_DUPLICATE_RESOURCE = 5;
+  VALIDATION_CODE_INCONSISTENT_SNAPSHOT = 6;
+  VALIDATION_CODE_GENERATION_CONFLICT = 7;
+}
+
+message ValidationError {
+  ValidationCode code = 1;
+  string field = 2;
+  string message = 3;
+}
+
+message PublishBundleRequest {
+  Bundle bundle = 1;
+}
+
+message PublishBundleResponse {
+  uint64 persisted_generation = 1;
+  string digest = 2;
+  bool idempotent = 3;
+  bool activated = 4;
+  repeated ValidationError validation_errors = 5;
+}
+
+message GetStatusRequest {
+  string target_id = 1;
+}
+
+enum DeliveryState {
+  DELIVERY_STATE_UNSPECIFIED = 0;
+  DELIVERY_STATE_ACK = 1;
+  DELIVERY_STATE_NACK = 2;
+}
+
+message DeliveryObservation {
+  string node_id = 1;
+  string type_url = 2;
+  uint64 generation = 3;
+  DeliveryState state = 4;
+  string nonce = 5;
+  string error_detail = 6;
+  google.protobuf.Timestamp observed_at = 7;
+}
+
+message GetStatusResponse {
+  string target_id = 1;
+  uint64 persisted_generation = 2;
+  string digest = 3;
+  bool activated = 4;
+  bool converged = 5;
+  repeated string connected_node_ids = 6;
+  repeated DeliveryObservation observations = 7;
+}
+
+service PublicationService {
+  rpc PublishBundle(PublishBundleRequest) returns (PublishBundleResponse);
+}
+
+service StatusService {
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+}
