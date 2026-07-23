@@ -53,6 +53,7 @@ func routeEntries(clusterName string, paths []string, upstreamPath string) []*ro
 				},
 				AppendAction: corev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 			}},
+			RequestHeadersToRemove: []string{rateLimitConsumerHeader},
 		})
 	}
 	return routes

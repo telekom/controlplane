@@ -52,6 +52,8 @@ type EnvoyFeatureBuilder interface {
 	// request by the external issuer (ext_authz) and injected upstream. realm
 	// and environment identify the token context (which signing realm applies).
 	RequireLMSToken(realm, environment string)
+	// ConfigureRateLimit declares route-wide and per-consumer shared limits.
+	ConfigureRateLimit(routeID string, routeLimit *gatewayv1.RateLimit, consumerLimits map[string]gatewayv1.Limits)
 }
 
 var _ EnvoyFeatureBuilder = &Builder{}
@@ -72,8 +74,9 @@ type Builder struct {
 	features map[gatewayv1.FeatureType]EnvoyFeature
 
 	// accumulated intent (set by feature Apply)
-	intent accessControlIntent
-	lms    lmsIntent
+	intent    accessControlIntent
+	lms       lmsIntent
+	rateLimit rateLimitIntent
 }
 
 // lmsIntent is the intent accumulated by the LastMileSecurity feature's Apply:
@@ -163,6 +166,10 @@ func (b *Builder) RequireLMSToken(realm, environment string) {
 	b.lms.environment = environment
 }
 
+func (b *Builder) ConfigureRateLimit(routeID string, routeLimit *gatewayv1.RateLimit, consumerLimits map[string]gatewayv1.Limits) {
+	b.rateLimit = newRateLimitIntent(routeID, routeLimit, consumerLimits)
+}
+
 // Build runs the enabled features, then renders the accumulated intent into an
 // xDS snapshot and publishes it.
 //
@@ -220,7 +227,7 @@ func (b *Builder) render() (ResourceBundle, error) {
 	routeName := b.route.Name
 	clusterName := routeName
 
-	filters, err := buildFilters(b.intent, b.lms)
+	filters, err := buildFilters(b.intent, b.rateLimit, b.lms)
 	if err != nil {
 		return ResourceBundle{}, err
 	}
@@ -234,7 +241,7 @@ func (b *Builder) render() (ResourceBundle, error) {
 		return ResourceBundle{}, err
 	}
 
-	listener, _, err := buildListener(routeName, clusterName, filters, r.GetHostnames(), r.GetPaths(), b.upstream.GetPath(), vhostPerFilterConfig)
+	listener, _, err := buildListener(routeName, clusterName, filters, r.GetHostnames(), r.GetPaths(), b.upstream.GetPath(), vhostPerFilterConfig, buildRateLimitDescriptors(b.rateLimit))
 	if err != nil {
 		return ResourceBundle{}, err
 	}
@@ -256,6 +263,14 @@ func (b *Builder) render() (ResourceBundle, error) {
 			return ResourceBundle{}, err
 		}
 		clusters = append(clusters, issuerCluster)
+	}
+
+	if b.rateLimit.enabled {
+		rateLimitCluster, err := buildRateLimitCluster()
+		if err != nil {
+			return ResourceBundle{}, err
+		}
+		clusters = append(clusters, rateLimitCluster)
 	}
 
 	// ponytail: RouteConfig is inlined in the HCM, so it is not published as a

@@ -52,6 +52,20 @@ valkey:
       cpu: 10m
       memory: 32Mi
 
+rateLimit:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docker.io/envoyproxy/ratelimit
+    tag: f2fb1577
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
 podAnnotations: {}
 podSecurityContext:
   runAsNonRoot: true

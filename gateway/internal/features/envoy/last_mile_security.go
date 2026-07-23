@@ -96,10 +96,24 @@ const (
 // https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-extauthz-metadata-context-namespaces ;
 // router must be terminal/last
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter
-func buildFilters(ac accessControlIntent, lms lmsIntent) ([]*hcmv3.HttpFilter, error) {
+func buildFilters(ac accessControlIntent, rateLimit rateLimitIntent, lms lmsIntent) ([]*hcmv3.HttpFilter, error) {
 	filters, err := buildAccessControlFilters(ac)
 	if err != nil {
 		return nil, err
+	}
+
+	if rateLimit.enabled {
+		metadataFilter, err := buildRateLimitMetadataFilter(rateLimit)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, metadataFilter)
+
+		rateLimitFilter, err := mkFilter(filterRateLimit, buildRateLimitFilter(rateLimit))
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, rateLimitFilter)
 	}
 
 	if lms.enabled {

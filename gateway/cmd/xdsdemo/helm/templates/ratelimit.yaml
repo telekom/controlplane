@@ -1,0 +1,122 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if .Values.rateLimit.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "xdsdemo.componentName" (dict "root" . "component" "ratelimit-config") }}
+  labels:
+    {{- include "xdsdemo.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+{{ .Files.Get "files/ratelimit-config.yaml" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "xdsdemo.componentName" (dict "root" . "component" "ratelimit") }}
+  labels:
+    {{- include "xdsdemo.labels" . | nindent 4 }}
+    {{- include "xdsdemo.selectorLabels" (dict "root" . "component" "ratelimit") | nindent 4 }}
+spec:
+  replicas: {{ .Values.rateLimit.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "xdsdemo.selectorLabels" (dict "root" . "component" "ratelimit") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/ratelimit-config: {{ .Files.Get "files/ratelimit-config.yaml" | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "xdsdemo.selectorLabels" (dict "root" . "component" "ratelimit") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: ratelimit
+          image: {{ include "xdsdemo.image" .Values.rateLimit.image | quote }}
+          imagePullPolicy: {{ .Values.rateLimit.image.pullPolicy }}
+          command:
+            - /bin/ratelimit
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: CONFIG_TYPE
+              value: FILE
+            - name: RUNTIME_ROOT
+              value: /data
+            - name: RUNTIME_SUBDIRECTORY
+              value: ratelimit
+            - name: RUNTIME_APPDIRECTORY
+              value: config
+            - name: RUNTIME_WATCH_ROOT
+              value: "false"
+            - name: HEALTHY_WITH_AT_LEAST_ONE_CONFIG_LOADED
+              value: "true"
+            - name: REDIS_SOCKET_TYPE
+              value: tcp
+            - name: REDIS_URL
+              value: valkey:6379
+            - name: USE_STATSD
+              value: "false"
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 8081
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+          resources:
+            {{- toYaml .Values.rateLimit.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /data/ratelimit/config/config.yaml
+              subPath: config.yaml
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "xdsdemo.componentName" (dict "root" . "component" "ratelimit-config") }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # The xDS-generated global rate-limit cluster resolves this fixed name.
+  name: ratelimit
+  labels:
+    {{- include "xdsdemo.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "xdsdemo.selectorLabels" (dict "root" . "component" "ratelimit") | nindent 4 }}
+  ports:
+    - name: grpc
+      port: 8081
+      targetPort: grpc
+{{- end }}

@@ -1,0 +1,18 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+domain: tardis-gateway
+descriptors:
+  - key: route
+    descriptors:
+      - key: window
+        rate_limit:
+          unit: hour
+          requests_per_unit: 1
+      - key: consumer
+        descriptors:
+          - key: window
+            rate_limit:
+              unit: hour
+              requests_per_unit: 1

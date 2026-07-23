@@ -73,6 +73,9 @@ var _ = Describe("buildAccessControlFilters", func() {
 			for _, p := range jwt.GetProviders() {
 				issuers = append(issuers, p.GetIssuer())
 				Expect(p.GetPayloadInMetadata()).To(Equal(jwtPayloadMetadataKey))
+				Expect(p.GetClaimToHeaders()).To(HaveLen(1))
+				Expect(p.GetClaimToHeaders()[0].GetHeaderName()).To(Equal(rateLimitConsumerHeader))
+				Expect(p.GetClaimToHeaders()[0].GetClaimName()).To(Equal(consumerMatchClaim))
 				remote := p.GetRemoteJwks()
 				Expect(remote).NotTo(BeNil())
 				Expect(remote.GetHttpUri().GetUri()).To(Equal(jwksURIFromIssuer(p.GetIssuer())))

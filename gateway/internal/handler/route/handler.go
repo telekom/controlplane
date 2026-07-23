@@ -156,6 +156,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route, xdsClient en
 	if gateway.Spec.Type == gatewayv1.GatewayTypeEnvoy {
 		builder := envoy.NewFeatureBuilder(xdsClient, route, nil, gateway)
 		builder.EnableFeature(envoy.InstanceAccessControlFeature)
+		builder.EnableFeature(envoy.InstanceRateLimitFeature)
 		builder.EnableFeature(envoy.InstanceLastMileSecurityFeature)
 		return builder, nil
 	}

@@ -177,6 +177,10 @@ func buildJwtAuthn(trustedIssuers []string) *jwtauthnv3.JwtAuthentication {
 		providers[name] = &jwtauthnv3.JwtProvider{
 			Issuer:            issuer,
 			PayloadInMetadata: jwtPayloadMetadataKey,
+			ClaimToHeaders: []*jwtauthnv3.JwtClaimToHeader{{
+				HeaderName: rateLimitConsumerHeader,
+				ClaimName:  consumerMatchClaim,
+			}},
 			JwksSourceSpecifier: &jwtauthnv3.JwtProvider_RemoteJwks{
 				RemoteJwks: &jwtauthnv3.RemoteJwks{
 					HttpUri: &corev3.HttpUri{
@@ -285,11 +289,16 @@ func mkFilter(name string, msg proto.Message) (*hcmv3.HttpFilter, error) {
 // listener code knowing which feature they belong to.
 //
 // ponytail: fixed 0.0.0.0:10000 bind + inline RouteConfig; POC single-listener.
-func buildListener(routeName, clusterName string, filters []*hcmv3.HttpFilter, hostnames, paths []string, upstreamPath string, vhostPerFilterConfig map[string]*anypb.Any) (*listenerv3.Listener, *routev3.RouteConfiguration, error) {
+
+func buildListener(routeName, clusterName string, filters []*hcmv3.HttpFilter, hostnames, paths []string, upstreamPath string, vhostPerFilterConfig map[string]*anypb.Any, rateLimits []*routev3.RateLimit) (*listenerv3.Listener, *routev3.RouteConfiguration, error) {
+	routes := routeEntries(clusterName, paths, upstreamPath)
+	for _, route := range routes {
+		route.GetRoute().RateLimits = rateLimits
+	}
 	vhost := &routev3.VirtualHost{
 		Name:    routeName,
 		Domains: routeDomains(hostnames),
-		Routes:  routeEntries(clusterName, paths, upstreamPath),
+		Routes:  routes,
 	}
 	if len(vhostPerFilterConfig) > 0 {
 		vhost.TypedPerFilterConfig = vhostPerFilterConfig

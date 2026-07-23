@@ -32,6 +32,7 @@ var _ = Describe("buildFilters (ext_authz ordering)", func() {
 					accessControl:  true,
 					allowConsumers: []string{"client-a"},
 				},
+				rateLimitIntent{},
 				lmsIntent{enabled: true, realm: "r1", environment: "poc"},
 			)
 			Expect(err).NotTo(HaveOccurred())
@@ -47,6 +48,7 @@ var _ = Describe("buildFilters (ext_authz ordering)", func() {
 		It("emits no ext_authz filter", func() {
 			filters, err := buildFilters(
 				accessControlIntent{trustedIssuers: []string{"https://iss-a"}},
+				rateLimitIntent{},
 				lmsIntent{enabled: false},
 			)
 			Expect(err).NotTo(HaveOccurred())
@@ -57,7 +59,7 @@ var _ = Describe("buildFilters (ext_authz ordering)", func() {
 	})
 
 	It("points ext_authz at the issuer gRPC cluster and fails closed", func() {
-		filters, err := buildFilters(accessControlIntent{}, lmsIntent{enabled: true})
+		filters, err := buildFilters(accessControlIntent{}, rateLimitIntent{}, lmsIntent{enabled: true})
 		Expect(err).NotTo(HaveOccurred())
 
 		cfg := &extauthzv3.ExtAuthz{}

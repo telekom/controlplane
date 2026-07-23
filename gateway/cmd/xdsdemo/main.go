@@ -70,6 +70,7 @@ func main() {
 
 	builder := envoy.NewFeatureBuilder(xds, route, nil, &gatewayv1.Gateway{})
 	builder.EnableFeature(envoy.InstanceAccessControlFeature)
+	builder.EnableFeature(envoy.InstanceRateLimitFeature)
 	builder.EnableFeature(envoy.InstanceLastMileSecurityFeature)
 	builder.SetUpstream(client.NewUpstreamOrDie(*upstreamURL))
 

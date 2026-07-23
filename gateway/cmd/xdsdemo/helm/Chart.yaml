@@ -4,7 +4,7 @@
 
 apiVersion: v2
 name: xdsdemo
-description: Envoy xDS demo with LMS ext-authz token issuance
+description: Envoy xDS demo with LMS ext-authz and shared Valkey rate limiting
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
