@@ -19,7 +19,6 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 			input := api.FileExposure{
 				Type:       "file",
 				FileType:   "demo-sftp-spec-v1",
-				Variant:    "sftp",
 				Visibility: api.WORLD,
 				PublicKeys: []api.PublicKey{
 					{Label: "provider-key", Key: "ssh-ed25519 AAAA1"},
@@ -30,7 +29,6 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 
 			Expect(output).ToNot(BeNil())
 			Expect(output.FileType).To(Equal("demo-sftp-spec-v1"))
-			Expect(output.Variant).To(Equal(roverv1.FileVariantSFTP))
 			Expect(output.Visibility).To(Equal(roverv1.VisibilityWorld))
 			Expect(output.PublicKeys).To(HaveLen(1))
 			Expect(output.PublicKeys[0].Label).To(Equal("provider-key"))
@@ -53,21 +51,6 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 
 			Expect(output.Visibility).To(BeEmpty())
 		})
-
-		It("must leave variant empty when omitted (optional field)", func() {
-			input := api.FileExposure{
-				Type:       "file",
-				FileType:   "demo-sftp-spec-v1",
-				Visibility: api.WORLD,
-				PublicKeys: []api.PublicKey{
-					{Label: "provider-key", Key: "ssh-ed25519 AAAA1"},
-				},
-			}
-
-			output := mapFileExposure(input)
-
-			Expect(output.Variant).To(BeEmpty())
-		})
 	})
 
 	Context("mapFileSubscription", func() {
@@ -75,7 +58,6 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 			input := api.FileSubscription{
 				Type:     "file",
 				FileType: "demo-sftp-spec-v1",
-				Variant:  "sftp",
 				PublicKeys: []api.PublicKey{
 					{Label: "consumer-key", Key: "ssh-ed25519 AAAA2"},
 				},
@@ -85,7 +67,6 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 
 			Expect(output).ToNot(BeNil())
 			Expect(output.FileType).To(Equal("demo-sftp-spec-v1"))
-			Expect(output.Variant).To(Equal(roverv1.FileVariantSFTP))
 			Expect(output.PublicKeys).To(HaveLen(1))
 			Expect(output.PublicKeys[0].Label).To(Equal("consumer-key"))
 			Expect(output.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA2"))

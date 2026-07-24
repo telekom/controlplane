@@ -54,7 +54,6 @@ func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 func mapFileSubscription(in api.FileSubscription) *roverv1.FileSubscription {
 	return &roverv1.FileSubscription{
 		FileType:   in.FileType,
-		Variant:    roverv1.FileVariant(in.Variant),
 		PublicKeys: mapPublicKeys(in.PublicKeys),
 	}
 }

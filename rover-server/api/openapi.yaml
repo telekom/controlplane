@@ -301,7 +301,7 @@ paths:
       description: >
         **Important:** The deletion is done asynchronously to ensure that the
         resource was actually deleted, use this or the GET resource until you
-        receive a 404 response.  
+        receive a 404 response.
 
         Delete Rover - will remove your API / Subscriptions / Exposures
       operationId: deleteRover
@@ -733,7 +733,7 @@ paths:
       description: >
         **Important:** The deletion is done asynchronously to ensure that the
         resource was actually deleted, use this or the GET resource until you
-        receive a 404 response.  
+        receive a 404 response.
 
         Delete an ApiSpecification
       operationId: deleteApiSpecification
@@ -969,7 +969,7 @@ paths:
       description: >
         **Important:** The deletion is done asynchronously to ensure that the
         resource was actually deleted, use this or the GET resource until you
-        receive a 404 response.  
+        receive a 404 response.
 
         Delete an EventSpecification
       operationId: deleteEventSpecification
@@ -2070,7 +2070,7 @@ components:
         - id
       allOf:
         - $ref: '#/components/schemas/RateLimit'
-        - properties: 
+        - properties:
             id:
               type: string
               description: The unique ID of this consumer (their clientId)
@@ -2467,11 +2467,6 @@ components:
           type: string
         fileType:
           type: string
-        variant:
-          type: string
-          enum:
-            - sftp
-          description: File-transfer backend. Optional; currently only "sftp" is supported.
         publicKeys:
           type: array
           items:

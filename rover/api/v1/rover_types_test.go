@@ -411,7 +411,6 @@ var _ = Describe("Rover V1 Test Suite", func() {
 					{
 						File: &v1.FileExposure{
 							FileType:   "demo-sftp-spec-v1",
-							Variant:    v1.FileVariantSFTP,
 							Visibility: v1.VisibilityWorld,
 							PublicKeys: []v1.PublicKey{
 								{Label: "demo-provider-key", Key: "ssh-ed25519 AAAAprovider"},

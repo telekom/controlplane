@@ -191,25 +191,6 @@ const (
 	TypeFile Type = "file"
 )
 
-// FileVariant selects the file-transfer backend used for a file type exposure or
-// subscription. Currently only SFTP is supported, as CloudWalker has been retired.
-type FileVariant string
-
-// String returns the raw string value of the FileVariant.
-//
-// TODO(DHEI-20903): currently unused in production code (only asserted in tests).
-// It will be called by the file-domain handler
-// (rover/internal/handler/rover/file, added in DHEI-20903) when logging/serialising
-// the selected variant while creating the file-domain CRD.
-func (v FileVariant) String() string {
-	return string(v)
-}
-
-const (
-	// FileVariantSFTP indicates that the file type is handled via the SFTP backend.
-	FileVariantSFTP FileVariant = "sftp"
-)
-
 // ApprovalStrategy defines the approval workflow for API exposure
 type ApprovalStrategy string
 
@@ -445,12 +426,6 @@ type FileExposure struct {
 	// +kubebuilder:validation:MinLength=1
 	FileType string `json:"fileType"`
 
-	// Variant selects the file-transfer backend. Currently only "sftp" is
-	// supported. The field is optional since CloudWalker has been retired.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=sftp
-	Variant FileVariant `json:"variant,omitempty"`
-
 	// Visibility defines who can see and subscribe to this file type
 	// +kubebuilder:validation:Enum=World;Zone;Enterprise
 	// +kubebuilder:default=Enterprise
@@ -476,12 +451,6 @@ type FileSubscription struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	FileType string `json:"fileType"`
-
-	// Variant selects the file-transfer backend. Currently only "sftp" is
-	// supported. The field is optional since CloudWalker has been retired.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=sftp
-	Variant FileVariant `json:"variant,omitempty"`
 
 	// PublicKeys are the SSH public keys registered for the consumer's SFTP user.
 	// At least one key is required. Both label and key value must be unique per fileType.

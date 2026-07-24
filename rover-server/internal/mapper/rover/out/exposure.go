@@ -52,7 +52,6 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 func mapFileExposure(in *roverv1.FileExposure) api.FileExposure {
 	return api.FileExposure{
 		FileType:   in.FileType,
-		Variant:    api.FileExposureVariant(in.Variant),
 		Visibility: toApiVisibility(in.Visibility),
 		PublicKeys: mapPublicKeys(in.PublicKeys),
 	}
