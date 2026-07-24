@@ -22,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
+	kongfeatures "github.com/telekom/controlplane/gateway/internal/features/kong"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	consumerhandler "github.com/telekom/controlplane/gateway/internal/handler/consumer"
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
@@ -36,7 +37,7 @@ var _ = Describe("ConsumerHandler", func() {
 		handler     *consumerhandler.ConsumerHandler
 		mockClient  *fakeclient.MockJanitorClient
 		mockKC      *clientmock.MockKongClient
-		mockBuilder *featmock.MockFeaturesBuilder
+		mockBuilder *featmock.MockKongFeatureBuilder
 		consumer    *gatewayv1.Consumer
 	)
 
@@ -44,7 +45,7 @@ var _ = Describe("ConsumerHandler", func() {
 		handler = &consumerhandler.ConsumerHandler{}
 		mockClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		mockKC = clientmock.NewMockKongClient(GinkgoT())
-		mockBuilder = featmock.NewMockFeaturesBuilder(GinkgoT())
+		mockBuilder = featmock.NewMockKongFeatureBuilder(GinkgoT())
 
 		ctx = cc.WithClient(context.Background(), mockClient)
 
@@ -77,9 +78,9 @@ var _ = Describe("ConsumerHandler", func() {
 			return mockKC, nil
 		}
 
-		originalNewFeatureBuilder := features.NewFeatureBuilder
-		DeferCleanup(func() { features.NewFeatureBuilder = originalNewFeatureBuilder })
-		features.NewFeatureBuilder = func(_ kongclient.KongClient, _ *gatewayv1.Route, _ *gatewayv1.Consumer, _ *gatewayv1.Gateway) features.FeaturesBuilder {
+		originalNewFeatureBuilder := kongfeatures.NewFeatureBuilder
+		DeferCleanup(func() { kongfeatures.NewFeatureBuilder = originalNewFeatureBuilder })
+		kongfeatures.NewFeatureBuilder = func(_ kongclient.KongClient, _ *gatewayv1.Route, _ *gatewayv1.Consumer, _ *gatewayv1.Gateway) features.KongFeatureBuilder {
 			return mockBuilder
 		}
 	}
@@ -134,7 +135,7 @@ var _ = Describe("ConsumerHandler", func() {
 			It("returns error when feature builder creation fails (gateway not ready)", func() {
 				setupNotReadyGatewayGet()
 
-				// Don't override features.NewFeatureBuilder - let the real one see the not-ready gateway
+				// Don't override kongfeatures.NewFeatureBuilder - let the real one see the not-ready gateway
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
 				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
