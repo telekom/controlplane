@@ -24,8 +24,18 @@ type AdminConfig struct {
 	Url          string `json:"url"`
 }
 
+const (
+	GatewayClassNameKong  = "kong"
+	GatewayClassNameEnvoy = "envoy"
+)
+
 // GatewaySpec defines the desired state of Gateway
 type GatewaySpec struct {
+	// gatewayClassName is the name of the GatewayClass that this Gateway belongs to.
+	// If this field is not specified, the default GatewayClass "kong" will be used.
+	// +optional
+	GatewayClassName string `json:"gatewayClassName,omitempty"`
+
 	Redis *RedisConfig `json:"redis,omitempty"`
 	Admin AdminConfig  `json:"admin"`
 

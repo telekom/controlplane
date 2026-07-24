@@ -62,6 +62,11 @@ spec:
                 items:
                   type: string
                 type: array
+              gatewayClassName:
+                description: |-
+                  gatewayClassName is the name of the GatewayClass that this Gateway belongs to.
+                  If this field is not specified, the default GatewayClass "kong" will be used.
+                type: string
               redis:
                 properties:
                   enableTLS:

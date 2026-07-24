@@ -26,6 +26,7 @@ import (
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/controller"
+	"github.com/telekom/controlplane/gateway/internal/features/envoy"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 	// +kubebuilder:scaffold:imports
 )
@@ -48,10 +49,12 @@ func main() {
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
+	var xdsAddr string
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", "0", "The address the probe endpoint binds to.")
+	flag.StringVar(&xdsAddr, "xds-bind-address", ":18000", "The address the Envoy xDS (ADS) gRPC server binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -139,6 +142,10 @@ func main() {
 	rootCtx := ctrl.SetupSignalHandler()
 	controller.RegisterIndecesOrDie(rootCtx, mgr)
 
+	// The shared, long-lived xDS snapshot cache. Reconcilers publish into it (on
+	// the leader) and the ADS server serves from it (on every replica).
+	xdsCache := envoy.NewXdsCache(ctrl.Log.WithName("envoy"))
+
 	if err = (&controller.GatewayReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -147,8 +154,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controller.RouteReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		XdsClient: xdsCache,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Route")
 		os.Exit(1)
@@ -168,6 +176,13 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
+
+	// The Envoy xDS server runs on ALL replicas (not leader-gated) so each can
+	// serve its own connected Envoy pods. See internal/features/envoy/README.md.
+	if err := mgr.Add(envoy.NewServer(xdsCache.Cache(), xdsAddr)); err != nil {
+		setupLog.Error(err, "unable to add Envoy xDS server runnable")
+		os.Exit(1)
+	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")

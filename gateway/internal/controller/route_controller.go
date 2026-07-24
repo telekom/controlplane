@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features/envoy"
 	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
 )
 
@@ -28,6 +29,10 @@ type RouteReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+
+	// XdsClient is the shared Envoy xDS client, injected at startup and passed to
+	// the RouteHandler for Envoy-class Gateways. May be nil in Kong-only setups.
+	XdsClient envoy.XdsClient
 
 	cc.Controller[*gatewayv1.Route]
 }
@@ -44,7 +49,7 @@ func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("route-controller")
-	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&routehandler.RouteHandler{XdsClient: r.XdsClient}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Route{}).

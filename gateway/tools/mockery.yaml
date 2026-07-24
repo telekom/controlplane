@@ -5,6 +5,7 @@
 with-expecter: True
 mockname: "Mock{{.InterfaceName}}"
 outpkg: "mock"
+boilerplate-file: "../../hack/boilerplate.go.txt"
 filename: "mock_{{.InterfaceName}}.go"
 packages:
   github.com/telekom/controlplane/gateway/pkg/kong/client:
@@ -25,7 +26,7 @@ packages:
     config:
     interfaces:
       # select the interfaces you want mocked
-      FeaturesBuilder:
+      KongFeatureBuilder:
         # Modify package-level config for this specific interface (if applicable)
         config:
           dir: "../internal/features/mock"

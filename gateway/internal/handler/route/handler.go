@@ -18,7 +18,10 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
-	"github.com/telekom/controlplane/gateway/internal/features/feature"
+	"github.com/telekom/controlplane/gateway/internal/features/envoy"
+	envoyfeature "github.com/telekom/controlplane/gateway/internal/features/envoy/feature"
+	"github.com/telekom/controlplane/gateway/internal/features/kong"
+	"github.com/telekom/controlplane/gateway/internal/features/kong/feature"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,12 +30,17 @@ import (
 
 var _ handler.Handler[*gatewayv1.Route] = &RouteHandler{}
 
-type RouteHandler struct{}
+type RouteHandler struct {
+	// XdsClient is the shared, long-lived Envoy xDS client. It is only used for
+	// routes on an Envoy-class Gateway; the Kong path ignores it. May be nil in
+	// Kong-only setups.
+	XdsClient envoy.XdsClient
+}
 
 func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Route) error {
 	log := log.FromContext(ctx)
 	kubeClient := cc.ClientFromContextOrDie(ctx)
-	builder, err := NewFeatureBuilder(ctx, route)
+	builder, err := h.NewFeatureBuilder(ctx, route)
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
@@ -126,7 +134,7 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 	return nil
 }
 
-func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, error) {
+func (h *RouteHandler) NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeatureBuilder, error) {
 
 	ready, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
@@ -136,12 +144,22 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 		return nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
 	}
 
+	if gateway.Spec.GatewayClassName == gatewayv1.GatewayClassNameEnvoy {
+		builder := envoy.NewEnvoyFeatureBuilder(h.XdsClient, route, nil, gateway)
+		builder.EnableFeature(envoyfeature.InstanceAccessControlFeature)
+
+		return builder, nil
+
+	}
+
+	// fallback to Kong as default to support existing installations that don't have the gatewayClassName set
+
 	kc, err := kongutil.GetClientFor(gateway)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get kong client")
 	}
 
-	builder := features.NewFeatureBuilder(kc, route, nil, gateway)
+	builder := kong.NewFeatureBuilder(kc, route, nil, gateway)
 	builder.EnableFeature(feature.InstanceAccessControlFeature)
 	builder.EnableFeature(feature.InstancePassThroughFeature)
 	builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
@@ -155,6 +173,5 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceBasicAuthFeature)
 	builder.EnableFeature(feature.InstanceCircuitBreakerFeature)
 	builder.EnableFeature(feature.InstanceDynamicUpstreamFeature)
-
 	return builder, nil
 }
