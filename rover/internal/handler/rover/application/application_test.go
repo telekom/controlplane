@@ -37,7 +37,7 @@ var _ = Describe("RoverNeedsClient", func() {
 
 	DescribeTable("decides whether the derived Application requires an Identity client",
 		func(exps []roverv1.Exposure, subs []roverv1.Subscription, expected bool) {
-			Expect(RoverNeedsClient(newRover(exps, subs))).To(Equal(expected))
+			Expect(isClientNeeded(newRover(exps, subs))).To(Equal(expected))
 		},
 		// Logical Application (file-only or empty) => no client/consumer.
 		Entry("empty rover", nil, nil, false),
