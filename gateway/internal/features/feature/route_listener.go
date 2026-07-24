@@ -9,6 +9,7 @@ import (
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
@@ -52,6 +53,8 @@ func (f *RouteListenerFeature) Apply(_ context.Context, builder features.Feature
 			Issuer:       rl.Spec.GatewayClient.Issuer,
 		}
 	}
+
+	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostListenerUrl))
 
 	return nil
 }
