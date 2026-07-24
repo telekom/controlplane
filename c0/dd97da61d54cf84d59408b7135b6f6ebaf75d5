@@ -1,0 +1,57 @@
+rover-server/config/certmanager/kustomizeconfig.yaml
+  s_0b79a12d4f99d3::t_7d8e4e773b6242 1-12
+rover-server/internal/config/config.go
+  s_0b79a12d4f99d3::t_9d2a451d9a6c34 78-86,89
+  s_0b79a12d4f99d3::t_03509a2f843eb6 97-100
+  s_0b79a12d4f99d3::t_41daf48c737f20 101-102
+rover-server/config/ingress/ingress.yaml
+  s_0b79a12d4f99d3::t_ab388f5f8472fa 22
+controlplane-api/cmd/main.go
+  s_0b79a12d4f99d3::t_85874de22ff3e4 149
+  s_0b79a12d4f99d3::t_424e7b2ec1c6f8 128,136-137
+  s_0b79a12d4f99d3::t_483ab610884de0 126-127
+rover-server/config/server/server.yaml
+  s_0b79a12d4f99d3::t_06c8a89ac5bf90 40,52,54,59,61,74-76,80-82
+  s_0b79a12d4f99d3::t_c17b529514d1ca 98,100
+  s_0b79a12d4f99d3::t_25b18e35b3ceaa 101-104
+  s_0b79a12d4f99d3::t_306559c17b6319 38-39,41-44
+controlplane-api/config/manager/manager.yaml
+  s_0b79a12d4f99d3::t_5d3436e019f9ff 68-70
+  s_0b79a12d4f99d3::t_b094eb3e0d1ed4 18-20
+rover-server/config/default/metrics_service.yaml
+  s_0b79a12d4f99d3::t_a5b5585b4dc87a 16-17,19
+rover-server/config/certmanager/certificate.yaml
+  s_0b79a12d4f99d3::t_6b8953af192985 1-20
+controlplane-api/cmd/config/config.go
+  s_0b79a12d4f99d3::t_d7f5e444b8c0e4 72-75
+  s_0b79a12d4f99d3::t_d4401aca503b1b 76-77
+rover-server/config/prometheus/monitor.yaml
+  s_0b79a12d4f99d3::t_e75c7c85236dea 18-20
+  s_0b79a12d4f99d3::t_9ba98cd7c50491 21
+rover-server/config/certmanager/kustomization.yaml
+  s_0b79a12d4f99d3::t_9e45554c664c33 1-9
+rover-server/config/default/kustomization.yaml
+  s_0b79a12d4f99d3::t_da4dd0cd790948 53-89
+  s_0b79a12d4f99d3::t_841dafdcc7d4f0 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c0dd97da61d54cf84d59408b7135b6f6ebaf75d5",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_0b79a12d4f99d3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06be77a0fffeKVeoi055m17ls2",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
