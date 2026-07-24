@@ -58,13 +58,21 @@ func DefaultConfig() *ServerConfig {
 				Cert: "/etc/tls/tls.crt",
 				Key:  "/etc/tls/tls.key",
 			},
-			// controlplane-api is external-only: a single JWT listener on :8443
-			// (secure by default). No internal k8s listener.
+			// External JWT listener on :8443 (secure by default) plus an
+			// internal k8s listener on :9443 for in-cluster callers. Empty
+			// accessConfig = any authenticated in-cluster SA; in-cluster issuer
+			// auto-discovered.
 			Listeners: commonconfig.ListenersConfig{
 				External: &cserver.ListenerConfig{
 					Address: ":8443",
 					JWT: &security.JWTConfig{
 						Mode: security.ModeJWT,
+					},
+				},
+				Internal: &cserver.ListenerConfig{
+					Address: ":9443",
+					K8s: &cserver.K8sConfig{
+						Audience: "controlplane-api",
 					},
 				},
 			},

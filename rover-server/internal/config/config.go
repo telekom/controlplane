@@ -75,18 +75,29 @@ func DefaultConfig() *ServerConfig {
 				Encoding: "json",
 				Level:    "info",
 			},
-			// One external JWT listener on :8080, plain HTTP (TLS nil). The
-			// internal k8s listener is opt-in via config (add a
-			// listeners.internal.k8s block); an empty k8s block auto-uses the
-			// local cluster issuer.
+			// Default TLS cert/key paths. A tls block in the config file
+			// overrides these; empty cert/key downgrades to plain HTTP (dev only).
+			TLS: &cserver.TLSFileConfig{
+				Cert: "/etc/tls/tls.crt",
+				Key:  "/etc/tls/tls.key",
+			},
+			// External JWT listener on :8443 (HTTPS) plus an internal k8s
+			// listener on :9443 for in-cluster callers. Empty accessConfig =
+			// any authenticated in-cluster SA; in-cluster issuer auto-discovered.
 			Listeners: commonconfig.ListenersConfig{
 				External: &cserver.ListenerConfig{
-					Address: ":8080",
+					Address: ":8443",
 					JWT: &security.JWTConfig{
 						Mode:           security.ModeJWT,
 						TrustedIssuers: []string{},
 						DefaultScope:   "tardis:team:all",
 						ScopePrefix:    "tardis:",
+					},
+				},
+				Internal: &cserver.ListenerConfig{
+					Address: ":9443",
+					K8s: &cserver.K8sConfig{
+						Audience: "rover-server",
 					},
 				},
 			},

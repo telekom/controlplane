@@ -15,8 +15,10 @@ metadata:
 spec:
   endpoints:
     - path: /metrics
-      port: http # Ensure this is the name of the port that exposes HTTP metrics
-      scheme: http
+      port: https # metrics are served on the TLS external listener
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
   selector:
     matchLabels:
       control-plane: rover-server

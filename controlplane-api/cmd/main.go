@@ -106,17 +106,26 @@ func main() {
 		return opts
 	}
 
-	// controlplane-api is external-only: a single JWT listener, no internal
-	// k8s listener. FamilyFromListenerConfig with internal=false requires a
-	// JWT block (the config default supplies one).
-	lc := cfg.Listeners.External
-	if lc == nil {
-		log.Error(fmt.Errorf("no external listener configured"), "controlplane-api requires listeners.external")
-		os.Exit(1)
+	// buildListener turns a listener config into a Listener, choosing JWT vs
+	// K8s from the config block. Internal listeners get admin-context.
+	buildListener := func(lc *cserver.ListenerConfig, internal bool) *cserver.Listener {
+		if lc == nil {
+			return nil
+		}
+		var opts []cserver.FamilyOption
+		if internal {
+			opts = append(opts, cserver.WithAdminContext())
+		}
+		fam, err := cserver.FamilyFromListenerConfig(*lc, jwtOpts, opts...)
+		if err != nil {
+			log.Error(err, "failed to build security family for listener", "address", lc.Address)
+			os.Exit(1)
+		}
+		return &cserver.Listener{Address: lc.Address, Family: fam}
 	}
-	family, err := cserver.FamilyFromListenerConfig(*lc, jwtOpts)
-	if err != nil {
-		log.Error(err, "failed to build security family for external listener", "address", lc.Address)
+
+	if cfg.Listeners.External == nil {
+		log.Error(fmt.Errorf("no external listener configured"), "controlplane-api requires listeners.external")
 		os.Exit(1)
 	}
 
@@ -124,7 +133,8 @@ func main() {
 		AppConfig: appCfg,
 		TLS:       cfg.TLS.ToServerTLS(),
 		Listeners: cserver.Listeners{
-			External: &cserver.Listener{Address: lc.Address, Family: family},
+			Internal: buildListener(cfg.Listeners.Internal, true),
+			External: buildListener(cfg.Listeners.External, false),
 		},
 		Register: gqlCtrl.RegisterRoutes,
 	}
@@ -136,7 +146,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	log.Info("server started", "addr", lc.Address, "tls", cfg.TLS != nil)
+	log.Info("server started", "external", cfg.Listeners.External.Address, "internal", cfg.Listeners.Internal, "tls", cfg.TLS != nil)
 
 	<-ctx.Done()
 	log.Info("shutting down server")
