@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -110,6 +111,7 @@ var _ = Describe("RouteListenerFeature", func() {
 				jc := plugin.NewJumperConfig()
 				builder.EXPECT().GetRouteListeners().Return([]*gatewayv1.RouteListener{rl})
 				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return()
 
 				err := f.Apply(ctx, builder)
 				Expect(err).ToNot(HaveOccurred())
@@ -146,6 +148,7 @@ var _ = Describe("RouteListenerFeature", func() {
 				jc := plugin.NewJumperConfig()
 				builder.EXPECT().GetRouteListeners().Return(rls)
 				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return()
 
 				err := f.Apply(ctx, builder)
 				Expect(err).ToNot(HaveOccurred())
@@ -180,6 +183,7 @@ var _ = Describe("RouteListenerFeature", func() {
 
 				builder.EXPECT().GetRouteListeners().Return([]*gatewayv1.RouteListener{rl})
 				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return()
 
 				err := f.Apply(ctx, builder)
 				Expect(err).ToNot(HaveOccurred())

@@ -12,6 +12,7 @@ import (
 )
 
 const LocalhostProxyUrl = "http://localhost:8080/proxy"
+const LocalhostListenerUrl = "http://localhost:8080/listener"
 
 type ConsumerId string
 
