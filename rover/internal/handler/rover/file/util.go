@@ -7,12 +7,14 @@ package file
 import (
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 )
 
 // MakeName generates a deterministic resource name for a file exposure or
 // subscription: "<fileType>--<owner>" (spec_dcp naming), normalized.
 func MakeName(fileType, ownerName string) string {
-	return filev1.MakeFileTypeName(fileType) + "--" + ownerName
+	return filev1.MakeFileTypeName(fileType) + "--" + labelutil.NormalizeValue(ownerName)
 }
 
 // mapPublicKeys converts rover-domain public keys to file-domain public keys.

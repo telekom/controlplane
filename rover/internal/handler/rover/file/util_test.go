@@ -20,6 +20,7 @@ func TestMakeName(t *testing.T) {
 		{"hyphenated file type", "de-telekom-eni-foo-v1", "provider", "de-telekom-eni-foo-v1--provider"},
 		{"dotted file type is normalized", "de.telekom.foo.v1", "consumer", "de-telekom-foo-v1--consumer"},
 		{"mixed case is lowercased", "De.Telekom.V1", "app", "de-telekom-v1--app"},
+		{"owner name is normalized", "de.telekom.foo.v1", "My_App", "de-telekom-foo-v1--my-app"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

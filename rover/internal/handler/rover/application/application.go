@@ -47,8 +47,7 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	} else if err != nil {
 		return err
 	}
-	// If the Application publishes any events, we need to create a client for it, even if it doesn't have any subscriptions.
-	// This is because the client is needed to access the publish-route
+
 	needsClient := isClientNeeded(owner)
 	var subscriberFailoverZones []types.ObjectRef
 	if needsClient {
@@ -132,12 +131,10 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	return err
 }
 
-// isClientNeeded reports whether the Application derived from the given Rover
-// requires an Identity client (and Gateway consumer).
-//
-// File-type (SFTP) subscriptions and exposures are realized in the file domain via
-// SFTP users and SSH public keys. They neither need an Identity client nor a Gateway
-// consumer. Only non-file subscriptions or any event exposure force a client/consumer.
+// isClientNeeded reports whether the derived Application requires an Identity
+// client (and Gateway consumer). Non-file subscriptions and event exposures
+// (which need client access to the publish-route) require one; file-type (SFTP)
+// exposures and subscriptions never do, as they are realized in the file domain.
 func isClientNeeded(owner *roverv1.Rover) bool {
 	hasAnyEventExposures := slices.ContainsFunc(owner.Spec.Exposures, func(ex roverv1.Exposure) bool {
 		return ex.Type() == roverv1.TypeEvent
