@@ -1,0 +1,20 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: file.cp.ei.telekom.de/v1
+kind: ZoneServiceConfig
+metadata:
+  name: sample-zone
+spec:
+  api:
+    name: sftp-api
+    path: /sftp/api
+    url: https://sftp-api.example.com/base-path/
+    type: TeamAPI
+  service:
+    host: sftp.default.svc.cluster.local
+    port: 3022
+  serviceExternal:
+    host: sftp.example.com
+    port: 3022
