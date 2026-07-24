@@ -6,7 +6,6 @@ package in
 
 import (
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +14,11 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
+
+// MigrationActive controls whether the client secret is copied through on
+// mapping. Set once at startup from config; defaults off.
+// ponytail: package var over threading cfg through every MapRequest caller.
+var MigrationActive bool
 
 func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *roverv1.Rover, err error) {
 	res = &roverv1.Rover{
@@ -53,7 +57,7 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 		return res, errors.Wrap(err, "failed to map rover")
 	}
 
-	if viper.GetBool("migration.active") {
+	if MigrationActive {
 		res.Spec.ClientSecret = in.ClientSecret
 	}
 	return

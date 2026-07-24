@@ -15,6 +15,9 @@ spec:
     - name: https
       port: 443
       targetPort: 8443
+    - name: internal
+      port: 9443
+      targetPort: 9443
   selector:
     app.kubernetes.io/component: manager
 ---
@@ -61,6 +64,9 @@ spec:
           ports:
             - name: https
               containerPort: 8443
+              protocol: TCP
+            - name: internal
+              containerPort: 9443
               protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false

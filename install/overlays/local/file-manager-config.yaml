@@ -10,6 +10,6 @@ backend:
   role_arn: "arn:aws:iam::123456789012:role/my-sample-role" # Replace with your actual IAM role ARN
   token_path: "/var/run/secrets/file-manager/file-manager-token"
 
-
-security:
-  enabled: false # client needs to provide the authentication token in the request header
+# Auth: uses the default internal k8s listener (:8443, audience file-manager,
+# in-cluster issuer, empty accessConfig = any authenticated in-cluster SA).
+# To restrict, add a listeners.internal.k8s.accessConfig allow-list.

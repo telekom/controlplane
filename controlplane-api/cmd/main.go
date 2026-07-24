@@ -8,7 +8,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -19,7 +18,6 @@ import (
 	"github.com/go-logr/zapr"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"github.com/telekom/controlplane/common-server/pkg/server/serve"
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
@@ -95,50 +93,63 @@ func main() {
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.EnableCors = true
-	s := cserver.NewServerWithApp(cserver.NewAppWithConfig(appCfg))
-
-	probesCtrl := cserver.NewProbesController()
-	probesCtrl.Register(s.App, cserver.ControllerOpts{})
 
 	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
-	gqlCtrl.RegisterPlayground(s.App, "/graphql")
-	secOpts := security.SecurityOpts{
-		Mode: cfg.Security.Mode,
-		Log:  log.WithName("security"),
-		JWTOpts: []security.Option[*security.JWTOpts]{
-			security.WithTrustedIssuers(cfg.Security.TrustedIssuers),
-		},
+
+	// jwtOpts turns the listener's jwt block into full SecurityOpts. controlplane-api
+	// has no server-specific check-access templates (GraphQL guards via business
+	// context downstream), so this only wires the logger.
+	jwtOpts := func(jc security.JWTConfig) security.SecurityOpts {
+		opts := jc.ToSecurityOpts()
+		opts.Log = log.WithName("security")
+		opts.BusinessContextOpts = append(opts.BusinessContextOpts, security.WithLog(log.WithName("security")))
+		return opts
 	}
-	s.RegisterController(gqlCtrl, cserver.ControllerOpts{
-		Prefix:         "/graphql",
-		AllowedMethods: []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodOptions},
-		Security:       secOpts,
-	})
 
-	go func() {
-		if !cfg.Server.TLS.Enabled {
-			fmt.Println("WARNING: Using HTTP instead of HTTPS. This is not secure.")
-			if err := s.App.Listen(cfg.Server.Address); err != nil {
-				log.Error(err, "failed to start server")
-				os.Exit(1)
-			}
-			return
+	// buildListener turns a listener config into a Listener, choosing JWT vs
+	// K8s from the config block. Internal listeners get admin-context.
+	buildListener := func(lc *cserver.ListenerConfig, internal bool) *cserver.Listener {
+		if lc == nil {
+			return nil
 		}
+		var opts []cserver.FamilyOption
+		if internal {
+			opts = append(opts, cserver.WithAdminContext())
+		}
+		fam, err := cserver.FamilyFromListenerConfig(*lc, jwtOpts, opts...)
+		if err != nil {
+			log.Error(err, "failed to build security family for listener", "address", lc.Address)
+			os.Exit(1)
+		}
+		return &cserver.Listener{Address: lc.Address, Family: fam}
+	}
 
-		tlsCtx := logr.NewContext(ctx, log.WithName("server"))
-		if err := serve.ServeTLS(tlsCtx, s.App, cfg.Server.Address, cfg.Server.TLS.Cert, cfg.Server.TLS.Key); err != nil {
-			log.Error(err, "failed to start server")
+	if cfg.Listeners.External == nil {
+		log.Error(fmt.Errorf("no external listener configured"), "controlplane-api requires listeners.external")
+		os.Exit(1)
+	}
+
+	ms := &cserver.MultiServer{
+		AppConfig: appCfg,
+		TLS:       cfg.TLS.ToServerTLS(),
+		Listeners: cserver.Listeners{
+			Internal: buildListener(cfg.Listeners.Internal, true),
+			External: buildListener(cfg.Listeners.External, false),
+		},
+		Register: gqlCtrl.RegisterRoutes,
+	}
+
+	ctx = logr.NewContext(ctx, log.WithName("server"))
+	go func() {
+		if err := ms.Run(ctx); err != nil {
+			log.Error(err, "server exited with error")
 			os.Exit(1)
 		}
 	}()
-	log.Info("server started", "addr", cfg.Server.Address, "tls", cfg.Server.TLS.Enabled)
+	log.Info("server started", "external", cfg.Listeners.External.Address, "internal", cfg.Listeners.Internal, "tls", cfg.TLS != nil)
 
 	<-ctx.Done()
 	log.Info("shutting down server")
-
-	if err := s.App.Shutdown(); err != nil {
-		log.Error(err, "failed to gracefully shutdown server")
-	}
 
 	if err := client.Close(); err != nil {
 		log.Error(err, "failed to close database client")

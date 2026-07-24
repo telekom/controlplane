@@ -16,7 +16,6 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 
 	"github.com/telekom/controlplane/common-server/pkg/server"
-	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
@@ -34,12 +33,16 @@ func NewController(srv *handler.Server, enablePlayground bool) *Controller {
 	}
 }
 
-// Register implements server.Controller.
-func (c *Controller) Register(router fiber.Router, opts server.ControllerOpts) {
-	checkAccess := security.ConfigureSecurity(router, opts.Security)
+// RegisterRoutes registers the GraphQL routes onto router, attaching guard
+// (from the listener's security family) to /query. It fits the MultiServer
+// RegisterFunc signature. The playground is registered separately and left
+// unauthenticated (see RegisterPlayground).
+func (c *Controller) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
+	c.RegisterPlayground(router, "/graphql")
 	gqlHandler := httpHandlerWithUserContext(c.srv)
-	router.Post("/query", checkAccess, gqlHandler)
-	router.Get("/query", checkAccess, gqlHandler)
+	group := router.Group("/graphql")
+	group.Add(fiber.MethodPost, "/query", server.Guarded(guard, gqlHandler)...)
+	group.Add(fiber.MethodGet, "/query", server.Guarded(guard, gqlHandler)...)
 }
 
 // RegisterPlayground registers the GraphQL playground on the given router

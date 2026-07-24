@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -77,7 +78,10 @@ type McpSpecificationController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
-var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
+// SecurityTemplates are the rover-specific check-access comparison templates.
+// They are exported so cmd/main.go can inject them into the JWT SecurityOpts
+// when building each listener's security family.
+var SecurityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--",
 		UserInputTemplate: "{{ .B.Environment }}--{{ .P.Resourceid }}",
@@ -106,25 +110,7 @@ type Server struct {
 	McpSpecifications   McpSpecificationController
 }
 
-func (s *Server) RegisterRoutes(router fiber.Router) {
-	checkAccess := security.ConfigureSecurity(router, security.SecurityOpts{
-		Mode: s.Config.Security.Mode,
-		Log:  s.Log,
-		JWTOpts: []security.Option[*security.JWTOpts]{
-			security.WithLmsCheck(s.Config.Security.LMS.BasePath),
-			security.WithTrustedIssuers(s.Config.Security.TrustedIssuers),
-		},
-		BusinessContextOpts: []security.Option[*security.BusinessContextOpts]{
-			security.WithDefaultScope(s.Config.Security.DefaultScope),
-			security.WithLog(s.Log),
-			security.WithScopePrefix(s.Config.Security.ScopePrefix),
-		},
-		CheckAccessOpts: []security.Option[*security.CheckAccessOpts]{
-			security.WithPathParamKey("resourceId"),
-			security.WithTemplates(securityTemplates),
-		},
-	})
-
+func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
 	swagger, err := api.GetSwagger()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to get swagger"))
@@ -146,67 +132,67 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 
 	s.Log.Info("Registering apispecifications routes")
 
-	router.Get("/apispecifications", checkAccess, s.GetAllApiSpecifications)
-	router.Post("/apispecifications", checkAccess, s.CreateApiSpecification)
-	router.Get("/apispecifications/:resourceId/status", checkAccess, s.GetApiSpecificationStatus)
+	router.Add(fiber.MethodGet, "/apispecifications", cserver.Guarded(guard, s.GetAllApiSpecifications)...)
+	router.Add(fiber.MethodPost, "/apispecifications", cserver.Guarded(guard, s.CreateApiSpecification)...)
+	router.Add(fiber.MethodGet, "/apispecifications/:resourceId/status", cserver.Guarded(guard, s.GetApiSpecificationStatus)...)
 
-	router.Get("/apispecifications/:resourceId", checkAccess, s.GetApiSpecifications)
-	router.Put("/apispecifications/:resourceId", checkAccess, s.UpdateApiSpecification)
-	router.Delete("/apispecifications/:resourceId", checkAccess, s.DeleteApiSpecification)
+	router.Add(fiber.MethodGet, "/apispecifications/:resourceId", cserver.Guarded(guard, s.GetApiSpecifications)...)
+	router.Add(fiber.MethodPut, "/apispecifications/:resourceId", cserver.Guarded(guard, s.UpdateApiSpecification)...)
+	router.Add(fiber.MethodDelete, "/apispecifications/:resourceId", cserver.Guarded(guard, s.DeleteApiSpecification)...)
 
 	s.Log.Info("Registering rovers routes")
 
-	router.Get("/rovers", checkAccess, s.GetAllRovers)
-	router.Post("/rovers", checkAccess, s.CreateRover)
-	router.Get("/rovers/info", checkAccess, s.GetManyApplicationInfo)
+	router.Add(fiber.MethodGet, "/rovers", cserver.Guarded(guard, s.GetAllRovers)...)
+	router.Add(fiber.MethodPost, "/rovers", cserver.Guarded(guard, s.CreateRover)...)
+	router.Add(fiber.MethodGet, "/rovers/info", cserver.Guarded(guard, s.GetManyApplicationInfo)...)
 
-	router.Get("/rovers/:resourceId/status", checkAccess, s.GetRoverStatus)
-	router.Get("/rovers/:resourceId/info", checkAccess, s.GetApplicationInfo)
-	router.Patch("/rovers/:resourceId/secret", checkAccess, s.ResetRoverSecret)
-	router.Get("/rovers/:resourceId/secret/status", checkAccess, s.GetSecretRotationStatus)
+	router.Add(fiber.MethodGet, "/rovers/:resourceId/status", cserver.Guarded(guard, s.GetRoverStatus)...)
+	router.Add(fiber.MethodGet, "/rovers/:resourceId/info", cserver.Guarded(guard, s.GetApplicationInfo)...)
+	router.Add(fiber.MethodPatch, "/rovers/:resourceId/secret", cserver.Guarded(guard, s.ResetRoverSecret)...)
+	router.Add(fiber.MethodGet, "/rovers/:resourceId/secret/status", cserver.Guarded(guard, s.GetSecretRotationStatus)...)
 
-	router.Delete("/rovers/:resourceId", checkAccess, s.DeleteRover)
-	router.Get("/rovers/:resourceId", checkAccess, s.GetRover)
-	router.Put("/rovers/:resourceId", checkAccess, s.UpdateRover)
+	router.Add(fiber.MethodDelete, "/rovers/:resourceId", cserver.Guarded(guard, s.DeleteRover)...)
+	router.Add(fiber.MethodGet, "/rovers/:resourceId", cserver.Guarded(guard, s.GetRover)...)
+	router.Add(fiber.MethodPut, "/rovers/:resourceId", cserver.Guarded(guard, s.UpdateRover)...)
 
 	s.Log.Info("Registering eventspecifications routes")
 
-	router.Get("/eventspecifications", checkAccess, s.GetAllEventSpecifications)
-	router.Post("/eventspecifications", checkAccess, s.CreateEventSpecification)
-	router.Get("/eventspecifications/:resourceId/status", checkAccess, s.GetEventSpecificationStatus)
+	router.Add(fiber.MethodGet, "/eventspecifications", cserver.Guarded(guard, s.GetAllEventSpecifications)...)
+	router.Add(fiber.MethodPost, "/eventspecifications", cserver.Guarded(guard, s.CreateEventSpecification)...)
+	router.Add(fiber.MethodGet, "/eventspecifications/:resourceId/status", cserver.Guarded(guard, s.GetEventSpecificationStatus)...)
 
-	router.Get("/eventspecifications/:resourceId", checkAccess, s.GetEventSpecification)
-	router.Put("/eventspecifications/:resourceId", checkAccess, s.UpdateEventSpecification)
-	router.Delete("/eventspecifications/:resourceId", checkAccess, s.DeleteEventSpecification)
+	router.Add(fiber.MethodGet, "/eventspecifications/:resourceId", cserver.Guarded(guard, s.GetEventSpecification)...)
+	router.Add(fiber.MethodPut, "/eventspecifications/:resourceId", cserver.Guarded(guard, s.UpdateEventSpecification)...)
+	router.Add(fiber.MethodDelete, "/eventspecifications/:resourceId", cserver.Guarded(guard, s.DeleteEventSpecification)...)
 
 	s.Log.Info("Registering apiroadmaps routes")
 
-	router.Get("/apiroadmaps", checkAccess, s.GetAllApiRoadmaps)
-	router.Post("/apiroadmaps", checkAccess, s.CreateApiRoadmap)
-	router.Get("/apiroadmaps/:resourceId/status", checkAccess, s.GetApiRoadmapStatus)
+	router.Add(fiber.MethodGet, "/apiroadmaps", cserver.Guarded(guard, s.GetAllApiRoadmaps)...)
+	router.Add(fiber.MethodPost, "/apiroadmaps", cserver.Guarded(guard, s.CreateApiRoadmap)...)
+	router.Add(fiber.MethodGet, "/apiroadmaps/:resourceId/status", cserver.Guarded(guard, s.GetApiRoadmapStatus)...)
 
-	router.Get("/apiroadmaps/:resourceId", checkAccess, s.GetApiRoadmap)
-	router.Put("/apiroadmaps/:resourceId", checkAccess, s.UpdateApiRoadmap)
-	router.Delete("/apiroadmaps/:resourceId", checkAccess, s.DeleteApiRoadmap)
+	router.Add(fiber.MethodGet, "/apiroadmaps/:resourceId", cserver.Guarded(guard, s.GetApiRoadmap)...)
+	router.Add(fiber.MethodPut, "/apiroadmaps/:resourceId", cserver.Guarded(guard, s.UpdateApiRoadmap)...)
+	router.Add(fiber.MethodDelete, "/apiroadmaps/:resourceId", cserver.Guarded(guard, s.DeleteApiRoadmap)...)
 
 	s.Log.Info("Registering apichangelogs routes")
 
-	router.Get("/apichangelogs", checkAccess, s.GetAllApiChangelogs)
-	router.Post("/apichangelogs", checkAccess, s.CreateApiChangelog)
-	router.Get("/apichangelogs/:resourceId/status", checkAccess, s.GetApiChangelogStatus)
+	router.Add(fiber.MethodGet, "/apichangelogs", cserver.Guarded(guard, s.GetAllApiChangelogs)...)
+	router.Add(fiber.MethodPost, "/apichangelogs", cserver.Guarded(guard, s.CreateApiChangelog)...)
+	router.Add(fiber.MethodGet, "/apichangelogs/:resourceId/status", cserver.Guarded(guard, s.GetApiChangelogStatus)...)
 
-	router.Get("/apichangelogs/:resourceId", checkAccess, s.GetApiChangelog)
-	router.Put("/apichangelogs/:resourceId", checkAccess, s.UpdateApiChangelog)
-	router.Delete("/apichangelogs/:resourceId", checkAccess, s.DeleteApiChangelog)
+	router.Add(fiber.MethodGet, "/apichangelogs/:resourceId", cserver.Guarded(guard, s.GetApiChangelog)...)
+	router.Add(fiber.MethodPut, "/apichangelogs/:resourceId", cserver.Guarded(guard, s.UpdateApiChangelog)...)
+	router.Add(fiber.MethodDelete, "/apichangelogs/:resourceId", cserver.Guarded(guard, s.DeleteApiChangelog)...)
 
 	s.Log.Info("Registering mcpspecifications routes")
 
-	router.Get("/mcpspecifications", checkAccess, s.GetAllMcpSpecifications)
-	router.Post("/mcpspecifications", checkAccess, s.CreateMcpSpecification)
-	router.Get("/mcpspecifications/:resourceId/status", checkAccess, s.GetMcpSpecificationStatus)
+	router.Add(fiber.MethodGet, "/mcpspecifications", cserver.Guarded(guard, s.GetAllMcpSpecifications)...)
+	router.Add(fiber.MethodPost, "/mcpspecifications", cserver.Guarded(guard, s.CreateMcpSpecification)...)
+	router.Add(fiber.MethodGet, "/mcpspecifications/:resourceId/status", cserver.Guarded(guard, s.GetMcpSpecificationStatus)...)
 
-	router.Get("/mcpspecifications/:resourceId", checkAccess, s.GetMcpSpecification)
-	router.Put("/mcpspecifications/:resourceId", checkAccess, s.UpdateMcpSpecification)
-	router.Delete("/mcpspecifications/:resourceId", checkAccess, s.DeleteMcpSpecification)
+	router.Add(fiber.MethodGet, "/mcpspecifications/:resourceId", cserver.Guarded(guard, s.GetMcpSpecification)...)
+	router.Add(fiber.MethodPut, "/mcpspecifications/:resourceId", cserver.Guarded(guard, s.UpdateMcpSpecification)...)
+	router.Add(fiber.MethodDelete, "/mcpspecifications/:resourceId", cserver.Guarded(guard, s.DeleteMcpSpecification)...)
 
 }
