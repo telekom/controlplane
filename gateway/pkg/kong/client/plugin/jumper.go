@@ -12,6 +12,7 @@ import (
 )
 
 const LocalhostProxyUrl = "http://localhost:8080/proxy"
+const LocalhostListenerUrl = "http://localhost:8080/listener"
 
 type ConsumerId string
 
@@ -52,13 +53,21 @@ type LoadBalancingServer struct {
 	Weight   int32  `json:"weight,omitempty"`
 }
 
+type RouteListenerEntry struct {
+	Issue        string `json:"issue"`
+	ServiceOwner string `json:"serviceOwner"`
+	ClientId     string `json:"clientId,omitempty"`
+	Issuer       string `json:"issuer,omitempty"`
+}
+
 type JumperConfig struct {
 	OAuth         map[ConsumerId]OauthCredentials     `json:"oauth,omitempty"`
 	BasicAuth     map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
 	Claims        map[ConsumerId][]Claim              `json:"claims,omitempty"`
 	LoadBalancing *LoadBalancing                      `json:"loadBalancing,omitempty"`
 	// Mesh indicates whether the Jumper should operate in mesh mode.
-	Mesh bool `json:"mesh,omitempty"`
+	Mesh          bool                              `json:"mesh,omitempty"`
+	RouteListener map[ConsumerId]RouteListenerEntry `json:"routeListener,omitempty"`
 }
 
 func NewJumperConfig() *JumperConfig {

@@ -26,4 +26,5 @@ const (
 	FeatureTypeClaims           FeatureType = "Claims"           // depends on LastMileSecurity
 	FeatureTypeLoadBalancing    FeatureType = "LoadBalancing"    // depends on LastMileSecurity
 	FeatureTypeFailover         FeatureType = "Failover"         // depends on LastMileSecurity
+	FeatureTypeRouteListener    FeatureType = "RouteListener"    // depends on LastMileSecurity
 )

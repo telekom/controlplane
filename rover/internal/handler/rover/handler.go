@@ -28,7 +28,9 @@ import (
 	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/event"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/permission"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/spectre"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
 var _ handler.Handler[*roverv1.Rover] = (*RoverHandler)(nil)
@@ -51,6 +53,12 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 
 	if err := h.handleSubscriptions(ctx, c, roverObj, logger); err != nil {
 		return err
+	}
+
+	if config.FeatureSpectre.IsEnabled() {
+		if err := spectre.HandleListeners(ctx, c, roverObj); err != nil {
+			return errors.Wrap(err, "failed to handle listeners")
+		}
 	}
 
 	if err := h.handlePermissions(ctx, c, roverObj, logger); err != nil {
@@ -79,6 +87,10 @@ func addKnownTypes(c client.JanitorClient) {
 	if config.FeatureAiGateway.IsEnabled() {
 		c.AddKnownTypeToState(&agenticv1.McpExposure{})
 		c.AddKnownTypeToState(&agenticv1.McpSubscription{})
+	}
+	if config.FeatureSpectre.IsEnabled() {
+		c.AddKnownTypeToState(&spectrev1.SpectreApplication{})
+		c.AddKnownTypeToState(&spectrev1.Listener{})
 	}
 }
 

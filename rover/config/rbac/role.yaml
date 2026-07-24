@@ -153,3 +153,16 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - spectre.cp.ei.telekom.de
+  resources:
+  - listeners
+  - spectreapplications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
