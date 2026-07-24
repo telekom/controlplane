@@ -78,6 +78,10 @@ spec:
                 - password
                 - port
                 type: object
+              relayIdentity:
+                description: RelayIdentity is the URI SAN authorized to request this
+                  Gateway's xDS node.
+                type: string
               type:
                 description: GatewayType defines the type of the gateway (e.g., Kong,
                   Envoy)
@@ -151,6 +155,12 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              relayIdentity:
+                description: RelayIdentity is the relay URI SAN assigned to this Gateway.
+                type: string
+              xdsNodeId:
+                description: XDSNodeID is the stable Gateway UID-based xDS node identity.
+                type: string
             type: object
         type: object
     served: true

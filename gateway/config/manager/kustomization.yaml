@@ -4,3 +4,4 @@
 
 resources:
 - manager.yaml
+- xds_assignments.yaml

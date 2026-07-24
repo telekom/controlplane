@@ -157,7 +157,6 @@ var _ = Describe("AccessControlFeature", func() {
 			},
 		}
 	}
-
 	It("is used only when the route has trusted issuers", func() {
 		b := NewFeatureBuilder(nil, newRoute(), nil, nil)
 		Expect(InstanceAccessControlFeature.IsUsed(ctx, b)).To(BeTrue())
@@ -227,15 +226,18 @@ var _ = Describe("Builder.Build", func() {
 			},
 		}
 	}
+	newGateway := func() *gatewayv1.Gateway {
+		return &gatewayv1.Gateway{ObjectMeta: metav1.ObjectMeta{UID: "gateway-uid"}}
+	}
 
 	It("runs the feature and publishes a consistent snapshot that round-trips", func() {
-		b := NewFeatureBuilder(xds, newRoute(), nil, nil)
+		b := NewFeatureBuilder(xds, newRoute(), nil, newGateway())
 		b.EnableFeature(InstanceAccessControlFeature)
 		b.SetUpstream(client.NewUpstreamOrDie("https://backend.svc.local:8080/api"))
 
 		Expect(b.Build(ctx)).To(Succeed())
 
-		snap, err := cache.GetSnapshot(PocNodeID)
+		snap, err := cache.GetSnapshot("gateway:gateway-uid")
 		Expect(err).NotTo(HaveOccurred())
 		// SetSnapshotFor already asserts Consistent() before publishing; confirm
 		// the published snapshot carries the expected resource kinds.
@@ -246,7 +248,7 @@ var _ = Describe("Builder.Build", func() {
 	})
 
 	It("returns an error when upstream is not set", func() {
-		b := NewFeatureBuilder(xds, newRoute(), nil, nil)
+		b := NewFeatureBuilder(xds, newRoute(), nil, newGateway())
 		b.EnableFeature(InstanceAccessControlFeature)
 		Expect(b.Build(ctx)).To(MatchError(ContainSubstring("upstream")))
 	})
@@ -258,16 +260,16 @@ var _ = Describe("Builder.Build", func() {
 			// second upstream is ignored: load balancing is out of scope.
 			{Scheme: "https", Hostname: "other.svc.local", Port: 9090, Path: "/other"},
 		}
-		b := NewFeatureBuilder(xds, route, nil, nil)
+		b := NewFeatureBuilder(xds, route, nil, newGateway())
 		b.EnableFeature(InstanceAccessControlFeature)
 
 		Expect(b.Build(ctx)).To(Succeed())
 
-		snap, err := cache.GetSnapshot(PocNodeID)
+		snap, err := cache.GetSnapshot("gateway:gateway-uid")
 		Expect(err).NotTo(HaveOccurred())
 		res := snap.GetResources(resource.ClusterType)
-		Expect(res).To(HaveKey("my-route"))
-		cl := res["my-route"].(*clusterv3.Cluster)
+		Expect(res).To(HaveKey("route:ns:my-route"))
+		cl := res["route:ns:my-route"].(*clusterv3.Cluster)
 		sa := cl.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].
 			GetEndpoint().GetAddress().GetSocketAddress()
 		Expect(sa.GetAddress()).To(Equal("backend.svc.local"))

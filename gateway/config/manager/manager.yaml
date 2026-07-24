@@ -53,8 +53,15 @@ spec:
       - args:
           - --leader-elect
           - --health-probe-bind-address=:8081
+          - --xds-bind-address=:18000
+          - --xds-server-cert-file=/var/run/xds/tls.crt
+          - --xds-server-key-file=/var/run/xds/tls.key
+          - --xds-client-ca-file=/var/run/xds/ca.crt
+          - --xds-relay-assignments-file=/etc/xds/assignments.yaml
         image: ghcr.io/telekom/controlplane/gateway:stable
         name: manager
+        ports:
+          - {name: xds, containerPort: 18000}
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -81,7 +88,13 @@ spec:
           requests:
             cpu: 30m
             memory: 64Mi
-        volumeMounts: []
+        volumeMounts:
+          - {name: xds-tls, mountPath: /var/run/xds, readOnly: true}
+          - {name: xds-assignments, mountPath: /etc/xds, readOnly: true}
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
-      volumes: []
+      volumes:
+        - name: xds-tls
+          secret: {secretName: gateway-xds-tls}
+        - name: xds-assignments
+          configMap: {name: gateway-xds-assignments}

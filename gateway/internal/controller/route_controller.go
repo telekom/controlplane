@@ -53,11 +53,29 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&gatewayv1.Gateway{}, handler.EnqueueRequestsFromMapFunc(r.mapGatewayToRoutes),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+func (r *RouteReconciler) mapGatewayToRoutes(ctx context.Context, obj client.Object) []reconcile.Request {
+	gateway, ok := obj.(*gatewayv1.Gateway)
+	if !ok {
+		return nil
+	}
+	routes := &gatewayv1.RouteList{}
+	if err := r.List(ctx, routes, client.MatchingFields{IndexFieldSpecGateway: client.ObjectKeyFromObject(gateway).String()}); err != nil {
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(routes.Items))
+	for i := range routes.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&routes.Items[i])})
+	}
+	return requests
 }
 
 func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client.Object) []reconcile.Request {

@@ -5,20 +5,11 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"flag"
-	"net"
 	"os"
 
-	clusterservice "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
-	discoverygrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	endpointservice "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
-	listenerservice "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
-	routeservice "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
 	cachev3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	serverv3 "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	"google.golang.org/grpc"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -36,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/cmd/xdsserver"
 	"github.com/telekom/controlplane/gateway/internal/controller"
 	"github.com/telekom/controlplane/gateway/internal/features/envoy"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
@@ -61,6 +53,10 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var xdsAddr string
+	var xdsServerCertificateFile string
+	var xdsServerKeyFile string
+	var xdsClientCAFile string
+	var xdsRelayAssignmentsFile string
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -74,6 +70,10 @@ func main() {
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&xdsAddr, "xds-bind-address", ":18000",
 		"The address the Envoy xDS ADS gRPC server binds to.")
+	flag.StringVar(&xdsServerCertificateFile, "xds-server-cert-file", "", "Server certificate for xDS mTLS.")
+	flag.StringVar(&xdsServerKeyFile, "xds-server-key-file", "", "Server private key for xDS mTLS.")
+	flag.StringVar(&xdsClientCAFile, "xds-client-ca-file", "", "CA bundle used to verify xDS relay client certificates.")
+	flag.StringVar(&xdsRelayAssignmentsFile, "xds-relay-assignments-file", "", "JSON or YAML relay URI SAN to node ID assignments.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -158,15 +158,25 @@ func main() {
 	// FeatureBuilder and served to Envoy over ADS. Mirrors cmd/xdsdemo.
 	xdsCache := cachev3.NewSnapshotCache(false, cachev3.IDHash{}, nil)
 	xdsClient := envoy.NewXdsClient(xdsCache)
-	if err := startXdsServer(rootCtx, xdsCache, xdsAddr); err != nil {
+	xdsServer, err := xdsserver.Start(rootCtx, xdsCache, xdsserver.Config{
+		Address:               xdsAddr,
+		ServerCertificateFile: xdsServerCertificateFile,
+		ServerKeyFile:         xdsServerKeyFile,
+		ClientCAFile:          xdsClientCAFile,
+		RelayAssignmentsFile:  xdsRelayAssignmentsFile,
+		Registry:              metrics.Registry,
+	})
+	if err != nil {
 		setupLog.Error(err, "unable to start xDS server")
 		os.Exit(1)
 	}
 	setupLog.Info("started Envoy xDS ADS server", "addr", xdsAddr)
 
 	if err = (&controller.GatewayReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Scheme:      mgr.GetScheme(),
+		XdsClient:   xdsClient,
+		Assignments: xdsServer,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
 		os.Exit(1)
@@ -209,34 +219,4 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
-}
-
-// startXdsServer serves the Envoy ADS API from the shared snapshot cache on a
-// background goroutine. It stops gracefully when ctx is cancelled. Mirrors the
-// registration in cmd/xdsdemo.
-func startXdsServer(ctx context.Context, cache cachev3.SnapshotCache, addr string) error {
-	lis, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
-
-	srv := serverv3.NewServer(ctx, cache, nil)
-	grpcServer := grpc.NewServer()
-	discoverygrpc.RegisterAggregatedDiscoveryServiceServer(grpcServer, srv)
-	clusterservice.RegisterClusterDiscoveryServiceServer(grpcServer, srv)
-	endpointservice.RegisterEndpointDiscoveryServiceServer(grpcServer, srv)
-	listenerservice.RegisterListenerDiscoveryServiceServer(grpcServer, srv)
-	routeservice.RegisterRouteDiscoveryServiceServer(grpcServer, srv)
-
-	go func() {
-		<-ctx.Done()
-		grpcServer.GracefulStop()
-	}()
-	go func() {
-		if err := grpcServer.Serve(lis); err != nil {
-			setupLog.Error(err, "xDS server stopped")
-		}
-	}()
-
-	return nil
 }

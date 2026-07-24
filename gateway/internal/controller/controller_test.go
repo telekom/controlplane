@@ -16,8 +16,48 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	clientfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+var _ = Describe("Route watch mapping", func() {
+	It("maps all indexed routes while isolating gateways by namespace", func() {
+		// arrange
+		scheme := runtime.NewScheme()
+		Expect(gatewayv1.AddToScheme(scheme)).To(Succeed())
+		gateway := &gatewayv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "shared", Namespace: "gateway-a"}}
+		routeOne := &gatewayv1.Route{
+			ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "routes-a"},
+			Spec:       gatewayv1.RouteSpec{GatewayRef: types.ObjectRef{Name: "shared", Namespace: "gateway-a"}},
+		}
+		routeTwo := &gatewayv1.Route{
+			ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "routes-b"},
+			Spec:       gatewayv1.RouteSpec{GatewayRef: types.ObjectRef{Name: "shared", Namespace: "gateway-a"}},
+		}
+		otherGatewayRoute := &gatewayv1.Route{
+			ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: "routes-a"},
+			Spec:       gatewayv1.RouteSpec{GatewayRef: types.ObjectRef{Name: "shared", Namespace: "gateway-b"}},
+		}
+		indexedClient := clientfake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(routeOne, routeTwo, otherGatewayRoute).
+			WithIndex(&gatewayv1.Route{}, IndexFieldSpecGateway, func(obj client.Object) []string {
+				return []string{obj.(*gatewayv1.Route).Spec.GatewayRef.String()}
+			}).
+			Build()
+		reconciler := &RouteReconciler{Client: indexedClient}
+
+		// act
+		requests := reconciler.mapGatewayToRoutes(context.Background(), gateway)
+
+		// assert
+		Expect(requests).To(ConsistOf(
+			HaveField("NamespacedName", client.ObjectKey{Namespace: "routes-a", Name: "one"}),
+			HaveField("NamespacedName", client.ObjectKey{Namespace: "routes-b", Name: "two"}),
+		))
+	})
+})
 
 var _ = Describe("Controller Integration", Ordered, func() {
 

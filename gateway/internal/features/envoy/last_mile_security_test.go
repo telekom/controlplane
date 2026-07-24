@@ -156,13 +156,14 @@ var _ = Describe("LastMileSecurityFeature", func() {
 	It("publishes a consistent snapshot including the issuer cluster", func() {
 		cache := cachev3.NewSnapshotCache(false, cachev3.IDHash{}, nil)
 		xds := NewXdsClient(cache)
-		b := NewFeatureBuilder(xds, newRoute(), nil, nil)
+		gateway := &gatewayv1.Gateway{ObjectMeta: metav1.ObjectMeta{UID: "gateway-uid"}}
+		b := NewFeatureBuilder(xds, newRoute(), nil, gateway)
 		b.EnableFeature(InstanceLastMileSecurityFeature)
 		b.SetUpstream(client.NewUpstreamOrDie("https://backend.svc.local:8080/api"))
 
 		Expect(b.Build(ctx)).To(Succeed())
 
-		snap, err := cache.GetSnapshot(PocNodeID)
+		snap, err := cache.GetSnapshot("gateway:gateway-uid")
 		Expect(err).NotTo(HaveOccurred())
 		// upstream cluster + issuer cluster (no trusted issuers => no jwks).
 		Expect(snap.GetResources(resource.ClusterType)).To(HaveKey(lmsIssuerCluster))

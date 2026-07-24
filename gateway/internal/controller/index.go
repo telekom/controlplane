@@ -16,6 +16,7 @@ import (
 
 var IndexFieldSpecRoute = "spec.route"
 var IndexFieldSpecRouteName = "spec.route.name"
+var IndexFieldSpecGateway = "spec.gatewayRef"
 
 func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	// Index the consumeRoute by the route it references
@@ -51,6 +52,18 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.Route{})
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create field-indexer")
+		os.Exit(1)
+	}
+
+	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.Route{}, IndexFieldSpecGateway, func(obj client.Object) []string {
+		route, ok := obj.(*gatewayv1.Route)
+		if !ok {
+			return nil
+		}
+		return []string{route.Spec.GatewayRef.String()}
+	})
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create Gateway Route index", "FieldIndex", IndexFieldSpecGateway)
 		os.Exit(1)
 	}
 }

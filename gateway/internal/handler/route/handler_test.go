@@ -293,6 +293,45 @@ var _ = Describe("RouteHandler", func() {
 
 	Describe("Delete()", func() {
 		Context("happy path", func() {
+			It("deletes an Envoy route by its stable identity without using Kong", func() {
+				// arrange
+				xdsClient := &fakeXdsClient{}
+				handler = routehandler.NewRouteHandler(routehandler.WithXdsClient(xdsClient))
+				mockClient.EXPECT().Get(mock.Anything, pkgtypes.NamespacedName{Namespace: "test-ns", Name: "test-gateway"}, mock.Anything).
+					Run(func(_ context.Context, _ pkgtypes.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+						gw := obj.(*gatewayv1.Gateway)
+						gw.Name = "test-gateway"
+						gw.Namespace = "test-ns"
+						gw.Spec.Type = gatewayv1.GatewayTypeEnvoy
+						meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
+							Type:   condition.ConditionTypeReady,
+							Status: metav1.ConditionTrue,
+							Reason: "Ready",
+						})
+					}).Return(nil)
+				mockClient.EXPECT().List(mock.Anything, mock.Anything).Return(nil)
+				originalGetClientFor := kongutil.GetClientFor
+				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
+				kongClientRequested := false
+				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
+					kongClientRequested = true
+					return mockKC, nil
+				}
+
+				// act
+				err := handler.Delete(ctx, route)
+
+				// assert
+				Expect(err).NotTo(HaveOccurred())
+				Expect(xdsClient.deletedGateway).To(SatisfyAll(
+					HaveField("Namespace", "test-ns"),
+					HaveField("Name", "test-gateway"),
+				))
+				Expect(xdsClient.deletedRouteID).To(Equal("test-ns/test-route"))
+				Expect(kongClientRequested).To(BeFalse())
+				mockKC.AssertNotCalled(GinkgoT(), "DeleteRoute", mock.Anything, mock.Anything)
+			})
+
 			It("deletes route via kong client", func() {
 				setupReadyGatewayGet()
 

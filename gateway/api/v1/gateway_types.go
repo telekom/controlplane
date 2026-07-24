@@ -41,6 +41,10 @@ type GatewaySpec struct {
 	Admin AdminConfig  `json:"admin"`
 
 	Features []FeatureType `json:"features,omitempty"`
+
+	// RelayIdentity is the URI SAN authorized to request this Gateway's xDS node.
+	// +optional
+	RelayIdentity string `json:"relayIdentity,omitempty"`
 }
 
 // GatewayStatus defines the observed state of Gateway
@@ -51,6 +55,14 @@ type GatewayStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+
+	// XDSNodeID is the stable Gateway UID-based xDS node identity.
+	// +optional
+	XDSNodeID string `json:"xdsNodeId,omitempty"`
+
+	// RelayIdentity is the relay URI SAN assigned to this Gateway.
+	// +optional
+	RelayIdentity string `json:"relayIdentity,omitempty"`
 }
 
 // +kubebuilder:object:root=true

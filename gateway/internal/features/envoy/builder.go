@@ -67,6 +67,7 @@ type Builder struct {
 	consumer         *gatewayv1.Consumer
 	gateway          *gatewayv1.Gateway
 	allowedConsumers []*gatewayv1.ConsumeRoute
+	expectedRouteIDs []string
 	upstream         client.Upstream
 
 	features map[gatewayv1.FeatureType]EnvoyFeature
@@ -74,6 +75,10 @@ type Builder struct {
 	// accumulated intent (set by feature Apply)
 	intent accessControlIntent
 	lms    lmsIntent
+}
+
+func (b *Builder) SetExpectedRouteIDs(ids []string) {
+	b.expectedRouteIDs = append([]string(nil), ids...)
 }
 
 // lmsIntent is the intent accumulated by the LastMileSecurity feature's Apply:
@@ -103,6 +108,7 @@ var NewFeatureBuilder = func(xds XdsClient, route *gatewayv1.Route, consumer *ga
 		consumer:         consumer,
 		gateway:          gateway,
 		allowedConsumers: []*gatewayv1.ConsumeRoute{},
+		expectedRouteIDs: []string{RouteIdentity(route)},
 		features:         map[gatewayv1.FeatureType]EnvoyFeature{},
 	}
 }
@@ -165,9 +171,6 @@ func (b *Builder) RequireLMSToken(realm, environment string) {
 
 // Build runs the enabled features, then renders the accumulated intent into an
 // xDS snapshot and publishes it.
-//
-// ponytail: single PocNodeID + whole-snapshot overwrite → one route at a time.
-// Upgrade path: per-node accumulation of a node's routes.
 func (b *Builder) Build(ctx context.Context) error {
 	log := logr.FromContextOrDiscard(ctx).WithName("envoy.builder")
 	if b.route == nil {
@@ -203,7 +206,7 @@ func (b *Builder) Build(ctx context.Context) error {
 		return fmt.Errorf("rendering xDS bundle for route %s: %w", b.route.Name, err)
 	}
 
-	if err := b.xds.SetSnapshotFor(ctx, PocNodeID, bundle); err != nil {
+	if err := b.xds.PublishRoute(ctx, b.gateway, RouteIdentity(b.route), b.expectedRouteIDs, bundle); err != nil {
 		return fmt.Errorf("publishing snapshot for route %s: %w", b.route.Name, err)
 	}
 	return nil
@@ -217,7 +220,7 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 
 // render turns the accumulated intent into xDS resources.
 func (b *Builder) render() (ResourceBundle, error) {
-	routeName := b.route.Name
+	routeName := routeResourceName(b.route)
 	clusterName := routeName
 
 	filters, err := buildFilters(b.intent, b.lms)
@@ -265,6 +268,10 @@ func (b *Builder) render() (ResourceBundle, error) {
 		Listeners: []*listenerv3.Listener{listener},
 		Clusters:  clusters,
 	}, nil
+}
+
+func routeResourceName(route *gatewayv1.Route) string {
+	return "route:" + route.Namespace + ":" + route.Name
 }
 
 // sortFeatures orders features by ascending priority (lower applies earlier),

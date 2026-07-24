@@ -53,6 +53,19 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
+	if envoyBuilder, ok := builder.(*envoy.Builder); ok {
+		routes := &gatewayv1.RouteList{}
+		if err := kubeClient.List(ctx, routes); err != nil {
+			return errors.Wrap(err, "failed to list Gateway routes")
+		}
+		expected := make([]string, 0, len(routes.Items))
+		for i := range routes.Items {
+			if routes.Items[i].Spec.GatewayRef.Equals(&route.Spec.GatewayRef) && !controller.IsBeingDeleted(&routes.Items[i]) {
+				expected = append(expected, envoy.RouteIdentity(&routes.Items[i]))
+			}
+		}
+		envoyBuilder.SetExpectedRouteIDs(expected)
+	}
 
 	routeConsumers := &gatewayv1.ConsumeRouteList{}
 	if !route.Spec.PassThrough {
@@ -128,6 +141,22 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 	_, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
 		return err
+	}
+	if gateway.Spec.Type == gatewayv1.GatewayTypeEnvoy {
+		if h.xdsClient == nil {
+			return errors.New("xDS client is not configured")
+		}
+		routes := &gatewayv1.RouteList{}
+		if err := cc.ClientFromContextOrDie(ctx).List(ctx, routes); err != nil {
+			return errors.Wrap(err, "failed to list remaining Gateway routes")
+		}
+		expected := make([]string, 0, len(routes.Items))
+		for i := range routes.Items {
+			if envoy.RouteIdentity(&routes.Items[i]) != envoy.RouteIdentity(route) && routes.Items[i].Spec.GatewayRef.Equals(&route.Spec.GatewayRef) && !controller.IsBeingDeleted(&routes.Items[i]) {
+				expected = append(expected, envoy.RouteIdentity(&routes.Items[i]))
+			}
+		}
+		return h.xdsClient.DeleteRouteWithExpected(ctx, gateway, envoy.RouteIdentity(route), expected)
 	}
 
 	kc, err := kongutil.GetClientFor(gateway)

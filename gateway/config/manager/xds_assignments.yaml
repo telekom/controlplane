@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-xds-assignments
+  namespace: system
+data:
+  assignments.yaml: |
+    {}
