@@ -332,34 +332,35 @@ configMapGenerator:
       disableNameSuffixHash: true
 ```
 
-Then create a `secret-manager-config.yaml` next to your overlay. Here is an example that uses the Kubernetes backend:
+Then create a `secret-manager-config.yaml` next to your overlay. The Secret Manager authenticates callers on an internal listener using in-cluster Kubernetes service account tokens. A minimal example using the Kubernetes backend:
+
+```yaml
+backend:
+  type: kubernetes
+```
+
+With no `accessConfig`, any authenticated in-cluster service account is allowed. To restrict which service accounts may read or write secrets — recommended in production — add an `accessConfig` allow-list under the internal listener's `k8s` block:
 
 ```yaml
 backend:
   type: kubernetes
 
-security:
-  enabled: true
-```
-
-When security is enabled, you can optionally restrict which service accounts are allowed to read or write secrets by adding an `access_config` section. This is useful in production to ensure that only the controllers that need secret access can reach the Secret Manager:
-
-```yaml
-security:
-  enabled: true
-  access_config:
-    - service_account_name: identity-controller-manager
-      deployment_name: identity-controller-manager
-      namespace: identity-system
-      allowed_access:
-        - secrets_read
-    - service_account_name: organization-controller-manager
-      deployment_name: organization-controller-manager
-      namespace: organization-system
-      allowed_access:
-        - onboarding_write
-        - secrets_write
-        - secrets_read
+listeners:
+  internal:
+    address: ":8443"
+    k8s:
+      audience: secret-manager
+      accessConfig:
+        - service_account_name: identity-controller-manager
+          namespace: identity-system
+          allowed_access:
+            - secrets_read
+        - service_account_name: organization-controller-manager
+          namespace: organization-system
+          allowed_access:
+            - onboarding_write
+            - secrets_write
+            - secrets_read
 ```
 
 The available access rights are:
@@ -408,9 +409,6 @@ backend:
   sts_endpoint: https://sts.amazonaws.com
   role_arn: arn:aws:iam::123456789012:role/my-file-manager-role
   token_path: /var/run/secrets/file-manager/file-manager-token
-
-security:
-  enabled: true
 ```
 
 Replace the `bucket_name` and `role_arn` with your actual S3 bucket and IAM role. The `token_path` points to a projected service account token that the File Manager uses for STS authentication — this is configured automatically by the default deployment.
@@ -427,9 +425,6 @@ backend:
   bucket_name: controlplane-files
   access_key: myAccessKey
   secret_key: mySecretKey
-
-security:
-  enabled: true
 ```
 
 Replace the `endpoint`, `access_key`, and `secret_key` with your MinIO instance details. The repository includes an example MinIO Helm values file under `file-manager/examples/minio/` that you can use as a starting point.
@@ -438,7 +433,7 @@ Replace the `endpoint`, `access_key`, and `secret_key` with your MinIO instance 
 
 #### Security
 
-When `security.enabled` is set to `true`, callers must provide a valid authentication token in the request header. The controllers that interact with the File Manager (such as the API and Rover controllers) handle this automatically.
+The File Manager authenticates callers on its internal listener using in-cluster Kubernetes service account tokens. The controllers that interact with the File Manager (such as the API and Rover controllers) provide these automatically. To restrict which service accounts are allowed, add an `accessConfig` allow-list under the internal listener's `k8s` block; with no `accessConfig`, any authenticated in-cluster service account is allowed.
 
 ### Reference: eventing component details {#reference-eventing-component-details}
 

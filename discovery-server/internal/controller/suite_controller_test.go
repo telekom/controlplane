@@ -14,7 +14,9 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	csstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
@@ -67,7 +69,7 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	log.Init()
+	log.Init(commonconfig.LogConfig{})
 
 	// Create secret-wrapped stores that return deep copies (the obfuscator
 	// modifies objects in place via JSON round-trip, so each call must
@@ -122,7 +124,7 @@ var _ = BeforeSuite(func() {
 	app = cserver.NewAppWithConfig(appCfg)
 
 	s := server.Server{
-		Config:             &config.ServerConfig{Security: config.SecurityConfig{Mode: "mock"}},
+		Config:             &config.ServerConfig{},
 		Log:                log.Log,
 		Applications:       NewApplicationController(stores),
 		ApiExposures:       NewApiExposureController(stores),
@@ -131,7 +133,26 @@ var _ = BeforeSuite(func() {
 		EventSubscriptions: NewEventSubscriptionController(stores),
 		EventTypes:         NewEventTypeController(stores),
 	}
-	s.RegisterRoutes(app)
+
+	// Install the mock-JWT security family on the app and register routes with
+	// its per-route guard, mirroring the production MultiServer wiring so the
+	// scope-based access checks these specs assert stay exercised.
+	fam := cserver.JWTFamily(security.SecurityOpts{
+		Mode: security.ModeMock,
+		Log:  log.Log,
+		BusinessContextOpts: []security.Option[*security.BusinessContextOpts]{
+			security.WithDefaultScope("tardis:user:read"),
+			security.WithScopePrefix("tardis:"),
+			security.WithLog(log.Log),
+		},
+		CheckAccessOpts: []security.Option[*security.CheckAccessOpts]{
+			security.WithPathParamKey("applicationId"),
+			security.WithTemplates(server.SecurityTemplates),
+		},
+	})
+	guard := fam(app)
+
+	s.RegisterRoutes(app, guard)
 })
 
 var _ = AfterSuite(func() {

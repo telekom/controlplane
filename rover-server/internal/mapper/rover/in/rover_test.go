@@ -8,7 +8,6 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
@@ -253,7 +252,8 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
 
-			viper.Set("migration.active", true)
+			MigrationActive = true
+			defer func() { MigrationActive = false }()
 
 			output, err = MapRequest(input, resourceIdInfo)
 

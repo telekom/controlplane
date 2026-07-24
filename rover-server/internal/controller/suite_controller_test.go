@@ -113,11 +113,7 @@ var _ = BeforeSuite(func() {
 
 	// Create a new server
 	s := server.Server{
-		Config: &config.ServerConfig{
-			Security: config.SecurityConfig{
-				Mode: security.ModeMock,
-			},
-		},
+		Config:              &config.ServerConfig{},
 		Log:                 log.Log,
 		ApiSpecifications:   NewApiSpecificationController(stores, oaslint.NewLinter(config.OasLintingConfig{})),
 		Rovers:              NewRoverController(stores),
@@ -126,7 +122,25 @@ var _ = BeforeSuite(func() {
 		ApiChangelogs:       NewApiChangelogController(stores),
 	}
 
-	s.RegisterRoutes(app)
+	// Install the mock-JWT security family on the app and register routes with
+	// its per-route guard, mirroring the production MultiServer wiring so the
+	// scope-based access checks these specs assert stay exercised.
+	fam := cserver.JWTFamily(security.SecurityOpts{
+		Mode: security.ModeMock,
+		Log:  log.Log,
+		BusinessContextOpts: []security.Option[*security.BusinessContextOpts]{
+			security.WithDefaultScope("tardis:team:all"),
+			security.WithScopePrefix("tardis:"),
+			security.WithLog(log.Log),
+		},
+		CheckAccessOpts: []security.Option[*security.CheckAccessOpts]{
+			security.WithPathParamKey("resourceId"),
+			security.WithTemplates(server.SecurityTemplates),
+		},
+	})
+	guard := fam(app)
+
+	s.RegisterRoutes(app, guard)
 
 })
 
