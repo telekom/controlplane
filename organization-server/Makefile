@@ -12,6 +12,12 @@ all: build
 .PHONY: generate
 generate: ## Run code generation (oapi-codegen + genqlient).
 	go generate ./tools/...
+	@# Prepend SPDX headers to generated files that lack them
+	@for f in internal/api/server.gen.go internal/graphql/generated.go; do \
+		if [ -f "$$f" ]; then \
+			head -3 "$$f" | grep -q 'SPDX' || { { cat ../hack/boilerplate.go.txt; echo; cat "$$f"; } > "$$f.tmp" && mv "$$f.tmp" "$$f"; }; \
+		fi; \
+	done
 
 .PHONY: manifests
 manifests: ## No-op (no CRD manifests for REST servers, required by CI).

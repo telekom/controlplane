@@ -716,6 +716,22 @@ type ApiSubscriptionWhereInput struct {
 	M2mAuthMethodNEQ   *ApiSubscriptionM2mAuthMethod  `json:"m2mAuthMethodNEQ"`
 	M2mAuthMethodIn    []ApiSubscriptionM2mAuthMethod `json:"m2mAuthMethodIn"`
 	M2mAuthMethodNotIn []ApiSubscriptionM2mAuthMethod `json:"m2mAuthMethodNotIn"`
+	// gateway_url field predicates
+	GatewayURL             *string  `json:"gatewayURL"`
+	GatewayURLNEQ          *string  `json:"gatewayURLNEQ"`
+	GatewayURLIn           []string `json:"gatewayURLIn"`
+	GatewayURLNotIn        []string `json:"gatewayURLNotIn"`
+	GatewayURLGT           *string  `json:"gatewayURLGT"`
+	GatewayURLGTE          *string  `json:"gatewayURLGTE"`
+	GatewayURLLT           *string  `json:"gatewayURLLT"`
+	GatewayURLLTE          *string  `json:"gatewayURLLTE"`
+	GatewayURLContains     *string  `json:"gatewayURLContains"`
+	GatewayURLHasPrefix    *string  `json:"gatewayURLHasPrefix"`
+	GatewayURLHasSuffix    *string  `json:"gatewayURLHasSuffix"`
+	GatewayURLIsNil        *bool    `json:"gatewayURLIsNil"`
+	GatewayURLNotNil       *bool    `json:"gatewayURLNotNil"`
+	GatewayURLEqualFold    *string  `json:"gatewayURLEqualFold"`
+	GatewayURLContainsFold *string  `json:"gatewayURLContainsFold"`
 	// owner edge predicates
 	HasOwner     *bool                   `json:"hasOwner"`
 	HasOwnerWith []ApplicationWhereInput `json:"hasOwnerWith"`
@@ -1081,6 +1097,53 @@ func (v *ApiSubscriptionWhereInput) GetM2mAuthMethodIn() []ApiSubscriptionM2mAut
 // GetM2mAuthMethodNotIn returns ApiSubscriptionWhereInput.M2mAuthMethodNotIn, and is useful for accessing the field via an interface.
 func (v *ApiSubscriptionWhereInput) GetM2mAuthMethodNotIn() []ApiSubscriptionM2mAuthMethod {
 	return v.M2mAuthMethodNotIn
+}
+
+// GetGatewayURL returns ApiSubscriptionWhereInput.GatewayURL, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURL() *string { return v.GatewayURL }
+
+// GetGatewayURLNEQ returns ApiSubscriptionWhereInput.GatewayURLNEQ, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLNEQ() *string { return v.GatewayURLNEQ }
+
+// GetGatewayURLIn returns ApiSubscriptionWhereInput.GatewayURLIn, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLIn() []string { return v.GatewayURLIn }
+
+// GetGatewayURLNotIn returns ApiSubscriptionWhereInput.GatewayURLNotIn, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLNotIn() []string { return v.GatewayURLNotIn }
+
+// GetGatewayURLGT returns ApiSubscriptionWhereInput.GatewayURLGT, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLGT() *string { return v.GatewayURLGT }
+
+// GetGatewayURLGTE returns ApiSubscriptionWhereInput.GatewayURLGTE, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLGTE() *string { return v.GatewayURLGTE }
+
+// GetGatewayURLLT returns ApiSubscriptionWhereInput.GatewayURLLT, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLLT() *string { return v.GatewayURLLT }
+
+// GetGatewayURLLTE returns ApiSubscriptionWhereInput.GatewayURLLTE, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLLTE() *string { return v.GatewayURLLTE }
+
+// GetGatewayURLContains returns ApiSubscriptionWhereInput.GatewayURLContains, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLContains() *string { return v.GatewayURLContains }
+
+// GetGatewayURLHasPrefix returns ApiSubscriptionWhereInput.GatewayURLHasPrefix, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLHasPrefix() *string { return v.GatewayURLHasPrefix }
+
+// GetGatewayURLHasSuffix returns ApiSubscriptionWhereInput.GatewayURLHasSuffix, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLHasSuffix() *string { return v.GatewayURLHasSuffix }
+
+// GetGatewayURLIsNil returns ApiSubscriptionWhereInput.GatewayURLIsNil, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLIsNil() *bool { return v.GatewayURLIsNil }
+
+// GetGatewayURLNotNil returns ApiSubscriptionWhereInput.GatewayURLNotNil, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLNotNil() *bool { return v.GatewayURLNotNil }
+
+// GetGatewayURLEqualFold returns ApiSubscriptionWhereInput.GatewayURLEqualFold, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLEqualFold() *string { return v.GatewayURLEqualFold }
+
+// GetGatewayURLContainsFold returns ApiSubscriptionWhereInput.GatewayURLContainsFold, and is useful for accessing the field via an interface.
+func (v *ApiSubscriptionWhereInput) GetGatewayURLContainsFold() *string {
+	return v.GatewayURLContainsFold
 }
 
 // GetHasOwner returns ApiSubscriptionWhereInput.HasOwner, and is useful for accessing the field via an interface.
@@ -1853,6 +1916,9 @@ type ApplicationWhereInput struct {
 	// subscribed_events edge predicates
 	HasSubscribedEvents     *bool                         `json:"hasSubscribedEvents"`
 	HasSubscribedEventsWith []EventSubscriptionWhereInput `json:"hasSubscribedEventsWith"`
+	// permission_set edge predicates
+	HasPermissionSet     *bool                     `json:"hasPermissionSet"`
+	HasPermissionSetWith []PermissionSetWhereInput `json:"hasPermissionSetWith"`
 }
 
 // GetNot returns ApplicationWhereInput.Not, and is useful for accessing the field via an interface.
@@ -2372,6 +2438,14 @@ func (v *ApplicationWhereInput) GetHasSubscribedEvents() *bool { return v.HasSub
 // GetHasSubscribedEventsWith returns ApplicationWhereInput.HasSubscribedEventsWith, and is useful for accessing the field via an interface.
 func (v *ApplicationWhereInput) GetHasSubscribedEventsWith() []EventSubscriptionWhereInput {
 	return v.HasSubscribedEventsWith
+}
+
+// GetHasPermissionSet returns ApplicationWhereInput.HasPermissionSet, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetHasPermissionSet() *bool { return v.HasPermissionSet }
+
+// GetHasPermissionSetWith returns ApplicationWhereInput.HasPermissionSetWith, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetHasPermissionSetWith() []PermissionSetWhereInput {
+	return v.HasPermissionSetWith
 }
 
 // ApprovalRequestState is enum for the field state
@@ -3176,6 +3250,17 @@ type ApprovalWhereInput struct {
 	NameHasSuffix    *string  `json:"nameHasSuffix"`
 	NameEqualFold    *string  `json:"nameEqualFold"`
 	NameContainsFold *string  `json:"nameContainsFold"`
+	// expiresAt field predicates
+	Expiresat       *time.Time  `json:"expiresat"`
+	ExpiresatNEQ    *time.Time  `json:"expiresatNEQ"`
+	ExpiresatIn     []time.Time `json:"expiresatIn"`
+	ExpiresatNotIn  []time.Time `json:"expiresatNotIn"`
+	ExpiresatGT     *time.Time  `json:"expiresatGT"`
+	ExpiresatGTE    *time.Time  `json:"expiresatGTE"`
+	ExpiresatLT     *time.Time  `json:"expiresatLT"`
+	ExpiresatLTE    *time.Time  `json:"expiresatLTE"`
+	ExpiresatIsNil  *bool       `json:"expiresatIsNil"`
+	ExpiresatNotNil *bool       `json:"expiresatNotNil"`
 	// state field predicates
 	State      *ApprovalState  `json:"state"`
 	StateNEQ   *ApprovalState  `json:"stateNEQ"`
@@ -3550,6 +3635,36 @@ func (v *ApprovalWhereInput) GetNameEqualFold() *string { return v.NameEqualFold
 // GetNameContainsFold returns ApprovalWhereInput.NameContainsFold, and is useful for accessing the field via an interface.
 func (v *ApprovalWhereInput) GetNameContainsFold() *string { return v.NameContainsFold }
 
+// GetExpiresat returns ApprovalWhereInput.Expiresat, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresat() *time.Time { return v.Expiresat }
+
+// GetExpiresatNEQ returns ApprovalWhereInput.ExpiresatNEQ, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatNEQ() *time.Time { return v.ExpiresatNEQ }
+
+// GetExpiresatIn returns ApprovalWhereInput.ExpiresatIn, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatIn() []time.Time { return v.ExpiresatIn }
+
+// GetExpiresatNotIn returns ApprovalWhereInput.ExpiresatNotIn, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatNotIn() []time.Time { return v.ExpiresatNotIn }
+
+// GetExpiresatGT returns ApprovalWhereInput.ExpiresatGT, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatGT() *time.Time { return v.ExpiresatGT }
+
+// GetExpiresatGTE returns ApprovalWhereInput.ExpiresatGTE, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatGTE() *time.Time { return v.ExpiresatGTE }
+
+// GetExpiresatLT returns ApprovalWhereInput.ExpiresatLT, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatLT() *time.Time { return v.ExpiresatLT }
+
+// GetExpiresatLTE returns ApprovalWhereInput.ExpiresatLTE, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatLTE() *time.Time { return v.ExpiresatLTE }
+
+// GetExpiresatIsNil returns ApprovalWhereInput.ExpiresatIsNil, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatIsNil() *bool { return v.ExpiresatIsNil }
+
+// GetExpiresatNotNil returns ApprovalWhereInput.ExpiresatNotNil, and is useful for accessing the field via an interface.
+func (v *ApprovalWhereInput) GetExpiresatNotNil() *bool { return v.ExpiresatNotNil }
+
 // GetState returns ApprovalWhereInput.State, and is useful for accessing the field via an interface.
 func (v *ApprovalWhereInput) GetState() *ApprovalState { return v.State }
 
@@ -3770,6 +3885,8 @@ type CreateTeamInput struct {
 	Name        string        `json:"name"`
 	Email       string        `json:"email"`
 	Members     []MemberInput `json:"members"`
+	DisplayName *string       `json:"displayName"`
+	Description *string       `json:"description"`
 }
 
 // GetEnvironment returns CreateTeamInput.Environment, and is useful for accessing the field via an interface.
@@ -3786,6 +3903,12 @@ func (v *CreateTeamInput) GetEmail() string { return v.Email }
 
 // GetMembers returns CreateTeamInput.Members, and is useful for accessing the field via an interface.
 func (v *CreateTeamInput) GetMembers() []MemberInput { return v.Members }
+
+// GetDisplayName returns CreateTeamInput.DisplayName, and is useful for accessing the field via an interface.
+func (v *CreateTeamInput) GetDisplayName() *string { return v.DisplayName }
+
+// GetDescription returns CreateTeamInput.Description, and is useful for accessing the field via an interface.
+func (v *CreateTeamInput) GetDescription() *string { return v.Description }
 
 // CreateTeamResponse is returned by CreateTeam on success.
 type CreateTeamResponse struct {
@@ -4052,6 +4175,22 @@ type EventExposureWhereInput struct {
 	ActiveNEQ    *bool `json:"activeNEQ"`
 	ActiveIsNil  *bool `json:"activeIsNil"`
 	ActiveNotNil *bool `json:"activeNotNil"`
+	// gateway_publishing_url field predicates
+	GatewayPublishingURL             *string  `json:"gatewayPublishingURL"`
+	GatewayPublishingURLNEQ          *string  `json:"gatewayPublishingURLNEQ"`
+	GatewayPublishingURLIn           []string `json:"gatewayPublishingURLIn"`
+	GatewayPublishingURLNotIn        []string `json:"gatewayPublishingURLNotIn"`
+	GatewayPublishingURLGT           *string  `json:"gatewayPublishingURLGT"`
+	GatewayPublishingURLGTE          *string  `json:"gatewayPublishingURLGTE"`
+	GatewayPublishingURLLT           *string  `json:"gatewayPublishingURLLT"`
+	GatewayPublishingURLLTE          *string  `json:"gatewayPublishingURLLTE"`
+	GatewayPublishingURLContains     *string  `json:"gatewayPublishingURLContains"`
+	GatewayPublishingURLHasPrefix    *string  `json:"gatewayPublishingURLHasPrefix"`
+	GatewayPublishingURLHasSuffix    *string  `json:"gatewayPublishingURLHasSuffix"`
+	GatewayPublishingURLIsNil        *bool    `json:"gatewayPublishingURLIsNil"`
+	GatewayPublishingURLNotNil       *bool    `json:"gatewayPublishingURLNotNil"`
+	GatewayPublishingURLEqualFold    *string  `json:"gatewayPublishingURLEqualFold"`
+	GatewayPublishingURLContainsFold *string  `json:"gatewayPublishingURLContainsFold"`
 	// owner edge predicates
 	HasOwner     *bool                   `json:"hasOwner"`
 	HasOwnerWith []ApplicationWhereInput `json:"hasOwnerWith"`
@@ -4372,6 +4511,79 @@ func (v *EventExposureWhereInput) GetActiveIsNil() *bool { return v.ActiveIsNil 
 // GetActiveNotNil returns EventExposureWhereInput.ActiveNotNil, and is useful for accessing the field via an interface.
 func (v *EventExposureWhereInput) GetActiveNotNil() *bool { return v.ActiveNotNil }
 
+// GetGatewayPublishingURL returns EventExposureWhereInput.GatewayPublishingURL, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURL() *string { return v.GatewayPublishingURL }
+
+// GetGatewayPublishingURLNEQ returns EventExposureWhereInput.GatewayPublishingURLNEQ, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLNEQ() *string {
+	return v.GatewayPublishingURLNEQ
+}
+
+// GetGatewayPublishingURLIn returns EventExposureWhereInput.GatewayPublishingURLIn, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLIn() []string {
+	return v.GatewayPublishingURLIn
+}
+
+// GetGatewayPublishingURLNotIn returns EventExposureWhereInput.GatewayPublishingURLNotIn, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLNotIn() []string {
+	return v.GatewayPublishingURLNotIn
+}
+
+// GetGatewayPublishingURLGT returns EventExposureWhereInput.GatewayPublishingURLGT, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLGT() *string {
+	return v.GatewayPublishingURLGT
+}
+
+// GetGatewayPublishingURLGTE returns EventExposureWhereInput.GatewayPublishingURLGTE, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLGTE() *string {
+	return v.GatewayPublishingURLGTE
+}
+
+// GetGatewayPublishingURLLT returns EventExposureWhereInput.GatewayPublishingURLLT, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLLT() *string {
+	return v.GatewayPublishingURLLT
+}
+
+// GetGatewayPublishingURLLTE returns EventExposureWhereInput.GatewayPublishingURLLTE, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLLTE() *string {
+	return v.GatewayPublishingURLLTE
+}
+
+// GetGatewayPublishingURLContains returns EventExposureWhereInput.GatewayPublishingURLContains, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLContains() *string {
+	return v.GatewayPublishingURLContains
+}
+
+// GetGatewayPublishingURLHasPrefix returns EventExposureWhereInput.GatewayPublishingURLHasPrefix, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLHasPrefix() *string {
+	return v.GatewayPublishingURLHasPrefix
+}
+
+// GetGatewayPublishingURLHasSuffix returns EventExposureWhereInput.GatewayPublishingURLHasSuffix, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLHasSuffix() *string {
+	return v.GatewayPublishingURLHasSuffix
+}
+
+// GetGatewayPublishingURLIsNil returns EventExposureWhereInput.GatewayPublishingURLIsNil, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLIsNil() *bool {
+	return v.GatewayPublishingURLIsNil
+}
+
+// GetGatewayPublishingURLNotNil returns EventExposureWhereInput.GatewayPublishingURLNotNil, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLNotNil() *bool {
+	return v.GatewayPublishingURLNotNil
+}
+
+// GetGatewayPublishingURLEqualFold returns EventExposureWhereInput.GatewayPublishingURLEqualFold, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLEqualFold() *string {
+	return v.GatewayPublishingURLEqualFold
+}
+
+// GetGatewayPublishingURLContainsFold returns EventExposureWhereInput.GatewayPublishingURLContainsFold, and is useful for accessing the field via an interface.
+func (v *EventExposureWhereInput) GetGatewayPublishingURLContainsFold() *string {
+	return v.GatewayPublishingURLContainsFold
+}
+
 // GetHasOwner returns EventExposureWhereInput.HasOwner, and is useful for accessing the field via an interface.
 func (v *EventExposureWhereInput) GetHasOwner() *bool { return v.HasOwner }
 
@@ -4559,6 +4771,22 @@ type EventSubscriptionWhereInput struct {
 	CallbackURLNotNil       *bool    `json:"callbackURLNotNil"`
 	CallbackURLEqualFold    *string  `json:"callbackURLEqualFold"`
 	CallbackURLContainsFold *string  `json:"callbackURLContainsFold"`
+	// gateway_sse_url field predicates
+	GatewaySseURL             *string  `json:"gatewaySseURL"`
+	GatewaySseURLNEQ          *string  `json:"gatewaySseURLNEQ"`
+	GatewaySseURLIn           []string `json:"gatewaySseURLIn"`
+	GatewaySseURLNotIn        []string `json:"gatewaySseURLNotIn"`
+	GatewaySseURLGT           *string  `json:"gatewaySseURLGT"`
+	GatewaySseURLGTE          *string  `json:"gatewaySseURLGTE"`
+	GatewaySseURLLT           *string  `json:"gatewaySseURLLT"`
+	GatewaySseURLLTE          *string  `json:"gatewaySseURLLTE"`
+	GatewaySseURLContains     *string  `json:"gatewaySseURLContains"`
+	GatewaySseURLHasPrefix    *string  `json:"gatewaySseURLHasPrefix"`
+	GatewaySseURLHasSuffix    *string  `json:"gatewaySseURLHasSuffix"`
+	GatewaySseURLIsNil        *bool    `json:"gatewaySseURLIsNil"`
+	GatewaySseURLNotNil       *bool    `json:"gatewaySseURLNotNil"`
+	GatewaySseURLEqualFold    *string  `json:"gatewaySseURLEqualFold"`
+	GatewaySseURLContainsFold *string  `json:"gatewaySseURLContainsFold"`
 	// owner edge predicates
 	HasOwner     *bool                   `json:"hasOwner"`
 	HasOwnerWith []ApplicationWhereInput `json:"hasOwnerWith"`
@@ -4982,6 +5210,61 @@ func (v *EventSubscriptionWhereInput) GetCallbackURLEqualFold() *string {
 // GetCallbackURLContainsFold returns EventSubscriptionWhereInput.CallbackURLContainsFold, and is useful for accessing the field via an interface.
 func (v *EventSubscriptionWhereInput) GetCallbackURLContainsFold() *string {
 	return v.CallbackURLContainsFold
+}
+
+// GetGatewaySseURL returns EventSubscriptionWhereInput.GatewaySseURL, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURL() *string { return v.GatewaySseURL }
+
+// GetGatewaySseURLNEQ returns EventSubscriptionWhereInput.GatewaySseURLNEQ, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLNEQ() *string { return v.GatewaySseURLNEQ }
+
+// GetGatewaySseURLIn returns EventSubscriptionWhereInput.GatewaySseURLIn, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLIn() []string { return v.GatewaySseURLIn }
+
+// GetGatewaySseURLNotIn returns EventSubscriptionWhereInput.GatewaySseURLNotIn, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLNotIn() []string { return v.GatewaySseURLNotIn }
+
+// GetGatewaySseURLGT returns EventSubscriptionWhereInput.GatewaySseURLGT, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLGT() *string { return v.GatewaySseURLGT }
+
+// GetGatewaySseURLGTE returns EventSubscriptionWhereInput.GatewaySseURLGTE, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLGTE() *string { return v.GatewaySseURLGTE }
+
+// GetGatewaySseURLLT returns EventSubscriptionWhereInput.GatewaySseURLLT, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLLT() *string { return v.GatewaySseURLLT }
+
+// GetGatewaySseURLLTE returns EventSubscriptionWhereInput.GatewaySseURLLTE, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLLTE() *string { return v.GatewaySseURLLTE }
+
+// GetGatewaySseURLContains returns EventSubscriptionWhereInput.GatewaySseURLContains, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLContains() *string {
+	return v.GatewaySseURLContains
+}
+
+// GetGatewaySseURLHasPrefix returns EventSubscriptionWhereInput.GatewaySseURLHasPrefix, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLHasPrefix() *string {
+	return v.GatewaySseURLHasPrefix
+}
+
+// GetGatewaySseURLHasSuffix returns EventSubscriptionWhereInput.GatewaySseURLHasSuffix, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLHasSuffix() *string {
+	return v.GatewaySseURLHasSuffix
+}
+
+// GetGatewaySseURLIsNil returns EventSubscriptionWhereInput.GatewaySseURLIsNil, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLIsNil() *bool { return v.GatewaySseURLIsNil }
+
+// GetGatewaySseURLNotNil returns EventSubscriptionWhereInput.GatewaySseURLNotNil, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLNotNil() *bool { return v.GatewaySseURLNotNil }
+
+// GetGatewaySseURLEqualFold returns EventSubscriptionWhereInput.GatewaySseURLEqualFold, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLEqualFold() *string {
+	return v.GatewaySseURLEqualFold
+}
+
+// GetGatewaySseURLContainsFold returns EventSubscriptionWhereInput.GatewaySseURLContainsFold, and is useful for accessing the field via an interface.
+func (v *EventSubscriptionWhereInput) GetGatewaySseURLContainsFold() *string {
+	return v.GatewaySseURLContainsFold
 }
 
 // GetHasOwner returns EventSubscriptionWhereInput.HasOwner, and is useful for accessing the field via an interface.
@@ -6426,6 +6709,366 @@ func (v *MemberWhereInput) GetHasTeam() *bool { return v.HasTeam }
 // GetHasTeamWith returns MemberWhereInput.HasTeamWith, and is useful for accessing the field via an interface.
 func (v *MemberWhereInput) GetHasTeamWith() []TeamWhereInput { return v.HasTeamWith }
 
+// PermissionSetStatusPhase is enum for the field status_phase
+type PermissionSetStatusPhase string
+
+const (
+	PermissionSetStatusPhaseReady   PermissionSetStatusPhase = "READY"
+	PermissionSetStatusPhasePending PermissionSetStatusPhase = "PENDING"
+	PermissionSetStatusPhaseError   PermissionSetStatusPhase = "ERROR"
+	PermissionSetStatusPhaseUnknown PermissionSetStatusPhase = "UNKNOWN"
+)
+
+var AllPermissionSetStatusPhase = []PermissionSetStatusPhase{
+	PermissionSetStatusPhaseReady,
+	PermissionSetStatusPhasePending,
+	PermissionSetStatusPhaseError,
+	PermissionSetStatusPhaseUnknown,
+}
+
+// PermissionSetWhereInput is used for filtering PermissionSet objects.
+// Input was generated by ent.
+type PermissionSetWhereInput struct {
+	Not *PermissionSetWhereInput  `json:"not"`
+	And []PermissionSetWhereInput `json:"and"`
+	Or  []PermissionSetWhereInput `json:"or"`
+	// id field predicates
+	Id      *string  `json:"id"`
+	IdNEQ   *string  `json:"idNEQ"`
+	IdIn    []string `json:"idIn"`
+	IdNotIn []string `json:"idNotIn"`
+	IdGT    *string  `json:"idGT"`
+	IdGTE   *string  `json:"idGTE"`
+	IdLT    *string  `json:"idLT"`
+	IdLTE   *string  `json:"idLTE"`
+	// created_at field predicates
+	CreatedAt      *time.Time  `json:"createdAt"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ"`
+	CreatedAtIn    []time.Time `json:"createdAtIn"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE"`
+	// last_modified_at field predicates
+	LastModifiedAt      *time.Time  `json:"lastModifiedAt"`
+	LastModifiedAtNEQ   *time.Time  `json:"lastModifiedAtNEQ"`
+	LastModifiedAtIn    []time.Time `json:"lastModifiedAtIn"`
+	LastModifiedAtNotIn []time.Time `json:"lastModifiedAtNotIn"`
+	LastModifiedAtGT    *time.Time  `json:"lastModifiedAtGT"`
+	LastModifiedAtGTE   *time.Time  `json:"lastModifiedAtGTE"`
+	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT"`
+	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE"`
+	// status_phase field predicates
+	StatusPhase       *PermissionSetStatusPhase  `json:"statusPhase"`
+	StatusPhaseNEQ    *PermissionSetStatusPhase  `json:"statusPhaseNEQ"`
+	StatusPhaseIn     []PermissionSetStatusPhase `json:"statusPhaseIn"`
+	StatusPhaseNotIn  []PermissionSetStatusPhase `json:"statusPhaseNotIn"`
+	StatusPhaseIsNil  *bool                      `json:"statusPhaseIsNil"`
+	StatusPhaseNotNil *bool                      `json:"statusPhaseNotNil"`
+	// status_message field predicates
+	StatusMessage             *string  `json:"statusMessage"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ"`
+	StatusMessageIn           []string `json:"statusMessageIn"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn"`
+	StatusMessageGT           *string  `json:"statusMessageGT"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE"`
+	StatusMessageLT           *string  `json:"statusMessageLT"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE"`
+	StatusMessageContains     *string  `json:"statusMessageContains"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix"`
+	StatusMessageIsNil        *bool    `json:"statusMessageIsNil"`
+	StatusMessageNotNil       *bool    `json:"statusMessageNotNil"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold"`
+	// environment field predicates
+	Environment             *string  `json:"environment"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ"`
+	EnvironmentIn           []string `json:"environmentIn"`
+	EnvironmentNotIn        []string `json:"environmentNotIn"`
+	EnvironmentGT           *string  `json:"environmentGT"`
+	EnvironmentGTE          *string  `json:"environmentGTE"`
+	EnvironmentLT           *string  `json:"environmentLT"`
+	EnvironmentLTE          *string  `json:"environmentLTE"`
+	EnvironmentContains     *string  `json:"environmentContains"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix"`
+	EnvironmentIsNil        *bool    `json:"environmentIsNil"`
+	EnvironmentNotNil       *bool    `json:"environmentNotNil"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold"`
+	// namespace field predicates
+	Namespace             *string  `json:"namespace"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ"`
+	NamespaceIn           []string `json:"namespaceIn"`
+	NamespaceNotIn        []string `json:"namespaceNotIn"`
+	NamespaceGT           *string  `json:"namespaceGT"`
+	NamespaceGTE          *string  `json:"namespaceGTE"`
+	NamespaceLT           *string  `json:"namespaceLT"`
+	NamespaceLTE          *string  `json:"namespaceLTE"`
+	NamespaceContains     *string  `json:"namespaceContains"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold"`
+	// owner_application edge predicates
+	HasOwnerApplication     *bool                   `json:"hasOwnerApplication"`
+	HasOwnerApplicationWith []ApplicationWhereInput `json:"hasOwnerApplicationWith"`
+}
+
+// GetNot returns PermissionSetWhereInput.Not, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNot() *PermissionSetWhereInput { return v.Not }
+
+// GetAnd returns PermissionSetWhereInput.And, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetAnd() []PermissionSetWhereInput { return v.And }
+
+// GetOr returns PermissionSetWhereInput.Or, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetOr() []PermissionSetWhereInput { return v.Or }
+
+// GetId returns PermissionSetWhereInput.Id, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetId() *string { return v.Id }
+
+// GetIdNEQ returns PermissionSetWhereInput.IdNEQ, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetIdNEQ() *string { return v.IdNEQ }
+
+// GetIdIn returns PermissionSetWhereInput.IdIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetIdIn() []string { return v.IdIn }
+
+// GetIdNotIn returns PermissionSetWhereInput.IdNotIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetIdNotIn() []string { return v.IdNotIn }
+
+// GetIdGT returns PermissionSetWhereInput.IdGT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetIdGT() *string { return v.IdGT }
+
+// GetIdGTE returns PermissionSetWhereInput.IdGTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetIdGTE() *string { return v.IdGTE }
+
+// GetIdLT returns PermissionSetWhereInput.IdLT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetIdLT() *string { return v.IdLT }
+
+// GetIdLTE returns PermissionSetWhereInput.IdLTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetIdLTE() *string { return v.IdLTE }
+
+// GetCreatedAt returns PermissionSetWhereInput.CreatedAt, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetCreatedAtNEQ returns PermissionSetWhereInput.CreatedAtNEQ, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetCreatedAtNEQ() *time.Time { return v.CreatedAtNEQ }
+
+// GetCreatedAtIn returns PermissionSetWhereInput.CreatedAtIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetCreatedAtIn() []time.Time { return v.CreatedAtIn }
+
+// GetCreatedAtNotIn returns PermissionSetWhereInput.CreatedAtNotIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetCreatedAtNotIn() []time.Time { return v.CreatedAtNotIn }
+
+// GetCreatedAtGT returns PermissionSetWhereInput.CreatedAtGT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetCreatedAtGT() *time.Time { return v.CreatedAtGT }
+
+// GetCreatedAtGTE returns PermissionSetWhereInput.CreatedAtGTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetCreatedAtGTE() *time.Time { return v.CreatedAtGTE }
+
+// GetCreatedAtLT returns PermissionSetWhereInput.CreatedAtLT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetCreatedAtLT() *time.Time { return v.CreatedAtLT }
+
+// GetCreatedAtLTE returns PermissionSetWhereInput.CreatedAtLTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetCreatedAtLTE() *time.Time { return v.CreatedAtLTE }
+
+// GetLastModifiedAt returns PermissionSetWhereInput.LastModifiedAt, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetLastModifiedAt() *time.Time { return v.LastModifiedAt }
+
+// GetLastModifiedAtNEQ returns PermissionSetWhereInput.LastModifiedAtNEQ, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetLastModifiedAtNEQ() *time.Time { return v.LastModifiedAtNEQ }
+
+// GetLastModifiedAtIn returns PermissionSetWhereInput.LastModifiedAtIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetLastModifiedAtIn() []time.Time { return v.LastModifiedAtIn }
+
+// GetLastModifiedAtNotIn returns PermissionSetWhereInput.LastModifiedAtNotIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetLastModifiedAtNotIn() []time.Time { return v.LastModifiedAtNotIn }
+
+// GetLastModifiedAtGT returns PermissionSetWhereInput.LastModifiedAtGT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetLastModifiedAtGT() *time.Time { return v.LastModifiedAtGT }
+
+// GetLastModifiedAtGTE returns PermissionSetWhereInput.LastModifiedAtGTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetLastModifiedAtGTE() *time.Time { return v.LastModifiedAtGTE }
+
+// GetLastModifiedAtLT returns PermissionSetWhereInput.LastModifiedAtLT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetLastModifiedAtLT() *time.Time { return v.LastModifiedAtLT }
+
+// GetLastModifiedAtLTE returns PermissionSetWhereInput.LastModifiedAtLTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetLastModifiedAtLTE() *time.Time { return v.LastModifiedAtLTE }
+
+// GetStatusPhase returns PermissionSetWhereInput.StatusPhase, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusPhase() *PermissionSetStatusPhase { return v.StatusPhase }
+
+// GetStatusPhaseNEQ returns PermissionSetWhereInput.StatusPhaseNEQ, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusPhaseNEQ() *PermissionSetStatusPhase {
+	return v.StatusPhaseNEQ
+}
+
+// GetStatusPhaseIn returns PermissionSetWhereInput.StatusPhaseIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusPhaseIn() []PermissionSetStatusPhase {
+	return v.StatusPhaseIn
+}
+
+// GetStatusPhaseNotIn returns PermissionSetWhereInput.StatusPhaseNotIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusPhaseNotIn() []PermissionSetStatusPhase {
+	return v.StatusPhaseNotIn
+}
+
+// GetStatusPhaseIsNil returns PermissionSetWhereInput.StatusPhaseIsNil, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusPhaseIsNil() *bool { return v.StatusPhaseIsNil }
+
+// GetStatusPhaseNotNil returns PermissionSetWhereInput.StatusPhaseNotNil, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusPhaseNotNil() *bool { return v.StatusPhaseNotNil }
+
+// GetStatusMessage returns PermissionSetWhereInput.StatusMessage, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessage() *string { return v.StatusMessage }
+
+// GetStatusMessageNEQ returns PermissionSetWhereInput.StatusMessageNEQ, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageNEQ() *string { return v.StatusMessageNEQ }
+
+// GetStatusMessageIn returns PermissionSetWhereInput.StatusMessageIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageIn() []string { return v.StatusMessageIn }
+
+// GetStatusMessageNotIn returns PermissionSetWhereInput.StatusMessageNotIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageNotIn() []string { return v.StatusMessageNotIn }
+
+// GetStatusMessageGT returns PermissionSetWhereInput.StatusMessageGT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageGT() *string { return v.StatusMessageGT }
+
+// GetStatusMessageGTE returns PermissionSetWhereInput.StatusMessageGTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageGTE() *string { return v.StatusMessageGTE }
+
+// GetStatusMessageLT returns PermissionSetWhereInput.StatusMessageLT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageLT() *string { return v.StatusMessageLT }
+
+// GetStatusMessageLTE returns PermissionSetWhereInput.StatusMessageLTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageLTE() *string { return v.StatusMessageLTE }
+
+// GetStatusMessageContains returns PermissionSetWhereInput.StatusMessageContains, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageContains() *string { return v.StatusMessageContains }
+
+// GetStatusMessageHasPrefix returns PermissionSetWhereInput.StatusMessageHasPrefix, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageHasPrefix() *string {
+	return v.StatusMessageHasPrefix
+}
+
+// GetStatusMessageHasSuffix returns PermissionSetWhereInput.StatusMessageHasSuffix, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageHasSuffix() *string {
+	return v.StatusMessageHasSuffix
+}
+
+// GetStatusMessageIsNil returns PermissionSetWhereInput.StatusMessageIsNil, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageIsNil() *bool { return v.StatusMessageIsNil }
+
+// GetStatusMessageNotNil returns PermissionSetWhereInput.StatusMessageNotNil, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageNotNil() *bool { return v.StatusMessageNotNil }
+
+// GetStatusMessageEqualFold returns PermissionSetWhereInput.StatusMessageEqualFold, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageEqualFold() *string {
+	return v.StatusMessageEqualFold
+}
+
+// GetStatusMessageContainsFold returns PermissionSetWhereInput.StatusMessageContainsFold, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetStatusMessageContainsFold() *string {
+	return v.StatusMessageContainsFold
+}
+
+// GetEnvironment returns PermissionSetWhereInput.Environment, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironment() *string { return v.Environment }
+
+// GetEnvironmentNEQ returns PermissionSetWhereInput.EnvironmentNEQ, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentNEQ() *string { return v.EnvironmentNEQ }
+
+// GetEnvironmentIn returns PermissionSetWhereInput.EnvironmentIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentIn() []string { return v.EnvironmentIn }
+
+// GetEnvironmentNotIn returns PermissionSetWhereInput.EnvironmentNotIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentNotIn() []string { return v.EnvironmentNotIn }
+
+// GetEnvironmentGT returns PermissionSetWhereInput.EnvironmentGT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentGT() *string { return v.EnvironmentGT }
+
+// GetEnvironmentGTE returns PermissionSetWhereInput.EnvironmentGTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentGTE() *string { return v.EnvironmentGTE }
+
+// GetEnvironmentLT returns PermissionSetWhereInput.EnvironmentLT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentLT() *string { return v.EnvironmentLT }
+
+// GetEnvironmentLTE returns PermissionSetWhereInput.EnvironmentLTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentLTE() *string { return v.EnvironmentLTE }
+
+// GetEnvironmentContains returns PermissionSetWhereInput.EnvironmentContains, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentContains() *string { return v.EnvironmentContains }
+
+// GetEnvironmentHasPrefix returns PermissionSetWhereInput.EnvironmentHasPrefix, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentHasPrefix() *string { return v.EnvironmentHasPrefix }
+
+// GetEnvironmentHasSuffix returns PermissionSetWhereInput.EnvironmentHasSuffix, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentHasSuffix() *string { return v.EnvironmentHasSuffix }
+
+// GetEnvironmentIsNil returns PermissionSetWhereInput.EnvironmentIsNil, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentIsNil() *bool { return v.EnvironmentIsNil }
+
+// GetEnvironmentNotNil returns PermissionSetWhereInput.EnvironmentNotNil, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentNotNil() *bool { return v.EnvironmentNotNil }
+
+// GetEnvironmentEqualFold returns PermissionSetWhereInput.EnvironmentEqualFold, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentEqualFold() *string { return v.EnvironmentEqualFold }
+
+// GetEnvironmentContainsFold returns PermissionSetWhereInput.EnvironmentContainsFold, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetEnvironmentContainsFold() *string {
+	return v.EnvironmentContainsFold
+}
+
+// GetNamespace returns PermissionSetWhereInput.Namespace, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespace() *string { return v.Namespace }
+
+// GetNamespaceNEQ returns PermissionSetWhereInput.NamespaceNEQ, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceNEQ() *string { return v.NamespaceNEQ }
+
+// GetNamespaceIn returns PermissionSetWhereInput.NamespaceIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceIn() []string { return v.NamespaceIn }
+
+// GetNamespaceNotIn returns PermissionSetWhereInput.NamespaceNotIn, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceNotIn() []string { return v.NamespaceNotIn }
+
+// GetNamespaceGT returns PermissionSetWhereInput.NamespaceGT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceGT() *string { return v.NamespaceGT }
+
+// GetNamespaceGTE returns PermissionSetWhereInput.NamespaceGTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceGTE() *string { return v.NamespaceGTE }
+
+// GetNamespaceLT returns PermissionSetWhereInput.NamespaceLT, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceLT() *string { return v.NamespaceLT }
+
+// GetNamespaceLTE returns PermissionSetWhereInput.NamespaceLTE, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceLTE() *string { return v.NamespaceLTE }
+
+// GetNamespaceContains returns PermissionSetWhereInput.NamespaceContains, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceContains() *string { return v.NamespaceContains }
+
+// GetNamespaceHasPrefix returns PermissionSetWhereInput.NamespaceHasPrefix, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceHasPrefix() *string { return v.NamespaceHasPrefix }
+
+// GetNamespaceHasSuffix returns PermissionSetWhereInput.NamespaceHasSuffix, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceHasSuffix() *string { return v.NamespaceHasSuffix }
+
+// GetNamespaceEqualFold returns PermissionSetWhereInput.NamespaceEqualFold, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceEqualFold() *string { return v.NamespaceEqualFold }
+
+// GetNamespaceContainsFold returns PermissionSetWhereInput.NamespaceContainsFold, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetNamespaceContainsFold() *string { return v.NamespaceContainsFold }
+
+// GetHasOwnerApplication returns PermissionSetWhereInput.HasOwnerApplication, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetHasOwnerApplication() *bool { return v.HasOwnerApplication }
+
+// GetHasOwnerApplicationWith returns PermissionSetWhereInput.HasOwnerApplicationWith, and is useful for accessing the field via an interface.
+func (v *PermissionSetWhereInput) GetHasOwnerApplicationWith() []ApplicationWhereInput {
+	return v.HasOwnerApplicationWith
+}
+
 // RotateTeamTokenResponse is returned by RotateTeamToken on success.
 type RotateTeamTokenResponse struct {
 	// Rotate the token for a team. Triggers async secret regeneration.
@@ -6627,6 +7270,38 @@ type TeamWhereInput struct {
 	EmailHasSuffix    *string  `json:"emailHasSuffix"`
 	EmailEqualFold    *string  `json:"emailEqualFold"`
 	EmailContainsFold *string  `json:"emailContainsFold"`
+	// displayName field predicates
+	Displayname             *string  `json:"displayname"`
+	DisplaynameNEQ          *string  `json:"displaynameNEQ"`
+	DisplaynameIn           []string `json:"displaynameIn"`
+	DisplaynameNotIn        []string `json:"displaynameNotIn"`
+	DisplaynameGT           *string  `json:"displaynameGT"`
+	DisplaynameGTE          *string  `json:"displaynameGTE"`
+	DisplaynameLT           *string  `json:"displaynameLT"`
+	DisplaynameLTE          *string  `json:"displaynameLTE"`
+	DisplaynameContains     *string  `json:"displaynameContains"`
+	DisplaynameHasPrefix    *string  `json:"displaynameHasPrefix"`
+	DisplaynameHasSuffix    *string  `json:"displaynameHasSuffix"`
+	DisplaynameIsNil        *bool    `json:"displaynameIsNil"`
+	DisplaynameNotNil       *bool    `json:"displaynameNotNil"`
+	DisplaynameEqualFold    *string  `json:"displaynameEqualFold"`
+	DisplaynameContainsFold *string  `json:"displaynameContainsFold"`
+	// description field predicates
+	Description             *string  `json:"description"`
+	DescriptionNEQ          *string  `json:"descriptionNEQ"`
+	DescriptionIn           []string `json:"descriptionIn"`
+	DescriptionNotIn        []string `json:"descriptionNotIn"`
+	DescriptionGT           *string  `json:"descriptionGT"`
+	DescriptionGTE          *string  `json:"descriptionGTE"`
+	DescriptionLT           *string  `json:"descriptionLT"`
+	DescriptionLTE          *string  `json:"descriptionLTE"`
+	DescriptionContains     *string  `json:"descriptionContains"`
+	DescriptionHasPrefix    *string  `json:"descriptionHasPrefix"`
+	DescriptionHasSuffix    *string  `json:"descriptionHasSuffix"`
+	DescriptionIsNil        *bool    `json:"descriptionIsNil"`
+	DescriptionNotNil       *bool    `json:"descriptionNotNil"`
+	DescriptionEqualFold    *string  `json:"descriptionEqualFold"`
+	DescriptionContainsFold *string  `json:"descriptionContainsFold"`
 	// category field predicates
 	Category      *TeamCategory  `json:"category"`
 	CategoryNEQ   *TeamCategory  `json:"categoryNEQ"`
@@ -6971,6 +7646,96 @@ func (v *TeamWhereInput) GetEmailEqualFold() *string { return v.EmailEqualFold }
 // GetEmailContainsFold returns TeamWhereInput.EmailContainsFold, and is useful for accessing the field via an interface.
 func (v *TeamWhereInput) GetEmailContainsFold() *string { return v.EmailContainsFold }
 
+// GetDisplayname returns TeamWhereInput.Displayname, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplayname() *string { return v.Displayname }
+
+// GetDisplaynameNEQ returns TeamWhereInput.DisplaynameNEQ, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameNEQ() *string { return v.DisplaynameNEQ }
+
+// GetDisplaynameIn returns TeamWhereInput.DisplaynameIn, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameIn() []string { return v.DisplaynameIn }
+
+// GetDisplaynameNotIn returns TeamWhereInput.DisplaynameNotIn, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameNotIn() []string { return v.DisplaynameNotIn }
+
+// GetDisplaynameGT returns TeamWhereInput.DisplaynameGT, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameGT() *string { return v.DisplaynameGT }
+
+// GetDisplaynameGTE returns TeamWhereInput.DisplaynameGTE, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameGTE() *string { return v.DisplaynameGTE }
+
+// GetDisplaynameLT returns TeamWhereInput.DisplaynameLT, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameLT() *string { return v.DisplaynameLT }
+
+// GetDisplaynameLTE returns TeamWhereInput.DisplaynameLTE, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameLTE() *string { return v.DisplaynameLTE }
+
+// GetDisplaynameContains returns TeamWhereInput.DisplaynameContains, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameContains() *string { return v.DisplaynameContains }
+
+// GetDisplaynameHasPrefix returns TeamWhereInput.DisplaynameHasPrefix, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameHasPrefix() *string { return v.DisplaynameHasPrefix }
+
+// GetDisplaynameHasSuffix returns TeamWhereInput.DisplaynameHasSuffix, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameHasSuffix() *string { return v.DisplaynameHasSuffix }
+
+// GetDisplaynameIsNil returns TeamWhereInput.DisplaynameIsNil, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameIsNil() *bool { return v.DisplaynameIsNil }
+
+// GetDisplaynameNotNil returns TeamWhereInput.DisplaynameNotNil, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameNotNil() *bool { return v.DisplaynameNotNil }
+
+// GetDisplaynameEqualFold returns TeamWhereInput.DisplaynameEqualFold, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameEqualFold() *string { return v.DisplaynameEqualFold }
+
+// GetDisplaynameContainsFold returns TeamWhereInput.DisplaynameContainsFold, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDisplaynameContainsFold() *string { return v.DisplaynameContainsFold }
+
+// GetDescription returns TeamWhereInput.Description, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescription() *string { return v.Description }
+
+// GetDescriptionNEQ returns TeamWhereInput.DescriptionNEQ, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionNEQ() *string { return v.DescriptionNEQ }
+
+// GetDescriptionIn returns TeamWhereInput.DescriptionIn, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionIn() []string { return v.DescriptionIn }
+
+// GetDescriptionNotIn returns TeamWhereInput.DescriptionNotIn, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionNotIn() []string { return v.DescriptionNotIn }
+
+// GetDescriptionGT returns TeamWhereInput.DescriptionGT, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionGT() *string { return v.DescriptionGT }
+
+// GetDescriptionGTE returns TeamWhereInput.DescriptionGTE, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionGTE() *string { return v.DescriptionGTE }
+
+// GetDescriptionLT returns TeamWhereInput.DescriptionLT, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionLT() *string { return v.DescriptionLT }
+
+// GetDescriptionLTE returns TeamWhereInput.DescriptionLTE, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionLTE() *string { return v.DescriptionLTE }
+
+// GetDescriptionContains returns TeamWhereInput.DescriptionContains, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionContains() *string { return v.DescriptionContains }
+
+// GetDescriptionHasPrefix returns TeamWhereInput.DescriptionHasPrefix, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionHasPrefix() *string { return v.DescriptionHasPrefix }
+
+// GetDescriptionHasSuffix returns TeamWhereInput.DescriptionHasSuffix, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionHasSuffix() *string { return v.DescriptionHasSuffix }
+
+// GetDescriptionIsNil returns TeamWhereInput.DescriptionIsNil, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionIsNil() *bool { return v.DescriptionIsNil }
+
+// GetDescriptionNotNil returns TeamWhereInput.DescriptionNotNil, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionNotNil() *bool { return v.DescriptionNotNil }
+
+// GetDescriptionEqualFold returns TeamWhereInput.DescriptionEqualFold, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionEqualFold() *string { return v.DescriptionEqualFold }
+
+// GetDescriptionContainsFold returns TeamWhereInput.DescriptionContainsFold, and is useful for accessing the field via an interface.
+func (v *TeamWhereInput) GetDescriptionContainsFold() *string { return v.DescriptionContainsFold }
+
 // GetCategory returns TeamWhereInput.Category, and is useful for accessing the field via an interface.
 func (v *TeamWhereInput) GetCategory() *TeamCategory { return v.Category }
 
@@ -7139,8 +7904,10 @@ func (v *UpdateGroupUpdateGroupUpdateGroupPayloadGroup) GetDisplayName() string 
 func (v *UpdateGroupUpdateGroupUpdateGroupPayloadGroup) GetDescription() string { return v.Description }
 
 type UpdateTeamInput struct {
-	TeamId string  `json:"teamId"`
-	Email  *string `json:"email"`
+	TeamId      string  `json:"teamId"`
+	Email       *string `json:"email"`
+	DisplayName *string `json:"displayName"`
+	Description *string `json:"description"`
 }
 
 // GetTeamId returns UpdateTeamInput.TeamId, and is useful for accessing the field via an interface.
@@ -7149,9 +7916,15 @@ func (v *UpdateTeamInput) GetTeamId() string { return v.TeamId }
 // GetEmail returns UpdateTeamInput.Email, and is useful for accessing the field via an interface.
 func (v *UpdateTeamInput) GetEmail() *string { return v.Email }
 
+// GetDisplayName returns UpdateTeamInput.DisplayName, and is useful for accessing the field via an interface.
+func (v *UpdateTeamInput) GetDisplayName() *string { return v.DisplayName }
+
+// GetDescription returns UpdateTeamInput.Description, and is useful for accessing the field via an interface.
+func (v *UpdateTeamInput) GetDescription() *string { return v.Description }
+
 // UpdateTeamResponse is returned by UpdateTeam on success.
 type UpdateTeamResponse struct {
-	// Update team metadata (email). Does not manage members.
+	// Update team metadata (email, description, displayName). Does not manage members.
 	UpdateTeam UpdateTeamUpdateTeamUpdateTeamPayload `json:"updateTeam"`
 }
 
