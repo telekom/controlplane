@@ -36,23 +36,23 @@ func New(ctrl *controller.Controller, log logr.Logger) *Server {
 }
 
 // RegisterRoutes registers all REST endpoints on the given Fiber router group.
-func (s *Server) RegisterRoutes(api fiber.Router, teamAuth fiber.Handler) {
-	api.Post("/hubs", s.CreateHub)
-	api.Get("/hubs", s.ListHubs)
-	api.Get("/hubs/:hub", teamAuth, s.GetHub)
-	api.Put("/hubs/:hub", teamAuth, s.UpdateHub)
-	api.Delete("/hubs/:hub", teamAuth, s.DeleteHub)
-	api.Get("/hubs/:hub/status", teamAuth, s.GetHubStatus)
+func (s *Server) RegisterRoutes(router fiber.Router, teamAuth fiber.Handler) {
+	router.Post("/hubs", s.CreateHub)
+	router.Get("/hubs", s.ListHubs)
+	router.Get("/hubs/:hub", teamAuth, s.GetHub)
+	router.Put("/hubs/:hub", teamAuth, s.UpdateHub)
+	router.Delete("/hubs/:hub", teamAuth, s.DeleteHub)
+	router.Get("/hubs/:hub/status", teamAuth, s.GetHubStatus)
 
-	api.Post("/hubs/:hub/teams", teamAuth, s.CreateTeam)
-	api.Get("/hubs/:hub/teams", teamAuth, s.ListTeams)
-	api.Get("/hubs/:hub/teams/:team", teamAuth, s.GetTeam)
-	api.Put("/hubs/:hub/teams/:team", teamAuth, s.UpdateTeam)
-	api.Delete("/hubs/:hub/teams/:team", teamAuth, s.DeleteTeam)
-	api.Get("/hubs/:hub/teams/:team/status", teamAuth, s.GetTeamStatus)
+	router.Post("/hubs/:hub/teams", teamAuth, s.CreateTeam)
+	router.Get("/hubs/:hub/teams", teamAuth, s.ListTeams)
+	router.Get("/hubs/:hub/teams/:team", teamAuth, s.GetTeam)
+	router.Put("/hubs/:hub/teams/:team", teamAuth, s.UpdateTeam)
+	router.Delete("/hubs/:hub/teams/:team", teamAuth, s.DeleteTeam)
+	router.Get("/hubs/:hub/teams/:team/status", teamAuth, s.GetTeamStatus)
 
-	api.Patch("/hubs/:hub/teams/:team/teamToken", teamAuth, s.PatchTeamToken)
-	api.Get("/hubs/:hub/teams/:team/resources", teamAuth, s.GetTeamResources)
+	router.Patch("/hubs/:hub/teams/:team/teamToken", teamAuth, s.PatchTeamToken)
+	router.Get("/hubs/:hub/teams/:team/resources", teamAuth, s.GetTeamResources)
 }
 
 // --- Hub handlers ---
@@ -60,13 +60,13 @@ func (s *Server) RegisterRoutes(api fiber.Router, teamAuth fiber.Handler) {
 func (s *Server) CreateHub(c *fiber.Ctx) error {
 	var req api.HubCreateRequest
 	if err := c.BodyParser(&req); err != nil {
-		return badRequest(c, "Invalid request body")
+		return badRequest(c)
 	}
 
 	ctx := s.contextWithIdentity(c)
 	id := mw.ConsumerIdentityFromContext(c)
 
-	result, mutErrs, err := s.ctrl.Create(ctx, id.Environment, req)
+	result, mutErrs, err := s.ctrl.Create(ctx, id.Environment, &req)
 	if err != nil {
 		return s.internalError(c, err, "Unable to create hub", "hub", req.Name)
 	}
@@ -123,12 +123,12 @@ func (s *Server) UpdateHub(c *fiber.Ctx) error {
 
 	var req api.HubUpdateRequest
 	if err := c.BodyParser(&req); err != nil {
-		return badRequest(c, "Invalid request body")
+		return badRequest(c)
 	}
 
 	ctx := s.contextWithIdentity(c)
 
-	result, mutErrs, err := s.ctrl.Update(ctx, hubName, req)
+	result, mutErrs, err := s.ctrl.Update(ctx, hubName, &req)
 	if err != nil {
 		return s.internalError(c, err, "Unable to update hub", "hub", hubName)
 	}
@@ -176,13 +176,13 @@ func (s *Server) CreateTeam(c *fiber.Ctx) error {
 
 	var req api.TeamCreateRequest
 	if err := c.BodyParser(&req); err != nil {
-		return badRequest(c, "Invalid request body")
+		return badRequest(c)
 	}
 
 	ctx := s.contextWithIdentity(c)
 	id := mw.ConsumerIdentityFromContext(c)
 
-	result, mutErrs, err := s.ctrl.CreateTeam(ctx, id.Environment, hubName, req)
+	result, mutErrs, err := s.ctrl.CreateTeam(ctx, id.Environment, hubName, &req)
 	if err != nil {
 		return s.internalError(c, err, "Unable to create team", "hub", hubName)
 	}
@@ -242,12 +242,12 @@ func (s *Server) UpdateTeam(c *fiber.Ctx) error {
 
 	var req api.TeamUpdateRequest
 	if err := c.BodyParser(&req); err != nil {
-		return badRequest(c, "Invalid request body")
+		return badRequest(c)
 	}
 
 	ctx := s.contextWithIdentity(c)
 
-	result, mutErrs, err := s.ctrl.UpdateTeam(ctx, hubName, teamName, req)
+	result, mutErrs, err := s.ctrl.UpdateTeam(ctx, hubName, teamName, &req)
 	if err != nil {
 		return s.internalError(c, err, "Unable to update team", "hub", hubName, "team", teamName)
 	}
@@ -371,12 +371,12 @@ func (s *Server) internalError(c *fiber.Ctx, err error, msg string, keysAndValue
 	})
 }
 
-func badRequest(c *fiber.Ctx, detail string) error {
+func badRequest(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusBadRequest).JSON(api.Error{
 		Type:   "about:blank",
 		Title:  "Bad Request",
 		Status: float32(400),
-		Detail: detail,
+		Detail: "Invalid request body",
 	})
 }
 

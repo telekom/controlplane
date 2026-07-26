@@ -60,7 +60,7 @@ func New(cpapi graphql.Client, rover *client.RoverClient) *Controller {
 
 // --- Hub operations ---
 
-func (ctrl *Controller) Create(ctx context.Context, env string, req api.HubCreateRequest) (*api.HubResponse, []MutationError, error) {
+func (ctrl *Controller) Create(ctx context.Context, env string, req *api.HubCreateRequest) (*api.HubResponse, []MutationError, error) {
 	desc := req.Description
 	resp, err := gql.CreateGroup(ctx, ctrl.cpapi, gql.CreateGroupInput{
 		Environment: env,
@@ -118,7 +118,7 @@ func (ctrl *Controller) Get(ctx context.Context, hubName string) (*api.HubRespon
 	return &result, nil
 }
 
-func (ctrl *Controller) Update(ctx context.Context, hubName string, req api.HubUpdateRequest) (*api.HubResponse, []MutationError, error) {
+func (ctrl *Controller) Update(ctx context.Context, hubName string, req *api.HubUpdateRequest) (*api.HubResponse, []MutationError, error) {
 	groupID, err := ctrl.resolveGroupID(ctx, hubName)
 	if err != nil {
 		return nil, nil, err
@@ -185,7 +185,7 @@ func (ctrl *Controller) GetStatus(_ context.Context, _ string) (*api.ResourceSta
 
 // --- Team operations ---
 
-func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req api.TeamCreateRequest) (*api.TeamResponse, []MutationError, error) {
+func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req *api.TeamCreateRequest) (*api.TeamResponse, []MutationError, error) {
 	members := make([]gql.MemberInput, 0)
 	if req.Members != nil {
 		for _, m := range req.Members {
@@ -268,7 +268,7 @@ func (ctrl *Controller) GetTeam(ctx context.Context, hubName, teamName string) (
 	return &result, nil
 }
 
-func (ctrl *Controller) UpdateTeam(ctx context.Context, hubName, teamName string, req api.TeamUpdateRequest) (*api.TeamResponse, []MutationError, error) {
+func (ctrl *Controller) UpdateTeam(ctx context.Context, hubName, teamName string, req *api.TeamUpdateRequest) (*api.TeamResponse, []MutationError, error) {
 	teamID, err := ctrl.resolveTeamID(ctx, hubName, teamName)
 	if err != nil {
 		return nil, nil, err
