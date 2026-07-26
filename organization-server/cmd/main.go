@@ -19,8 +19,9 @@ import (
 
 	"github.com/telekom/controlplane/organization-server/internal/client"
 	"github.com/telekom/controlplane/organization-server/internal/config"
-	"github.com/telekom/controlplane/organization-server/internal/handler"
+	"github.com/telekom/controlplane/organization-server/internal/controller"
 	mw "github.com/telekom/controlplane/organization-server/internal/middleware"
+	"github.com/telekom/controlplane/organization-server/internal/server"
 )
 
 func main() {
@@ -66,8 +67,9 @@ func main() {
 
 	// Register all endpoint handlers (TeamAuthorization applied per-route inside).
 	teamAuth := mw.TeamAuthorization(log)
-	h := handler.New(cpapiClient, roverClient, log)
-	h.RegisterRoutes(api, teamAuth)
+	ctrl := controller.New(cpapiClient, roverClient)
+	srv := server.New(ctrl, log)
+	srv.RegisterRoutes(api, teamAuth)
 
 	// Graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

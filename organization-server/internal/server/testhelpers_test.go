@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package handler_test
+package server_test
 
 import (
 	"encoding/base64"
@@ -18,8 +18,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/telekom/controlplane/organization-server/internal/client"
-	"github.com/telekom/controlplane/organization-server/internal/handler"
+	"github.com/telekom/controlplane/organization-server/internal/controller"
 	mw "github.com/telekom/controlplane/organization-server/internal/middleware"
+	"github.com/telekom/controlplane/organization-server/internal/server"
 
 	. "github.com/onsi/gomega"
 )
@@ -70,7 +71,8 @@ func newTestApp(graphqlURL, roverURL string) *fiber.App {
 
 	cpapiClient := client.NewCPAPIClient(graphqlURL, nil, "")
 	roverClient := client.NewRoverClient(roverURL, "tardis")
-	h := handler.New(cpapiClient, roverClient, logr.Discard())
+	ctrl := controller.New(cpapiClient, roverClient)
+	srv := server.New(ctrl, logr.Discard())
 
 	// In tests: mock JWT (no trusted issuers) + identity extraction + permissive team auth
 	teamAuth := mw.TeamAuthorization(logr.Discard())
@@ -79,7 +81,7 @@ func newTestApp(graphqlURL, roverURL string) *fiber.App {
 		mw.IdentityExtraction(logr.Discard(), "test"),
 		mw.Obfuscate(),
 	)
-	h.RegisterRoutes(api, teamAuth)
+	srv.RegisterRoutes(api, teamAuth)
 
 	return app
 }

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package handler_test
+package server_test
 
 import (
 	"encoding/json"
