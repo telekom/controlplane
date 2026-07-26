@@ -13,6 +13,10 @@ all: build
 generate: ## Run code generation (oapi-codegen + genqlient).
 	go generate ./tools/...
 
+.PHONY: manifests
+manifests: ## No-op (no CRD manifests for REST servers, required by CI).
+	@true
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
