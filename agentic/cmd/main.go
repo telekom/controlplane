@@ -155,11 +155,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := (&controller.AgenticServerReconciler{
+	if err := (&controller.McpServerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AgenticServer")
+		setupLog.Error(err, "unable to create controller", "controller", "McpServer")
 		os.Exit(1)
 	}
 	if err := (&controller.AgenticExposureReconciler{

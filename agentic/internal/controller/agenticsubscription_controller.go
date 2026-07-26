@@ -43,7 +43,7 @@ type AgenticSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticsubscriptions/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticsubscriptions/finalizers,verbs=update
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticexposures,verbs=get;list;watch
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticservers,verbs=get;list;watch
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumeroutes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch

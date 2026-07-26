@@ -43,7 +43,7 @@ type AgenticExposureReconciler struct {
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticexposures/finalizers,verbs=update
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticservers,verbs=get;list;watch
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers,verbs=get;list;watch
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticsubscriptions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch
 
@@ -62,8 +62,8 @@ func (r *AgenticExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToAgenticExposure),
 			builder.WithPredicates(LabelPredicate),
 		).
-		Watches(&agenticv1.AgenticServer{},
-			handler.EnqueueRequestsFromMapFunc(r.MapAgenticServerToAgenticExposure),
+		Watches(&agenticv1.McpServer{},
+			handler.EnqueueRequestsFromMapFunc(r.MapMcpServerToAgenticExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&agenticv1.AgenticExposure{},
@@ -85,9 +85,9 @@ func (r *AgenticExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// MapAgenticServerToAgenticExposure enqueues AgenticExposures referencing the changed AgenticServer.
-func (r *AgenticExposureReconciler) MapAgenticServerToAgenticExposure(ctx context.Context, obj client.Object) []reconcile.Request {
-	server, ok := obj.(*agenticv1.AgenticServer)
+// MapMcpServerToAgenticExposure enqueues AgenticExposures referencing the changed McpServer.
+func (r *AgenticExposureReconciler) MapMcpServerToAgenticExposure(ctx context.Context, obj client.Object) []reconcile.Request {
+	server, ok := obj.(*agenticv1.McpServer)
 	if !ok {
 		return nil
 	}
@@ -113,7 +113,7 @@ func (r *AgenticExposureReconciler) MapAgenticServerToAgenticExposure(ctx contex
 
 // MapAgenticExposureToAgenticExposure enqueues other AgenticExposures with the same basePath.
 //
-//nolint:dupl // parallel structure with MapAgenticServerToAgenticServer; operates on different types
+//nolint:dupl // parallel structure with MapMcpServerToMcpServer; operates on different types
 func (r *AgenticExposureReconciler) MapAgenticExposureToAgenticExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	exposure, ok := obj.(*agenticv1.AgenticExposure)
 	if !ok {

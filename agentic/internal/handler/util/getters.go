@@ -66,23 +66,23 @@ func GetApplication(ctx context.Context, ref ctypes.ObjectRef) (*applicationapi.
 	return application, nil
 }
 
-// FindActiveAgenticServer finds the active AgenticServer for a given basePath.
+// FindActiveMcpServer finds the active McpServer for a given basePath.
 // Returns (found, mcpServer, error).
 // If found is false and mcpServer is non-nil, a server exists but with a different case
 // (e.g. /MyMcp vs /mymcp) — the caller should treat this as a conflict, not a missing server.
-func FindActiveAgenticServer(ctx context.Context, basePath string) (bool, *agenticv1.AgenticServer, error) {
+func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1.McpServer, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	serverList := &agenticv1.AgenticServerList{}
+	serverList := &agenticv1.McpServerList{}
 	if err := c.List(ctx, serverList, client.MatchingLabels{
 		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
-		return false, nil, errors.Wrapf(err, "failed to list AgenticServers for basePath %q", basePath)
+		return false, nil, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
 	}
 
 	// Filter to exact basePath match AND active; also detect case-only mismatches.
-	var candidates []agenticv1.AgenticServer
-	var caseConflict *agenticv1.AgenticServer
+	var candidates []agenticv1.McpServer
+	var caseConflict *agenticv1.McpServer
 	for i := range serverList.Items {
 		server := &serverList.Items[i]
 		if !server.Status.Active {
@@ -107,7 +107,7 @@ func FindActiveAgenticServer(ctx context.Context, basePath string) (bool, *agent
 
 	activeServer := &candidates[0]
 	if err := condition.EnsureReady(activeServer); err != nil {
-		return false, activeServer, ctrlerrors.BlockedErrorf("AgenticServer %q is not ready", basePath)
+		return false, activeServer, ctrlerrors.BlockedErrorf("McpServer %q is not ready", basePath)
 	}
 
 	return true, activeServer, nil

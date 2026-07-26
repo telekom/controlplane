@@ -7,14 +7,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: agenticservers.agentic.cp.ei.telekom.de
+  name: mcpservers.agentic.cp.ei.telekom.de
 spec:
   group: agentic.cp.ei.telekom.de
   names:
-    kind: AgenticServer
-    listKind: AgenticServerList
-    plural: agenticservers
-    singular: agenticserver
+    kind: McpServer
+    listKind: McpServerList
+    plural: mcpservers
+    singular: mcpserver
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -33,7 +33,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          AgenticServer is the Schema for the agenticservers API.
+          McpServer is the Schema for the mcpservers API.
           It represents a registered MCP server definition, serving as the
           canonical reference that AgenticExposure and AgenticSubscription point to.
         properties:
@@ -55,7 +55,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AgenticServerSpec defines the desired state of AgenticServer.
+            description: McpServerSpec defines the desired state of McpServer.
             properties:
               basePath:
                 description: BasePath is the base path of the MCP server endpoint.
@@ -95,10 +95,10 @@ spec:
             - version
             type: object
           status:
-            description: AgenticServerStatus defines the observed state of AgenticServer.
+            description: McpServerStatus defines the observed state of McpServer.
             properties:
               active:
-                description: Active indicates whether this AgenticServer is the active
+                description: Active indicates whether this McpServer is the active
                   singleton for its basePath.
                 type: boolean
               conditions:

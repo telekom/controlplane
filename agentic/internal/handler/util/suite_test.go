@@ -74,11 +74,11 @@ func makeReadyApplication(name, clientId string) *applicationapi.Application {
 	return a
 }
 
-func makeReadyAgenticServer(basePath string) agenticv1.AgenticServer {
-	s := agenticv1.AgenticServer{
+func makeReadyMcpServer(basePath string) agenticv1.McpServer {
+	s := agenticv1.McpServer{
 		ObjectMeta: metav1.ObjectMeta{Name: "mcp-server", Namespace: "default"},
-		Spec:       agenticv1.AgenticServerSpec{BasePath: basePath, Version: "1.0.0", Name: "Test"},
-		Status:     agenticv1.AgenticServerStatus{Active: true},
+		Spec:       agenticv1.McpServerSpec{BasePath: basePath, Version: "1.0.0", Name: "Test"},
+		Status:     agenticv1.McpServerStatus{Active: true},
 	}
 	setReady(&s.Status.Conditions)
 	return s

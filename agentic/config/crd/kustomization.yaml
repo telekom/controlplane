@@ -7,7 +7,7 @@
 # It should be run by config/default
 resources:
 - bases/agentic.cp.ei.telekom.de_agenticexposures.yaml
-- bases/agentic.cp.ei.telekom.de_agenticservers.yaml
+- bases/agentic.cp.ei.telekom.de_mcpservers.yaml
 - bases/agentic.cp.ei.telekom.de_agenticsubscriptions.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 

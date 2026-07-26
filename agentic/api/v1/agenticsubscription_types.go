@@ -12,7 +12,7 @@ import (
 
 // AgenticSubscriptionSpec defines the desired state of AgenticSubscription.
 type AgenticSubscriptionSpec struct {
-	// BasePath references the AgenticServer/AgenticExposure via basePath.
+	// BasePath references the McpServer/AgenticExposure via basePath.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=`^/.*$`
