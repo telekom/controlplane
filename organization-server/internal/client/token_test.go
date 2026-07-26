@@ -29,8 +29,8 @@ func TestTokenSource_FetchesToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tok != "test-token" {
-		t.Fatalf("expected 'test-token', got %q", tok)
+	if tok.AccessToken != "test-token" {
+		t.Fatalf("expected 'test-token', got %q", tok.AccessToken)
 	}
 }
 
@@ -61,8 +61,8 @@ func TestTokenSource_CachesToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tok2 != "cached-token" {
-		t.Fatalf("expected 'cached-token', got %q", tok2)
+	if tok2.AccessToken != "cached-token" {
+		t.Fatalf("expected 'cached-token', got %q", tok2.AccessToken)
 	}
 
 	if callCount.Load() != 1 {

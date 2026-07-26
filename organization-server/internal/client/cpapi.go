@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
+	"golang.org/x/oauth2"
 
 	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 )
@@ -45,7 +46,7 @@ func identityFromContext(ctx context.Context) *ConsumerIdentity {
 // X-Forwarded-* headers (extracted from context).
 // caFilePath is the path to the CA bundle for TLS verification (e.g.
 // "/var/run/secrets/trust-bundle/trust-bundle.pem"). If empty, system CAs are used.
-func NewCPAPIClient(endpoint string, tokenSource *TokenSource, caFilePath string) graphql.Client {
+func NewCPAPIClient(endpoint string, tokenSource oauth2.TokenSource, caFilePath string) graphql.Client {
 	baseClient := commonclient.NewBaseHttpClient(
 		commonclient.WithCaFilepath(caFilePath),
 		commonclient.WithClientName("cpapi"),
@@ -64,18 +65,18 @@ func NewCPAPIClient(endpoint string, tokenSource *TokenSource, caFilePath string
 // 1. Bearer token from TokenSource (facade's admin credentials)
 // 2. X-Forwarded-* headers from context (consumer identity)
 type cpAPITransport struct {
-	tokenSource *TokenSource
+	tokenSource oauth2.TokenSource
 	base        http.RoundTripper
 }
 
 func (t *cpAPITransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Inject admin token.
 	if t.tokenSource != nil {
-		token, err := t.tokenSource.Token()
+		tok, err := t.tokenSource.Token()
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Authorization", "Bearer "+tok.AccessToken)
 	}
 
 	// Inject consumer identity from context.

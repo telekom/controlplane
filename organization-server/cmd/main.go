@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"golang.org/x/oauth2"
+
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 
 	"github.com/telekom/controlplane/organization-server/internal/client"
@@ -35,7 +37,7 @@ func main() {
 	)
 
 	// OAuth token source for admin authentication to CP API.
-	var tokenSource *client.TokenSource
+	var tokenSource oauth2.TokenSource
 	if cfg.OAuthTokenURL != "" && cfg.OAuthClientID != "" {
 		tokenSource = client.NewTokenSource(cfg.OAuthTokenURL, cfg.OAuthClientID, cfg.OAuthClientSecret)
 		log.Info("OAuth token source configured")
