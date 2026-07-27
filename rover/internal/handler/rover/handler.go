@@ -82,11 +82,6 @@ func addKnownTypes(c client.JanitorClient) {
 		c.AddKnownTypeToState(&filev1.FileExposure{})
 		c.AddKnownTypeToState(&filev1.FileSubscription{})
 	}
-
-	// Create Application from Rover
-	err := application.HandleApplication(ctx, c, roverObj)
-	if err != nil {
-		return errors.Wrap(err, "failed to handle application")
 	if config.FeatureAiGateway.IsEnabled() {
 		c.AddKnownTypeToState(&agenticv1.McpExposure{})
 		c.AddKnownTypeToState(&agenticv1.McpSubscription{})
@@ -98,7 +93,6 @@ func (h *RoverHandler) handleExposures(ctx context.Context, c client.JanitorClie
 	roverObj.Status.EventExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	roverObj.Status.AiExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	roverObj.Status.FileExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
-	seenDescriminators := make(map[string]struct{})
 
 	seenDiscriminators := make(map[string]struct{})
 	for _, exp := range roverObj.Spec.Exposures {
@@ -142,18 +136,18 @@ func (h *RoverHandler) handleExposure(ctx context.Context, c client.JanitorClien
 			return errors.Wrap(err, "failed to handle AI exposure")
 		}
 	case roverv1.TypeFile:
-			// Duplicate file types are rejected by the Rover admission webhook
-			if !config.FeatureFile.IsEnabled() {
-				log.Info("file exposure skipped, feature has not been enabled")
-				continue
-			}
-			if err := file.HandleExposure(ctx, c, roverObj, exp.File); err != nil {
-				return errors.Wrap(err, "failed to handle file exposure")
-			}
-
-		default:
-			return errors.New("unknown exposure type: " + exp.Type().String())
+		// Duplicate file types are rejected by the Rover admission webhook
+		if !config.FeatureFile.IsEnabled() {
+			logger.Info("file exposure skipped, feature has not been enabled")
+			return nil
 		}
+		if err := file.HandleExposure(ctx, c, roverObj, exp.File); err != nil {
+			return errors.Wrap(err, "failed to handle file exposure")
+		}
+
+	default:
+		return errors.New("unknown exposure type: " + exp.Type().String())
+	}
 	return nil
 }
 
@@ -193,20 +187,20 @@ func (h *RoverHandler) handleSubscription(ctx context.Context, c client.JanitorC
 		}
 		if err := ai.HandleSubscription(ctx, c, roverObj, sub.Ai); err != nil {
 			return errors.Wrap(err, "failed to handle AI subscription")
-			}
-
-		case roverv1.TypeFile:
-			if !config.FeatureFile.IsEnabled() {
-				log.Info("file subscription skipped, feature has not been enabled")
-				continue
-			}
-			if err := file.HandleSubscription(ctx, c, roverObj, sub.File); err != nil {
-				return errors.Wrap(err, "failed to handle file subscription")
-			}
-
-		default:
-			return errors.New("unknown subscription type: " + sub.Type().String())
 		}
+
+	case roverv1.TypeFile:
+		if !config.FeatureFile.IsEnabled() {
+			logger.Info("file subscription skipped, feature has not been enabled")
+			return nil
+		}
+		if err := file.HandleSubscription(ctx, c, roverObj, sub.File); err != nil {
+			return errors.Wrap(err, "failed to handle file subscription")
+		}
+
+	default:
+		return errors.New("unknown subscription type: " + sub.Type().String())
+	}
 	return nil
 }
 

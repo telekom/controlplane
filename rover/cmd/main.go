@@ -11,7 +11,6 @@ import (
 	"os"
 
 	filev1 "github.com/telekom/controlplane/file/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -42,10 +41,6 @@ import (
 	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var (

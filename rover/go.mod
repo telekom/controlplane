@@ -25,13 +25,9 @@ require (
 	github.com/onsi/gomega v1.42.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
-	github.com/telekom/controlplane/file/api v0.0.0-00010101000000-000000000000
-	golang.org/x/crypto v0.52.0
-	k8s.io/api v0.36.0
-	k8s.io/apimachinery v0.36.0
-	k8s.io/client-go v0.36.0
-	sigs.k8s.io/controller-runtime v0.24.0
 	github.com/telekom/controlplane/agentic/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/file/api v0.0.0-00010101000000-000000000000
+	golang.org/x/crypto v0.53.0
 	k8s.io/api v0.36.2
 	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2
