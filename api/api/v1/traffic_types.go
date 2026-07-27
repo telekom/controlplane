@@ -13,7 +13,7 @@ import (
 type Traffic struct {
 	// Failover defines the failover configuration for the API exposure.
 	// +kubebuilder:validation:Optional
-	Failover *Failover `json:"failover,omitempty"`
+	Failover *ProviderFailover `json:"failover,omitempty"`
 	// RateLimit defines request rate limiting for this API
 	// +kubebuilder:validation:Optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
@@ -28,16 +28,32 @@ type CircuitBreaker struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
+type ProviderFailover struct {
+	// Zones defines the list of zones that are eligible for failover.
+	// If empty, the Provider failover feature is disabled.
+	// +kubebuilder:validation:Optional
+	Zones []ctypes.ObjectRef `json:"zones,omitempty"`
+}
+
+func (f ProviderFailover) ContainsZone(zone ctypes.ObjectRef) bool {
+	return slices.ContainsFunc(f.Zones, func(z ctypes.ObjectRef) bool {
+		return z.Equals(&zone)
+	})
+}
+
 type SubscriberTraffic struct {
 	// Failover defines the failover configuration for the API exposure.
 	// +kubebuilder:validation:Optional
-	Failover *Failover `json:"failover,omitempty"`
+	Failover *SubscriberFailover `json:"failover,omitempty"`
 }
 
-type Failover struct {
-	// Zone is the zone to which the traffic should be failed over in case of an error.
-	// +kubebuilder:validation:Required
-	Zones []ctypes.ObjectRef `json:"zone"`
+// SubscriberFailover defines the failover configuration that is applied to the downstream consumer of the API exposure
+type SubscriberFailover struct {
+	// Enabled flags if failover is enabled
+	// This automatically selects eligible zones for failover based on the owner zone
+	// and available zones in the cluster.
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled"`
 }
 
 // -------
@@ -118,10 +134,4 @@ func (t *Traffic) HasSubscriberRateLimit() bool {
 		return false
 	}
 	return t.RateLimit.SubscriberRateLimit != nil
-}
-
-func (f Failover) ContainsZone(zone ctypes.ObjectRef) bool {
-	return slices.ContainsFunc(f.Zones, func(z ctypes.ObjectRef) bool {
-		return z.Equals(&zone)
-	})
 }

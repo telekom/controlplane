@@ -72,8 +72,10 @@ var _ = Describe("Approval Controller", Ordered, func() {
 	}
 
 	properties := map[string]any{
-		"basePath": "/eni/distr/v1",
-		"scopes":   "read",
+		"basePath":      "/eni/distr/v1",
+		"scopes":        "read",
+		"resource_type": "API",
+		"resource_name": "/eni/distr/v1",
 	}
 
 	err := requester.SetProperties(properties)

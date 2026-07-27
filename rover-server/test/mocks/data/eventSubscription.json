@@ -48,7 +48,7 @@
       {
         "type": "Ready",
         "status": "True",
-        "reason": "EventSubscriptionProvisioned",
+        "reason": "Provisioned",
         "message": "All sub-resources are ready"
       },
       {

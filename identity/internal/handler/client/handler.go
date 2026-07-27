@@ -106,7 +106,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 
 	client.Status.ClientUid = clientCopy.Status.ClientUid
 	client.SetCondition(condition.NewDoneProcessingCondition("Created Client"))
-	client.SetCondition(condition.NewReadyCondition("Ready", "Client is ready"))
+	client.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Client is ready"))
 
 	return nil
 }

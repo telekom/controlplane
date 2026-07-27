@@ -205,6 +205,28 @@ var _ = Describe("Rover Handler", func() {
 				Expect(security).To(HaveKeyWithValue("type", "basicAuth"))
 			})
 
+			It("should preserve an explicit exposure type", func() {
+				obj := &types.UnstructuredObject{
+					Content: map[string]any{
+						"spec": map[string]any{
+							"exposures": []any{
+								map[string]any{
+									"type":     "ai",
+									"basePath": "/mcp/assistant",
+								},
+							},
+						},
+					},
+				}
+
+				err := v0.PatchRoverRequest(context.Background(), obj)
+
+				Expect(err).NotTo(HaveOccurred())
+				exposures := obj.GetContent()["exposures"].([]map[string]any)
+				Expect(exposures).To(HaveLen(1))
+				Expect(exposures[0]).To(HaveKeyWithValue("type", "ai"))
+			})
+
 			It("should patch file exposures", func() {
 				obj := &types.UnstructuredObject{
 					Content: map[string]any{
@@ -311,6 +333,20 @@ var _ = Describe("Rover Handler", func() {
 				Expect(result).To(HaveLen(1))
 				Expect(result[0]).To(HaveKeyWithValue("type", "api"))
 				Expect(result[0]["security"]).To(HaveKeyWithValue("type", "oauth2"))
+			})
+
+			It("should preserve an explicit subscription type", func() {
+				subscriptions := []any{
+					map[string]any{
+						"type":     "ai",
+						"basePath": "/mcp/assistant",
+					},
+				}
+
+				result := v0.PatchSubscriptions(subscriptions)
+
+				Expect(result).To(HaveLen(1))
+				Expect(result[0]).To(HaveKeyWithValue("type", "ai"))
 			})
 
 			It("should patch event subscriptions correctly", func() {

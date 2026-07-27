@@ -6,18 +6,26 @@ package controller
 
 import (
 	"context"
+	"slices"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/handler/application"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
 )
@@ -75,5 +83,35 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}).
 		Owns(&identity.Client{}).
 		Owns(&gateway.Consumer{}).
+		Watches(&adminv1.Zone{},
+			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApplication),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		Complete(r)
+}
+
+func (r *ApplicationReconciler) MapZoneToApplication(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	zone, ok := obj.(*adminv1.Zone)
+	if !ok {
+		return nil
+	}
+
+	list := &applicationv1.ApplicationList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+	})
+	if err != nil {
+		logger.Error(err, "failed to list Applications for Zone")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		if list.Items[i].Spec.Zone.Name == zone.Name {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+		}
+	}
+	return slices.Clip(reqs)
 }

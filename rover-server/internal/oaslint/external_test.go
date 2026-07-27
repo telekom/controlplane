@@ -15,13 +15,16 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-var _ = Describe("ExternalLinter", func() {
+var _ = Describe("externalLinter", func() {
 	var (
 		ctx    context.Context
 		server *httptest.Server
-		linter *ExternalLinter
+		linter *externalLinter
 		spec   io.Reader
 	)
 
@@ -67,11 +70,11 @@ servers:
 				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(resp) //nolint:errcheck
 			}))
-			linter = NewExternalLinter(server.URL)
+			linter = newExternalLinter(server.URL)
 		})
 
 		It("should return a passing result", func() {
-			result, err := linter.Lint(ctx, spec)
+			result, err := linter.lint(ctx, spec)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Passed).To(BeTrue())
 			Expect(result.LinterId).To(Equal("scan-123"))
@@ -99,11 +102,11 @@ servers:
 				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(resp) //nolint:errcheck
 			}))
-			linter = NewExternalLinter(server.URL)
+			linter = newExternalLinter(server.URL)
 		})
 
 		It("should return a failing result", func() {
-			result, err := linter.Lint(ctx, spec)
+			result, err := linter.lint(ctx, spec)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Passed).To(BeFalse())
 			Expect(result.Errors).To(Equal(5))
@@ -119,11 +122,11 @@ servers:
 			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 			}))
-			linter = NewExternalLinter(server.URL)
+			linter = newExternalLinter(server.URL)
 		})
 
 		It("should return an error", func() {
-			result, err := linter.Lint(ctx, spec)
+			result, err := linter.lint(ctx, spec)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("linter API error"))
 			Expect(result).To(BeNil())
@@ -132,13 +135,13 @@ servers:
 
 	Context("when the linter API is unreachable", func() {
 		BeforeEach(func() {
-			linter = NewExternalLinter("http://localhost:1", WithHTTPClient(&http.Client{
+			linter = newExternalLinter("http://localhost:1", withHTTPClient(&http.Client{
 				Timeout: 1 * time.Second,
 			}))
 		})
 
 		It("should return a connection error", func() {
-			result, err := linter.Lint(ctx, spec)
+			result, err := linter.lint(ctx, spec)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("calling linter API"))
 			Expect(result).To(BeNil())
@@ -151,11 +154,11 @@ servers:
 				w.Header().Set("Content-Type", "application/json")
 				w.Write([]byte("not json")) //nolint:errcheck
 			}))
-			linter = NewExternalLinter(server.URL)
+			linter = newExternalLinter(server.URL)
 		})
 
 		It("should return a decode error", func() {
-			result, err := linter.Lint(ctx, spec)
+			result, err := linter.lint(ctx, spec)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("decoding linter response"))
 			Expect(result).To(BeNil())
@@ -163,12 +166,15 @@ servers:
 	})
 })
 
-var _ = Describe("NoopLinter", func() {
-	It("should always return a passing result", func() {
-		linter := &NoopLinter{}
-		result, err := linter.Lint(context.Background(), bytes.NewBuffer([]byte("anything")))
+var _ = Describe("noopLinter", func() {
+	It("should always return a passing result with Skipped outcome", func() {
+		linter := &noopLinter{}
+		apiSpec := &roverv1.ApiSpecification{}
+		outcome, err := linter.Lint(context.Background(), apiSpec, &apiv1.ApiCategory{}, bytes.NewBuffer([]byte("anything")))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(result.Passed).To(BeTrue())
-		Expect(result.Reason).To(ContainSubstring("disabled"))
+		Expect(outcome).To(Equal(Skipped))
+		Expect(apiSpec.Spec.Lint).ToNot(BeNil())
+		Expect(apiSpec.Spec.Lint.Passed).To(BeTrue())
+		Expect(apiSpec.Spec.Lint.Message).To(ContainSubstring("disabled"))
 	})
 })

@@ -928,6 +928,26 @@ func SecretRotationMessageContainsFold(v string) predicate.Application {
 	return predicate.Application(sql.FieldContainsFold(FieldSecretRotationMessage, v))
 }
 
+// ExternalIdsIsNil applies the IsNil predicate on the "external_ids" field.
+func ExternalIdsIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldExternalIds))
+}
+
+// ExternalIdsNotNil applies the NotNil predicate on the "external_ids" field.
+func ExternalIdsNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldExternalIds))
+}
+
+// IPRestrictionsIsNil applies the IsNil predicate on the "ip_restrictions" field.
+func IPRestrictionsIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldIPRestrictions))
+}
+
+// IPRestrictionsNotNil applies the NotNil predicate on the "ip_restrictions" field.
+func IPRestrictionsNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldIPRestrictions))
+}
+
 // HasZone applies the HasEdge predicate on the "zone" edge.
 func HasZone() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
@@ -1058,6 +1078,29 @@ func HasSubscribedEvents() predicate.Application {
 func HasSubscribedEventsWith(preds ...predicate.EventSubscription) predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
 		step := newSubscribedEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPermissionSet applies the HasEdge predicate on the "permission_set" edge.
+func HasPermissionSet() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, PermissionSetTable, PermissionSetColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPermissionSetWith applies the HasEdge predicate on the "permission_set" edge with a given conditions (other predicates).
+func HasPermissionSetWith(preds ...predicate.PermissionSet) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newPermissionSetStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

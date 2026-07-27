@@ -29,11 +29,11 @@ func (t *Translator) ShouldSkip(_ *adminv1.Zone) (bool, string) {
 // Translate converts a Zone CR into a ZoneData DTO.
 // Visibility is converted from title case ("World"/"Enterprise") to
 // upper case ("WORLD"/"ENTERPRISE") to match the ent enum.
-// GatewayURL is taken from Spec.Gateway.Url; an empty string is mapped to nil.
+// GatewayURL is taken from the default preset's first URL; nil if no preset is configured.
 func (t *Translator) Translate(_ context.Context, obj *adminv1.Zone) (*ZoneData, error) {
 	var gatewayURL *string
-	if obj.Spec.Gateway.Url != "" {
-		url := obj.Spec.Gateway.Url
+	if preset, err := obj.Spec.Gateway.GetDefaultPreset(); err == nil {
+		url := preset.GetDefaultUrl()
 		gatewayURL = &url
 	}
 

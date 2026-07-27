@@ -11,8 +11,56 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
+
+// validateSubscription rejects subscription input that carries provider-only
+// fields. Claims are honored only on API exposure security; a subscription that
+// sends them is a client error (they would otherwise be silently dropped during
+// mapping).
+func validateSubscription(in *api.Subscription) error {
+	subType, err := in.Discriminator()
+	if err != nil {
+		return errors.Wrap(err, "failed to get subscription type")
+	}
+
+	var security api.Security
+	switch subType {
+	case "api":
+		apiSub, err := in.AsApiSubscription()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to ApiSubscription")
+		}
+		security = apiSub.Security
+	case "ai":
+		aiSub, err := in.AsAiSubscription()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to AiSubscription")
+		}
+		security = aiSub.Security
+	default:
+		return nil
+	}
+
+	secType, err := security.Discriminator()
+	if err != nil {
+		// This only happens if subscription does not have a security field, which is valid. No further validation needed.
+		return nil
+	}
+	if secType == "oauth2" {
+		oauth2, err := security.AsOauth2()
+		if err != nil {
+			return nil
+		}
+		if oauth2.Claims != (api.Claims{}) {
+			return problems.ValidationError("security.claims",
+				"claims are only supported on API exposure security, not on subscription security")
+		}
+	}
+
+	return nil
+}
 
 func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 	subType, err := in.Discriminator()
@@ -34,6 +82,14 @@ func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 		}
 
 		out.Event = mapEventSubscription(eventSub)
+
+	case "ai":
+		aiSub, err := in.AsAiSubscription()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to AiSubscription")
+		}
+
+		out.Ai = mapAiSubscription(aiSub)
 
 	case "file":
 		fileSub, err := in.AsFileSubscription()
@@ -65,7 +121,6 @@ func mapApiSubscription(in api.ApiSubscription) *roverv1.ApiSubscription {
 
 	mapSubscriptionSecurity(in, out)
 	mapSubscriptionTransformation(in, out)
-	mapSubscriptionTraffic(in, out)
 
 	return out
 }
@@ -98,6 +153,7 @@ func mapSubscriptionSecurity(in api.ApiSubscription, out *roverv1.ApiSubscriptio
 				ClientId:     oauth2.ClientId,
 				ClientSecret: oauth2.ClientSecret,
 				ClientKey:    oauth2.ClientKey,
+				RefreshToken: oauth2.RefreshToken,
 			}
 		}
 		if oauth2.Username != "" {
@@ -118,14 +174,6 @@ func mapSubscriptionSecurity(in api.ApiSubscription, out *roverv1.ApiSubscriptio
 }
 
 func mapSubscriptionTransformation(in api.ApiSubscription, out *roverv1.ApiSubscription) {}
-
-func mapSubscriptionTraffic(in api.ApiSubscription, out *roverv1.ApiSubscription) {
-	if len(in.Failover.Zones) > 0 {
-		out.Traffic.Failover = &roverv1.Failover{
-			Zones: in.Failover.Zones,
-		}
-	}
-}
 
 func mapEventSubscription(in api.EventSubscription) *roverv1.EventSubscription {
 	out := &roverv1.EventSubscription{
@@ -194,4 +242,66 @@ func mapEventTriggerForSubscription(in api.EventTrigger) *roverv1.EventTrigger {
 	}
 
 	return out
+}
+
+func mapAiSubscription(in api.AiSubscription) *roverv1.AiSubscription {
+	out := &roverv1.AiSubscription{}
+	out.BasePath = in.BasePath
+
+	mapAiSubscriptionSecurity(in, out)
+
+	if len(in.Failover.Zones) > 0 {
+		out.Traffic.Failover = &roverv1.SubscriberFailover{
+			Enabled: true,
+		}
+	}
+
+	return out
+}
+
+func mapAiSubscriptionSecurity(in api.AiSubscription, out *roverv1.AiSubscription) {
+	m2mSecurity := &roverv1.SubscriberMachine2MachineAuthentication{}
+
+	secType, err := in.Security.Discriminator()
+	if err != nil {
+		return
+	}
+
+	switch secType {
+	case "basicAuth":
+		basicAuth, err := in.Security.AsBasicAuth()
+		if err != nil {
+			return
+		}
+		m2mSecurity.Basic = &roverv1.BasicAuthCredentials{
+			Username: basicAuth.Username,
+			Password: basicAuth.Password,
+		}
+	case "oauth2":
+		oauth2, err := in.Security.AsOauth2()
+		if err != nil {
+			return
+		}
+		if oauth2.ClientId != "" {
+			m2mSecurity.Client = &roverv1.OAuth2ClientCredentials{
+				ClientId:     oauth2.ClientId,
+				ClientSecret: oauth2.ClientSecret,
+				ClientKey:    oauth2.ClientKey,
+			}
+		}
+		if oauth2.Username != "" {
+			m2mSecurity.Basic = &roverv1.BasicAuthCredentials{
+				Username: oauth2.Username,
+				Password: oauth2.Password,
+			}
+		}
+
+		m2mSecurity.Scopes = oauth2.Scopes
+	}
+
+	if m2mSecurity.Basic != nil || m2mSecurity.Client != nil || m2mSecurity.Scopes != nil {
+		out.Security = &roverv1.SubscriberSecurity{
+			M2M: m2mSecurity,
+		}
+	}
 }

@@ -140,4 +140,31 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(output.Icto).To(Equal("icto-12345"))
 		})
 	})
+
+	Context("Consumer Failover", func() {
+		It("must map per-subscription failover to global failover on Rover level", func() {
+			input := rover.DeepCopy()
+			By("setting a subscription with failover enabled")
+			input.Spec.Zone = "test-zone"
+			input.Spec.Subscriptions = []roverv1.Subscription{
+				{
+					Api: &roverv1.ApiSubscription{
+						BasePath: "/eni/failover-test/v1",
+						Traffic: roverv1.SubscriberTraffic{
+							Failover: &roverv1.SubscriberFailover{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			}
+
+			By("mapping the rover")
+			output := &api.Rover{}
+			Expect(MapRover(input, output)).To(Succeed())
+
+			By("checking that the failover is set on the rover level")
+			Expect(output.FailoverEnabled).To(BeTrue())
+		})
+	})
 })

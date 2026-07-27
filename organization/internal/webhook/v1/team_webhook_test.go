@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -49,16 +50,31 @@ var _ = Describe("Team Webhook", func() {
 				Type: adminv1.ManagedRouteTypeTeamAPI,
 			}}},
 			Visibility: adminv1.ZoneVisibilityWorld,
+			Gateway: adminv1.GatewayConfig{
+				Admin: adminv1.GatewayAdminConfig{
+					Url: "http://gateway-admin.test.local:8001",
+				},
+				Presets: []adminv1.GatewayConfigPreset{{
+					Name:    "default",
+					Default: true,
+					Urls: []adminv1.UrlConfig{{
+						Hostname: "gateway.test.local",
+						BasePath: "/",
+					}},
+				}},
+			},
+			IdentityProvider: adminv1.IdentityProviderConfig{
+				Url: "http://idp.test.local:8080",
+				Admin: adminv1.IdentityProviderAdminConfig{
+					Url: ptr.To("http://idp-admin.test.local:8080"),
+				},
+			},
 		},
 	}
 
 	zoneStatus := adminv1.ZoneStatus{
 		TeamApiIdentityRealm: &types.ObjectRef{
 			Name:      "team-api-identity-realm",
-			Namespace: testNamespace,
-		},
-		TeamApiGatewayRealm: &types.ObjectRef{
-			Name:      "team-api-gateway-realm",
 			Namespace: testNamespace,
 		},
 		Links: adminv1.Links{

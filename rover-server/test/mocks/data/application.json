@@ -31,7 +31,7 @@
       {
         "type": "Ready",
         "status": "True",
-        "reason": "SubResourceProvisioned",
+        "reason": "Provisioned",
         "message": "All sub-resources are up to date"
       },
       {

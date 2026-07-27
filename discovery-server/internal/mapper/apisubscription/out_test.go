@@ -14,6 +14,7 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/common-server/pkg/store"
 	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
@@ -52,17 +53,30 @@ func TestMapResponse_ResolvedReferences(t *testing.T) {
 	sub.Spec.Zone = ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"}
 	sub.Spec.Requestor.Application = ctypes.ObjectRef{Name: "my-app", Namespace: "poc--eni--hyperion"}
 	sub.Status.Approval = &ctypes.ObjectRef{Name: "appr", Namespace: "poc--eni--hyperion"}
-	sub.Spec.Traffic.Failover = &apiv1.Failover{Zones: []ctypes.ObjectRef{{Name: "dataplane2", Namespace: "poc"}}}
+	sub.Spec.Traffic.Failover = &apiv1.SubscriberFailover{Enabled: true}
+	sub.Status.FailoverRoutes = []ctypes.ObjectRef{{Name: "route-eni-distr-v1", Namespace: "dp2-ns"}}
 
 	zonePrimary := &adminv1.Zone{}
 	zonePrimary.Name = "dataplane1"
 	zonePrimary.Namespace = "poc"
-	zonePrimary.Status.Links.Url = "https://gw-primary.example/"
+	zonePrimary.Status.Namespace = "dp1-ns"
+	zonePrimary.Status.Links.Url = "https://gw-primary-default.example/"
+	zonePrimary.Spec.Gateway.Presets = []adminv1.GatewayConfigPreset{{
+		Name:     "failover",
+		Urls:     []adminv1.UrlConfig{{Hostname: "gw-primary.example", Scheme: "https"}},
+		Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+	}}
 
 	zoneFailover := &adminv1.Zone{}
 	zoneFailover.Name = "dataplane2"
 	zoneFailover.Namespace = "poc"
-	zoneFailover.Status.Links.Url = "https://gw-failover.example/"
+	zoneFailover.Status.Namespace = "dp2-ns"
+	zoneFailover.Status.Links.Url = "https://gw-failover-default.example/"
+	zoneFailover.Spec.Gateway.Presets = []adminv1.GatewayConfigPreset{{
+		Name:     "failover",
+		Urls:     []adminv1.UrlConfig{{Hostname: "gw-failover.example", Scheme: "https"}},
+		Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+	}}
 
 	app := &applicationv1.Application{}
 	app.Name = "my-app"
@@ -75,7 +89,9 @@ func TestMapResponse_ResolvedReferences(t *testing.T) {
 
 	zoneStore := csmocks.NewMockObjectStore[*adminv1.Zone](t)
 	zoneStore.EXPECT().Get(mock.Anything, "poc", "dataplane1").Return(zonePrimary, nil)
-	zoneStore.EXPECT().Get(mock.Anything, "poc", "dataplane2").Return(zoneFailover, nil)
+	zoneStore.EXPECT().List(mock.Anything, mock.Anything).Return(&store.ListResponse[*adminv1.Zone]{
+		Items: []*adminv1.Zone{zonePrimary, zoneFailover},
+	}, nil)
 
 	appStore := csmocks.NewMockObjectStore[*applicationv1.Application](t)
 	appStore.EXPECT().Get(mock.Anything, "poc--eni--hyperion", "my-app").Return(app, nil)

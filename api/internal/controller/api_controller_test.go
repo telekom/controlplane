@@ -69,7 +69,7 @@ var _ = Describe("Api Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(firstApi), firstApi)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(firstApi.Status.Active).To(BeTrue())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(firstApi.GetConditions(), condition.ConditionTypeReady), "ApiActive")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(firstApi.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -85,7 +85,7 @@ var _ = Describe("Api Controller", Ordered, func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApi), secondApi)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), "ApiNotActive")
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), condition.ReasonPreconditionNotMet)
 				g.Expect(secondApi.Status.Active).To(BeFalse())
 			}, timeout, interval).Should(Succeed())
 		})
@@ -100,7 +100,7 @@ var _ = Describe("Api Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApi), secondApi)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApi.Status.Active).To(BeTrue())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), "ApiActive")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -135,7 +135,7 @@ var _ = Describe("Api Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(firstApi), firstApi)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(firstApi.Status.Active).To(BeTrue())
-				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(firstApi.GetConditions(), condition.ConditionTypeReady), "ApiActive")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(firstApi.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -151,7 +151,7 @@ var _ = Describe("Api Controller", Ordered, func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApi), secondApi)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), "ApiNotActiveCaseConflict")
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), condition.ReasonPreconditionNotMet)
 				g.Expect(secondApi.Status.Active).To(BeFalse())
 			}, timeout, interval).Should(Succeed())
 		})

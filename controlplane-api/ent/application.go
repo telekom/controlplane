@@ -6,6 +6,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -13,8 +14,10 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // Application is the model entity for the Application schema.
@@ -50,6 +53,10 @@ type Application struct {
 	SecretRotationPhase application.SecretRotationPhase `json:"secret_rotation_phase,omitempty"`
 	// SecretRotationMessage holds the value of the "secret_rotation_message" field.
 	SecretRotationMessage *string `json:"secret_rotation_message,omitempty"`
+	// ExternalIds holds the value of the "external_ids" field.
+	ExternalIds []model.ExternalId `json:"external_ids,omitempty"`
+	// IPRestrictions holds the value of the "ip_restrictions" field.
+	IPRestrictions model.IpRestrictions `json:"ip_restrictions,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApplicationQuery when eager-loading is set.
 	Edges             ApplicationEdges `json:"edges"`
@@ -72,11 +79,13 @@ type ApplicationEdges struct {
 	ExposedEvents []*EventExposure `json:"exposed_events,omitempty"`
 	// SubscribedEvents holds the value of the subscribed_events edge.
 	SubscribedEvents []*EventSubscription `json:"subscribed_events,omitempty"`
+	// PermissionSet holds the value of the permission_set edge.
+	PermissionSet *PermissionSet `json:"permission_set,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [5]map[string]int
+	totalCount [6]map[string]int
 
 	namedExposedApis      map[string][]*ApiExposure
 	namedSubscribedApis   map[string][]*ApiSubscription
@@ -142,11 +151,24 @@ func (e ApplicationEdges) SubscribedEventsOrErr() ([]*EventSubscription, error) 
 	return nil, &NotLoadedError{edge: "subscribed_events"}
 }
 
+// PermissionSetOrErr returns the PermissionSet value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApplicationEdges) PermissionSetOrErr() (*PermissionSet, error) {
+	if e.PermissionSet != nil {
+		return e.PermissionSet, nil
+	} else if e.loadedTypes[6] {
+		return nil, &NotFoundError{label: permissionset.Label}
+	}
+	return nil, &NotLoadedError{edge: "permission_set"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Application) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case application.FieldExternalIds, application.FieldIPRestrictions:
+			values[i] = new([]byte)
 		case application.FieldID:
 			values[i] = new(sql.NullInt64)
 		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldEnvironment, application.FieldNamespace, application.FieldName, application.FieldClientID, application.FieldClientSecret, application.FieldRotatedClientSecret, application.FieldSecretRotationPhase, application.FieldSecretRotationMessage:
@@ -271,6 +293,22 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 				_m.SecretRotationMessage = new(string)
 				*_m.SecretRotationMessage = value.String
 			}
+		case application.FieldExternalIds:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field external_ids", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.ExternalIds); err != nil {
+					return fmt.Errorf("unmarshal field external_ids: %w", err)
+				}
+			}
+		case application.FieldIPRestrictions:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field ip_restrictions", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.IPRestrictions); err != nil {
+					return fmt.Errorf("unmarshal field ip_restrictions: %w", err)
+				}
+			}
 		case application.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field team_applications", value)
@@ -326,6 +364,11 @@ func (_m *Application) QueryExposedEvents() *EventExposureQuery {
 // QuerySubscribedEvents queries the "subscribed_events" edge of the Application entity.
 func (_m *Application) QuerySubscribedEvents() *EventSubscriptionQuery {
 	return NewApplicationClient(_m.config).QuerySubscribedEvents(_m)
+}
+
+// QueryPermissionSet queries the "permission_set" edge of the Application entity.
+func (_m *Application) QueryPermissionSet() *PermissionSetQuery {
+	return NewApplicationClient(_m.config).QueryPermissionSet(_m)
 }
 
 // Update returns a builder for updating this Application.
@@ -410,6 +453,12 @@ func (_m *Application) String() string {
 		builder.WriteString("secret_rotation_message=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	builder.WriteString("external_ids=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExternalIds))
+	builder.WriteString(", ")
+	builder.WriteString("ip_restrictions=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IPRestrictions))
 	builder.WriteByte(')')
 	return builder.String()
 }

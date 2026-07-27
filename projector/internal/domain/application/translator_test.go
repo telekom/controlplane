@@ -42,6 +42,22 @@ var _ = Describe("Application Translator", func() {
 				Spec: appv1.ApplicationSpec{
 					Team: "platform--narvi",
 					Zone: commontypes.ObjectRef{Name: "caas"},
+					ExternalIds: []appv1.ExternalId{
+						appv1.ExternalId{
+							Id:     "abc",
+							Scheme: "schema1",
+						},
+						appv1.ExternalId{
+							Id:     "123",
+							Scheme: "schema2",
+						},
+					},
+					Security: &appv1.Security{
+						IpRestrictions: &appv1.IpRestrictions{
+							Allow: []string{"127.0.0.1", "127.0.0.2"},
+							Deny:  []string{"127.0.0.4", "127.0.0.5"},
+						},
+					},
 				},
 				Status: appv1.ApplicationStatus{
 					ClientId: "client-123",
@@ -65,6 +81,14 @@ var _ = Describe("Application Translator", func() {
 			Expect(data.ClientID).ToNot(BeNil())
 			Expect(*data.ClientID).To(Equal("client-123"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
+
+			Expect(data.ExternalIds).To(HaveLen(2))
+			Expect(data.ExternalIds[0].Id).To(Equal("abc"))
+			Expect(data.ExternalIds[0].Scheme).To(Equal("schema1"))
+			Expect(data.ExternalIds[1].Id).To(Equal("123"))
+			Expect(data.ExternalIds[1].Scheme).To(Equal("schema2"))
+			Expect(data.IpRestrictions.Allow).To(Equal([]string{"127.0.0.1", "127.0.0.2"}))
+			Expect(data.IpRestrictions.Deny).To(Equal([]string{"127.0.0.4", "127.0.0.5"}))
 		})
 
 		It("should set ClientID to nil when Status.ClientId is empty", func() {

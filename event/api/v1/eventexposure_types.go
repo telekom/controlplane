@@ -108,6 +108,10 @@ type EventExposureStatus struct {
 	// CallbackURL is the URL of callback gateway in the provider zone.
 	// +optional
 	CallbackURL string `json:"callbackURL,omitempty"`
+
+	// PublishURL is the URL of publishing events in the provider zone.
+	// +optional
+	PublishURL string `json:"publishURL,omitempty"`
 }
 
 // +kubebuilder:object:root=true

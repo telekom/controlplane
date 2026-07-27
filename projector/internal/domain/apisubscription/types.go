@@ -10,7 +10,10 @@
 // downstream Approval/ApprovalRequest modules.
 package apisubscription
 
-import "github.com/telekom/controlplane/projector/internal/domain/shared"
+import (
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
+)
 
 // APISubscriptionKey is the composite identity key for ApiSubscription
 // entities. It contains the fields needed for both the primary DB operation
@@ -31,10 +34,11 @@ type APISubscriptionData struct {
 	StatusMessage  string
 	BasePath       string
 	M2MAuthMethod  string // "NONE", "OAUTH2_CLIENT", "BASIC_AUTH", "SCOPES_ONLY"
-	ApprovedScopes []string
+	Security       *model.ApiSubscriptionSecurity
 	OwnerAppName   string // resolved to owner Application FK (required)
 	OwnerTeamName  string // used to resolve owner Application FK
 	TargetBasePath string // used to resolve optional target ApiExposure FK
 	TargetAppName  string // always "" from CR (not known to subscriber)
 	TargetTeamName string // always "" from CR (not known to subscriber)
+	GatewayUrl     string // gateway url from subscription
 }

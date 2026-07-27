@@ -13,6 +13,17 @@ const (
 	TokenRequestClientSecretPost  TokenRequestMethod = "client_secret_post"
 )
 
+// GrantType defines the OAuth2 grant type for external IDP token requests.
+// +kubebuilder:validation:Enum=client_credentials;authorization_code;password;refresh_token
+type GrantType string
+
+const (
+	GrantTypeClientCredentials GrantType = "client_credentials"
+	GrantTypeAuthorizationCode GrantType = "authorization_code"
+	GrantTypePassword          GrantType = "password"
+	GrantTypeRefreshToken      GrantType = "refresh_token"
+)
+
 type Security struct {
 	// DisableAccessControl disable the ACL mechanism for this route
 	// +kubebuilder:validation:Optional
@@ -23,9 +34,47 @@ type Security struct {
 	// +kubebuilder:validation:Optional
 	DefaultConsumers []string `json:"defaultConsumers,omitempty"`
 
+	// TrustedIssuers defines a list of trusted token issuers for this route. If empty, all issuers are trusted.
+	// +kubebuilder:validation:Optional
+	// +listType=set
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:items:Format=uri
+	TrustedIssuers []string `json:"trustedIssuers,omitempty"`
+
+	// RealmName defines the realm name for this route, which is used in the Jumper sidecar to determine the Last-Mile-Token
+	// +kubebuilder:validation:Required
+	RealmName string `json:"realmName"`
+
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`
+}
+
+// ClaimValueFrom is a source Jumper resolves at runtime into the claim value.
+// +kubebuilder:validation:Enum=ConsumerClientId
+type ClaimValueFrom string
+
+const (
+	ClaimValueFromConsumerClientId ClaimValueFrom = "ConsumerClientId"
+)
+
+// Claim is a single token claim written into JumperConfig.Claims.
+// Value is a CP-resolved literal; ValueFrom is resolved by Jumper at runtime.
+// Exactly one of value or valueFrom must be set.
+// +kubebuilder:validation:XValidation:rule="has(self.value) != has(self.valueFrom)",message="exactly one of value or valueFrom must be set"
+type Claim struct {
+	// Key is the claim name. Only "aud" is supported.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=aud
+	Key string `json:"key"`
+	// Value is the CP-resolved literal claim value
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Value string `json:"value,omitempty"`
+	// ValueFrom is a runtime source Jumper resolves (e.g. ConsumerClientId)
+	// +kubebuilder:validation:Optional
+	ValueFrom ClaimValueFrom `json:"valueFrom,omitempty"`
 }
 
 func (s *Security) HasM2M() bool {
@@ -37,6 +86,13 @@ func (s *Security) HasM2MExternalIDP() bool {
 		return false
 	}
 	return s.M2M.ExternalIDP != nil
+}
+
+func (s *Security) HasM2MClaims() bool {
+	if !s.HasM2M() {
+		return false
+	}
+	return len(s.M2M.Claims) > 0
 }
 
 func (s *Security) HasBasicAuth() bool {
@@ -80,7 +136,8 @@ func (s *ConsumeRouteSecurity) HasBasicAuth() bool {
 // Either externalIDP, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="ExternalIDP and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes)", message="At least one of externalIDP, basic, or scopes must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes) || has(self.claims)", message="At least one of externalIDP, basic, scopes, or claims must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || !has(self.claims) || (!has(self.externalIDP) && !has(self.basic))", message="Claims require the platform-managed token and cannot be used with an external IDP or basic authentication"
 type Machine2MachineAuthentication struct {
 	// ExternalIDP defines external identity provider configuration
 	// +kubebuilder:validation:Optional
@@ -93,6 +150,9 @@ type Machine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
+	// Claims defines token claims applied to all consumers (the "default" bucket)
+	// +kubebuilder:validation:Optional
+	Claims []Claim `json:"claims,omitempty"`
 }
 
 // ConsumerMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for consumers
@@ -122,12 +182,11 @@ type ExternalIdentityProvider struct {
 	TokenEndpoint string `json:"tokenEndpoint"`
 
 	// TokenRequest configures the token endpoint authentication method (RFC 7591)
-	// +kubebuilder:validation:Optional
-	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
+	// +kubebuilder:validation:Required
+	TokenRequest TokenRequestMethod `json:"tokenRequest"`
 	// GrantType is the grant type for the external IDP authentication
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
-	GrantType string `json:"grantType,omitempty"`
+	// +kubebuilder:validation:Required
+	GrantType GrantType `json:"grantType"`
 
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
@@ -162,4 +221,8 @@ type OAuth2ClientCredentials struct {
 	// clientKey is the private key associated with the client ID
 	// +kubebuilder:validation:Optional
 	ClientKey string `json:"clientKey,omitempty"`
+	// RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+	// without requiring re-authentication. Used with the refresh_token grant type.
+	// +kubebuilder:validation:Optional
+	RefreshToken string `json:"refreshToken,omitempty"`
 }

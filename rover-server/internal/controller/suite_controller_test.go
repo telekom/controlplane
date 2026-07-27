@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	cstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/file-manager/api"
@@ -27,6 +28,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/internal/config"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	"github.com/telekom/controlplane/rover-server/pkg/log"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
@@ -111,9 +113,13 @@ var _ = BeforeSuite(func() {
 
 	// Create a new server
 	s := server.Server{
-		Config:              &config.ServerConfig{},
+		Config: &config.ServerConfig{
+			Security: config.SecurityConfig{
+				Mode: security.ModeMock,
+			},
+		},
 		Log:                 log.Log,
-		ApiSpecifications:   NewApiSpecificationController(stores, config.OasLintingConfig{}),
+		ApiSpecifications:   NewApiSpecificationController(stores, oaslint.NewLinter(config.OasLintingConfig{})),
 		Rovers:              NewRoverController(stores),
 		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),

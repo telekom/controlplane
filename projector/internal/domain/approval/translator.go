@@ -6,7 +6,9 @@ package approval
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -78,6 +80,17 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		targetNamespace = obj.Namespace
 	}
 
+	var expiresAt *time.Time
+	if obj.Status.ExpiresAt != nil {
+		t := obj.Status.ExpiresAt.Time
+		expiresAt = &t
+	}
+
+	properties, err := FromProperties(obj.Spec.Requester)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode properties of Approval %q: %w", obj.GetName(), err)
+	}
+
 	return &ApprovalData{
 		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:           phase,
@@ -92,6 +105,8 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		TargetKind:            obj.Spec.Target.TypeMeta.Kind,
 		SubscriptionNamespace: targetNamespace,
 		SubscriptionName:      obj.Spec.Target.Name,
+		ExpiresAt:             expiresAt,
+		AccessScopes:          properties.Scopes,
 	}, nil
 }
 
@@ -205,16 +220,22 @@ func mapDecisions(decisions []approvalv1.Decision) []model.Decision {
 
 // mapAvailableTransitions converts CR AvailableTransitions (from Status) to
 // model AvailableTransition DTOs. Note: CR field .To maps to DTO .ToState.
+//
+// Transitions targeting "Expired" are filtered out — Expired is currently an
+// internal state that must not be displayed to users via the query layer.
 func mapAvailableTransitions(transitions approvalv1.AvailableTransitions) []model.AvailableTransition {
 	if len(transitions) == 0 {
 		return []model.AvailableTransition{}
 	}
-	result := make([]model.AvailableTransition, len(transitions))
-	for i, at := range transitions {
-		result[i] = model.AvailableTransition{
+	result := make([]model.AvailableTransition, 0, len(transitions))
+	for _, at := range transitions {
+		if at.To == approvalv1.ApprovalStateExpired {
+			continue
+		}
+		result = append(result, model.AvailableTransition{
 			Action:  string(at.Action),
 			ToState: string(at.To),
-		}
+		})
 	}
 	return result
 }

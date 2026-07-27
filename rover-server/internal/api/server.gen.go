@@ -27,6 +27,72 @@ const (
 	OAuth2Scopes oAuth2ContextKey = "OAuth2.Scopes"
 )
 
+// Defines values for AiExposureVariant.
+const (
+	AiExposureVariantMCP            AiExposureVariant = "MCP"
+	AiExposureVariantTELECONTEXTMCP AiExposureVariant = "TELECONTEXTMCP"
+)
+
+// Valid indicates whether the value is a known member of the AiExposureVariant enum.
+func (e AiExposureVariant) Valid() bool {
+	switch e {
+	case AiExposureVariantMCP:
+		return true
+	case AiExposureVariantTELECONTEXTMCP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AiExposureInfoType.
+const (
+	AiExposureInfoTypeAi AiExposureInfoType = "ai"
+)
+
+// Valid indicates whether the value is a known member of the AiExposureInfoType enum.
+func (e AiExposureInfoType) Valid() bool {
+	switch e {
+	case AiExposureInfoTypeAi:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AiExposureInfoVariant.
+const (
+	AiExposureInfoVariantMCP            AiExposureInfoVariant = "MCP"
+	AiExposureInfoVariantTELECONTEXTMCP AiExposureInfoVariant = "TELECONTEXTMCP"
+)
+
+// Valid indicates whether the value is a known member of the AiExposureInfoVariant enum.
+func (e AiExposureInfoVariant) Valid() bool {
+	switch e {
+	case AiExposureInfoVariantMCP:
+		return true
+	case AiExposureInfoVariantTELECONTEXTMCP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AiSubscriptionInfoType.
+const (
+	AiSubscriptionInfoTypeAi AiSubscriptionInfoType = "ai"
+)
+
+// Valid indicates whether the value is a known member of the AiSubscriptionInfoType enum.
+func (e AiSubscriptionInfoType) Valid() bool {
+	switch e {
+	case AiSubscriptionInfoTypeAi:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ApiExposureInfoType.
 const (
 	ApiExposureInfoTypeApi ApiExposureInfoType = "api"
@@ -108,6 +174,27 @@ const (
 func (e BasicAuthType) Valid() bool {
 	switch e {
 	case BasicAuthTypeBasicAuth:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ClaimValueFrom.
+const (
+	BasePath         ClaimValueFrom = "BasePath"
+	ConsumerClientId ClaimValueFrom = "ConsumerClientId"
+	ProviderClientId ClaimValueFrom = "ProviderClientId"
+)
+
+// Valid indicates whether the value is a known member of the ClaimValueFrom enum.
+func (e ClaimValueFrom) Valid() bool {
+	switch e {
+	case BasePath:
+		return true
+	case ConsumerClientId:
+		return true
+	case ProviderClientId:
 		return true
 	default:
 		return false
@@ -489,6 +576,76 @@ func (e GetApplicationsInfoParamsSort) Valid() bool {
 	}
 }
 
+// AiExposure defines model for AiExposure.
+type AiExposure struct {
+	Approval       ApprovalStrategy   `json:"approval"`
+	BasePath       string             `json:"basePath"`
+	CircuitBreaker CircuitBreaker     `json:"circuitBreaker,omitempty,omitzero"`
+	Failover       Failover           `json:"failover,omitempty,omitzero"`
+	LoadBalancing  LoadBalancing      `json:"loadBalancing,omitempty,omitzero"`
+	RateLimit      RateLimitContainer `json:"rateLimit,omitempty,omitzero"`
+
+	// RemoveHeaders Allows you to specify a list of header names that will be removed before forwarding the request to the MCP server
+	RemoveHeaders []string      `json:"removeHeaders,omitempty,omitzero"`
+	Security      Security      `json:"security,omitempty,omitzero"`
+	TrustedTeams  []TrustedTeam `json:"trustedTeams,omitempty,omitzero"`
+	Type          string        `json:"type"`
+	Upstream      string        `json:"upstream,omitempty,omitzero"`
+
+	// Variant The MCP exposure variant
+	Variant    AiExposureVariant `json:"variant"`
+	Visibility Visibility        `json:"visibility"`
+}
+
+// AiExposureVariant The MCP exposure variant
+type AiExposureVariant string
+
+// AiExposureInfo defines model for AiExposureInfo.
+type AiExposureInfo struct {
+	Approval       ApprovalStrategy   `json:"approval"`
+	BasePath       string             `json:"basePath"`
+	CircuitBreaker CircuitBreaker     `json:"circuitBreaker,omitempty,omitzero"`
+	Failover       Failover           `json:"failover,omitempty,omitzero"`
+	LoadBalancing  LoadBalancing      `json:"loadBalancing,omitempty,omitzero"`
+	RateLimit      RateLimitContainer `json:"rateLimit,omitempty,omitzero"`
+
+	// RemoveHeaders Allows you to specify a list of header names that will be removed before forwarding the request to the MCP server
+	RemoveHeaders []string           `json:"removeHeaders,omitempty,omitzero"`
+	Security      Security           `json:"security,omitempty,omitzero"`
+	TrustedTeams  []TrustedTeam      `json:"trustedTeams,omitempty,omitzero"`
+	Type          AiExposureInfoType `json:"type"`
+	Upstream      string             `json:"upstream,omitempty,omitzero"`
+
+	// Variant The MCP exposure variant
+	Variant    AiExposureInfoVariant `json:"variant"`
+	Visibility Visibility            `json:"visibility"`
+}
+
+// AiExposureInfoType defines model for AiExposureInfo.Type.
+type AiExposureInfoType string
+
+// AiExposureInfoVariant The MCP exposure variant
+type AiExposureInfoVariant string
+
+// AiSubscription defines model for AiSubscription.
+type AiSubscription struct {
+	BasePath string   `json:"basePath"`
+	Failover Failover `json:"failover,omitempty,omitzero"`
+	Security Security `json:"security,omitempty,omitzero"`
+	Type     string   `json:"type"`
+}
+
+// AiSubscriptionInfo defines model for AiSubscriptionInfo.
+type AiSubscriptionInfo struct {
+	BasePath string                 `json:"basePath"`
+	Failover Failover               `json:"failover,omitempty,omitzero"`
+	Security Security               `json:"security,omitempty,omitzero"`
+	Type     AiSubscriptionInfoType `json:"type"`
+}
+
+// AiSubscriptionInfoType defines model for AiSubscriptionInfo.Type.
+type AiSubscriptionInfoType string
+
 // ApiChangelog defines model for ApiChangelog.
 type ApiChangelog struct {
 	// BasePath The API basePath
@@ -725,11 +882,14 @@ type ApplicationInfo struct {
 	ChevronApplication string `json:"chevronApplication,omitempty,omitzero"`
 
 	// ChevronUrl URL to query permissions for this application
-	ChevronUrl   string         `json:"chevronUrl,omitempty,omitzero"`
-	Errors       []Problem      `json:"errors"`
-	Exposures    []ExposureInfo `json:"exposures"`
-	Infos        []Problem      `json:"infos"`
-	IrisClientId string         `json:"irisClientId"`
+	ChevronUrl string         `json:"chevronUrl,omitempty,omitzero"`
+	Errors     []Problem      `json:"errors"`
+	Exposures  []ExposureInfo `json:"exposures"`
+
+	// FailoverEnabled Indicates if failover is enabled for this application
+	FailoverEnabled bool      `json:"failoverEnabled,omitempty,omitzero"`
+	Infos           []Problem `json:"infos"`
+	IrisClientId    string    `json:"irisClientId"`
 
 	// IrisClientSecret Deprecated: Use secretInfo.clientSecret instead. This field will be removed in a future version.
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
@@ -803,6 +963,24 @@ type Category = string
 type CircuitBreaker struct {
 	// Enabled Flags if the Kong circuit breaker feature should be used
 	Enabled bool `json:"enabled,omitempty,omitzero"`
+}
+
+// Claim A single claim value. Exactly one of value or valueFrom must be set.
+type Claim struct {
+	// Value A literal claim value.
+	Value string `json:"value,omitempty,omitzero"`
+
+	// ValueFrom A predefined source resolved into the claim value.
+	ValueFrom ClaimValueFrom `json:"valueFrom,omitempty,omitzero"`
+}
+
+// ClaimValueFrom A predefined source resolved into the claim value.
+type ClaimValueFrom string
+
+// Claims Token claims written into the platform-managed LMS token. Provider-side only: honored on an API exposure's security and ignored on a subscription's security. Only valid on the LMS token (not with an external IDP tokenEndpoint or basic auth).
+type Claims struct {
+	// Aud A single claim value. Exactly one of value or valueFrom must be set.
+	Aud Claim `json:"aud,omitempty,omitzero"`
 }
 
 // ConsumerRateLimit defines model for ConsumerRateLimit.
@@ -1129,8 +1307,39 @@ type LoadBalancing struct {
 	Servers []Server `json:"servers"`
 }
 
+// McpSpecification defines model for McpSpecification.
+type McpSpecification struct {
+	Specification map[string]interface{} `json:"specification"`
+}
+
+// McpSpecificationCreateRequest defines model for McpSpecificationCreateRequest.
+type McpSpecificationCreateRequest = McpSpecification
+
+// McpSpecificationListResponse defines model for McpSpecificationListResponse.
+type McpSpecificationListResponse struct {
+	// UnderscoreLinks HATEOAS links for pagination
+	UnderscoreLinks Links                      `json:"_links"`
+	Items           []McpSpecificationResponse `json:"items"`
+}
+
+// McpSpecificationResponse defines model for McpSpecificationResponse.
+type McpSpecificationResponse struct {
+	Category      string                 `json:"category,omitempty,omitzero"`
+	Id            string                 `json:"id"`
+	Name          string                 `json:"name"`
+	Specification map[string]interface{} `json:"specification"`
+
+	// Status Response resource which contains information about the status of the resource and all its relevant sub-resources
+	Status ResourceStatusResponse `json:"status"`
+}
+
+// McpSpecificationUpdateRequest defines model for McpSpecificationUpdateRequest.
+type McpSpecificationUpdateRequest = McpSpecification
+
 // Oauth2 defines model for Oauth2.
 type Oauth2 struct {
+	// Claims Token claims written into the platform-managed LMS token. Provider-side only: honored on an API exposure's security and ignored on a subscription's security. Only valid on the LMS token (not with an external IDP tokenEndpoint or basic auth).
+	Claims        Claims    `json:"claims,omitempty,omitzero"`
 	ClientId      string    `json:"clientId,omitempty,omitzero"`
 	ClientKey     string    `json:"clientKey,omitempty,omitzero"`
 	ClientSecret  string    `json:"clientSecret,omitempty,omitzero"`
@@ -1231,9 +1440,12 @@ type Rover struct {
 	Authentication Authentication      `json:"authentication,omitempty,omitzero"`
 	Authorization  []AuthorizationInfo `json:"authorization,omitempty,omitzero"`
 	Exposures      []Exposure          `json:"exposures,omitempty,omitzero"`
-	Icto           string              `json:"icto,omitempty,omitzero"`
-	Id             string              `json:"id,omitempty,omitzero"`
-	IpRestrictions IpRestrictions      `json:"ipRestrictions,omitempty,omitzero"`
+
+	// FailoverEnabled Configures the DTC failover for consumers
+	FailoverEnabled bool           `json:"failoverEnabled,omitempty,omitzero"`
+	Icto            string         `json:"icto,omitempty,omitzero"`
+	Id              string         `json:"id,omitempty,omitzero"`
+	IpRestrictions  IpRestrictions `json:"ipRestrictions,omitempty,omitzero"`
 
 	// Psiid PSI system number identifier attached to this application
 	Psiid         string         `json:"psiid,omitempty,omitzero"`
@@ -1247,10 +1459,13 @@ type RoverCreateRequest struct {
 	Authentication Authentication      `json:"authentication,omitempty,omitzero"`
 	Authorization  []AuthorizationInfo `json:"authorization,omitempty,omitzero"`
 	Exposures      []Exposure          `json:"exposures,omitempty,omitzero"`
-	Icto           string              `json:"icto,omitempty,omitzero"`
-	Id             string              `json:"id,omitempty,omitzero"`
-	IpRestrictions IpRestrictions      `json:"ipRestrictions,omitempty,omitzero"`
-	Name           string              `json:"name,omitempty,omitzero"`
+
+	// FailoverEnabled Configures the DTC failover for consumers
+	FailoverEnabled bool           `json:"failoverEnabled,omitempty,omitzero"`
+	Icto            string         `json:"icto,omitempty,omitzero"`
+	Id              string         `json:"id,omitempty,omitzero"`
+	IpRestrictions  IpRestrictions `json:"ipRestrictions,omitempty,omitzero"`
+	Name            string         `json:"name,omitempty,omitzero"`
 
 	// Psiid PSI system number identifier attached to this application
 	Psiid         string         `json:"psiid,omitempty,omitzero"`
@@ -1282,10 +1497,13 @@ type RoverResponse struct {
 	Authentication Authentication      `json:"authentication,omitempty,omitzero"`
 	Authorization  []AuthorizationInfo `json:"authorization,omitempty,omitzero"`
 	Exposures      []Exposure          `json:"exposures,omitempty,omitzero"`
-	Icto           string              `json:"icto,omitempty,omitzero"`
-	Id             string              `json:"id,omitempty,omitzero"`
-	IpRestrictions IpRestrictions      `json:"ipRestrictions,omitempty,omitzero"`
-	Name           string              `json:"name,omitempty,omitzero"`
+
+	// FailoverEnabled Configures the DTC failover for consumers
+	FailoverEnabled bool           `json:"failoverEnabled,omitempty,omitzero"`
+	Icto            string         `json:"icto,omitempty,omitzero"`
+	Id              string         `json:"id,omitempty,omitzero"`
+	IpRestrictions  IpRestrictions `json:"ipRestrictions,omitempty,omitzero"`
+	Name            string         `json:"name,omitempty,omitzero"`
 
 	// Psiid PSI system number identifier attached to this application
 	Psiid         string         `json:"psiid,omitempty,omitzero"`
@@ -1336,11 +1554,14 @@ type RoverUpdateRequest struct {
 	Authorization  []AuthorizationInfo `json:"authorization,omitempty,omitzero"`
 
 	// ClientSecret This field is only used for migration purposes and will be ignored otherwise.
-	ClientSecret   string         `json:"clientSecret,omitempty,omitzero"`
-	Exposures      []Exposure     `json:"exposures,omitempty,omitzero"`
-	Icto           string         `json:"icto,omitempty,omitzero"`
-	Id             string         `json:"id,omitempty,omitzero"`
-	IpRestrictions IpRestrictions `json:"ipRestrictions,omitempty,omitzero"`
+	ClientSecret string     `json:"clientSecret,omitempty,omitzero"`
+	Exposures    []Exposure `json:"exposures,omitempty,omitzero"`
+
+	// FailoverEnabled Configures the DTC failover for consumers
+	FailoverEnabled bool           `json:"failoverEnabled,omitempty,omitzero"`
+	Icto            string         `json:"icto,omitempty,omitzero"`
+	Id              string         `json:"id,omitempty,omitzero"`
+	IpRestrictions  IpRestrictions `json:"ipRestrictions,omitempty,omitzero"`
 
 	// Psiid PSI system number identifier attached to this application
 	Psiid         string         `json:"psiid,omitempty,omitzero"`
@@ -1498,6 +1719,12 @@ type GetAllEventSpecificationsParams struct {
 // GetAllEventSpecificationsParamsSort defines parameters for GetAllEventSpecifications.
 type GetAllEventSpecificationsParamsSort string
 
+// GetAllMcpSpecificationsParams defines parameters for GetAllMcpSpecifications.
+type GetAllMcpSpecificationsParams struct {
+	// Cursor cursor to be used for pagination. If not provided, the first page will be returned. The cursor is a string that points to a page of data.
+	Cursor Cursor `form:"cursor,omitempty" json:"cursor,omitempty,omitzero"`
+}
+
 // GetAllRoversParams defines parameters for GetAllRovers.
 type GetAllRoversParams struct {
 	// Limit page size requested by the consumer; must not be larger than the maximal page size
@@ -1564,6 +1791,12 @@ type CreateEventSpecificationJSONRequestBody = EventSpecificationCreateRequest
 // UpdateEventSpecificationJSONRequestBody defines body for UpdateEventSpecification for application/json ContentType.
 type UpdateEventSpecificationJSONRequestBody = EventSpecificationUpdateRequest
 
+// CreateMcpSpecificationJSONRequestBody defines body for CreateMcpSpecification for application/json ContentType.
+type CreateMcpSpecificationJSONRequestBody = McpSpecificationCreateRequest
+
+// UpdateMcpSpecificationJSONRequestBody defines body for UpdateMcpSpecification for application/json ContentType.
+type UpdateMcpSpecificationJSONRequestBody = McpSpecificationUpdateRequest
+
 // CreateRoverJSONRequestBody defines body for CreateRover for application/json ContentType.
 type CreateRoverJSONRequestBody = RoverCreateRequest
 
@@ -1626,6 +1859,34 @@ func (t *Exposure) MergeEventExposure(v EventExposure) error {
 	return err
 }
 
+// AsAiExposure returns the union data inside the Exposure as a AiExposure
+func (t Exposure) AsAiExposure() (AiExposure, error) {
+	var body AiExposure
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAiExposure overwrites any union data inside the Exposure as the provided AiExposure
+func (t *Exposure) FromAiExposure(v AiExposure) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAiExposure performs a merge with any union data inside the Exposure, using the provided AiExposure
+func (t *Exposure) MergeAiExposure(v AiExposure) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsFileExposure returns the union data inside the Exposure as a FileExposure
 func (t Exposure) AsFileExposure() (FileExposure, error) {
 	var body FileExposure
@@ -1668,6 +1929,8 @@ func (t Exposure) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "ai":
+		return t.AsAiExposure()
 	case "api":
 		return t.AsApiExposure()
 	case "event":
@@ -1745,6 +2008,34 @@ func (t *ExposureInfo) MergeEventExposureInfo(v EventExposureInfo) error {
 	return err
 }
 
+// AsAiExposureInfo returns the union data inside the ExposureInfo as a AiExposureInfo
+func (t ExposureInfo) AsAiExposureInfo() (AiExposureInfo, error) {
+	var body AiExposureInfo
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAiExposureInfo overwrites any union data inside the ExposureInfo as the provided AiExposureInfo
+func (t *ExposureInfo) FromAiExposureInfo(v AiExposureInfo) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAiExposureInfo performs a merge with any union data inside the ExposureInfo, using the provided AiExposureInfo
+func (t *ExposureInfo) MergeAiExposureInfo(v AiExposureInfo) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsFileExposureInfo returns the union data inside the ExposureInfo as a FileExposureInfo
 func (t ExposureInfo) AsFileExposureInfo() (FileExposureInfo, error) {
 	var body FileExposureInfo
@@ -1787,6 +2078,8 @@ func (t ExposureInfo) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "ai":
+		return t.AsAiExposureInfo()
 	case "api":
 		return t.AsApiExposureInfo()
 	case "event":
@@ -1953,6 +2246,34 @@ func (t *Subscription) MergeEventSubscription(v EventSubscription) error {
 	return err
 }
 
+// AsAiSubscription returns the union data inside the Subscription as a AiSubscription
+func (t Subscription) AsAiSubscription() (AiSubscription, error) {
+	var body AiSubscription
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAiSubscription overwrites any union data inside the Subscription as the provided AiSubscription
+func (t *Subscription) FromAiSubscription(v AiSubscription) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAiSubscription performs a merge with any union data inside the Subscription, using the provided AiSubscription
+func (t *Subscription) MergeAiSubscription(v AiSubscription) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsFileSubscription returns the union data inside the Subscription as a FileSubscription
 func (t Subscription) AsFileSubscription() (FileSubscription, error) {
 	var body FileSubscription
@@ -1995,6 +2316,8 @@ func (t Subscription) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "ai":
+		return t.AsAiSubscription()
 	case "api":
 		return t.AsApiSubscription()
 	case "event":
@@ -2072,6 +2395,34 @@ func (t *SubscriptionInfo) MergeEventSubscriptionInfo(v EventSubscriptionInfo) e
 	return err
 }
 
+// AsAiSubscriptionInfo returns the union data inside the SubscriptionInfo as a AiSubscriptionInfo
+func (t SubscriptionInfo) AsAiSubscriptionInfo() (AiSubscriptionInfo, error) {
+	var body AiSubscriptionInfo
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAiSubscriptionInfo overwrites any union data inside the SubscriptionInfo as the provided AiSubscriptionInfo
+func (t *SubscriptionInfo) FromAiSubscriptionInfo(v AiSubscriptionInfo) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAiSubscriptionInfo performs a merge with any union data inside the SubscriptionInfo, using the provided AiSubscriptionInfo
+func (t *SubscriptionInfo) MergeAiSubscriptionInfo(v AiSubscriptionInfo) error {
+	v.Type = "ai"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsFileSubscriptionInfo returns the union data inside the SubscriptionInfo as a FileSubscriptionInfo
 func (t SubscriptionInfo) AsFileSubscriptionInfo() (FileSubscriptionInfo, error) {
 	var body FileSubscriptionInfo
@@ -2114,6 +2465,8 @@ func (t SubscriptionInfo) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "ai":
+		return t.AsAiSubscriptionInfo()
 	case "api":
 		return t.AsApiSubscriptionInfo()
 	case "event":
@@ -2138,6 +2491,161 @@ func (t *SubscriptionInfo) UnmarshalJSON(b []byte) error {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
+	"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",
+	"AQA=",
 	"H4sIAAAAAAAC/+x9aXfbOLLoX8HhvR/SM5TkLD3zxvfLc2wl0Zsk9pXs7p6b5PlAZEnChATYAChH3cf/",
 	"/R4s3EGKUmxn06c4IpZCoapQGwp/egGLE0aBSuEd/+mtAIfA9Z+/TUGkkTxlKZXq/yGIgJNEEka9Y+8k",
 	"kCmOEE3jOXDEFohIiAXiIFNOIUSEIrkCxEEkjApAcxZu0IJxJFdEoAQvYej5nghWEGM1ekwoidPYOz7y",

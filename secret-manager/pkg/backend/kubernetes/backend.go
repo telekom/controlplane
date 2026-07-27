@@ -198,5 +198,11 @@ func handleError(err error, id Id) error {
 	if apierrors.IsNotFound(err) {
 		return backend.ErrIncorrectState(id, err)
 	}
+	if isRetryableConflict(err) {
+		// Retries were exhausted on a live write conflict: transient contention,
+		// not a server fault. Surface it as TooManyRequests (HTTP 429) so callers
+		// retry, matching the Conjur backend instead of returning a 500.
+		return backend.NewBackendError(id, err, backend.TypeErrTooManyRequests)
+	}
 	return backend.NewBackendError(id, err, "InternalError")
 }

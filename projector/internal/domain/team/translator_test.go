@@ -175,6 +175,50 @@ var _ = Describe("Team Translator", func() {
 			Expect(result.StatusPhase).To(Equal("ERROR"))
 			Expect(result.StatusMessage).To(Equal("something broke"))
 		})
+
+		It("maps DisplayName and Description from spec", func() {
+			obj := &orgv1.Team{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "grp--display",
+					Namespace: "dev",
+				},
+				Spec: orgv1.TeamSpec{
+					Name:        "display",
+					Group:       "grp",
+					Email:       "display@example.com",
+					Category:    orgv1.TeamCategoryCustomer,
+					Members:     []orgv1.Member{},
+					DisplayName: "My Display Name",
+					Description: "A detailed description",
+				},
+			}
+
+			result, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.DisplayName).To(Equal("My Display Name"))
+			Expect(result.Description).To(Equal("A detailed description"))
+		})
+
+		It("maps empty DisplayName and Description when not set", func() {
+			obj := &orgv1.Team{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "grp--nodisplay",
+					Namespace: "dev",
+				},
+				Spec: orgv1.TeamSpec{
+					Name:     "nodisplay",
+					Group:    "grp",
+					Email:    "nodisplay@example.com",
+					Category: orgv1.TeamCategoryCustomer,
+					Members:  []orgv1.Member{},
+				},
+			}
+
+			result, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.DisplayName).To(BeEmpty())
+			Expect(result.Description).To(BeEmpty())
+		})
 	})
 
 	Describe("KeyFromObject", func() {

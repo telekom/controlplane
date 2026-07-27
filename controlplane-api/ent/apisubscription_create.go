@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApiSubscriptionCreate is the builder for creating a ApiSubscription entity.
@@ -132,9 +133,23 @@ func (_c *ApiSubscriptionCreate) SetNillableM2mAuthMethod(v *apisubscription.M2m
 	return _c
 }
 
-// SetApprovedScopes sets the "approved_scopes" field.
-func (_c *ApiSubscriptionCreate) SetApprovedScopes(v []string) *ApiSubscriptionCreate {
-	_c.mutation.SetApprovedScopes(v)
+// SetGatewayURL sets the "gateway_url" field.
+func (_c *ApiSubscriptionCreate) SetGatewayURL(v string) *ApiSubscriptionCreate {
+	_c.mutation.SetGatewayURL(v)
+	return _c
+}
+
+// SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
+func (_c *ApiSubscriptionCreate) SetNillableGatewayURL(v *string) *ApiSubscriptionCreate {
+	if v != nil {
+		_c.SetGatewayURL(*v)
+	}
+	return _c
+}
+
+// SetSecurity sets the "security" field.
+func (_c *ApiSubscriptionCreate) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionCreate {
+	_c.mutation.SetSecurity(v)
 	return _c
 }
 
@@ -272,10 +287,6 @@ func (_c *ApiSubscriptionCreate) defaults() error {
 		v := apisubscription.DefaultM2mAuthMethod
 		_c.mutation.SetM2mAuthMethod(v)
 	}
-	if _, ok := _c.mutation.ApprovedScopes(); !ok {
-		v := apisubscription.DefaultApprovedScopes
-		_c.mutation.SetApprovedScopes(v)
-	}
 	return nil
 }
 
@@ -323,9 +334,6 @@ func (_c *ApiSubscriptionCreate) check() error {
 		if err := apisubscription.M2mAuthMethodValidator(v); err != nil {
 			return &ValidationError{Name: "m2m_auth_method", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.m2m_auth_method": %w`, err)}
 		}
-	}
-	if _, ok := _c.mutation.ApprovedScopes(); !ok {
-		return &ValidationError{Name: "approved_scopes", err: errors.New(`ent: missing required field "ApiSubscription.approved_scopes"`)}
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
 		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "ApiSubscription.owner"`)}
@@ -393,9 +401,13 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 		_spec.SetField(apisubscription.FieldM2mAuthMethod, field.TypeEnum, value)
 		_node.M2mAuthMethod = value
 	}
-	if value, ok := _c.mutation.ApprovedScopes(); ok {
-		_spec.SetField(apisubscription.FieldApprovedScopes, field.TypeJSON, value)
-		_node.ApprovedScopes = value
+	if value, ok := _c.mutation.GatewayURL(); ok {
+		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
+		_node.GatewayURL = &value
+	}
+	if value, ok := _c.mutation.Security(); ok {
+		_spec.SetField(apisubscription.FieldSecurity, field.TypeJSON, value)
+		_node.Security = value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -645,15 +657,39 @@ func (u *ApiSubscriptionUpsert) UpdateM2mAuthMethod() *ApiSubscriptionUpsert {
 	return u
 }
 
-// SetApprovedScopes sets the "approved_scopes" field.
-func (u *ApiSubscriptionUpsert) SetApprovedScopes(v []string) *ApiSubscriptionUpsert {
-	u.Set(apisubscription.FieldApprovedScopes, v)
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ApiSubscriptionUpsert) SetGatewayURL(v string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldGatewayURL, v)
 	return u
 }
 
-// UpdateApprovedScopes sets the "approved_scopes" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateApprovedScopes() *ApiSubscriptionUpsert {
-	u.SetExcluded(apisubscription.FieldApprovedScopes)
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateGatewayURL() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldGatewayURL)
+	return u
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ApiSubscriptionUpsert) ClearGatewayURL() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldGatewayURL)
+	return u
+}
+
+// SetSecurity sets the "security" field.
+func (u *ApiSubscriptionUpsert) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldSecurity, v)
+	return u
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateSecurity() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldSecurity)
+	return u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiSubscriptionUpsert) ClearSecurity() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldSecurity)
 	return u
 }
 
@@ -835,17 +871,45 @@ func (u *ApiSubscriptionUpsertOne) UpdateM2mAuthMethod() *ApiSubscriptionUpsertO
 	})
 }
 
-// SetApprovedScopes sets the "approved_scopes" field.
-func (u *ApiSubscriptionUpsertOne) SetApprovedScopes(v []string) *ApiSubscriptionUpsertOne {
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ApiSubscriptionUpsertOne) SetGatewayURL(v string) *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.SetApprovedScopes(v)
+		s.SetGatewayURL(v)
 	})
 }
 
-// UpdateApprovedScopes sets the "approved_scopes" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateApprovedScopes() *ApiSubscriptionUpsertOne {
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateGatewayURL() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.UpdateApprovedScopes()
+		s.UpdateGatewayURL()
+	})
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ApiSubscriptionUpsertOne) ClearGatewayURL() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearGatewayURL()
+	})
+}
+
+// SetSecurity sets the "security" field.
+func (u *ApiSubscriptionUpsertOne) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetSecurity(v)
+	})
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateSecurity() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateSecurity()
+	})
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiSubscriptionUpsertOne) ClearSecurity() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearSecurity()
 	})
 }
 
@@ -1193,17 +1257,45 @@ func (u *ApiSubscriptionUpsertBulk) UpdateM2mAuthMethod() *ApiSubscriptionUpsert
 	})
 }
 
-// SetApprovedScopes sets the "approved_scopes" field.
-func (u *ApiSubscriptionUpsertBulk) SetApprovedScopes(v []string) *ApiSubscriptionUpsertBulk {
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ApiSubscriptionUpsertBulk) SetGatewayURL(v string) *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.SetApprovedScopes(v)
+		s.SetGatewayURL(v)
 	})
 }
 
-// UpdateApprovedScopes sets the "approved_scopes" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateApprovedScopes() *ApiSubscriptionUpsertBulk {
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateGatewayURL() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.UpdateApprovedScopes()
+		s.UpdateGatewayURL()
+	})
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ApiSubscriptionUpsertBulk) ClearGatewayURL() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearGatewayURL()
+	})
+}
+
+// SetSecurity sets the "security" field.
+func (u *ApiSubscriptionUpsertBulk) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetSecurity(v)
+	})
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateSecurity() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateSecurity()
+	})
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiSubscriptionUpsertBulk) ClearSecurity() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearSecurity()
 	})
 }
 

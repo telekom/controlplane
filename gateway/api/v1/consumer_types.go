@@ -12,8 +12,8 @@ import (
 
 // ConsumerSpec defines the desired state of Consumer
 type ConsumerSpec struct {
-	Realm types.ObjectRef `json:"realm"`
-	Name  string          `json:"name"`
+	Gateway types.ObjectRef `json:"gateway"`
+	Name    string          `json:"name"`
 
 	Security *ConsumerSecurity `json:"security,omitempty"`
 }

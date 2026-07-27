@@ -90,7 +90,9 @@ var _ = Describe("Zone Integration", func() {
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
 					Gateway: adminv1.GatewayConfig{
-						Url: "https://gw.integration.test",
+						Presets: []adminv1.GatewayConfigPreset{
+							{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.integration.test"}}},
+						},
 					},
 				},
 			}
@@ -123,7 +125,9 @@ var _ = Describe("Zone Integration", func() {
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
 					Gateway: adminv1.GatewayConfig{
-						Url: "https://gw1.test",
+						Presets: []adminv1.GatewayConfigPreset{
+							{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw1.test"}}},
+						},
 					},
 				},
 			}

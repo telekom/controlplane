@@ -45,13 +45,4 @@ resources:
   kind: Consumer
   path: github.com/telekom/controlplane/gateway/api/v1
   version: v1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: cp.ei.telekom.de
-  group: gateway
-  kind: Realm
-  path: github.com/telekom/controlplane/gateway/api/v1
-  version: v1
 version: "3"

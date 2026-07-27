@@ -7,15 +7,16 @@ package controller
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiChangelog Controller", func() {
@@ -92,7 +93,6 @@ var _ = Describe("ApiChangelog Controller", func() {
 
 				g.Expect(readyCondition).To(BeTrue(), "Ready condition should be true")
 				g.Expect(processingCondition).To(BeTrue(), "Processing condition should be false")
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})

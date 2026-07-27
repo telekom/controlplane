@@ -144,6 +144,46 @@ func (_u *TeamUpdate) SetNillableEmail(v *string) *TeamUpdate {
 	return _u
 }
 
+// SetDisplayName sets the "displayName" field.
+func (_u *TeamUpdate) SetDisplayName(v string) *TeamUpdate {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "displayName" field if the given value is not nil.
+func (_u *TeamUpdate) SetNillableDisplayName(v *string) *TeamUpdate {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
+// ClearDisplayName clears the value of the "displayName" field.
+func (_u *TeamUpdate) ClearDisplayName() *TeamUpdate {
+	_u.mutation.ClearDisplayName()
+	return _u
+}
+
+// SetDescription sets the "description" field.
+func (_u *TeamUpdate) SetDescription(v string) *TeamUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_u *TeamUpdate) SetNillableDescription(v *string) *TeamUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
+	}
+	return _u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (_u *TeamUpdate) ClearDescription() *TeamUpdate {
+	_u.mutation.ClearDescription()
+	return _u
+}
+
 // SetCategory sets the "category" field.
 func (_u *TeamUpdate) SetCategory(v team.Category) *TeamUpdate {
 	_u.mutation.SetCategory(v)
@@ -465,6 +505,18 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(team.FieldEmail, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(team.FieldDisplayName, field.TypeString, value)
+	}
+	if _u.mutation.DisplayNameCleared() {
+		_spec.ClearField(team.FieldDisplayName, field.TypeString)
+	}
+	if value, ok := _u.mutation.Description(); ok {
+		_spec.SetField(team.FieldDescription, field.TypeString, value)
+	}
+	if _u.mutation.DescriptionCleared() {
+		_spec.ClearField(team.FieldDescription, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
@@ -809,6 +861,46 @@ func (_u *TeamUpdateOne) SetNillableEmail(v *string) *TeamUpdateOne {
 	if v != nil {
 		_u.SetEmail(*v)
 	}
+	return _u
+}
+
+// SetDisplayName sets the "displayName" field.
+func (_u *TeamUpdateOne) SetDisplayName(v string) *TeamUpdateOne {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "displayName" field if the given value is not nil.
+func (_u *TeamUpdateOne) SetNillableDisplayName(v *string) *TeamUpdateOne {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
+// ClearDisplayName clears the value of the "displayName" field.
+func (_u *TeamUpdateOne) ClearDisplayName() *TeamUpdateOne {
+	_u.mutation.ClearDisplayName()
+	return _u
+}
+
+// SetDescription sets the "description" field.
+func (_u *TeamUpdateOne) SetDescription(v string) *TeamUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_u *TeamUpdateOne) SetNillableDescription(v *string) *TeamUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
+	}
+	return _u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (_u *TeamUpdateOne) ClearDescription() *TeamUpdateOne {
+	_u.mutation.ClearDescription()
 	return _u
 }
 
@@ -1163,6 +1255,18 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(team.FieldEmail, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(team.FieldDisplayName, field.TypeString, value)
+	}
+	if _u.mutation.DisplayNameCleared() {
+		_spec.ClearField(team.FieldDisplayName, field.TypeString)
+	}
+	if value, ok := _u.mutation.Description(); ok {
+		_spec.SetField(team.FieldDescription, field.TypeString, value)
+	}
+	if _u.mutation.DescriptionCleared() {
+		_spec.ClearField(team.FieldDescription, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)

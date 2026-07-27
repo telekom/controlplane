@@ -24,6 +24,10 @@ func mapSubscription(in *roverv1.Subscription, out *api.Subscription) error {
 		if err := out.FromEventSubscription(mapEventSubscription(in.Event)); err != nil {
 			return errors.Wrap(err, "failed to map event subscription")
 		}
+	} else if in.Ai != nil {
+		if err := out.FromAiSubscription(mapAiSubscription(in.Ai)); err != nil {
+			return errors.Wrap(err, "failed to map ai subscription")
+		}
 	} else {
 		return errors.Errorf("unknown subscription type: %s", in.Type())
 	}
@@ -71,6 +75,48 @@ func mapEventSubscription(in *roverv1.EventSubscription) api.EventSubscription {
 	return out
 }
 
+func mapAiSubscription(in *roverv1.AiSubscription) api.AiSubscription {
+	out := api.AiSubscription{
+		BasePath: in.BasePath,
+	}
+
+	if in.Traffic.Failover != nil && in.Traffic.Failover.Enabled {
+		out.Failover = api.Failover{
+			Zones: []string{},
+		}
+	}
+
+	if in.Security != nil && in.Security.M2M != nil {
+		m2m := in.Security.M2M
+		if m2m.Basic != nil {
+			basicAuth := api.BasicAuth{
+				Username: m2m.Basic.Username,
+				Password: m2m.Basic.Password,
+			}
+			out.Security = api.Security{}
+			out.Security.FromBasicAuth(basicAuth)
+		} else {
+			oauth2 := api.Oauth2{}
+
+			if m2m.Client != nil {
+				oauth2.ClientId = m2m.Client.ClientId
+				oauth2.ClientSecret = m2m.Client.ClientSecret
+				oauth2.ClientKey = m2m.Client.ClientKey
+			}
+			if len(m2m.Scopes) > 0 {
+				oauth2.Scopes = m2m.Scopes
+			}
+
+			if !reflect.ValueOf(oauth2).IsZero() {
+				out.Security = api.Security{}
+				out.Security.FromOauth2(oauth2)
+			}
+		}
+	}
+
+	return out
+}
+
 func mapEventTriggerOutForSubscription(in *roverv1.EventTrigger) api.EventTrigger {
 	out := api.EventTrigger{}
 
@@ -101,7 +147,6 @@ func mapApiSubscription(in *roverv1.ApiSubscription) api.ApiSubscription {
 
 	mapSubscriptionSecurity(in, &apiSub)
 	mapSubscriptionTransformation(in, &apiSub)
-	mapSubscriptionTraffic(in, &apiSub)
 
 	return apiSub
 }
@@ -128,6 +173,7 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 		oauth2.ClientId = m2m.Client.ClientId
 		oauth2.ClientSecret = m2m.Client.ClientSecret
 		oauth2.ClientKey = m2m.Client.ClientKey
+		oauth2.RefreshToken = m2m.Client.RefreshToken
 	}
 
 	if len(m2m.Scopes) > 0 {
@@ -142,14 +188,4 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 
 func mapSubscriptionTransformation(in *roverv1.ApiSubscription, out *api.ApiSubscription) {
 	// No implementation in the 'in' side either
-}
-
-func mapSubscriptionTraffic(in *roverv1.ApiSubscription, out *api.ApiSubscription) {
-	if in.Traffic.Failover != nil {
-		out.Failover = api.Failover{
-			Zones: in.Traffic.Failover.Zones,
-		}
-	}
-
-	// todo: ratelimit (ignore for now until implementation is clear)
 }

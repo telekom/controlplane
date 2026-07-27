@@ -26,7 +26,7 @@ type RemoteOrganizationHandler struct{}
 func (h *RemoteOrganizationHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.RemoteOrganization) (err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	envName := contextutil.EnvFromContextOrDie(ctx)
-	obj.SetCondition(condition.NewProcessingCondition("Provisioning", "RemoteOrganization is being provisioned"))
+	obj.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "RemoteOrganization is being provisioned"))
 
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -47,7 +47,7 @@ func (h *RemoteOrganizationHandler) CreateOrUpdate(ctx context.Context, obj *adm
 	}
 
 	obj.Status.Namespace = namespace.Name
-	obj.SetCondition(condition.NewReadyCondition("Provisioned", "RemoteOrganization has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "RemoteOrganization has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("RemoteOrganization has been provisioned"))
 	return nil
 }

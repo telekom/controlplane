@@ -52,6 +52,23 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
+	filterApiCategoryLabelValue := func(obj client.Object) []string {
+		apiCategory, ok := obj.(*apiapi.ApiCategory)
+		if !ok {
+			return nil
+		}
+		if apiCategory.Spec.LabelValue == "" {
+			return nil
+		}
+		return []string{apiCategory.Spec.LabelValue}
+	}
+	err = mgr.GetFieldIndexer().
+		IndexField(ctx, &apiapi.ApiCategory{}, "spec.labelValue", filterApiCategoryLabelValue)
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for ApiCategory", "FieldIndex", "spec.labelValue")
+		os.Exit(1)
+	}
+
 	err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &apiapi.RemoteApiSubscription{})
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create field-indexer")

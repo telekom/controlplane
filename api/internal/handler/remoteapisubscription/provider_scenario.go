@@ -148,8 +148,8 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 	}
 
 	if res != controllerutil.OperationResultNone {
-		obj.SetCondition(condition.NewProcessingCondition("Processing", "Processing RemoteApiSubscription"))
-		obj.SetCondition(condition.NewNotReadyCondition("Processing", "Processing RemoteApiSubscription"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "Processing RemoteApiSubscription"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "Processing RemoteApiSubscription"))
 	} else {
 		if err = mirrorChildSubscriptionStatus(ctx, obj, apiSubscription); err != nil {
 			return errors.Wrapf(err, "failed to mirror child subscription status")
@@ -181,7 +181,7 @@ func mirrorChildSubscriptionStatus(ctx context.Context, obj *apiapi.RemoteApiSub
 		obj.Status.Conditions = apiSubscription.Status.Conditions // TODO: good idea?
 		return nil
 	}
-	obj.SetCondition(condition.NewReadyCondition("Ready", "RemoteApiSubscription is ready"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "RemoteApiSubscription is ready"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("RemoteApiSubscription is done processing"))
 	return fillRouteInfo(ctx, obj, apiSubscription)
 }

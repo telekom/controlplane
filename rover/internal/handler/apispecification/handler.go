@@ -77,11 +77,11 @@ func (h *ApiSpecificationHandler) createOrUpdateApi(ctx context.Context, apiSpec
 	}
 
 	if c.AnyChanged() {
-		apiSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "API updated"))
-		apiSpec.SetCondition(condition.NewNotReadyCondition("Provisioning", "API is not ready"))
+		apiSpec.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "API updated"))
+		apiSpec.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "API is not ready"))
 	} else {
 		apiSpec.SetCondition(condition.NewDoneProcessingCondition("API created"))
-		apiSpec.SetCondition(condition.NewReadyCondition("Provisioned", "API is ready"))
+		apiSpec.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "API is ready"))
 	}
 
 	return nil

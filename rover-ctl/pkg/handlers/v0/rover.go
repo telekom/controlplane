@@ -116,6 +116,13 @@ func PatchExposures(exposures []any) []map[string]any {
 		exposuresMaps[i] = exposureMap
 	}
 	for i, exposure := range exposuresMaps {
+		if _, hasExplicitType := exposure["type"]; !hasExplicitType {
+			if _, exist := exposure["basePath"]; exist {
+				exposuresMaps[i]["type"] = "api"
+			} else if _, exist := exposure["eventType"]; exist {
+				exposuresMaps[i]["type"] = "event"
+			}
+		}
 		if _, exist := exposure["basePath"]; exist {
 			exposuresMaps[i]["type"] = "api"
 		} else if _, exist := exposure["eventType"]; exist {
@@ -145,6 +152,13 @@ func PatchSubscriptions(subscriptions []any) []map[string]any {
 		subscriptionsMaps[i] = subscriptionMap
 	}
 	for i, subscription := range subscriptionsMaps {
+		if _, hasExplicitType := subscription["type"]; !hasExplicitType {
+			if _, exist := subscription["basePath"]; exist {
+				subscriptionsMaps[i]["type"] = "api"
+			} else if _, exist := subscription["eventType"]; exist {
+				subscriptionsMaps[i]["type"] = "event"
+			}
+		}
 		if _, exist := subscription["basePath"]; exist {
 			subscriptionsMaps[i]["type"] = "api"
 		} else if _, exist := subscription["eventType"]; exist {

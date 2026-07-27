@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -85,6 +86,25 @@ var _ = Describe("Team Controller", Ordered, func() {
 					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
+				Gateway: adminv1.GatewayConfig{
+					Admin: adminv1.GatewayAdminConfig{
+						Url: "http://gateway-admin.test.local:8001",
+					},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{{
+							Hostname: "gateway.test.local",
+							BasePath: "/",
+						}},
+					}},
+				},
+				IdentityProvider: adminv1.IdentityProviderConfig{
+					Url: "http://idp.test.local:8080",
+					Admin: adminv1.IdentityProviderAdminConfig{
+						Url: ptr.To("http://idp-admin.test.local:8080"),
+					},
+				},
 			},
 		}
 
@@ -93,7 +113,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 				Name:      "team-api-identity-realm",
 				Namespace: testNamespace,
 			},
-			TeamApiGatewayRealm: &types.ObjectRef{
+			Gateway: &types.ObjectRef{
 				Name:      "team-api-gateway-realm",
 				Namespace: testNamespace,
 			},
@@ -115,7 +135,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 			By("Checking if the zone is status is updated")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone.Status.TeamApiGatewayRealm).NotTo(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).NotTo(BeNil())
 
 			By("Mocking Secret Manager")
@@ -158,10 +177,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					By("Checking if the identity client has been deleted")
-					err = k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), &identityv1.Client{})
-					g.Expect(errors.IsNotFound(err)).To(BeTrue())
-
 					By("Checking if the Team namespace is being terminated")
 					ns := newNamespaceObj(team.Status.Namespace)
 					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(ns), ns)
@@ -173,9 +188,9 @@ var _ = Describe("Team Controller", Ordered, func() {
 					err = k8sClient.Get(ctx, team.Status.GatewayConsumerRef.K8s(), &gatewayv1.Consumer{})
 					g.Expect(errors.IsNotFound(err)).To(BeTrue())
 
-					By("Checking identity client deletion")
-					err = k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), &identityv1.Client{})
-					g.Expect(errors.IsNotFound(err)).To(BeTrue())
+					// Identity client deletion is handled by K8s garbage collection via owner reference.
+					// EnvTest does not run the GC controller, so we skip this assertion here.
+					// Owner reference correctness is verified in the main test.
 
 					By("Checking notification channel deletion")
 					err = k8sClient.Get(ctx, team.Status.NotificationChannelRef.K8s(), &notificationv1.NotificationChannel{})
@@ -214,7 +229,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					}))
 
 					By("Checking the team identity client ref")
-					g.Expect(team.Status.IdentityClientRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--team-user"))
+					g.Expect(team.Status.IdentityClientRef.String()).To(Equal(testNamespace + "/" + groupName + "--" + teamName + "--team-user"))
 
 					By("Checking the team identity client object")
 					identityClient := &identityv1.Client{}
@@ -238,6 +253,11 @@ var _ = Describe("Team Controller", Ordered, func() {
 						config.EnvironmentLabelKey: testEnvironment,
 					}))
 
+					By("Checking the team identity client owner reference")
+					g.Expect(identityClient.GetOwnerReferences()).To(HaveLen(1))
+					g.Expect(identityClient.GetOwnerReferences()[0].Name).To(Equal(team.GetName()))
+					g.Expect(identityClient.GetOwnerReferences()[0].UID).To(Equal(team.GetUID()))
+
 					By("Checking the team gateway consumer ref")
 					g.Expect(team.Status.GatewayConsumerRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--team-user"))
 
@@ -247,7 +267,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking the team gateway consumer object spec")
 					g.Expect(gatewayConsumer.Spec).To(BeEquivalentTo(gatewayv1.ConsumerSpec{
-						Realm: types.ObjectRef{
+						Gateway: types.ObjectRef{
 							Name:      "team-api-gateway-realm",
 							Namespace: "default",
 							UID:       "",
@@ -566,6 +586,25 @@ var _ = Describe("Team Controller", Ordered, func() {
 			},
 			Spec: adminv1.ZoneSpec{
 				Visibility: adminv1.ZoneVisibilityWorld,
+				Gateway: adminv1.GatewayConfig{
+					Admin: adminv1.GatewayAdminConfig{
+						Url: "http://gateway-admin.test.local:8001",
+					},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{{
+							Hostname: "gateway.test.local",
+							BasePath: "/",
+						}},
+					}},
+				},
+				IdentityProvider: adminv1.IdentityProviderConfig{
+					Url: "http://idp.test.local:8080",
+					Admin: adminv1.IdentityProviderAdminConfig{
+						Url: ptr.To("http://idp-admin.test.local:8080"),
+					},
+				},
 			},
 		}
 
@@ -576,7 +615,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 			By("Checking if the zone realm refs are nil")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone.Status.TeamApiGatewayRealm).To(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).To(BeNil())
 		})
 
@@ -636,8 +674,8 @@ var _ = Describe("Team Controller", Ordered, func() {
 					readyCondition := meta.FindStatusCondition(team.GetConditions(), condition.ConditionTypeReady)
 					g.Expect(readyCondition).NotTo(BeNil())
 					g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-					g.Expect(readyCondition.Reason).To(Equal("ErrorOccurred"))
-					g.Expect(readyCondition.Message).To(ContainSubstring("found no zone with team apis"))
+					g.Expect(readyCondition.Reason).To(Equal(condition.ReasonError))
+					g.Expect(readyCondition.Message).To(ContainSubstring("no zone with managed routes found"))
 
 					By("Checking the team namespace in status")
 					g.Expect(team.Status.Namespace).To(Equal(expectedTeamNamespaceName))

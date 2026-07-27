@@ -9,6 +9,8 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
 type ServerConfig struct {
@@ -43,8 +45,9 @@ type TLSConfig struct {
 }
 
 type SecurityConfig struct {
-	Enabled        bool     `yaml:"enabled"`
-	TrustedIssuers []string `yaml:"trustedIssuers"`
+	// Mode controls authentication behaviour: use security.ModeJWT or security.ModeMock.
+	Mode           security.Mode `yaml:"mode"`
+	TrustedIssuers []string      `yaml:"trustedIssuers"`
 }
 
 type GraphQLConfig struct {
@@ -75,7 +78,7 @@ func DefaultConfig() *ServerConfig {
 			},
 		},
 		Security: SecurityConfig{
-			Enabled: false,
+			Mode: security.ModeJWT,
 		},
 		GraphQL: GraphQLConfig{
 			PlaygroundEnabled: true,

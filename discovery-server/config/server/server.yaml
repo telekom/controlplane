@@ -25,6 +25,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - args: []
           env: []
@@ -55,7 +57,7 @@ spec:
               cpu: 500m
               memory: 128Mi
             requests:
-              cpu: 10m
+              cpu: 30m
               memory: 64Mi
           volumeMounts:
             - name: db-data

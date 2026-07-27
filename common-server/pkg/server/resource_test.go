@@ -15,11 +15,34 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/test/mocks"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+// permissiveAdminTemplates grants unconditional admin access regardless of the
+// requested namespace/name. These tests exercise CRUD/store logic, not the
+// authorization rules covered by the security middleware test suite.
+var permissiveAdminTemplates = map[security.ClientType]security.ComparisonTemplates{
+	security.ClientTypeAdmin: {ExpectedTemplate: "allow", UserInputTemplate: "allow", MatchType: security.MatchTypeEqual},
+}
+
+// permissiveCheckAccessOpts pairs permissiveAdminTemplates with a Prefix func that
+// always resolves to an empty prefix, matching the pre-existing (unscoped) store
+// query behaviour that these tests assert on.
+var permissiveCheckAccessOpts = []security.Option[*security.CheckAccessOpts]{
+	security.WithTemplates(permissiveAdminTemplates),
+	security.WithPrefixFunc(func(*security.BusinessContext, map[string]string, map[security.ClientType]security.ComparisonTemplates) (string, error) {
+		return "", nil
+	}),
+}
+
+// adminBearerToken is a mock JWT carrying an admin:all scope so requests pass the
+// security middleware's checkAccess step when combined with permissiveAdminTemplates.
+var adminBearerToken = "Bearer " + securitymock.NewMockAccessToken("test", "group", "team", []string{"admin:all"})
 
 var _ = Describe("ResourceController", func() {
 	var (
@@ -44,7 +67,13 @@ var _ = Describe("ResourceController", func() {
 		mockStore.EXPECT().Info().Return(testGVR, testGVK)
 		resourceCtrl = server.NewResourceController(mockStore, GinkgoLogr)
 		app = fiber.New()
-		resourceCtrl.Register(app.Group("/tests"), server.ControllerOpts{Prefix: "/tests"})
+		resourceCtrl.Register(app.Group("/tests"), server.ControllerOpts{
+			Prefix: "/tests",
+			Security: security.SecurityOpts{
+				Mode:            security.ModeMock,
+				CheckAccessOpts: permissiveCheckAccessOpts,
+			},
+		})
 	})
 
 	AfterEach(func() {
@@ -55,6 +84,7 @@ var _ = Describe("ResourceController", func() {
 			mockStore.EXPECT().CreateOrReplace(mock.Anything, mock.Anything).Return(nil)
 
 			req := httptest.NewRequest(http.MethodPost, "/tests", bytes.NewReader(testObjectJSON))
+			req.Header.Set("Authorization", adminBearerToken)
 			req.Header.Set("Content-Type", "application/json")
 			resp, err := app.Test(req)
 
@@ -64,6 +94,7 @@ var _ = Describe("ResourceController", func() {
 
 		It("should return an error for invalid JSON", func() {
 			req := httptest.NewRequest(http.MethodPost, "/tests", bytes.NewReader([]byte("invalid-json")))
+			req.Header.Set("Authorization", adminBearerToken)
 			req.Header.Set("Content-Type", "application/json")
 			resp, err := app.Test(req)
 
@@ -77,6 +108,7 @@ var _ = Describe("ResourceController", func() {
 			mockStore.EXPECT().Get(mock.Anything, testNamespace, testName).Return(&unstructured.Unstructured{}, nil)
 
 			req := httptest.NewRequest(http.MethodGet, "/tests/default/test-name", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -87,6 +119,7 @@ var _ = Describe("ResourceController", func() {
 			mockStore.EXPECT().Get(mock.Anything, testNamespace, testName).Return(nil, errors.New("not found"))
 
 			req := httptest.NewRequest(http.MethodGet, "/tests/default/test-name", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -99,6 +132,7 @@ var _ = Describe("ResourceController", func() {
 			mockStore.EXPECT().Delete(mock.Anything, testNamespace, testName).Return(nil)
 
 			req := httptest.NewRequest(http.MethodDelete, "/tests/default/test-name", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -109,6 +143,7 @@ var _ = Describe("ResourceController", func() {
 			mockStore.EXPECT().Delete(mock.Anything, testNamespace, testName).Return(errors.New("delete error"))
 
 			req := httptest.NewRequest(http.MethodDelete, "/tests/default/test-name", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -127,6 +162,7 @@ var _ = Describe("ResourceController", func() {
 			}, nil)
 
 			req := httptest.NewRequest(http.MethodGet, "/tests", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -139,6 +175,7 @@ var _ = Describe("ResourceController", func() {
 			mockStore.EXPECT().List(mock.Anything, mock.Anything).Return(nil, errors.New("list error"))
 
 			req := httptest.NewRequest(http.MethodGet, "/tests", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -152,6 +189,7 @@ var _ = Describe("ResourceController", func() {
 
 			patchJSON := `[{"op":"replace","path":"/metadata/labels","value":{"key":"value"}}]`
 			req := httptest.NewRequest(http.MethodPatch, "/tests/default/test-name", bytes.NewReader([]byte(patchJSON)))
+			req.Header.Set("Authorization", adminBearerToken)
 			req.Header.Set("Content-Type", "application/json")
 			resp, err := app.Test(req)
 
@@ -161,6 +199,7 @@ var _ = Describe("ResourceController", func() {
 
 		It("should return an error for invalid patch JSON", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/tests/default/test-name", bytes.NewReader([]byte("invalid-json")))
+			req.Header.Set("Authorization", adminBearerToken)
 			req.Header.Set("Content-Type", "application/json")
 			resp, err := app.Test(req)
 
@@ -173,6 +212,7 @@ var _ = Describe("ResourceController", func() {
 
 			patchJSON := `[{"op":"replace","path":"/metadata/labels","value":{"key":"value"}}]`
 			req := httptest.NewRequest(http.MethodPatch, "/tests/default/test-name", bytes.NewReader([]byte(patchJSON)))
+			req.Header.Set("Authorization", adminBearerToken)
 			req.Header.Set("Content-Type", "application/json")
 			resp, err := app.Test(req)
 
@@ -200,6 +240,7 @@ var _ = Describe("ResourceController", func() {
 			})
 
 			req := httptest.NewRequest(http.MethodGet, "/queryargs?prefix=test-prefix&cursor=test-cursor&limit=10&filter=key==value&sort=key:asc", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -215,6 +256,7 @@ var _ = Describe("ResourceController", func() {
 			})
 
 			req := httptest.NewRequest(http.MethodGet, "/queryargs?filter=invalid-filter", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -230,6 +272,7 @@ var _ = Describe("ResourceController", func() {
 			})
 
 			req := httptest.NewRequest(http.MethodGet, "/queryargs?sort=invalid-sort", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())

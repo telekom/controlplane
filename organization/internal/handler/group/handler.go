@@ -20,7 +20,7 @@ type GroupHandler struct{}
 
 func (h *GroupHandler) CreateOrUpdate(_ context.Context, groupObj *organizationv1.Group) error {
 	groupObj.SetCondition(condition.NewDoneProcessingCondition("Created Group"))
-	groupObj.SetCondition(condition.NewReadyCondition("Ready", "Group is ready"))
+	groupObj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Group is ready"))
 	return nil
 }
 

@@ -31,7 +31,7 @@ func (h *HandlerIdentityProvider) CreateOrUpdate(ctx context.Context, idp *ident
 	idp.Status.AdminConsoleUrl = keycloak.DetermineAdminConsoleUrlFrom(idp.Spec.AdminUrl, keycloak.MasterRealm)
 
 	idp.SetCondition(condition.NewDoneProcessingCondition("Created IdentityProvider"))
-	idp.SetCondition(condition.NewReadyCondition("Ready", "IdentityProvider is ready"))
+	idp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "IdentityProvider is ready"))
 
 	message := fmt.Sprintf("IdentityProvider %s is ready", idp.Name)
 	logger.V(1).Info(message, "IdentityProviderStatus", idp.Status)

@@ -20,50 +20,39 @@ import (
 
 // ViewerFromBusinessContext is a gqlgen AroundOperations middleware that bridges
 // common-server's BusinessContext (from JWT) to ent's privacy system via the Viewer.
-// When securityEnabled is false and no BusinessContext is present, an admin viewer
-// is injected so that the GraphQL playground works without authentication.
-func ViewerFromBusinessContext(client *ent.Client, securityEnabled bool) graphql.OperationMiddleware {
+func ViewerFromBusinessContext(client *ent.Client) graphql.OperationMiddleware {
 	return func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		v := &viewer.Viewer{}
 		logger := logr.FromContextOrDiscard(ctx).WithName("viewer-middleware")
 
 		bCtx, ok := security.FromContext(ctx)
-		if !ok && securityEnabled {
-			// If security is enabled but no BusinessContext is found, return an error response.
-			// This should not happen in practice since the security middleware should reject unauthenticated requests,
-			// but we add this check for extra safety.
+		if !ok {
+			// Security middleware should have rejected unauthenticated requests before reaching here.
+			// If no BusinessContext is present it is a programming error — return a safe error.
 			return graphql.OneShot(graphql.ErrorResponse(ctx, "no business context found"))
 		}
 
-		if ok {
-			switch bCtx.ClientType {
-			case security.ClientTypeAdmin:
-				v.Admin = true
-
-			case security.ClientTypeGroup:
-				v.Group = bCtx.Group
-				// SystemContext: No Viewer exists yet — we need to query teams for
-				// this group in order to build the Viewer that privacy rules will use.
-				sysCtx := viewer.SystemContext(ctx)
-				teams, err := client.Team.Query().
-					Where(entteam.HasGroupWith(entgroup.Name(bCtx.Group))).
-					Select(entteam.FieldName).
-					Strings(sysCtx)
-				if err != nil {
-					logger.Error(err, "failed to resolve teams for group", "group", bCtx.Group)
-					return graphql.OneShot(graphql.ErrorResponse(ctx, "failed to resolve teams for group"))
-
-				} else {
-					v.Teams = teams
-				}
-
-			case security.ClientTypeTeam:
-				v.Teams = []string{bCtx.Team}
-			}
-		} else if !securityEnabled {
-			logger.Info("No business context found, but security is disabled - injecting admin viewer for playground access")
+		switch bCtx.ClientType {
+		case security.ClientTypeAdmin:
 			v.Admin = true
 
+		case security.ClientTypeGroup:
+			v.Group = bCtx.Group
+			// SystemContext: No Viewer exists yet — we need to query teams for
+			// this group in order to build the Viewer that privacy rules will use.
+			sysCtx := viewer.SystemContext(ctx)
+			teams, err := client.Team.Query().
+				Where(entteam.HasGroupWith(entgroup.Name(bCtx.Group))).
+				Select(entteam.FieldName).
+				Strings(sysCtx)
+			if err != nil {
+				logger.Error(err, "failed to resolve teams for group", "group", bCtx.Group)
+				return graphql.OneShot(graphql.ErrorResponse(ctx, "failed to resolve teams for group"))
+			}
+			v.Teams = teams
+
+		case security.ClientTypeTeam:
+			v.Teams = []string{bCtx.Team}
 		}
 
 		// Populate forwarded user identity if present in context.

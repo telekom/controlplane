@@ -21,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -39,6 +40,7 @@ type ApplicationQuery struct {
 	withSubscribedApis        *ApiSubscriptionQuery
 	withExposedEvents         *EventExposureQuery
 	withSubscribedEvents      *EventSubscriptionQuery
+	withPermissionSet         *PermissionSetQuery
 	withFKs                   bool
 	modifiers                 []func(*sql.Selector)
 	loadTotal                 []func(context.Context, []*Application) error
@@ -207,6 +209,28 @@ func (_q *ApplicationQuery) QuerySubscribedEvents() *EventSubscriptionQuery {
 			sqlgraph.From(application.Table, application.FieldID, selector),
 			sqlgraph.To(eventsubscription.Table, eventsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedEventsTable, application.SubscribedEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPermissionSet chains the current query on the "permission_set" edge.
+func (_q *ApplicationQuery) QueryPermissionSet() *PermissionSetQuery {
+	query := (&PermissionSetClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, selector),
+			sqlgraph.To(permissionset.Table, permissionset.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, application.PermissionSetTable, application.PermissionSetColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -412,6 +436,7 @@ func (_q *ApplicationQuery) Clone() *ApplicationQuery {
 		withSubscribedApis:   _q.withSubscribedApis.Clone(),
 		withExposedEvents:    _q.withExposedEvents.Clone(),
 		withSubscribedEvents: _q.withSubscribedEvents.Clone(),
+		withPermissionSet:    _q.withPermissionSet.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -481,6 +506,17 @@ func (_q *ApplicationQuery) WithSubscribedEvents(opts ...func(*EventSubscription
 		opt(query)
 	}
 	_q.withSubscribedEvents = query
+	return _q
+}
+
+// WithPermissionSet tells the query-builder to eager-load the nodes that are connected to
+// the "permission_set" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithPermissionSet(opts ...func(*PermissionSetQuery)) *ApplicationQuery {
+	query := (&PermissionSetClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPermissionSet = query
 	return _q
 }
 
@@ -569,13 +605,14 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*Application{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			_q.withZone != nil,
 			_q.withOwnerTeam != nil,
 			_q.withExposedApis != nil,
 			_q.withSubscribedApis != nil,
 			_q.withExposedEvents != nil,
 			_q.withSubscribedEvents != nil,
+			_q.withPermissionSet != nil,
 		}
 	)
 	if _q.withZone != nil || _q.withOwnerTeam != nil {
@@ -644,6 +681,12 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			func(n *Application, e *EventSubscription) {
 				n.Edges.SubscribedEvents = append(n.Edges.SubscribedEvents, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPermissionSet; query != nil {
+		if err := _q.loadPermissionSet(ctx, query, nodes, nil,
+			func(n *Application, e *PermissionSet) { n.Edges.PermissionSet = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -866,6 +909,34 @@ func (_q *ApplicationQuery) loadSubscribedEvents(ctx context.Context, query *Eve
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "application_subscribed_events" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ApplicationQuery) loadPermissionSet(ctx context.Context, query *PermissionSetQuery, nodes []*Application, init func(*Application), assign func(*Application, *PermissionSet)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Application)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.PermissionSet(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(application.PermissionSetColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.application_permission_set
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "application_permission_set" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "application_permission_set" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -19,7 +20,6 @@ import (
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
-
 	err := index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &apiapi.Api{})
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create ownerIndex Api")
@@ -68,4 +68,16 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		}
 	}
 
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.McpExposure{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for McpExposure")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.McpSubscription{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for McpSubscription")
+			os.Exit(1)
+		}
+	}
 }

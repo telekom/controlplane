@@ -124,7 +124,6 @@ The following tables list all available schemas, grouped by domain. Click a sche
 | **ConsumeRoute** | [`consumeroute_v1.json`](pathname:///schemas/gateway.cp.ei.telekom.de/consumeroute_v1.json) |
 | **Consumer** | [`consumer_v1.json`](pathname:///schemas/gateway.cp.ei.telekom.de/consumer_v1.json) |
 | **Gateway** | [`gateway_v1.json`](pathname:///schemas/gateway.cp.ei.telekom.de/gateway_v1.json) |
-| **Realm** | [`realm_v1.json`](pathname:///schemas/gateway.cp.ei.telekom.de/realm_v1.json) |
 | **Route** | [`route_v1.json`](pathname:///schemas/gateway.cp.ei.telekom.de/route_v1.json) |
 
 ---

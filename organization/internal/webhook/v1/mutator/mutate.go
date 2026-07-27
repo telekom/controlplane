@@ -14,7 +14,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -34,19 +33,24 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 	var availableSecrets map[string]string
 	var clientSecret string
 
-	if !secretsapi.IsRef(teamObj.Spec.Secret) {
-		log.V(1).Info("spec.secret is not a reference, generating new secret")
-		if strings.EqualFold(teamObj.Spec.Secret, secret.KeywordRotate) || teamObj.Spec.Secret == "" {
-			// generate new secret
-			clientSecret = string(uuid.NewUUID())
-		} else {
-			// use provided secret
-			clientSecret = teamObj.Spec.Secret
-		}
-	} else {
+	if secretsapi.IsRef(teamObj.Spec.Secret) {
 		log.V(1).Info("spec.secret is already a reference, nothing to do")
 		return nil
 	}
+
+	log.V(1).Info("spec.secret is not a reference, generating new secret")
+	if strings.EqualFold(teamObj.Spec.Secret, secret.KeywordRotate) || teamObj.Spec.Secret == "" {
+		// generate new secret
+		var err error
+		clientSecret, err = secretsapi.GenerateSecret()
+		if err != nil {
+			return fmt.Errorf("unable to generate new client secret: %w", err)
+		}
+	} else {
+		// use provided secret
+		clientSecret = teamObj.Spec.Secret
+	}
+
 	clientSecretValue, teamToken, err := generateNewToken(env, teamObj, zoneObj, clientSecret)
 	if err != nil {
 		return fmt.Errorf("unable to generate team token: %w", err)

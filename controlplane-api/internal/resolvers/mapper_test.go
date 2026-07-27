@@ -74,6 +74,26 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 
 	It("should return ApiExposureInfo for a subscription's target", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-beta"}})
+
+		client.ApiExposure.UpdateOneID(s.ExposureAlpha.ID).SetTraffic(
+			model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Overrides: []model.RateLimitOverrides{
+							{
+								Subscriber: "team-beta",
+								Limits: model.Limits{
+									Second: 2,
+									Minute: 2,
+									Hour:   2,
+								},
+							},
+						},
+					},
+				},
+			},
+		).SaveX(ctx)
+
 		info, err := r.ApiSubscription().Target(ctx, s.Subscription)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
@@ -82,6 +102,10 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 		Expect(info.OwnerTeam).NotTo(BeNil())
 		Expect(info.OwnerTeam.Name).To(Equal("team-alpha"))
 		Expect(info.OwnerTeam.GroupName).To(Equal("group-a"))
+		Expect(info.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Subscriber).To(Equal("team-beta"))
+		Expect(info.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Second).To(Equal(2))
+		Expect(info.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Minute).To(Equal(2))
+		Expect(info.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Hour).To(Equal(2))
 	})
 })
 

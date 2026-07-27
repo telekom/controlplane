@@ -32,7 +32,7 @@ func (v *ApiChangelogCustomValidator) ValidateCreate(ctx context.Context, change
 	return v.ValidateCreateOrUpdate(ctx, changelog)
 }
 
-func (v *ApiChangelogCustomValidator) ValidateUpdate(ctx context.Context, _ *roverv1.ApiChangelog, changelog *roverv1.ApiChangelog) (admission.Warnings, error) {
+func (v *ApiChangelogCustomValidator) ValidateUpdate(ctx context.Context, _, changelog *roverv1.ApiChangelog) (admission.Warnings, error) {
 	return v.ValidateCreateOrUpdate(ctx, changelog)
 }
 

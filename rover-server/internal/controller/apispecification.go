@@ -22,11 +22,11 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
-	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/in"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/out"
@@ -42,14 +42,14 @@ type ApiSpecificationController struct {
 	Store  store.ObjectStore[*roverv1.ApiSpecification]
 
 	// Linter handles OAS linting operations. If nil, linting is disabled.
-	Linter ApiLinter
+	Linter oaslint.Linter
 }
 
-func NewApiSpecificationController(stores *s.Stores, lintCfg config.OasLintingConfig) *ApiSpecificationController {
+func NewApiSpecificationController(stores *s.Stores, linter oaslint.Linter) *ApiSpecificationController {
 	return &ApiSpecificationController{
 		stores: stores,
 		Store:  stores.APISpecificationStore,
-		Linter: NewApiLinter(lintCfg),
+		Linter: linter,
 	}
 }
 
@@ -205,16 +205,6 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, catErr
 	}
 
-	// Look up the specific ApiCategory for linting.
-	var apiCategory *apiv1.ApiCategory
-	if categoryList != nil {
-		cat, ok := categoryList.FindByLabelValue(apiSpec.Spec.Category)
-		if !ok {
-			return res, problems.BadRequest(fmt.Sprintf("Invalid ApiCategory %q", apiSpec.Spec.Category))
-		}
-		apiCategory = cat
-	}
-
 	// Early return: spec content unchanged.
 	_, same, hashErr := a.isHashEqual(ctx, id, specMarshaled)
 	if hashErr != nil {
@@ -225,7 +215,7 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	}
 
 	// Lint before uploading or storing; reject immediately on failure.
-	if err := a.lintSpec(ctx, apiSpec, apiCategory, specMarshaled); err != nil {
+	if err := a.checkAndLintSpec(ctx, apiSpec, categoryList, specMarshaled); err != nil {
 		return res, err
 	}
 
@@ -278,6 +268,11 @@ func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *ap
 		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories", "error", err)
 		return nil
 	}
+	if len(categoryList.Items) == 0 {
+		logr.FromContextOrDiscard(ctx).Info("No ApiCategories found")
+		return nil
+	}
+
 	result := &apiv1.ApiCategoryList{Items: make([]apiv1.ApiCategory, 0, len(categoryList.Items))}
 	for _, item := range categoryList.Items {
 		result.Items = append(result.Items, *item)
@@ -307,6 +302,22 @@ func (a *ApiSpecificationController) validateApiCategoryFromList(categoryList *a
 	return nil
 }
 
+// checkAndLintSpec resolves the matching ApiCategory from the list and runs OAS linting.
+// Linting is skipped when no ApiCategories exist in the cluster (categoryList is nil)
+// or when the spec's category is not found in the list.
+func (a *ApiSpecificationController) checkAndLintSpec(ctx context.Context, apiSpec *roverv1.ApiSpecification, categoryList *apiv1.ApiCategoryList, specMarshaled []byte) error {
+	if categoryList == nil || len(categoryList.Items) == 0 {
+		return nil
+	}
+
+	apiCategory, ok := categoryList.FindByLabelValue(apiSpec.Spec.Category)
+	if !ok {
+		return problems.BadRequest(fmt.Sprintf("Invalid ApiCategory %q", apiSpec.Spec.Category))
+	}
+
+	return a.lintSpec(ctx, apiSpec, apiCategory, specMarshaled)
+}
+
 // lintSpec performs OAS linting for the given spec before it is persisted.
 // Returns an error (as a Problem) if linting blocks or the linter is unreachable in block mode.
 func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *roverv1.ApiSpecification, apiCategory *apiv1.ApiCategory, specMarshaled []byte) error {
@@ -326,7 +337,7 @@ func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *rove
 			"The linting service could not be reached. Your API specification was not saved.",
 		)
 	}
-	if outcome == LintBlocked {
+	if outcome == oaslint.Blocked {
 		msg := "OAS linting did not pass"
 		if apiSpec.Spec.Lint != nil && apiSpec.Spec.Lint.Message != "" {
 			msg = fmt.Sprintf("%s: %s", msg, apiSpec.Spec.Lint.Message)

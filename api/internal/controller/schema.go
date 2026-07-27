@@ -15,6 +15,7 @@ import (
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
+	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 )
 
 func RegisterSchemesOrDie(scheme *runtime.Scheme) {
@@ -25,4 +26,5 @@ func RegisterSchemesOrDie(scheme *runtime.Scheme) {
 	utilruntime.Must(apiapi.AddToScheme(scheme))
 	utilruntime.Must(identityapi.AddToScheme(scheme))
 	utilruntime.Must(applicationapi.AddToScheme(scheme))
+	utilruntime.Must(organizationapi.AddToScheme(scheme))
 }

@@ -23,6 +23,8 @@ type TeamData struct {
 	Name          string
 	Email         string
 	Category      string // "CUSTOMER" or "INFRASTRUCTURE" (upper-cased from CR enum)
+	DisplayName   string
+	Description   string
 	GroupName     string
 	TeamToken     string // secret-manager reference for the team token
 	Members       []MemberData

@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
@@ -31,6 +32,39 @@ var _ = Describe("Subscription Mapper", func() {
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
+		})
+
+		It("must reject claims on api subscription security", func() {
+			apiSub := api.ApiSubscription{}
+			apiSub.Security = api.Security{}
+			Expect(apiSub.Security.FromOauth2(api.Oauth2{
+				ClientId: "some-client",
+				Claims:   api.Claims{Aud: api.Claim{Value: "eni--foo--api-provider-rover"}},
+			})).To(Succeed())
+			sub := GetApiSubscription(apiSub)
+
+			err := validateSubscription(&sub)
+
+			Expect(err).To(HaveOccurred())
+			Expect(problems.IsValidationError(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("claims are only supported on API exposure security"))
+		})
+
+		It("must reject claims on ai subscription security", func() {
+			aiSub := api.AiSubscription{}
+			aiSub.Security = api.Security{}
+			Expect(aiSub.Security.FromOauth2(api.Oauth2{
+				ClientId: "some-client",
+				Claims:   api.Claims{Aud: api.Claim{Value: "eni--foo--api-provider-rover"}},
+			})).To(Succeed())
+			var sub api.Subscription
+			Expect((&sub).FromAiSubscription(aiSub)).To(Succeed())
+
+			err := validateSubscription(&sub)
+
+			Expect(err).To(HaveOccurred())
+			Expect(problems.IsValidationError(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("claims are only supported on API exposure security"))
 		})
 	})
 
@@ -260,48 +294,6 @@ var _ = Describe("Subscription Mapper", func() {
 			Expect(output.SelectionFilter).ToNot(BeNil())
 			Expect(output.SelectionFilter.Attributes).To(HaveKeyWithValue("source", "my-app"))
 			Expect(output.SelectionFilter.Expression).ToNot(BeNil())
-		})
-	})
-
-	Context("mapSubscriptionTraffic", func() {
-		It("must map failover zones", func() {
-			input := api.ApiSubscription{
-				BasePath: "/test",
-				Failover: api.Failover{
-					Zones: []string{"zone-a", "zone-b"},
-				},
-			}
-
-			output := &roverv1.ApiSubscription{}
-			mapSubscriptionTraffic(input, output)
-
-			Expect(output.Traffic.Failover).ToNot(BeNil())
-			Expect(output.Traffic.Failover.Zones).To(ConsistOf("zone-a", "zone-b"))
-		})
-
-		It("must handle empty failover zones", func() {
-			input := api.ApiSubscription{
-				BasePath: "/test",
-				Failover: api.Failover{
-					Zones: []string{},
-				},
-			}
-
-			output := &roverv1.ApiSubscription{}
-			mapSubscriptionTraffic(input, output)
-
-			Expect(output.Traffic.Failover).To(BeNil())
-		})
-
-		It("must handle nil failover", func() {
-			input := api.ApiSubscription{
-				BasePath: "/test",
-			}
-
-			output := &roverv1.ApiSubscription{}
-			mapSubscriptionTraffic(input, output)
-
-			Expect(output.Traffic.Failover).To(BeNil())
 		})
 	})
 

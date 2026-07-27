@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // EventSubscriptionCreate is the builder for creating a EventSubscription entity.
@@ -131,6 +132,32 @@ func (_c *EventSubscriptionCreate) SetNillableDeliveryType(v *eventsubscription.
 	return _c
 }
 
+// SetTrigger sets the "trigger" field.
+func (_c *EventSubscriptionCreate) SetTrigger(v *model.EventTrigger) *EventSubscriptionCreate {
+	_c.mutation.SetTrigger(v)
+	return _c
+}
+
+// SetDelivery sets the "delivery" field.
+func (_c *EventSubscriptionCreate) SetDelivery(v model.EventDelivery) *EventSubscriptionCreate {
+	_c.mutation.SetDelivery(v)
+	return _c
+}
+
+// SetNillableDelivery sets the "delivery" field if the given value is not nil.
+func (_c *EventSubscriptionCreate) SetNillableDelivery(v *model.EventDelivery) *EventSubscriptionCreate {
+	if v != nil {
+		_c.SetDelivery(*v)
+	}
+	return _c
+}
+
+// SetScopes sets the "scopes" field.
+func (_c *EventSubscriptionCreate) SetScopes(v []string) *EventSubscriptionCreate {
+	_c.mutation.SetScopes(v)
+	return _c
+}
+
 // SetCallbackURL sets the "callback_url" field.
 func (_c *EventSubscriptionCreate) SetCallbackURL(v string) *EventSubscriptionCreate {
 	_c.mutation.SetCallbackURL(v)
@@ -141,6 +168,20 @@ func (_c *EventSubscriptionCreate) SetCallbackURL(v string) *EventSubscriptionCr
 func (_c *EventSubscriptionCreate) SetNillableCallbackURL(v *string) *EventSubscriptionCreate {
 	if v != nil {
 		_c.SetCallbackURL(*v)
+	}
+	return _c
+}
+
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (_c *EventSubscriptionCreate) SetGatewaySseURL(v string) *EventSubscriptionCreate {
+	_c.mutation.SetGatewaySseURL(v)
+	return _c
+}
+
+// SetNillableGatewaySseURL sets the "gateway_sse_url" field if the given value is not nil.
+func (_c *EventSubscriptionCreate) SetNillableGatewaySseURL(v *string) *EventSubscriptionCreate {
+	if v != nil {
+		_c.SetGatewaySseURL(*v)
 	}
 	return _c
 }
@@ -264,6 +305,14 @@ func (_c *EventSubscriptionCreate) defaults() error {
 		v := eventsubscription.DefaultDeliveryType
 		_c.mutation.SetDeliveryType(v)
 	}
+	if _, ok := _c.mutation.Trigger(); !ok {
+		v := eventsubscription.DefaultTrigger
+		_c.mutation.SetTrigger(v)
+	}
+	if _, ok := _c.mutation.Delivery(); !ok {
+		v := eventsubscription.DefaultDelivery
+		_c.mutation.SetDelivery(v)
+	}
 	return nil
 }
 
@@ -311,6 +360,9 @@ func (_c *EventSubscriptionCreate) check() error {
 		if err := eventsubscription.DeliveryTypeValidator(v); err != nil {
 			return &ValidationError{Name: "delivery_type", err: fmt.Errorf(`ent: validator failed for field "EventSubscription.delivery_type": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.Delivery(); !ok {
+		return &ValidationError{Name: "delivery", err: errors.New(`ent: missing required field "EventSubscription.delivery"`)}
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
 		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "EventSubscription.owner"`)}
@@ -378,9 +430,25 @@ func (_c *EventSubscriptionCreate) createSpec() (*EventSubscription, *sqlgraph.C
 		_spec.SetField(eventsubscription.FieldDeliveryType, field.TypeEnum, value)
 		_node.DeliveryType = value
 	}
+	if value, ok := _c.mutation.Trigger(); ok {
+		_spec.SetField(eventsubscription.FieldTrigger, field.TypeJSON, value)
+		_node.Trigger = value
+	}
+	if value, ok := _c.mutation.Delivery(); ok {
+		_spec.SetField(eventsubscription.FieldDelivery, field.TypeJSON, value)
+		_node.Delivery = value
+	}
+	if value, ok := _c.mutation.Scopes(); ok {
+		_spec.SetField(eventsubscription.FieldScopes, field.TypeJSON, value)
+		_node.Scopes = value
+	}
 	if value, ok := _c.mutation.CallbackURL(); ok {
 		_spec.SetField(eventsubscription.FieldCallbackURL, field.TypeString, value)
 		_node.CallbackURL = &value
+	}
+	if value, ok := _c.mutation.GatewaySseURL(); ok {
+		_spec.SetField(eventsubscription.FieldGatewaySseURL, field.TypeString, value)
+		_node.GatewaySseURL = &value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -614,6 +682,54 @@ func (u *EventSubscriptionUpsert) UpdateDeliveryType() *EventSubscriptionUpsert 
 	return u
 }
 
+// SetTrigger sets the "trigger" field.
+func (u *EventSubscriptionUpsert) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldTrigger, v)
+	return u
+}
+
+// UpdateTrigger sets the "trigger" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateTrigger() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldTrigger)
+	return u
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsert) ClearTrigger() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldTrigger)
+	return u
+}
+
+// SetDelivery sets the "delivery" field.
+func (u *EventSubscriptionUpsert) SetDelivery(v model.EventDelivery) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldDelivery, v)
+	return u
+}
+
+// UpdateDelivery sets the "delivery" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateDelivery() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldDelivery)
+	return u
+}
+
+// SetScopes sets the "scopes" field.
+func (u *EventSubscriptionUpsert) SetScopes(v []string) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldScopes, v)
+	return u
+}
+
+// UpdateScopes sets the "scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateScopes() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldScopes)
+	return u
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (u *EventSubscriptionUpsert) ClearScopes() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldScopes)
+	return u
+}
+
 // SetCallbackURL sets the "callback_url" field.
 func (u *EventSubscriptionUpsert) SetCallbackURL(v string) *EventSubscriptionUpsert {
 	u.Set(eventsubscription.FieldCallbackURL, v)
@@ -629,6 +745,24 @@ func (u *EventSubscriptionUpsert) UpdateCallbackURL() *EventSubscriptionUpsert {
 // ClearCallbackURL clears the value of the "callback_url" field.
 func (u *EventSubscriptionUpsert) ClearCallbackURL() *EventSubscriptionUpsert {
 	u.SetNull(eventsubscription.FieldCallbackURL)
+	return u
+}
+
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsert) SetGatewaySseURL(v string) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldGatewaySseURL, v)
+	return u
+}
+
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateGatewaySseURL() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldGatewaySseURL)
+	return u
+}
+
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsert) ClearGatewaySseURL() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldGatewaySseURL)
 	return u
 }
 
@@ -810,6 +944,62 @@ func (u *EventSubscriptionUpsertOne) UpdateDeliveryType() *EventSubscriptionUpse
 	})
 }
 
+// SetTrigger sets the "trigger" field.
+func (u *EventSubscriptionUpsertOne) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetTrigger(v)
+	})
+}
+
+// UpdateTrigger sets the "trigger" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateTrigger() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateTrigger()
+	})
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsertOne) ClearTrigger() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearTrigger()
+	})
+}
+
+// SetDelivery sets the "delivery" field.
+func (u *EventSubscriptionUpsertOne) SetDelivery(v model.EventDelivery) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetDelivery(v)
+	})
+}
+
+// UpdateDelivery sets the "delivery" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateDelivery() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateDelivery()
+	})
+}
+
+// SetScopes sets the "scopes" field.
+func (u *EventSubscriptionUpsertOne) SetScopes(v []string) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetScopes(v)
+	})
+}
+
+// UpdateScopes sets the "scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateScopes() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateScopes()
+	})
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (u *EventSubscriptionUpsertOne) ClearScopes() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearScopes()
+	})
+}
+
 // SetCallbackURL sets the "callback_url" field.
 func (u *EventSubscriptionUpsertOne) SetCallbackURL(v string) *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
@@ -828,6 +1018,27 @@ func (u *EventSubscriptionUpsertOne) UpdateCallbackURL() *EventSubscriptionUpser
 func (u *EventSubscriptionUpsertOne) ClearCallbackURL() *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.ClearCallbackURL()
+	})
+}
+
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertOne) SetGatewaySseURL(v string) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetGatewaySseURL(v)
+	})
+}
+
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateGatewaySseURL() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateGatewaySseURL()
+	})
+}
+
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertOne) ClearGatewaySseURL() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearGatewaySseURL()
 	})
 }
 
@@ -1175,6 +1386,62 @@ func (u *EventSubscriptionUpsertBulk) UpdateDeliveryType() *EventSubscriptionUps
 	})
 }
 
+// SetTrigger sets the "trigger" field.
+func (u *EventSubscriptionUpsertBulk) SetTrigger(v *model.EventTrigger) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetTrigger(v)
+	})
+}
+
+// UpdateTrigger sets the "trigger" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateTrigger() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateTrigger()
+	})
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (u *EventSubscriptionUpsertBulk) ClearTrigger() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearTrigger()
+	})
+}
+
+// SetDelivery sets the "delivery" field.
+func (u *EventSubscriptionUpsertBulk) SetDelivery(v model.EventDelivery) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetDelivery(v)
+	})
+}
+
+// UpdateDelivery sets the "delivery" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateDelivery() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateDelivery()
+	})
+}
+
+// SetScopes sets the "scopes" field.
+func (u *EventSubscriptionUpsertBulk) SetScopes(v []string) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetScopes(v)
+	})
+}
+
+// UpdateScopes sets the "scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateScopes() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateScopes()
+	})
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (u *EventSubscriptionUpsertBulk) ClearScopes() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearScopes()
+	})
+}
+
 // SetCallbackURL sets the "callback_url" field.
 func (u *EventSubscriptionUpsertBulk) SetCallbackURL(v string) *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
@@ -1193,6 +1460,27 @@ func (u *EventSubscriptionUpsertBulk) UpdateCallbackURL() *EventSubscriptionUpse
 func (u *EventSubscriptionUpsertBulk) ClearCallbackURL() *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.ClearCallbackURL()
+	})
+}
+
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertBulk) SetGatewaySseURL(v string) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetGatewaySseURL(v)
+	})
+}
+
+// UpdateGatewaySseURL sets the "gateway_sse_url" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateGatewaySseURL() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateGatewaySseURL()
+	})
+}
+
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (u *EventSubscriptionUpsertBulk) ClearGatewaySseURL() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearGatewaySseURL()
 	})
 }
 

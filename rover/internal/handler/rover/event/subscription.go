@@ -8,6 +8,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -15,15 +19,12 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // HandleSubscription creates or updates an EventSubscription resource owned by the given Rover.
 func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rover.Rover, sub *rover.EventSubscription) error {
-	log := log.FromContext(ctx)
-	log.V(1).Info("Handle EventSubscription", "eventType", sub.EventType)
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Handle EventSubscription", "eventType", sub.EventType)
 
 	name := MakeName(owner.Name, sub.EventType)
 
@@ -62,7 +63,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 				},
 				ObjectRef: *owner.Status.Application,
 			},
-			Delivery: mapDelivery(sub.Delivery),
+			Delivery: mapDelivery(&sub.Delivery),
 			Trigger:  mapEventTrigger(sub.Trigger),
 			Scopes:   sub.Scopes,
 		}
@@ -83,7 +84,11 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 }
 
 // mapDelivery converts a rover EventDelivery to an event-domain Delivery.
-func mapDelivery(roverDelivery rover.EventDelivery) eventv1.Delivery {
+func mapDelivery(roverDelivery *rover.EventDelivery) eventv1.Delivery {
+	if roverDelivery == nil {
+		return eventv1.Delivery{}
+	}
+
 	return eventv1.Delivery{
 		Type:                  eventv1.DeliveryType(roverDelivery.Type),
 		Payload:               eventv1.PayloadType(roverDelivery.Payload),

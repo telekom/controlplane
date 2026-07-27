@@ -91,7 +91,7 @@ func main() {
 	}
 
 	secretResolver := secrets.NewResolver(secretsapi.NewSecrets())
-	srv := newGraphQLServer(client, services, secretResolver, cfg.Security.Enabled, cfg.FileManager.BaseURL)
+	srv := newGraphQLServer(client, services, secretResolver, cfg.FileManager.BaseURL)
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.EnableCors = true
@@ -103,13 +103,11 @@ func main() {
 	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
 	gqlCtrl.RegisterPlayground(s.App, "/graphql")
 	secOpts := security.SecurityOpts{
-		Enabled: cfg.Security.Enabled,
-		Log:     log.WithName("security"),
-	}
-	if len(cfg.Security.TrustedIssuers) > 0 {
-		secOpts.JWTOpts = []security.Option[*security.JWTOpts]{
+		Mode: cfg.Security.Mode,
+		Log:  log.WithName("security"),
+		JWTOpts: []security.Option[*security.JWTOpts]{
 			security.WithTrustedIssuers(cfg.Security.TrustedIssuers),
-		}
+		},
 	}
 	s.RegisterController(gqlCtrl, cserver.ControllerOpts{
 		Prefix:         "/graphql",
@@ -180,7 +178,7 @@ func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }
 
-func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, securityEnabled bool, fileManagerBaseURL string) *handler.Server {
+func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, fileManagerBaseURL string) *handler.Server {
 	srv := handler.New(resolvers.NewSchema(entClient, services, secretResolver, fileManagerBaseURL))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -193,7 +191,7 @@ func newGraphQLServer(entClient *ent.Client, services service.Services, secretRe
 	})
 	srv.SetErrorPresenter(gqlcontroller.ErrorPresenter)
 
-	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(entClient, securityEnabled))
+	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(entClient))
 	srv.AroundOperations(gqlcontroller.LogMutationUser())
 
 	return srv

@@ -154,9 +154,29 @@ func (_c *ApprovalCreate) SetAvailableTransitions(v []model.AvailableTransition)
 	return _c
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_c *ApprovalCreate) SetRequestedScopes(v []string) *ApprovalCreate {
+	_c.mutation.SetRequestedScopes(v)
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *ApprovalCreate) SetName(v string) *ApprovalCreate {
 	_c.mutation.SetName(v)
+	return _c
+}
+
+// SetExpiresAt sets the "expiresAt" field.
+func (_c *ApprovalCreate) SetExpiresAt(v time.Time) *ApprovalCreate {
+	_c.mutation.SetExpiresAt(v)
+	return _c
+}
+
+// SetNillableExpiresAt sets the "expiresAt" field if the given value is not nil.
+func (_c *ApprovalCreate) SetNillableExpiresAt(v *time.Time) *ApprovalCreate {
+	if v != nil {
+		_c.SetExpiresAt(*v)
+	}
 	return _c
 }
 
@@ -427,9 +447,17 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 		_spec.SetField(approval.FieldAvailableTransitions, field.TypeJSON, value)
 		_node.AvailableTransitions = value
 	}
+	if value, ok := _c.mutation.RequestedScopes(); ok {
+		_spec.SetField(approval.FieldRequestedScopes, field.TypeJSON, value)
+		_node.RequestedScopes = value
+	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := _c.mutation.ExpiresAt(); ok {
+		_spec.SetField(approval.FieldExpiresAt, field.TypeTime, value)
+		_node.ExpiresAt = &value
 	}
 	if value, ok := _c.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)
@@ -689,6 +717,24 @@ func (u *ApprovalUpsert) ClearAvailableTransitions() *ApprovalUpsert {
 	return u
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApprovalUpsert) SetRequestedScopes(v []string) *ApprovalUpsert {
+	u.Set(approval.FieldRequestedScopes, v)
+	return u
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateRequestedScopes() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldRequestedScopes)
+	return u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApprovalUpsert) ClearRequestedScopes() *ApprovalUpsert {
+	u.SetNull(approval.FieldRequestedScopes)
+	return u
+}
+
 // SetName sets the "name" field.
 func (u *ApprovalUpsert) SetName(v string) *ApprovalUpsert {
 	u.Set(approval.FieldName, v)
@@ -698,6 +744,24 @@ func (u *ApprovalUpsert) SetName(v string) *ApprovalUpsert {
 // UpdateName sets the "name" field to the value that was provided on create.
 func (u *ApprovalUpsert) UpdateName() *ApprovalUpsert {
 	u.SetExcluded(approval.FieldName)
+	return u
+}
+
+// SetExpiresAt sets the "expiresAt" field.
+func (u *ApprovalUpsert) SetExpiresAt(v time.Time) *ApprovalUpsert {
+	u.Set(approval.FieldExpiresAt, v)
+	return u
+}
+
+// UpdateExpiresAt sets the "expiresAt" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateExpiresAt() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldExpiresAt)
+	return u
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (u *ApprovalUpsert) ClearExpiresAt() *ApprovalUpsert {
+	u.SetNull(approval.FieldExpiresAt)
 	return u
 }
 
@@ -954,6 +1018,27 @@ func (u *ApprovalUpsertOne) ClearAvailableTransitions() *ApprovalUpsertOne {
 	})
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApprovalUpsertOne) SetRequestedScopes(v []string) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateRequestedScopes() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApprovalUpsertOne) ClearRequestedScopes() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
 // SetName sets the "name" field.
 func (u *ApprovalUpsertOne) SetName(v string) *ApprovalUpsertOne {
 	return u.Update(func(s *ApprovalUpsert) {
@@ -965,6 +1050,27 @@ func (u *ApprovalUpsertOne) SetName(v string) *ApprovalUpsertOne {
 func (u *ApprovalUpsertOne) UpdateName() *ApprovalUpsertOne {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetExpiresAt sets the "expiresAt" field.
+func (u *ApprovalUpsertOne) SetExpiresAt(v time.Time) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetExpiresAt(v)
+	})
+}
+
+// UpdateExpiresAt sets the "expiresAt" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateExpiresAt() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateExpiresAt()
+	})
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (u *ApprovalUpsertOne) ClearExpiresAt() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearExpiresAt()
 	})
 }
 
@@ -1389,6 +1495,27 @@ func (u *ApprovalUpsertBulk) ClearAvailableTransitions() *ApprovalUpsertBulk {
 	})
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApprovalUpsertBulk) SetRequestedScopes(v []string) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateRequestedScopes() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApprovalUpsertBulk) ClearRequestedScopes() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
 // SetName sets the "name" field.
 func (u *ApprovalUpsertBulk) SetName(v string) *ApprovalUpsertBulk {
 	return u.Update(func(s *ApprovalUpsert) {
@@ -1400,6 +1527,27 @@ func (u *ApprovalUpsertBulk) SetName(v string) *ApprovalUpsertBulk {
 func (u *ApprovalUpsertBulk) UpdateName() *ApprovalUpsertBulk {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetExpiresAt sets the "expiresAt" field.
+func (u *ApprovalUpsertBulk) SetExpiresAt(v time.Time) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetExpiresAt(v)
+	})
+}
+
+// UpdateExpiresAt sets the "expiresAt" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateExpiresAt() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateExpiresAt()
+	})
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (u *ApprovalUpsertBulk) ClearExpiresAt() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearExpiresAt()
 	})
 }
 

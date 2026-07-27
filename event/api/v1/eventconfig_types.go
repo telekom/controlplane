@@ -21,7 +21,10 @@ type AdminConfig struct {
 	Url string `json:"url"`
 
 	// Client configures the identity client used for admin access to the configuration backend.
-	Client ClientConfig `json:"client"`
+	// If omitted, defaults are applied: clientId and clientSecret are auto-generated,
+	// and the realm is resolved from the Zone's internal identity realm.
+	// +optional
+	Client ClientConfig `json:"client,omitempty"`
 }
 
 type ClientConfig struct {
@@ -50,24 +53,30 @@ type MeshConfig struct {
 	ZoneNames []string `json:"zoneNames,omitempty"`
 
 	// Client configures the identity client used for mesh communication between zones.
-	Client ClientConfig `json:"client"`
+	// If omitted, defaults are applied: clientId and clientSecret are auto-generated,
+	// and the realm is resolved from the Zone's default identity realm.
+	// +optional
+	Client ClientConfig `json:"client,omitempty"`
 }
 
-// EventConfigSpec defines the desired state of EventConfig.
-type EventConfigSpec struct {
-	// Zone references the Zone for which this EventConfig applies.
-	Zone ctypes.ObjectRef `json:"zone"`
-
+// LocalBackend configures a zone that runs its own event backend (Horizon).
+// It holds the connection to the configuration backend and the internal
+// upstream URLs for the SSE, publish, and Voyager gateway Routes.
+type LocalBackend struct {
 	// Admin configures the connection to the configuration backend.
 	Admin AdminConfig `json:"admin"`
 
 	// ServerSendEventUrl is the internal URL of the SSE backend service
 	// Used as the upstream for the SSE gateway Route.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Format=uri
 	ServerSendEventUrl string `json:"serverSendEventUrl"`
 
 	// PublishEventUrl is the internal URL of the publish backend service
 	// Used as the upstream for the publish gateway Route.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Format=uri
 	PublishEventUrl string `json:"publishEventUrl"`
 
@@ -75,10 +84,41 @@ type EventConfigSpec struct {
 	// Used as the upstream for the Voyager gateway Route which exposes
 	// event listing and redelivery APIs.
 	// +kubebuilder:validation:Format=uri
+	// +optional
 	VoyagerApiUrl string `json:"voyagerApiUrl,omitempty"`
+}
+
+// ProxyBackend configures a zone that runs no local event backend (no Horizon).
+// All event traffic and configuration is proxied to the single TargetZone,
+// which must be a local (non-proxy) zone running Horizon.
+type ProxyBackend struct {
+	// TargetZone references the local zone whose event backend this proxy zone
+	// forwards all publish, subscribe, and configuration traffic to.
+	TargetZone ctypes.ObjectRef `json:"targetZone"`
+}
+
+// EventConfigSpec defines the desired state of EventConfig.
+// Exactly one of Local or Proxy must be set: Local for a zone running its own
+// event backend (Horizon), Proxy for a zone that forwards all traffic to a target zone.
+// +kubebuilder:validation:XValidation:rule="has(self.local) != has(self.proxy)",message="exactly one of spec.local or spec.proxy must be set"
+type EventConfigSpec struct {
+	// Zone references the Zone for which this EventConfig applies.
+	Zone ctypes.ObjectRef `json:"zone"`
+
+	// Local configures a zone that runs its own event backend (Horizon).
+	// Mutually exclusive with Proxy.
+	// +optional
+	Local *LocalBackend `json:"local,omitempty"`
+
+	// Proxy configures a zone that runs no local event backend and forwards
+	// all traffic to a target zone. Mutually exclusive with Local.
+	// +optional
+	Proxy *ProxyBackend `json:"proxy,omitempty"`
 
 	// Mesh configures the mesh topology for event distribution.
-	Mesh MeshConfig `json:"mesh"`
+	// If omitted, defaults to full mesh with the realm resolved from the Zone's default identity realm.
+	// +optional
+	Mesh *MeshConfig `json:"mesh,omitempty"`
 }
 
 // EventConfigStatus defines the observed state of EventConfig.
@@ -187,11 +227,25 @@ func (r *EventConfig) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
+// IsProxy reports whether this EventConfig is for a proxy zone that runs no
+// local event backend and forwards all traffic to its target zone.
+func (r *EventConfig) IsProxy() bool {
+	return r.Spec.Proxy != nil
+}
+
+// IsLocal reports whether this EventConfig is for a local zone that runs its
+// own event backend. The CEL XOR rule on the spec guarantees exactly one of
+// local/proxy is set, so IsLocal is the negation of IsProxy for an admitted
+// object; it also guards against a nil Spec.Local when neither is set.
+func (r *EventConfig) IsLocal() bool {
+	return r.Spec.Local != nil
+}
+
 func (r *EventConfig) SupportsZone(zoneName string) bool {
 	if r.Spec.Zone.Name == zoneName {
 		return true
 	}
-	if r.Spec.Mesh.FullMesh {
+	if r.Spec.Mesh == nil || r.Spec.Mesh.FullMesh {
 		return true
 	}
 	return slices.Contains(r.Spec.Mesh.ZoneNames, zoneName)

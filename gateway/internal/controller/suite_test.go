@@ -10,15 +10,20 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sync"
 	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.uber.org/mock/gomock"
-
-	corev1 "k8s.io/api/core/v1"
+	"github.com/stretchr/testify/mock"
+	"github.com/telekom/controlplane/common/pkg/config"
+	testmock "github.com/telekom/controlplane/common/pkg/test/mock"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
+	kongmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
+	"github.com/telekom/controlplane/gateway/pkg/kongutil"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -29,55 +34,48 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/telekom/controlplane/common/pkg/test/mock"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	"github.com/telekom/controlplane/gateway/internal/features"
-	features_mock "github.com/telekom/controlplane/gateway/internal/features/mock"
-	kong_client "github.com/telekom/controlplane/gateway/pkg/kong/client"
-	kong_clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
-	"github.com/telekom/controlplane/gateway/pkg/kongutil"
-	// +kubebuilder:scaffold:imports
+	corev1 "k8s.io/api/core/v1"
 )
 
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
-
 const (
-	timeout         = 2 * time.Second
+	timeout         = 5 * time.Second
 	interval        = 100 * time.Millisecond
 	testNamespace   = "default"
 	testEnvironment = "test"
 )
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-var ctx context.Context
-var cancel context.CancelFunc
+var (
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
 
-var GetMockClientFor func(gwCfg kongutil.GatewayAdminConfig) *kong_clientmock.MockKongClient
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	mockKongClient *kongmock.MockKongClient
+)
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
-
-	RunSpecs(t, "Controller Suite")
+	RunSpecs(t, "Gateway Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
+	var err error
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "config", "crd", "bases"),
+		},
 		ErrorIfCRDPathMissing: true,
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
 			fmt.Sprintf("%s-%s-%s", os.Getenv("ENVTEST_K8S_VERSION"), runtime.GOOS, runtime.GOARCH)),
 	}
 
-	var err error
-	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
@@ -85,13 +83,10 @@ var _ = BeforeSuite(func() {
 	err = gatewayv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	// +kubebuilder:scaffold:scheme
-
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	By("Creating the manager")
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
 		Metrics: server.Options{
@@ -100,93 +95,66 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	By("Registering all required indices")
+	// Register field indices needed by controllers
 	RegisterIndecesOrDie(ctx, k8sManager)
 
-	By("Setting up controllers")
+	// Setup MockKongClient with capturing expectations
+	mockKongClient = kongmock.NewMockKongClient(GinkgoT())
+	setupKongMockExpectations()
+
+	// Override kongutil.GetClientFor to always return our mock
+	originalGetClientFor := kongutil.GetClientFor
+	kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
+		return mockKongClient, nil
+	}
+
+	// Override secrets.Get to be an identity function (no real secret resolution needed)
+	originalSecretsGet := secretsapi.Get
+	secretsapi.Get = func(_ context.Context, secretRef string) (string, error) {
+		return secretRef, nil
+	}
+
+	// Setup controllers
 	err = (&GatewayReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
-		Recorder: &mock.EventRecorder{},
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&RealmReconciler{
-		Client:   k8sManager.GetClient(),
-		Scheme:   k8sManager.GetScheme(),
-		Recorder: &mock.EventRecorder{},
+		Recorder: &testmock.EventRecorder{},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&RouteReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
-		Recorder: &mock.EventRecorder{},
+		Recorder: &testmock.EventRecorder{},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ConsumerReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
-		Recorder: &mock.EventRecorder{},
+		Recorder: &testmock.EventRecorder{},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ConsumeRouteReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
-		Recorder: &mock.EventRecorder{},
+		Recorder: &testmock.EventRecorder{},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	By("Creating the environment namespace")
-	CreateNamespace(testEnvironment)
-
-	By("Setting up the required mocks")
-	mockCtrl := gomock.NewController(GinkgoT())
-	mockMutex := sync.Mutex{}
-	kongClientMockCache := make(map[string]*kong_clientmock.MockKongClient)
-
-	kongutil.GetClientFor = func(gwCfg kongutil.GatewayAdminConfig) (kong_client.KongClient, error) {
-		mockMutex.Lock()
-		defer mockMutex.Unlock()
-		if client, found := kongClientMockCache[gwCfg.AdminUrl()]; found {
-			return client, nil
-		}
-		client := kong_clientmock.NewMockKongClient(mockCtrl)
-		kongClientMockCache[gwCfg.AdminUrl()] = client
-		return client, nil
-	}
-
-	features.NewFeatureBuilder = func(kc kong_client.KongClient, route *gatewayv1.Route, consumer *gatewayv1.Consumer, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) features.FeaturesBuilder {
-		mockMutex.Lock()
-		defer mockMutex.Unlock()
-		mockBuilder := features_mock.NewMockFeaturesBuilder(mockCtrl)
-		mockBuilder.EXPECT().EnableFeature(gomock.Any()).MinTimes(1)
-		mockBuilder.EXPECT().AddAllowedConsumers(gomock.Any()).AnyTimes()
-		mockBuilder.EXPECT().Build(gomock.Any()).Return(nil).AnyTimes()
-		mockBuilder.EXPECT().BuildForConsumer(gomock.Any()).Return(nil).AnyTimes()
-		mockBuilder.EXPECT().GetAllowedConsumers().Return(nil).AnyTimes()
-
-		return mockBuilder
-	}
-
-	GetMockClientFor = func(gwCfg kongutil.GatewayAdminConfig) *kong_clientmock.MockKongClient {
-		client, err := kongutil.GetClientFor(gwCfg)
-		Expect(err).ToNot(HaveOccurred())
-		c, ok := client.(*kong_clientmock.MockKongClient)
-		if !ok {
-			Fail("unexpected kong-client type")
-		}
-		return c
-	}
-
+	// Start manager
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 
+	// Restore original functions after suite completes
+	DeferCleanup(func() {
+		kongutil.GetClientFor = originalGetClientFor
+		secretsapi.Get = originalSecretsGet
+	})
 })
 
 var _ = AfterSuite(func() {
@@ -196,11 +164,54 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-func CreateNamespace(name string) {
+// setupKongMockExpectations configures the MockKongClient to accept all calls
+// and allow reconciliation loops to proceed without error.
+func setupKongMockExpectations() {
+	mockKongClient.On("CreateOrReplaceRoute", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockKongClient.On("CreateOrReplacePlugin", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+	mockKongClient.On("CleanupPlugins", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockKongClient.On("DeleteRoute", mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockKongClient.On("CreateOrReplaceConsumer", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+	mockKongClient.On("DeleteConsumer", mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockKongClient.On("LoadPlugin", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+	mockKongClient.On("DeleteUpstream", mock.Anything, mock.Anything).Return(nil).Maybe()
+}
+
+// createNamespace creates a namespace if it does not already exist.
+func createNamespace(name string) {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
-	Expect(k8sClient.Create(ctx, ns)).To(Succeed())
+	err := k8sClient.Create(ctx, ns)
+	if !errors.IsAlreadyExists(err) {
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+
+// newGateway creates a Gateway resource with the given name in the specified namespace.
+func newGateway(name, namespace string) *gatewayv1.Gateway {
+	return &gatewayv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			},
+		},
+		Spec: gatewayv1.GatewaySpec{
+			Admin: gatewayv1.AdminConfig{
+				Url:          "http://kong-admin:8001",
+				ClientId:     "test-client-id",
+				ClientSecret: "test-client-secret",
+				IssuerUrl:    "http://issuer:8080/realms/test",
+			},
+			Redis: &gatewayv1.RedisConfig{
+				Host:     "redis:6379",
+				Port:     6379,
+				Password: "redis-password",
+			},
+		},
+	}
 }

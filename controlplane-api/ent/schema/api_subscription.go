@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApiSubscription holds the schema definition for an API subscription.
@@ -43,8 +44,11 @@ func (ApiSubscription) Fields() []ent.Field {
 				"ScopesOnly", "SCOPES_ONLY",
 			).
 			Default("NONE"),
-		field.JSON("approved_scopes", []string{}).
-			Default([]string{}).
+		field.Text("gateway_url").
+			Optional().
+			Nillable(),
+		field.JSON("security", &model.ApiSubscriptionSecurity{}).
+			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }

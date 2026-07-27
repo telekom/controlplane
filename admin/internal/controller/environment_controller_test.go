@@ -37,7 +37,7 @@ var _ = Describe("Environment Controller", func() {
 					config.EnvironmentLabelKey: testEnvironment,
 				},
 			},
-			Spec: adminv1.EnvironmentSpec{},
+			Spec: adminv1.EnvironmentSpec{RealmName: testEnvironment},
 		}
 
 		BeforeEach(func() {

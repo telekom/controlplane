@@ -36,52 +36,56 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// --- Admin Identity Client ---
+	// --- Fetch Zone early to auto-resolve optional realm references ---
 
-	adminRealm := &identityv1.Realm{}
-	err := c.Get(ctx, obj.Spec.Admin.Client.Realm.K8s(), adminRealm)
+	myZone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
 	if err != nil {
-		if apierrors.IsNotFound(errors.Cause(err)) {
-			return ctrlerrors.BlockedErrorf("referenced identity Realm %q not found", obj.Spec.Admin.Client.Realm.String())
+		return errors.Wrapf(err, "failed to get zone for EventConfig's zone reference %q", obj.Spec.Zone.String())
+	}
+
+	if myZone.Status.Namespace != obj.Namespace {
+		return ctrlerrors.BlockedErrorf("EventConfig must be located in the correlated zone-namespace %q", myZone.Status.Namespace)
+	}
+
+	// --- Resolve effective mesh config (nil means full mesh) ---
+
+	meshCfg := obj.Spec.Mesh
+	if meshCfg == nil {
+		meshCfg = &eventv1.MeshConfig{FullMesh: true}
+	}
+
+	// --- Identity Clients ---
+
+	// Proxy zones have no admin client of their own; their EventStore authenticates
+	// to the target zone's configuration backend using the target's admin client.
+	var adminClient *identityv1.Client
+	var adminTokenUrl string
+	if obj.IsProxy() {
+		obj.Status.AdminClient = nil
+	} else {
+		adminClient, adminTokenUrl, err = h.resolveAndCreateAdminClient(ctx, obj, myZone)
+		if err != nil {
+			return err
 		}
-		return errors.Wrapf(err, "failed to get identity Realm %q", obj.Spec.Admin.Client.Realm.String())
+		obj.Status.AdminClient = eventv1.NewObservedObjectRef(adminClient)
+		logger.V(1).Info("identity AdminClient created/updated", "client", adminClient.Name)
 	}
 
-	// Derive the token URL from the realm's issuer URL
-	// This is used to configure the EventStore with the correct token endpoint for obtaining access tokens.
-	adminClientTokenUrl := adminRealm.Status.IssuerUrl + tokenUrlSuffix
-	if adminClientTokenUrl == "" {
-		return ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", adminRealm.Name)
-	}
-
-	adminClient, err := h.createIdentityClient(ctx, obj, &obj.Spec.Admin.Client)
+	meshClient, err := h.resolveAndCreateMeshClient(ctx, obj, myZone, meshCfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to create identity Client")
-	}
-	obj.Status.AdminClient = eventv1.NewObservedObjectRef(adminClient)
-	logger.V(1).Info("identity AdminClient created/updated", "client", adminClient.Name)
-
-	// --- Mesh Identity Client ---
-
-	meshRealm := &identityv1.Realm{}
-	err = c.Get(ctx, obj.Spec.Mesh.Client.Realm.K8s(), meshRealm)
-	if err != nil {
-		if apierrors.IsNotFound(errors.Cause(err)) {
-			return ctrlerrors.BlockedErrorf("referenced identity Realm %q not found", obj.Spec.Mesh.Client.Realm.String())
-		}
-		return errors.Wrapf(err, "failed to get identity Realm %q", obj.Spec.Mesh.Client.Realm.String())
-	}
-
-	meshClient, err := h.createIdentityClient(ctx, obj, &obj.Spec.Mesh.Client)
-	if err != nil {
-		return errors.Wrap(err, "failed to create identity Client")
+		return err
 	}
 	obj.Status.MeshClient = eventv1.NewObservedObjectRef(meshClient)
 	logger.V(1).Info("identity MeshClient created/updated", "client", meshClient.Name)
 
 	// --- EventStore ---
 
-	eventStore, err := h.createEventStore(ctx, obj, adminClient, adminClientTokenUrl)
+	var eventStore *pubsubv1.EventStore
+	if obj.IsProxy() {
+		eventStore, err = h.createProxyEventStore(ctx, obj)
+	} else {
+		eventStore, err = h.createEventStore(ctx, obj, adminClient, adminTokenUrl)
+	}
 	if err != nil {
 		return errors.Wrap(err, "failed to create EventStore")
 	}
@@ -90,29 +94,16 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	// --- Routes ---
 
-	if err = h.createCallbackRoutes(ctx, obj); err != nil {
-		return errors.Wrap(err, "failed to create callback Routes")
+	if routeErr := h.createRoutes(ctx, obj, myZone, meshCfg); routeErr != nil {
+		return routeErr
 	}
-	logger.V(1).Info("Callback Routes created/updated", "count", len(obj.Status.ProxyCallbackRoutes))
-
-	if obj.Spec.VoyagerApiUrl != "" {
-		if err = h.createVoyagerRoutes(ctx, obj); err != nil {
-			return errors.Wrap(err, "failed to create voyager Routes")
-		}
-		logger.V(1).Info("Voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
-	}
-
-	if err = h.createPublishRoute(ctx, obj); err != nil {
-		return errors.Wrap(err, "failed to create publish Route")
-	}
-	logger.V(1).Info("Publish Route created/updated")
 
 	// --- Finalize status conditions ---
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
 			"One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
 		return nil
 	}
 
@@ -128,7 +119,7 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	// --- Done ---
 
-	obj.SetCondition(condition.NewReadyCondition("EventConfigProvisioned", "EventConfig has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "EventConfig has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("EventConfig has been provisioned"))
 
 	return nil
@@ -140,7 +131,113 @@ func (h *EventConfigHandler) Delete(ctx context.Context, obj *eventv1.EventConfi
 	return nil
 }
 
-// createIdentityClient creates an identity.Client for the event operator to authenticate with configuration backend.
+// createRoutes provisions the callback, Voyager, and publish gateway Routes for the
+// EventConfig, dispatching to the proxy or local builders based on the zone kind.
+func (h *EventConfigHandler) createRoutes(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone, meshCfg *eventv1.MeshConfig) error {
+	logger := log.FromContext(ctx)
+
+	if err := h.createCallbackRoutes(ctx, obj, myZone, meshCfg); err != nil {
+		return errors.Wrap(err, "failed to create callback Routes")
+	}
+	logger.V(1).Info("Callback Routes created/updated", "count", len(obj.Status.ProxyCallbackRoutes))
+
+	// Voyager Routes: local zones expose their own backend; proxy zones forward their
+	// own-zone Route to the target and still participate in the full mesh.
+	if obj.IsProxy() {
+		if err := h.createProxyVoyagerRoutes(ctx, obj, myZone, meshCfg); err != nil {
+			return errors.Wrap(err, "failed to create proxy voyager Routes")
+		}
+		logger.V(1).Info("Proxy voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
+	} else if obj.IsLocal() && obj.Spec.Local.VoyagerApiUrl != "" {
+		if err := h.createVoyagerRoutes(ctx, obj, myZone, meshCfg); err != nil {
+			return errors.Wrap(err, "failed to create voyager Routes")
+		}
+		logger.V(1).Info("Voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
+	}
+
+	if obj.IsProxy() {
+		if err := h.createProxyPublishRoute(ctx, obj, myZone); err != nil {
+			return errors.Wrap(err, "failed to create proxy publish Route")
+		}
+		logger.V(1).Info("Proxy publish Route created/updated")
+	} else {
+		if err := h.createPublishRoute(ctx, obj, myZone); err != nil {
+			return errors.Wrap(err, "failed to create publish Route")
+		}
+		logger.V(1).Info("Publish Route created/updated")
+	}
+
+	return nil
+}
+
+// resolveAndCreateAdminClient resolves the admin realm (from zone if not explicitly specified)
+// and creates/updates the identity client for admin access. Returns the client and the token URL.
+func (h *EventConfigHandler) resolveAndCreateAdminClient(ctx context.Context, obj *eventv1.EventConfig, zone *adminv1.Zone) (*identityv1.Client, string, error) {
+	logger := log.FromContext(ctx)
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	clientCfg := obj.Spec.Local.Admin.Client
+	if clientCfg.Realm.IsEmpty() {
+		if zone.Status.InternalIdentityRealm == nil {
+			return nil, "", ctrlerrors.BlockedErrorf("Zone %q does not have an internal identity realm yet", zone.Name)
+		}
+		clientCfg.Realm = *zone.Status.InternalIdentityRealm
+		logger.V(1).Info("Auto-resolved admin client realm from zone", "realm", clientCfg.Realm.String())
+	}
+
+	realm := &identityv1.Realm{}
+	if err := c.Get(ctx, clientCfg.Realm.K8s(), realm); err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return nil, "", ctrlerrors.BlockedErrorf("referenced identity Realm %q not found", clientCfg.Realm.String())
+		}
+		return nil, "", errors.Wrapf(err, "failed to get identity Realm %q", clientCfg.Realm.String())
+	}
+
+	tokenUrl := realm.Status.IssuerUrl + tokenUrlSuffix
+	if tokenUrl == "" {
+		return nil, "", ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", realm.Name)
+	}
+
+	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to create admin identity Client")
+	}
+
+	return identityClient, tokenUrl, nil
+}
+
+// resolveAndCreateMeshClient resolves the mesh realm (from zone if not explicitly specified)
+// and creates/updates the identity client for cross-zone mesh communication.
+func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj *eventv1.EventConfig, zone *adminv1.Zone, meshCfg *eventv1.MeshConfig) (*identityv1.Client, error) {
+	logger := log.FromContext(ctx)
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	clientCfg := meshCfg.Client
+	if clientCfg.Realm.IsEmpty() {
+		if zone.Status.IdentityRealm == nil {
+			return nil, ctrlerrors.BlockedErrorf("Zone %q does not have a default identity realm yet", zone.Name)
+		}
+		clientCfg.Realm = *zone.Status.IdentityRealm
+		logger.V(1).Info("Auto-resolved mesh client realm from zone", "realm", clientCfg.Realm.String())
+	}
+
+	realm := &identityv1.Realm{}
+	if err := c.Get(ctx, clientCfg.Realm.K8s(), realm); err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return nil, ctrlerrors.BlockedErrorf("referenced identity Realm %q not found", clientCfg.Realm.String())
+		}
+		return nil, errors.Wrapf(err, "failed to get identity Realm %q", clientCfg.Realm.String())
+	}
+
+	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create mesh identity Client")
+	}
+
+	return identityClient, nil
+}
+
+// createIdentityClient is a utility function to create or update an identityv1.Client resource for a given EventConfig and ClientConfig.
 func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig) (*identityv1.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -176,26 +273,22 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 	return identityClient, nil
 }
 
-func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *eventv1.EventConfig) error {
+// listMeshPeerZones lists the zones of all other EventConfigs (excluding obj's own zone).
+// realPeers:    non-proxy peers that host a backend (a proxy Route can point at them).
+// allPeers:     every peer (real + proxy); proxy peers are trust-only, no Route target.
+// inboundPeers: peers that mesh with obj's zone (SupportsZone), i.e. are actually allowed
+//
+//	to read this zone's primary Route. Only these peers' LMS issuers may be
+//	trusted on the primary; a peer that does not mesh here gets no trust.
+func (h *EventConfigHandler) listMeshPeerZones(ctx context.Context, obj *eventv1.EventConfig) (realPeerZones, allPeerZones, inboundPeerZones []*adminv1.Zone, err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
-	myZone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get zone for EventConfig's zone reference %q", obj.Spec.Zone.String())
-	}
-
-	if myZone.Status.Namespace != obj.Namespace {
-		return ctrlerrors.BlockedErrorf("EventConfig must be located in the correlated zone-namespace %q", myZone.Status.Namespace)
-	}
-
 	otherEventConfigs := &eventv1.EventConfigList{}
-	err = c.List(ctx, otherEventConfigs)
-	if err != nil {
-		return errors.Wrap(err, "failed to list other EventConfigs")
+	if err = c.List(ctx, otherEventConfigs); err != nil {
+		return nil, nil, nil, errors.Wrap(err, "failed to list other EventConfigs")
 	}
 	logger.V(1).Info("Fetched other EventConfigs", "count", len(otherEventConfigs.Items))
-	otherZones := make([]*adminv1.Zone, 0, len(otherEventConfigs.Items))
 
 	for i := range otherEventConfigs.Items {
 		other := &otherEventConfigs.Items[i]
@@ -204,13 +297,44 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 		}
 		otherZone, zoneErr := util.GetZone(ctx, other.Spec.Zone.K8s())
 		if zoneErr != nil {
-			return errors.Wrapf(zoneErr, "failed to get zone for other EventConfig %q", other.Name)
+			return nil, nil, nil, errors.Wrapf(zoneErr, "failed to get zone for other EventConfig %q", other.Name)
 		}
-		otherZones = append(otherZones, otherZone)
+		allPeerZones = append(allPeerZones, otherZone)
+		if !other.IsProxy() {
+			realPeerZones = append(realPeerZones, otherZone)
+		}
+		if other.SupportsZone(obj.Spec.Zone.Name) {
+			inboundPeerZones = append(inboundPeerZones, otherZone)
+		}
+	}
+	return realPeerZones, allPeerZones, inboundPeerZones, nil
+}
+
+func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone, meshCfg *eventv1.MeshConfig) error {
+	logger := log.FromContext(ctx)
+
+	realmName := myZone.Status.RealmName
+
+	// Callbacks proxy to every peer (proxy zones also expose a local callback primary),
+	// so route targets use the full peer set. Primary-route trust, however, is limited to
+	// inbound peers: only zones that mesh with this zone may read its callback primary.
+	_, otherZones, inboundZones, err := h.listMeshPeerZones(ctx, obj)
+	if err != nil {
+		return err
+	}
+
+	// Proxy routes use the source zone's LMS issuer (mesh-client authentication)
+	var proxyTrustedIssuers []string
+	if myZone.Status.Links.LmsIssuer != "" {
+		proxyTrustedIssuers = []string{myZone.Status.Links.LmsIssuer}
 	}
 
 	logger.V(1).Info("Creating proxy callback Routes for other zones", "count", len(otherZones))
-	routes, err := util.CreateCallbackProxyRoutes(ctx, &obj.Spec.Mesh, myZone, otherZones, util.WithOwner(obj))
+	routes, err := util.CreateCallbackProxyRoutes(ctx, meshCfg, myZone, otherZones,
+		util.WithOwner(obj),
+		util.WithTrustedIssuers(proxyTrustedIssuers),
+		util.WithRealmName(realmName),
+	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create callback proxy Routes")
 	}
@@ -220,67 +344,121 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 
 	for zoneName, route := range routes {
 		obj.Status.ProxyCallbackRoutes = append(obj.Status.ProxyCallbackRoutes, *types.ObjectRefFromObject(route))
-		obj.Status.ProxyCallbackURLs[zoneName] = route.Spec.Downstreams[0].Url()
+		obj.Status.ProxyCallbackURLs[zoneName] = util.RouteDownstreamURL(route)
 	}
 
-	isProxyTarget := len(obj.Status.ProxyCallbackRoutes) > 0
-	myCallbackRoute, err := util.CreateCallbackRoute(ctx, myZone, util.WithOwner(obj), util.WithProxyTarget(isProxyTarget))
+	// Primary callback route: trusted issuers = [IDP issuer] + [LMS issuers of inbound peers].
+	// A peer's LMS issuer is trusted only if that peer meshes with this zone; without a mesh
+	// there is no LMS issuer to add and no mesh-client consumer on the primary.
+	isProxyTarget := len(inboundZones) > 0
+	primaryTrustedIssuers := collectPrimaryTrustedIssuers(myZone, inboundZones, isProxyTarget)
+
+	myCallbackRoute, err := util.CreateCallbackRoute(ctx, myZone,
+		util.WithOwner(obj),
+		util.WithProxyTarget(isProxyTarget),
+		util.WithTrustedIssuers(primaryTrustedIssuers),
+		util.WithRealmName(realmName),
+	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create callback Route for own zone")
 	}
 	obj.Status.CallbackRoute = types.ObjectRefFromObject(myCallbackRoute)
-	obj.Status.CallbackURL = myCallbackRoute.Spec.Downstreams[0].Url()
+	obj.Status.CallbackURL = util.RouteDownstreamURL(myCallbackRoute)
 
 	return nil
 }
 
-func (h *EventConfigHandler) createPublishRoute(ctx context.Context, obj *eventv1.EventConfig) error {
-	myZone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get zone for EventConfig's zone reference %q", obj.Spec.Zone.String())
+func (h *EventConfigHandler) createPublishRoute(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone) error {
+	realmName := myZone.Status.RealmName
+
+	// Publish routes are accessed by event publishers (external services) using IDP tokens
+	var trustedIssuers []string
+	if myZone.Status.Links.Issuer != "" {
+		trustedIssuers = []string{myZone.Status.Links.Issuer}
 	}
 
-	route, err := util.CreatePublishRoute(ctx, myZone, obj)
+	// Proxy zones targeting this zone forward publish traffic authenticated with an
+	// LMS (mesh) token issued in their own zone. Trust those issuers so the target
+	// gateway accepts the proxied publish requests.
+	proxySourceZones, err := h.findProxySourceZones(ctx, obj, myZone)
+	if err != nil {
+		return err
+	}
+	for _, pz := range proxySourceZones {
+		if pz.Status.Links.LmsIssuer != "" {
+			trustedIssuers = append(trustedIssuers, pz.Status.Links.LmsIssuer)
+		}
+	}
+
+	route, err := util.CreatePublishRoute(ctx, myZone, obj,
+		util.WithOwner(obj),
+		util.WithTrustedIssuers(trustedIssuers),
+		util.WithRealmName(realmName),
+	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create publish Route")
 	}
 	obj.Status.PublishRoute = types.ObjectRefFromObject(route)
-	obj.Status.PublishURL = route.Spec.Downstreams[0].Url()
+	obj.Status.PublishURL = util.RouteDownstreamURL(route)
 
 	return nil
 }
 
-func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *eventv1.EventConfig) error {
+// findProxySourceZones returns the zones of all proxy EventConfigs whose target is myZone.
+// These are the zones that forward event traffic into this (local) zone via mesh-client tokens.
+func (h *EventConfigHandler) findProxySourceZones(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone) ([]*adminv1.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
 
-	myZone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get zone for EventConfig's zone reference %q", obj.Spec.Zone.String())
+	eventConfigs := &eventv1.EventConfigList{}
+	if err := c.List(ctx, eventConfigs); err != nil {
+		return nil, errors.Wrap(err, "failed to list EventConfigs")
 	}
 
-	otherEventConfigs := &eventv1.EventConfigList{}
-	err = c.List(ctx, otherEventConfigs)
-	if err != nil {
-		return errors.Wrap(err, "failed to list other EventConfigs")
-	}
-	logger.V(1).Info("Fetched other EventConfigs for voyager Routes", "count", len(otherEventConfigs.Items))
-	otherZones := make([]*adminv1.Zone, 0, len(otherEventConfigs.Items))
-
-	for i := range otherEventConfigs.Items {
-		other := &otherEventConfigs.Items[i]
-		if types.Equals(other, obj) {
+	var sourceZones []*adminv1.Zone
+	for i := range eventConfigs.Items {
+		other := &eventConfigs.Items[i]
+		if types.Equals(other, obj) || !other.IsProxy() {
 			continue
 		}
-		otherZone, zoneErr := util.GetZone(ctx, other.Spec.Zone.K8s())
-		if zoneErr != nil {
-			return errors.Wrapf(zoneErr, "failed to get zone for other EventConfig %q", other.Name)
+		if other.Spec.Proxy.TargetZone.Name != myZone.Name {
+			continue
 		}
-		otherZones = append(otherZones, otherZone)
+		sourceZone, err := util.GetZone(ctx, other.Spec.Zone.K8s())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get zone for proxy EventConfig %q", other.Name)
+		}
+		sourceZones = append(sourceZones, sourceZone)
 	}
 
-	logger.V(1).Info("Creating proxy voyager Routes for other zones", "count", len(otherZones))
-	routes, err := util.CreateVoyagerProxyRoutes(ctx, &obj.Spec.Mesh, myZone, otherZones, util.WithOwner(obj))
+	return sourceZones, nil
+}
+
+func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone, meshCfg *eventv1.MeshConfig) error {
+	logger := log.FromContext(ctx)
+
+	realmName := myZone.Status.RealmName
+
+	// realPeerZones excludes proxy peers (they run no local Voyager backend, so there
+	// is no primary Route to point a proxy Route at). inboundPeerZones are the peers that
+	// mesh with this zone and are therefore allowed to read its Voyager primary; only their
+	// LMS issuers are trusted on the primary Route.
+	realPeerZones, _, inboundPeerZones, err := h.listMeshPeerZones(ctx, obj)
+	if err != nil {
+		return err
+	}
+
+	// Proxy routes use the source zone's LMS issuer (mesh-client authentication)
+	var proxyTrustedIssuers []string
+	if myZone.Status.Links.LmsIssuer != "" {
+		proxyTrustedIssuers = []string{myZone.Status.Links.LmsIssuer}
+	}
+
+	logger.V(1).Info("Creating proxy voyager Routes for other zones", "count", len(realPeerZones))
+	routes, err := util.CreateVoyagerProxyRoutes(ctx, meshCfg, myZone, realPeerZones,
+		util.WithOwner(obj),
+		util.WithTrustedIssuers(proxyTrustedIssuers),
+		util.WithRealmName(realmName),
+	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create voyager proxy Routes")
 	}
@@ -290,16 +468,103 @@ func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *event
 
 	for zoneName, route := range routes {
 		obj.Status.ProxyVoyagerRoutes = append(obj.Status.ProxyVoyagerRoutes, *types.ObjectRefFromObject(route))
-		obj.Status.ProxyVoyagerURLs[zoneName] = route.Spec.Downstreams[0].Url()
+		obj.Status.ProxyVoyagerURLs[zoneName] = util.RouteDownstreamURL(route)
 	}
 
-	isProxyTarget := len(obj.Status.ProxyVoyagerRoutes) > 0
-	myVoyagerRoute, err := util.CreateVoyagerRoute(ctx, myZone, obj, util.WithOwner(obj), util.WithProxyTarget(isProxyTarget))
+	// Primary voyager route trust includes this zone's IDP issuer plus the LMS issuers of
+	// the inbound peers (proxy and non-proxy) that mesh with this zone. isProxyTarget is
+	// true only when at least one such peer exists; a zone with no inbound mesh partners
+	// exposes no mesh-client consumer and trusts no LMS issuer on its primary.
+	isProxyTarget := len(inboundPeerZones) > 0
+	primaryTrustedIssuers := collectPrimaryTrustedIssuers(myZone, inboundPeerZones, isProxyTarget)
+
+	myVoyagerRoute, err := util.CreateVoyagerRoute(ctx, myZone, obj,
+		util.WithOwner(obj),
+		util.WithProxyTarget(isProxyTarget),
+		util.WithTrustedIssuers(primaryTrustedIssuers),
+		util.WithRealmName(realmName),
+	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create voyager Route for own zone")
 	}
 	obj.Status.VoyagerRoute = types.ObjectRefFromObject(myVoyagerRoute)
-	obj.Status.VoyagerURL = myVoyagerRoute.Spec.Downstreams[0].Url()
+	obj.Status.VoyagerURL = util.RouteDownstreamURL(myVoyagerRoute)
+
+	return nil
+}
+
+// createProxyVoyagerRoutes builds Voyager Routes for a proxy zone. The proxy zone runs no
+// Voyager backend, so its own-zone Route forwards to the target zone's gateway. It also
+// participates in the full mesh: it builds proxy Routes to every other meshed non-proxy
+// zone, exactly like a local zone. If the target zone exposes no Voyager backend, no
+// Voyager Routes are created.
+func (h *EventConfigHandler) createProxyVoyagerRoutes(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone, meshCfg *eventv1.MeshConfig) error {
+	logger := log.FromContext(ctx)
+
+	realmName := myZone.Status.RealmName
+	targetZoneName := obj.Spec.Proxy.TargetZone.Name
+
+	targetCfg, err := util.GetEventConfigForZone(ctx, targetZoneName)
+	if err != nil {
+		return err // BlockedError propagates so the proxy requeues until the target is ready
+	}
+	if !targetCfg.IsLocal() {
+		return ctrlerrors.BlockedErrorf("target zone %q of proxy EventConfig %q must be a local (non-proxy) zone", targetZoneName, obj.Name)
+	}
+	if targetCfg.Spec.Local.VoyagerApiUrl == "" {
+		logger.V(0).Info("Target zone exposes no Voyager backend; skipping Voyager Routes for proxy zone", "targetZone", targetZoneName)
+		return nil
+	}
+
+	targetZone, err := util.GetZone(ctx, targetCfg.Spec.Zone.K8s())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get target zone %q", targetZoneName)
+	}
+
+	// Own-zone Route: serves /horizon/voyager/v1 + /horizon-{myZone}/voyager/v1, forwarding to the target
+	// zone's gateway. Readers in this zone authenticate with IDP tokens (local trust).
+	var ownTrustedIssuers []string
+	if myZone.Status.Links.Issuer != "" {
+		ownTrustedIssuers = []string{myZone.Status.Links.Issuer}
+	}
+	ownRoute, err := util.CreateProxyLocalVoyagerRoute(ctx, myZone, targetZone,
+		util.WithOwner(obj),
+		util.WithTrustedIssuers(ownTrustedIssuers),
+		util.WithRealmName(realmName),
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to create own proxy voyager Route")
+	}
+	obj.Status.VoyagerRoute = types.ObjectRefFromObject(ownRoute)
+	obj.Status.VoyagerURL = util.RouteDownstreamURL(ownRoute)
+
+	// Mesh Routes: proxy to every other meshed non-proxy zone, like a local zone.
+	// Proxy routes authenticate to the target primary with this zone's LMS (mesh) issuer.
+	realPeerZones, _, _, err := h.listMeshPeerZones(ctx, obj)
+	if err != nil {
+		return err
+	}
+
+	var proxyTrustedIssuers []string
+	if myZone.Status.Links.LmsIssuer != "" {
+		proxyTrustedIssuers = []string{myZone.Status.Links.LmsIssuer}
+	}
+
+	logger.V(1).Info("Creating proxy voyager Routes for other zones", "count", len(realPeerZones))
+	routes, err := util.CreateVoyagerProxyRoutes(ctx, meshCfg, myZone, realPeerZones,
+		util.WithOwner(obj),
+		util.WithTrustedIssuers(proxyTrustedIssuers),
+		util.WithRealmName(realmName),
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to create voyager proxy Routes")
+	}
+	obj.Status.ProxyVoyagerRoutes = make([]types.ObjectRef, 0, len(routes))
+	obj.Status.ProxyVoyagerURLs = make(map[string]string, len(routes))
+	for zoneName, route := range routes {
+		obj.Status.ProxyVoyagerRoutes = append(obj.Status.ProxyVoyagerRoutes, *types.ObjectRefFromObject(route))
+		obj.Status.ProxyVoyagerURLs[zoneName] = util.RouteDownstreamURL(route)
+	}
 
 	return nil
 }
@@ -322,7 +587,7 @@ func (h *EventConfigHandler) createEventStore(ctx context.Context, obj *eventv1.
 		}
 
 		eventStore.Spec = pubsubv1.EventStoreSpec{
-			Url:          obj.Spec.Admin.Url,
+			Url:          obj.Spec.Local.Admin.Url,
 			TokenUrl:     tokenUrl,
 			ClientId:     identityClient.Spec.ClientId,
 			ClientSecret: identityClient.Spec.ClientSecret,
@@ -336,4 +601,145 @@ func (h *EventConfigHandler) createEventStore(ctx context.Context, obj *eventv1.
 	}
 
 	return eventStore, nil
+}
+
+// createProxyEventStore creates a pubsub.EventStore for a proxy zone. A proxy zone
+// still needs its own EventStore so the pubsub runtime can provision Subscriptions
+// for consumers in this zone; those Subscriptions are configured against the target
+// zone's backend. Instead of a local admin client, it authenticates to the target
+// zone's configuration backend using the target zone's admin client credentials and
+// admin realm token endpoint.
+func (h *EventConfigHandler) createProxyEventStore(ctx context.Context, obj *eventv1.EventConfig) (*pubsubv1.EventStore, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	targetZoneName := obj.Spec.Proxy.TargetZone.Name
+
+	targetCfg, err := util.GetEventConfigForZone(ctx, targetZoneName)
+	if err != nil {
+		return nil, err // BlockedError propagates so the proxy requeues until the target is ready
+	}
+	if !targetCfg.IsLocal() {
+		return nil, ctrlerrors.BlockedErrorf("target zone %q of proxy EventConfig %q must be a local (non-proxy) zone", targetZoneName, obj.Name)
+	}
+
+	targetZone, err := util.GetZone(ctx, targetCfg.Spec.Zone.K8s())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get target zone %q", targetZoneName)
+	}
+
+	adminCfg := targetCfg.Spec.Local.Admin
+	tokenUrl, err := h.resolveAdminTokenUrl(ctx, &adminCfg.Client, targetZone)
+	if err != nil {
+		return nil, err
+	}
+
+	eventStore := &pubsubv1.EventStore{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      obj.Name,
+			Namespace: obj.Namespace,
+		},
+	}
+
+	mutator := func() error {
+		if refErr := controllerutil.SetControllerReference(obj, eventStore, c.Scheme()); refErr != nil {
+			return errors.Wrap(refErr, "failed to set controller reference")
+		}
+
+		eventStore.Spec = pubsubv1.EventStoreSpec{
+			Url:          adminCfg.Url,
+			TokenUrl:     tokenUrl,
+			ClientId:     adminCfg.Client.ClientId,
+			ClientSecret: adminCfg.Client.ClientSecret,
+		}
+		return nil
+	}
+
+	if _, err := c.CreateOrUpdate(ctx, eventStore, mutator); err != nil {
+		return nil, errors.Wrapf(err, "failed to create or update proxy EventStore %s", eventStore.Name)
+	}
+
+	return eventStore, nil
+}
+
+// resolveAdminTokenUrl resolves the OAuth2 token endpoint for an admin client config,
+// falling back to the zone's internal identity realm when no realm is explicitly set.
+func (h *EventConfigHandler) resolveAdminTokenUrl(ctx context.Context, clientCfg *eventv1.ClientConfig, zone *adminv1.Zone) (string, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	realmRef := clientCfg.Realm
+	if realmRef.IsEmpty() {
+		if zone.Status.InternalIdentityRealm == nil {
+			return "", ctrlerrors.BlockedErrorf("Zone %q does not have an internal identity realm yet", zone.Name)
+		}
+		realmRef = *zone.Status.InternalIdentityRealm
+	}
+
+	realm := &identityv1.Realm{}
+	if err := c.Get(ctx, realmRef.K8s(), realm); err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return "", ctrlerrors.BlockedErrorf("referenced identity Realm %q not found", realmRef.String())
+		}
+		return "", errors.Wrapf(err, "failed to get identity Realm %q", realmRef.String())
+	}
+	if realm.Status.IssuerUrl == "" {
+		return "", ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", realm.Name)
+	}
+
+	return realm.Status.IssuerUrl + tokenUrlSuffix, nil
+}
+
+// createProxyPublishRoute creates the publish Route for a proxy zone as a proxy Route
+// pointing at the target zone's gateway. Local publishers authenticate with the zone's
+// IDP tokens on the downstream side; the gateway re-authenticates to the target with the
+// mesh client.
+func (h *EventConfigHandler) createProxyPublishRoute(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone) error {
+	targetZone, err := util.GetZone(ctx, obj.Spec.Proxy.TargetZone.K8s())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get target zone %q", obj.Spec.Proxy.TargetZone.String())
+	}
+
+	realmName := myZone.Status.RealmName
+
+	// Publishers access the proxy publish route with IDP tokens, same as a primary route.
+	var trustedIssuers []string
+	if myZone.Status.Links.Issuer != "" {
+		trustedIssuers = []string{myZone.Status.Links.Issuer}
+	}
+
+	route, err := util.CreatePublishProxyRoute(ctx, myZone, targetZone,
+		util.WithOwner(obj),
+		util.WithTrustedIssuers(trustedIssuers),
+		util.WithRealmName(realmName),
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to create proxy publish Route")
+	}
+	obj.Status.PublishRoute = types.ObjectRefFromObject(route)
+	obj.Status.PublishURL = util.RouteDownstreamURL(route)
+
+	return nil
+}
+
+// collectPrimaryTrustedIssuers builds the list of trusted token issuers for a primary event route.
+// It includes the zone's own IDP issuer (for consumer access) and the LMS issuers from
+// all cross-zone proxy zones (for mesh-client access from proxy routes).
+func collectPrimaryTrustedIssuers(myZone *adminv1.Zone, otherZones []*adminv1.Zone, isProxyTarget bool) []string {
+	var issuers []string
+
+	// Zone's IDP issuer: all event routes are accessed by external services
+	if myZone.Status.Links.Issuer != "" {
+		issuers = append(issuers, myZone.Status.Links.Issuer)
+	}
+
+	// LMS issuers from proxy zones: when cross-zone proxies forward traffic
+	// to this primary route, they present LMS tokens from their respective zones
+	if isProxyTarget {
+		for _, otherZone := range otherZones {
+			if otherZone.Status.Links.LmsIssuer != "" {
+				issuers = append(issuers, otherZone.Status.Links.LmsIssuer)
+			}
+		}
+	}
+
+	return issuers
 }

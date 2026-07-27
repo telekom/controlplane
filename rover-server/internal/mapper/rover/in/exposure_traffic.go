@@ -26,7 +26,7 @@ func mapExposureTraffic(in api.ApiExposure, out *roverv1.ApiExposure) {
 
 	// Only create a Failover object if we have zones
 	if len(failoverZones) > 0 {
-		out.Traffic.Failover = &roverv1.Failover{
+		out.Traffic.Failover = &roverv1.ProviderFailover{
 			Zones: failoverZones,
 		}
 	}

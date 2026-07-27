@@ -2182,7 +2182,16 @@ components:
       properties:
         zone:
           type: string
+          deprecated: true
+          description: 'Deprecated: first failover zone only. Use `zones` instead.'
           example: aws
+        zones:
+          type: array
+          items:
+            type: string
+          example:
+            - aws
+            - gcp
     LoadBalancing:
       type: object
       readOnly: true

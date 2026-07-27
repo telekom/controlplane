@@ -51,6 +51,8 @@ func (t *Translator) Translate(_ context.Context, obj *orgv1.Team) (*TeamData, e
 		GroupName:     obj.Spec.Group,
 		TeamToken:     obj.GetTeamToken(),
 		Members:       members,
+		DisplayName:   obj.Spec.DisplayName,
+		Description:   obj.Spec.Description,
 	}, nil
 }
 

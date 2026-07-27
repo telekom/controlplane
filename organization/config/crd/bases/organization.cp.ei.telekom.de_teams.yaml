@@ -51,6 +51,14 @@ spec:
                 - Customer
                 - Infrastructure
                 type: string
+              description:
+                description: Description of a team
+                maxLength: 256
+                type: string
+              displayName:
+                description: DisplayName is the name of the team, that should be displayed
+                  in UI if available
+                type: string
               email:
                 description: Email is the mail of the team
                 format: email

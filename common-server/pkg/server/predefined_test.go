@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/test/mocks"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -40,7 +41,13 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 			Op:    store.OpEqual,
 			Value: "$<key1>",
 		})
-		predefinedController.Register(app.Group("/tests"), server.ControllerOpts{Prefix: "/tests"})
+		predefinedController.Register(app.Group("/tests"), server.ControllerOpts{
+			Prefix: "/tests",
+			Security: security.SecurityOpts{
+				Mode:            security.ModeMock,
+				CheckAccessOpts: permissiveCheckAccessOpts,
+			},
+		})
 	})
 
 	AfterEach(func() {
@@ -88,6 +95,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 
 			By("Calling the predefined controller endpoint")
 			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -117,6 +125,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 
 			By("Calling the predefined controller endpoint - first call")
 			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -143,6 +152,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 
 			By("Calling the predefined controller endpoint - second call")
 			req = httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value5_6", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err = app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -169,6 +179,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 
 			By("Calling the predefined controller endpoint - third call")
 			req = httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=bla", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err = app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -198,6 +209,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 
 			By("Calling the predefined controller endpoint")
 			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2&filter=spec.key2=~value2_2&limit=22", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -249,7 +261,13 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 			Op:    store.OpEqual,
 			Value: "value1_1",
 		})
-		predefinedController.Register(app.Group("/tests"), server.ControllerOpts{Prefix: "/tests"})
+		predefinedController.Register(app.Group("/tests"), server.ControllerOpts{
+			Prefix: "/tests",
+			Security: security.SecurityOpts{
+				Mode:            security.ModeMock,
+				CheckAccessOpts: permissiveCheckAccessOpts,
+			},
+		})
 	})
 
 	AfterEach(func() {
@@ -310,6 +328,7 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 		It("should construct store.ListOpts properly - use hardcoded value", func() {
 			By("Calling the predefined controller endpoint")
 			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Hardcoded", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -328,6 +347,7 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 		It("should construct store.ListOpts properly - dont replace hardcoded filter", func() {
 			By("Calling the predefined controller endpoint + custom query params")
 			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Hardcoded?filter=spec.key1==value9_9", nil)
+			req.Header.Set("Authorization", adminBearerToken)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))

@@ -37,6 +37,10 @@ const (
 	FieldName = "name"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
+	// FieldDisplayName holds the string denoting the displayname field in the database.
+	FieldDisplayName = "display_name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
 	// FieldTeamToken holds the string denoting the team_token field in the database.
@@ -101,6 +105,8 @@ var Columns = []string{
 	FieldNamespace,
 	FieldName,
 	FieldEmail,
+	FieldDisplayName,
+	FieldDescription,
 	FieldCategory,
 	FieldTeamToken,
 }
@@ -245,6 +251,16 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByEmail orders the results by the email field.
 func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEmail, opts...).ToFunc()
+}
+
+// ByDisplayName orders the results by the displayName field.
+func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByCategory orders the results by the category field.

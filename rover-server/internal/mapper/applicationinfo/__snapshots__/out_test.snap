@@ -82,7 +82,7 @@
  },
  "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
  "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
- "status": "blocked",
+ "status": "processing",
  "subscriptions": null,
  "variables": null,
  "warnings": null,

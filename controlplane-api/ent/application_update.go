@@ -13,15 +13,18 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApplicationUpdate is the builder for updating Application entities.
@@ -265,6 +268,44 @@ func (_u *ApplicationUpdate) ClearSecretRotationMessage() *ApplicationUpdate {
 	return _u
 }
 
+// SetExternalIds sets the "external_ids" field.
+func (_u *ApplicationUpdate) SetExternalIds(v []model.ExternalId) *ApplicationUpdate {
+	_u.mutation.SetExternalIds(v)
+	return _u
+}
+
+// AppendExternalIds appends value to the "external_ids" field.
+func (_u *ApplicationUpdate) AppendExternalIds(v []model.ExternalId) *ApplicationUpdate {
+	_u.mutation.AppendExternalIds(v)
+	return _u
+}
+
+// ClearExternalIds clears the value of the "external_ids" field.
+func (_u *ApplicationUpdate) ClearExternalIds() *ApplicationUpdate {
+	_u.mutation.ClearExternalIds()
+	return _u
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (_u *ApplicationUpdate) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpdate {
+	_u.mutation.SetIPRestrictions(v)
+	return _u
+}
+
+// SetNillableIPRestrictions sets the "ip_restrictions" field if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillableIPRestrictions(v *model.IpRestrictions) *ApplicationUpdate {
+	if v != nil {
+		_u.SetIPRestrictions(*v)
+	}
+	return _u
+}
+
+// ClearIPRestrictions clears the value of the "ip_restrictions" field.
+func (_u *ApplicationUpdate) ClearIPRestrictions() *ApplicationUpdate {
+	_u.mutation.ClearIPRestrictions()
+	return _u
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by ID.
 func (_u *ApplicationUpdate) SetZoneID(id int) *ApplicationUpdate {
 	_u.mutation.SetZoneID(id)
@@ -345,6 +386,25 @@ func (_u *ApplicationUpdate) AddSubscribedEvents(v ...*EventSubscription) *Appli
 		ids[i] = v[i].ID
 	}
 	return _u.AddSubscribedEventIDs(ids...)
+}
+
+// SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
+func (_u *ApplicationUpdate) SetPermissionSetID(id int) *ApplicationUpdate {
+	_u.mutation.SetPermissionSetID(id)
+	return _u
+}
+
+// SetNillablePermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillablePermissionSetID(id *int) *ApplicationUpdate {
+	if id != nil {
+		_u = _u.SetPermissionSetID(*id)
+	}
+	return _u
+}
+
+// SetPermissionSet sets the "permission_set" edge to the PermissionSet entity.
+func (_u *ApplicationUpdate) SetPermissionSet(v *PermissionSet) *ApplicationUpdate {
+	return _u.SetPermissionSetID(v.ID)
 }
 
 // Mutation returns the ApplicationMutation object of the builder.
@@ -446,6 +506,12 @@ func (_u *ApplicationUpdate) RemoveSubscribedEvents(v ...*EventSubscription) *Ap
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscribedEventIDs(ids...)
+}
+
+// ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
+func (_u *ApplicationUpdate) ClearPermissionSet() *ApplicationUpdate {
+	_u.mutation.ClearPermissionSet()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -613,6 +679,23 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.SecretRotationMessageCleared() {
 		_spec.ClearField(application.FieldSecretRotationMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExternalIds(); ok {
+		_spec.SetField(application.FieldExternalIds, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedExternalIds(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, application.FieldExternalIds, value)
+		})
+	}
+	if _u.mutation.ExternalIdsCleared() {
+		_spec.ClearField(application.FieldExternalIds, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.IPRestrictions(); ok {
+		_spec.SetField(application.FieldIPRestrictions, field.TypeJSON, value)
+	}
+	if _u.mutation.IPRestrictionsCleared() {
+		_spec.ClearField(application.FieldIPRestrictions, field.TypeJSON)
 	}
 	if _u.mutation.ZoneCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -845,6 +928,35 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PermissionSetCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PermissionSetIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1100,6 +1212,44 @@ func (_u *ApplicationUpdateOne) ClearSecretRotationMessage() *ApplicationUpdateO
 	return _u
 }
 
+// SetExternalIds sets the "external_ids" field.
+func (_u *ApplicationUpdateOne) SetExternalIds(v []model.ExternalId) *ApplicationUpdateOne {
+	_u.mutation.SetExternalIds(v)
+	return _u
+}
+
+// AppendExternalIds appends value to the "external_ids" field.
+func (_u *ApplicationUpdateOne) AppendExternalIds(v []model.ExternalId) *ApplicationUpdateOne {
+	_u.mutation.AppendExternalIds(v)
+	return _u
+}
+
+// ClearExternalIds clears the value of the "external_ids" field.
+func (_u *ApplicationUpdateOne) ClearExternalIds() *ApplicationUpdateOne {
+	_u.mutation.ClearExternalIds()
+	return _u
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (_u *ApplicationUpdateOne) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpdateOne {
+	_u.mutation.SetIPRestrictions(v)
+	return _u
+}
+
+// SetNillableIPRestrictions sets the "ip_restrictions" field if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillableIPRestrictions(v *model.IpRestrictions) *ApplicationUpdateOne {
+	if v != nil {
+		_u.SetIPRestrictions(*v)
+	}
+	return _u
+}
+
+// ClearIPRestrictions clears the value of the "ip_restrictions" field.
+func (_u *ApplicationUpdateOne) ClearIPRestrictions() *ApplicationUpdateOne {
+	_u.mutation.ClearIPRestrictions()
+	return _u
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by ID.
 func (_u *ApplicationUpdateOne) SetZoneID(id int) *ApplicationUpdateOne {
 	_u.mutation.SetZoneID(id)
@@ -1180,6 +1330,25 @@ func (_u *ApplicationUpdateOne) AddSubscribedEvents(v ...*EventSubscription) *Ap
 		ids[i] = v[i].ID
 	}
 	return _u.AddSubscribedEventIDs(ids...)
+}
+
+// SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
+func (_u *ApplicationUpdateOne) SetPermissionSetID(id int) *ApplicationUpdateOne {
+	_u.mutation.SetPermissionSetID(id)
+	return _u
+}
+
+// SetNillablePermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillablePermissionSetID(id *int) *ApplicationUpdateOne {
+	if id != nil {
+		_u = _u.SetPermissionSetID(*id)
+	}
+	return _u
+}
+
+// SetPermissionSet sets the "permission_set" edge to the PermissionSet entity.
+func (_u *ApplicationUpdateOne) SetPermissionSet(v *PermissionSet) *ApplicationUpdateOne {
+	return _u.SetPermissionSetID(v.ID)
 }
 
 // Mutation returns the ApplicationMutation object of the builder.
@@ -1281,6 +1450,12 @@ func (_u *ApplicationUpdateOne) RemoveSubscribedEvents(v ...*EventSubscription) 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscribedEventIDs(ids...)
+}
+
+// ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
+func (_u *ApplicationUpdateOne) ClearPermissionSet() *ApplicationUpdateOne {
+	_u.mutation.ClearPermissionSet()
+	return _u
 }
 
 // Where appends a list predicates to the ApplicationUpdate builder.
@@ -1478,6 +1653,23 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	}
 	if _u.mutation.SecretRotationMessageCleared() {
 		_spec.ClearField(application.FieldSecretRotationMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExternalIds(); ok {
+		_spec.SetField(application.FieldExternalIds, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedExternalIds(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, application.FieldExternalIds, value)
+		})
+	}
+	if _u.mutation.ExternalIdsCleared() {
+		_spec.ClearField(application.FieldExternalIds, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.IPRestrictions(); ok {
+		_spec.SetField(application.FieldIPRestrictions, field.TypeJSON, value)
+	}
+	if _u.mutation.IPRestrictionsCleared() {
+		_spec.ClearField(application.FieldIPRestrictions, field.TypeJSON)
 	}
 	if _u.mutation.ZoneCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1710,6 +1902,35 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PermissionSetCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PermissionSetIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

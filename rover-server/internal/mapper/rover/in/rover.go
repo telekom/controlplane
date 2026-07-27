@@ -11,6 +11,7 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
@@ -35,16 +36,20 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 	}
 
 	apiRover := &api.Rover{
-		Authentication: in.Authentication,
-		Authorization:  in.Authorization,
-		Exposures:      in.Exposures,
-		Icto:           in.Icto,
-		Psiid:          in.Psiid,
-		IpRestrictions: in.IpRestrictions,
-		Subscriptions:  in.Subscriptions,
-		Zone:           in.Zone,
+		Authentication:  in.Authentication,
+		Authorization:   in.Authorization,
+		Exposures:       in.Exposures,
+		Icto:            in.Icto,
+		Psiid:           in.Psiid,
+		IpRestrictions:  in.IpRestrictions,
+		Subscriptions:   in.Subscriptions,
+		Zone:            in.Zone,
+		FailoverEnabled: in.FailoverEnabled,
 	}
 	if err = MapRover(apiRover, res); err != nil {
+		if problems.IsValidationError(err) {
+			return res, err
+		}
 		return res, errors.Wrap(err, "failed to map rover")
 	}
 
@@ -79,6 +84,12 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 		Icto:  in.Icto,
 	})
 	mapAuthentication(in, out)
+
+	// Consumer Failover
+	if in.FailoverEnabled {
+		out.EnableFailoverOnAllSubscriptions()
+	}
+
 	return nil
 }
 
@@ -99,6 +110,9 @@ func mapExposures(in *api.Rover, out *roverv1.Rover) error {
 func mapSubscriptions(in *api.Rover, out *roverv1.Rover) error {
 	out.Spec.Subscriptions = make([]roverv1.Subscription, len(in.Subscriptions))
 	for i := range out.Spec.Subscriptions {
+		if err := validateSubscription(&in.Subscriptions[i]); err != nil {
+			return err
+		}
 		err := mapSubscription(&in.Subscriptions[i], &out.Spec.Subscriptions[i])
 		if err != nil {
 			return errors.Wrap(err, "failed to map subscription")

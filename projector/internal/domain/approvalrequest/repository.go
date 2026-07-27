@@ -115,7 +115,8 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		SetDecider(data.Decider).
 		SetDeciderTeamName(data.Decider.TeamName).
 		SetDecisions(data.Decisions).
-		SetAvailableTransitions(data.AvailableTransitions)
+		SetAvailableTransitions(data.AvailableTransitions).
+		SetRequestedScopes(data.AccessScopes)
 
 	// Set the correct subscription FK based on target kind.
 	if data.TargetKind == TargetKindEventSubscription {
@@ -129,7 +130,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		UpdateNewValues().
 		ID(ctx)
 	if upsertErr != nil {
-		if infrastructure.IsFKViolation(upsertErr) {
+		if infrastructure.IsFKViolation(upsertErr, "") {
 			r.evictSubscriptionCache(data)
 			return runtime.WrapDependencyMissing("api_subscription",
 				data.SubscriptionNamespace+"/"+data.SubscriptionName)
@@ -151,7 +152,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		update = update.SetAPISubscriptionID(subID).ClearEventSubscription()
 	}
 	if err := update.Exec(ctx); err != nil {
-		if infrastructure.IsFKViolation(err) {
+		if infrastructure.IsFKViolation(err, "") {
 			r.evictSubscriptionCache(data)
 			return runtime.WrapDependencyMissing("api_subscription",
 				data.SubscriptionNamespace+"/"+data.SubscriptionName)

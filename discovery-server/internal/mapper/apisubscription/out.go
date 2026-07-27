@@ -83,25 +83,36 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 }
 
 func mapFailover(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse, zoneStore store.ObjectStore[*adminv1.Zone]) {
-	if in.Spec.Traffic.Failover == nil || len(in.Spec.Traffic.Failover.Zones) == 0 {
+	if in.Spec.Traffic.Failover == nil || !in.Spec.Traffic.Failover.Enabled {
+		return
+	}
+	if len(in.Status.FailoverRoutes) == 0 {
 		return
 	}
 
-	failover := make(api.SubscriptionFailover, 0, len(in.Spec.Traffic.Failover.Zones))
-	for _, zoneRef := range in.Spec.Traffic.Failover.Zones {
+	// Build namespace→zone lookup from all zones.
+	zones, err := zoneStore.List(ctx, store.ListOpts{Limit: 100})
+	if err != nil || zones == nil {
+		return
+	}
+	nsByZone := make(map[string]*adminv1.Zone, len(zones.Items))
+	for i := range zones.Items {
+		nsByZone[zones.Items[i].Status.Namespace] = zones.Items[i]
+	}
+
+	failover := make(api.SubscriptionFailover, 0, len(in.Status.FailoverRoutes))
+	for _, routeRef := range in.Status.FailoverRoutes {
+		zone, ok := nsByZone[routeRef.Namespace]
+		if !ok {
+			continue
+		}
 		entry := struct {
 			GatewayUrl string `json:"gatewayUrl,omitempty,omitzero"`
 			Zone       string `json:"zone,omitempty,omitzero"`
 		}{
-			Zone: zoneRef.Name,
+			Zone:       zone.GetName(),
+			GatewayUrl: joinURL(gatewayBaseUrl(zone, true), in.Spec.ApiBasePath),
 		}
-
-		// Resolve gateway URL for the failover zone.
-		zone, err := zoneStore.Get(ctx, zoneRef.Namespace, zoneRef.Name)
-		if err == nil && zone != nil {
-			entry.GatewayUrl = joinURL(zone.Status.Links.Url, in.Spec.ApiBasePath)
-		}
-
 		failover = append(failover, entry)
 	}
 	out.Failover = failover
@@ -112,7 +123,7 @@ func mapGatewayUrl(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiS
 	if err != nil || zone == nil {
 		return
 	}
-	out.GatewayUrl = joinURL(zone.Status.Links.Url, in.Spec.ApiBasePath)
+	out.GatewayUrl = joinURL(gatewayBaseUrl(zone, in.HasFailover()), in.Spec.ApiBasePath)
 }
 
 func mapTeamAndApplication(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse, appStore store.ObjectStore[*applicationv1.Application]) {
@@ -168,4 +179,17 @@ func mapApproval(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSub
 // TODO: use url.JoinPath(base, path)
 func joinURL(base, path string) string {
 	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(path, "/")
+}
+
+// gatewayBaseUrl returns the appropriate gateway base URL for a zone.
+// When failover is enabled, it selects the ConsumerFailover preset URL;
+// otherwise it falls back to the default URL from Status.Links.
+func gatewayBaseUrl(zone *adminv1.Zone, failover bool) string {
+	if failover {
+		preset, err := zone.SelectGatewayPreset(adminv1.FeatureConsumerFailover)
+		if err == nil {
+			return preset.GetDefaultUrl()
+		}
+	}
+	return zone.Status.Links.Url
 }

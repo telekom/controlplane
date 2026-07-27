@@ -51,13 +51,16 @@ var _ = Describe("Secret", func() {
 
 			secretMap, err := secrets.GetSecrets()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(secretMap).To(HaveLen(2))
+			Expect(secretMap).To(HaveLen(3))
 			Expect(secretMap).To(HaveKey("clientSecret"))
 			Expect(secretMap).To(HaveKey("rotatedClientSecret"))
+			Expect(secretMap).To(HaveKey("externalSecrets"))
 			Expect(secretMap["clientSecret"].Value()).ToNot(BeEmpty())
 			Expect(secretMap["clientSecret"].AllowChange()).To(BeFalse())
 			Expect(secretMap["rotatedClientSecret"].Value()).To(Equal("NOT_USED"))
 			Expect(secretMap["rotatedClientSecret"].AllowChange()).To(BeFalse())
+			Expect(secretMap["externalSecrets"].IsEmpty()).To(BeTrue())
+			Expect(secretMap["externalSecrets"].AllowChange()).To(BeFalse())
 		})
 	})
 

@@ -25,6 +25,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -51,6 +52,7 @@ const (
 	TypeEventType         = "EventType"
 	TypeGroup             = "Group"
 	TypeMember            = "Member"
+	TypePermissionSet     = "PermissionSet"
 	TypeTeam              = "Team"
 	TypeZone              = "Zone"
 )
@@ -1261,6 +1263,8 @@ type ApiExposureMutation struct {
 	appendfeatures       []string
 	upstreams            *[]model.Upstream
 	appendupstreams      []model.Upstream
+	security             *model.ApiExposureSecurity
+	traffic              *model.Traffic
 	approval_config      *model.ApprovalConfig
 	api_version          *string
 	clearedFields        map[string]struct{}
@@ -1852,6 +1856,104 @@ func (m *ApiExposureMutation) ResetUpstreams() {
 	m.appendupstreams = nil
 }
 
+// SetSecurity sets the "security" field.
+func (m *ApiExposureMutation) SetSecurity(mes model.ApiExposureSecurity) {
+	m.security = &mes
+}
+
+// Security returns the value of the "security" field in the mutation.
+func (m *ApiExposureMutation) Security() (r model.ApiExposureSecurity, exists bool) {
+	v := m.security
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecurity returns the old "security" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldSecurity(ctx context.Context) (v model.ApiExposureSecurity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
+	}
+	return oldValue.Security, nil
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (m *ApiExposureMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[apiexposure.FieldSecurity] = struct{}{}
+}
+
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *ApiExposureMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldSecurity]
+	return ok
+}
+
+// ResetSecurity resets all changes to the "security" field.
+func (m *ApiExposureMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, apiexposure.FieldSecurity)
+}
+
+// SetTraffic sets the "traffic" field.
+func (m *ApiExposureMutation) SetTraffic(value model.Traffic) {
+	m.traffic = &value
+}
+
+// Traffic returns the value of the "traffic" field in the mutation.
+func (m *ApiExposureMutation) Traffic() (r model.Traffic, exists bool) {
+	v := m.traffic
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTraffic returns the old "traffic" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldTraffic(ctx context.Context) (v model.Traffic, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTraffic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
+	}
+	return oldValue.Traffic, nil
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (m *ApiExposureMutation) ClearTraffic() {
+	m.traffic = nil
+	m.clearedFields[apiexposure.FieldTraffic] = struct{}{}
+}
+
+// TrafficCleared returns if the "traffic" field was cleared in this mutation.
+func (m *ApiExposureMutation) TrafficCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldTraffic]
+	return ok
+}
+
+// ResetTraffic resets all changes to the "traffic" field.
+func (m *ApiExposureMutation) ResetTraffic() {
+	m.traffic = nil
+	delete(m.clearedFields, apiexposure.FieldTraffic)
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (m *ApiExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
 	m.approval_config = &mc
@@ -2103,7 +2205,7 @@ func (m *ApiExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiExposureMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, apiexposure.FieldCreatedAt)
 	}
@@ -2136,6 +2238,12 @@ func (m *ApiExposureMutation) Fields() []string {
 	}
 	if m.upstreams != nil {
 		fields = append(fields, apiexposure.FieldUpstreams)
+	}
+	if m.security != nil {
+		fields = append(fields, apiexposure.FieldSecurity)
+	}
+	if m.traffic != nil {
+		fields = append(fields, apiexposure.FieldTraffic)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, apiexposure.FieldApprovalConfig)
@@ -2173,6 +2281,10 @@ func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Features()
 	case apiexposure.FieldUpstreams:
 		return m.Upstreams()
+	case apiexposure.FieldSecurity:
+		return m.Security()
+	case apiexposure.FieldTraffic:
+		return m.Traffic()
 	case apiexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	case apiexposure.FieldAPIVersion:
@@ -2208,6 +2320,10 @@ func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldFeatures(ctx)
 	case apiexposure.FieldUpstreams:
 		return m.OldUpstreams(ctx)
+	case apiexposure.FieldSecurity:
+		return m.OldSecurity(ctx)
+	case apiexposure.FieldTraffic:
+		return m.OldTraffic(ctx)
 	case apiexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	case apiexposure.FieldAPIVersion:
@@ -2298,6 +2414,20 @@ func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUpstreams(v)
 		return nil
+	case apiexposure.FieldSecurity:
+		v, ok := value.(model.ApiExposureSecurity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurity(v)
+		return nil
+	case apiexposure.FieldTraffic:
+		v, ok := value.(model.Traffic)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTraffic(v)
+		return nil
 	case apiexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
 		if !ok {
@@ -2354,6 +2484,12 @@ func (m *ApiExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(apiexposure.FieldActive) {
 		fields = append(fields, apiexposure.FieldActive)
 	}
+	if m.FieldCleared(apiexposure.FieldSecurity) {
+		fields = append(fields, apiexposure.FieldSecurity)
+	}
+	if m.FieldCleared(apiexposure.FieldTraffic) {
+		fields = append(fields, apiexposure.FieldTraffic)
+	}
 	if m.FieldCleared(apiexposure.FieldAPIVersion) {
 		fields = append(fields, apiexposure.FieldAPIVersion)
 	}
@@ -2382,6 +2518,12 @@ func (m *ApiExposureMutation) ClearField(name string) error {
 		return nil
 	case apiexposure.FieldActive:
 		m.ClearActive()
+		return nil
+	case apiexposure.FieldSecurity:
+		m.ClearSecurity()
+		return nil
+	case apiexposure.FieldTraffic:
+		m.ClearTraffic()
 		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ClearAPIVersion()
@@ -2426,6 +2568,12 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 		return nil
 	case apiexposure.FieldUpstreams:
 		m.ResetUpstreams()
+		return nil
+	case apiexposure.FieldSecurity:
+		m.ResetSecurity()
+		return nil
+	case apiexposure.FieldTraffic:
+		m.ResetTraffic()
 		return nil
 	case apiexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()
@@ -2572,8 +2720,8 @@ type ApiSubscriptionMutation struct {
 	name                     *string
 	base_path                *string
 	m2m_auth_method          *apisubscription.M2mAuthMethod
-	approved_scopes          *[]string
-	appendapproved_scopes    []string
+	gateway_url              *string
+	security                 **model.ApiSubscriptionSecurity
 	clearedFields            map[string]struct{}
 	owner                    *int
 	clearedowner             bool
@@ -3053,55 +3201,102 @@ func (m *ApiSubscriptionMutation) ResetM2mAuthMethod() {
 	m.m2m_auth_method = nil
 }
 
-// SetApprovedScopes sets the "approved_scopes" field.
-func (m *ApiSubscriptionMutation) SetApprovedScopes(s []string) {
-	m.approved_scopes = &s
-	m.appendapproved_scopes = nil
+// SetGatewayURL sets the "gateway_url" field.
+func (m *ApiSubscriptionMutation) SetGatewayURL(s string) {
+	m.gateway_url = &s
 }
 
-// ApprovedScopes returns the value of the "approved_scopes" field in the mutation.
-func (m *ApiSubscriptionMutation) ApprovedScopes() (r []string, exists bool) {
-	v := m.approved_scopes
+// GatewayURL returns the value of the "gateway_url" field in the mutation.
+func (m *ApiSubscriptionMutation) GatewayURL() (r string, exists bool) {
+	v := m.gateway_url
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldApprovedScopes returns the old "approved_scopes" field's value of the ApiSubscription entity.
+// OldGatewayURL returns the old "gateway_url" field's value of the ApiSubscription entity.
 // If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldApprovedScopes(ctx context.Context) (v []string, err error) {
+func (m *ApiSubscriptionMutation) OldGatewayURL(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldApprovedScopes is only allowed on UpdateOne operations")
+		return v, errors.New("OldGatewayURL is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldApprovedScopes requires an ID field in the mutation")
+		return v, errors.New("OldGatewayURL requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldApprovedScopes: %w", err)
+		return v, fmt.Errorf("querying old value for OldGatewayURL: %w", err)
 	}
-	return oldValue.ApprovedScopes, nil
+	return oldValue.GatewayURL, nil
 }
 
-// AppendApprovedScopes adds s to the "approved_scopes" field.
-func (m *ApiSubscriptionMutation) AppendApprovedScopes(s []string) {
-	m.appendapproved_scopes = append(m.appendapproved_scopes, s...)
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (m *ApiSubscriptionMutation) ClearGatewayURL() {
+	m.gateway_url = nil
+	m.clearedFields[apisubscription.FieldGatewayURL] = struct{}{}
 }
 
-// AppendedApprovedScopes returns the list of values that were appended to the "approved_scopes" field in this mutation.
-func (m *ApiSubscriptionMutation) AppendedApprovedScopes() ([]string, bool) {
-	if len(m.appendapproved_scopes) == 0 {
-		return nil, false
+// GatewayURLCleared returns if the "gateway_url" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) GatewayURLCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldGatewayURL]
+	return ok
+}
+
+// ResetGatewayURL resets all changes to the "gateway_url" field.
+func (m *ApiSubscriptionMutation) ResetGatewayURL() {
+	m.gateway_url = nil
+	delete(m.clearedFields, apisubscription.FieldGatewayURL)
+}
+
+// SetSecurity sets the "security" field.
+func (m *ApiSubscriptionMutation) SetSecurity(mss *model.ApiSubscriptionSecurity) {
+	m.security = &mss
+}
+
+// Security returns the value of the "security" field in the mutation.
+func (m *ApiSubscriptionMutation) Security() (r *model.ApiSubscriptionSecurity, exists bool) {
+	v := m.security
+	if v == nil {
+		return
 	}
-	return m.appendapproved_scopes, true
+	return *v, true
 }
 
-// ResetApprovedScopes resets all changes to the "approved_scopes" field.
-func (m *ApiSubscriptionMutation) ResetApprovedScopes() {
-	m.approved_scopes = nil
-	m.appendapproved_scopes = nil
+// OldSecurity returns the old "security" field's value of the ApiSubscription entity.
+// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiSubscriptionMutation) OldSecurity(ctx context.Context) (v *model.ApiSubscriptionSecurity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
+	}
+	return oldValue.Security, nil
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (m *ApiSubscriptionMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[apisubscription.FieldSecurity] = struct{}{}
+}
+
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldSecurity]
+	return ok
+}
+
+// ResetSecurity resets all changes to the "security" field.
+func (m *ApiSubscriptionMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, apisubscription.FieldSecurity)
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by id.
@@ -3363,7 +3558,7 @@ func (m *ApiSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, apisubscription.FieldCreatedAt)
 	}
@@ -3391,8 +3586,11 @@ func (m *ApiSubscriptionMutation) Fields() []string {
 	if m.m2m_auth_method != nil {
 		fields = append(fields, apisubscription.FieldM2mAuthMethod)
 	}
-	if m.approved_scopes != nil {
-		fields = append(fields, apisubscription.FieldApprovedScopes)
+	if m.gateway_url != nil {
+		fields = append(fields, apisubscription.FieldGatewayURL)
+	}
+	if m.security != nil {
+		fields = append(fields, apisubscription.FieldSecurity)
 	}
 	return fields
 }
@@ -3420,8 +3618,10 @@ func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.BasePath()
 	case apisubscription.FieldM2mAuthMethod:
 		return m.M2mAuthMethod()
-	case apisubscription.FieldApprovedScopes:
-		return m.ApprovedScopes()
+	case apisubscription.FieldGatewayURL:
+		return m.GatewayURL()
+	case apisubscription.FieldSecurity:
+		return m.Security()
 	}
 	return nil, false
 }
@@ -3449,8 +3649,10 @@ func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldBasePath(ctx)
 	case apisubscription.FieldM2mAuthMethod:
 		return m.OldM2mAuthMethod(ctx)
-	case apisubscription.FieldApprovedScopes:
-		return m.OldApprovedScopes(ctx)
+	case apisubscription.FieldGatewayURL:
+		return m.OldGatewayURL(ctx)
+	case apisubscription.FieldSecurity:
+		return m.OldSecurity(ctx)
 	}
 	return nil, fmt.Errorf("unknown ApiSubscription field %s", name)
 }
@@ -3523,12 +3725,19 @@ func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetM2mAuthMethod(v)
 		return nil
-	case apisubscription.FieldApprovedScopes:
-		v, ok := value.([]string)
+	case apisubscription.FieldGatewayURL:
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetApprovedScopes(v)
+		m.SetGatewayURL(v)
+		return nil
+	case apisubscription.FieldSecurity:
+		v, ok := value.(*model.ApiSubscriptionSecurity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurity(v)
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription field %s", name)
@@ -3569,6 +3778,12 @@ func (m *ApiSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(apisubscription.FieldEnvironment) {
 		fields = append(fields, apisubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(apisubscription.FieldGatewayURL) {
+		fields = append(fields, apisubscription.FieldGatewayURL)
+	}
+	if m.FieldCleared(apisubscription.FieldSecurity) {
+		fields = append(fields, apisubscription.FieldSecurity)
+	}
 	return fields
 }
 
@@ -3591,6 +3806,12 @@ func (m *ApiSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case apisubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case apisubscription.FieldGatewayURL:
+		m.ClearGatewayURL()
+		return nil
+	case apisubscription.FieldSecurity:
+		m.ClearSecurity()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription nullable field %s", name)
@@ -3627,8 +3848,11 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 	case apisubscription.FieldM2mAuthMethod:
 		m.ResetM2mAuthMethod()
 		return nil
-	case apisubscription.FieldApprovedScopes:
-		m.ResetApprovedScopes()
+	case apisubscription.FieldGatewayURL:
+		m.ResetGatewayURL()
+		return nil
+	case apisubscription.FieldSecurity:
+		m.ResetSecurity()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription field %s", name)
@@ -3818,6 +4042,9 @@ type ApplicationMutation struct {
 	current_expires_at       *time.Time
 	secret_rotation_phase    *application.SecretRotationPhase
 	secret_rotation_message  *string
+	external_ids             *[]model.ExternalId
+	appendexternal_ids       []model.ExternalId
+	ip_restrictions          *model.IpRestrictions
 	clearedFields            map[string]struct{}
 	zone                     *int
 	clearedzone              bool
@@ -3835,6 +4062,8 @@ type ApplicationMutation struct {
 	subscribed_events        map[int]struct{}
 	removedsubscribed_events map[int]struct{}
 	clearedsubscribed_events bool
+	permission_set           *int
+	clearedpermission_set    bool
 	done                     bool
 	oldValue                 func(context.Context) (*Application, error)
 	predicates               []predicate.Application
@@ -4559,6 +4788,120 @@ func (m *ApplicationMutation) ResetSecretRotationMessage() {
 	delete(m.clearedFields, application.FieldSecretRotationMessage)
 }
 
+// SetExternalIds sets the "external_ids" field.
+func (m *ApplicationMutation) SetExternalIds(mi []model.ExternalId) {
+	m.external_ids = &mi
+	m.appendexternal_ids = nil
+}
+
+// ExternalIds returns the value of the "external_ids" field in the mutation.
+func (m *ApplicationMutation) ExternalIds() (r []model.ExternalId, exists bool) {
+	v := m.external_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalIds returns the old "external_ids" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldExternalIds(ctx context.Context) (v []model.ExternalId, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalIds: %w", err)
+	}
+	return oldValue.ExternalIds, nil
+}
+
+// AppendExternalIds adds mi to the "external_ids" field.
+func (m *ApplicationMutation) AppendExternalIds(mi []model.ExternalId) {
+	m.appendexternal_ids = append(m.appendexternal_ids, mi...)
+}
+
+// AppendedExternalIds returns the list of values that were appended to the "external_ids" field in this mutation.
+func (m *ApplicationMutation) AppendedExternalIds() ([]model.ExternalId, bool) {
+	if len(m.appendexternal_ids) == 0 {
+		return nil, false
+	}
+	return m.appendexternal_ids, true
+}
+
+// ClearExternalIds clears the value of the "external_ids" field.
+func (m *ApplicationMutation) ClearExternalIds() {
+	m.external_ids = nil
+	m.appendexternal_ids = nil
+	m.clearedFields[application.FieldExternalIds] = struct{}{}
+}
+
+// ExternalIdsCleared returns if the "external_ids" field was cleared in this mutation.
+func (m *ApplicationMutation) ExternalIdsCleared() bool {
+	_, ok := m.clearedFields[application.FieldExternalIds]
+	return ok
+}
+
+// ResetExternalIds resets all changes to the "external_ids" field.
+func (m *ApplicationMutation) ResetExternalIds() {
+	m.external_ids = nil
+	m.appendexternal_ids = nil
+	delete(m.clearedFields, application.FieldExternalIds)
+}
+
+// SetIPRestrictions sets the "ip_restrictions" field.
+func (m *ApplicationMutation) SetIPRestrictions(mr model.IpRestrictions) {
+	m.ip_restrictions = &mr
+}
+
+// IPRestrictions returns the value of the "ip_restrictions" field in the mutation.
+func (m *ApplicationMutation) IPRestrictions() (r model.IpRestrictions, exists bool) {
+	v := m.ip_restrictions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIPRestrictions returns the old "ip_restrictions" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldIPRestrictions(ctx context.Context) (v model.IpRestrictions, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIPRestrictions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIPRestrictions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIPRestrictions: %w", err)
+	}
+	return oldValue.IPRestrictions, nil
+}
+
+// ClearIPRestrictions clears the value of the "ip_restrictions" field.
+func (m *ApplicationMutation) ClearIPRestrictions() {
+	m.ip_restrictions = nil
+	m.clearedFields[application.FieldIPRestrictions] = struct{}{}
+}
+
+// IPRestrictionsCleared returns if the "ip_restrictions" field was cleared in this mutation.
+func (m *ApplicationMutation) IPRestrictionsCleared() bool {
+	_, ok := m.clearedFields[application.FieldIPRestrictions]
+	return ok
+}
+
+// ResetIPRestrictions resets all changes to the "ip_restrictions" field.
+func (m *ApplicationMutation) ResetIPRestrictions() {
+	m.ip_restrictions = nil
+	delete(m.clearedFields, application.FieldIPRestrictions)
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by id.
 func (m *ApplicationMutation) SetZoneID(id int) {
 	m.zone = &id
@@ -4853,6 +5196,45 @@ func (m *ApplicationMutation) ResetSubscribedEvents() {
 	m.removedsubscribed_events = nil
 }
 
+// SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by id.
+func (m *ApplicationMutation) SetPermissionSetID(id int) {
+	m.permission_set = &id
+}
+
+// ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
+func (m *ApplicationMutation) ClearPermissionSet() {
+	m.clearedpermission_set = true
+}
+
+// PermissionSetCleared reports if the "permission_set" edge to the PermissionSet entity was cleared.
+func (m *ApplicationMutation) PermissionSetCleared() bool {
+	return m.clearedpermission_set
+}
+
+// PermissionSetID returns the "permission_set" edge ID in the mutation.
+func (m *ApplicationMutation) PermissionSetID() (id int, exists bool) {
+	if m.permission_set != nil {
+		return *m.permission_set, true
+	}
+	return
+}
+
+// PermissionSetIDs returns the "permission_set" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PermissionSetID instead. It exists only for internal usage by the builders.
+func (m *ApplicationMutation) PermissionSetIDs() (ids []int) {
+	if id := m.permission_set; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPermissionSet resets all changes to the "permission_set" edge.
+func (m *ApplicationMutation) ResetPermissionSet() {
+	m.permission_set = nil
+	m.clearedpermission_set = false
+}
+
 // Where appends a list predicates to the ApplicationMutation builder.
 func (m *ApplicationMutation) Where(ps ...predicate.Application) {
 	m.predicates = append(m.predicates, ps...)
@@ -4887,7 +5269,7 @@ func (m *ApplicationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApplicationMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, application.FieldCreatedAt)
 	}
@@ -4930,6 +5312,12 @@ func (m *ApplicationMutation) Fields() []string {
 	if m.secret_rotation_message != nil {
 		fields = append(fields, application.FieldSecretRotationMessage)
 	}
+	if m.external_ids != nil {
+		fields = append(fields, application.FieldExternalIds)
+	}
+	if m.ip_restrictions != nil {
+		fields = append(fields, application.FieldIPRestrictions)
+	}
 	return fields
 }
 
@@ -4966,6 +5354,10 @@ func (m *ApplicationMutation) Field(name string) (ent.Value, bool) {
 		return m.SecretRotationPhase()
 	case application.FieldSecretRotationMessage:
 		return m.SecretRotationMessage()
+	case application.FieldExternalIds:
+		return m.ExternalIds()
+	case application.FieldIPRestrictions:
+		return m.IPRestrictions()
 	}
 	return nil, false
 }
@@ -5003,6 +5395,10 @@ func (m *ApplicationMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldSecretRotationPhase(ctx)
 	case application.FieldSecretRotationMessage:
 		return m.OldSecretRotationMessage(ctx)
+	case application.FieldExternalIds:
+		return m.OldExternalIds(ctx)
+	case application.FieldIPRestrictions:
+		return m.OldIPRestrictions(ctx)
 	}
 	return nil, fmt.Errorf("unknown Application field %s", name)
 }
@@ -5110,6 +5506,20 @@ func (m *ApplicationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSecretRotationMessage(v)
 		return nil
+	case application.FieldExternalIds:
+		v, ok := value.([]model.ExternalId)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalIds(v)
+		return nil
+	case application.FieldIPRestrictions:
+		v, ok := value.(model.IpRestrictions)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIPRestrictions(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Application field %s", name)
 }
@@ -5167,6 +5577,12 @@ func (m *ApplicationMutation) ClearedFields() []string {
 	if m.FieldCleared(application.FieldSecretRotationMessage) {
 		fields = append(fields, application.FieldSecretRotationMessage)
 	}
+	if m.FieldCleared(application.FieldExternalIds) {
+		fields = append(fields, application.FieldExternalIds)
+	}
+	if m.FieldCleared(application.FieldIPRestrictions) {
+		fields = append(fields, application.FieldIPRestrictions)
+	}
 	return fields
 }
 
@@ -5207,6 +5623,12 @@ func (m *ApplicationMutation) ClearField(name string) error {
 		return nil
 	case application.FieldSecretRotationMessage:
 		m.ClearSecretRotationMessage()
+		return nil
+	case application.FieldExternalIds:
+		m.ClearExternalIds()
+		return nil
+	case application.FieldIPRestrictions:
+		m.ClearIPRestrictions()
 		return nil
 	}
 	return fmt.Errorf("unknown Application nullable field %s", name)
@@ -5258,13 +5680,19 @@ func (m *ApplicationMutation) ResetField(name string) error {
 	case application.FieldSecretRotationMessage:
 		m.ResetSecretRotationMessage()
 		return nil
+	case application.FieldExternalIds:
+		m.ResetExternalIds()
+		return nil
+	case application.FieldIPRestrictions:
+		m.ResetIPRestrictions()
+		return nil
 	}
 	return fmt.Errorf("unknown Application field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApplicationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.zone != nil {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -5282,6 +5710,9 @@ func (m *ApplicationMutation) AddedEdges() []string {
 	}
 	if m.subscribed_events != nil {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.permission_set != nil {
+		edges = append(edges, application.EdgePermissionSet)
 	}
 	return edges
 }
@@ -5322,13 +5753,17 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgePermissionSet:
+		if id := m.permission_set; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApplicationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.removedexposed_apis != nil {
 		edges = append(edges, application.EdgeExposedApis)
 	}
@@ -5378,7 +5813,7 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApplicationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.clearedzone {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -5396,6 +5831,9 @@ func (m *ApplicationMutation) ClearedEdges() []string {
 	}
 	if m.clearedsubscribed_events {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.clearedpermission_set {
+		edges = append(edges, application.EdgePermissionSet)
 	}
 	return edges
 }
@@ -5416,6 +5854,8 @@ func (m *ApplicationMutation) EdgeCleared(name string) bool {
 		return m.clearedexposed_events
 	case application.EdgeSubscribedEvents:
 		return m.clearedsubscribed_events
+	case application.EdgePermissionSet:
+		return m.clearedpermission_set
 	}
 	return false
 }
@@ -5429,6 +5869,9 @@ func (m *ApplicationMutation) ClearEdge(name string) error {
 		return nil
 	case application.EdgeOwnerTeam:
 		m.ClearOwnerTeam()
+		return nil
+	case application.EdgePermissionSet:
+		m.ClearPermissionSet()
 		return nil
 	}
 	return fmt.Errorf("unknown Application unique edge %s", name)
@@ -5456,6 +5899,9 @@ func (m *ApplicationMutation) ResetEdge(name string) error {
 	case application.EdgeSubscribedEvents:
 		m.ResetSubscribedEvents()
 		return nil
+	case application.EdgePermissionSet:
+		m.ResetPermissionSet()
+		return nil
 	}
 	return fmt.Errorf("unknown Application edge %s", name)
 }
@@ -5481,7 +5927,10 @@ type ApprovalMutation struct {
 	appenddecisions             []model.Decision
 	available_transitions       *[]model.AvailableTransition
 	appendavailable_transitions []model.AvailableTransition
+	requested_scopes            *[]string
+	appendrequested_scopes      []string
 	name                        *string
+	expiresAt                   *time.Time
 	state                       *approval.State
 	clearedFields               map[string]struct{}
 	api_subscription            *int
@@ -6142,6 +6591,71 @@ func (m *ApprovalMutation) ResetAvailableTransitions() {
 	delete(m.clearedFields, approval.FieldAvailableTransitions)
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (m *ApprovalMutation) SetRequestedScopes(s []string) {
+	m.requested_scopes = &s
+	m.appendrequested_scopes = nil
+}
+
+// RequestedScopes returns the value of the "requested_scopes" field in the mutation.
+func (m *ApprovalMutation) RequestedScopes() (r []string, exists bool) {
+	v := m.requested_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestedScopes returns the old "requested_scopes" field's value of the Approval entity.
+// If the Approval object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalMutation) OldRequestedScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestedScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestedScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestedScopes: %w", err)
+	}
+	return oldValue.RequestedScopes, nil
+}
+
+// AppendRequestedScopes adds s to the "requested_scopes" field.
+func (m *ApprovalMutation) AppendRequestedScopes(s []string) {
+	m.appendrequested_scopes = append(m.appendrequested_scopes, s...)
+}
+
+// AppendedRequestedScopes returns the list of values that were appended to the "requested_scopes" field in this mutation.
+func (m *ApprovalMutation) AppendedRequestedScopes() ([]string, bool) {
+	if len(m.appendrequested_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendrequested_scopes, true
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (m *ApprovalMutation) ClearRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	m.clearedFields[approval.FieldRequestedScopes] = struct{}{}
+}
+
+// RequestedScopesCleared returns if the "requested_scopes" field was cleared in this mutation.
+func (m *ApprovalMutation) RequestedScopesCleared() bool {
+	_, ok := m.clearedFields[approval.FieldRequestedScopes]
+	return ok
+}
+
+// ResetRequestedScopes resets all changes to the "requested_scopes" field.
+func (m *ApprovalMutation) ResetRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	delete(m.clearedFields, approval.FieldRequestedScopes)
+}
+
 // SetName sets the "name" field.
 func (m *ApprovalMutation) SetName(s string) {
 	m.name = &s
@@ -6176,6 +6690,55 @@ func (m *ApprovalMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *ApprovalMutation) ResetName() {
 	m.name = nil
+}
+
+// SetExpiresAt sets the "expiresAt" field.
+func (m *ApprovalMutation) SetExpiresAt(t time.Time) {
+	m.expiresAt = &t
+}
+
+// ExpiresAt returns the value of the "expiresAt" field in the mutation.
+func (m *ApprovalMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expiresAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expiresAt" field's value of the Approval entity.
+// If the Approval object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (m *ApprovalMutation) ClearExpiresAt() {
+	m.expiresAt = nil
+	m.clearedFields[approval.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expiresAt" field was cleared in this mutation.
+func (m *ApprovalMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[approval.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expiresAt" field.
+func (m *ApprovalMutation) ResetExpiresAt() {
+	m.expiresAt = nil
+	delete(m.clearedFields, approval.FieldExpiresAt)
 }
 
 // SetState sets the "state" field.
@@ -6326,7 +6889,7 @@ func (m *ApprovalMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApprovalMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 17)
 	if m.created_at != nil {
 		fields = append(fields, approval.FieldCreatedAt)
 	}
@@ -6366,8 +6929,14 @@ func (m *ApprovalMutation) Fields() []string {
 	if m.available_transitions != nil {
 		fields = append(fields, approval.FieldAvailableTransitions)
 	}
+	if m.requested_scopes != nil {
+		fields = append(fields, approval.FieldRequestedScopes)
+	}
 	if m.name != nil {
 		fields = append(fields, approval.FieldName)
+	}
+	if m.expiresAt != nil {
+		fields = append(fields, approval.FieldExpiresAt)
 	}
 	if m.state != nil {
 		fields = append(fields, approval.FieldState)
@@ -6406,8 +6975,12 @@ func (m *ApprovalMutation) Field(name string) (ent.Value, bool) {
 		return m.Decisions()
 	case approval.FieldAvailableTransitions:
 		return m.AvailableTransitions()
+	case approval.FieldRequestedScopes:
+		return m.RequestedScopes()
 	case approval.FieldName:
 		return m.Name()
+	case approval.FieldExpiresAt:
+		return m.ExpiresAt()
 	case approval.FieldState:
 		return m.State()
 	}
@@ -6445,8 +7018,12 @@ func (m *ApprovalMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDecisions(ctx)
 	case approval.FieldAvailableTransitions:
 		return m.OldAvailableTransitions(ctx)
+	case approval.FieldRequestedScopes:
+		return m.OldRequestedScopes(ctx)
 	case approval.FieldName:
 		return m.OldName(ctx)
+	case approval.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
 	case approval.FieldState:
 		return m.OldState(ctx)
 	}
@@ -6549,12 +7126,26 @@ func (m *ApprovalMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAvailableTransitions(v)
 		return nil
+	case approval.FieldRequestedScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestedScopes(v)
+		return nil
 	case approval.FieldName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case approval.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
 		return nil
 	case approval.FieldState:
 		v, ok := value.(approval.State)
@@ -6605,6 +7196,12 @@ func (m *ApprovalMutation) ClearedFields() []string {
 	if m.FieldCleared(approval.FieldAvailableTransitions) {
 		fields = append(fields, approval.FieldAvailableTransitions)
 	}
+	if m.FieldCleared(approval.FieldRequestedScopes) {
+		fields = append(fields, approval.FieldRequestedScopes)
+	}
+	if m.FieldCleared(approval.FieldExpiresAt) {
+		fields = append(fields, approval.FieldExpiresAt)
+	}
 	return fields
 }
 
@@ -6630,6 +7227,12 @@ func (m *ApprovalMutation) ClearField(name string) error {
 		return nil
 	case approval.FieldAvailableTransitions:
 		m.ClearAvailableTransitions()
+		return nil
+	case approval.FieldRequestedScopes:
+		m.ClearRequestedScopes()
+		return nil
+	case approval.FieldExpiresAt:
+		m.ClearExpiresAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval nullable field %s", name)
@@ -6678,8 +7281,14 @@ func (m *ApprovalMutation) ResetField(name string) error {
 	case approval.FieldAvailableTransitions:
 		m.ResetAvailableTransitions()
 		return nil
+	case approval.FieldRequestedScopes:
+		m.ResetRequestedScopes()
+		return nil
 	case approval.FieldName:
 		m.ResetName()
+		return nil
+	case approval.FieldExpiresAt:
+		m.ResetExpiresAt()
 		return nil
 	case approval.FieldState:
 		m.ResetState()
@@ -6801,6 +7410,8 @@ type ApprovalRequestMutation struct {
 	appenddecisions             []model.Decision
 	available_transitions       *[]model.AvailableTransition
 	appendavailable_transitions []model.AvailableTransition
+	requested_scopes            *[]string
+	appendrequested_scopes      []string
 	name                        *string
 	state                       *approvalrequest.State
 	clearedFields               map[string]struct{}
@@ -7462,6 +8073,71 @@ func (m *ApprovalRequestMutation) ResetAvailableTransitions() {
 	delete(m.clearedFields, approvalrequest.FieldAvailableTransitions)
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (m *ApprovalRequestMutation) SetRequestedScopes(s []string) {
+	m.requested_scopes = &s
+	m.appendrequested_scopes = nil
+}
+
+// RequestedScopes returns the value of the "requested_scopes" field in the mutation.
+func (m *ApprovalRequestMutation) RequestedScopes() (r []string, exists bool) {
+	v := m.requested_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestedScopes returns the old "requested_scopes" field's value of the ApprovalRequest entity.
+// If the ApprovalRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalRequestMutation) OldRequestedScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestedScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestedScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestedScopes: %w", err)
+	}
+	return oldValue.RequestedScopes, nil
+}
+
+// AppendRequestedScopes adds s to the "requested_scopes" field.
+func (m *ApprovalRequestMutation) AppendRequestedScopes(s []string) {
+	m.appendrequested_scopes = append(m.appendrequested_scopes, s...)
+}
+
+// AppendedRequestedScopes returns the list of values that were appended to the "requested_scopes" field in this mutation.
+func (m *ApprovalRequestMutation) AppendedRequestedScopes() ([]string, bool) {
+	if len(m.appendrequested_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendrequested_scopes, true
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (m *ApprovalRequestMutation) ClearRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	m.clearedFields[approvalrequest.FieldRequestedScopes] = struct{}{}
+}
+
+// RequestedScopesCleared returns if the "requested_scopes" field was cleared in this mutation.
+func (m *ApprovalRequestMutation) RequestedScopesCleared() bool {
+	_, ok := m.clearedFields[approvalrequest.FieldRequestedScopes]
+	return ok
+}
+
+// ResetRequestedScopes resets all changes to the "requested_scopes" field.
+func (m *ApprovalRequestMutation) ResetRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	delete(m.clearedFields, approvalrequest.FieldRequestedScopes)
+}
+
 // SetName sets the "name" field.
 func (m *ApprovalRequestMutation) SetName(s string) {
 	m.name = &s
@@ -7646,7 +8322,7 @@ func (m *ApprovalRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApprovalRequestMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, approvalrequest.FieldCreatedAt)
 	}
@@ -7685,6 +8361,9 @@ func (m *ApprovalRequestMutation) Fields() []string {
 	}
 	if m.available_transitions != nil {
 		fields = append(fields, approvalrequest.FieldAvailableTransitions)
+	}
+	if m.requested_scopes != nil {
+		fields = append(fields, approvalrequest.FieldRequestedScopes)
 	}
 	if m.name != nil {
 		fields = append(fields, approvalrequest.FieldName)
@@ -7726,6 +8405,8 @@ func (m *ApprovalRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.Decisions()
 	case approvalrequest.FieldAvailableTransitions:
 		return m.AvailableTransitions()
+	case approvalrequest.FieldRequestedScopes:
+		return m.RequestedScopes()
 	case approvalrequest.FieldName:
 		return m.Name()
 	case approvalrequest.FieldState:
@@ -7765,6 +8446,8 @@ func (m *ApprovalRequestMutation) OldField(ctx context.Context, name string) (en
 		return m.OldDecisions(ctx)
 	case approvalrequest.FieldAvailableTransitions:
 		return m.OldAvailableTransitions(ctx)
+	case approvalrequest.FieldRequestedScopes:
+		return m.OldRequestedScopes(ctx)
 	case approvalrequest.FieldName:
 		return m.OldName(ctx)
 	case approvalrequest.FieldState:
@@ -7869,6 +8552,13 @@ func (m *ApprovalRequestMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAvailableTransitions(v)
 		return nil
+	case approvalrequest.FieldRequestedScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestedScopes(v)
+		return nil
 	case approvalrequest.FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -7925,6 +8615,9 @@ func (m *ApprovalRequestMutation) ClearedFields() []string {
 	if m.FieldCleared(approvalrequest.FieldAvailableTransitions) {
 		fields = append(fields, approvalrequest.FieldAvailableTransitions)
 	}
+	if m.FieldCleared(approvalrequest.FieldRequestedScopes) {
+		fields = append(fields, approvalrequest.FieldRequestedScopes)
+	}
 	return fields
 }
 
@@ -7950,6 +8643,9 @@ func (m *ApprovalRequestMutation) ClearField(name string) error {
 		return nil
 	case approvalrequest.FieldAvailableTransitions:
 		m.ClearAvailableTransitions()
+		return nil
+	case approvalrequest.FieldRequestedScopes:
+		m.ClearRequestedScopes()
 		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest nullable field %s", name)
@@ -7997,6 +8693,9 @@ func (m *ApprovalRequestMutation) ResetField(name string) error {
 		return nil
 	case approvalrequest.FieldAvailableTransitions:
 		m.ResetAvailableTransitions()
+		return nil
+	case approvalrequest.FieldRequestedScopes:
+		m.ResetRequestedScopes()
 		return nil
 	case approvalrequest.FieldName:
 		m.ResetName()
@@ -8103,30 +8802,33 @@ func (m *ApprovalRequestMutation) ResetEdge(name string) error {
 // EventExposureMutation represents an operation that mutates the EventExposure nodes in the graph.
 type EventExposureMutation struct {
 	config
-	op                    Op
-	typ                   string
-	id                    *int
-	created_at            *time.Time
-	last_modified_at      *time.Time
-	status_phase          *eventexposure.StatusPhase
-	status_message        *string
-	environment           *string
-	namespace             *string
-	event_type            *string
-	visibility            *eventexposure.Visibility
-	active                *bool
-	approval_config       *model.ApprovalConfig
-	clearedFields         map[string]struct{}
-	owner                 *int
-	clearedowner          bool
-	event_type_def        *int
-	clearedevent_type_def bool
-	subscriptions         map[int]struct{}
-	removedsubscriptions  map[int]struct{}
-	clearedsubscriptions  bool
-	done                  bool
-	oldValue              func(context.Context) (*EventExposure, error)
-	predicates            []predicate.EventExposure
+	op                     Op
+	typ                    string
+	id                     *int
+	created_at             *time.Time
+	last_modified_at       *time.Time
+	status_phase           *eventexposure.StatusPhase
+	status_message         *string
+	environment            *string
+	namespace              *string
+	event_type             *string
+	visibility             *eventexposure.Visibility
+	active                 *bool
+	event_scopes           *[]model.EventScope
+	appendevent_scopes     []model.EventScope
+	gateway_publishing_url *string
+	approval_config        *model.ApprovalConfig
+	clearedFields          map[string]struct{}
+	owner                  *int
+	clearedowner           bool
+	event_type_def         *int
+	clearedevent_type_def  bool
+	subscriptions          map[int]struct{}
+	removedsubscriptions   map[int]struct{}
+	clearedsubscriptions   bool
+	done                   bool
+	oldValue               func(context.Context) (*EventExposure, error)
+	predicates             []predicate.EventExposure
 }
 
 var _ ent.Mutation = (*EventExposureMutation)(nil)
@@ -8603,6 +9305,120 @@ func (m *EventExposureMutation) ResetActive() {
 	delete(m.clearedFields, eventexposure.FieldActive)
 }
 
+// SetEventScopes sets the "event_scopes" field.
+func (m *EventExposureMutation) SetEventScopes(ms []model.EventScope) {
+	m.event_scopes = &ms
+	m.appendevent_scopes = nil
+}
+
+// EventScopes returns the value of the "event_scopes" field in the mutation.
+func (m *EventExposureMutation) EventScopes() (r []model.EventScope, exists bool) {
+	v := m.event_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventScopes returns the old "event_scopes" field's value of the EventExposure entity.
+// If the EventExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventExposureMutation) OldEventScopes(ctx context.Context) (v []model.EventScope, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventScopes: %w", err)
+	}
+	return oldValue.EventScopes, nil
+}
+
+// AppendEventScopes adds ms to the "event_scopes" field.
+func (m *EventExposureMutation) AppendEventScopes(ms []model.EventScope) {
+	m.appendevent_scopes = append(m.appendevent_scopes, ms...)
+}
+
+// AppendedEventScopes returns the list of values that were appended to the "event_scopes" field in this mutation.
+func (m *EventExposureMutation) AppendedEventScopes() ([]model.EventScope, bool) {
+	if len(m.appendevent_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendevent_scopes, true
+}
+
+// ClearEventScopes clears the value of the "event_scopes" field.
+func (m *EventExposureMutation) ClearEventScopes() {
+	m.event_scopes = nil
+	m.appendevent_scopes = nil
+	m.clearedFields[eventexposure.FieldEventScopes] = struct{}{}
+}
+
+// EventScopesCleared returns if the "event_scopes" field was cleared in this mutation.
+func (m *EventExposureMutation) EventScopesCleared() bool {
+	_, ok := m.clearedFields[eventexposure.FieldEventScopes]
+	return ok
+}
+
+// ResetEventScopes resets all changes to the "event_scopes" field.
+func (m *EventExposureMutation) ResetEventScopes() {
+	m.event_scopes = nil
+	m.appendevent_scopes = nil
+	delete(m.clearedFields, eventexposure.FieldEventScopes)
+}
+
+// SetGatewayPublishingURL sets the "gateway_publishing_url" field.
+func (m *EventExposureMutation) SetGatewayPublishingURL(s string) {
+	m.gateway_publishing_url = &s
+}
+
+// GatewayPublishingURL returns the value of the "gateway_publishing_url" field in the mutation.
+func (m *EventExposureMutation) GatewayPublishingURL() (r string, exists bool) {
+	v := m.gateway_publishing_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGatewayPublishingURL returns the old "gateway_publishing_url" field's value of the EventExposure entity.
+// If the EventExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventExposureMutation) OldGatewayPublishingURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGatewayPublishingURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGatewayPublishingURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGatewayPublishingURL: %w", err)
+	}
+	return oldValue.GatewayPublishingURL, nil
+}
+
+// ClearGatewayPublishingURL clears the value of the "gateway_publishing_url" field.
+func (m *EventExposureMutation) ClearGatewayPublishingURL() {
+	m.gateway_publishing_url = nil
+	m.clearedFields[eventexposure.FieldGatewayPublishingURL] = struct{}{}
+}
+
+// GatewayPublishingURLCleared returns if the "gateway_publishing_url" field was cleared in this mutation.
+func (m *EventExposureMutation) GatewayPublishingURLCleared() bool {
+	_, ok := m.clearedFields[eventexposure.FieldGatewayPublishingURL]
+	return ok
+}
+
+// ResetGatewayPublishingURL resets all changes to the "gateway_publishing_url" field.
+func (m *EventExposureMutation) ResetGatewayPublishingURL() {
+	m.gateway_publishing_url = nil
+	delete(m.clearedFields, eventexposure.FieldGatewayPublishingURL)
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (m *EventExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
 	m.approval_config = &mc
@@ -8805,7 +9621,7 @@ func (m *EventExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventExposureMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, eventexposure.FieldCreatedAt)
 	}
@@ -8832,6 +9648,12 @@ func (m *EventExposureMutation) Fields() []string {
 	}
 	if m.active != nil {
 		fields = append(fields, eventexposure.FieldActive)
+	}
+	if m.event_scopes != nil {
+		fields = append(fields, eventexposure.FieldEventScopes)
+	}
+	if m.gateway_publishing_url != nil {
+		fields = append(fields, eventexposure.FieldGatewayPublishingURL)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, eventexposure.FieldApprovalConfig)
@@ -8862,6 +9684,10 @@ func (m *EventExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Visibility()
 	case eventexposure.FieldActive:
 		return m.Active()
+	case eventexposure.FieldEventScopes:
+		return m.EventScopes()
+	case eventexposure.FieldGatewayPublishingURL:
+		return m.GatewayPublishingURL()
 	case eventexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	}
@@ -8891,6 +9717,10 @@ func (m *EventExposureMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldVisibility(ctx)
 	case eventexposure.FieldActive:
 		return m.OldActive(ctx)
+	case eventexposure.FieldEventScopes:
+		return m.OldEventScopes(ctx)
+	case eventexposure.FieldGatewayPublishingURL:
+		return m.OldGatewayPublishingURL(ctx)
 	case eventexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	}
@@ -8965,6 +9795,20 @@ func (m *EventExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetActive(v)
 		return nil
+	case eventexposure.FieldEventScopes:
+		v, ok := value.([]model.EventScope)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventScopes(v)
+		return nil
+	case eventexposure.FieldGatewayPublishingURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGatewayPublishingURL(v)
+		return nil
 	case eventexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
 		if !ok {
@@ -9014,6 +9858,12 @@ func (m *EventExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(eventexposure.FieldActive) {
 		fields = append(fields, eventexposure.FieldActive)
 	}
+	if m.FieldCleared(eventexposure.FieldEventScopes) {
+		fields = append(fields, eventexposure.FieldEventScopes)
+	}
+	if m.FieldCleared(eventexposure.FieldGatewayPublishingURL) {
+		fields = append(fields, eventexposure.FieldGatewayPublishingURL)
+	}
 	return fields
 }
 
@@ -9039,6 +9889,12 @@ func (m *EventExposureMutation) ClearField(name string) error {
 		return nil
 	case eventexposure.FieldActive:
 		m.ClearActive()
+		return nil
+	case eventexposure.FieldEventScopes:
+		m.ClearEventScopes()
+		return nil
+	case eventexposure.FieldGatewayPublishingURL:
+		m.ClearGatewayPublishingURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventExposure nullable field %s", name)
@@ -9074,6 +9930,12 @@ func (m *EventExposureMutation) ResetField(name string) error {
 		return nil
 	case eventexposure.FieldActive:
 		m.ResetActive()
+		return nil
+	case eventexposure.FieldEventScopes:
+		m.ResetEventScopes()
+		return nil
+	case eventexposure.FieldGatewayPublishingURL:
+		m.ResetGatewayPublishingURL()
 		return nil
 	case eventexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()
@@ -9217,7 +10079,12 @@ type EventSubscriptionMutation struct {
 	name                     *string
 	event_type               *string
 	delivery_type            *eventsubscription.DeliveryType
+	trigger                  **model.EventTrigger
+	delivery                 *model.EventDelivery
+	scopes                   *[]string
+	appendscopes             []string
 	callback_url             *string
+	gateway_sse_url          *string
 	clearedFields            map[string]struct{}
 	owner                    *int
 	clearedowner             bool
@@ -9694,6 +10561,156 @@ func (m *EventSubscriptionMutation) ResetDeliveryType() {
 	m.delivery_type = nil
 }
 
+// SetTrigger sets the "trigger" field.
+func (m *EventSubscriptionMutation) SetTrigger(mt *model.EventTrigger) {
+	m.trigger = &mt
+}
+
+// Trigger returns the value of the "trigger" field in the mutation.
+func (m *EventSubscriptionMutation) Trigger() (r *model.EventTrigger, exists bool) {
+	v := m.trigger
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTrigger returns the old "trigger" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldTrigger(ctx context.Context) (v *model.EventTrigger, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTrigger is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTrigger requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTrigger: %w", err)
+	}
+	return oldValue.Trigger, nil
+}
+
+// ClearTrigger clears the value of the "trigger" field.
+func (m *EventSubscriptionMutation) ClearTrigger() {
+	m.trigger = nil
+	m.clearedFields[eventsubscription.FieldTrigger] = struct{}{}
+}
+
+// TriggerCleared returns if the "trigger" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) TriggerCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldTrigger]
+	return ok
+}
+
+// ResetTrigger resets all changes to the "trigger" field.
+func (m *EventSubscriptionMutation) ResetTrigger() {
+	m.trigger = nil
+	delete(m.clearedFields, eventsubscription.FieldTrigger)
+}
+
+// SetDelivery sets the "delivery" field.
+func (m *EventSubscriptionMutation) SetDelivery(md model.EventDelivery) {
+	m.delivery = &md
+}
+
+// Delivery returns the value of the "delivery" field in the mutation.
+func (m *EventSubscriptionMutation) Delivery() (r model.EventDelivery, exists bool) {
+	v := m.delivery
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDelivery returns the old "delivery" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldDelivery(ctx context.Context) (v model.EventDelivery, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDelivery is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDelivery requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDelivery: %w", err)
+	}
+	return oldValue.Delivery, nil
+}
+
+// ResetDelivery resets all changes to the "delivery" field.
+func (m *EventSubscriptionMutation) ResetDelivery() {
+	m.delivery = nil
+}
+
+// SetScopes sets the "scopes" field.
+func (m *EventSubscriptionMutation) SetScopes(s []string) {
+	m.scopes = &s
+	m.appendscopes = nil
+}
+
+// Scopes returns the value of the "scopes" field in the mutation.
+func (m *EventSubscriptionMutation) Scopes() (r []string, exists bool) {
+	v := m.scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScopes returns the old "scopes" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScopes: %w", err)
+	}
+	return oldValue.Scopes, nil
+}
+
+// AppendScopes adds s to the "scopes" field.
+func (m *EventSubscriptionMutation) AppendScopes(s []string) {
+	m.appendscopes = append(m.appendscopes, s...)
+}
+
+// AppendedScopes returns the list of values that were appended to the "scopes" field in this mutation.
+func (m *EventSubscriptionMutation) AppendedScopes() ([]string, bool) {
+	if len(m.appendscopes) == 0 {
+		return nil, false
+	}
+	return m.appendscopes, true
+}
+
+// ClearScopes clears the value of the "scopes" field.
+func (m *EventSubscriptionMutation) ClearScopes() {
+	m.scopes = nil
+	m.appendscopes = nil
+	m.clearedFields[eventsubscription.FieldScopes] = struct{}{}
+}
+
+// ScopesCleared returns if the "scopes" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) ScopesCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldScopes]
+	return ok
+}
+
+// ResetScopes resets all changes to the "scopes" field.
+func (m *EventSubscriptionMutation) ResetScopes() {
+	m.scopes = nil
+	m.appendscopes = nil
+	delete(m.clearedFields, eventsubscription.FieldScopes)
+}
+
 // SetCallbackURL sets the "callback_url" field.
 func (m *EventSubscriptionMutation) SetCallbackURL(s string) {
 	m.callback_url = &s
@@ -9741,6 +10758,55 @@ func (m *EventSubscriptionMutation) CallbackURLCleared() bool {
 func (m *EventSubscriptionMutation) ResetCallbackURL() {
 	m.callback_url = nil
 	delete(m.clearedFields, eventsubscription.FieldCallbackURL)
+}
+
+// SetGatewaySseURL sets the "gateway_sse_url" field.
+func (m *EventSubscriptionMutation) SetGatewaySseURL(s string) {
+	m.gateway_sse_url = &s
+}
+
+// GatewaySseURL returns the value of the "gateway_sse_url" field in the mutation.
+func (m *EventSubscriptionMutation) GatewaySseURL() (r string, exists bool) {
+	v := m.gateway_sse_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGatewaySseURL returns the old "gateway_sse_url" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldGatewaySseURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGatewaySseURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGatewaySseURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGatewaySseURL: %w", err)
+	}
+	return oldValue.GatewaySseURL, nil
+}
+
+// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
+func (m *EventSubscriptionMutation) ClearGatewaySseURL() {
+	m.gateway_sse_url = nil
+	m.clearedFields[eventsubscription.FieldGatewaySseURL] = struct{}{}
+}
+
+// GatewaySseURLCleared returns if the "gateway_sse_url" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) GatewaySseURLCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldGatewaySseURL]
+	return ok
+}
+
+// ResetGatewaySseURL resets all changes to the "gateway_sse_url" field.
+func (m *EventSubscriptionMutation) ResetGatewaySseURL() {
+	m.gateway_sse_url = nil
+	delete(m.clearedFields, eventsubscription.FieldGatewaySseURL)
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by id.
@@ -9948,7 +11014,7 @@ func (m *EventSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 14)
 	if m.created_at != nil {
 		fields = append(fields, eventsubscription.FieldCreatedAt)
 	}
@@ -9976,8 +11042,20 @@ func (m *EventSubscriptionMutation) Fields() []string {
 	if m.delivery_type != nil {
 		fields = append(fields, eventsubscription.FieldDeliveryType)
 	}
+	if m.trigger != nil {
+		fields = append(fields, eventsubscription.FieldTrigger)
+	}
+	if m.delivery != nil {
+		fields = append(fields, eventsubscription.FieldDelivery)
+	}
+	if m.scopes != nil {
+		fields = append(fields, eventsubscription.FieldScopes)
+	}
 	if m.callback_url != nil {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
+	}
+	if m.gateway_sse_url != nil {
+		fields = append(fields, eventsubscription.FieldGatewaySseURL)
 	}
 	return fields
 }
@@ -10005,8 +11083,16 @@ func (m *EventSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.EventType()
 	case eventsubscription.FieldDeliveryType:
 		return m.DeliveryType()
+	case eventsubscription.FieldTrigger:
+		return m.Trigger()
+	case eventsubscription.FieldDelivery:
+		return m.Delivery()
+	case eventsubscription.FieldScopes:
+		return m.Scopes()
 	case eventsubscription.FieldCallbackURL:
 		return m.CallbackURL()
+	case eventsubscription.FieldGatewaySseURL:
+		return m.GatewaySseURL()
 	}
 	return nil, false
 }
@@ -10034,8 +11120,16 @@ func (m *EventSubscriptionMutation) OldField(ctx context.Context, name string) (
 		return m.OldEventType(ctx)
 	case eventsubscription.FieldDeliveryType:
 		return m.OldDeliveryType(ctx)
+	case eventsubscription.FieldTrigger:
+		return m.OldTrigger(ctx)
+	case eventsubscription.FieldDelivery:
+		return m.OldDelivery(ctx)
+	case eventsubscription.FieldScopes:
+		return m.OldScopes(ctx)
 	case eventsubscription.FieldCallbackURL:
 		return m.OldCallbackURL(ctx)
+	case eventsubscription.FieldGatewaySseURL:
+		return m.OldGatewaySseURL(ctx)
 	}
 	return nil, fmt.Errorf("unknown EventSubscription field %s", name)
 }
@@ -10108,12 +11202,40 @@ func (m *EventSubscriptionMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetDeliveryType(v)
 		return nil
+	case eventsubscription.FieldTrigger:
+		v, ok := value.(*model.EventTrigger)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTrigger(v)
+		return nil
+	case eventsubscription.FieldDelivery:
+		v, ok := value.(model.EventDelivery)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDelivery(v)
+		return nil
+	case eventsubscription.FieldScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScopes(v)
+		return nil
 	case eventsubscription.FieldCallbackURL:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCallbackURL(v)
+		return nil
+	case eventsubscription.FieldGatewaySseURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGatewaySseURL(v)
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription field %s", name)
@@ -10154,8 +11276,17 @@ func (m *EventSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(eventsubscription.FieldEnvironment) {
 		fields = append(fields, eventsubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(eventsubscription.FieldTrigger) {
+		fields = append(fields, eventsubscription.FieldTrigger)
+	}
+	if m.FieldCleared(eventsubscription.FieldScopes) {
+		fields = append(fields, eventsubscription.FieldScopes)
+	}
 	if m.FieldCleared(eventsubscription.FieldCallbackURL) {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
+	}
+	if m.FieldCleared(eventsubscription.FieldGatewaySseURL) {
+		fields = append(fields, eventsubscription.FieldGatewaySseURL)
 	}
 	return fields
 }
@@ -10180,8 +11311,17 @@ func (m *EventSubscriptionMutation) ClearField(name string) error {
 	case eventsubscription.FieldEnvironment:
 		m.ClearEnvironment()
 		return nil
+	case eventsubscription.FieldTrigger:
+		m.ClearTrigger()
+		return nil
+	case eventsubscription.FieldScopes:
+		m.ClearScopes()
+		return nil
 	case eventsubscription.FieldCallbackURL:
 		m.ClearCallbackURL()
+		return nil
+	case eventsubscription.FieldGatewaySseURL:
+		m.ClearGatewaySseURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription nullable field %s", name)
@@ -10218,8 +11358,20 @@ func (m *EventSubscriptionMutation) ResetField(name string) error {
 	case eventsubscription.FieldDeliveryType:
 		m.ResetDeliveryType()
 		return nil
+	case eventsubscription.FieldTrigger:
+		m.ResetTrigger()
+		return nil
+	case eventsubscription.FieldDelivery:
+		m.ResetDelivery()
+		return nil
+	case eventsubscription.FieldScopes:
+		m.ResetScopes()
+		return nil
 	case eventsubscription.FieldCallbackURL:
 		m.ResetCallbackURL()
+		return nil
+	case eventsubscription.FieldGatewaySseURL:
+		m.ResetGatewaySseURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription field %s", name)
@@ -12586,6 +13738,819 @@ func (m *MemberMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Member edge %s", name)
 }
 
+// PermissionSetMutation represents an operation that mutates the PermissionSet nodes in the graph.
+type PermissionSetMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	last_modified_at         *time.Time
+	status_phase             *permissionset.StatusPhase
+	status_message           *string
+	environment              *string
+	namespace                *string
+	permissions              *[]model.Permission
+	appendpermissions        []model.Permission
+	clearedFields            map[string]struct{}
+	owner_application        *int
+	clearedowner_application bool
+	done                     bool
+	oldValue                 func(context.Context) (*PermissionSet, error)
+	predicates               []predicate.PermissionSet
+}
+
+var _ ent.Mutation = (*PermissionSetMutation)(nil)
+
+// permissionsetOption allows management of the mutation configuration using functional options.
+type permissionsetOption func(*PermissionSetMutation)
+
+// newPermissionSetMutation creates new mutation for the PermissionSet entity.
+func newPermissionSetMutation(c config, op Op, opts ...permissionsetOption) *PermissionSetMutation {
+	m := &PermissionSetMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePermissionSet,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPermissionSetID sets the ID field of the mutation.
+func withPermissionSetID(id int) permissionsetOption {
+	return func(m *PermissionSetMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PermissionSet
+		)
+		m.oldValue = func(ctx context.Context) (*PermissionSet, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PermissionSet.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPermissionSet sets the old PermissionSet of the mutation.
+func withPermissionSet(node *PermissionSet) permissionsetOption {
+	return func(m *PermissionSetMutation) {
+		m.oldValue = func(context.Context) (*PermissionSet, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PermissionSetMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PermissionSetMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PermissionSetMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PermissionSetMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().PermissionSet.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *PermissionSetMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *PermissionSetMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *PermissionSetMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *PermissionSetMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *PermissionSetMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *PermissionSetMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *PermissionSetMutation) SetStatusPhase(pp permissionset.StatusPhase) {
+	m.status_phase = &pp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *PermissionSetMutation) StatusPhase() (r permissionset.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldStatusPhase(ctx context.Context) (v *permissionset.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *PermissionSetMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[permissionset.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *PermissionSetMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[permissionset.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *PermissionSetMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, permissionset.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *PermissionSetMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *PermissionSetMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *PermissionSetMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[permissionset.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *PermissionSetMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[permissionset.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *PermissionSetMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, permissionset.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *PermissionSetMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *PermissionSetMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *PermissionSetMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[permissionset.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *PermissionSetMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[permissionset.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *PermissionSetMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, permissionset.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *PermissionSetMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *PermissionSetMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *PermissionSetMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetPermissions sets the "permissions" field.
+func (m *PermissionSetMutation) SetPermissions(value []model.Permission) {
+	m.permissions = &value
+	m.appendpermissions = nil
+}
+
+// Permissions returns the value of the "permissions" field in the mutation.
+func (m *PermissionSetMutation) Permissions() (r []model.Permission, exists bool) {
+	v := m.permissions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPermissions returns the old "permissions" field's value of the PermissionSet entity.
+// If the PermissionSet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionSetMutation) OldPermissions(ctx context.Context) (v []model.Permission, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPermissions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPermissions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPermissions: %w", err)
+	}
+	return oldValue.Permissions, nil
+}
+
+// AppendPermissions adds value to the "permissions" field.
+func (m *PermissionSetMutation) AppendPermissions(value []model.Permission) {
+	m.appendpermissions = append(m.appendpermissions, value...)
+}
+
+// AppendedPermissions returns the list of values that were appended to the "permissions" field in this mutation.
+func (m *PermissionSetMutation) AppendedPermissions() ([]model.Permission, bool) {
+	if len(m.appendpermissions) == 0 {
+		return nil, false
+	}
+	return m.appendpermissions, true
+}
+
+// ClearPermissions clears the value of the "permissions" field.
+func (m *PermissionSetMutation) ClearPermissions() {
+	m.permissions = nil
+	m.appendpermissions = nil
+	m.clearedFields[permissionset.FieldPermissions] = struct{}{}
+}
+
+// PermissionsCleared returns if the "permissions" field was cleared in this mutation.
+func (m *PermissionSetMutation) PermissionsCleared() bool {
+	_, ok := m.clearedFields[permissionset.FieldPermissions]
+	return ok
+}
+
+// ResetPermissions resets all changes to the "permissions" field.
+func (m *PermissionSetMutation) ResetPermissions() {
+	m.permissions = nil
+	m.appendpermissions = nil
+	delete(m.clearedFields, permissionset.FieldPermissions)
+}
+
+// SetOwnerApplicationID sets the "owner_application" edge to the Application entity by id.
+func (m *PermissionSetMutation) SetOwnerApplicationID(id int) {
+	m.owner_application = &id
+}
+
+// ClearOwnerApplication clears the "owner_application" edge to the Application entity.
+func (m *PermissionSetMutation) ClearOwnerApplication() {
+	m.clearedowner_application = true
+}
+
+// OwnerApplicationCleared reports if the "owner_application" edge to the Application entity was cleared.
+func (m *PermissionSetMutation) OwnerApplicationCleared() bool {
+	return m.clearedowner_application
+}
+
+// OwnerApplicationID returns the "owner_application" edge ID in the mutation.
+func (m *PermissionSetMutation) OwnerApplicationID() (id int, exists bool) {
+	if m.owner_application != nil {
+		return *m.owner_application, true
+	}
+	return
+}
+
+// OwnerApplicationIDs returns the "owner_application" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerApplicationID instead. It exists only for internal usage by the builders.
+func (m *PermissionSetMutation) OwnerApplicationIDs() (ids []int) {
+	if id := m.owner_application; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwnerApplication resets all changes to the "owner_application" edge.
+func (m *PermissionSetMutation) ResetOwnerApplication() {
+	m.owner_application = nil
+	m.clearedowner_application = false
+}
+
+// Where appends a list predicates to the PermissionSetMutation builder.
+func (m *PermissionSetMutation) Where(ps ...predicate.PermissionSet) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the PermissionSetMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *PermissionSetMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.PermissionSet, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *PermissionSetMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *PermissionSetMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (PermissionSet).
+func (m *PermissionSetMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PermissionSetMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.created_at != nil {
+		fields = append(fields, permissionset.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, permissionset.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, permissionset.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, permissionset.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, permissionset.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, permissionset.FieldNamespace)
+	}
+	if m.permissions != nil {
+		fields = append(fields, permissionset.FieldPermissions)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PermissionSetMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case permissionset.FieldCreatedAt:
+		return m.CreatedAt()
+	case permissionset.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case permissionset.FieldStatusPhase:
+		return m.StatusPhase()
+	case permissionset.FieldStatusMessage:
+		return m.StatusMessage()
+	case permissionset.FieldEnvironment:
+		return m.Environment()
+	case permissionset.FieldNamespace:
+		return m.Namespace()
+	case permissionset.FieldPermissions:
+		return m.Permissions()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PermissionSetMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case permissionset.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case permissionset.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case permissionset.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case permissionset.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case permissionset.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case permissionset.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case permissionset.FieldPermissions:
+		return m.OldPermissions(ctx)
+	}
+	return nil, fmt.Errorf("unknown PermissionSet field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PermissionSetMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case permissionset.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case permissionset.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case permissionset.FieldStatusPhase:
+		v, ok := value.(permissionset.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case permissionset.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case permissionset.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case permissionset.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case permissionset.FieldPermissions:
+		v, ok := value.([]model.Permission)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPermissions(v)
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PermissionSetMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PermissionSetMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PermissionSetMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PermissionSet numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PermissionSetMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(permissionset.FieldStatusPhase) {
+		fields = append(fields, permissionset.FieldStatusPhase)
+	}
+	if m.FieldCleared(permissionset.FieldStatusMessage) {
+		fields = append(fields, permissionset.FieldStatusMessage)
+	}
+	if m.FieldCleared(permissionset.FieldEnvironment) {
+		fields = append(fields, permissionset.FieldEnvironment)
+	}
+	if m.FieldCleared(permissionset.FieldPermissions) {
+		fields = append(fields, permissionset.FieldPermissions)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PermissionSetMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PermissionSetMutation) ClearField(name string) error {
+	switch name {
+	case permissionset.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case permissionset.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case permissionset.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case permissionset.FieldPermissions:
+		m.ClearPermissions()
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PermissionSetMutation) ResetField(name string) error {
+	switch name {
+	case permissionset.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case permissionset.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case permissionset.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case permissionset.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case permissionset.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case permissionset.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case permissionset.FieldPermissions:
+		m.ResetPermissions()
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PermissionSetMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.owner_application != nil {
+		edges = append(edges, permissionset.EdgeOwnerApplication)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PermissionSetMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case permissionset.EdgeOwnerApplication:
+		if id := m.owner_application; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PermissionSetMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PermissionSetMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PermissionSetMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedowner_application {
+		edges = append(edges, permissionset.EdgeOwnerApplication)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PermissionSetMutation) EdgeCleared(name string) bool {
+	switch name {
+	case permissionset.EdgeOwnerApplication:
+		return m.clearedowner_application
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PermissionSetMutation) ClearEdge(name string) error {
+	switch name {
+	case permissionset.EdgeOwnerApplication:
+		m.ClearOwnerApplication()
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PermissionSetMutation) ResetEdge(name string) error {
+	switch name {
+	case permissionset.EdgeOwnerApplication:
+		m.ResetOwnerApplication()
+		return nil
+	}
+	return fmt.Errorf("unknown PermissionSet edge %s", name)
+}
+
 // TeamMutation represents an operation that mutates the Team nodes in the graph.
 type TeamMutation struct {
 	config
@@ -12600,6 +14565,8 @@ type TeamMutation struct {
 	namespace           *string
 	name                *string
 	email               *string
+	displayName         *string
+	description         *string
 	category            *team.Category
 	team_token          *string
 	clearedFields       map[string]struct{}
@@ -13047,6 +15014,104 @@ func (m *TeamMutation) ResetEmail() {
 	m.email = nil
 }
 
+// SetDisplayName sets the "displayName" field.
+func (m *TeamMutation) SetDisplayName(s string) {
+	m.displayName = &s
+}
+
+// DisplayName returns the value of the "displayName" field in the mutation.
+func (m *TeamMutation) DisplayName() (r string, exists bool) {
+	v := m.displayName
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisplayName returns the old "displayName" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldDisplayName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisplayName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
+	}
+	return oldValue.DisplayName, nil
+}
+
+// ClearDisplayName clears the value of the "displayName" field.
+func (m *TeamMutation) ClearDisplayName() {
+	m.displayName = nil
+	m.clearedFields[team.FieldDisplayName] = struct{}{}
+}
+
+// DisplayNameCleared returns if the "displayName" field was cleared in this mutation.
+func (m *TeamMutation) DisplayNameCleared() bool {
+	_, ok := m.clearedFields[team.FieldDisplayName]
+	return ok
+}
+
+// ResetDisplayName resets all changes to the "displayName" field.
+func (m *TeamMutation) ResetDisplayName() {
+	m.displayName = nil
+	delete(m.clearedFields, team.FieldDisplayName)
+}
+
+// SetDescription sets the "description" field.
+func (m *TeamMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *TeamMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *TeamMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[team.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *TeamMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[team.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *TeamMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, team.FieldDescription)
+}
+
 // SetCategory sets the "category" field.
 func (m *TeamMutation) SetCategory(t team.Category) {
 	m.category = &t
@@ -13421,7 +15486,7 @@ func (m *TeamMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TeamMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, team.FieldCreatedAt)
 	}
@@ -13445,6 +15510,12 @@ func (m *TeamMutation) Fields() []string {
 	}
 	if m.email != nil {
 		fields = append(fields, team.FieldEmail)
+	}
+	if m.displayName != nil {
+		fields = append(fields, team.FieldDisplayName)
+	}
+	if m.description != nil {
+		fields = append(fields, team.FieldDescription)
 	}
 	if m.category != nil {
 		fields = append(fields, team.FieldCategory)
@@ -13476,6 +15547,10 @@ func (m *TeamMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case team.FieldEmail:
 		return m.Email()
+	case team.FieldDisplayName:
+		return m.DisplayName()
+	case team.FieldDescription:
+		return m.Description()
 	case team.FieldCategory:
 		return m.Category()
 	case team.FieldTeamToken:
@@ -13505,6 +15580,10 @@ func (m *TeamMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case team.FieldEmail:
 		return m.OldEmail(ctx)
+	case team.FieldDisplayName:
+		return m.OldDisplayName(ctx)
+	case team.FieldDescription:
+		return m.OldDescription(ctx)
 	case team.FieldCategory:
 		return m.OldCategory(ctx)
 	case team.FieldTeamToken:
@@ -13574,6 +15653,20 @@ func (m *TeamMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEmail(v)
 		return nil
+	case team.FieldDisplayName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisplayName(v)
+		return nil
+	case team.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
 	case team.FieldCategory:
 		v, ok := value.(team.Category)
 		if !ok {
@@ -13627,6 +15720,12 @@ func (m *TeamMutation) ClearedFields() []string {
 	if m.FieldCleared(team.FieldEnvironment) {
 		fields = append(fields, team.FieldEnvironment)
 	}
+	if m.FieldCleared(team.FieldDisplayName) {
+		fields = append(fields, team.FieldDisplayName)
+	}
+	if m.FieldCleared(team.FieldDescription) {
+		fields = append(fields, team.FieldDescription)
+	}
 	if m.FieldCleared(team.FieldTeamToken) {
 		fields = append(fields, team.FieldTeamToken)
 	}
@@ -13652,6 +15751,12 @@ func (m *TeamMutation) ClearField(name string) error {
 		return nil
 	case team.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case team.FieldDisplayName:
+		m.ClearDisplayName()
+		return nil
+	case team.FieldDescription:
+		m.ClearDescription()
 		return nil
 	case team.FieldTeamToken:
 		m.ClearTeamToken()
@@ -13687,6 +15792,12 @@ func (m *TeamMutation) ResetField(name string) error {
 		return nil
 	case team.FieldEmail:
 		m.ResetEmail()
+		return nil
+	case team.FieldDisplayName:
+		m.ResetDisplayName()
+		return nil
+	case team.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case team.FieldCategory:
 		m.ResetCategory()

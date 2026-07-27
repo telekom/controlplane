@@ -7,16 +7,16 @@ package controller
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	apiapi "github.com/telekom/controlplane/api/api/v1"
-	"github.com/telekom/controlplane/common/pkg/config"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiSpecification Controller", func() {
@@ -67,7 +67,6 @@ var _ = Describe("ApiSpecification Controller", func() {
 		})
 
 		It("should successfully reconcile the resource", func() {
-
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKey{
 					Name:      resourceName,
@@ -84,10 +83,9 @@ var _ = Describe("ApiSpecification Controller", func() {
 
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(api.Spec.Version).To(Equal("1.0.0"))
-				g.Expect(api.Spec.XVendor).To(Equal(true))
+				g.Expect(api.Spec.XVendor).To(BeTrue())
 				g.Expect(api.Spec.Category).To(Equal("other"))
 				g.Expect(api.Spec.Oauth2Scopes).To(ConsistOf("read", "write"))
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})

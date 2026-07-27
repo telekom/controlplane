@@ -407,6 +407,16 @@ func (r *IDResolver) EvictAPISubscription(namespace, name string) {
 	r.clearNegCache(et + ":" + lk)
 }
 
+// EvictAPIExposureByBasePath removes the cached DB primary key for an
+// ApiExposure identified by base path. Called when a FK constraint violation
+// indicates the cached exposure ID is stale (e.g. the exposure row was deleted
+// out from under a subscription that still had it cached).
+func (r *IDResolver) EvictAPIExposureByBasePath(basePath string) {
+	et, lk := cachekeys.APIExposureByBasePath(basePath)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
+}
+
 // EvictEventSubscription removes the cached DB primary key for an
 // EventSubscription identified by namespace + name.
 func (r *IDResolver) EvictEventSubscription(namespace, name string) {

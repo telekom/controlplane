@@ -46,6 +46,10 @@ type ApiExposure struct {
 	Features []string `json:"features,omitempty"`
 	// Upstreams holds the value of the "upstreams" field.
 	Upstreams []model.Upstream `json:"upstreams,omitempty"`
+	// Security holds the value of the "security" field.
+	Security model.ApiExposureSecurity `json:"security,omitempty"`
+	// Traffic holds the value of the "traffic" field.
+	Traffic model.Traffic `json:"traffic,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
 	ApprovalConfig model.ApprovalConfig `json:"approval_config,omitempty"`
 	// APIVersion holds the value of the "api_version" field.
@@ -111,7 +115,7 @@ func (*ApiExposure) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apiexposure.FieldFeatures, apiexposure.FieldUpstreams, apiexposure.FieldApprovalConfig:
+		case apiexposure.FieldFeatures, apiexposure.FieldUpstreams, apiexposure.FieldSecurity, apiexposure.FieldTraffic, apiexposure.FieldApprovalConfig:
 			values[i] = new([]byte)
 		case apiexposure.FieldActive:
 			values[i] = new(sql.NullBool)
@@ -218,6 +222,22 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &_m.Upstreams); err != nil {
 					return fmt.Errorf("unmarshal field upstreams: %w", err)
+				}
+			}
+		case apiexposure.FieldSecurity:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field security", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Security); err != nil {
+					return fmt.Errorf("unmarshal field security: %w", err)
+				}
+			}
+		case apiexposure.FieldTraffic:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field traffic", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Traffic); err != nil {
+					return fmt.Errorf("unmarshal field traffic: %w", err)
 				}
 			}
 		case apiexposure.FieldApprovalConfig:
@@ -340,6 +360,12 @@ func (_m *ApiExposure) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("upstreams=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Upstreams))
+	builder.WriteString(", ")
+	builder.WriteString("security=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Security))
+	builder.WriteString(", ")
+	builder.WriteString("traffic=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Traffic))
 	builder.WriteString(", ")
 	builder.WriteString("approval_config=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ApprovalConfig))

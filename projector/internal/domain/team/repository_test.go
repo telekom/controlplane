@@ -323,6 +323,52 @@ var _ = Describe("Team Repository", func() {
 			Expect(totalMembers).To(Equal(2))
 		})
 
+		It("should persist displayName and description on first upsert", func() {
+			data := &team.TeamData{
+				Meta:          shared.NewMetadata("prod", "grp--dn", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "",
+				Name:          "grp--dn",
+				Email:         "dn@example.com",
+				Category:      "CUSTOMER",
+				GroupName:     "grp",
+				DisplayName:   "Nice Name",
+				Description:   "Some description",
+				Members:       []team.MemberData{},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			t, err := client.Team.Query().Where(entteam.NameEQ("grp--dn")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(t.DisplayName).To(HaveValue(Equal("Nice Name")))
+			Expect(t.Description).To(HaveValue(Equal("Some description")))
+		})
+
+		It("should update displayName and description on re-upsert", func() {
+			data := &team.TeamData{
+				Meta:          shared.NewMetadata("prod", "grp--dnupd", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "",
+				Name:          "grp--dnupd",
+				Email:         "dnupd@example.com",
+				Category:      "CUSTOMER",
+				GroupName:     "grp",
+				DisplayName:   "Original",
+				Description:   "Original desc",
+				Members:       []team.MemberData{},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			data.DisplayName = "Updated"
+			data.Description = "Updated desc"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			t, err := client.Team.Query().Where(entteam.NameEQ("grp--dnupd")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(t.DisplayName).To(HaveValue(Equal("Updated")))
+			Expect(t.Description).To(HaveValue(Equal("Updated desc")))
+		})
+
 		It("should populate the edge cache after upsert", func() {
 			data := &team.TeamData{
 				Meta:          shared.NewMetadata("prod", "grp--cached", nil),

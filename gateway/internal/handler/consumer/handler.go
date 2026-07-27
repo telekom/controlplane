@@ -15,7 +15,6 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
-	"github.com/telekom/controlplane/gateway/internal/handler/realm"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
@@ -40,12 +39,8 @@ func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *gatewayv
 }
 
 func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consumer) error {
-	_, realm, err := realm.GetRealmByRef(ctx, consumer.Spec.Realm)
-	if err != nil {
-		return err
-	}
 
-	_, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
+	_, gateway, err := gateway.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
 	if err != nil {
 		return err
 	}
@@ -64,20 +59,13 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 }
 
 func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (features.FeaturesBuilder, error) {
-	ready, realm, err := realm.GetRealmByRef(ctx, consumer.Spec.Realm)
-	if err != nil {
-		return nil, err
-	}
-	if !ready {
-		return nil, ctrlerrors.BlockedErrorf("realm %s is not ready", consumer.Spec.Realm.Name)
-	}
 
-	ready, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
+	ready, gateway, err := gateway.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
 	if err != nil {
 		return nil, err
 	}
 	if !ready {
-		return nil, ctrlerrors.BlockedErrorf("gateway %s is not ready", realm.Spec.Gateway.Name)
+		return nil, ctrlerrors.BlockedErrorf("gateway %s is not ready", consumer.Spec.Gateway.Name)
 	}
 
 	kc, err := kongutil.GetClientFor(gateway)
@@ -85,7 +73,7 @@ func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (featu
 		return nil, errors.Wrap(err, "failed to get kong client")
 	}
 
-	builder := features.NewFeatureBuilder(kc, nil, consumer, realm, gateway)
+	builder := features.NewFeatureBuilder(kc, nil, consumer, gateway)
 	builder.EnableFeature(feature.InstanceIpRestrictionFeature)
 
 	return builder, nil

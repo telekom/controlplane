@@ -113,17 +113,9 @@ rules:
   - update
   - watch
 - apiGroups:
-  - gateway.cp.ei.telekom.de
+  - organization.cp.ei.telekom.de
   resources:
-  - realms
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - identity.cp.ei.telekom.de
-  resources:
-  - clients
+  - teams
   verbs:
   - get
   - list

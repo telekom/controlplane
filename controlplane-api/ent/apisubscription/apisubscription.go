@@ -39,8 +39,10 @@ const (
 	FieldBasePath = "base_path"
 	// FieldM2mAuthMethod holds the string denoting the m2m_auth_method field in the database.
 	FieldM2mAuthMethod = "m2m_auth_method"
-	// FieldApprovedScopes holds the string denoting the approved_scopes field in the database.
-	FieldApprovedScopes = "approved_scopes"
+	// FieldGatewayURL holds the string denoting the gateway_url field in the database.
+	FieldGatewayURL = "gateway_url"
+	// FieldSecurity holds the string denoting the security field in the database.
+	FieldSecurity = "security"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeTarget holds the string denoting the target edge name in mutations.
@@ -102,7 +104,8 @@ var Columns = []string{
 	FieldName,
 	FieldBasePath,
 	FieldM2mAuthMethod,
-	FieldApprovedScopes,
+	FieldGatewayURL,
+	FieldSecurity,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "api_subscriptions"
@@ -147,8 +150,6 @@ var (
 	NameValidator func(string) error
 	// BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	BasePathValidator func(string) error
-	// DefaultApprovedScopes holds the default value on creation for the "approved_scopes" field.
-	DefaultApprovedScopes []string
 )
 
 // StatusPhase defines the type for the "status_phase" enum field.
@@ -255,6 +256,11 @@ func ByBasePath(opts ...sql.OrderTermOption) OrderOption {
 // ByM2mAuthMethod orders the results by the m2m_auth_method field.
 func ByM2mAuthMethod(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldM2mAuthMethod, opts...).ToFunc()
+}
+
+// ByGatewayURL orders the results by the gateway_url field.
+func ByGatewayURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGatewayURL, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

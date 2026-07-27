@@ -46,6 +46,7 @@
         Security:       (*v1.Security)(nil),
     },
     Event: (*v1.EventExposure)(nil),
+    Ai:    (*v1.AiExposure)(nil),
     File:  (*v1.FileExposure)(nil),
 }
 ---
@@ -63,6 +64,7 @@
         Scopes:                 nil,
         AdditionalPublisherIds: nil,
     },
+    Ai: (*v1.AiExposure)(nil),
     File: (*v1.FileExposure)(nil),
 }
 ---

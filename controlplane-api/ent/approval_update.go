@@ -215,6 +215,24 @@ func (_u *ApprovalUpdate) ClearAvailableTransitions() *ApprovalUpdate {
 	return _u
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *ApprovalUpdate) SetRequestedScopes(v []string) *ApprovalUpdate {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *ApprovalUpdate) AppendRequestedScopes(v []string) *ApprovalUpdate {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *ApprovalUpdate) ClearRequestedScopes() *ApprovalUpdate {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *ApprovalUpdate) SetName(v string) *ApprovalUpdate {
 	_u.mutation.SetName(v)
@@ -226,6 +244,26 @@ func (_u *ApprovalUpdate) SetNillableName(v *string) *ApprovalUpdate {
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetExpiresAt sets the "expiresAt" field.
+func (_u *ApprovalUpdate) SetExpiresAt(v time.Time) *ApprovalUpdate {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expiresAt" field if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableExpiresAt(v *time.Time) *ApprovalUpdate {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (_u *ApprovalUpdate) ClearExpiresAt() *ApprovalUpdate {
+	_u.mutation.ClearExpiresAt()
 	return _u
 }
 
@@ -450,8 +488,25 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.AvailableTransitionsCleared() {
 		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(approval.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, approval.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(approval.FieldRequestedScopes, field.TypeJSON)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(approval.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.ExpiresAtCleared() {
+		_spec.ClearField(approval.FieldExpiresAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)
@@ -714,6 +769,24 @@ func (_u *ApprovalUpdateOne) ClearAvailableTransitions() *ApprovalUpdateOne {
 	return _u
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *ApprovalUpdateOne) SetRequestedScopes(v []string) *ApprovalUpdateOne {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *ApprovalUpdateOne) AppendRequestedScopes(v []string) *ApprovalUpdateOne {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *ApprovalUpdateOne) ClearRequestedScopes() *ApprovalUpdateOne {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *ApprovalUpdateOne) SetName(v string) *ApprovalUpdateOne {
 	_u.mutation.SetName(v)
@@ -725,6 +798,26 @@ func (_u *ApprovalUpdateOne) SetNillableName(v *string) *ApprovalUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetExpiresAt sets the "expiresAt" field.
+func (_u *ApprovalUpdateOne) SetExpiresAt(v time.Time) *ApprovalUpdateOne {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expiresAt" field if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableExpiresAt(v *time.Time) *ApprovalUpdateOne {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
+// ClearExpiresAt clears the value of the "expiresAt" field.
+func (_u *ApprovalUpdateOne) ClearExpiresAt() *ApprovalUpdateOne {
+	_u.mutation.ClearExpiresAt()
 	return _u
 }
 
@@ -979,8 +1072,25 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 	if _u.mutation.AvailableTransitionsCleared() {
 		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(approval.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, approval.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(approval.FieldRequestedScopes, field.TypeJSON)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approval.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(approval.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.ExpiresAtCleared() {
+		_spec.ClearField(approval.FieldExpiresAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)

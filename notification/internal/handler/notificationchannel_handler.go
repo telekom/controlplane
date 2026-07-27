@@ -33,7 +33,7 @@ type NotificationChannelHandler struct {
 func (n *NotificationChannelHandler) CreateOrUpdate(ctx context.Context, channel *notificationv1.NotificationChannel) error {
 	doNotificationsHousekeeping(ctx, channel, n.HousekeepingConfig)
 
-	channel.SetCondition(condition.NewReadyCondition("Provisioned", "Notification channel is provisioned"))
+	channel.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Notification channel is provisioned"))
 	channel.SetCondition(condition.NewDoneProcessingCondition("Notification channel is done processing"))
 	return nil
 }

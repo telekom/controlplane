@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	// +kubebuilder:scaffold:imports
@@ -196,6 +197,30 @@ func NewZone(name string, environment string) *adminv1.Zone {
 		},
 		Spec: adminv1.ZoneSpec{
 			Visibility: adminv1.ZoneVisibilityWorld,
+			Gateway: adminv1.GatewayConfig{
+				Admin: adminv1.GatewayAdminConfig{
+					Url: "http://gateway-admin.test.local:8001",
+				},
+				Presets: []adminv1.GatewayConfigPreset{
+					{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{
+							{
+								Hostname: "gateway.test.local",
+								Scheme:   "https",
+								BasePath: "/",
+							},
+						},
+					},
+				},
+			},
+			IdentityProvider: adminv1.IdentityProviderConfig{
+				Url: "http://idp.test.local:8080",
+				Admin: adminv1.IdentityProviderAdminConfig{
+					Url: ptr.To("http://idp-admin.test.local:8080"),
+				},
+			},
 		},
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/schema"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -126,7 +127,7 @@ func init() {
 	// apiexposure.DefaultUpstreams holds the default value on creation for the upstreams field.
 	apiexposure.DefaultUpstreams = apiexposureDescUpstreams.Default.([]model.Upstream)
 	// apiexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	apiexposureDescApprovalConfig := apiexposureFields[5].Descriptor()
+	apiexposureDescApprovalConfig := apiexposureFields[7].Descriptor()
 	// apiexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	apiexposure.DefaultApprovalConfig = apiexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	apisubscriptionMixin := schema.ApiSubscription{}.Mixin()
@@ -167,10 +168,6 @@ func init() {
 	apisubscriptionDescBasePath := apisubscriptionFields[0].Descriptor()
 	// apisubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	apisubscription.BasePathValidator = apisubscriptionDescBasePath.Validators[0].(func(string) error)
-	// apisubscriptionDescApprovedScopes is the schema descriptor for approved_scopes field.
-	apisubscriptionDescApprovedScopes := apisubscriptionFields[2].Descriptor()
-	// apisubscription.DefaultApprovedScopes holds the default value on creation for the approved_scopes field.
-	apisubscription.DefaultApprovedScopes = apisubscriptionDescApprovedScopes.Default.([]string)
 	applicationMixin := schema.Application{}.Mixin()
 	application.Policy = privacy.NewPolicies(applicationMixin[0], schema.Application{})
 	application.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -351,8 +348,12 @@ func init() {
 	eventexposureDescActive := eventexposureFields[2].Descriptor()
 	// eventexposure.DefaultActive holds the default value on creation for the active field.
 	eventexposure.DefaultActive = eventexposureDescActive.Default.(bool)
+	// eventexposureDescEventScopes is the schema descriptor for event_scopes field.
+	eventexposureDescEventScopes := eventexposureFields[3].Descriptor()
+	// eventexposure.DefaultEventScopes holds the default value on creation for the event_scopes field.
+	eventexposure.DefaultEventScopes = eventexposureDescEventScopes.Default.([]model.EventScope)
 	// eventexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	eventexposureDescApprovalConfig := eventexposureFields[3].Descriptor()
+	eventexposureDescApprovalConfig := eventexposureFields[5].Descriptor()
 	// eventexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	eventexposure.DefaultApprovalConfig = eventexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	eventsubscriptionMixin := schema.EventSubscription{}.Mixin()
@@ -393,6 +394,14 @@ func init() {
 	eventsubscriptionDescEventType := eventsubscriptionFields[0].Descriptor()
 	// eventsubscription.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
 	eventsubscription.EventTypeValidator = eventsubscriptionDescEventType.Validators[0].(func(string) error)
+	// eventsubscriptionDescTrigger is the schema descriptor for trigger field.
+	eventsubscriptionDescTrigger := eventsubscriptionFields[2].Descriptor()
+	// eventsubscription.DefaultTrigger holds the default value on creation for the trigger field.
+	eventsubscription.DefaultTrigger = eventsubscriptionDescTrigger.Default.(*model.EventTrigger)
+	// eventsubscriptionDescDelivery is the schema descriptor for delivery field.
+	eventsubscriptionDescDelivery := eventsubscriptionFields[3].Descriptor()
+	// eventsubscription.DefaultDelivery holds the default value on creation for the delivery field.
+	eventsubscription.DefaultDelivery = eventsubscriptionDescDelivery.Default.(model.EventDelivery)
 	eventtypeMixin := schema.EventType{}.Mixin()
 	eventtype.Policy = privacy.NewPolicies(eventtypeMixin[0], schema.EventType{})
 	eventtype.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -485,6 +494,40 @@ func init() {
 	memberDescEmail := memberFields[1].Descriptor()
 	// member.EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	member.EmailValidator = memberDescEmail.Validators[0].(func(string) error)
+	permissionsetMixin := schema.PermissionSet{}.Mixin()
+	permissionset.Policy = privacy.NewPolicies(permissionsetMixin[0], schema.PermissionSet{})
+	permissionset.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := permissionset.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	permissionsetMixinFields1 := permissionsetMixin[1].Fields()
+	_ = permissionsetMixinFields1
+	permissionsetMixinFields4 := permissionsetMixin[4].Fields()
+	_ = permissionsetMixinFields4
+	permissionsetFields := schema.PermissionSet{}.Fields()
+	_ = permissionsetFields
+	// permissionsetDescCreatedAt is the schema descriptor for created_at field.
+	permissionsetDescCreatedAt := permissionsetMixinFields1[0].Descriptor()
+	// permissionset.DefaultCreatedAt holds the default value on creation for the created_at field.
+	permissionset.DefaultCreatedAt = permissionsetDescCreatedAt.Default.(func() time.Time)
+	// permissionsetDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	permissionsetDescLastModifiedAt := permissionsetMixinFields1[1].Descriptor()
+	// permissionset.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	permissionset.DefaultLastModifiedAt = permissionsetDescLastModifiedAt.Default.(func() time.Time)
+	// permissionset.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	permissionset.UpdateDefaultLastModifiedAt = permissionsetDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// permissionsetDescNamespace is the schema descriptor for namespace field.
+	permissionsetDescNamespace := permissionsetMixinFields4[0].Descriptor()
+	// permissionset.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	permissionset.NamespaceValidator = permissionsetDescNamespace.Validators[0].(func(string) error)
+	// permissionsetDescPermissions is the schema descriptor for permissions field.
+	permissionsetDescPermissions := permissionsetFields[0].Descriptor()
+	// permissionset.DefaultPermissions holds the default value on creation for the permissions field.
+	permissionset.DefaultPermissions = permissionsetDescPermissions.Default.([]model.Permission)
 	teamMixin := schema.Team{}.Mixin()
 	team.Policy = privacy.NewPolicies(teamMixin[0], schema.Team{})
 	team.Hooks[0] = func(next ent.Mutator) ent.Mutator {

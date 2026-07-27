@@ -23,6 +23,7 @@
         Security:       (*v1.SubscriberSecurity)(nil),
     },
     Event: (*v1.EventSubscription)(nil),
+    Ai:    (*v1.AiSubscription)(nil),
     File:  (*v1.FileSubscription)(nil),
 }
 ---
@@ -36,6 +37,7 @@
         Trigger:   (*v1.EventTrigger)(nil),
         Scopes:    nil,
     },
+    Ai: (*v1.AiSubscription)(nil),
     File: (*v1.FileSubscription)(nil),
 }
 ---

@@ -46,7 +46,7 @@ type SubscriptionMetadata struct {
 
 // SubscriptionSpec wraps the subscription body and environment
 type SubscriptionSpec struct {
-	// Environment is the realm/environment name.
+	// Environment is the environment name to identify which environment the subscription belongs to.
 	// +optional
 	Environment string `json:"environment,omitempty"`
 

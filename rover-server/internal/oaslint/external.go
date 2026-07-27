@@ -13,6 +13,7 @@ import (
 	"net/url"
 
 	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
+	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 )
 
 const (
@@ -20,42 +21,38 @@ const (
 	yamlContentType = "application/yaml; charset=UTF-8"
 )
 
-var _ Linter = (*ExternalLinter)(nil)
-
 // HTTPDoer is the interface for executing HTTP requests.
 // Compatible with *http.Client and metrics-wrapped clients.
-type HTTPDoer interface {
-	Do(req *http.Request) (*http.Response, error)
-}
+type HTTPDoer = client.HttpRequestDoer
 
-// ExternalLinter calls an external linter REST API (Atlas Linter Service compatible).
+// externalLinter calls an external linter REST API (Atlas Linter Service compatible).
 // POST {baseURL}/api/linter/scans with the OAS spec as YAML body.
-type ExternalLinter struct {
+type externalLinter struct {
 	baseURL string
 	ruleset string
-	client  HTTPDoer
+	client  client.HttpRequestDoer
 }
 
-// ExternalLinterOption configures the ExternalLinter.
-type ExternalLinterOption func(*ExternalLinter)
+// externalLinterOption configures the externalLinter.
+type externalLinterOption func(*externalLinter)
 
-// WithHTTPClient overrides the default HTTP client.
-func WithHTTPClient(c HTTPDoer) ExternalLinterOption {
-	return func(l *ExternalLinter) {
+// withHTTPClient overrides the default HTTP client.
+func withHTTPClient(c client.HttpRequestDoer) externalLinterOption {
+	return func(l *externalLinter) {
 		l.client = c
 	}
 }
 
-// WithRuleset sets the ruleset query parameter for linter scan requests.
-func WithRuleset(ruleset string) ExternalLinterOption {
-	return func(l *ExternalLinter) {
+// withRuleset sets the ruleset query parameter for linter scan requests.
+func withRuleset(ruleset string) externalLinterOption {
+	return func(l *externalLinter) {
 		l.ruleset = ruleset
 	}
 }
 
-// NewExternalLinter creates a new ExternalLinter targeting the given base URL.
-func NewExternalLinter(baseURL string, opts ...ExternalLinterOption) *ExternalLinter {
-	l := &ExternalLinter{
+// newExternalLinter creates a new externalLinter targeting the given base URL.
+func newExternalLinter(baseURL string, opts ...externalLinterOption) *externalLinter {
+	l := &externalLinter{
 		baseURL: baseURL,
 		client:  &http.Client{},
 	}
@@ -87,7 +84,7 @@ type violationsInfo struct {
 	Hints    int `json:"hints"`
 }
 
-func (l *ExternalLinter) Lint(ctx context.Context, spec io.Reader) (*LintResult, error) {
+func (l *externalLinter) lint(ctx context.Context, spec io.Reader) (*scanResult, error) {
 	scanURL := fmt.Sprintf("%s/%s", l.baseURL, scanEndpoint)
 	if l.ruleset != "" {
 		scanURL = fmt.Sprintf("%s?ruleset=%s", scanURL, url.QueryEscape(l.ruleset))
@@ -120,7 +117,7 @@ func (l *ExternalLinter) Lint(ctx context.Context, spec io.Reader) (*LintResult,
 		reason = fmt.Sprintf("linter scan found %d error(s) per %q rules", scan.Info.Errors, scan.Ruleset.Name)
 	}
 
-	return &LintResult{
+	return &scanResult{
 		Passed:   passed,
 		Reason:   reason,
 		Ruleset:  scan.Ruleset.Name,

@@ -7,6 +7,8 @@ package shared
 import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
 )
 
 // StatusFromConditions extracts the ent status_phase and status_message
@@ -19,7 +21,7 @@ import (
 //	Ready=False, other reason        -> "PENDING"
 //	Ready condition missing          -> "UNKNOWN"
 func StatusFromConditions(conditions []metav1.Condition) (phase, message string) {
-	ready := meta.FindStatusCondition(conditions, "Ready")
+	ready := meta.FindStatusCondition(conditions, condition.ConditionTypeReady)
 	if ready == nil {
 		return "UNKNOWN", ""
 	}
@@ -27,7 +29,7 @@ func StatusFromConditions(conditions []metav1.Condition) (phase, message string)
 	case metav1.ConditionTrue:
 		return "READY", ready.Message
 	case metav1.ConditionFalse:
-		if ready.Reason == "Error" || ready.Reason == "Failed" {
+		if ready.Reason == condition.ReasonError || ready.Reason == "Failed" {
 			return "ERROR", ready.Message
 		}
 		return "PENDING", ready.Message

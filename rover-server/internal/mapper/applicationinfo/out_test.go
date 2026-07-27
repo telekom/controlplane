@@ -110,6 +110,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 					},
 				},
 				Status: eventv1.EventExposureStatus{
+					PublishURL: "https://horizon.example.com/events/v1",
 					Conditions: []metav1.Condition{
 						{Type: "Ready", Status: metav1.ConditionTrue, Reason: "Ready"},
 					},
@@ -151,49 +152,6 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(err).To(BeNil())
 			Expect(appInfo.Exposures).To(HaveLen(1))
 			Expect(appInfo.StargatePublishEventUrl).To(Equal("https://horizon.example.com/events/v1"))
-		})
-
-		It("must return error when zone fetch fails for event exposures", func() {
-			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
-
-			localStores := &store.Stores{}
-
-			apiExpMock := mocks.NewMockObjectStore[*apiv1.ApiExposure](GinkgoT())
-			localStores.APIExposureStore = apiExpMock
-
-			readyEventExp := &eventv1.EventExposure{
-				TypeMeta:   metav1.TypeMeta{APIVersion: "event.2.2/v1", Kind: "EventExposure"},
-				ObjectMeta: metav1.ObjectMeta{Name: "event-exp-1", Namespace: "test-ns"},
-				Spec: eventv1.EventExposureSpec{
-					EventType:  "de.telekom.test.event.v1",
-					Visibility: eventv1.VisibilityEnterprise,
-					Approval:   eventv1.Approval{Strategy: eventv1.ApprovalStrategySimple},
-				},
-				Status: eventv1.EventExposureStatus{
-					Conditions: []metav1.Condition{
-						{Type: "Ready", Status: metav1.ConditionTrue, Reason: "Ready"},
-					},
-				},
-			}
-			eventExpMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
-			eventExpMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(readyEventExp, nil).Maybe()
-			localStores.EventExposureStore = eventExpMock
-
-			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
-			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("zone not found")).Maybe()
-			localStores.ZoneStore = zoneMock
-
-			roverWithEventExp := rover.DeepCopy()
-			roverWithEventExp.Status.ApiExposures = nil
-			roverWithEventExp.Status.EventExposures = []types.ObjectRef{
-				{Name: "event-exp-1", Namespace: "test-ns"},
-			}
-
-			appInfo := &api.ApplicationInfo{}
-			err := FillExposureInfo(secCtx, roverWithEventExp, appInfo, localStores)
-
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(ContainSubstring("failed to get zone"))
 		})
 
 		It("must record error when EventExposureStore.Get fails", func() {

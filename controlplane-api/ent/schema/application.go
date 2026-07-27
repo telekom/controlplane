@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // Application holds the schema definition for the Application entity.
@@ -61,6 +62,12 @@ func (Application) Fields() []ent.Field {
 		field.Text("secret_rotation_message").
 			Optional().
 			Nillable(),
+		field.JSON("external_ids", []model.ExternalId{}).
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.JSON("ip_restrictions", model.IpRestrictions{}).
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }
 
@@ -83,6 +90,8 @@ func (Application) Edges() []ent.Edge {
 			Annotations(entgql.RelayConnection()),
 		edge.To("subscribed_events", EventSubscription.Type).
 			Annotations(entgql.RelayConnection()),
+		edge.To("permission_set", PermissionSet.Type).
+			Unique(),
 	}
 }
 

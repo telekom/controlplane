@@ -151,6 +151,34 @@ func (_c *ApiExposureCreate) SetUpstreams(v []model.Upstream) *ApiExposureCreate
 	return _c
 }
 
+// SetSecurity sets the "security" field.
+func (_c *ApiExposureCreate) SetSecurity(v model.ApiExposureSecurity) *ApiExposureCreate {
+	_c.mutation.SetSecurity(v)
+	return _c
+}
+
+// SetNillableSecurity sets the "security" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureCreate {
+	if v != nil {
+		_c.SetSecurity(*v)
+	}
+	return _c
+}
+
+// SetTraffic sets the "traffic" field.
+func (_c *ApiExposureCreate) SetTraffic(v model.Traffic) *ApiExposureCreate {
+	_c.mutation.SetTraffic(v)
+	return _c
+}
+
+// SetNillableTraffic sets the "traffic" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableTraffic(v *model.Traffic) *ApiExposureCreate {
+	if v != nil {
+		_c.SetTraffic(*v)
+	}
+	return _c
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (_c *ApiExposureCreate) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureCreate {
 	_c.mutation.SetApprovalConfig(v)
@@ -418,6 +446,14 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 		_spec.SetField(apiexposure.FieldUpstreams, field.TypeJSON, value)
 		_node.Upstreams = value
 	}
+	if value, ok := _c.mutation.Security(); ok {
+		_spec.SetField(apiexposure.FieldSecurity, field.TypeJSON, value)
+		_node.Security = value
+	}
+	if value, ok := _c.mutation.Traffic(); ok {
+		_spec.SetField(apiexposure.FieldTraffic, field.TypeJSON, value)
+		_node.Traffic = value
+	}
 	if value, ok := _c.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
 		_node.ApprovalConfig = value
@@ -672,6 +708,42 @@ func (u *ApiExposureUpsert) UpdateUpstreams() *ApiExposureUpsert {
 	return u
 }
 
+// SetSecurity sets the "security" field.
+func (u *ApiExposureUpsert) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldSecurity, v)
+	return u
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateSecurity() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldSecurity)
+	return u
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiExposureUpsert) ClearSecurity() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldSecurity)
+	return u
+}
+
+// SetTraffic sets the "traffic" field.
+func (u *ApiExposureUpsert) SetTraffic(v model.Traffic) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldTraffic, v)
+	return u
+}
+
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateTraffic() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldTraffic)
+	return u
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiExposureUpsert) ClearTraffic() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldTraffic)
+	return u
+}
+
 // SetApprovalConfig sets the "approval_config" field.
 func (u *ApiExposureUpsert) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpsert {
 	u.Set(apiexposure.FieldApprovalConfig, v)
@@ -912,6 +984,48 @@ func (u *ApiExposureUpsertOne) SetUpstreams(v []model.Upstream) *ApiExposureUpse
 func (u *ApiExposureUpsertOne) UpdateUpstreams() *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.UpdateUpstreams()
+	})
+}
+
+// SetSecurity sets the "security" field.
+func (u *ApiExposureUpsertOne) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetSecurity(v)
+	})
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateSecurity() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateSecurity()
+	})
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiExposureUpsertOne) ClearSecurity() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearSecurity()
+	})
+}
+
+// SetTraffic sets the "traffic" field.
+func (u *ApiExposureUpsertOne) SetTraffic(v model.Traffic) *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetTraffic(v)
+	})
+}
+
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateTraffic() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateTraffic()
+	})
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiExposureUpsertOne) ClearTraffic() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearTraffic()
 	})
 }
 
@@ -1326,6 +1440,48 @@ func (u *ApiExposureUpsertBulk) SetUpstreams(v []model.Upstream) *ApiExposureUps
 func (u *ApiExposureUpsertBulk) UpdateUpstreams() *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.UpdateUpstreams()
+	})
+}
+
+// SetSecurity sets the "security" field.
+func (u *ApiExposureUpsertBulk) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetSecurity(v)
+	})
+}
+
+// UpdateSecurity sets the "security" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateSecurity() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateSecurity()
+	})
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (u *ApiExposureUpsertBulk) ClearSecurity() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearSecurity()
+	})
+}
+
+// SetTraffic sets the "traffic" field.
+func (u *ApiExposureUpsertBulk) SetTraffic(v model.Traffic) *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetTraffic(v)
+	})
+}
+
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateTraffic() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateTraffic()
+	})
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiExposureUpsertBulk) ClearTraffic() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearTraffic()
 	})
 }
 

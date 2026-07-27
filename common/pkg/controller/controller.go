@@ -233,7 +233,7 @@ func HandleError(ctx context.Context, err error, obj common_types.Object, record
 // and the Ready condition is not already set to false.
 func EnsureNotReadyOnError(_ context.Context, _ client.Client, obj common_types.Object, err error) bool {
 	if err != nil && !meta.IsStatusConditionFalse(obj.GetConditions(), condition.ConditionTypeReady) {
-		return obj.SetCondition(condition.NewNotReadyCondition("ErrorOccurred", err.Error()))
+		return obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonError, err.Error()))
 	}
 	return false
 }

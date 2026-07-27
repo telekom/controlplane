@@ -7,14 +7,16 @@ package roadmap_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/roadmap"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func createRoadmapObject() *roverv1.Roadmap {
@@ -41,7 +43,6 @@ func createRoadmapObject() *roverv1.Roadmap {
 }
 
 var _ = Describe("Roadmap Handler", func() {
-
 	var ctx context.Context
 	var roadmapHandler *roadmap.RoadmapHandler
 
@@ -65,7 +66,7 @@ var _ = Describe("Roadmap Handler", func() {
 			readyCond := meta.FindStatusCondition(roadmapObj.Status.Conditions, condition.ConditionTypeReady)
 			Expect(readyCond).NotTo(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(readyCond.Reason).To(Equal("Ready"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 
 			By("Verify Processing condition is set to false")
 			processingCond := meta.FindStatusCondition(roadmapObj.Status.Conditions, condition.ConditionTypeProcessing)

@@ -82,7 +82,9 @@ func (r *Repository) Upsert(ctx context.Context, data *TeamData) error {
 			SetStatusPhase(team.StatusPhase(data.StatusPhase)).
 			SetStatusMessage(data.StatusMessage).
 			SetEnvironment(data.Meta.Environment).
-			SetNamespace(data.Meta.Namespace)
+			SetNamespace(data.Meta.Namespace).
+			SetDisplayName(data.DisplayName).
+			SetDescription(data.Description)
 
 		if data.TeamToken != "" {
 			create = create.SetTeamToken(data.TeamToken)
@@ -101,6 +103,8 @@ func (r *Repository) Upsert(ctx context.Context, data *TeamData) error {
 				u.SetStatusMessage(data.StatusMessage)
 				u.SetEnvironment(data.Meta.Environment)
 				u.SetNamespace(data.Meta.Namespace)
+				u.SetDescription(data.Description)
+				u.SetDisplayName(data.DisplayName)
 				if data.TeamToken != "" {
 					u.SetTeamToken(data.TeamToken)
 				} else {

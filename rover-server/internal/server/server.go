@@ -68,6 +68,15 @@ type ApiChangelogController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
+type McpSpecificationController interface {
+	Create(ctx context.Context, req api.McpSpecificationCreateRequest) (api.McpSpecificationResponse, error)
+	Get(ctx context.Context, resourceId string) (api.McpSpecificationResponse, error)
+	GetAll(ctx context.Context, params api.GetAllMcpSpecificationsParams) (*api.McpSpecificationListResponse, error)
+	Update(ctx context.Context, resourceId string, req api.McpSpecificationUpdateRequest) (api.McpSpecificationResponse, error)
+	Delete(ctx context.Context, resourceId string) error
+	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
+}
+
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--",
@@ -94,12 +103,13 @@ type Server struct {
 	Roadmaps            ApiRoadmapController
 	EventSpecifications EventSpecificationController
 	ApiChangelogs       ApiChangelogController
+	McpSpecifications   McpSpecificationController
 }
 
 func (s *Server) RegisterRoutes(router fiber.Router) {
 	checkAccess := security.ConfigureSecurity(router, security.SecurityOpts{
-		Enabled: true,
-		Log:     s.Log,
+		Mode: s.Config.Security.Mode,
+		Log:  s.Log,
 		JWTOpts: []security.Option[*security.JWTOpts]{
 			security.WithLmsCheck(s.Config.Security.LMS.BasePath),
 			security.WithTrustedIssuers(s.Config.Security.TrustedIssuers),
@@ -188,5 +198,15 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Get("/apichangelogs/:resourceId", checkAccess, s.GetApiChangelog)
 	router.Put("/apichangelogs/:resourceId", checkAccess, s.UpdateApiChangelog)
 	router.Delete("/apichangelogs/:resourceId", checkAccess, s.DeleteApiChangelog)
+
+	s.Log.Info("Registering mcpspecifications routes")
+
+	router.Get("/mcpspecifications", checkAccess, s.GetAllMcpSpecifications)
+	router.Post("/mcpspecifications", checkAccess, s.CreateMcpSpecification)
+	router.Get("/mcpspecifications/:resourceId/status", checkAccess, s.GetMcpSpecificationStatus)
+
+	router.Get("/mcpspecifications/:resourceId", checkAccess, s.GetMcpSpecification)
+	router.Put("/mcpspecifications/:resourceId", checkAccess, s.UpdateMcpSpecification)
+	router.Delete("/mcpspecifications/:resourceId", checkAccess, s.DeleteMcpSpecification)
 
 }

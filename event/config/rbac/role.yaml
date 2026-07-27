@@ -104,15 +104,6 @@ rules:
   - update
   - watch
 - apiGroups:
-  - gateway.cp.ei.telekom.de
-  - identity.cp.ei.telekom.de
-  resources:
-  - realms
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - identity.cp.ei.telekom.de
   resources:
   - clients
@@ -123,6 +114,14 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - identity.cp.ei.telekom.de
+  resources:
+  - realms
+  verbs:
+  - get
+  - list
   - watch
 - apiGroups:
   - pubsub.cp.ei.telekom.de

@@ -54,16 +54,6 @@ const (
 	TemplatePlaceholderIsExpired      = "is_expired"
 )
 
-const (
-	NotificationPropertiesBasePath  = "basePath"
-	NotificationPropertiesEventType = "eventType"
-)
-
-const (
-	NotificationResourceTypeApi   = "API"
-	NotificationResourceTypeEvent = "event"
-)
-
 type Actor string
 
 const (
@@ -117,18 +107,9 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 		}
 	}
 
-	// handle the resource type and resource name
-	// api - basepath (set in api subscription handler)
-	if requesterPropertiesMap[NotificationPropertiesBasePath] != nil {
-		requesterPropertiesMap[TemplatePlaceholderResourceType] = NotificationResourceTypeApi
-		requesterPropertiesMap[TemplatePlaceholderResourceName] = requesterPropertiesMap[NotificationPropertiesBasePath]
-	}
-
-	// event - event type (set in event subscription handler)
-	if requesterPropertiesMap[NotificationPropertiesEventType] != nil {
-		requesterPropertiesMap[TemplatePlaceholderResourceType] = NotificationResourceTypeEvent
-		requesterPropertiesMap[TemplatePlaceholderResourceName] = requesterPropertiesMap[NotificationPropertiesEventType]
-	}
+	// resource_type and resource_name are set directly by the subscription
+	// handler that creates the ApprovalRequest (api/event/mcp), so they flow
+	// through as ordinary properties.
 
 	// scopes
 	if requesterPropertiesMap[TemplatePlaceholderScopes] == nil {

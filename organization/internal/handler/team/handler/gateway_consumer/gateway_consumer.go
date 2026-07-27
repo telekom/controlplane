@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
@@ -31,12 +32,17 @@ func (g GatewayConsumerHandler) CreateOrUpdate(ctx context.Context, owner *organ
 		return err
 	}
 
+	gatewayRef := zoneObj.Status.Gateway
+	if gatewayRef == nil {
+		// this should not happen if the cluster is properly configured
+		return ctrlerrors.BlockedErrorf("no gateway reference found in zone object")
+	}
 	mutate := func() error {
 		gatewayConsumerObj.Spec.Name = gatewayConsumerObj.GetName()
 
 		gatewayConsumerObj.Spec = gatewayv1.ConsumerSpec{
-			Realm: *zoneObj.Status.TeamApiGatewayRealm,
-			Name:  gatewayConsumerObj.GetName(),
+			Gateway: *gatewayRef,
+			Name:    gatewayConsumerObj.GetName(),
 		}
 
 		gatewayConsumerObj.SetLabels(owner.GetLabels())

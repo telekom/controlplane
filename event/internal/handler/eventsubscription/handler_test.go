@@ -23,6 +23,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -146,7 +147,7 @@ func makeReadyEventConfig(zoneName string, fullMesh bool, meshZones []string) ev
 		},
 		Spec: eventv1.EventConfigSpec{
 			Zone: ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
-			Mesh: eventv1.MeshConfig{
+			Mesh: &eventv1.MeshConfig{
 				FullMesh:  fullMesh,
 				ZoneNames: meshZones,
 			},
@@ -403,6 +404,12 @@ var _ = Describe("EventSubscriptionHandler", func() {
 				_ = mutate()
 				subscriber := obj.(*pubsubv1.Subscriber)
 				subscriber.Status.SubscriptionId = subscriptionId
+				meta.SetStatusCondition(&subscriber.Status.Conditions, metav1.Condition{
+					Type:               condition.ConditionTypeReady,
+					Status:             metav1.ConditionTrue,
+					Reason:             "Ready",
+					ObservedGeneration: subscriber.Generation,
+				})
 			}).
 			Return(result, err).Once()
 	}
@@ -464,7 +471,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventTypeNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -496,7 +503,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventExposureNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -532,7 +539,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventExposureNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("should return error when GetEventConfigForZone fails for exposure zone", func() {
@@ -570,7 +577,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ZoneNotSupported"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -757,7 +764,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("InvalidRequestor"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonValidationFailed))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -814,7 +821,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ApprovalPending"))
+			Expect(readyCond.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -837,7 +844,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ApprovalDenied"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -857,7 +864,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ApprovalRequestDenied"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -878,7 +885,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("PublisherNotReady"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -909,12 +916,12 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ChildResourcesNotReady"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(processingCond.Reason).To(Equal("ChildResourcesNotReady"))
+			Expect(processingCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 		})
 
 		It("should set Ready when all provisioning succeeds", func() {
@@ -928,7 +935,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(readyCond.Reason).To(Equal("EventSubscriptionProvisioned"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())

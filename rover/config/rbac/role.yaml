@@ -23,6 +23,20 @@ rules:
   - list
   - watch
 - apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpexposures
+  - mcpservers
+  - mcpsubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - api.cp.ei.telekom.de
   resources:
   - apicategories
@@ -118,6 +132,7 @@ rules:
   - apichangelogs
   - apispecifications
   - eventspecifications
+  - mcpspecifications
   - filespecifications
   - roadmaps
   - rovers
@@ -135,6 +150,7 @@ rules:
   - apichangelogs/finalizers
   - apispecifications/finalizers
   - eventspecifications/finalizers
+  - mcpspecifications/finalizers
   - filespecifications/finalizers
   - roadmaps/finalizers
   - rovers/finalizers
@@ -146,6 +162,7 @@ rules:
   - apichangelogs/status
   - apispecifications/status
   - eventspecifications/status
+  - mcpspecifications/status
   - filespecifications/status
   - roadmaps/status
   - rovers/status

@@ -4,7 +4,7 @@
 
 module github/telekom/controplane/cpapi/api
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/oapi-codegen/runtime v1.4.0

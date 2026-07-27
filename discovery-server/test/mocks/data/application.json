@@ -33,7 +33,7 @@
       {
         "type": "Ready",
         "status": "True",
-        "reason": "SubResourceProvisioned",
+        "reason": "Provisioned",
         "message": "All sub-resources are up to date",
         "lastTransitionTime": "2025-01-15T10:01:00Z",
         "observedGeneration": 1

@@ -23,6 +23,7 @@ import (
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventexposure"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -77,11 +78,28 @@ func makeReadyZone() *adminv1.Zone {
 			Name:      "test-zone",
 			Namespace: "default",
 		},
+		Spec: adminv1.ZoneSpec{
+			Gateway: adminv1.GatewayConfig{
+				Presets: []adminv1.GatewayConfigPreset{{
+					Name:    "default",
+					Default: true,
+					Urls: []adminv1.UrlConfig{{
+						Hostname: "gateway.example.com",
+						Port:     443,
+						Scheme:   "https",
+					}},
+				}},
+			},
+		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			GatewayRealm: &ctypes.ObjectRef{
-				Name:      "gw-realm",
+			Gateway: &ctypes.ObjectRef{
+				Name:      "gw",
 				Namespace: "default",
+			},
+			Links: adminv1.Links{
+				Issuer:    "https://idp.test-zone.example.com",
+				LmsIssuer: "https://lms.test-zone.example.com",
 			},
 		},
 	}
@@ -101,14 +119,16 @@ func makeReadyEventConfig() eventv1.EventConfig {
 		},
 		Spec: eventv1.EventConfigSpec{
 			Zone: ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
-			Admin: eventv1.AdminConfig{
-				Url: "https://admin.example.com",
-				Client: eventv1.ClientConfig{
-					Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+			Local: &eventv1.LocalBackend{
+				Admin: eventv1.AdminConfig{
+					Url: "https://admin.example.com",
+					Client: eventv1.ClientConfig{
+						Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+					},
 				},
+				ServerSendEventUrl: "https://sse.example.com",
+				PublishEventUrl:    "http://publish.internal:8080/publish",
 			},
-			ServerSendEventUrl: "https://sse.example.com",
-			PublishEventUrl:    "http://publish.internal:8080/publish",
 		},
 		Status: eventv1.EventConfigStatus{
 			EventStore: &ctypes.ObjectRef{
@@ -116,6 +136,7 @@ func makeReadyEventConfig() eventv1.EventConfig {
 				Namespace: "default",
 			},
 			CallbackURL: "https://callback.example.com/test-zone/callback/v1",
+			PublishURL:  "https://publish.gateway.example.com",
 		},
 	}
 	meta.SetStatusCondition(&ec.Status.Conditions, metav1.Condition{
@@ -166,31 +187,55 @@ func makeReadyApplication() *applicationv1.Application {
 	return app
 }
 
-func makeReadyGatewayRealm() *gatewayv1.Realm {
-	r := &gatewayv1.Realm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gw-realm",
-			Namespace: "default",
-		},
-		Spec: gatewayv1.RealmSpec{
-			Urls:             []string{"https://gateway.example.com:443"},
-			IssuerUrls:       []string{"https://issuer.example.com"},
-			DefaultConsumers: []string{},
-		},
+// makeReadyTargetZone builds the ready local zone that a proxy zone forwards to.
+func makeReadyTargetZone() *adminv1.Zone {
+	z := makeReadyZone()
+	z.Name = "target-zone"
+	z.Status.Namespace = "target-ns"
+	z.Status.Gateway = &ctypes.ObjectRef{Name: "target-gw", Namespace: "default"}
+	z.Status.Links = adminv1.Links{
+		Issuer:    "https://idp.target-zone.example.com",
+		LmsIssuer: "https://lms.target-zone.example.com",
 	}
-	meta.SetStatusCondition(&r.Status.Conditions, metav1.Condition{
-		Type:   condition.ConditionTypeReady,
-		Status: metav1.ConditionTrue,
-		Reason: "Ready",
-	})
-	return r
+	return z
+}
+
+// makeProxyEventConfig builds a ready proxy EventConfig for test-zone that targets target-zone.
+// A proxy config has no Local backend — this is the shape that used to panic CreateSSERoute.
+func makeProxyEventConfig() eventv1.EventConfig {
+	ec := makeReadyEventConfig()
+	ec.Name = "test-eventconfig-proxy"
+	ec.Spec.Zone = ctypes.ObjectRef{Name: "test-zone", Namespace: "default"}
+	ec.Spec.Local = nil
+	ec.Spec.Proxy = &eventv1.ProxyBackend{
+		TargetZone: ctypes.ObjectRef{Name: "target-zone", Namespace: "default"},
+	}
+	return ec
+}
+
+// makeTargetEventConfig builds the ready local EventConfig for target-zone.
+func makeTargetEventConfig() eventv1.EventConfig {
+	ec := makeReadyEventConfig()
+	ec.Name = "target-eventconfig"
+	ec.Spec.Zone = ctypes.ObjectRef{Name: "target-zone", Namespace: "default"}
+	return ec
+}
+
+// zoneFromListOpts extracts the zone name from a MatchingFields list option.
+func zoneFromListOpts(opts []client.ListOption) string {
+	for _, opt := range opts {
+		if mf, ok := opt.(client.MatchingFields); ok {
+			return mf[".spec.zone.name"]
+		}
+	}
+	return ""
 }
 
 var (
 	zoneKey       = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
+	targetZoneKey = k8stypes.NamespacedName{Name: "target-zone", Namespace: "default"}
 	eventStoreKey = k8stypes.NamespacedName{Name: "test-eventstore", Namespace: "default"}
 	appKey        = k8stypes.NamespacedName{Name: "test-app", Namespace: "default"}
-	gwRealmKey    = k8stypes.NamespacedName{Name: "gw-realm", Namespace: "default"}
 )
 
 var _ = Describe("EventExposureHandler", func() {
@@ -203,6 +248,7 @@ var _ = Describe("EventExposureHandler", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
+		ctx = contextutil.WithEnv(ctx, "test-env")
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
 		h = &eventexposure.EventExposureHandler{}
@@ -334,22 +380,6 @@ var _ = Describe("EventExposureHandler", func() {
 			Return(err).Once()
 	}
 
-	// mockGetGatewayRealm sets up a mock for c.Get on the gateway Realm.
-	mockGetGatewayRealm := func(realm *gatewayv1.Realm) {
-		fakeClient.EXPECT().
-			Get(ctx, gwRealmKey, mock.AnythingOfType("*v1.Realm")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*gatewayv1.Realm) = *realm
-			}).
-			Return(nil).Once()
-	}
-
-	mockGetGatewayRealmError := func(err error) {
-		fakeClient.EXPECT().
-			Get(ctx, gwRealmKey, mock.AnythingOfType("*v1.Realm")).
-			Return(err).Once()
-	}
-
 	// mockCreateOrUpdateRoute sets up a mock for c.CreateOrUpdate on a Route.
 	mockCreateOrUpdateRoute := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
@@ -375,7 +405,6 @@ var _ = Describe("EventExposureHandler", func() {
 		ec := makeReadyEventConfig()
 		es := makeReadyEventStore()
 		app := makeReadyApplication()
-		gwRealm := makeReadyGatewayRealm()
 
 		mockListEventTypes([]eventv1.EventType{et})
 		mockListEventExposures([]eventv1.EventExposure{})
@@ -385,7 +414,6 @@ var _ = Describe("EventExposureHandler", func() {
 		mockGetApplication(app)
 		mockCreateOrUpdatePublisher(controllerutil.OperationResultCreated, nil)
 		mockListEventSubscriptions([]eventv1.EventSubscription{}) // no cross-zone SSE
-		mockGetGatewayRealm(gwRealm)                              // for CreateSSERoute
 		mockCreateOrUpdateRoute(controllerutil.OperationResultCreated, nil)
 		mockCleanup(0, nil)
 	}
@@ -411,7 +439,7 @@ var _ = Describe("EventExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventTypeNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
@@ -462,7 +490,7 @@ var _ = Describe("EventExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("EventExposureAlreadyExists"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("should return error when GetZone fails", func() {
@@ -576,6 +604,7 @@ var _ = Describe("EventExposureHandler", func() {
 		It("should return error when CreateSSERoute fails", func() {
 			et := makeReadyEventType()
 			zone := makeReadyZone()
+			zone.Spec.Gateway.Presets = nil // no default preset → CreateSSERoute returns BlockedError
 			ec := makeReadyEventConfig()
 			es := makeReadyEventStore()
 			app := makeReadyApplication()
@@ -588,7 +617,6 @@ var _ = Describe("EventExposureHandler", func() {
 			mockGetApplication(app)
 			mockCreateOrUpdatePublisher(controllerutil.OperationResultCreated, nil)
 			mockListEventSubscriptions([]eventv1.EventSubscription{}) // no cross-zone
-			mockGetGatewayRealmError(fmt.Errorf("realm fetch failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -607,12 +635,12 @@ var _ = Describe("EventExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ChildResourcesNotReady"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(processingCond.Reason).To(Equal("ChildResourcesNotReady"))
+			Expect(processingCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 		})
 
 		It("should set Ready condition when all children ready", func() {
@@ -626,12 +654,111 @@ var _ = Describe("EventExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(readyCond.Reason).To(Equal("EventExposureProvisioned"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Done"))
+		})
+
+		It("should not panic and route via backend zone when exposure zone is a proxy zone", func() {
+			// Regression: a proxy exposure zone has EventConfig.Spec.Local == nil.
+			// reconcileSSERoutes must resolve the target (local) zone as the SSE
+			// backend, build the primary Route there, and give the proxy zone its
+			// own-zone proxy Route — never dereference the nil Local backend.
+			et := makeReadyEventType()
+			proxyZone := makeReadyZone() // test-zone (the proxy exposure zone)
+			targetZone := makeReadyTargetZone()
+			proxyCfg := makeProxyEventConfig()
+			targetCfg := makeTargetEventConfig()
+			es := makeReadyEventStore()
+			app := makeReadyApplication()
+
+			mockListEventTypes([]eventv1.EventType{et})
+			mockListEventExposures([]eventv1.EventExposure{})
+			mockGetZone(proxyZone)
+
+			// EventConfig lookups are zone-aware: test-zone -> proxy, target-zone -> local.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, opts ...client.ListOption) {
+					cfg := proxyCfg
+					if zoneFromListOpts(opts) == "target-zone" {
+						cfg = targetCfg
+					}
+					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{cfg}}
+				}).
+				Return(nil) // test-zone x2 (config + eventstore) + target-zone x1
+
+			mockGetEventStore(es)
+			mockGetApplication(app)
+			mockCreateOrUpdatePublisher(controllerutil.OperationResultCreated, nil)
+			mockListEventSubscriptions([]eventv1.EventSubscription{}) // no cross-zone subscribers
+
+			// Resolve target zone as SSE backend.
+			fakeClient.EXPECT().
+				Get(ctx, targetZoneKey, mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*adminv1.Zone) = *targetZone
+				}).
+				Return(nil).Once()
+
+			// Two Routes: own-zone proxy Route (proxy zone) + primary Route (backend zone).
+			// Capture them by namespace so we can assert trusted-issuer wiring.
+			capturedRoutes := map[string]*gatewayv1.Route{}
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					route := obj.(*gatewayv1.Route)
+					capturedRoutes[route.Namespace] = route.DeepCopy()
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Times(2)
+
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			// Primary Route lives in the backend (target) zone's namespace.
+			Expect(obj.Status.Route).ToNot(BeNil())
+			Expect(obj.Status.Route.Namespace).To(Equal("target-ns"))
+
+			// Proxy exposure zone gets its own-zone proxy Route (in its own namespace).
+			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
+			Expect(obj.Status.ProxyRoutes[0].Namespace).To(Equal("default"))
+
+			// SSE URLs are published for both the proxy zone and the backend zone.
+			Expect(obj.Status.SseURLs).To(HaveKey("test-zone"))
+			Expect(obj.Status.SseURLs).To(HaveKey("target-zone"))
+
+			// Own-zone proxy Route: subscribers connect locally with an IDP token, so it
+			// trusts the proxy zone's IDP issuer and NOT its LMS issuer.
+			ownProxyRoute := capturedRoutes["default"]
+			Expect(ownProxyRoute).ToNot(BeNil())
+			Expect(ownProxyRoute.Spec.Security.TrustedIssuers).To(ConsistOf("https://idp.test-zone.example.com"))
+
+			// Primary Route in the backend zone trusts its own IDP issuer plus the mesh
+			// (LMS) issuer of the proxy exposure zone reaching it over the proxy hop.
+			primaryRoute := capturedRoutes["target-ns"]
+			Expect(primaryRoute).ToNot(BeNil())
+			Expect(primaryRoute.Spec.Security.TrustedIssuers).To(ConsistOf(
+				"https://idp.target-zone.example.com",
+				"https://lms.test-zone.example.com",
+			))
+		})
+
+		It("should set PublishURL from EventConfig PublishURL", func() {
+			setupFullHappyPath()
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.PublishURL).To(Equal("https://publish.gateway.example.com"))
 		})
 	})
 

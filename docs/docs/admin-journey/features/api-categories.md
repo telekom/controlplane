@@ -27,8 +27,14 @@ info:
 
 When the specification is submitted, the platform looks up the matching `ApiCategory` resource and validates the request against its rules. If the category does not exist, is inactive, or the team is not allowed to use it, the request is rejected.
 
+When API runtime resources are processed, the platform also enforces `allowTeams.categories` for `ApiExposure` and `ApiSubscription` before provisioning downstream gateway resources.
+
+:::note
+Runtime enforcement in this phase is intentionally scoped to `allowTeams.categories`. `allowTeams.names` is currently not evaluated by `ApiExposure` and `ApiSubscription` handlers.
+:::
+
 :::info
-If no `ApiCategory` resources exist in the environment, the platform skips category validation entirely and accepts any value. This means you can adopt API Categories gradually — they only take effect once you create your first one.
+If no `ApiCategory` resources exist in the environment, the platform skips runtime category validation entirely and accepts any value. This means you can adopt API Categories gradually — they only take effect once you create your first one.
 :::
 
 :::caution

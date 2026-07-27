@@ -20,9 +20,13 @@ spec:
     url: https://my-idp.example.com/
   gateway:
     admin:
-      clientSecret: someSecret
       url: https://my-gateway-admin.example.com/admin-api
-    url: https://my-gateway.example.com/
+    presets:
+      - name: default
+        default: true
+        urls:
+          - hostname: my-gateway.example.com
+            basePath: /
   redis:
     host: my-redis-host
     port: 6379

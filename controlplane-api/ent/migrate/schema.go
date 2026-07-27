@@ -63,6 +63,8 @@ var (
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "features", Type: field.TypeJSON},
 		{Name: "upstreams", Type: field.TypeJSON},
+		{Name: "security", Type: field.TypeJSON, Nullable: true},
+		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "api_exposures", Type: field.TypeInt, Nullable: true},
@@ -76,13 +78,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_exposures_apis_exposures",
-				Columns:    []*schema.Column{APIExposuresColumns[14]},
+				Columns:    []*schema.Column{APIExposuresColumns[16]},
 				RefColumns: []*schema.Column{ApisColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_exposures_applications_exposed_apis",
-				Columns:    []*schema.Column{APIExposuresColumns[15]},
+				Columns:    []*schema.Column{APIExposuresColumns[17]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -91,7 +93,7 @@ var (
 			{
 				Name:    "apiexposure_base_path_application_exposed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[15]},
+				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[17]},
 			},
 		},
 	}
@@ -107,7 +109,8 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
-		{Name: "approved_scopes", Type: field.TypeJSON},
+		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "security", Type: field.TypeJSON, Nullable: true},
 		{Name: "api_subscription_target", Type: field.TypeInt, Nullable: true},
 		{Name: "application_subscribed_apis", Type: field.TypeInt},
 	}
@@ -119,13 +122,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_subscriptions_api_exposures_target",
-				Columns:    []*schema.Column{APISubscriptionsColumns[11]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[12]},
 				RefColumns: []*schema.Column{APIExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_subscriptions_applications_subscribed_apis",
-				Columns:    []*schema.Column{APISubscriptionsColumns[12]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[13]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -139,7 +142,7 @@ var (
 			{
 				Name:    "apisubscription_base_path_application_subscribed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[12]},
+				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[13]},
 			},
 		},
 	}
@@ -160,6 +163,8 @@ var (
 		{Name: "current_expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "secret_rotation_phase", Type: field.TypeEnum, Enums: []string{"DONE", "ROTATING", "GRACE_PERIOD_ACTIVE", "GRACE_PERIOD_EXPIRING", "FAILED"}, Default: "DONE"},
 		{Name: "secret_rotation_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "external_ids", Type: field.TypeJSON, Nullable: true},
+		{Name: "ip_restrictions", Type: field.TypeJSON, Nullable: true},
 		{Name: "team_applications", Type: field.TypeInt},
 		{Name: "zone_applications", Type: field.TypeInt},
 	}
@@ -171,13 +176,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "applications_teams_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[15]},
+				Columns:    []*schema.Column{ApplicationsColumns[17]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "applications_zones_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[16]},
+				Columns:    []*schema.Column{ApplicationsColumns[18]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -186,7 +191,7 @@ var (
 			{
 				Name:    "application_name_team_applications",
 				Unique:  true,
-				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[15]},
+				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[17]},
 			},
 		},
 	}
@@ -206,7 +211,9 @@ var (
 		{Name: "decider_team_name", Type: field.TypeString, Size: 2147483647},
 		{Name: "decisions", Type: field.TypeJSON},
 		{Name: "available_transitions", Type: field.TypeJSON, Nullable: true},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
 		{Name: "api_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "event_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
@@ -219,13 +226,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approvals_api_subscriptions_approval",
-				Columns:    []*schema.Column{ApprovalsColumns[16]},
+				Columns:    []*schema.Column{ApprovalsColumns[18]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "approvals_event_subscriptions_approval",
-				Columns:    []*schema.Column{ApprovalsColumns[17]},
+				Columns:    []*schema.Column{ApprovalsColumns[19]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -234,7 +241,7 @@ var (
 			{
 				Name:    "approval_namespace_name",
 				Unique:  true,
-				Columns: []*schema.Column{ApprovalsColumns[6], ApprovalsColumns[14]},
+				Columns: []*schema.Column{ApprovalsColumns[6], ApprovalsColumns[15]},
 			},
 		},
 	}
@@ -254,6 +261,7 @@ var (
 		{Name: "decider_team_name", Type: field.TypeString, Size: 2147483647},
 		{Name: "decisions", Type: field.TypeJSON},
 		{Name: "available_transitions", Type: field.TypeJSON, Nullable: true},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED"}, Default: "PENDING"},
 		{Name: "api_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
@@ -267,13 +275,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approval_requests_api_subscriptions_approval_requests",
-				Columns:    []*schema.Column{ApprovalRequestsColumns[16]},
+				Columns:    []*schema.Column{ApprovalRequestsColumns[17]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "approval_requests_event_subscriptions_approval_requests",
-				Columns:    []*schema.Column{ApprovalRequestsColumns[17]},
+				Columns:    []*schema.Column{ApprovalRequestsColumns[18]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -282,7 +290,7 @@ var (
 			{
 				Name:    "approvalrequest_namespace_name",
 				Unique:  true,
-				Columns: []*schema.Column{ApprovalRequestsColumns[6], ApprovalRequestsColumns[14]},
+				Columns: []*schema.Column{ApprovalRequestsColumns[6], ApprovalRequestsColumns[15]},
 			},
 		},
 	}
@@ -298,6 +306,8 @@ var (
 		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
+		{Name: "event_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "gateway_publishing_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "application_exposed_events", Type: field.TypeInt},
 		{Name: "event_type_exposures", Type: field.TypeInt, Nullable: true},
@@ -310,13 +320,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "event_exposures_applications_exposed_events",
-				Columns:    []*schema.Column{EventExposuresColumns[11]},
+				Columns:    []*schema.Column{EventExposuresColumns[13]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "event_exposures_event_types_exposures",
-				Columns:    []*schema.Column{EventExposuresColumns[12]},
+				Columns:    []*schema.Column{EventExposuresColumns[14]},
 				RefColumns: []*schema.Column{EventTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -325,7 +335,7 @@ var (
 			{
 				Name:    "eventexposure_event_type_application_exposed_events",
 				Unique:  true,
-				Columns: []*schema.Column{EventExposuresColumns[7], EventExposuresColumns[11]},
+				Columns: []*schema.Column{EventExposuresColumns[7], EventExposuresColumns[13]},
 			},
 		},
 	}
@@ -341,7 +351,11 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "delivery_type", Type: field.TypeEnum, Enums: []string{"CALLBACK", "SERVER_SENT_EVENT"}, Default: "CALLBACK"},
+		{Name: "trigger", Type: field.TypeJSON, Nullable: true},
+		{Name: "delivery", Type: field.TypeJSON},
+		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "callback_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "gateway_sse_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "application_subscribed_events", Type: field.TypeInt},
 		{Name: "event_subscription_target", Type: field.TypeInt, Nullable: true},
 	}
@@ -353,13 +367,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "event_subscriptions_applications_subscribed_events",
-				Columns:    []*schema.Column{EventSubscriptionsColumns[11]},
+				Columns:    []*schema.Column{EventSubscriptionsColumns[15]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "event_subscriptions_event_exposures_target",
-				Columns:    []*schema.Column{EventSubscriptionsColumns[12]},
+				Columns:    []*schema.Column{EventSubscriptionsColumns[16]},
 				RefColumns: []*schema.Column{EventExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -373,7 +387,7 @@ var (
 			{
 				Name:    "eventsubscription_event_type_application_subscribed_events",
 				Unique:  true,
-				Columns: []*schema.Column{EventSubscriptionsColumns[8], EventSubscriptionsColumns[11]},
+				Columns: []*schema.Column{EventSubscriptionsColumns[8], EventSubscriptionsColumns[15]},
 			},
 		},
 	}
@@ -462,6 +476,32 @@ var (
 			},
 		},
 	}
+	// PermissionSetsColumns holds the columns for the "permission_sets" table.
+	PermissionSetsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "permissions", Type: field.TypeJSON, Nullable: true},
+		{Name: "application_permission_set", Type: field.TypeInt, Unique: true},
+	}
+	// PermissionSetsTable holds the schema information for the "permission_sets" table.
+	PermissionSetsTable = &schema.Table{
+		Name:       "permission_sets",
+		Columns:    PermissionSetsColumns,
+		PrimaryKey: []*schema.Column{PermissionSetsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "permission_sets_applications_permission_set",
+				Columns:    []*schema.Column{PermissionSetsColumns[8]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// TeamsColumns holds the columns for the "teams" table.
 	TeamsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -473,6 +513,8 @@ var (
 		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "email", Type: field.TypeString, Size: 2147483647},
+		{Name: "display_name", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "category", Type: field.TypeEnum, Enums: []string{"CUSTOMER", "INFRASTRUCTURE"}, Default: "CUSTOMER"},
 		{Name: "team_token", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "group_teams", Type: field.TypeInt, Nullable: true},
@@ -485,7 +527,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "teams_groups_teams",
-				Columns:    []*schema.Column{TeamsColumns[11]},
+				Columns:    []*schema.Column{TeamsColumns[13]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -528,6 +570,7 @@ var (
 		EventTypesTable,
 		GroupsTable,
 		MembersTable,
+		PermissionSetsTable,
 		TeamsTable,
 		ZonesTable,
 	}
@@ -551,6 +594,7 @@ func init() {
 	EventSubscriptionsTable.ForeignKeys[1].RefTable = EventExposuresTable
 	EventTypesTable.ForeignKeys[0].RefTable = TeamsTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
+	PermissionSetsTable.ForeignKeys[0].RefTable = ApplicationsTable
 	TeamsTable.ForeignKeys[0].RefTable = GroupsTable
 	ZonesTable.ForeignKeys[0].RefTable = APISubscriptionsTable
 }

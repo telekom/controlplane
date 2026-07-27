@@ -24,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
@@ -265,6 +266,16 @@ func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, apiexposure.FieldUpstreams)
 				fieldSeen[apiexposure.FieldUpstreams] = struct{}{}
 			}
+		case "security":
+			if _, ok := fieldSeen[apiexposure.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldSecurity)
+				fieldSeen[apiexposure.FieldSecurity] = struct{}{}
+			}
+		case "traffic":
+			if _, ok := fieldSeen[apiexposure.FieldTraffic]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldTraffic)
+				fieldSeen[apiexposure.FieldTraffic] = struct{}{}
+			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[apiexposure.FieldApprovalConfig]; !ok {
 				selectedFields = append(selectedFields, apiexposure.FieldApprovalConfig)
@@ -452,10 +463,15 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, apisubscription.FieldM2mAuthMethod)
 				fieldSeen[apisubscription.FieldM2mAuthMethod] = struct{}{}
 			}
-		case "approvedScopes":
-			if _, ok := fieldSeen[apisubscription.FieldApprovedScopes]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldApprovedScopes)
-				fieldSeen[apisubscription.FieldApprovedScopes] = struct{}{}
+		case "gatewayURL":
+			if _, ok := fieldSeen[apisubscription.FieldGatewayURL]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldGatewayURL)
+				fieldSeen[apisubscription.FieldGatewayURL] = struct{}{}
+			}
+		case "security":
+			if _, ok := fieldSeen[apisubscription.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldSecurity)
+				fieldSeen[apisubscription.FieldSecurity] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -908,6 +924,17 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 			_q.WithNamedSubscribedEvents(alias, func(wq *EventSubscriptionQuery) {
 				*wq = *query
 			})
+
+		case "permissionSet":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PermissionSetClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, permissionsetImplementors)...); err != nil {
+				return err
+			}
+			_q.withPermissionSet = query
 		case "createdAt":
 			if _, ok := fieldSeen[application.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, application.FieldCreatedAt)
@@ -977,6 +1004,16 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 			if _, ok := fieldSeen[application.FieldSecretRotationMessage]; !ok {
 				selectedFields = append(selectedFields, application.FieldSecretRotationMessage)
 				fieldSeen[application.FieldSecretRotationMessage] = struct{}{}
+			}
+		case "externalIds":
+			if _, ok := fieldSeen[application.FieldExternalIds]; !ok {
+				selectedFields = append(selectedFields, application.FieldExternalIds)
+				fieldSeen[application.FieldExternalIds] = struct{}{}
+			}
+		case "ipRestrictions":
+			if _, ok := fieldSeen[application.FieldIPRestrictions]; !ok {
+				selectedFields = append(selectedFields, application.FieldIPRestrictions)
+				fieldSeen[application.FieldIPRestrictions] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -1133,10 +1170,20 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, approval.FieldAvailableTransitions)
 				fieldSeen[approval.FieldAvailableTransitions] = struct{}{}
 			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[approval.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, approval.FieldRequestedScopes)
+				fieldSeen[approval.FieldRequestedScopes] = struct{}{}
+			}
 		case "name":
 			if _, ok := fieldSeen[approval.FieldName]; !ok {
 				selectedFields = append(selectedFields, approval.FieldName)
 				fieldSeen[approval.FieldName] = struct{}{}
+			}
+		case "expiresat":
+			if _, ok := fieldSeen[approval.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, approval.FieldExpiresAt)
+				fieldSeen[approval.FieldExpiresAt] = struct{}{}
 			}
 		case "state":
 			if _, ok := fieldSeen[approval.FieldState]; !ok {
@@ -1297,6 +1344,11 @@ func (_q *ApprovalRequestQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[approvalrequest.FieldAvailableTransitions]; !ok {
 				selectedFields = append(selectedFields, approvalrequest.FieldAvailableTransitions)
 				fieldSeen[approvalrequest.FieldAvailableTransitions] = struct{}{}
+			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[approvalrequest.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, approvalrequest.FieldRequestedScopes)
+				fieldSeen[approvalrequest.FieldRequestedScopes] = struct{}{}
 			}
 		case "name":
 			if _, ok := fieldSeen[approvalrequest.FieldName]; !ok {
@@ -1464,6 +1516,16 @@ func (_q *EventExposureQuery) collectField(ctx context.Context, oneNode bool, op
 			if _, ok := fieldSeen[eventexposure.FieldActive]; !ok {
 				selectedFields = append(selectedFields, eventexposure.FieldActive)
 				fieldSeen[eventexposure.FieldActive] = struct{}{}
+			}
+		case "eventScopes":
+			if _, ok := fieldSeen[eventexposure.FieldEventScopes]; !ok {
+				selectedFields = append(selectedFields, eventexposure.FieldEventScopes)
+				fieldSeen[eventexposure.FieldEventScopes] = struct{}{}
+			}
+		case "gatewayPublishingURL":
+			if _, ok := fieldSeen[eventexposure.FieldGatewayPublishingURL]; !ok {
+				selectedFields = append(selectedFields, eventexposure.FieldGatewayPublishingURL)
+				fieldSeen[eventexposure.FieldGatewayPublishingURL] = struct{}{}
 			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[eventexposure.FieldApprovalConfig]; !ok {
@@ -1634,10 +1696,30 @@ func (_q *EventSubscriptionQuery) collectField(ctx context.Context, oneNode bool
 				selectedFields = append(selectedFields, eventsubscription.FieldDeliveryType)
 				fieldSeen[eventsubscription.FieldDeliveryType] = struct{}{}
 			}
+		case "trigger":
+			if _, ok := fieldSeen[eventsubscription.FieldTrigger]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldTrigger)
+				fieldSeen[eventsubscription.FieldTrigger] = struct{}{}
+			}
+		case "delivery":
+			if _, ok := fieldSeen[eventsubscription.FieldDelivery]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldDelivery)
+				fieldSeen[eventsubscription.FieldDelivery] = struct{}{}
+			}
+		case "scopes":
+			if _, ok := fieldSeen[eventsubscription.FieldScopes]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldScopes)
+				fieldSeen[eventsubscription.FieldScopes] = struct{}{}
+			}
 		case "callbackURL":
 			if _, ok := fieldSeen[eventsubscription.FieldCallbackURL]; !ok {
 				selectedFields = append(selectedFields, eventsubscription.FieldCallbackURL)
 				fieldSeen[eventsubscription.FieldCallbackURL] = struct{}{}
+			}
+		case "gatewaySseURL":
+			if _, ok := fieldSeen[eventsubscription.FieldGatewaySseURL]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldGatewaySseURL)
+				fieldSeen[eventsubscription.FieldGatewaySseURL] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -2020,6 +2102,125 @@ func newMemberPaginateArgs(rv map[string]any) *memberPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *PermissionSetQuery) CollectFields(ctx context.Context, satisfies ...string) (*PermissionSetQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *PermissionSetQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(permissionset.Columns))
+		selectedFields = []string{permissionset.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "createdAt":
+			if _, ok := fieldSeen[permissionset.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldCreatedAt)
+				fieldSeen[permissionset.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[permissionset.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldLastModifiedAt)
+				fieldSeen[permissionset.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[permissionset.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldStatusPhase)
+				fieldSeen[permissionset.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[permissionset.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldStatusMessage)
+				fieldSeen[permissionset.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[permissionset.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldEnvironment)
+				fieldSeen[permissionset.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[permissionset.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldNamespace)
+				fieldSeen[permissionset.FieldNamespace] = struct{}{}
+			}
+		case "permissions":
+			if _, ok := fieldSeen[permissionset.FieldPermissions]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldPermissions)
+				fieldSeen[permissionset.FieldPermissions] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type permissionsetPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []PermissionSetPaginateOption
+}
+
+func newPermissionSetPaginateArgs(rv map[string]any) *permissionsetPaginateArgs {
+	args := &permissionsetPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &PermissionSetOrder{Field: &PermissionSetOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithPermissionSetOrder(order))
+			}
+		case *PermissionSetOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithPermissionSetOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*PermissionSetWhereInput); ok {
+		args.opts = append(args.opts, WithPermissionSetFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *TeamQuery) CollectFields(ctx context.Context, satisfies ...string) (*TeamQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -2370,6 +2571,16 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			if _, ok := fieldSeen[team.FieldEmail]; !ok {
 				selectedFields = append(selectedFields, team.FieldEmail)
 				fieldSeen[team.FieldEmail] = struct{}{}
+			}
+		case "displayname":
+			if _, ok := fieldSeen[team.FieldDisplayName]; !ok {
+				selectedFields = append(selectedFields, team.FieldDisplayName)
+				fieldSeen[team.FieldDisplayName] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[team.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, team.FieldDescription)
+				fieldSeen[team.FieldDescription] = struct{}{}
 			}
 		case "category":
 			if _, ok := fieldSeen[team.FieldCategory]; !ok {

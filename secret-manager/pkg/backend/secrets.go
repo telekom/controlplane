@@ -71,7 +71,7 @@ func (a *Secrets) GetSecrets() (map[string]SecretValue, error) {
 	keys := maps.Keys(secrets)
 	for key := range keys {
 		value := secrets[key]
-		if value.IsEmpty() {
+		if value.IsEmpty() && value.AllowChange() {
 			delete(secrets, key)
 			continue
 		}

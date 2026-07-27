@@ -38,7 +38,7 @@ kubectl -n controlplane-system port-forward svc/secret-manager 8443:443
 # Then, get an access token for the relevant service account
 export NAMESPACE="controlplane-system"
 export SERVICE_ACCOUNT="secret-manager"
-export TOKEN=$(kubectl create token -n $NAMESPACE $SERVICE_ACCOUNT --duration 10m)
+export TOKEN=$(kubectl create token -n $NAMESPACE $SERVICE_ACCOUNT --duration 10m --audience secret-manager)
 
 # Finally, run the client with the remote URL and token
 go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --env foo

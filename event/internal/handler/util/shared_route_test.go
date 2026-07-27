@@ -137,3 +137,13 @@ var _ = Describe("WithProxyTarget", func() {
 		Expect(opts.IsProxyTarget).To(BeFalse())
 	})
 })
+
+// ---------- WithCallbackConsumer ----------
+
+var _ = Describe("WithCallbackConsumer", func() {
+	It("should append the callback client to ExtraConsumers", func() {
+		opts := &util.Options{}
+		util.WithCallbackConsumer()(opts)
+		Expect(opts.ExtraConsumers).To(ContainElement(util.CallbackClientName))
+	})
+})

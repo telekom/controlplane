@@ -15,6 +15,7 @@ spec:
   selector:
     matchLabels:
       control-plane: controller-manager
+      app.kubernetes.io/name: approval
   replicas: 1
   template:
     metadata:
@@ -83,7 +84,7 @@ spec:
               cpu: 500m
               memory: 128Mi
             requests:
-              cpu: 10m
+              cpu: 30m
               memory: 64Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

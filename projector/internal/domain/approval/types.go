@@ -10,6 +10,8 @@
 package approval
 
 import (
+	"time"
+
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 )
@@ -50,4 +52,8 @@ type ApprovalData struct {
 	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string
+	ExpiresAt             *time.Time
+
+	// AccessScopes is the list of access scopes requested by the approval.
+	AccessScopes []string
 }

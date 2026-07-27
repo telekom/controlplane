@@ -52,7 +52,7 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 		logger.V(1).Info("Skipping expiration handler: approval is not in an active state", "state", approval.Spec.State)
 		ae.SetCondition(condition.NewDoneProcessingCondition("ApprovalExpiration processed"))
 		ae.SetCondition(
-			condition.NewReadyCondition("Ready", "ApprovalExpiration processed successfully - parent approval is not active (Granted or Suspended)"))
+			condition.NewReadyCondition(condition.ReasonProvisioned, "ApprovalExpiration processed successfully - parent approval is not active (Granted or Suspended)"))
 		return nil
 	}
 
@@ -99,7 +99,7 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 
 	ae.SetCondition(condition.NewDoneProcessingCondition("ApprovalExpiration processed"))
 	ae.SetCondition(
-		condition.NewReadyCondition("Ready", "ApprovalExpiration processed successfully"))
+		condition.NewReadyCondition(condition.ReasonProvisioned, "ApprovalExpiration processed successfully"))
 
 	return nil
 }

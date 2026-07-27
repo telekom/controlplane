@@ -8,8 +8,10 @@ import (
 	"context"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+	"github.com/telekom/controlplane/projector/internal/util"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -43,11 +45,27 @@ func (t *Translator) ShouldSkip(_ *apiv1.ApiSubscription) (bool, string) {
 //	len(m2m.Scopes) > 0 → "SCOPES_ONLY"
 //	otherwise           → "NONE"
 //
-// ApprovedScopes comes from security.M2M.Scopes, defaulting to an empty slice.
 // OwnerAppName from Requestor.Application.Name, OwnerTeamName from namespace.
 // TargetBasePath = Spec.ApiBasePath. TargetAppName/TargetTeamName are always "".
 func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*APISubscriptionData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
+
+	var security *model.ApiSubscriptionSecurity
+	if obj.Spec.Security != nil {
+		security = &model.ApiSubscriptionSecurity{}
+		if obj.Spec.Security.M2M != nil {
+			security.M2M = &model.SubscriberMachine2MachineAuthentication{}
+			if obj.Spec.Security.M2M.Client != nil {
+				security.M2M.Client = util.MapCrOAuthToCpApi(obj.Spec.Security.M2M.Client)
+			}
+			if obj.Spec.Security.M2M.Basic != nil {
+				security.M2M.Basic = util.MapCrBasicAuthToCpApi(obj.Spec.Security.M2M.Basic)
+			}
+			if len(obj.Spec.Security.M2M.Scopes) > 0 {
+				security.M2M.Scopes = obj.Spec.Security.M2M.Scopes
+			}
+		}
+	}
 
 	return &APISubscriptionData{
 		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
@@ -55,12 +73,13 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*
 		StatusMessage:  message,
 		BasePath:       obj.Spec.ApiBasePath,
 		M2MAuthMethod:  deriveM2MAuthMethod(obj.Spec.Security),
-		ApprovedScopes: deriveApprovedScopes(obj.Spec.Security),
+		Security:       security,
 		OwnerAppName:   obj.Spec.Requestor.Application.Name,
 		OwnerTeamName:  shared.TeamNameFromNamespace(obj.Namespace),
 		TargetBasePath: obj.Spec.ApiBasePath,
 		TargetAppName:  "", // TODO: this needs to be improved, we need to get the ApiExposure into the context to resolve this
 		TargetTeamName: "",
+		GatewayUrl:     obj.Status.GatewayUrl,
 	}, nil
 }
 
@@ -116,13 +135,4 @@ func deriveM2MAuthMethod(security *apiv1.SubscriberSecurity) string {
 		return "SCOPES_ONLY"
 	}
 	return "NONE"
-}
-
-// deriveApprovedScopes extracts the M2M scopes from the security config. If
-// security or M2M is nil, returns an empty slice (never nil).
-func deriveApprovedScopes(security *apiv1.SubscriberSecurity) []string {
-	if security == nil || security.M2M == nil || len(security.M2M.Scopes) == 0 {
-		return []string{}
-	}
-	return security.M2M.Scopes
 }

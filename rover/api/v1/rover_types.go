@@ -5,6 +5,8 @@
 package v1
 
 import (
+	"slices"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,6 +46,10 @@ type RoverStatus struct {
 	FileSubscriptions []types.ObjectRef `json:"fileSubscriptions,omitempty"`
 	// PermissionSets are references to PermissionSet resources created by this Rover
 	PermissionSets []types.ObjectRef `json:"permissionSets,omitempty"`
+	// AiExposures are references to McpExposure resources created by this Rover
+	AiExposures []types.ObjectRef `json:"aiExposures,omitempty"`
+	// AiSubscriptions are references to McpSubscription resources created by this Rover
+	AiSubscriptions []types.ObjectRef `json:"aiSubscriptions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -73,6 +79,34 @@ func (r *Rover) GetConditions() []metav1.Condition {
 
 func (r *Rover) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
+}
+
+// HasFailoverEnabledOnAnySubscription checks if any of the Rover's subscriptions have failover enabled
+func (r *Rover) HasFailoverEnabledOnAnySubscription() bool {
+	return slices.ContainsFunc(r.Spec.Subscriptions, func(sub Subscription) bool {
+		switch sub.Type() {
+		case TypeApi:
+			return sub.Api != nil && sub.Api.Traffic.Failover != nil && sub.Api.Traffic.Failover.Enabled
+		default:
+			return false
+		}
+	})
+}
+
+// EnableFailoverOnAllSubscriptions enables failover on all API subscriptions of the Rover
+func (r *Rover) EnableFailoverOnAllSubscriptions() {
+	for i := range r.Spec.Subscriptions {
+		sub := &r.Spec.Subscriptions[i]
+		switch sub.Type() {
+		case TypeApi:
+			if sub.Api != nil {
+				if sub.Api.Traffic.Failover == nil {
+					sub.Api.Traffic.Failover = &SubscriberFailover{}
+				}
+				sub.Api.Traffic.Failover.Enabled = true
+			}
+		}
+	}
 }
 
 //+kubebuilder:object:root=true
@@ -123,13 +157,16 @@ type RoverSpec struct {
 
 	// Exposures is a list of APIs and Events that this Rover exposes to consumers
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Exposures []Exposure `json:"exposures,omitempty"`
 	// Subscriptions is a list of APIs and Events that this Rover consumes from providers
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Subscriptions []Subscription `json:"subscriptions,omitempty"`
 
 	// Permissions defines role-based access control permissions for this application
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Permissions []Permission `json:"permissions,omitempty"`
 
 	// ExternalIds carries business identifiers (e.g. PSI, ICTO) attached to this
@@ -187,6 +224,8 @@ const (
 	TypeApi Type = "api"
 	// TypeEvent represents an Event type resource
 	TypeEvent Type = "event"
+	// TypeAi represents an AI/MCP type resource
+	TypeAi Type = "ai"
 	// TypeFile represents a File type resource (SFTP integration)
 	TypeFile Type = "file"
 )
@@ -209,6 +248,7 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:items:MaxLength=43
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Allow []string `json:"allow,omitempty"`
 	// Deny is a list of IP addresses or CIDR ranges that are denied access
@@ -216,6 +256,7 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:items:MaxLength=43
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Deny []string `json:"deny,omitempty"`
 }
@@ -238,8 +279,8 @@ type RoverM2MAuthentication struct {
 }
 
 // Exposure defines a service that is exposed by this Rover
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event) || has(self.file)", message="At least one of api, event or file must be specified"
-// +kubebuilder:validation:XValidation:rule="self == null || [has(self.api), has(self.event), has(self.file)].filter(x, x).size() == 1", message="Only one of api, event or file can be specified (XOR relationship)"
+// +kubebuilder:validation:MaxProperties=1
+// +kubebuilder:validation:MinProperties=1
 type Exposure struct {
 	// Api defines an API-based service exposure configuration
 	// +kubebuilder:validation:Optional
@@ -247,6 +288,9 @@ type Exposure struct {
 	// Event defines an Event-based service exposure configuration
 	// +kubebuilder:validation:Optional
 	Event *EventExposure `json:"event,omitempty"`
+	// Ai defines an AI/MCP server exposure configuration
+	// +kubebuilder:validation:Optional
+	Ai *AiExposure `json:"ai,omitempty"`
 	// File defines a File-based (SFTP) service exposure configuration
 	// +kubebuilder:validation:Optional
 	File *FileExposure `json:"file,omitempty"`
@@ -259,6 +303,9 @@ func (e *Exposure) Type() Type {
 	if e.Event != nil {
 		return TypeEvent
 	}
+	if e.Ai != nil {
+		return TypeAi
+	}
 	if e.File != nil {
 		return TypeFile
 	}
@@ -266,8 +313,8 @@ func (e *Exposure) Type() Type {
 }
 
 // Subscription defines a service that this Rover consumes
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event) || has(self.file)", message="At least one of api, event or file must be specified"
-// +kubebuilder:validation:XValidation:rule="self == null || [has(self.api), has(self.event), has(self.file)].filter(x, x).size() == 1", message="Only one of api, event or file can be specified (XOR relationship)"
+// +kubebuilder:validation:MaxProperties=1
+// +kubebuilder:validation:MinProperties=1
 type Subscription struct {
 	// Api defines an API-based service subscription configuration
 	// +kubebuilder:validation:Optional
@@ -275,6 +322,9 @@ type Subscription struct {
 	// Event defines an Event-based service subscription configuration
 	// +kubebuilder:validation:Optional
 	Event *EventSubscription `json:"event,omitempty"`
+	// Ai defines an AI/MCP server subscription configuration
+	// +kubebuilder:validation:Optional
+	Ai *AiSubscription `json:"ai,omitempty"`
 	// File defines a File-based (SFTP) service subscription configuration
 	// +kubebuilder:validation:Optional
 	File *FileSubscription `json:"file,omitempty"`
@@ -286,6 +336,9 @@ func (s *Subscription) Type() Type {
 	}
 	if s.Event != nil {
 		return TypeEvent
+	}
+	if s.Ai != nil {
+		return TypeAi
 	}
 	if s.File != nil {
 		return TypeFile
@@ -414,6 +467,73 @@ type EventSubscription struct {
 	// Must match scope names defined on the corresponding EventExposure
 	// +kubebuilder:validation:Optional
 	Scopes []string `json:"scopes,omitempty"`
+}
+
+// AiVariant defines the AI exposure variant.
+// +kubebuilder:validation:Enum=MCP;TELECONTEXTMCP
+type AiVariant string
+
+const (
+	// AiVariantMCP exposes a standard MCP server via AI Gateway
+	AiVariantMCP AiVariant = "MCP"
+	// AiVariantTelecontextMCP exposes an MCP server with auto-created Telecontext access
+	AiVariantTelecontextMCP AiVariant = "TELECONTEXTMCP"
+)
+
+// AiExposure defines an AI/MCP server that is exposed by this Rover
+type AiExposure struct {
+	// BasePath is the base path of the MCP server endpoint (must start with /)
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
+	BasePath string `json:"basePath"`
+
+	// Upstreams defines the backend MCP server endpoints
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=12
+	Upstreams []Upstream `json:"upstreams"`
+
+	// Variant defines the MCP exposure variant
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default=MCP
+	Variant AiVariant `json:"variant"`
+
+	// Visibility defines who can see and subscribe to this MCP server
+	// +kubebuilder:validation:Enum=World;Zone;Enterprise
+	// +kubebuilder:default=Enterprise
+	Visibility Visibility `json:"visibility"`
+
+	// Approval defines the approval workflow for subscriptions to this MCP server
+	// +kubebuilder:validation:Required
+	Approval Approval `json:"approval"`
+
+	// Transformation defines optional request/response transformations
+	// +kubebuilder:validation:Optional
+	Transformation *Transformation `json:"transformation,omitempty"`
+	// Traffic defines optional traffic management configuration
+	// +kubebuilder:validation:Optional
+	Traffic *Traffic `json:"traffic,omitempty"`
+	// Security defines optional security configuration
+	// +kubebuilder:validation:Optional
+	Security *Security `json:"security,omitempty"`
+}
+
+// AiSubscription defines an AI/MCP server that this Rover subscribes to
+type AiSubscription struct {
+	// BasePath is the base path of the MCP server to subscribe to (must start with /)
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
+	BasePath string `json:"basePath"`
+
+	// Transformation defines optional request/response transformations
+	// +kubebuilder:validation:Optional
+	Transformation *Transformation `json:"transformation,omitempty"`
+	// Traffic defines optional traffic management configuration
+	// +kubebuilder:validation:Optional
+	Traffic SubscriberTraffic `json:"traffic"`
+	// Security defines optional security configuration
+	// +kubebuilder:validation:Optional
+	Security *SubscriberSecurity `json:"security,omitempty"`
 }
 
 // FileExposure defines a file type that is exposed by this Rover via SFTP.

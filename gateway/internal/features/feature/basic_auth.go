@@ -45,14 +45,14 @@ func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.Features
 	}
 
 	// Check for failover security with basic auth
-	if route.HasFailoverSecurity() && route.Spec.Traffic.Failover.Security.HasBasicAuth() {
+	if HasFailoverSecurity(route) && route.Spec.Traffic.Failover.Security.HasBasicAuth() {
 		return true
 	}
 
 	// For primary routes, check route security and all consumers
 	if !route.IsProxy() {
 		// Check if route itself has basic auth configured
-		if route.HasM2M() && route.Spec.Security.HasBasicAuth() {
+		if HasM2M(route) && route.Spec.Security.HasBasicAuth() {
 			return true
 		}
 
@@ -75,11 +75,11 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	}
 
 	security := route.Spec.Security
-	if route.HasFailoverSecurity() {
+	if HasFailoverSecurity(route) {
 		security = route.Spec.Traffic.Failover.Security
 	}
 
-	if security != nil && security.HasBasicAuth() {
+	if security.HasBasicAuth() {
 		passwordValue, err := secretManagerApi.Get(ctx, security.M2M.Basic.Password)
 		if err != nil {
 			return errors.Wrapf(err, "cannot get basic auth password for route %s", route.GetName())

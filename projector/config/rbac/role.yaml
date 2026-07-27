@@ -70,3 +70,12 @@ rules:
   - get
   - list
   - watch
+# permission domain
+- apiGroups:
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets
+  verbs:
+  - get
+  - list
+  - watch

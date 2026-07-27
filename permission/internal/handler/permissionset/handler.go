@@ -111,7 +111,7 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 
 	// External PermissionSet has no status/conditions, so it's immediately "ready" after creation
 	// Set our internal PermissionSet to ready
-	obj.SetCondition(condition.NewReadyCondition("Provisioned", "External PermissionSet created successfully"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "External PermissionSet created successfully"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("External PermissionSet provisioned"))
 
 	logger.Info("PermissionSet provisioned", "external", externalPS.Namespace+"/"+externalPS.Name)

@@ -131,9 +131,9 @@ var _ = Describe("getAllProblemsInSubResource", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Problems).To(Equal(expectedProblems))
-			// apiSubscription has Ready=False and no Processing condition,
-			// so GetOverallStatus returns "none".
-			Expect(result.WorstOverallStatus).To(Equal(api.OverallStatusNone))
+			// apiSubscription has Ready=False/NoApproval (not a processing-equivalent reason)
+			// and no Processing condition → falls back to Ready=False → Blocked.
+			Expect(result.WorstOverallStatus).To(Equal(api.OverallStatusBlocked))
 			mockStore.AssertExpectations(GinkgoT())
 		})
 	})
@@ -177,7 +177,7 @@ var _ = Describe("getAllProblemsInSubResource", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Problems).To(HaveLen(1))
-			Expect(result.WorstOverallStatus).To(Equal(api.OverallStatusBlocked))
+			Expect(result.WorstOverallStatus).To(Equal(api.OverallStatusProcessing))
 			mockStore.AssertExpectations(GinkgoT())
 		})
 	})

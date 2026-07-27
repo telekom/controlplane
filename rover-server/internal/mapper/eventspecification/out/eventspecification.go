@@ -26,6 +26,7 @@ func MapResponse(ctx context.Context, in *roverv1.EventSpecification, specConten
 		Type:        in.Spec.Type,
 		Version:     in.Spec.Version,
 		Description: in.Spec.Description,
+		Category:    in.Spec.Category,
 		Id:          mapper.MakeResourceId(in),
 	}
 

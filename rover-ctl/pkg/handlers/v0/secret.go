@@ -77,15 +77,18 @@ func (h *RoverHandler) WaitForSecretConvergence(ctx context.Context, name string
 	ticker := time.NewTicker(viper.GetDuration("poll.interval"))
 	defer ticker.Stop()
 
+	var lastStatus *SecretRotationStatusResponse
+
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, errors.New("timed out waiting for secret rotation to converge")
+			return lastStatus, errors.New("timed out waiting for secret rotation to converge")
 		case <-ticker.C:
 			status, err := h.GetSecretRotationStatus(ctx, name)
 			if err != nil {
-				return nil, err
+				return lastStatus, err
 			}
+			lastStatus = status
 			if status.OverallStatus == "complete" {
 				return status, nil
 			}

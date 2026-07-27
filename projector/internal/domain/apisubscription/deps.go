@@ -20,4 +20,7 @@ import "context"
 type APISubscriptionDeps interface {
 	FindApplicationID(ctx context.Context, name, teamName string) (int, error)
 	FindAPIExposureByBasePath(ctx context.Context, basePath string) (int, error)
+	// EvictAPIExposureByBasePath clears a stale cached exposure ID after a FK
+	// violation, forcing the next resolve to hit the DB.
+	EvictAPIExposureByBasePath(basePath string)
 }

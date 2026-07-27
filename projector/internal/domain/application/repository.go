@@ -106,6 +106,12 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 	if data.SecretRotationMessage != nil {
 		create.SetSecretRotationMessage(*data.SecretRotationMessage)
 	}
+	if len(data.IpRestrictions.Allow) > 0 || len(data.IpRestrictions.Deny) > 0 {
+		create.SetIPRestrictions(data.IpRestrictions)
+	}
+	if len(data.ExternalIds) > 0 {
+		create.SetExternalIds(data.ExternalIds)
+	}
 
 	appID, upsertErr := create.
 		OnConflictColumns(application.FieldName, application.OwnerTeamColumn).
@@ -140,6 +146,16 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 				u.SetSecretRotationMessage(*data.SecretRotationMessage)
 			} else {
 				u.ClearSecretRotationMessage()
+			}
+			if len(data.IpRestrictions.Allow) > 0 || len(data.IpRestrictions.Deny) > 0 {
+				u.UpdateIPRestrictions()
+			} else {
+				u.ClearIPRestrictions()
+			}
+			if len(data.ExternalIds) > 0 {
+				u.UpdateExternalIds()
+			} else {
+				u.ClearExternalIds()
 			}
 		}).
 		ID(ctx)

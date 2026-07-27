@@ -68,6 +68,12 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 
 	status, err := roverHandler.ResetSecret(cmd.Context(), c.Name)
 	if err != nil {
+		if status != nil {
+			prettyString, fmtErr := util.FormatOutput(status, viper.GetString("output.format"))
+			if fmtErr == nil {
+				_, _ = c.Cmd.OutOrStdout().Write([]byte(prettyString))
+			}
+		}
 		return c.HandleError(err, "reset secret")
 	}
 

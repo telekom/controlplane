@@ -28,7 +28,7 @@ type NotificationTemplateHandler struct {
 func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, template *notificationv1.NotificationTemplate) error {
 	// Validate template content based on channel type
 	if err := n.validateTemplate(template); err != nil {
-		template.SetCondition(condition.NewReadyCondition("ValidationFailed", err.Error()))
+		template.SetCondition(condition.NewReadyCondition(condition.ReasonValidationFailed, err.Error()))
 		// Return BlockedError to use longer retry interval instead of aggressive error retries.
 		// Template validation errors can't be fixed by retrying - they require template changes
 		// which will trigger reconciliation via watches anyway.
@@ -44,7 +44,7 @@ func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, templa
 	// cache the parsed templates
 	n.Cache.Set(template.Name, parsedTemplates)
 
-	template.SetCondition(condition.NewReadyCondition("Provisioned", "Notification template is provisioned"))
+	template.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Notification template is provisioned"))
 	template.SetCondition(condition.NewDoneProcessingCondition("Notification template is done processing"))
 	return nil
 }
