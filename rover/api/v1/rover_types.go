@@ -274,7 +274,7 @@ type Exposure struct {
 	// Event defines an Event-based service exposure configuration
 	// +kubebuilder:validation:Optional
 	Event *EventExposure `json:"event,omitempty"`
-	// Ai defines an AI/MCP server exposure configuration
+	// Agentic defines an Agentic(MCP or agent) server exposure configuration
 	// +kubebuilder:validation:Optional
 	Agentic *AgenticExposure `json:"agentic,omitempty"`
 }

@@ -459,8 +459,8 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 			checkDuplicate(
 				existingSubs,
 				sub.Agentic.BasePath,
-				field.NewPath("spec").Child("subscriptions").Index(idx).Child("ai").Child("basePath"),
-				fmt.Sprintf("duplicate subscription for ai base path %s", sub.Agentic.BasePath),
+				field.NewPath("spec").Child("subscriptions").Index(idx).Child("agentic").Child("basePath"),
+				fmt.Sprintf("duplicate subscription for agentic base path %s", sub.Agentic.BasePath),
 			)
 		}
 	}
@@ -489,8 +489,8 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 			checkDuplicate(
 				existingExps,
 				exposure.Agentic.BasePath,
-				field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("basePath"),
-				fmt.Sprintf("duplicate exposure for ai base path %s", exposure.Agentic.BasePath),
+				field.NewPath("spec").Child("exposures").Index(idx).Child("agentic").Child("basePath"),
+				fmt.Sprintf("duplicate exposure for agentic base path %s", exposure.Agentic.BasePath),
 			)
 		}
 	}
@@ -699,13 +699,13 @@ func (r *RoverValidator) ValidateAiExposure(ctx context.Context, valErr *cerrors
 	for i, upstream := range exposure.Agentic.Upstreams {
 		if upstream.URL == "" {
 			valErr.AddRequiredError(
-				field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("upstreams").Index(i).Child("url"),
+				field.NewPath("spec").Child("exposures").Index(idx).Child("agentic").Child("upstreams").Index(i).Child("url"),
 				"upstream URL must not be empty",
 			)
 			continue
 		}
 		validateExternalURL(valErr,
-			field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("upstreams").Index(i).Child("url"),
+			field.NewPath("spec").Child("exposures").Index(idx).Child("agentic").Child("upstreams").Index(i).Child("url"),
 			upstream.URL)
 	}
 	return nil

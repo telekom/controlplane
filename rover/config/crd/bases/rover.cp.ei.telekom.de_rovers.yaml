@@ -84,7 +84,8 @@ spec:
                   minProperties: 1
                   properties:
                     agentic:
-                      description: Ai defines an AI/MCP server exposure configuration
+                      description: Agentic defines an Agentic(MCP or agent) server
+                        exposure configuration
                       properties:
                         approval:
                           description: Approval defines the approval workflow for

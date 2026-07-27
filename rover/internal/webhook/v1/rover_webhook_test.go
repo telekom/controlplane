@@ -818,6 +818,32 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
 			})
+
+			It("should report Errors for duplicate agentic subscriptions with correct field path", func() {
+				subs := []roverv1.Subscription{
+					{Agentic: &roverv1.AgenticSubscription{BasePath: "/mcp/weather/v1"}},
+					{Agentic: &roverv1.AgenticSubscription{BasePath: "/mcp/weather/v1"}},
+				}
+
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				err := MustNotHaveDuplicates(valErr, subs, []roverv1.Exposure{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(valErr.HasErrors()).To(BeTrue())
+				Expect(valErr.Errors[0].Field).To(ContainSubstring("spec.subscriptions[1].agentic.basePath"))
+			})
+
+			It("should report Errors for duplicate agentic exposures with correct field path", func() {
+				exps := []roverv1.Exposure{
+					{Agentic: &roverv1.AgenticExposure{BasePath: "/mcp/weather/v1"}},
+					{Agentic: &roverv1.AgenticExposure{BasePath: "/mcp/weather/v1"}},
+				}
+
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				err := MustNotHaveDuplicates(valErr, []roverv1.Subscription{}, exps)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(valErr.HasErrors()).To(BeTrue())
+				Expect(valErr.Errors[0].Field).To(ContainSubstring("spec.exposures[1].agentic.basePath"))
+			})
 		})
 
 		Context("validateRemoveHeaders", func() {
