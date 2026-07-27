@@ -1,0 +1,46 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Base image for the roverctl container image (referenced via `base_image` in
+# the top-level .goreleaser.yaml `kos` entry for `rover-ctl`).
+#
+# ko builds the final roverctl image by layering the roverctl Go binary on top
+# of this base image. ko cannot run install steps itself, so bash, jq, and yq
+# must already be present in the base image referenced by `base_image`.
+#
+# Versions are pinned intentionally so that customer scripts relying on
+# bash/jq/yq inside the roverctl container image do not silently change
+# behavior between roverctl releases. Bump these pins deliberately.
+ARG YQ_VERSION=4.44.3
+
+# yq is not packaged for Alpine. Build it from source via `go install` against
+# the Go module proxy (GOPROXY) rather than downloading the GitHub release
+# binary directly: some networks allow/whitelist the Go module proxy while
+# blocking or TLS-intercepting GitHub's release CDN, so this path is more
+# portable across corporate proxies.
+FROM golang:1.24-alpine AS yq-builder
+ARG YQ_VERSION
+RUN go install "github.com/mikefarah/yq/v4@v${YQ_VERSION}"
+
+FROM alpine:3.20
+
+ARG JQ_VERSION=1.7.1-r0
+ARG BASH_VERSION=5.2.26-r0
+
+RUN apk add --no-cache \
+        bash="${BASH_VERSION}" \
+        jq="${JQ_VERSION}" \
+        ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+COPY --from=yq-builder /go/bin/yq /usr/local/bin/yq
+
+# Match the nonroot uid/gid (65532) used by the other kos-built images in
+# this repo (e.g. gcr.io/distroless/static:nonroot) so the `user: 65532:65532`
+# setting in .goreleaser.yaml's rover-ctl kos entry keeps working unchanged.
+RUN addgroup -g 65532 nonroot \
+    && adduser -D -u 65532 -G nonroot -h /home/nonroot nonroot
+
+# ko appends the roverctl binary on top of this image; no ENTRYPOINT/CMD is
+# set here so ko can configure it based on the built Go binary.

@@ -40,6 +40,18 @@ Rover Control CLI (roverctl) is a command-line tool for managing rover resources
 
 See [rover-ctl help](./docs/roverctl.md) for a complete list of commands and options.
 
+### Container Image
+
+The `roverctl` container image published to the internal Artifactory Docker registry (`artifactory.devops.telekom.de/rover-ctl` — not GHCR, due to GPL licensing considerations, see [license-findings.md](../openspec/changes/add-roverctl-image-cli-tools/license-findings.md)) bundles the following tools alongside the `roverctl` binary, so it can be used to script and chain Control Plane interactions (e.g. piping `roverctl` JSON/YAML output through `jq`/`yq`) without installing anything separately:
+
+| Tool     | Pinned Version |
+|----------|-----------------|
+| `bash`   | 5.2.26          |
+| `jq`     | 1.7.1           |
+| `yq`     | 4.44.3          |
+
+These tools are only available inside the container image. The standalone `roverctl` binary archives (`.tar.gz`/`.zip` for Linux and Windows) do **not** bundle `bash`, `jq`, or `yq` — install them separately if you use the standalone binary outside a container.
+
 ## Configuration
 
 Rover-ctl can be configured using environment variables. The tool uses Viper for configuration management with the following options:

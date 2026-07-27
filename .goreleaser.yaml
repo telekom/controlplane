@@ -504,7 +504,14 @@ kos:
     main: .
     working_dir: rover-ctl
     repositories:
-      - ghcr.io/telekom/controlplane/rover-ctl
+      # Published to the internal Artifactory Docker registry, not GHCR: this
+      # image inherits bash/jq/yq from the custom base image below, which
+      # bundles GPL-3.0-or-later (bash, readline) and GPL-2.0-only (Alpine
+      # base) components. Publishing this final image to public GHCR would
+      # carry the same compliance concern as publishing the base image there.
+      # See openspec/changes/add-roverctl-image-cli-tools/license-findings.md.
+      # TODO: confirm real Artifactory host/path if different.
+      - artifactory.devops.telekom.de/artifactory/tardis-oci-local/tardis/customer/roverctl
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"
@@ -512,6 +519,25 @@ kos:
       org.opencontainers.image.version: "{{.Version}}"
       org.opencontainers.image.revision: "{{.FullCommit}}"
       org.opencontainers.image.licenses: "Apache-2.0"
+    # Custom base image bundling bash, jq, and yq alongside the roverctl
+    # binary (built from rover-ctl/Dockerfile.base and published by
+    # .github/workflows/release.yaml). See
+    # openspec/changes/add-roverctl-image-cli-tools.
+    #
+    # NOTE: goreleaser's `kos` pipe embeds ko as a Go library, not the ko
+    # CLI, so it does NOT read the `KO_DEFAULTBASEIMAGE` env var and the
+    # `base_image` field below does NOT support Go templating (e.g.
+    # `{{ .Env.X }}`) - both were tested and confirmed non-functional. The
+    # value must be a literal, static image reference.
+    #
+    # TODO: replace with the real internal Artifactory Docker registry
+    # path once available (placeholder below).
+    #
+    # Published to an internal Artifactory Docker registry (not GHCR) because
+    # it contains GPL-3.0-or-later (bash, readline) and GPL-2.0-only
+    # components inherited from its Alpine base; see
+    # openspec/changes/add-roverctl-image-cli-tools/license-findings.md.
+    base_image: artifactory.devops.telekom.de/artifactory/tardis-oci-local/tardis/customer/roverctl/rover-ctl-base:bash-jq-yq-v1
     user: 65532:65532
     tags:
       - latest
