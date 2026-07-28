@@ -177,8 +177,42 @@ jobs:
       ko_build_path: "cmd/main.go"
       coverage_threshold: 41
 
+  rover-ctl-base-image:
+    name: Rover-CTL Base Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e6e46e4699d4f9c68c3f9ba0be2e6f4a6b03bfe4 # v3.11.1
+      - name: Log in to Artifactory
+        # rover-ctl-base bundles GPL-3.0-or-later (bash, readline) and
+        # GPL-2.0-only (Alpine base) components, so it is published to the
+        # internal Artifactory registry, not GHCR. See
+        # openspec/changes/add-roverctl-image-cli-tools/license-findings.md.
+        # Built here - decoupled from the full release cycle in
+        # release.yaml (which only runs on manual workflow_dispatch) - so
+        # every CI run always has a base image to pull, instead of
+        # depending on a real release having happened first.
+        # TODO: confirm the real Artifactory registry host/path.
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.6.0
+        with:
+          registry: artifactory.devops.telekom.de
+          username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
+          password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
+      - name: Build and push rover-ctl base image
+        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47141f2ba9 # v6.18.0
+        with:
+          context: rover-ctl
+          file: rover-ctl/Dockerfile.base
+          push: true
+          tags: |
+            artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl/rover-ctl-base:latest
+            artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl/rover-ctl-base:bash-jq-yq-v1
+
   rover-ctl:
     name: Rover-CTL
+    needs: rover-ctl-base-image
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
       name: rover-ctl
