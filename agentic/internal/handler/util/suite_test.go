@@ -85,19 +85,19 @@ func makeReadyMcpServer(basePath string) agenticv1.McpServer {
 }
 
 //nolint:unparam // test helper designed for reuse with different basePaths
-func makeActiveMcpExposure(basePath, zoneName, uid string) agenticv1.McpExposure {
-	e := agenticv1.McpExposure{
+func makeActiveAgenticExposure(basePath, zoneName, uid string) agenticv1.AgenticExposure {
+	e := agenticv1.AgenticExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "exposure-" + zoneName,
 			Namespace: "default",
 			UID:       k8stypes.UID(uid),
 		},
-		Spec: agenticv1.McpExposureSpec{
+		Spec: agenticv1.AgenticExposureSpec{
 			BasePath: basePath,
 			Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
 			Provider: ctypes.ObjectRef{Name: "app", Namespace: "default"},
 		},
-		Status: agenticv1.McpExposureStatus{Active: true},
+		Status: agenticv1.AgenticExposureStatus{Active: true},
 	}
 	return e
 }

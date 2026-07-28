@@ -63,7 +63,7 @@ func (r *McpServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // MapMcpServerToMcpServer enqueues other McpServers with the same basePath
 // when any McpServer changes or is deleted.
 //
-//nolint:dupl // parallel structure with MapMcpExposureToMcpExposure; operates on different types
+//nolint:dupl // parallel structure with MapAgenticExposureToAgenticExposure; operates on different types
 func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj client.Object) []reconcile.Request {
 	server, ok := obj.(*agenticv1.McpServer)
 	if !ok {
@@ -72,8 +72,8 @@ func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj c
 
 	list := &agenticv1.McpServerList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:   server.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath),
+		cconfig.EnvironmentLabelKey:       server.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}

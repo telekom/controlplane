@@ -8,6 +8,8 @@ import (
 	"context"
 	"os"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -15,8 +17,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
-
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
@@ -69,14 +69,14 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	}
 
 	if cconfig.FeatureAiGateway.IsEnabled() {
-		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.McpExposure{})
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.AgenticExposure{})
 		if err != nil {
-			ctrl.Log.Error(err, "unable to create ownerIndex for McpExposure")
+			ctrl.Log.Error(err, "unable to create ownerIndex for AgenticExposure")
 			os.Exit(1)
 		}
-		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.McpSubscription{})
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.AgenticSubscription{})
 		if err != nil {
-			ctrl.Log.Error(err, "unable to create ownerIndex for McpSubscription")
+			ctrl.Log.Error(err, "unable to create ownerIndex for AgenticSubscription")
 			os.Exit(1)
 		}
 	}

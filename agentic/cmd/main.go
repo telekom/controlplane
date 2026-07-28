@@ -162,19 +162,19 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "McpServer")
 		os.Exit(1)
 	}
-	if err := (&controller.McpExposureReconciler{
+	if err := (&controller.AgenticExposureReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Config: agenticCfg,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "McpExposure")
+		setupLog.Error(err, "unable to create controller", "controller", "AgenticExposure")
 		os.Exit(1)
 	}
-	if err := (&controller.McpSubscriptionReconciler{
+	if err := (&controller.AgenticSubscriptionReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "McpSubscription")
+		setupLog.Error(err, "unable to create controller", "controller", "AgenticSubscription")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

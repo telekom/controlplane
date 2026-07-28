@@ -600,11 +600,11 @@ var _ = Describe("Secrets Handling", func() {
 	})
 
 	Context("OnboardApplication", func() {
-		var ctx context.Context
+		var testCtx context.Context
 		var rover *roverv1.Rover
 
 		BeforeEach(func() {
-			ctx = context.Background()
+			testCtx = context.Background()
 			rover = &roverv1.Rover{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-rover",
@@ -625,9 +625,9 @@ var _ = Describe("Secrets Handling", func() {
 					"clientSecret": "some:id:clientSecret:checksum",
 				}, nil
 			}
-			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover", mock.Anything).RunAndReturn(runAndReturnApplication)
+			fakeSecretManager.EXPECT().UpsertApplication(testCtx, "test", "eni--hyperion", "test-rover", mock.Anything).RunAndReturn(runAndReturnApplication)
 
-			err := OnboardApplication(ctx, rover, fakeSecretManager)
+			err := OnboardApplication(testCtx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -685,9 +685,9 @@ var _ = Describe("Secrets Handling", func() {
 			}
 
 			onboardingOption := mock.AnythingOfType("api.OnboardingOption")
-			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover", onboardingOption, onboardingOption, onboardingOption).RunAndReturn(runAndReturnApplication)
+			fakeSecretManager.EXPECT().UpsertApplication(testCtx, "test", "eni--hyperion", "test-rover", onboardingOption, onboardingOption, onboardingOption).RunAndReturn(runAndReturnApplication)
 
-			err := OnboardApplication(ctx, rover, fakeSecretManager)
+			err := OnboardApplication(testCtx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<some:id:clientSecret:checksum>"))
@@ -705,9 +705,9 @@ var _ = Describe("Secrets Handling", func() {
 					"clientSecret": "existing:clientSecret:checksum", // The SM will return the current value (which should match the existing reference)
 				}, nil
 			}
-			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
+			fakeSecretManager.EXPECT().UpsertApplication(testCtx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
 
-			err := OnboardApplication(ctx, rover, fakeSecretManager)
+			err := OnboardApplication(testCtx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
@@ -756,9 +756,9 @@ var _ = Describe("Secrets Handling", func() {
 					"externalSecrets": `{"api1": {"clientSecret": "existing:clientSecret:checksum", "externalIDP": {"password": "existing:externalIDPPassword:checksum"}}}`,
 				}, nil
 			}
-			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
+			fakeSecretManager.EXPECT().UpsertApplication(testCtx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
 
-			err := OnboardApplication(ctx, rover, fakeSecretManager)
+			err := OnboardApplication(testCtx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
