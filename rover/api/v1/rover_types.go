@@ -302,7 +302,7 @@ type Subscription struct {
 	// Event defines an Event-based service subscription configuration
 	// +kubebuilder:validation:Optional
 	Event *EventSubscription `json:"event,omitempty"`
-	// Ai defines an AI/MCP server subscription configuration
+	// Agentic defines an Agentic(MCP or agent) server subscription configuration
 	// +kubebuilder:validation:Optional
 	Agentic *AgenticSubscription `json:"agentic,omitempty"`
 }
