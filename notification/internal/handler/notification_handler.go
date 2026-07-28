@@ -18,6 +18,7 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -111,16 +112,16 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 	}
 
 	if shouldBlock {
-		notification.SetCondition(condition.NewBlockedCondition("Channel or template cannot be resolved"))
 		notification.SetCondition(condition.NewNotReadyCondition("NotificationSendingFailed", "Some notifications were not sent"))
+		return ctrlerrors.BlockedErrorf("Channel or template cannot be resolved")
+	}
+
+	if hasFailedSendAttempt(notification.Status.States) {
+		notification.SetCondition(condition.NewProcessingCondition("Retrying", "Retrying failed notifications"))
+		notification.SetCondition(condition.NewNotReadyCondition("Retrying", "Some notifications were not sent"))
 	} else {
-		if hasFailedSendAttempt(notification.Status.States) {
-			notification.SetCondition(condition.NewProcessingCondition("Retrying", "Retrying failed notifications"))
-			notification.SetCondition(condition.NewNotReadyCondition("Retrying", "Some notifications were not sent"))
-		} else {
-			notification.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Notification is provisioned"))
-			notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
-		}
+		notification.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Notification is provisioned"))
+		notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
 	}
 
 	return nil
@@ -170,6 +171,16 @@ func hasFailedSendAttempt(statesMap map[string]notificationv1.SendState) bool {
 func addResultToStatus(notification *notificationv1.Notification, channelId string, success bool, message string) {
 	if notification.Status.States == nil {
 		notification.Status.States = make(map[string]notificationv1.SendState)
+	}
+
+	// Skip update if the state hasn't meaningfully changed.
+	// Updating the timestamp on every reconciliation defeats the API server's
+	// no-op write optimization (bytes.Equal check), causing an infinite
+	// reconciliation loop: status update → watch event → immediate re-queue.
+	if existing, found := notification.Status.States[channelId]; found {
+		if existing.Sent == success && existing.ErrorMessage == message {
+			return
+		}
 	}
 
 	notification.Status.States[channelId] = notificationv1.SendState{

@@ -6,6 +6,7 @@ package handler_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	texttemplate "text/template"
 
@@ -19,6 +20,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -212,7 +214,9 @@ var _ = Describe("Notification Handler - Unit Tests", func() {
 			expectGetChannelError(fakeClient, "missing-channel", "default", fmt.Errorf("not found"))
 
 			err := handler.CreateOrUpdate(ctx, notification)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			var blockedErr ctrlerrors.BlockedError
+			Expect(errors.As(err, &blockedErr)).To(BeTrue())
 			Expect(mSender.callCount).To(Equal(0))
 
 			Expect(notification.Status.States).To(HaveKey("default/missing-channel"))
@@ -235,7 +239,9 @@ var _ = Describe("Notification Handler - Unit Tests", func() {
 			expectGetChannel(fakeClient, notReadyCh)
 
 			err := handler.CreateOrUpdate(ctx, notification)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			var blockedErr ctrlerrors.BlockedError
+			Expect(errors.As(err, &blockedErr)).To(BeTrue())
 			Expect(mSender.callCount).To(Equal(0))
 
 			Expect(notification.Status.States["default/not-ready-ch"].Sent).To(BeFalse())
@@ -255,7 +261,9 @@ var _ = Describe("Notification Handler - Unit Tests", func() {
 			// No cache entry — resolveTemplate returns error immediately (the !ok branch)
 
 			err := handler.CreateOrUpdate(ctx, notification)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			var blockedErr ctrlerrors.BlockedError
+			Expect(errors.As(err, &blockedErr)).To(BeTrue())
 			Expect(mSender.callCount).To(Equal(0))
 
 			Expect(notification.Status.States["default/team--mail"].Sent).To(BeFalse())
@@ -277,7 +285,9 @@ var _ = Describe("Notification Handler - Unit Tests", func() {
 			expectGetTemplateError(fakeClient, "my-purpose--mail", fmt.Errorf("template not found in k8s"))
 
 			err := handler.CreateOrUpdate(ctx, notification)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			var blockedErr ctrlerrors.BlockedError
+			Expect(errors.As(err, &blockedErr)).To(BeTrue())
 			Expect(mSender.callCount).To(Equal(0))
 
 			Expect(notification.Status.States["default/team--mail"].Sent).To(BeFalse())
@@ -354,7 +364,9 @@ var _ = Describe("Notification Handler - Unit Tests", func() {
 			expectGetChannelError(fakeClient, "team--chat", "default", fmt.Errorf("channel not found"))
 
 			err := handler.CreateOrUpdate(ctx, notification)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			var blockedErr ctrlerrors.BlockedError
+			Expect(errors.As(err, &blockedErr)).To(BeTrue())
 
 			Expect(notification.Status.States["default/team--mail"].Sent).To(BeTrue())
 			Expect(notification.Status.States["default/team--chat"].Sent).To(BeFalse())
@@ -483,7 +495,9 @@ var _ = Describe("Notification Handler - Unit Tests", func() {
 			expectGetChannelError(fakeClient, "ch-fail", "default", fmt.Errorf("not found"))
 
 			err := handler.CreateOrUpdate(ctx, notification)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			var blockedErr ctrlerrors.BlockedError
+			Expect(errors.As(err, &blockedErr)).To(BeTrue())
 
 			Expect(notification.Status.States["default/ch-ok"].Sent).To(BeTrue())
 			Expect(notification.Status.States["default/ch-fail"].Sent).To(BeFalse())
@@ -594,7 +608,9 @@ var _ = Describe("Notification Handler - Unit Tests", func() {
 			expectGetTemplate(fakeClient, "welcome--mail", notReadyTpl)
 
 			err := handler.CreateOrUpdate(ctx, notification)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			var blockedErr ctrlerrors.BlockedError
+			Expect(errors.As(err, &blockedErr)).To(BeTrue())
 			Expect(mSender.callCount).To(Equal(0))
 
 			Expect(notification.Status.States["default/team--mail"].Sent).To(BeFalse())
