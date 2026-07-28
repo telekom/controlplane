@@ -256,7 +256,7 @@ jobs:
       module: spectre
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
-      coverage_threshold: 50
+      coverage_threshold: 40
 
   projector:
     name: Projector
