@@ -185,6 +185,20 @@ jobs:
       module: rover-ctl
       run_check_generated_files: false
       ko_build_path: "main.go"
+      # rover-ctl's release image bundles bash/jq/yq via a custom base image
+      # containing GPL-3.0-or-later (bash, readline) and GPL-2.0-only
+      # (Alpine base) components, so CI must build/scan/push it the same way
+      # as the release pipeline: against the internal Artifactory registry,
+      # not GHCR. See openspec/changes/add-roverctl-image-cli-tools/license-findings.md
+      # and the `rover-ctl` kos entry in .goreleaser.yaml, which this must be
+      # kept in sync with.
+      # TODO: confirm the real Artifactory registry host/path (see open
+      # question on repository-path vs. subdomain/port method).
+      container_registry: artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl
+      base_image: artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl/rover-ctl-base:bash-jq-yq-v1
+    secrets:
+      registry_username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
+      registry_password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret
 
   snapshotter:
     name: Snapshotter

@@ -71,10 +71,15 @@ on:
         type: string
         default: ${{ github.ref }}
       container_registry:
-        description: "Container registry for Ko, e.g., ghcr.io or docker.io"
+        description: "Container registry for Ko, e.g., ghcr.io or docker.io. When set to a non-GHCR registry, registry_username/registry_password secrets are required for login."
         required: false
         type: string
         default: "ghcr.io"
+      base_image:
+        description: "Optional base image reference (registry/repo:tag) to use instead of the default in .ko.yaml. Passed to ko as KO_DEFAULTBASEIMAGE. Leave empty to use the default from .ko.yaml."
+        required: false
+        type: string
+        default: ""
       image_tags:
         description: "Comma-separated list of tags to apply to the built image. If empty, GITHUB_HEAD_REF_SLUG or latest will be used."
         required: false
@@ -85,6 +90,14 @@ on:
         required: false
         type: number
         default: 70
+
+    secrets:
+      registry_username:
+        description: "Username for logging in to container_registry, when it is not ghcr.io (which uses the built-in GITHUB_TOKEN keychain automatically). Also used by Trivy to pull the built image for scanning."
+        required: false
+      registry_password:
+        description: "Password/token for logging in to container_registry, when it is not ghcr.io. Also used by Trivy to pull the built image for scanning."
+        required: false
 
     outputs:
       image_digest:
@@ -365,6 +378,19 @@ jobs:
           REPO_LOWER=$(echo "${{ inputs.github_repository }}/${{ inputs.name }}" | tr '[:upper:]' '[:lower:]')
           echo "repo=${REPO_LOWER}" >> $GITHUB_OUTPUT
 
+      - name: Log in to container registry
+        # ghcr.io is authenticated automatically by ko's built-in GitHub
+        # Actions keychain (using the ambient GITHUB_TOKEN), so this step is
+        # skipped for the default registry. Any other registry (e.g. an
+        # internal Artifactory) needs an explicit login using the
+        # registry_username/registry_password secrets.
+        if: ${{ inputs.container_registry != 'ghcr.io' }}
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.6.0
+        with:
+          registry: ${{ inputs.container_registry }}
+          username: ${{ secrets.registry_username }}
+          password: ${{ secrets.registry_password }}
+
       - name: Build and Push Image with Ko
         id: build_image_ko_step
         shell: bash
@@ -372,10 +398,20 @@ jobs:
         env:
           KO_DOCKER_REPO: ${{ inputs.container_registry }}/${{ steps.repo_lower.outputs.repo }}
           KO_CONFIG_PATH: ${{ github.workspace }}/.ko.yaml
+          KO_DEFAULTBASEIMAGE: ${{ inputs.base_image }}
         run: |
           if [ -z "${{ inputs.github_repository }}" ] || [ -z "${{ inputs.github_ref }}" ]; then
             echo "Error: github_repository and github_ref inputs are required when run_build_image is true."
             exit 1
+          fi
+
+          # Unlike goreleaser's `kos` pipe (which embeds ko as a library and
+          # ignores this env var - see openspec/changes/add-roverctl-image-cli-tools),
+          # the `ko` CLI invoked directly below does honor KO_DEFAULTBASEIMAGE.
+          # An empty value is safely ignored by ko, falling back to
+          # KO_CONFIG_PATH's defaultBaseImage.
+          if [ -n "${KO_DEFAULTBASEIMAGE}" ]; then
+            echo "Using custom KO_DEFAULTBASEIMAGE: ${KO_DEFAULTBASEIMAGE}"
           fi
 
           effective_tags=""
@@ -402,9 +438,15 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      # No checkout or Go setup needed if only running Trivy on a remote image
+      # No checkout or Go setup needed if only running Trivy on a remote image.
+      # For ghcr.io, Trivy uses the ambient GITHUB_TOKEN automatically; other
+      # registries (e.g. an internal Artifactory) need explicit credentials,
+      # since this job runs independently of the `build` job's login step.
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_USERNAME: ${{ inputs.container_registry != 'ghcr.io' && secrets.registry_username || '' }}
+          TRIVY_PASSWORD: ${{ inputs.container_registry != 'ghcr.io' && secrets.registry_password || '' }}
         with:
           image-ref: ${{ inputs.container_registry }}/${{ needs.build.outputs.repo_lower }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"
