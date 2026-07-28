@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package ai_test
+package agentic_test
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/ai"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/agentic"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -109,7 +109,7 @@ var _ = Describe("HandleExposure", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure).ToNot(BeNil())
@@ -149,7 +149,7 @@ var _ = Describe("HandleExposure", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Labels).To(HaveKeyWithValue(agenticv1.AgenticBasePathLabelKey, "mcp-weather-v1"))
@@ -195,7 +195,7 @@ var _ = Describe("HandleExposure", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Spec.Security).ToNot(BeNil())
@@ -245,7 +245,7 @@ var _ = Describe("HandleExposure", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Spec.Traffic.CircuitBreaker).ToNot(BeNil())
@@ -291,7 +291,7 @@ var _ = Describe("HandleExposure", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Spec.Transformation).ToNot(BeNil())
@@ -347,7 +347,7 @@ var _ = Describe("HandleExposure", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Spec.Approval.TrustedTeams).To(ContainElements(
@@ -377,7 +377,7 @@ var _ = Describe("HandleExposure", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(owner.Status.AgenticExposures).To(HaveLen(1))
@@ -402,7 +402,7 @@ var _ = Describe("HandleExposure", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("api server error")).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("failed to create or update AgenticExposure"))
@@ -442,7 +442,7 @@ var _ = Describe("HandleSubscription", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub).ToNot(BeNil())
@@ -469,7 +469,7 @@ var _ = Describe("HandleSubscription", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub.Labels).To(HaveKeyWithValue(agenticv1.AgenticBasePathLabelKey, "mcp-weather-v1"))
@@ -503,7 +503,7 @@ var _ = Describe("HandleSubscription", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub.Spec.Security).ToNot(BeNil())
@@ -536,7 +536,7 @@ var _ = Describe("HandleSubscription", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub.Spec.Traffic.Failover).ToNot(BeNil())
@@ -556,7 +556,7 @@ var _ = Describe("HandleSubscription", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(owner.Status.AgenticSubscriptions).To(HaveLen(1))
@@ -573,7 +573,7 @@ var _ = Describe("HandleSubscription", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("api server error")).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("failed to create or update AgenticSubscription"))
@@ -582,7 +582,7 @@ var _ = Describe("HandleSubscription", func() {
 
 var _ = Describe("MakeName", func() {
 	It("should combine owner name and basePath", func() {
-		name := ai.MakeName("my-app", "/mcp/weather/v1")
+		name := agentic.MakeName("my-app", "/mcp/weather/v1")
 		Expect(name).To(Equal("my-app--mcp-weather-v1"))
 	})
 })

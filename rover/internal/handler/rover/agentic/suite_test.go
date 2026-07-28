@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package ai_test
+package agentic_test
 
 import (
 	"testing"
