@@ -146,7 +146,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	log.Info("server started", "external", cfg.Listeners.External.Address, "internal", cfg.Listeners.Internal, "tls", cfg.TLS != nil)
+	log.Info("server started", "external", cfg.Listeners.External.Address, "internal", cfg.Listeners.Internal.Address, "tls", cfg.TLS != nil)
 
 	<-ctx.Done()
 	log.Info("shutting down server")
