@@ -1086,6 +1086,29 @@ func HasSubscribedEventsWith(preds ...predicate.EventSubscription) predicate.App
 	})
 }
 
+// HasPermissionSet applies the HasEdge predicate on the "permission_set" edge.
+func HasPermissionSet() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, PermissionSetTable, PermissionSetColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPermissionSetWith applies the HasEdge predicate on the "permission_set" edge with a given conditions (other predicates).
+func HasPermissionSetWith(preds ...predicate.PermissionSet) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newPermissionSetStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Application) predicate.Application {
 	return predicate.Application(sql.AndPredicates(predicates...))

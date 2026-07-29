@@ -24,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
@@ -923,6 +924,17 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 			_q.WithNamedSubscribedEvents(alias, func(wq *EventSubscriptionQuery) {
 				*wq = *query
 			})
+
+		case "permissionSet":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PermissionSetClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, permissionsetImplementors)...); err != nil {
+				return err
+			}
+			_q.withPermissionSet = query
 		case "createdAt":
 			if _, ok := fieldSeen[application.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, application.FieldCreatedAt)
@@ -2085,6 +2097,125 @@ func newMemberPaginateArgs(rv map[string]any) *memberPaginateArgs {
 	}
 	if v, ok := rv[whereField].(*MemberWhereInput); ok {
 		args.opts = append(args.opts, WithMemberFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *PermissionSetQuery) CollectFields(ctx context.Context, satisfies ...string) (*PermissionSetQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *PermissionSetQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(permissionset.Columns))
+		selectedFields = []string{permissionset.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "createdAt":
+			if _, ok := fieldSeen[permissionset.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldCreatedAt)
+				fieldSeen[permissionset.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[permissionset.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldLastModifiedAt)
+				fieldSeen[permissionset.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[permissionset.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldStatusPhase)
+				fieldSeen[permissionset.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[permissionset.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldStatusMessage)
+				fieldSeen[permissionset.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[permissionset.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldEnvironment)
+				fieldSeen[permissionset.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[permissionset.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldNamespace)
+				fieldSeen[permissionset.FieldNamespace] = struct{}{}
+			}
+		case "permissions":
+			if _, ok := fieldSeen[permissionset.FieldPermissions]; !ok {
+				selectedFields = append(selectedFields, permissionset.FieldPermissions)
+				fieldSeen[permissionset.FieldPermissions] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type permissionsetPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []PermissionSetPaginateOption
+}
+
+func newPermissionSetPaginateArgs(rv map[string]any) *permissionsetPaginateArgs {
+	args := &permissionsetPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &PermissionSetOrder{Field: &PermissionSetOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithPermissionSetOrder(order))
+			}
+		case *PermissionSetOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithPermissionSetOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*PermissionSetWhereInput); ok {
+		args.opts = append(args.opts, WithPermissionSetFilter(v.Filter))
 	}
 	return args
 }

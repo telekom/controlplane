@@ -35,6 +35,7 @@ require (
 	github.com/telekom/controlplane/controlplane-api v0.0.0
 	github.com/telekom/controlplane/event/api v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0
+	github.com/telekom/controlplane/permission/api v0.0.0-00010101000000-000000000000
 	k8s.io/apiextensions-apiserver v0.36.2
 )
 
@@ -48,6 +49,7 @@ replace (
 	github.com/telekom/controlplane/controlplane-api => ../controlplane-api
 	github.com/telekom/controlplane/event/api => ../event/api
 	github.com/telekom/controlplane/organization/api => ../organization/api
+	github.com/telekom/controlplane/permission/api => ../permission/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )
 

@@ -34,10 +34,10 @@ type RoverStatus struct {
 	EventSubscriptions []types.ObjectRef `json:"eventSubscriptions,omitempty"`
 	// PermissionSets are references to PermissionSet resources created by this Rover
 	PermissionSets []types.ObjectRef `json:"permissionSets,omitempty"`
-	// AiExposures are references to McpExposure resources created by this Rover
-	AiExposures []types.ObjectRef `json:"aiExposures,omitempty"`
-	// AiSubscriptions are references to McpSubscription resources created by this Rover
-	AiSubscriptions []types.ObjectRef `json:"aiSubscriptions,omitempty"`
+	// AgenticExposures are references to AgenticExposure resources created by this Rover
+	AgenticExposures []types.ObjectRef `json:"aiExposures,omitempty"`
+	// AgenticSubscriptions are references to AgenticSubscription resources created by this Rover
+	AgenticSubscriptions []types.ObjectRef `json:"aiSubscriptions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -145,13 +145,16 @@ type RoverSpec struct {
 
 	// Exposures is a list of APIs and Events that this Rover exposes to consumers
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Exposures []Exposure `json:"exposures,omitempty"`
 	// Subscriptions is a list of APIs and Events that this Rover consumes from providers
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Subscriptions []Subscription `json:"subscriptions,omitempty"`
 
 	// Permissions defines role-based access control permissions for this application
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Permissions []Permission `json:"permissions,omitempty"`
 
 	// ExternalIds carries business identifiers (e.g. PSI, ICTO) attached to this
@@ -209,8 +212,8 @@ const (
 	TypeApi Type = "api"
 	// TypeEvent represents an Event type resource
 	TypeEvent Type = "event"
-	// TypeAi represents an AI/MCP type resource
-	TypeAi Type = "ai"
+	// TypeAgentic represents an Agentic type resource (MCP, A2A)
+	TypeAgentic Type = "agentic"
 )
 
 // ApprovalStrategy defines the approval workflow for API exposure
@@ -231,6 +234,7 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:items:MaxLength=43
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Allow []string `json:"allow,omitempty"`
 	// Deny is a list of IP addresses or CIDR ranges that are denied access
@@ -238,6 +242,7 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:items:MaxLength=43
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Deny []string `json:"deny,omitempty"`
 }
@@ -269,9 +274,9 @@ type Exposure struct {
 	// Event defines an Event-based service exposure configuration
 	// +kubebuilder:validation:Optional
 	Event *EventExposure `json:"event,omitempty"`
-	// Ai defines an AI/MCP server exposure configuration
+	// Agentic defines an Agentic(MCP or agent) server exposure configuration
 	// +kubebuilder:validation:Optional
-	Ai *AiExposure `json:"ai,omitempty"`
+	Agentic *AgenticExposure `json:"agentic,omitempty"`
 }
 
 func (e *Exposure) Type() Type {
@@ -281,8 +286,8 @@ func (e *Exposure) Type() Type {
 	if e.Event != nil {
 		return TypeEvent
 	}
-	if e.Ai != nil {
-		return TypeAi
+	if e.Agentic != nil {
+		return TypeAgentic
 	}
 	return ""
 }
@@ -297,9 +302,9 @@ type Subscription struct {
 	// Event defines an Event-based service subscription configuration
 	// +kubebuilder:validation:Optional
 	Event *EventSubscription `json:"event,omitempty"`
-	// Ai defines an AI/MCP server subscription configuration
+	// Agentic defines an Agentic(MCP or agent) server subscription configuration
 	// +kubebuilder:validation:Optional
-	Ai *AiSubscription `json:"ai,omitempty"`
+	Agentic *AgenticSubscription `json:"agentic,omitempty"`
 }
 
 func (s *Subscription) Type() Type {
@@ -309,8 +314,8 @@ func (s *Subscription) Type() Type {
 	if s.Event != nil {
 		return TypeEvent
 	}
-	if s.Ai != nil {
-		return TypeAi
+	if s.Agentic != nil {
+		return TypeAgentic
 	}
 	return ""
 }
@@ -438,19 +443,19 @@ type EventSubscription struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
 
-// AiVariant defines the AI exposure variant.
+// AgenticVariant defines the AI exposure variant.
 // +kubebuilder:validation:Enum=MCP;TELECONTEXTMCP
-type AiVariant string
+type AgenticVariant string
 
 const (
-	// AiVariantMCP exposes a standard MCP server via AI Gateway
-	AiVariantMCP AiVariant = "MCP"
-	// AiVariantTelecontextMCP exposes an MCP server with auto-created Telecontext access
-	AiVariantTelecontextMCP AiVariant = "TELECONTEXTMCP"
+	// AgenticVariantMCP exposes a standard MCP server via AI Gateway
+	AgenticVariantMCP AgenticVariant = "MCP"
+	// AgenticVariantTelecontextMCP exposes an MCP server with auto-created Telecontext access
+	AgenticVariantTelecontextMCP AgenticVariant = "TELECONTEXTMCP"
 )
 
-// AiExposure defines an AI/MCP server that is exposed by this Rover
-type AiExposure struct {
+// AgenticExposure defines an AI/MCP server that is exposed by this Rover
+type AgenticExposure struct {
 	// BasePath is the base path of the MCP server endpoint (must start with /)
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`
@@ -465,7 +470,7 @@ type AiExposure struct {
 	// Variant defines the MCP exposure variant
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default=MCP
-	Variant AiVariant `json:"variant"`
+	Variant AgenticVariant `json:"variant"`
 
 	// Visibility defines who can see and subscribe to this MCP server
 	// +kubebuilder:validation:Enum=World;Zone;Enterprise
@@ -487,8 +492,8 @@ type AiExposure struct {
 	Security *Security `json:"security,omitempty"`
 }
 
-// AiSubscription defines an AI/MCP server that this Rover subscribes to
-type AiSubscription struct {
+// AgenticSubscription defines an AI/MCP server that this Rover subscribes to
+type AgenticSubscription struct {
 	// BasePath is the base path of the MCP server to subscribe to (must start with /)
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^/[a-z0-9-/]+$`

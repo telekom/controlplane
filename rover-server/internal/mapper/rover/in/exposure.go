@@ -60,7 +60,7 @@ func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
 			return errors.Wrap(err, "failed to convert to AiExposure")
 		}
 
-		out.Ai = mapAiExposure(aiExp)
+		out.Agentic = mapAiExposure(aiExp)
 
 	default:
 		return errors.Errorf("unknown exposure type: %s", expType)
@@ -165,6 +165,7 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 					ClientId:     oauth2.ClientId,
 					ClientSecret: oauth2.ClientSecret,
 					ClientKey:    oauth2.ClientKey,
+					RefreshToken: oauth2.RefreshToken,
 				}
 			}
 			if oauth2.Username != "" {
@@ -178,12 +179,27 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 			// scopes
 			m2mSecurity.Scopes = oauth2.Scopes
 		}
+		m2mSecurity.Claims = mapExposureClaims(oauth2.Claims)
 	}
 
-	if m2mSecurity.Basic != nil || m2mSecurity.ExternalIDP != nil || m2mSecurity.Scopes != nil {
+	if m2mSecurity.Basic != nil || m2mSecurity.ExternalIDP != nil || m2mSecurity.Scopes != nil || m2mSecurity.Claims != nil {
 		out.Security = &roverv1.Security{
 			M2M: m2mSecurity,
 		}
+	}
+}
+
+// mapExposureClaims maps the rover-server Oauth2 claims (only aud is supported) into
+// the CRD Claims shape. value is copied through; valueFrom stays symbolic.
+func mapExposureClaims(in api.Claims) *roverv1.Claims {
+	if in.Aud.Value == "" && in.Aud.ValueFrom == "" {
+		return nil
+	}
+	return &roverv1.Claims{
+		Aud: &roverv1.Claim{
+			Value:     in.Aud.Value,
+			ValueFrom: roverv1.ClaimValueFrom(in.Aud.ValueFrom),
+		},
 	}
 }
 
@@ -292,10 +308,10 @@ func mapEventTrigger(in api.EventTrigger) *roverv1.EventTrigger {
 	return out
 }
 
-func mapAiExposure(in api.AiExposure) *roverv1.AiExposure {
-	out := &roverv1.AiExposure{}
+func mapAiExposure(in api.AiExposure) *roverv1.AgenticExposure {
+	out := &roverv1.AgenticExposure{}
 	out.BasePath = in.BasePath
-	out.Variant = roverv1.AiVariant(in.Variant)
+	out.Variant = roverv1.AgenticVariant(in.Variant)
 	out.Visibility = toRoverVisibility(in.Visibility)
 	out.Approval = roverv1.Approval{
 		Strategy: toRoverApprovalStrategy(in.Approval),
@@ -327,7 +343,7 @@ func mapAiExposure(in api.AiExposure) *roverv1.AiExposure {
 	return out
 }
 
-func mapAiTrustedTeams(in api.AiExposure, out *roverv1.AiExposure) {
+func mapAiTrustedTeams(in api.AiExposure, out *roverv1.AgenticExposure) {
 	if len(in.TrustedTeams) == 0 {
 		return
 	}
@@ -345,7 +361,7 @@ func mapAiTrustedTeams(in api.AiExposure, out *roverv1.AiExposure) {
 	}
 }
 
-func mapAiExposureSecurity(in api.AiExposure, out *roverv1.AiExposure) {
+func mapAiExposureSecurity(in api.AiExposure, out *roverv1.AgenticExposure) {
 	m2mSecurity := &roverv1.Machine2MachineAuthentication{}
 
 	secType, err := in.Security.Discriminator()
@@ -401,7 +417,7 @@ func mapAiExposureSecurity(in api.AiExposure, out *roverv1.AiExposure) {
 	}
 }
 
-func mapAiExposureTransformation(in api.AiExposure, out *roverv1.AiExposure) {
+func mapAiExposureTransformation(in api.AiExposure, out *roverv1.AgenticExposure) {
 	if len(in.RemoveHeaders) == 0 {
 		return
 	}
@@ -414,7 +430,7 @@ func mapAiExposureTransformation(in api.AiExposure, out *roverv1.AiExposure) {
 	}
 }
 
-func mapAiExposureTraffic(in api.AiExposure, out *roverv1.AiExposure) {
+func mapAiExposureTraffic(in api.AiExposure, out *roverv1.AgenticExposure) {
 	if out.Traffic == nil {
 		out.Traffic = &roverv1.Traffic{}
 	}
@@ -444,7 +460,7 @@ func mapAiExposureTraffic(in api.AiExposure, out *roverv1.AiExposure) {
 	}
 }
 
-func mapAiRateLimit(in api.AiExposure, out *roverv1.AiExposure) {
+func mapAiRateLimit(in api.AiExposure, out *roverv1.AgenticExposure) {
 	rl := in.RateLimit
 	hasProviderLimit := rl.Provider.Second != 0 || rl.Provider.Minute != 0 || rl.Provider.Hour != 0
 	hasConsumerDefaultLimit := rl.ConsumerDefault.Second != 0 || rl.ConsumerDefault.Minute != 0 || rl.ConsumerDefault.Hour != 0

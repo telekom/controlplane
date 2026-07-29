@@ -30,6 +30,8 @@ var _ = Describe("Feature Priority Ordering", func() {
 			features.Feature(feature.InstanceAccessControlFeature), 10),
 		Entry("CustomScopes has priority 10",
 			features.Feature(feature.InstanceCustomScopesFeature), 10),
+		Entry("Claims has priority 10",
+			features.Feature(feature.InstanceClaimsFeature), 10),
 		Entry("RateLimit has priority 10",
 			features.Feature(feature.InstanceRateLimitFeature), 10),
 		Entry("BasicAuth has priority 10",
@@ -89,6 +91,7 @@ var _ = Describe("Feature Priority Ordering", func() {
 			feature.InstanceBasicAuthFeature,
 			feature.InstanceRateLimitFeature,
 			feature.InstanceCustomScopesFeature,
+			feature.InstanceClaimsFeature,
 			feature.InstanceAccessControlFeature,
 			feature.InstanceExternalIDPFeature,
 			feature.InstanceHeaderTransformationFeature,
@@ -108,29 +111,29 @@ var _ = Describe("Feature Priority Ordering", func() {
 		Expect(allFeatures[2].Priority()).To(Equal(9))
 		Expect(allFeatures[2].Name()).To(Equal(feature.InstanceExternalIDPFeature.Name()))
 
-		// Priority 10: AccessControl, CustomScopes, RateLimit, BasicAuth, IpRestriction
-		for i := 3; i <= 7; i++ {
+		// Priority 10: AccessControl, CustomScopes, Claims, RateLimit, BasicAuth, IpRestriction
+		for i := 3; i <= 8; i++ {
 			Expect(allFeatures[i].Priority()).To(Equal(10))
 		}
 
 		// Priority 100: LastMileSecurity
-		Expect(allFeatures[8].Priority()).To(Equal(100))
-		Expect(allFeatures[8].Name()).To(Equal(feature.InstanceLastMileSecurityFeature.Name()))
+		Expect(allFeatures[9].Priority()).To(Equal(100))
+		Expect(allFeatures[9].Name()).To(Equal(feature.InstanceLastMileSecurityFeature.Name()))
 
 		// Priority 101: DynamicUpstream
-		Expect(allFeatures[9].Priority()).To(Equal(101))
-		Expect(allFeatures[9].Name()).To(Equal(feature.InstanceDynamicUpstreamFeature.Name()))
+		Expect(allFeatures[10].Priority()).To(Equal(101))
+		Expect(allFeatures[10].Name()).To(Equal(feature.InstanceDynamicUpstreamFeature.Name()))
 
 		// Priority 102: LoadBalancing
-		Expect(allFeatures[10].Priority()).To(Equal(102))
-		Expect(allFeatures[10].Name()).To(Equal(feature.InstanceLoadBalancingFeature.Name()))
+		Expect(allFeatures[11].Priority()).To(Equal(102))
+		Expect(allFeatures[11].Name()).To(Equal(feature.InstanceLoadBalancingFeature.Name()))
 
 		// Priority 109: Failover
-		Expect(allFeatures[11].Priority()).To(Equal(109))
-		Expect(allFeatures[11].Name()).To(Equal(feature.InstanceFailoverFeature.Name()))
+		Expect(allFeatures[12].Priority()).To(Equal(109))
+		Expect(allFeatures[12].Name()).To(Equal(feature.InstanceFailoverFeature.Name()))
 
 		// Priority 110: CircuitBreaker
-		Expect(allFeatures[12].Priority()).To(Equal(110))
-		Expect(allFeatures[12].Name()).To(Equal(feature.InstanceCircuitBreakerFeature.Name()))
+		Expect(allFeatures[13].Priority()).To(Equal(110))
+		Expect(allFeatures[13].Name()).To(Equal(feature.InstanceCircuitBreakerFeature.Name()))
 	})
 })

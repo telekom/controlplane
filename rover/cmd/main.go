@@ -200,16 +200,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if cconfig.FeaturePubSub.IsEnabled() {
-		if err = (&controller.EventSpecificationReconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "EventSpecification")
-			os.Exit(1)
-		}
-	}
-
 	if err = (&controller.ApiChangelogReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),

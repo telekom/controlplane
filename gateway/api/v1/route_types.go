@@ -141,6 +141,10 @@ func (g *Route) GetProperty(key string) string {
 	return val
 }
 
+func (g *Route) IsPrimary() bool {
+	return g.Spec.Type == RouteTypePrimary
+}
+
 func (g *Route) IsProxy() bool {
 	return g.Spec.Type != RouteTypePrimary
 }

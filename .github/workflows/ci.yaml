@@ -207,6 +207,17 @@ jobs:
       ko_build_path: "cmd/main.go"
       lint_fail_on_issues: true
 
+  agentic:
+    name: Agentic
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: agentic
+      module: agentic
+      run_check_generated_files: true
+      ko_build_path: "cmd/main.go"
+      coverage_threshold: 50
+      lint_fail_on_issues: true
+
   event:
     name: Event
     uses: ./.github/workflows/reusable-go-ci.yaml

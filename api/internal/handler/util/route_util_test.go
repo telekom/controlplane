@@ -256,4 +256,52 @@ var _ = Describe("Route Util", func() {
 			})
 		})
 	})
+
+	Describe("ResolveExposureClaims", func() {
+		const clientId = "eni--foo--api-provider"
+		const basePath = "/eni/foo/v1"
+
+		expWithClaim := func(aud *apiapi.Claim) *apiapi.ApiExposure {
+			return &apiapi.ApiExposure{
+				Spec: apiapi.ApiExposureSpec{
+					ApiBasePath: basePath,
+					Security:    &apiapi.Security{M2M: &apiapi.Machine2MachineAuthentication{Claims: &apiapi.Claims{Aud: aud}}},
+				},
+			}
+		}
+
+		It("returns nil when there is no security", func() {
+			exp := &apiapi.ApiExposure{Spec: apiapi.ApiExposureSpec{ApiBasePath: basePath}}
+			Expect(ResolveExposureClaims(exp, clientId)).To(BeNil())
+		})
+
+		It("returns nil when there are no claims", func() {
+			exp := &apiapi.ApiExposure{Spec: apiapi.ApiExposureSpec{Security: &apiapi.Security{M2M: &apiapi.Machine2MachineAuthentication{}}}}
+			Expect(ResolveExposureClaims(exp, clientId)).To(BeNil())
+		})
+
+		It("copies a literal value through", func() {
+			got := ResolveExposureClaims(expWithClaim(&apiapi.Claim{Value: "my-audience"}), clientId)
+			Expect(got.Aud.Value).To(Equal("my-audience"))
+			Expect(got.Aud.ValueFrom).To(BeEmpty())
+		})
+
+		It("resolves ProviderClientId to the application client id", func() {
+			got := ResolveExposureClaims(expWithClaim(&apiapi.Claim{ValueFrom: apiapi.ClaimValueFromProviderClientId}), clientId)
+			Expect(got.Aud.Value).To(Equal(clientId))
+			Expect(got.Aud.ValueFrom).To(BeEmpty())
+		})
+
+		It("resolves BasePath to the exposure base path", func() {
+			got := ResolveExposureClaims(expWithClaim(&apiapi.Claim{ValueFrom: apiapi.ClaimValueFromBasePath}), clientId)
+			Expect(got.Aud.Value).To(Equal(basePath))
+			Expect(got.Aud.ValueFrom).To(BeEmpty())
+		})
+
+		It("keeps ConsumerClientId symbolic", func() {
+			got := ResolveExposureClaims(expWithClaim(&apiapi.Claim{ValueFrom: apiapi.ClaimValueFromConsumerClientId}), clientId)
+			Expect(got.Aud.Value).To(BeEmpty())
+			Expect(got.Aud.ValueFrom).To(Equal(apiapi.ClaimValueFromConsumerClientId))
+		})
+	})
 })

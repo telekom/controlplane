@@ -159,6 +159,14 @@ func (_m *Application) SubscribedEvents(
 	return _m.QuerySubscribedEvents().Paginate(ctx, after, first, before, last, opts...)
 }
 
+func (_m *Application) PermissionSet(ctx context.Context) (*PermissionSet, error) {
+	result, err := _m.Edges.PermissionSetOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPermissionSet().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (_m *EventExposure) Owner(ctx context.Context) (*Application, error) {
 	result, err := _m.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {

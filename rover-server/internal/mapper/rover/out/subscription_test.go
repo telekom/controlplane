@@ -19,7 +19,8 @@ var _ = Describe("Subscription Mapper", func() {
 		It("must map ApiSubscription correctly", func() {
 			input := &apiSubscription
 
-			output := mapApiSubscription(input)
+			output, err := mapApiSubscription(input)
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
@@ -28,7 +29,8 @@ var _ = Describe("Subscription Mapper", func() {
 		It("must handle empty ApiSubscription input", func() {
 			input := &roverv1.ApiSubscription{}
 
-			output := mapApiSubscription(input)
+			output, err := mapApiSubscription(input)
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)

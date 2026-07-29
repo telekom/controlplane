@@ -109,6 +109,11 @@ spec:
                             description: ClientSecret is the secret associated with
                               the client ID
                             type: string
+                          refreshToken:
+                            description: |-
+                              RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+                              without requiring re-authentication. Used with the refresh_token grant type.
+                            type: string
                         required:
                         - clientId
                         type: object

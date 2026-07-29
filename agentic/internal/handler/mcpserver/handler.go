@@ -33,7 +33,7 @@ func (h *McpServerHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Mc
 	// List all McpServers with the same basePath
 	serverList := &agenticv1.McpServerList{}
 	if err := c.List(ctx, serverList, client.MatchingLabels{
-		agenticv1.McpBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
+		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
 	}); err != nil {
 		return errors.Wrapf(err, "failed to list McpServers for basePath %q", obj.Spec.BasePath)
 	}

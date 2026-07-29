@@ -77,7 +77,7 @@ type McpServerStatus struct {
 
 // McpServer is the Schema for the mcpservers API.
 // It represents a registered MCP server definition, serving as the
-// canonical reference that McpExposure and McpSubscription point to.
+// canonical reference that AgenticExposure and AgenticSubscription point to.
 type McpServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

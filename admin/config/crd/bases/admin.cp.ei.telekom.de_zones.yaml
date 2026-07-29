@@ -757,6 +757,11 @@ spec:
                       zone
                     format: uri
                     type: string
+                  internalIssuer:
+                    description: InternalIssuer is the expected issuer of downstream
+                      tokens for internal services in this zone
+                    format: uri
+                    type: string
                   permissionsUrl:
                     description: |-
                       PermissionsUrl for permission queries (dynamically built from gateway URL)

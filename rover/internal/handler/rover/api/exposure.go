@@ -17,6 +17,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -43,8 +44,18 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Namespace: environment,
 	}
 
+	// Resolve the owning team up front; it is added to the trusted teams below.
+	// The owner team is required here, so block (and requeue) if it cannot be resolved.
+	ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrlerrors.BlockedErrorf("owner team not found for application %s", owner.Name)
+		}
+		return err
+	}
+
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(owner, apiExposure, c.Scheme())
+		err = controllerutil.SetControllerReference(owner, apiExposure, c.Scheme())
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
@@ -72,16 +83,8 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			return errors.Wrap(err, "failed to map trusted teams")
 		}
 
-		// add owner to trusted teams
-		ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
-		switch {
-		case err != nil && apierrors.IsNotFound(err):
-			logger.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-		case err != nil:
-			return err
-		default:
-			apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
-		}
+		// add owner to trusted teams (already resolved above)
+		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
 
 		for i, upstream := range exp.Upstreams {
 			apiExposure.Spec.Upstreams[i] = apiapi.Upstream{
@@ -93,7 +96,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, apiExposure, mutator)
+	_, err = c.CreateOrUpdate(ctx, apiExposure, mutator)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or update ApiExposure")
 	}
@@ -156,9 +159,34 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 				Password: roverSecurity.M2M.Basic.Password,
 			}
 		}
+
+		security.M2M.Claims = mapClaimsToApiClaims(roverSecurity.M2M.Claims)
 	}
 
 	return security
+}
+
+// mapClaimsToApiClaims forwards the claim to the api domain. A user-provided literal
+// is copied through; ValueFrom sources (ProviderClientId, BasePath, ConsumerClientId)
+// stay symbolic and are resolved in the api domain (or by Jumper for ConsumerClientId).
+func mapClaimsToApiClaims(roverClaims *rover.Claims) *apiapi.Claims {
+	if roverClaims == nil || roverClaims.Aud == nil {
+		return nil
+	}
+
+	aud := roverClaims.Aud
+	resolved := &apiapi.Claim{}
+
+	switch {
+	case aud.Value != "":
+		resolved.Value = aud.Value
+	case aud.ValueFrom != "":
+		resolved.ValueFrom = apiapi.ClaimValueFrom(aud.ValueFrom)
+	default:
+		return nil
+	}
+
+	return &apiapi.Claims{Aud: resolved}
 }
 
 func mapTransformationToApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {

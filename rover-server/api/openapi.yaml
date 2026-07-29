@@ -2235,6 +2235,28 @@ components:
             - body
             - header
           description: "Specifies if the authentication data should be sent to the external IDP via headers or in the body of the request"
+        claims:
+          $ref: '#/components/schemas/Claims'
+    Claims:
+      type: object
+      description: "Token claims written into the platform-managed LMS token. Provider-side only: honored on an API exposure's security and ignored on a subscription's security. Only valid on the LMS token (not with an external IDP tokenEndpoint or basic auth)."
+      properties:
+        aud:
+          $ref: '#/components/schemas/Claim'
+    Claim:
+      type: object
+      description: "A single claim value. Exactly one of value or valueFrom must be set."
+      properties:
+        value:
+          type: string
+          description: "A literal claim value."
+        valueFrom:
+          type: string
+          description: "A predefined source resolved into the claim value."
+          enum:
+            - ProviderClientId
+            - ConsumerClientId
+            - BasePath
     Problem:
       type: object
       required:

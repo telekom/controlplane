@@ -45,8 +45,8 @@
         Traffic:        &v1.Traffic{},
         Security:       (*v1.Security)(nil),
     },
-    Event: (*v1.EventExposure)(nil),
-    Ai:    (*v1.AiExposure)(nil),
+    Event:   (*v1.EventExposure)(nil),
+    Agentic: (*v1.AgenticExposure)(nil),
 }
 ---
 
@@ -63,7 +63,7 @@
         Scopes:                 nil,
         AdditionalPublisherIds: nil,
     },
-    Ai: (*v1.AiExposure)(nil),
+    Agentic: (*v1.AgenticExposure)(nil),
 }
 ---
 

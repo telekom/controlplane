@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -312,6 +313,25 @@ func (_c *ApplicationCreate) AddSubscribedEvents(v ...*EventSubscription) *Appli
 		ids[i] = v[i].ID
 	}
 	return _c.AddSubscribedEventIDs(ids...)
+}
+
+// SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
+func (_c *ApplicationCreate) SetPermissionSetID(id int) *ApplicationCreate {
+	_c.mutation.SetPermissionSetID(id)
+	return _c
+}
+
+// SetNillablePermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID if the given value is not nil.
+func (_c *ApplicationCreate) SetNillablePermissionSetID(id *int) *ApplicationCreate {
+	if id != nil {
+		_c = _c.SetPermissionSetID(*id)
+	}
+	return _c
+}
+
+// SetPermissionSet sets the "permission_set" edge to the PermissionSet entity.
+func (_c *ApplicationCreate) SetPermissionSet(v *PermissionSet) *ApplicationCreate {
+	return _c.SetPermissionSetID(v.ID)
 }
 
 // Mutation returns the ApplicationMutation object of the builder.
@@ -612,6 +632,22 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PermissionSetIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

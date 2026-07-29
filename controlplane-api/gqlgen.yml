@@ -84,6 +84,9 @@ models:
   Upstream:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.Upstream
+  Permission:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Permission
   ApprovalConfig:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.ApprovalConfig

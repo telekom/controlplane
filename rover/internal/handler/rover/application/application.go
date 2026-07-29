@@ -6,28 +6,25 @@ package application
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-
-	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 func HandleApplication(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
-	log := log.FromContext(ctx)
 	environment := contextutil.EnvFromContextOrDie(ctx)
 	zoneRef := types.ObjectRef{
 		Name:      owner.Spec.Zone,
@@ -42,9 +39,10 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	}
 
 	team, err := organizationv1.FindTeamForObject(ctx, owner)
-	if err != nil && apierrors.IsNotFound(err) {
-		log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-	} else if err != nil {
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrlerrors.BlockedErrorf("team not found for application %s", owner.Name)
+		}
 		return err
 	}
 
@@ -59,12 +57,10 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	var hasAnySubscriptionFailoverEnabled bool
 	if needsClient {
 		for _, subscription := range owner.Spec.Subscriptions {
-			switch subscription.Type() {
-			case roverv1.TypeApi:
+			if subscription.Type() == roverv1.TypeApi {
 				failoverConfig := subscription.Api.Traffic.Failover
 				if failoverConfig != nil && failoverConfig.Enabled {
 					hasAnySubscriptionFailoverEnabled = true
-					// break the inner loop, we only need to know if any subscription has failover enabled
 					break
 				}
 			}
@@ -78,9 +74,8 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			config.BuildLabelKey("team"):        labelutil.NormalizeValue(team.Name),
 		}
 
-		err := controllerutil.SetControllerReference(owner, application, c.Scheme())
-		if err != nil {
-			return errors.Wrap(err, "failed to set controller reference")
+		if refErr := controllerutil.SetControllerReference(owner, application, c.Scheme()); refErr != nil {
+			return errors.Wrap(refErr, "failed to set controller reference")
 		}
 
 		// Preserve existing Application secret on updates (write-once);

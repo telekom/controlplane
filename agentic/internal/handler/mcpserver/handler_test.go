@@ -33,7 +33,7 @@ func newMcpServer(name, basePath string, uid types.UID, creationTime time.Time) 
 			UID:               uid,
 			CreationTimestamp: metav1.NewTime(creationTime),
 			Labels: map[string]string{
-				agenticv1.McpBasePathLabelKey: basePath,
+				agenticv1.AgenticBasePathLabelKey: basePath,
 			},
 		},
 		Spec: agenticv1.McpServerSpec{
