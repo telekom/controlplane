@@ -48,7 +48,7 @@ func (r *McpServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&mcpserver.McpServerHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&agenticv1.McpServer{}).
+		For(&agenticv1.McpServer{}, builder.WithPredicates(cc.Count("mcpserver", cc.RoleFor))).
 		Watches(&agenticv1.McpServer{},
 			handler.EnqueueRequestsFromMapFunc(r.MapMcpServerToMcpServer),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),

@@ -57,7 +57,7 @@ func (r *AgenticExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&agenticexposure.AgenticExposureHandler{Config: r.Config}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&agenticv1.AgenticExposure{}).
+		For(&agenticv1.AgenticExposure{}, builder.WithPredicates(cc.Count("agenticexposure", cc.RoleFor))).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToAgenticExposure),
 			builder.WithPredicates(LabelPredicate),

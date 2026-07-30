@@ -61,7 +61,7 @@ func (r *AgenticSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error
 	r.Controller = cc.NewController(&agenticsubscription.AgenticSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&agenticv1.AgenticSubscription{}).
+		For(&agenticv1.AgenticSubscription{}, builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleFor))).
 		Owns(&gatewayv1.ConsumeRoute{}).
 		Owns(&approvalv1.ApprovalRequest{}).
 		Watches(&agenticv1.AgenticExposure{},
