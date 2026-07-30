@@ -7,6 +7,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -44,7 +45,7 @@ func (r *McpSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&mcpspec_handler.McpSpecificationHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&rover.McpSpecification{}).
+		For(&rover.McpSpecification{}, builder.WithPredicates(cc.Count("mcpspecification", cc.RoleFor))).
 		Owns(&agenticv1.McpServer{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

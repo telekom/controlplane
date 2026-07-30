@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -50,7 +51,7 @@ func (r *ApiSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(h, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&rover.ApiSpecification{}).
+		For(&rover.ApiSpecification{}, builder.WithPredicates(cc.Count("apispecification", cc.RoleFor))).
 		Owns(&apiapi.Api{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

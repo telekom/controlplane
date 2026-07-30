@@ -7,6 +7,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -45,7 +46,7 @@ func (r *RoadmapReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&roadmap_handler.RoadmapHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&rover.Roadmap{}).
+		For(&rover.Roadmap{}, builder.WithPredicates(cc.Count("roadmap", cc.RoleFor))).
 		// Note: No .Owns() call here - Roadmap doesn't create any owned resources
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

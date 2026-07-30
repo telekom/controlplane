@@ -7,6 +7,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -47,7 +48,7 @@ func (r *EventSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	r.Controller = cc.NewController(&eventspec_handler.EventSpecificationHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&rover.EventSpecification{}).
+		For(&rover.EventSpecification{}, builder.WithPredicates(cc.Count("eventspecification", cc.RoleFor))).
 		Owns(&eventv1.EventType{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
