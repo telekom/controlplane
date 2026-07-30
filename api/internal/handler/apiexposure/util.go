@@ -10,14 +10,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
-	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
 // setAlreadyExposedConditions sets NotReady and Blocked conditions on the new ApiExposure
@@ -76,20 +75,22 @@ func ApiExposureMustNotAlreadyExist(ctx context.Context, candidate *apiv1.ApiExp
 // ApiMustExist checks if there is an active Api corresponding to the given ApiExposure.
 // If not, it sets appropriate conditions on the ApiExposure and cleans up owned Routes.
 func ApiMustExist(ctx context.Context, apiExp *apiv1.ApiExposure) (*apiv1.Api, error) {
-	janitorClient := cclient.ClientFromContextOrDie(ctx)
-
 	found, api, err := util.FindActiveAPI(ctx, apiExp.Spec.ApiBasePath)
 	if err != nil {
 		return nil, err
 	}
 
 	if !found {
-		routeList := &gatewayapi.RouteList{}
-		// Using ownedByLabel to cleanup all routes that are owned by the ApiExposure
-		_, err := janitorClient.Cleanup(ctx, routeList, cclient.OwnedByLabel(apiExp))
+		// No active Api means no routes should exist for this basepath. Since nothing is
+		// provisioned this reconciliation, the janitor treats every route for the basepath
+		// as stale and removes all of them (proxy, real, and failover).
+		deleted, err := util.CleanupStaleRoutes(ctx, apiExp.Spec.ApiBasePath)
 		if err != nil {
 			return nil, errors.Wrapf(err,
-				"failed to cleanup owned routes for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
+				"failed to cleanup routes for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
+		}
+		if deleted > 0 {
+			log.FromContext(ctx).V(1).Info("Cleaned up routes for ApiExposure with missing Api", "deleted", deleted)
 		}
 
 		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
