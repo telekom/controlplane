@@ -1,0 +1,38 @@
+discovery-server/internal/config/config_test.go
+  s_66bdc70f71950a::t_aa588466ad5137 11-12
+tools/snapshotter/go.mod
+  s_66bdc70f71950a::t_a7580499a7f14d 96
+discovery-server/go.mod
+  s_66bdc70f71950a::t_cb330dff79494e 129
+discovery-server/pkg/log/log.go
+  s_66bdc70f71950a::t_7f23c8c679c711 12-13
+event/internal/handler/eventsubscription/trigger_test.go
+  s_66bdc70f71950a::t_8a0cf746589469 281,316,342,375,423,469,506,537,563,591,643,682,745,870
+discovery-server/go.sum
+  s_66bdc70f71950a::t_943bded0042d43 378-379
+rover/config/crd/bases/rover.cp.ei.telekom.de_rovers.yaml
+  s_66bdc70f71950a::t_99ca502d871087 1261-1262
+tools/snapshotter/go.sum
+  s_66bdc70f71950a::t_6383782a338389 185-186,192-193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "fbb2d6e9e86d2a44de2b4c96b99d7e41fa142494",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_66bdc70f71950a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04e3a15d4ffeRYSrgM4Nowy9We",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
