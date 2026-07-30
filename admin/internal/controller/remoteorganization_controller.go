@@ -7,6 +7,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -46,7 +47,7 @@ func (r *RemoteOrganizationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	r.Controller = cc.NewController(&remoteorg_handler.RemoteOrganizationHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&adminv1.RemoteOrganization{}).
+		For(&adminv1.RemoteOrganization{}, builder.WithPredicates(cc.Count("remoteorganization", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
