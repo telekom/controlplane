@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -50,7 +51,7 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor))).
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
-			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}))).
+			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -73,3 +74,7 @@ func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client
 
 	return []reconcile.Request{{NamespacedName: client.ObjectKey{Name: route.Name, Namespace: route.Namespace}}}
 }
+
+type SkipInitialListPredicate struct{ predicate.Funcs }
+
+func (SkipInitialListPredicate) Create(e event.CreateEvent) bool { return !e.IsInInitialList }

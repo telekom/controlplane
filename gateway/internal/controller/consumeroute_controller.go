@@ -54,7 +54,7 @@ func (r *ConsumeRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRouteToConsumeRoute),
-			builder.WithPredicates(cc.Count("consumeroute", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+			builder.WithPredicates(cc.Count("consumeroute", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, SkipInitialListPredicate{}))).
 		Complete(r)
 }
 
