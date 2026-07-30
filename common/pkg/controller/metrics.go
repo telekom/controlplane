@@ -23,7 +23,7 @@ const (
 
 // Results record what the source's predicates did with an observed event.
 const (
-	ResultPassed   = "passed"   // admitted; the event reached the workqueue
+	ResultPassed   = "passed"   // admitted by this source's predicates
 	ResultFiltered = "filtered" // rejected by an inner predicate
 )
 
@@ -38,9 +38,9 @@ func init() {
 
 var _ predicate.Predicate = &countingPredicate{}
 
-// Count returns a predicate that counts every event it observes and then
-// delegates the filtering decision to inner. With no inner predicates it always
-// returns true.
+// Count returns a predicate that delegates the filtering decision to inner and
+// records every event it observes, labelled with that decision. With no inner
+// predicates it always returns true.
 //
 // Counting happens after inner runs: the event is recorded either way, with the
 // filtering outcome in the result label (ResultPassed or ResultFiltered). This is

@@ -119,15 +119,19 @@ var _ = Describe("Count predicate", func() {
 	})
 
 	It("ANDs multiple inner predicates", func() {
+		firstRan := false
 		p := Count("andctl", RoleWatches, predicate.NewPredicateFuncs(func(client.Object) bool {
+			firstRan = true
 			return true
 		}), rejectAll{})
 
 		Expect(p.Create(event.CreateEvent{Object: obj})).To(BeFalse())
+		Expect(firstRan).To(BeTrue(), "the first predicate must have been consulted")
 	})
 
 	It("tolerates a nil object without panicking", func() {
 		p := Count("nilctl", RoleWatches)
 		Expect(func() { p.Create(event.CreateEvent{}) }).ToNot(Panic())
+		Expect(func() { p.Update(event.UpdateEvent{}) }).ToNot(Panic())
 	})
 })
