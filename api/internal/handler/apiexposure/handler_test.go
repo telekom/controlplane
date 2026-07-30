@@ -39,9 +39,13 @@ import (
 // Test fixture builders
 // ──────────────────────────────────────────────────────────────────────────────
 
-const testEnv = "test-env"
+const (
+	testEnv      = "test-env"
+	testBasePath = "/my/api/v1"
+)
 
-func makeReadyApi(basePath string) apiapi.Api {
+func makeReadyApi() apiapi.Api {
+	basePath := testBasePath
 	api := apiapi.Api{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-api",
@@ -98,7 +102,8 @@ func enableConsumerFailover(z *adminv1.Zone) *adminv1.Zone {
 	return z
 }
 
-func newApiExposure(basePath string, zone ctypes.ObjectRef) *apiapi.ApiExposure {
+func newApiExposure(zone ctypes.ObjectRef) *apiapi.ApiExposure {
+	basePath := testBasePath
 	return &apiapi.ApiExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-exposure",
@@ -331,10 +336,10 @@ var _ = Describe("ApiExposureHandler", func() {
 		// Expects: 1 proxy route (zone-b) + 1 real route (zone-a).
 		Context("baseline: one cross-zone subscriber, no failover", func() {
 			It("creates a proxy route in the subscriber zone and a real route in the exposure zone", func() {
-				obj := newApiExposure(basePath, zoneARef)
+				obj := newApiExposure(zoneARef)
 
 				// --- Preamble: Api + ApiExposure validation ---
-				mockListApis([]apiapi.Api{makeReadyApi(basePath)})
+				mockListApis([]apiapi.Api{makeReadyApi()})
 				mockListApiExposures([]apiapi.ApiExposure{*obj}) // self → active=true
 				mockGetApplication()
 				mockGetTeamNotFound()
@@ -405,10 +410,10 @@ var _ = Describe("ApiExposureHandler", func() {
 		// enriched with failover hostnames/issuers; the plain zone-b proxy route is not.
 		Context("consumer failover: enriches only CF-capable zones with failover hostnames and issuers", func() {
 			It("enriches the CF-capable proxy route and the real route, but not the plain subscriber zone", func() {
-				obj := newApiExposure(basePath, zoneARef)
+				obj := newApiExposure(zoneARef)
 
 				// --- Preamble ---
-				mockListApis([]apiapi.Api{makeReadyApi(basePath)})
+				mockListApis([]apiapi.Api{makeReadyApi()})
 				mockListApiExposures([]apiapi.ApiExposure{*obj})
 				mockGetApplication()
 				mockGetTeamNotFound()
@@ -497,7 +502,7 @@ var _ = Describe("ApiExposureHandler", func() {
 		// Expects: 1 proxy route (zone-b with failover) + 1 secondary route (zone-f) + 1 real route.
 		Context("provider failover: creates secondary route in failover zone", func() {
 			It("creates a proxy route with failover, a secondary route, and a real route", func() {
-				obj := newApiExposure(basePath, zoneARef)
+				obj := newApiExposure(zoneARef)
 				obj.Spec.Traffic = apiapi.Traffic{
 					Failover: &apiapi.ProviderFailover{
 						Zones: []ctypes.ObjectRef{zoneFRef},
@@ -505,7 +510,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				}
 
 				// --- Preamble ---
-				mockListApis([]apiapi.Api{makeReadyApi(basePath)})
+				mockListApis([]apiapi.Api{makeReadyApi()})
 				mockListApiExposures([]apiapi.ApiExposure{*obj})
 				mockGetApplication()
 				mockGetTeamNotFound()
@@ -577,7 +582,7 @@ var _ = Describe("ApiExposureHandler", func() {
 		// covers real routes. The sweep must run only after the real route is created.
 		Context("zone change: sweep cleans up the orphaned real route", func() {
 			It("runs a basepath-only sweep after creating the new real route", func() {
-				obj := newApiExposure(basePath, zoneARef)
+				obj := newApiExposure(zoneARef)
 				// Place the real route in zone-b's namespace to represent the pre-move state.
 				obj.Status.Route = &ctypes.ObjectRef{
 					Name:      util.MakeRouteName(basePath),
@@ -585,7 +590,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				}
 
 				// --- Preamble ---
-				mockListApis([]apiapi.Api{makeReadyApi(basePath)})
+				mockListApis([]apiapi.Api{makeReadyApi()})
 				mockListApiExposures([]apiapi.ApiExposure{*obj})
 				mockGetApplication()
 				mockGetTeamNotFound()
@@ -641,8 +646,6 @@ var _ = Describe("ApiExposureHandler", func() {
 })
 
 var _ = Describe("ApiMustExist route cleanup", func() {
-	const basePath = "/my/api/v1"
-
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
@@ -659,7 +662,7 @@ var _ = Describe("ApiMustExist route cleanup", func() {
 	// routes for this basepath (proxy, real, and failover) across namespaces via the same
 	// basepath-scoped sweep (CleanupStaleRoutes) the reconcile path uses.
 	It("cleans up all routes by basepath when the Api is missing", func() {
-		obj := newApiExposure(basePath, ctypes.ObjectRef{Name: "zone-a", Namespace: "ns-a"})
+		obj := newApiExposure(ctypes.ObjectRef{Name: "zone-a", Namespace: "ns-a"})
 
 		// FindActiveAPI → empty list → API not found, triggering the cleanup path.
 		fakeClient.EXPECT().
