@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -45,7 +46,7 @@ func (r *IdentityProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// TODO CreateOrUpdate realms in keycloak
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&identityv1.IdentityProvider{}).
+		For(&identityv1.IdentityProvider{}, builder.WithPredicates(cc.Count("identityprovider", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

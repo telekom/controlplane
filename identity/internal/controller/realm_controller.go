@@ -58,7 +58,7 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(realmHandler.NewHandlerRealm(factory), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&identityv1.Realm{}).
+		For(&identityv1.Realm{}, builder.WithPredicates(cc.Count("realm", cc.RoleFor))).
 		Watches(&identityv1.IdentityProvider{},
 			handler.EnqueueRequestsFromMapFunc(r.mapIdpObjToRealm),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
