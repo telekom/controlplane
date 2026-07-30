@@ -70,6 +70,11 @@ type CreateRouteOptions struct {
 	// (ProviderClientId, BasePath) have been resolved to literals in the handler.
 	// When set, it overrides the claims mapped from the exposure's own security spec.
 	ResolvedClaims *apiapi.Claims
+
+	// OwnerUID is the UID of the resource that owns this route. When set, it is stamped
+	// onto the route as the owner.uid label. The label is informational (records which
+	// resource provisioned the route); route cleanup is keyed by basepath, not this label.
+	OwnerUID string
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
@@ -183,6 +188,15 @@ func WithRealmName(realmName string) CreateRouteOption {
 	}
 }
 
+// WithOwner stamps the owner.uid label on the route using the owner's UID.
+// The label is informational (debugging/observability): it records which resource
+// provisioned the route. Route cleanup is keyed by basepath, not by this label.
+func WithOwner(owner metav1.Object) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.OwnerUID = string(owner.GetUID())
+	}
+}
+
 // IsFailoverSecondary checks if the route is a failover secondary route.
 // This means that this route has the real upstream as a failover upstream.
 func (o *CreateRouteOptions) IsFailoverSecondary() bool {
@@ -260,6 +274,9 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
 			config.BuildLabelKey("zone"): labelutil.NormalizeValue(downstreamZone.GetName()),
 			config.BuildLabelKey("type"): "proxy",
+		}
+		if options.OwnerUID != "" {
+			proxyRoute.Labels[config.OwnerUidLabelKey] = options.OwnerUID
 		}
 
 		// Upstream for proxy route: points at the upstream zone's gateway URL for this basepath
@@ -484,24 +501,26 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	return nil
 }
 
-// CleanupStaleProxyRoutes uses the JanitorClient's Cleanup() to delete any stale proxy Routes
-// for the given apiBasePath that were NOT created/updated in this reconciliation cycle.
-// This handles zone changes: when subscriptions move or are deleted, old proxy routes are cleaned up.
-// NOTE: This does NOT delete provider failover routes (labeled with failover.secondary=true),
-// as those are managed separately by ApiExposure and should not be cleaned up here.
-func CleanupStaleProxyRoutes(ctx context.Context, apiBasePath string) (int, error) {
+// CleanupStaleRoutes deletes any Routes (proxy, secondary/failover, and real) for the
+// given apiBasePath that were not created/updated in this reconciliation cycle, using the
+// JanitorClient's Cleanup(). This removes routes orphaned when a zone change moves their
+// derived namespace: the janitor tracks routes touched via CreateOrUpdate this cycle, so
+// listing all routes for the basepath and deleting the untouched ones sweeps up orphans.
+//
+// IMPORTANT: Call only AFTER all routes for this reconciliation (proxy, failover, and
+// real) have been created/updated, otherwise routes not yet provisioned this cycle would
+// be deleted.
+func CleanupStaleRoutes(ctx context.Context, apiBasePath string) (int, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// Use janitor's Cleanup for all proxy routes with this basepath
-	// The janitor will only delete routes that were NOT touched in this reconciliation cycle
+	// Cleanup deletes only routes for this basepath not touched this cycle.
 	deleted, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, []client.ListOption{
 		client.MatchingLabels{
-			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
-			config.BuildLabelKey("type"): "proxy",
+			apiapi.BasePathLabelKey: labelutil.NormalizeLabelValue(apiBasePath),
 		},
 	})
 	if err != nil {
-		return deleted, errors.Wrapf(err, "failed to cleanup stale proxy routes for basepath %q", apiBasePath)
+		return deleted, errors.Wrapf(err, "failed to cleanup stale routes for basepath %q", apiBasePath)
 	}
 
 	return deleted, nil
@@ -536,6 +555,9 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
 			config.BuildLabelKey("zone"): labelutil.NormalizeValue(zone.Name),
 			config.BuildLabelKey("type"): "real",
+		}
+		if apiExposure.GetUID() != "" {
+			route.Labels[config.OwnerUidLabelKey] = string(apiExposure.GetUID())
 		}
 
 		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
