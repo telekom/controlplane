@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -51,7 +52,7 @@ func (r *RemoteApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager, syn
 	r.Controller = cc.NewController(handler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.RemoteApiSubscription{}).
+		For(&apiapi.RemoteApiSubscription{}, builder.WithPredicates(cc.Count("remoteapisubscription", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

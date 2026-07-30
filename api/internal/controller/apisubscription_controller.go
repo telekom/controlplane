@@ -65,7 +65,7 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apisubscription.ApiSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.ApiSubscription{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		For(&apiapi.ApiSubscription{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleFor, predicate.ResourceVersionChangedPredicate{}))).
 		Owns(&approvalapi.ApprovalRequest{}).
 		Owns(&approvalapi.Approval{}).
 		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).

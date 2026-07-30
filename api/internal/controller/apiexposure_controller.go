@@ -58,7 +58,7 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apiexposure.ApiExposureHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiv1.ApiExposure{}).
+		For(&apiv1.ApiExposure{}, builder.WithPredicates(cc.Count("apiexposure", cc.RoleFor))).
 		Watches(&apiv1.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
