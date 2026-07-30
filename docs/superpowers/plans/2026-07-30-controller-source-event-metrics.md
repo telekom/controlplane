@@ -19,7 +19,8 @@ Design spec: `docs/superpowers/specs/2026-07-30-controller-source-event-metrics-
   // SPDX-License-Identifier: Apache-2.0
   ```
 - Metric name is exactly `controlplane_controller_source_events_total`.
-- Label order in `NewCounterVec` and every `WithLabelValues` call is exactly `controller`, `role`, `source`, `verb`.
+- Label order in `NewCounterVec` and every `WithLabelValues` call is exactly `controller`, `role`, `source`, `verb`, `result`.
+- `result` values are exactly `passed` and `filtered`, exposed as constants `ResultPassed` and `ResultFiltered`. Counting happens *after* the inner predicates decide, so a watch guarded by `GenerationChangedPredicate` does not report discarded events as load.
 - The `controller` label value is the primary Kind lowercased (`"rover"`, `"route"`), **never** the `GetEventRecorderFor` style (`"rover-controller"`). This matches controller-runtime's own derivation at `pkg/builder/controller.go:387` and is required for the metric to join against `workqueue_adds_total{name=...}`.
 - `verb` values are exactly `create`, `update`, `delete`, `generic`.
 - The `common` module is consumed by the service modules via `replace ... => ../common` directives already present in each service `go.mod`. No version bump or publish step is needed.
@@ -639,10 +640,12 @@ SKIP=reuse-lint-file git commit -m "feat(<module>): count controller source even
 ```markdown
 ## Controller source event metrics
 
-`controlplane_controller_source_events_total{controller,role,source,verb}` counts
-every event delivered to a controller, attributed to the watch that produced it.
-`role` is `for`, `owns` or `watches`; `source` is the Kind of the watched object;
-`verb` is `create`, `update`, `delete` or `generic`.
+`controlplane_controller_source_events_total{controller,role,source,verb,result}`
+counts every event delivered to a controller, attributed to the watch that
+produced it. `role` is `for`, `owns` or `watches`; `source` is the Kind of the
+watched object; `verb` is `create`, `update`, `delete` or `generic`; `result` is
+`passed` or `filtered` depending on whether that watch's own predicates admitted
+the event.
 
 Wire it into a watch with `controller.Count`, passing any filtering predicates as
 trailing arguments rather than listing them alongside it:
@@ -652,12 +655,15 @@ trailing arguments rather than listing them alongside it:
         handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
         builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{})))
 
+Passing predicates to `Count` rather than beside it is what makes `result`
+meaningful: `Count` sees the filtering decision and records it, instead of
+counting events the controller then discards.
+
 The `controller` argument must be the primary Kind lowercased ("route", not
 "route-controller"), matching how controller-runtime labels its own metrics.
 
-Counting happens before predicates filter and before the workqueue deduplicates,
-so the ratio of this metric to `workqueue_adds_total{name=...}` shows how much
-traffic your predicates and deduplication are absorbing.
+Query `result="passed"` for the traffic that actually drives reconciles, and the
+`filtered` share to see how much noise a watch's predicates are absorbing.
 ```
 
 - [ ] **Step 2: Commit**

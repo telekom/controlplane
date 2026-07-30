@@ -98,8 +98,15 @@ the Kind alone is unambiguous.
 `verb` — `create`, `update`, `delete`, `generic`. Update events increment once
 despite carrying two objects.
 
-Cardinality: roughly 20 controllers plus 5 non-primary sources, times 4 verbs —
-low hundreds of series.
+`result` — `passed` or `filtered`, recording what the source's own predicates did
+with the event. Without it the metric is misleading: a watch guarded by
+`GenerationChangedPredicate` would report every status-only update as load, when
+the controller discards them. `result="passed"` is the reconcile-driving traffic;
+`result="filtered"` is traffic the informer and predicates still pay for but the
+workqueue never sees. Summing over `result` gives raw informer delivery.
+
+Cardinality: roughly 20 controllers plus 5 non-primary sources, times 4 verbs,
+times 2 results — low hundreds of series.
 
 ### Wrapping rather than composing
 
@@ -109,16 +116,30 @@ event that predicate rejects. `rover_controller.go:95` is exactly this case, a
 `Watches` guarded by `predicate.GenerationChangedPredicate{}`.
 
 `Count` therefore takes the inner predicates as arguments rather than sitting
-beside them, which makes the ordering impossible to get wrong. It counts first,
-then returns the AND of `inner`, leaving filtering behaviour unchanged. With no
-inner predicates it always returns `true`.
+beside them, which makes the ordering impossible to get wrong. It evaluates
+`inner`, records the outcome in the `result` label, and returns that same
+decision, leaving filtering behaviour unchanged. With no inner predicates every
+event passes.
 
 ### Semantics
 
-Counting is pre-filter and pre-deduplication: it reflects what the informer
-delivered. The gap between this metric and `workqueue_adds_total` is the
-combined effectiveness of predicates and queue deduplication, which is the
-ratio of interest when diagnosing a hot controller.
+Counting happens after the source's own predicates decide and before queue
+deduplication, with the decision recorded in `result`. Real reconcile-driving
+load per source is `result="passed"`. The gap between that and
+`workqueue_adds_total` is queue deduplication alone; the `filtered` series is
+what the predicates absorbed.
+
+Useful queries:
+
+```promql
+# Which watch actually drives reconciles
+sum by (controller, role, source) (
+  rate(controlplane_controller_source_events_total{result="passed"}[5m]))
+
+# Predicate effectiveness per source: how much noise is being absorbed
+sum by (source) (rate(controlplane_controller_source_events_total{result="filtered"}[5m]))
+  / sum by (source) (rate(controlplane_controller_source_events_total[5m]))
+```
 
 ## Usage
 
