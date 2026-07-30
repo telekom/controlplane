@@ -347,7 +347,7 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiSubscription) error {
 	// All route lifecycle (proxy + failover) is managed by ApiExposure.
 	// When this subscription is deleted, ApiExposure reconciles (via watch) and
-	// CleanupStaleProxyRoutes removes routes for zones with no remaining subscribers.
+	// CleanupStaleRoutes removes routes for zones with no remaining subscribers.
 	return nil
 }
 
