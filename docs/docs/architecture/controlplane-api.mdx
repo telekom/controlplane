@@ -163,7 +163,7 @@ The ControlPlane API supports two security modes, configured via `security.mode`
 | `jwt` | Yes | **Yes** | From JWT claims | Production |
 | `mock` | Yes | **No** | From JWT claims | Local development / integration testing |
 
-The **default mode is `jwt`** (secure by default). A deployment without explicit security configuration will panic at startup if no `trustedIssuers` are provided — this is intentional fail-closed behaviour.
+The **default mode is `jwt`** (secure by default). A deployment in `jwt` mode without any configured `trustedIssuers` will panic at startup — this is intentional fail-closed behaviour.
 
 Both modes require a **JWT bearer token** in the `Authorization` header. The token's issuer must match one of the configured `trustedIssuers` (only enforced in `jwt` mode). The API extracts the caller's identity (team, group, or admin role) from the JWT claims and uses it for team isolation.
 

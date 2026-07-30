@@ -7,7 +7,6 @@ package store
 import (
 	"context"
 
-	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -56,20 +55,20 @@ var SecretsForKinds = map[string][]string{
 
 // NewStores creates and initialises all stores. It panics if any store
 // cannot be created (same semantics as rover-server).
-func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
+func NewStores(ctx context.Context, cfg *rest.Config, db inmemory.DatabaseOpts, informer inmemory.InformerOpts) *Stores {
 	dynamicClient := dynamic.NewForConfigOrDie(cfg)
 
 	s := &Stores{}
 
-	s.APIExposureStore = NewOrDie[*apiv1.ApiExposure](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apiexposures"), apiv1.GroupVersion.WithKind("ApiExposure"))
-	s.APISubscriptionStore = NewOrDie[*apiv1.ApiSubscription](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription"))
-	s.ApplicationStore = NewOrDie[*applicationv1.Application](ctx, dynamicClient, applicationv1.GroupVersion.WithResource("applications"), applicationv1.GroupVersion.WithKind("Application"))
-	s.ZoneStore = NewOrDie[*adminv1.Zone](ctx, dynamicClient, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"))
-	s.ApprovalStore = NewOrDie[*approvalv1.Approval](ctx, dynamicClient, approvalv1.GroupVersion.WithResource("approvals"), approvalv1.GroupVersion.WithKind("Approval"))
+	s.APIExposureStore = NewOrDie[*apiv1.ApiExposure](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apiexposures"), apiv1.GroupVersion.WithKind("ApiExposure"), db, informer)
+	s.APISubscriptionStore = NewOrDie[*apiv1.ApiSubscription](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription"), db, informer)
+	s.ApplicationStore = NewOrDie[*applicationv1.Application](ctx, dynamicClient, applicationv1.GroupVersion.WithResource("applications"), applicationv1.GroupVersion.WithKind("Application"), db, informer)
+	s.ZoneStore = NewOrDie[*adminv1.Zone](ctx, dynamicClient, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"), db, informer)
+	s.ApprovalStore = NewOrDie[*approvalv1.Approval](ctx, dynamicClient, approvalv1.GroupVersion.WithResource("approvals"), approvalv1.GroupVersion.WithKind("Approval"), db, informer)
 
-	s.EventExposureStore = NewOrDie[*eventv1.EventExposure](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventexposures"), eventv1.GroupVersion.WithKind("EventExposure"))
-	s.EventSubscriptionStore = NewOrDie[*eventv1.EventSubscription](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"))
-	s.EventTypeStore = NewOrDie[*eventv1.EventType](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventtypes"), eventv1.GroupVersion.WithKind("EventType"))
+	s.EventExposureStore = NewOrDie[*eventv1.EventExposure](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventexposures"), eventv1.GroupVersion.WithKind("EventExposure"), db, informer)
+	s.EventSubscriptionStore = NewOrDie[*eventv1.EventSubscription](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"), db, informer)
+	s.EventTypeStore = NewOrDie[*eventv1.EventType](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventtypes"), eventv1.GroupVersion.WithKind("EventType"), db, informer)
 
 	secretsAPI := secretsapi.NewSecrets()
 	s.APIExposureSecretStore = secrets.WrapStore(s.APIExposureStore, SecretsForKinds["ApiExposure"], secrets.NewSecretManagerResolver(secretsAPI))
@@ -78,19 +77,14 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 	return s
 }
 
-func NewOrDie[T store.Object](ctx context.Context, dynamicClient dynamic.Interface, gvr schema.GroupVersionResource, gvk schema.GroupVersionKind) store.ObjectStore[T] {
+func NewOrDie[T store.Object](ctx context.Context, dynamicClient dynamic.Interface, gvr schema.GroupVersionResource, gvk schema.GroupVersionKind, db inmemory.DatabaseOpts, informer inmemory.InformerOpts) store.ObjectStore[T] {
 	storeOpts := inmemory.StoreOpts{
 		Client:       dynamicClient,
 		GVR:          gvr,
 		GVK:          gvk,
 		AllowedSorts: []string{},
-		Database: inmemory.DatabaseOpts{
-			Filepath:     viper.GetString("database.filepath"),
-			ReduceMemory: viper.GetBool("database.reduceMemory"),
-		},
-		Informer: inmemory.InformerOpts{
-			DisableCache: viper.GetBool("informer.disableCache"),
-		},
+		Database:     db,
+		Informer:     informer,
 	}
 
 	return inmemory.NewSortableOrDie[T](ctx, storeOpts)

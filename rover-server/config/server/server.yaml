@@ -35,6 +35,13 @@ spec:
                 name: rover-server-env
           image: ghcr.io/telekom/controlplane/rover-server:stable
           name: server
+          ports:
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            - name: internal
+              containerPort: 9443
+              protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -42,14 +49,16 @@ spec:
                 - "ALL"
           livenessProbe:
             httpGet:
+              scheme: HTTPS
               path: /healthz
-              port: 8080
+              port: 8443
             initialDelaySeconds: 15
             periodSeconds: 20
           readinessProbe:
             httpGet:
+              scheme: HTTPS
               path: /readyz
-              port: 8080
+              port: 8443
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
@@ -62,9 +71,15 @@ spec:
           volumeMounts:
             - name: db-data
               mountPath: /data
+            - name: cert-volume
+              mountPath: /etc/tls
+              readOnly: true
       volumes:
         - name: db-data
           emptyDir: {}
+        - name: cert-volume
+          secret:
+            secretName: rover-server-cert
       serviceAccountName: rover-server
       terminationGracePeriodSeconds: 10
 ---
@@ -80,8 +95,12 @@ metadata:
 spec:
   ports:
   - name: https
-    port: 8080
+    port: 443
     protocol: TCP
-    targetPort: 8080
+    targetPort: 8443
+  - name: internal
+    port: 9443
+    protocol: TCP
+    targetPort: 9443
   selector:
     control-plane: rover-server

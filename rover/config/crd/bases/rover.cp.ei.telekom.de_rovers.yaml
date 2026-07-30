@@ -1258,7 +1258,8 @@ spec:
                   minProperties: 1
                   properties:
                     agentic:
-                      description: Ai defines an AI/MCP server subscription configuration
+                      description: Agentic defines an Agentic(MCP or agent) server
+                        subscription configuration
                       properties:
                         basePath:
                           description: BasePath is the base path of the MCP server
