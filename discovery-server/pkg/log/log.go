@@ -7,9 +7,10 @@ package log
 import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
 )
 
 var Log logr.Logger

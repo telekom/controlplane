@@ -8,10 +8,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/telekom/controlplane/discovery-server/internal/config"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"github.com/telekom/controlplane/discovery-server/internal/config"
 )
 
 func TestConfig(t *testing.T) {
