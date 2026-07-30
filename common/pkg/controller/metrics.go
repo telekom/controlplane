@@ -21,10 +21,16 @@ const (
 	RoleWatches = "watches"
 )
 
+// Results record what the source's predicates did with an observed event.
+const (
+	ResultPassed   = "passed"   // admitted; the event reached the workqueue
+	ResultFiltered = "filtered" // rejected by an inner predicate
+)
+
 var eventsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Name: "controlplane_controller_source_events_total",
-	Help: "Events observed per controller source, before predicate filtering and queue deduplication.",
-}, []string{"controller", "role", "source", "verb"})
+	Help: "Events observed per controller source, labelled by whether the source's predicates admitted the event.",
+}, []string{"controller", "role", "source", "verb", "result"})
 
 func init() {
 	metrics.Registry.MustRegister(eventsTotal)
@@ -36,10 +42,12 @@ var _ predicate.Predicate = &countingPredicate{}
 // delegates the filtering decision to inner. With no inner predicates it always
 // returns true.
 //
-// Counting happens before inner runs, so events that inner rejects are still
-// counted. Always pass filtering predicates to Count rather than listing them
-// alongside it in builder.WithPredicates: that call ANDs its predicates and
-// short-circuits on the first false, which would silently drop counts.
+// Counting happens after inner runs: the event is recorded either way, with the
+// filtering outcome in the result label (ResultPassed or ResultFiltered). This is
+// why filtering predicates must be passed to Count rather than listed alongside it
+// in builder.WithPredicates: that call ANDs its predicates and short-circuits on
+// the first false, so Count would never see — and so could not label — the
+// decision another predicate made.
 //
 // The controller argument must be the primary Kind lowercased, e.g. "rover" and
 // not "rover-controller". That is how controller-runtime labels its own metrics,
@@ -61,9 +69,24 @@ type countingPredicate struct {
 	inner      []predicate.Predicate
 }
 
-// observe records one event of the given verb for the object's type.
-func (p *countingPredicate) observe(verb string, obj client.Object) {
-	eventsTotal.WithLabelValues(p.controller, p.role, sourceOf(obj), verb).Inc()
+// observe records one event of the given verb, labelled with the filtering outcome.
+func (p *countingPredicate) observe(verb string, obj client.Object, passed bool) {
+	result := ResultFiltered
+	if passed {
+		result = ResultPassed
+	}
+	eventsTotal.WithLabelValues(p.controller, p.role, sourceOf(obj), verb, result).Inc()
+}
+
+// admit runs the inner predicates, ANDing them with short-circuit, and returns
+// whether the event survives. No inner predicates means the event always passes.
+func (p *countingPredicate) admit(eval func(predicate.Predicate) bool) bool {
+	for _, i := range p.inner {
+		if !eval(i) {
+			return false
+		}
+	}
+	return true
 }
 
 // sourceOf returns the Kind of obj, e.g. "ConfigMap".
@@ -90,41 +113,25 @@ func sourceOf(obj client.Object) string {
 }
 
 func (p *countingPredicate) Create(e event.CreateEvent) bool {
-	p.observe("create", e.Object)
-	for _, i := range p.inner {
-		if !i.Create(e) {
-			return false
-		}
-	}
-	return true
+	passed := p.admit(func(i predicate.Predicate) bool { return i.Create(e) })
+	p.observe("create", e.Object, passed)
+	return passed
 }
 
 func (p *countingPredicate) Update(e event.UpdateEvent) bool {
-	p.observe("update", e.ObjectNew)
-	for _, i := range p.inner {
-		if !i.Update(e) {
-			return false
-		}
-	}
-	return true
+	passed := p.admit(func(i predicate.Predicate) bool { return i.Update(e) })
+	p.observe("update", e.ObjectNew, passed)
+	return passed
 }
 
 func (p *countingPredicate) Delete(e event.DeleteEvent) bool {
-	p.observe("delete", e.Object)
-	for _, i := range p.inner {
-		if !i.Delete(e) {
-			return false
-		}
-	}
-	return true
+	passed := p.admit(func(i predicate.Predicate) bool { return i.Delete(e) })
+	p.observe("delete", e.Object, passed)
+	return passed
 }
 
 func (p *countingPredicate) Generic(e event.GenericEvent) bool {
-	p.observe("generic", e.Object)
-	for _, i := range p.inner {
-		if !i.Generic(e) {
-			return false
-		}
-	}
-	return true
+	passed := p.admit(func(i predicate.Predicate) bool { return i.Generic(e) })
+	p.observe("generic", e.Object, passed)
+	return passed
 }

@@ -26,7 +26,7 @@ var _ = Describe("Count predicate", func() {
 
 	// readCounter gathers the metric from the controller-runtime registry and
 	// returns the value for the given label set, or 0 if the series is absent.
-	readCounter := func(controller, role, source, verb string) float64 {
+	readCounter := func(controller, role, source, verb, result string) float64 {
 		families, err := metrics.Registry.Gather()
 		Expect(err).ToNot(HaveOccurred())
 		for _, f := range families {
@@ -39,6 +39,7 @@ var _ = Describe("Count predicate", func() {
 					"role":       role,
 					"source":     source,
 					"verb":       verb,
+					"result":     result,
 				}
 				match := true
 				for _, l := range m.GetLabel() {
@@ -62,7 +63,7 @@ var _ = Describe("Count predicate", func() {
 
 		before := map[string]float64{}
 		for _, verb := range []string{"create", "update", "delete", "generic"} {
-			before[verb] = readCounter("testctl", RoleWatches, "ConfigMap", verb)
+			before[verb] = readCounter("testctl", RoleWatches, "ConfigMap", verb, ResultPassed)
 		}
 
 		Expect(p.Create(event.CreateEvent{Object: obj})).To(BeTrue())
@@ -71,7 +72,7 @@ var _ = Describe("Count predicate", func() {
 		Expect(p.Generic(event.GenericEvent{Object: obj})).To(BeTrue())
 
 		for _, verb := range []string{"create", "update", "delete", "generic"} {
-			Expect(readCounter("testctl", RoleWatches, "ConfigMap", verb)).
+			Expect(readCounter("testctl", RoleWatches, "ConfigMap", verb, ResultPassed)).
 				To(Equal(before[verb]+1), "verb %s", verb)
 		}
 	})
@@ -79,20 +80,42 @@ var _ = Describe("Count predicate", func() {
 	It("counts events that the inner predicate rejects, and still rejects them", func() {
 		p := Count("filterctl", RoleOwns, rejectAll{})
 
-		before := readCounter("filterctl", RoleOwns, "ConfigMap", "create")
+		before := readCounter("filterctl", RoleOwns, "ConfigMap", "create", ResultFiltered)
 
 		Expect(p.Create(event.CreateEvent{Object: obj})).To(BeFalse())
 
-		Expect(readCounter("filterctl", RoleOwns, "ConfigMap", "create")).
+		Expect(readCounter("filterctl", RoleOwns, "ConfigMap", "create", ResultFiltered)).
 			To(Equal(before + 1))
+	})
+
+	It("records filtered and passed events under separate result labels", func() {
+		rejected := Count("splitctl", RoleWatches, rejectAll{})
+		admitted := Count("splitctl", RoleWatches)
+
+		beforeFiltered := readCounter("splitctl", RoleWatches, "ConfigMap", "create", ResultFiltered)
+		beforePassed := readCounter("splitctl", RoleWatches, "ConfigMap", "create", ResultPassed)
+
+		Expect(rejected.Create(event.CreateEvent{Object: obj})).To(BeFalse())
+
+		Expect(readCounter("splitctl", RoleWatches, "ConfigMap", "create", ResultFiltered)).
+			To(Equal(beforeFiltered + 1))
+		Expect(readCounter("splitctl", RoleWatches, "ConfigMap", "create", ResultPassed)).
+			To(Equal(beforePassed), "a filtered event must not count as passed")
+
+		Expect(admitted.Create(event.CreateEvent{Object: obj})).To(BeTrue())
+
+		Expect(readCounter("splitctl", RoleWatches, "ConfigMap", "create", ResultPassed)).
+			To(Equal(beforePassed + 1))
+		Expect(readCounter("splitctl", RoleWatches, "ConfigMap", "create", ResultFiltered)).
+			To(Equal(beforeFiltered+1), "an admitted event must not count as filtered")
 	})
 
 	It("derives the source label from the object type", func() {
 		p := Count("srcctl", RoleFor)
 
-		before := readCounter("srcctl", RoleFor, "Secret", "create")
+		before := readCounter("srcctl", RoleFor, "Secret", "create", ResultPassed)
 		Expect(p.Create(event.CreateEvent{Object: &corev1.Secret{}})).To(BeTrue())
-		Expect(readCounter("srcctl", RoleFor, "Secret", "create")).To(Equal(before + 1))
+		Expect(readCounter("srcctl", RoleFor, "Secret", "create", ResultPassed)).To(Equal(before + 1))
 	})
 
 	It("ANDs multiple inner predicates", func() {
