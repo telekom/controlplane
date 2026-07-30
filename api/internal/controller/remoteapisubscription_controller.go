@@ -57,8 +57,8 @@ func (r *RemoteApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager, syn
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
-		Owns(&apiapi.ApiSubscription{}).
-		Owns(&applicationapi.Application{}).
+		Owns(&apiapi.ApiSubscription{}, builder.WithPredicates(cc.Count("remoteapisubscription", cc.RoleOwns))).
+		Owns(&applicationapi.Application{}, builder.WithPredicates(cc.Count("remoteapisubscription", cc.RoleOwns))).
 		// Watch Routes
 		Complete(r)
 }
