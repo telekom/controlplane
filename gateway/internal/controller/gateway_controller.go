@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -43,7 +44,7 @@ func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&handler.GatewayHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1.Gateway{}).
+		For(&v1.Gateway{}, builder.WithPredicates(cc.Count("gateway", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
