@@ -1,0 +1,69 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Rover-CTL Base Image"
+
+# Builds and pushes rover-ctl/Dockerfile.base (bash/jq/yq bundled alongside
+# roverctl) to the internal Artifactory Docker registry. Shared by:
+#   - ci.yaml: so every PR/CI run always has a base image to pull for the
+#     rover-ctl `ko build` step, independent of a real release having run.
+#   - release.yaml: so a real release always publishes the freshest base
+#     image before running goreleaser.
+#
+# Published to Artifactory, not GHCR: rover-ctl-base bundles GPL-3.0-or-later
+# (bash, readline) and GPL-2.0-only (Alpine base) components.
+#
+# NOTE: the registry host/path below MUST be kept identical to the
+# `base_image`/`repositories` values on the rover-ctl entry in
+# .goreleaser.yaml and to ci.yaml's `container_registry`/`base_image` inputs.
+# Sourced from repo variables here (goreleaser's `kos` pipe does not support
+# templating `base_image`/`repositories`, so .goreleaser.yaml must hardcode
+# the same values manually - see the comment there for the variable names to
+# keep in sync):
+#   - vars.REGISTRY_HOST        (e.g. artifactory.devops.telekom.de)
+#   - vars.REGISTRY_ROVERCTL_REPO (e.g. tardis-oci-local/tardis/customer/roverctl)
+#   - vars.ROVERCTL_BASE_IMAGE_TAG (e.g. bash-jq-yq-v1)
+# TODO: create these repository variables (Settings > Secrets and variables
+# > Actions > Variables) with the real Artifactory registry host/path.
+
+on:
+  workflow_call:
+    secrets:
+      registry_username:
+        description: "Username for logging in to the Artifactory Docker registry"
+        required: true
+      registry_password:
+        description: "Password/token for logging in to the Artifactory Docker registry"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    name: Build and push rover-ctl base image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Log in to Artifactory
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ vars.REGISTRY_HOST }}
+          username: ${{ secrets.registry_username }}
+          password: ${{ secrets.registry_password }}
+
+      - name: Build and push rover-ctl base image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: rover-ctl
+          file: rover-ctl/Dockerfile.base
+          push: true
+          tags: |
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}/rover-ctl-base:latest
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}/rover-ctl-base:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}

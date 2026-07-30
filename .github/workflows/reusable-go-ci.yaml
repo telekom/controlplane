@@ -406,8 +406,8 @@ jobs:
           fi
 
           # Unlike goreleaser's `kos` pipe (which embeds ko as a library and
-          # ignores this env var - see openspec/changes/add-roverctl-image-cli-tools),
-          # the `ko` CLI invoked directly below does honor KO_DEFAULTBASEIMAGE.
+          # ignores this env var), the `ko` CLI invoked directly below does
+          # honor KO_DEFAULTBASEIMAGE.
           # An empty value is safely ignored by ko, falling back to
           # KO_CONFIG_PATH's defaultBaseImage.
           if [ -n "${KO_DEFAULTBASEIMAGE}" ]; then

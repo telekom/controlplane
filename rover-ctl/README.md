@@ -42,7 +42,7 @@ See [rover-ctl help](./docs/roverctl.md) for a complete list of commands and opt
 
 ### Container Image
 
-The `roverctl` container image published to the internal Artifactory Docker registry (`artifactory.devops.telekom.de/rover-ctl` — not GHCR, due to GPL licensing considerations, see [license-findings.md](../openspec/changes/add-roverctl-image-cli-tools/license-findings.md)) bundles the following tools alongside the `roverctl` binary, so it can be used to script and chain Control Plane interactions (e.g. piping `roverctl` JSON/YAML output through `jq`/`yq`) without installing anything separately:
+The `roverctl` container image published to the internal Artifactory Docker registry (`artifactory.devops.telekom.de/rover-ctl` — not GHCR, due to GPL licensing considerations) bundles the following tools alongside the `roverctl` binary, so it can be used to script and chain Control Plane interactions (e.g. piping `roverctl` JSON/YAML output through `jq`/`yq`) without installing anything separately:
 
 | Tool     | Pinned Version |
 |----------|-----------------|

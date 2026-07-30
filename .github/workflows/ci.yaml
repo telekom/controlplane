@@ -179,36 +179,14 @@ jobs:
 
   rover-ctl-base-image:
     name: Rover-CTL Base Image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
-      - name: Log in to Artifactory
-        # rover-ctl-base bundles GPL-3.0-or-later (bash, readline) and
-        # GPL-2.0-only (Alpine base) components, so it is published to the
-        # internal Artifactory registry, not GHCR. See
-        # openspec/changes/add-roverctl-image-cli-tools/license-findings.md.
-        # Built here - decoupled from the full release cycle in
-        # release.yaml (which only runs on manual workflow_dispatch) - so
-        # every CI run always has a base image to pull, instead of
-        # depending on a real release having happened first.
-        # TODO: confirm the real Artifactory registry host/path.
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
-        with:
-          registry: artifactory.devops.telekom.de
-          username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
-          password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
-      - name: Build and push rover-ctl base image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
-        with:
-          context: rover-ctl
-          file: rover-ctl/Dockerfile.base
-          push: true
-          tags: |
-            artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl/rover-ctl-base:latest
-            artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl/rover-ctl-base:bash-jq-yq-v1
+    # Decoupled from the full release cycle in release.yaml (which only runs
+    # on manual workflow_dispatch), so every CI run always has a base image
+    # to pull, instead of depending on a real release having happened first.
+    # Shared with release.yaml via reusable-rover-ctl-base-image.yaml.
+    uses: ./.github/workflows/reusable-rover-ctl-base-image.yaml
+    secrets:
+      registry_username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
+      registry_password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
 
   rover-ctl:
     name: Rover-CTL
@@ -223,13 +201,14 @@ jobs:
       # containing GPL-3.0-or-later (bash, readline) and GPL-2.0-only
       # (Alpine base) components, so CI must build/scan/push it the same way
       # as the release pipeline: against the internal Artifactory registry,
-      # not GHCR. See openspec/changes/add-roverctl-image-cli-tools/license-findings.md
+      # not GHCR.
       # and the `rover-ctl` kos entry in .goreleaser.yaml, which this must be
-      # kept in sync with.
-      # TODO: confirm the real Artifactory registry host/path (see open
-      # question on repository-path vs. subdomain/port method).
-      container_registry: artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl
-      base_image: artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl/rover-ctl-base:bash-jq-yq-v1
+      # kept in sync with (goreleaser's `kos` pipe can't read repo vars, so
+      # that file hardcodes the same values - see the comment there).
+      # TODO: create vars.REGISTRY_HOST, vars.REGISTRY_ROVERCTL_REPO,
+      # and vars.ROVERCTL_BASE_IMAGE_TAG repository variables.
+      container_registry: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}
+      base_image: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}/rover-ctl-base:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
     secrets:
       registry_username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
       registry_password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret
