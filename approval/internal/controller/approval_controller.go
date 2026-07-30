@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -48,7 +49,7 @@ func (r *ApprovalReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(approval_handler.NewHandler(r.ExpirationConfig), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&approvalv1.Approval{}).
+		For(&approvalv1.Approval{}, builder.WithPredicates(cc.Count("approval", cc.RoleFor))).
 		Owns(&approvalv1.ApprovalExpiration{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
