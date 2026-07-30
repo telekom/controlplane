@@ -60,15 +60,23 @@ const (
     RoleWatches = "watches"
 )
 
+// Results record what the source's predicates did with an observed event.
+const (
+    ResultPassed   = "passed"   // admitted by this source's predicates
+    ResultFiltered = "filtered" // rejected by an inner predicate
+)
+
 var eventsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
     Name: "controlplane_controller_source_events_total",
-    Help: "Events observed per controller source, before predicate filtering and queue deduplication.",
-}, []string{"controller", "role", "source", "verb"})
+    Help: "Events observed per controller source, labelled by whether the source's predicates admitted the event.",
+}, []string{"controller", "role", "source", "verb", "result"})
 
 func init() { metrics.Registry.MustRegister(eventsTotal) }
 
-// Count returns a predicate that counts every observed event, then delegates to
-// inner. Counting happens before inner runs, so filtered events are still counted.
+// Count returns a predicate that delegates the filtering decision to inner and
+// records every event it observes, labelled with that decision. Counting happens
+// after inner runs: the event is recorded either way, with the filtering outcome
+// in the result label (ResultPassed or ResultFiltered).
 func Count(controller, role string, inner ...predicate.Predicate) predicate.Predicate
 ```
 
@@ -105,7 +113,7 @@ the controller discards them. `result="passed"` is the reconcile-driving traffic
 `result="filtered"` is traffic the informer and predicates still pay for but the
 workqueue never sees. Summing over `result` gives raw informer delivery.
 
-Cardinality: roughly 20 controllers plus 5 non-primary sources, times 4 verbs,
+Cardinality: roughly 40 controllers and 42 distinct watched Kinds, times 4 verbs,
 times 2 results — low hundreds of series.
 
 ### Wrapping rather than composing
@@ -154,9 +162,21 @@ b = b.Watches(&organizationv1.Team{},
 )
 ```
 
-Applied to every `For`, `Owns` and `Watches` across all controllers. Including
-`For` is partly redundant with `workqueue_adds_total`, but it is what makes the
-roles sum to the controller total.
+Applied to every `For` across all ~40 controllers, so every controller reports
+its primary source. Including `For` is partly redundant with
+`workqueue_adds_total`, but it makes the primary stream directly comparable to
+the non-primary ones.
+
+`Owns`/`Watches` coverage is scoped: instrumented in `rover` (rover_controller
+only), `gateway` (route, consumeroute), `pubsub` (subscriber only), `application`
+and `api`. Roughly 47 `Owns()`/`Watches()` registrations elsewhere are not yet
+instrumented: event (20), agentic (13), organization (3), rover `*Specification`
+controllers (3), notification (2), identity (2), admin (2), pubsub publisher (1),
+approval (1). Completing them is a planned follow-up.
+
+Until then the roles do **not** sum to the controller total for those modules. An
+absent `role="owns"`/`role="watches"` series means "not yet instrumented", not
+"no traffic" — do not read a missing series as an idle watch.
 
 ## Rollout
 
@@ -172,9 +192,12 @@ indirect dependency and is promoted to direct. No new module.
 
 One test file, `common/pkg/controller/metrics_test.go`, following the existing
 Ginkgo suite in the package. It fires all four event types through a `Count`
-wrapping a rejecting predicate and asserts, via
-`prometheus/client_golang/prometheus/testutil`, that counters increment even for
-filtered events and that the return value still reflects the inner predicate.
+wrapping a rejecting predicate and asserts, by gathering from
+controller-runtime's own `metrics.Registry` via `metrics.Registry.Gather()`, that
+counters increment for filtered events too and that the return value still
+reflects the inner predicate. Gathering from the real registry rather than a
+`testutil` helper also proves the metric is actually registered where the metrics
+endpoint will serve it.
 A second case asserts the `source` label is derived correctly from the object
 type.
 

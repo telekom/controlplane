@@ -94,7 +94,10 @@ func (p *countingPredicate) admit(eval func(predicate.Predicate) bool) bool {
 // It uses reflection rather than obj.GetObjectKind(): TypeMeta is empty on typed
 // objects delivered by an informer, so the GVK there is blank. apiutil.GVKForObject
 // would give the group-qualified GVK but needs a scheme and an error path, and no
-// two watched Kinds in this repo share a name across groups.
+// two watched Kinds in this repo share a name across groups. That last part is an
+// assumption that fails silently: adding a watch on a Kind whose name collides with
+// another group's Kind will merge both into one series with no error, and switching
+// sourceOf to apiutil.GVKForObject with a scheme is the upgrade path if that happens.
 func sourceOf(obj client.Object) string {
 	if obj == nil {
 		return "unknown"
