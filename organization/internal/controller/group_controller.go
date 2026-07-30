@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -42,7 +43,7 @@ func (r *GroupReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&handler.GroupHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&organizationv1.Group{}).
+		For(&organizationv1.Group{}, builder.WithPredicates(cc.Count("group", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

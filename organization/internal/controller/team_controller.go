@@ -59,7 +59,7 @@ func (r *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&teamhandler.TeamHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&organizationv1.Team{}).
+		For(&organizationv1.Team{}, builder.WithPredicates(cc.Count("team", cc.RoleFor))).
 		Owns(&identityv1.Client{},
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&notificationv1.NotificationChannel{},
