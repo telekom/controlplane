@@ -87,7 +87,7 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(notificationHandler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&notificationv1.Notification{}).
+		For(&notificationv1.Notification{}, builder.WithPredicates(cc.Count("notification", cc.RoleFor))).
 		Watches(&notificationv1.NotificationChannel{},
 			handler.EnqueueRequestsFromMapFunc(r.MapChannelToNotification),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),

@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -47,7 +48,7 @@ func (r *NotificationChannelReconciler) SetupWithManager(mgr ctrl.Manager) error
 	}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&notificationv1.NotificationChannel{}).
+		For(&notificationv1.NotificationChannel{}, builder.WithPredicates(cc.Count("notificationchannel", cc.RoleFor))).
 		Named("notificationchannel").
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	texttemplate "text/template"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,7 +50,7 @@ func (r *NotificationTemplateReconciler) SetupWithManager(mgr ctrl.Manager, cach
 	}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&notificationv1.NotificationTemplate{}).
+		For(&notificationv1.NotificationTemplate{}, builder.WithPredicates(cc.Count("notificationtemplate", cc.RoleFor))).
 		Named("notificationtemplate").
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
