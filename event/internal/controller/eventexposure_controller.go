@@ -62,7 +62,7 @@ func (r *EventExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&eventexposure.EventExposureHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&eventv1.EventExposure{}).
+		For(&eventv1.EventExposure{}, builder.WithPredicates(cc.Count("eventexposure", cc.RoleFor))).
 		Owns(&pubsubv1.Publisher{}).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToEventExposure),
