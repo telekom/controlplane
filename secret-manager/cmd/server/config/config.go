@@ -5,17 +5,15 @@
 package config
 
 import (
-	"io"
-	"os"
+	"fmt"
 
-	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
-
-	"gopkg.in/yaml.v3"
+	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 )
 
 type BackendConfig struct {
-	Type   string            `yaml:"type"`
-	Config map[string]string `yaml:",inline"`
+	Type   string            `mapstructure:"type"`
+	Config map[string]string `mapstructure:",remain"`
 }
 
 func (c BackendConfig) Get(key string) string {
@@ -35,50 +33,44 @@ func (c BackendConfig) GetDefault(key string, defaultValue string) string {
 	return defaultValue
 }
 
-type SecurityConfig struct {
-	Enabled        bool                      `yaml:"enabled"`
-	TrustedIssuers []string                  `yaml:"trusted_issuers"`
-	JWKSetURLs     []string                  `yaml:"jwk_set_urls"`
-	AccessConfig   []k8s.ServiceAccessConfig `yaml:"access_config"`
-}
-
 type ServerConfig struct {
-	Security SecurityConfig `yaml:"security"`
-	Backend  BackendConfig  `yaml:"backend"`
-}
-
-func ReadConfig(r io.Reader) (*ServerConfig, error) {
-	cfg := DefaultConfig()
-	content, err := io.ReadAll(r)
-	if err != nil {
-		return cfg, err
-	}
-	if err := yaml.Unmarshal(content, &cfg); err != nil {
-		return nil, err
-	}
-	return cfg, nil
+	commonconfig.BaseConfig `mapstructure:",squash"`
+	Backend                 BackendConfig `mapstructure:"backend"`
 }
 
 func DefaultConfig() *ServerConfig {
 	return &ServerConfig{
-		Security: SecurityConfig{
-			Enabled: true,
+		BaseConfig: commonconfig.BaseConfig{
+			// Default TLS cert/key paths. A tls block in the config file
+			// overrides these; setting them empty in the file downgrades to
+			// plain HTTP (dev only).
+			TLS: &cserver.TLSFileConfig{
+				Cert: "/etc/tls/tls.crt",
+				Key:  "/etc/tls/tls.key",
+			},
+			// Default internal listener: pure-k8s auth on :8443. audience and
+			// address are defaults so a file/env can override them. Omitting
+			// trustedIssuers means inCluster auto-discovery; empty accessConfig
+			// on the internal listener allows any authenticated in-cluster SA.
+			Listeners: commonconfig.ListenersConfig{
+				Internal: &cserver.ListenerConfig{
+					Address: ":8443",
+					K8s: &cserver.K8sConfig{
+						Audience: "secret-manager",
+					},
+				},
+			},
 		},
 	}
 }
 
+// GetConfigOrDie loads the server configuration from an optional YAML file,
+// overlaid with environment variables, on top of DefaultConfig, then validates
+// the listener config fail-closed.
 func GetConfigOrDie(filepath string) *ServerConfig {
-	if filepath == "" {
-		return DefaultConfig()
-	}
-	file, err := os.OpenFile(filepath, os.O_RDONLY, 0o644) //nolint:gosec
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close() //nolint:errcheck
-	cfg, err := ReadConfig(file)
-	if err != nil {
-		panic(err)
+	cfg := commonconfig.LoadOrDie(filepath, DefaultConfig())
+	if err := cfg.Listeners.Validate(); err != nil {
+		panic(fmt.Errorf("validating listeners config: %w", err))
 	}
 	return cfg
 }

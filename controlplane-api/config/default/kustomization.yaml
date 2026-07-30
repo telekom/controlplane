@@ -34,7 +34,10 @@ configMapGenerator:
     options:
       disableNameSuffixHash: true
     literals:
-      - config.yaml= # the server will use its default configuration if this is empty.
+      # An overlay MUST provide config.yaml with listeners.external.jwt.trustedIssuers
+      # (or mode: mock for dev). The default jwt listener has no issuers and the
+      # server fails closed at startup rather than running without auth.
+      - config.yaml=
   - name: controlplane-api-env
     options:
       disableNameSuffixHash: true
