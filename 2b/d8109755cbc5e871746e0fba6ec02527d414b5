@@ -1,0 +1,40 @@
+gateway/test/devloop/docker-compose.yaml
+  s_7f38de51b55bda::t_daba7f36fab2f2 96-131
+gateway/test/devloop/verify/xds.sh
+  s_7f38de51b55bda::t_f2a77887339720 1-30
+gateway/test/devloop/lib.sh
+  s_7f38de51b55bda::t_e0494f700c5b7e 44-60
+gateway/test/devloop/devloop.sh
+  s_7f38de51b55bda::t_d78e840354bc26 97
+  s_7f38de51b55bda::t_c24117712574bd 71-96,98-103,106-107,156
+  s_7f38de51b55bda::t_9ff20c585ac1ea 131-141,145-155
+  s_092cf52a35c0f4::t_3aa35983045170 157,199,208
+gateway/Makefile
+  s_7f38de51b55bda::t_99abbdbcbe185a 144-147
+gateway/test/devloop/envoy/bootstrap.tmpl.yaml
+  s_7f38de51b55bda::t_8ef682c2705f91 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2bd8109755cbc5e871746e0fba6ec02527d414b5",
+  "prompts": {},
+  "sessions": {
+    "s_092cf52a35c0f4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04ddb0e4cffeZjBr8B90eXQJNP",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_7f38de51b55bda": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d76733cffeh7BCU79iOSthAJ",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
