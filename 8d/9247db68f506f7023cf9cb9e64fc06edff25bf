@@ -1,0 +1,24 @@
+common/pkg/controller/metrics.go
+  s_2ef5d0c6579f9f::t_287b0ee5f89e41 97-100
+docs/superpowers/specs/2026-07-30-controller-source-event-metrics-design.md
+  s_2ef5d0c6579f9f::t_0cf7df94c13738 195-200
+  s_2ef5d0c6579f9f::t_10335f02916dea 165-179
+  s_2ef5d0c6579f9f::t_091898440dbbcb 63-68,71-72,76-79
+  s_2ef5d0c6579f9f::t_e7d1bb974653dd 116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8d9247db68f506f7023cf9cb9e64fc06edff25bf",
+  "prompts": {},
+  "sessions": {
+    "s_2ef5d0c6579f9f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d144aacffe35hkD6XjIrGDFa",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
