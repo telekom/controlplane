@@ -47,10 +47,10 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Route{}).
+		For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor))).
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
