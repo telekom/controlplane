@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -29,6 +30,7 @@ func main() {
 	cfg := config.LoadConfig(configFile)
 
 	log.Init(cfg.Log)
+	ctrllog.SetLogger(log.Log) // controller-runtime internals (informer cache) log via its root logger
 	rootCtx := logr.NewContext(context.Background(), log.Log)
 
 	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie(),

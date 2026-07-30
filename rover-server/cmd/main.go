@@ -17,6 +17,7 @@ import (
 	roverin "github.com/telekom/controlplane/rover-server/internal/mapper/rover/in"
 	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/controller"
@@ -34,6 +35,7 @@ func main() {
 	roverin.MigrationActive = cfg.Migration.Active
 
 	log.Init(cfg.Log)
+	ctrllog.SetLogger(log.Log) // controller-runtime internals (informer cache) log via its root logger
 	rootCtx := logr.NewContext(context.Background(), log.Log)
 
 	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie(),
