@@ -278,6 +278,7 @@ func TestCreatePublisherTrigger_SingleScope_AttributesOnly(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 	if result.SelectionFilter == nil || result.SelectionFilter.Expression == nil {
 		t.Fatal("expected SelectionFilter.Expression to be set")
@@ -312,6 +313,7 @@ func TestCreatePublisherTrigger_SingleScope_ExpressionOnly(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	got := jsonToMap(t, result.SelectionFilter.Expression)
@@ -337,6 +339,7 @@ func TestCreatePublisherTrigger_SingleScope_MultiAttributes(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	got := jsonToMap(t, result.SelectionFilter.Expression)
@@ -369,6 +372,7 @@ func TestCreatePublisherTrigger_TwoScopes_BothAttributes(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	got := jsonToMap(t, result.SelectionFilter.Expression)
@@ -416,6 +420,7 @@ func TestCreatePublisherTrigger_TwoScopes_MixedAttrsAndExpression(t *testing.T) 
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	got := jsonToMap(t, result.SelectionFilter.Expression)
@@ -461,6 +466,7 @@ func TestCreatePublisherTrigger_ResponseFilterPathsUnion(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 	if result.ResponseFilter == nil {
 		t.Fatal("expected ResponseFilter to be set")
@@ -497,6 +503,7 @@ func TestCreatePublisherTrigger_ResponseFilterPathsDedup(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	if len(result.ResponseFilter.Paths) != 1 {
@@ -527,6 +534,7 @@ func TestCreatePublisherTrigger_ResponseFilterModeLastWriteWins(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	// Last scope is "silver" with Exclude, so mode should be Exclude
@@ -552,6 +560,7 @@ func TestCreatePublisherTrigger_SelectionAndResponseCombined(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 	if result.SelectionFilter == nil || result.SelectionFilter.Expression == nil {
 		t.Error("expected SelectionFilter to be set")
@@ -579,6 +588,7 @@ func TestCreatePublisherTrigger_ScopeWithoutSelectionFilter(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 	if result.SelectionFilter != nil {
 		t.Error("expected nil SelectionFilter when scope has no selection filter")
@@ -630,6 +640,7 @@ func TestCreatePublisherTrigger_OnlyMatchingScopes(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	got := jsonToMap(t, result.SelectionFilter.Expression)
@@ -668,6 +679,7 @@ func TestCreatePublisherTrigger_SubsetOfScopes(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	got := jsonToMap(t, result.SelectionFilter.Expression)
@@ -730,6 +742,7 @@ func TestCreatePublisherTrigger_ResponseFilterModeWithEmptyStringNotOverwritten(
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 	// Gold set Exclude, silver has empty mode → should stay Exclude
 	if result.ResponseFilter.Mode != eventv1.ResponseFilterModeExclude {
@@ -854,6 +867,7 @@ func TestCreatePublisherTrigger_ThreeScopes_FullMerge(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("expected non-nil result")
+		return
 	}
 
 	// Check selection filter: 3 scopes → {"or": [gold_expr, silver_expr, bronze_expr]}

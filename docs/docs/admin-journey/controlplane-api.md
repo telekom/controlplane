@@ -61,7 +61,7 @@ kubectl apply -k install/overlays/local
 The local overlay also:
 
 - Includes the `database` component, which deploys a PostgreSQL pod with default credentials into the `controlplane-system` namespace
-- Provides a pre-configured ControlPlane API config with security set to `mock` and the GraphQL Playground enabled
+- Provides a pre-configured ControlPlane API config with the external listener's JWT auth set to `mock` and the GraphQL Playground enabled
 - Sets all images to the `latest` tag with `IfNotPresent` pull policy
 
 ## Enabling in the default overlay
@@ -154,14 +154,14 @@ Then create a `controlplane-api-config.yaml` next to your overlay.
 
 #### Security modes
 
-The `security.mode` field controls how the API authenticates incoming requests:
+The API authenticates incoming requests on its external listener. The `listeners.external.jwt.mode` field controls how:
 
 | Mode | JWT required | Signature validated | Use case |
 |------|-------------|---------------------|----------|
 | `jwt` | Yes | **Yes** | Production — full JWT validation against trusted issuers |
 | `mock` | Yes | **No** | Local development / integration testing — JWT parsed but signature is not checked |
 
-The default mode is `jwt` (secure by default). A deployment with no explicit `security` configuration will **panic at startup** if no `trustedIssuers` are provided.
+The default mode is `jwt` (secure by default). A deployment in `jwt` mode with no `trustedIssuers` will **panic at startup** — fail-closed by design.
 
 #### Production configuration
 
@@ -169,10 +169,13 @@ The default mode is `jwt` (secure by default). A deployment with no explicit `se
 database:
   url: ${DATABASE_URL}
 
-security:
-  mode: jwt
-  trustedIssuers:
-    - https://your-idp.example.com/realms/controlplane
+listeners:
+  external:
+    address: ":8443"
+    jwt:
+      mode: jwt
+      trustedIssuers:
+        - https://your-idp.example.com/realms/controlplane
 ```
 
 The `DATABASE_URL` variable is injected from the `controlplane-db` Secret by the deployment manifest.
@@ -187,8 +190,11 @@ The `DATABASE_URL` variable is injected from the `controlplane-db` Secret by the
 database:
   url: ${DATABASE_URL}
 
-security:
-  mode: mock
+listeners:
+  external:
+    address: ":8443"
+    jwt:
+      mode: mock
 
 graphql:
   playgroundEnabled: true
@@ -201,9 +207,12 @@ graphql:
 #### Testing configuration
 
 ```yaml
-security:
-  mode: mock
-  # No trustedIssuers needed — signatures are not validated
+listeners:
+  external:
+    address: ":8443"
+    jwt:
+      mode: mock
+      # No trustedIssuers needed — signatures are not validated
 ```
 
 :::warning
@@ -279,7 +288,7 @@ For local development with `mode: mock`, any JWT with valid claims works — the
 |---|---|---|
 | Projector pod not starting | Database not reachable | Check that the `controlplane-db` Secret exists and the connection string is correct. The readiness probe at `/readyz` includes a database check. |
 | Projector logs show `ErrDependencyMissing` | Resources synced out of order | This is normal — the Projector retries automatically when a parent resource has not been synced yet. |
-| ControlPlane API returns empty results | Projector not running, or JWT scoping | Confirm the Projector is syncing. If security is enabled, check that the caller's JWT has the expected team/group claims. |
+| ControlPlane API returns empty results | Projector not running, or JWT scoping | Confirm the Projector is syncing. Otherwise check that the caller's JWT has the expected team/group claims. |
 | GraphQL Playground not accessible | Playground disabled in config | Set `graphql.playgroundEnabled: true` in the ControlPlane API configuration. |
 | Playground queries return 401 | Missing or invalid Authorization header | Add `{ "Authorization": "Bearer <token>" }` in the Playground Headers tab. With `mode: mock`, any JWT with valid claims works. |
 

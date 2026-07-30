@@ -7,7 +7,7 @@ package log
 import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/spf13/viper"
+	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -19,16 +19,16 @@ const (
 	consoleLogging = "console"
 )
 
-func Init() {
+func Init(cfg commonconfig.LogConfig) {
 	logCfg := zap.NewProductionConfig()
 	logCfg.DisableStacktrace = true
 	logCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
-	zapLogLevel, err := zapcore.ParseLevel(viper.GetString("log.level"))
+	zapLogLevel, err := zapcore.ParseLevel(cfg.Level)
 	if err != nil {
 		zapLogLevel = zapcore.InfoLevel
 	}
 
-	encoding := viper.GetString("log.encoding")
+	encoding := cfg.Encoding
 	if encoding == consoleLogging {
 		logCfg.Encoding = consoleLogging
 	} else {
