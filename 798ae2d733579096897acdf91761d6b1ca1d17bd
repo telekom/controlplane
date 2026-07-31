@@ -1,0 +1,22 @@
+api/internal/handler/apiexposure/handler_test.go
+  s_0f83abd6531c95::t_f6ca80d088c563 47-48
+  s_0f83abd6531c95::t_c8dc51adcf0a8b 105-106
+  s_0f83abd6531c95::t_b04346dbdaa240 42-45
+  s_0f83abd6531c95::t_81b2341db637da 339,342,413,416,505,513,585,593,665
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "798ae2d733579096897acdf91761d6b1ca1d17bd",
+  "prompts": {},
+  "sessions": {
+    "s_0f83abd6531c95": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04da3c9f4ffedditHQJm7F8QpL",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

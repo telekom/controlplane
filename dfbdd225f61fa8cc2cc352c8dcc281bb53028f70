@@ -1,0 +1,21 @@
+gateway/test/devloop/verify/operator.sh
+  s_eeee28390d9842::t_3973c5a581e47a 15
+gateway/test/devloop/devloop.sh
+  s_eeee28390d9842::t_7f373c86b9a14e 99-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "dfbdd225f61fa8cc2cc352c8dcc281bb53028f70",
+  "prompts": {},
+  "sessions": {
+    "s_eeee28390d9842": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d9ab72bffen3KdICuXLRDzPw",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

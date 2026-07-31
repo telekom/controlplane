@@ -1,0 +1,23 @@
+agentic/internal/controller/mcpserver_controller.go
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 51
+agentic/internal/controller/agenticexposure_controller.go
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 60
+agentic/internal/controller/agenticsubscription_controller.go
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3d59f8253a76adae9fce7d2507f2bb4f3b82763a",
+  "prompts": {},
+  "sessions": {
+    "s_54e0bd8dd0e945": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d87057fffeCAJfZTsvIrhkJs",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

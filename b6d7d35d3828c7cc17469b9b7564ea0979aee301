@@ -1,0 +1,20 @@
+docs/superpowers/specs/2026-07-30-cleanup-stale-routes-scoping-design.md
+  s_932b63ce1842d2::t_a920702ac4db03 1-6
+  s_932b63ce1842d2::t_ec080842a5771b 7-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b6d7d35d3828c7cc17469b9b7564ea0979aee301",
+  "prompts": {},
+  "sessions": {
+    "s_932b63ce1842d2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d8ba9b9ffewwo9VRo39FLY4m",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

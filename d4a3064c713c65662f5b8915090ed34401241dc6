@@ -1,0 +1,27 @@
+rover-server/config/default/kustomization.yaml
+  s_3df1b0aa1962c7::t_2934f58da3aea3 36-37
+controlplane-api/cmd/main.go
+  s_3df1b0aa1962c7::t_fb81dfae9d3ec5 149
+rover-server/config/prometheus/monitor_tls_patch.yaml
+  s_3df1b0aa1962c7::t_f0788636550e27 1-23
+rover-server/config/prometheus/kustomization.yaml
+  s_3df1b0aa1962c7::t_81757fc76f5bd1 7-14
+discovery-server/config/default/kustomization.yaml
+  s_3df1b0aa1962c7::t_234b2e0afc3ee7 35-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d4a3064c713c65662f5b8915090ed34401241dc6",
+  "prompts": {},
+  "sessions": {
+    "s_3df1b0aa1962c7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_052161fc0ffeTgDtBTIvgBtCEm",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

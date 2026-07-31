@@ -1,0 +1,23 @@
+common/pkg/controller/metrics.go
+  s_054659ba5806da::t_65df7275aa64ff 1-130
+common/pkg/controller/metrics_test.go
+  s_054659ba5806da::t_c9d24db68909ad 1-110
+common/go.mod
+  s_054659ba5806da::t_a2760847e5c63a 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6369d1c5eda671106cd182ce5e419be932ec6aac",
+  "prompts": {},
+  "sessions": {
+    "s_054659ba5806da": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04dabd0fbffeyE7qBRF1Y49NHT",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

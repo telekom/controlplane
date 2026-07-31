@@ -1,0 +1,19 @@
+application/internal/controller/application_controller.go
+  s_41aa99c21c99f7::t_710b61287c626d 84-85,88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "913e2da87cd211e8b5183918b5f97b4d2519418d",
+  "prompts": {},
+  "sessions": {
+    "s_41aa99c21c99f7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d4d8522ffeCALLPhLENLA1v4",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
