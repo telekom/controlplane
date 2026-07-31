@@ -61,7 +61,7 @@ func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&identityv1.Client{}, builder.WithPredicates(cc.Count("client", cc.RoleFor))).
 		Watches(&identityv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmObjToIdentityClient),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+			builder.WithPredicates(cc.Count("client", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

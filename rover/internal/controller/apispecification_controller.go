@@ -52,7 +52,7 @@ func (r *ApiSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rover.ApiSpecification{}, builder.WithPredicates(cc.Count("apispecification", cc.RoleFor))).
-		Owns(&apiapi.Api{}).
+		Owns(&apiapi.Api{}, builder.WithPredicates(cc.Count("apispecification", cc.RoleOwns))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

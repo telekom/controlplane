@@ -49,7 +49,7 @@ func (r *EventSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rover.EventSpecification{}, builder.WithPredicates(cc.Count("eventspecification", cc.RoleFor))).
-		Owns(&eventv1.EventType{}).
+		Owns(&eventv1.EventType{}, builder.WithPredicates(cc.Count("eventspecification", cc.RoleOwns))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

@@ -46,7 +46,7 @@ func (r *McpSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rover.McpSpecification{}, builder.WithPredicates(cc.Count("mcpspecification", cc.RoleFor))).
-		Owns(&agenticv1.McpServer{}).
+		Owns(&agenticv1.McpServer{}, builder.WithPredicates(cc.Count("mcpspecification", cc.RoleOwns))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
