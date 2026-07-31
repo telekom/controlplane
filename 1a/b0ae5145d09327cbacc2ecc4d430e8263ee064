@@ -1,0 +1,27 @@
+gateway/test/devloop/.gitignore
+  s_9dc21f618977f5::t_048841fb8a84a8 1-3
+gateway/test/devloop/verify/lib.sh
+  s_9dc21f618977f5::t_048841fb8a84a8 26-29
+gateway/test/devloop/README.md
+  s_9dc21f618977f5::t_048841fb8a84a8 46-47
+gateway/test/devloop/lib.sh
+  s_9dc21f618977f5::t_048841fb8a84a8 10
+gateway/test/devloop/verify/crs.sh
+  s_9dc21f618977f5::t_048841fb8a84a8 21,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1ab0ae5145d09327cbacc2ecc4d430e8263ee064",
+  "prompts": {},
+  "sessions": {
+    "s_9dc21f618977f5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04888d45cffeDO42qp6LL450KE",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
