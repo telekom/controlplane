@@ -44,8 +44,6 @@ spec:
       containers:
         - name: manager
           args:
-            - --address
-            - :8443
             - --configfile
             - /etc/file-manager/config.yaml
           image: ghcr.io/telekom/controlplane/file-manager:stable
