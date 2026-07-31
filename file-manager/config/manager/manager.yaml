@@ -79,10 +79,10 @@ spec:
           resources:
             limits:
               cpu: 500m
-              memory: 128Mi
+              memory: 1Gi
             requests:
               cpu: 30m
-              memory: 32Mi
+              memory: 128Mi
           volumeMounts:
             - name: file-manager-config
               mountPath: /etc/file-manager

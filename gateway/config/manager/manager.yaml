@@ -77,10 +77,10 @@ spec:
         resources:
           limits:
             cpu: 500m
-            memory: 128Mi
+            memory: 1Gi
           requests:
             cpu: 30m
-            memory: 64Mi
+            memory: 128Mi
         volumeMounts: []
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
