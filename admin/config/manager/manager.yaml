@@ -79,7 +79,7 @@ spec:
           # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
           resources:
             limits:
-              cpu: 1500m
+              cpu: 500m
               memory: 1Gi
             requests:
               cpu: 30m
