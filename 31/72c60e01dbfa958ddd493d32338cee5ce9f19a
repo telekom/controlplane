@@ -1,0 +1,38 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3172c60e01dbfa958ddd493d32338cee5ce9f19a",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_4c8aac287a1811": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0763079b4ffeZk32TPKf6GH8VX",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_4e4c162d9e2e59": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07657bae2ffed7oEiU1TG5GPAF",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_61f4b4aec66f44": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0762f8bb8ffeI9yI25Th3k19eu",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

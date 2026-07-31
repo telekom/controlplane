@@ -1,0 +1,83 @@
+gateway/internal/features/envoy/routing_test.go
+  s_e36533b3721d0f::t_d2faa80629836d 45-56
+  s_e36533b3721d0f::t_a68c30595ab2f1 30-31
+gateway/internal/features/envoy/routing.go
+  s_e36533b3721d0f::t_d2faa80629836d 10,15-16,49-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "3577783c603bb1c455b4b89e3eccca45a376ba8c",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_1557dcd58182f7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077572523ffe57fjuKzcyySU52",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_27267cfe644f41": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0773b5133ffewm9aPNfO6I4In4",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_69281849fd426d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077071c3bffel2kT4YlNeAah9x",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_72482c0ee82cc9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077161f55ffeJJmaOtsq9DYqyP",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9318644cfdc2d8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07722da6affeXdRCUU7kk1BJj7",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c98a9407697a75": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_076dbbc1cffeVUYjZNSGlm7cgb",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e36533b3721d0f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "2802bf4f-172e-4ef8-ad13-36c5ea47e334",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_e7c717da840680": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07704488effeB2tjqGE2N2J0We",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
