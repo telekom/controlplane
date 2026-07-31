@@ -12,8 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	handler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
@@ -43,7 +45,7 @@ func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&handler.GatewayHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1.Gateway{}).
+		For(&v1.Gateway{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
