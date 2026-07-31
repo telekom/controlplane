@@ -177,20 +177,43 @@ jobs:
       ko_build_path: "cmd/main.go"
       coverage_threshold: 41
 
+  rover-ctl-base-image-changes:
+    name: Detect rover-ctl base image changes
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.filter.outputs.rover_ctl_base }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check for rover-ctl base image changes
+        id: filter
+        uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3.0.3
+        with:
+          filters: |
+            rover_ctl_base:
+              - 'rover-ctl/Dockerfile.base'
+
   rover-ctl-base-image:
     name: Rover-CTL Base Image
-    # Decoupled from the full release cycle in release.yaml (which only runs
-    # on manual workflow_dispatch), so every CI run always has a base image
-    # to pull, instead of depending on a real release having happened first.
-    # Shared with release.yaml via reusable-rover-ctl-base-image.yaml.
-    uses: ./.github/workflows/reusable-rover-ctl-base-image.yaml
-    secrets:
-      registry_username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
-      registry_password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
+    needs: rover-ctl-base-image-changes
+    # Only rebuild/push when rover-ctl/Dockerfile.base actually changed in
+    # this push/PR - avoids rebuilding the same unchanged image on every CI
+    # run, while removing the staleness risk of a purely manual trigger
+    # (this job runs automatically the moment the Dockerfile changes, before
+    # merge). See .github/workflows/rover-ctl-base-image.yaml for the full
+    # rationale and the release.yaml safety net.
+    if: needs.rover-ctl-base-image-changes.outputs.changed == 'true'
+    uses: ./.github/workflows/rover-ctl-base-image.yaml
+    secrets: inherit
 
   rover-ctl:
     name: Rover-CTL
     needs: rover-ctl-base-image
+    # rover-ctl-base-image is conditionally skipped when Dockerfile.base
+    # didn't change (see above) - by default a skipped `needs` job would
+    # also skip this job, so explicitly allow proceeding when it was
+    # skipped, not just when it succeeded.
+    if: ${{ !cancelled() && (needs.rover-ctl-base-image.result == 'success' || needs.rover-ctl-base-image.result == 'skipped') }}
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
       name: rover-ctl
@@ -207,7 +230,16 @@ jobs:
       # that file hardcodes the same values - see the comment there).
       # TODO: create vars.REGISTRY_HOST, vars.REGISTRY_ROVERCTL_REPO,
       # and vars.ROVERCTL_BASE_IMAGE_TAG repository variables.
-      container_registry: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}
+      #
+      # container_registry is the registry HOST ONLY (for docker login /
+      # Trivy auth). image_repository is a full override of the final image
+      # path, since Artifactory's path layout doesn't match GHCR's
+      # <registry>/<org>/<repo>/<module> convention that reusable-go-ci.yaml
+      # otherwise derives automatically - without this override, that
+      # convention's org/repo/module suffix would get appended a second time
+      # on top of the already-complete Artifactory path.
+      container_registry: ${{ vars.REGISTRY_HOST }}
+      image_repository: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}
       base_image: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}/rover-ctl-base:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
     secrets:
       registry_username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret

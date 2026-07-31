@@ -71,10 +71,15 @@ on:
         type: string
         default: ${{ github.ref }}
       container_registry:
-        description: "Container registry for Ko, e.g., ghcr.io or docker.io. When set to a non-GHCR registry, registry_username/registry_password secrets are required for login."
+        description: "Container registry HOST ONLY (no path), e.g., ghcr.io or artifactory.example.com. Used for docker/login-action and Trivy's registry auth. When set to a non-GHCR registry, registry_username/registry_password secrets are required for login."
         required: false
         type: string
         default: "ghcr.io"
+      image_repository:
+        description: "Optional full override for the KO_DOCKER_REPO image path (registry host + full repo path), bypassing the default '<container_registry>/<github_repository>/<name>' convention used for GHCR. Use this when the target registry's path structure doesn't match GHCR's org/repo/module layout (e.g. an internal Artifactory registry with a different path convention). Leave empty to use the default convention."
+        required: false
+        type: string
+        default: ""
       base_image:
         description: "Optional base image reference (registry/repo:tag) to use instead of the default in .ko.yaml. Passed to ko as KO_DEFAULTBASEIMAGE. Leave empty to use the default from .ko.yaml."
         required: false
@@ -343,6 +348,7 @@ jobs:
     outputs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
       repo_lower: ${{ steps.repo_lower.outputs.repo }}
+      image_repository: ${{ steps.resolve_image_repository.outputs.image_repository }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -378,6 +384,17 @@ jobs:
           REPO_LOWER=$(echo "${{ inputs.github_repository }}/${{ inputs.name }}" | tr '[:upper:]' '[:lower:]')
           echo "repo=${REPO_LOWER}" >> $GITHUB_OUTPUT
 
+      - name: Resolve effective image repository
+        id: resolve_image_repository
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.image_repository }}" ]; then
+            IMAGE_REPOSITORY="${{ inputs.image_repository }}"
+          else
+            IMAGE_REPOSITORY="${{ inputs.container_registry }}/${{ steps.repo_lower.outputs.repo }}"
+          fi
+          echo "image_repository=${IMAGE_REPOSITORY}" >> $GITHUB_OUTPUT
+
       - name: Log in to container registry
         # ghcr.io is authenticated automatically by ko's built-in GitHub
         # Actions keychain (using the ambient GITHUB_TOKEN), so this step is
@@ -396,7 +413,7 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.module }}
         env:
-          KO_DOCKER_REPO: ${{ inputs.container_registry }}/${{ steps.repo_lower.outputs.repo }}
+          KO_DOCKER_REPO: ${{ steps.resolve_image_repository.outputs.image_repository }}
           KO_CONFIG_PATH: ${{ github.workspace }}/.ko.yaml
           KO_DEFAULTBASEIMAGE: ${{ inputs.base_image }}
         run: |
@@ -448,7 +465,7 @@ jobs:
           TRIVY_USERNAME: ${{ inputs.container_registry != 'ghcr.io' && secrets.registry_username || '' }}
           TRIVY_PASSWORD: ${{ inputs.container_registry != 'ghcr.io' && secrets.registry_password || '' }}
         with:
-          image-ref: ${{ inputs.container_registry }}/${{ needs.build.outputs.repo_lower }}@${{ needs.build.outputs.image_digest }}
+          image-ref: ${{ needs.build.outputs.image_repository }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"

@@ -12,10 +12,13 @@ permissions:
 jobs:
   rover-ctl-base-image:
     name: Rover-CTL Base Image
-    uses: ./.github/workflows/reusable-rover-ctl-base-image.yaml
-    secrets:
-      registry_username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
-      registry_password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
+    # Unconditional (unlike ci.yaml's path-filtered job): release runs are
+    # already manual/infrequent, so rebuilding here isn't wasteful, and this
+    # acts as a safety net ensuring the base image is always fresh before a
+    # real release, regardless of whether ci.yaml's change-detection ran on
+    # the exact commit being released.
+    uses: ./.github/workflows/rover-ctl-base-image.yaml
+    secrets: inherit
 
   release:
     needs: rover-ctl-base-image
@@ -58,13 +61,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Log in to Artifactory
         # The rover-ctl-base image itself is built/pushed by the
-        # rover-ctl-base-image job above (shared with ci.yaml via
-        # reusable-rover-ctl-base-image.yaml). This login is still needed
-        # here because goreleaser's `kos` pipe also pushes the final
-        # rover-ctl image to Artifactory (see the `rover-ctl` entry in
+        # rover-ctl-base-image job above. This login is still needed here
+        # because goreleaser's `kos` pipe also pushes the final rover-ctl
+        # image to Artifactory (see the `rover-ctl` entry in
         # .goreleaser.yaml) - it bundles the same GPL-3.0-or-later (bash,
         # readline) and GPL-2.0-only (Alpine base) components, so it can't
         # be published to GHCR either.
+        #
         # vars.REGISTRY_HOST must match the `repositories`/`base_image`
         # values hardcoded in .goreleaser.yaml (which can't read repo vars -
         # see the comment there).

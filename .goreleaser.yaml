@@ -515,7 +515,7 @@ kos:
       # were tested and confirmed non-functional, so this must be a literal,
       # static value. This MUST be kept identical to
       # vars.REGISTRY_HOST + "/" + vars.REGISTRY_ROVERCTL_REPO,
-      # which .github/workflows/ci.yaml and reusable-rover-ctl-base-image.yaml
+      # which .github/workflows/ci.yaml and .github/workflows/rover-ctl-base-image.yaml
       # derive dynamically from those repo variables.
       # TODO: confirm real Artifactory host/path if different.
       - artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl
@@ -543,8 +543,8 @@ kos:
     # reference, kept identical to vars.REGISTRY_HOST + "/" +
     # vars.REGISTRY_ROVERCTL_REPO + "/rover-ctl-base:" +
     # vars.ROVERCTL_BASE_IMAGE_TAG, which
-    # .github/workflows/ci.yaml and reusable-rover-ctl-base-image.yaml derive
-    # dynamically from those repo variables.
+    # .github/workflows/ci.yaml and .github/workflows/rover-ctl-base-image.yaml
+    # derive dynamically from those repo variables.
     #
     # TODO: replace with the real internal Artifactory Docker registry
     # path once available (placeholder below).
