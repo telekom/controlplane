@@ -117,6 +117,22 @@ var _ = Describe("Parser", func() {
 			Expect(objects[0].GetName()).To(Equal("test-json-rover"))
 		})
 
+		It("should substitute placeholders in a JSON file", func() {
+			os.Setenv("ROVERCTL_TEST_JSON_NAME", "placeholder-json-rover")
+			defer os.Unsetenv("ROVERCTL_TEST_JSON_NAME")
+
+			file, err := os.CreateTemp(GinkgoT().TempDir(), "*.json")
+			Expect(err).NotTo(HaveOccurred())
+			_, err = file.WriteString(`{"apiVersion":"tcp.ei.telekom.de/v1","kind":"Rover","metadata":{"name":"${ROVERCTL_TEST_JSON_NAME}"}}`)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file.Close()).To(Succeed())
+
+			jsonParser := parser.NewObjectParser()
+			Expect(jsonParser.Parse(file.Name())).To(Succeed())
+			Expect(jsonParser.Objects()).To(HaveLen(1))
+			Expect(jsonParser.Objects()[0].GetName()).To(Equal("placeholder-json-rover"))
+		})
+
 		It("should parse multiple documents from a YAML file", func() {
 			// Parse a YAML file with multiple documents
 			err := objectParser.Parse(filepath.Join(testdataDir, "multi-document.yaml"))
