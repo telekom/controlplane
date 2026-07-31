@@ -2444,6 +2444,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuthorizationInfo'
+        listeners:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoverListener'
+        listenerSubscription:
+          $ref: '#/components/schemas/ListenerSubscription'
         failoverEnabled:
           type: boolean
           description: Configures the DTC failover for consumers
@@ -3241,3 +3247,54 @@ components:
           type: array
           items:
             type: string
+    RoverListener:
+      type: object
+      required:
+        - consumer
+        - provider
+      properties:
+        consumer:
+          type: string
+          description: ENI of the consuming application (e.g. "eni--team--app")
+        provider:
+          type: string
+          description: ENI of the providing application (e.g. "eni--other--provider")
+        apiBasePath:
+          type: string
+          description: Base path of the API to listen on
+        eventType:
+          type: string
+          description: Event type to listen on (alternative to apiBasePath)
+        requestFilter:
+          $ref: '#/components/schemas/ListenerFilter'
+        responseFilter:
+          $ref: '#/components/schemas/ListenerFilter'
+        eventFilter:
+          $ref: '#/components/schemas/ListenerFilter'
+    ListenerFilter:
+      type: object
+      properties:
+        trigger:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value conditions that must match for the filter to activate
+        payload:
+          type: array
+          items:
+            type: string
+          description: Fields to include in the listener output
+    ListenerSubscription:
+      type: object
+      properties:
+        deliveryType:
+          type: string
+          enum:
+            - callback
+            - server_sent_event
+          default: server_sent_event
+          description: Delivery mechanism for listener events
+        callback:
+          type: string
+          format: uri
+          description: URL where listener events are delivered when deliveryType is "callback"

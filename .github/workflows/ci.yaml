@@ -248,6 +248,16 @@ jobs:
       ko_build_path: "cmd/main.go"
       lint_fail_on_issues: true
 
+  spectre:
+    name: Spectre
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: spectre
+      module: spectre
+      run_check_generated_files: true
+      ko_build_path: "cmd/main.go"
+      coverage_threshold: 40
+
   projector:
     name: Projector
     uses: ./.github/workflows/reusable-go-ci.yaml
