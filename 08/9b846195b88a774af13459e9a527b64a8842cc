@@ -1,0 +1,21 @@
+rover-server/internal/api/server.gen.go
+  s_55f06342a36404::t_5b578b83bbaa2c 242,244,251-252,255-256,287,289,296-297,300-301,2233-2388
+rover-server/api/openapi.yaml
+  s_55f06342a36404::t_d6045787c0bffa 2244-2245,2804-2805
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "089b846195b88a774af13459e9a527b64a8842cc",
+  "prompts": {},
+  "sessions": {
+    "s_55f06342a36404": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038ae7359ffelxq7A0zXpNv0Qk",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
