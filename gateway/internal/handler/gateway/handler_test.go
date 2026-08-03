@@ -9,6 +9,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+	cc "github.com/telekom/controlplane/common/pkg/client"
+	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -37,11 +40,13 @@ var _ = Describe("GatewayHandler", func() {
 	Describe("Delete()", func() {
 		It("returns nil", func() {
 			handler := &gwhandler.GatewayHandler{}
+			mockClient := fakeclient.NewMockJanitorClient(GinkgoT())
+			mockClient.On("List", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			gw := &gatewayv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-gw"},
 			}
 
-			err := handler.Delete(context.Background(), gw)
+			err := handler.Delete(cc.WithClient(context.Background(), mockClient), gw)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

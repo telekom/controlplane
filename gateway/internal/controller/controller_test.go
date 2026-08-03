@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -192,5 +193,95 @@ var _ = Describe("Controller Integration", Ordered, func() {
 				g.Expect(meta.IsStatusConditionTrue(consumeRoute.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
 			}, timeout, interval).Should(Succeed())
 		})
+	})
+})
+
+var _ = Describe("Gateway deletion", Ordered, func() {
+	const (
+		gatewayName = "deletion-guard-gateway"
+		namespace   = testEnvironment
+	)
+
+	ctx := context.Background()
+	var gateway *gatewayv1.Gateway
+	var route *gatewayv1.Route
+	var consumer *gatewayv1.Consumer
+
+	BeforeAll(func() {
+		createNamespace(namespace)
+		gateway = newGateway(gatewayName, namespace)
+		Expect(k8sClient.Create(ctx, gateway)).To(Succeed())
+		Eventually(func(g Gomega) {
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(gateway), gateway)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(meta.IsStatusConditionTrue(gateway.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
+
+		route = &gatewayv1.Route{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "deletion-guard-route",
+				Namespace: namespace,
+				Labels: map[string]string{
+					config.EnvironmentLabelKey: testEnvironment,
+				},
+			},
+			Spec: gatewayv1.RouteSpec{
+				GatewayRef: types.ObjectRef{Name: gatewayName, Namespace: namespace},
+				Type:       gatewayv1.RouteTypePrimary,
+				Hostnames:  []string{"deletion-guard.example.com"},
+				Paths:      []string{"/guard"},
+				Backend: gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{
+					{Scheme: "https", Hostname: "guard-backend.internal", Port: 443},
+				}},
+			},
+		}
+		Expect(k8sClient.Create(ctx, route)).To(Succeed())
+
+		consumer = &gatewayv1.Consumer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "deletion-guard-consumer",
+				Namespace: namespace,
+				Labels: map[string]string{
+					config.EnvironmentLabelKey: testEnvironment,
+				},
+			},
+			Spec: gatewayv1.ConsumerSpec{
+				Gateway: types.ObjectRef{Name: gatewayName, Namespace: namespace},
+				Name:    "deletion-guard-consumer",
+			},
+		}
+		Expect(k8sClient.Create(ctx, consumer)).To(Succeed())
+	})
+
+	It("keeps a referenced Gateway terminating until its Route is gone", func() {
+		Expect(k8sClient.Delete(ctx, gateway)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(gateway), gateway)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(gateway.DeletionTimestamp.IsZero()).To(BeFalse())
+		}, timeout, interval).Should(Succeed())
+
+		Consistently(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(gateway), &gatewayv1.Gateway{}))
+		}, time.Second, interval).Should(BeFalse())
+
+		Expect(k8sClient.Delete(ctx, route)).To(Succeed())
+
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), &gatewayv1.Route{}))
+		}, timeout, interval).Should(BeTrue())
+		Consistently(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(gateway), &gatewayv1.Gateway{}))
+		}, time.Second, interval).Should(BeFalse())
+
+		Expect(k8sClient.Delete(ctx, consumer)).To(Succeed())
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(consumer), &gatewayv1.Consumer{}))
+		}, timeout, interval).Should(BeTrue())
+
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(gateway), &gatewayv1.Gateway{}))
+		}, timeout, interval).Should(BeTrue())
 	})
 })

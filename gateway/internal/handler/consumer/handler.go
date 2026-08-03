@@ -16,6 +16,8 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ handler.Handler[*gatewayv1.Consumer] = &ConsumerHandler{}
@@ -42,6 +44,10 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 
 	_, gateway, err := gateway.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
 	if err != nil {
+		// There is no gateway configuration available for deleting the Kong consumer.
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 

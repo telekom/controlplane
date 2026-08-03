@@ -12,8 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	crhandler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	handler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
@@ -44,9 +47,31 @@ func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1.Gateway{}).
+		Watches(&v1.Route{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapRouteToGateway),
+			builder.WithPredicates(cc.DeleteOnlyPredicate{})).
+		Watches(&v1.Consumer{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapConsumerToGateway),
+			builder.WithPredicates(cc.DeleteOnlyPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+func (r *GatewayReconciler) mapConsumerToGateway(_ context.Context, obj client.Object) []reconcile.Request {
+	consumer, ok := obj.(*v1.Consumer)
+	if !ok {
+		return nil
+	}
+	return []reconcile.Request{{NamespacedName: consumer.Spec.Gateway.K8s()}}
+}
+
+func (r *GatewayReconciler) mapRouteToGateway(_ context.Context, obj client.Object) []reconcile.Request {
+	route, ok := obj.(*v1.Route)
+	if !ok {
+		return nil
+	}
+	return []reconcile.Request{{NamespacedName: route.Spec.GatewayRef.K8s()}}
 }
