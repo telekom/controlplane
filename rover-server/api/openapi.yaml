@@ -2241,6 +2241,8 @@ components:
           enum:
             - body
             - header
+            - BODY
+            - HEADER
           description: "Specifies if the authentication data should be sent to the external IDP via headers or in the body of the request"
         claims:
           $ref: '#/components/schemas/Claims'
@@ -2799,6 +2801,8 @@ components:
           enum:
             - include
             - exclude
+            - INCLUDE
+            - EXCLUDE
         selectionFilter:
           type: object
           additionalProperties:
