@@ -117,6 +117,64 @@ var _ = Describe("Parser", func() {
 			Expect(objects[0].GetName()).To(Equal("test-json-rover"))
 		})
 
+		It("should substitute placeholders in a JSON file", func() {
+			os.Setenv("ROVERCTL_TEST_STRING", "placeholder-json-rover")
+			os.Setenv("ROVERCTL_TEST_TRUE", "true")
+			os.Setenv("ROVERCTL_TEST_FALSE", "false")
+			os.Setenv("ROVERCTL_TEST_INTEGER", "100")
+			os.Setenv("ROVERCTL_TEST_DECIMAL", "12.5")
+			os.Setenv("ROVERCTL_TEST_NULL", "null")
+			defer os.Unsetenv("ROVERCTL_TEST_STRING")
+			defer os.Unsetenv("ROVERCTL_TEST_TRUE")
+			defer os.Unsetenv("ROVERCTL_TEST_FALSE")
+			defer os.Unsetenv("ROVERCTL_TEST_INTEGER")
+			defer os.Unsetenv("ROVERCTL_TEST_DECIMAL")
+			defer os.Unsetenv("ROVERCTL_TEST_NULL")
+
+			file, err := os.CreateTemp(GinkgoT().TempDir(), "*.json")
+			Expect(err).NotTo(HaveOccurred())
+			_, err = file.WriteString(`{
+  "apiVersion":"tcp.ei.telekom.de/v1",
+  "kind":"Rover",
+  "metadata":{"name":"${ROVERCTL_TEST_STRING}"},
+  "spec":{
+    "enabled":${ROVERCTL_TEST_TRUE},
+    "disabled":${ROVERCTL_TEST_FALSE},
+    "count":${ROVERCTL_TEST_INTEGER},
+    "ratio":${ROVERCTL_TEST_DECIMAL},
+    "optional":${ROVERCTL_TEST_NULL}
+  }
+}`)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file.Close()).To(Succeed())
+
+			jsonParser := parser.NewObjectParser()
+			Expect(jsonParser.Parse(file.Name())).To(Succeed())
+			Expect(jsonParser.Objects()).To(HaveLen(1))
+			Expect(jsonParser.Objects()[0].GetName()).To(Equal("placeholder-json-rover"))
+			spec, ok := jsonParser.Objects()[0].GetContent()["spec"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(spec).To(HaveKeyWithValue("enabled", true))
+			Expect(spec).To(HaveKeyWithValue("disabled", false))
+			Expect(spec).To(HaveKeyWithValue("count", float64(100)))
+			Expect(spec).To(HaveKeyWithValue("ratio", 12.5))
+			Expect(spec).To(HaveKeyWithValue("optional", BeNil()))
+		})
+
+		It("should reject an unquoted placeholder that does not resolve to JSON", func() {
+			os.Setenv("ROVERCTL_TEST_INVALID_JSON", "not-json")
+			defer os.Unsetenv("ROVERCTL_TEST_INVALID_JSON")
+
+			file, err := os.CreateTemp(GinkgoT().TempDir(), "*.json")
+			Expect(err).NotTo(HaveOccurred())
+			_, err = file.WriteString(`{"value":${ROVERCTL_TEST_INVALID_JSON}}`)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file.Close()).To(Succeed())
+
+			err = parser.NewObjectParser().Parse(file.Name())
+			Expect(err).To(MatchError(ContainSubstring("failed to parse JSON")))
+		})
+
 		It("should parse multiple documents from a YAML file", func() {
 			// Parse a YAML file with multiple documents
 			err := objectParser.Parse(filepath.Join(testdataDir, "multi-document.yaml"))
@@ -300,6 +358,7 @@ var _ = Describe("Parser", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to substitute placeholders"))
 			Expect(err.Error()).To(ContainSubstring("ROVERCTL_TEST_NAME"))
+			Expect(err.Error()).To(ContainSubstring("ROVERCTL_TEST_REPO"))
 		})
 	})
 })
