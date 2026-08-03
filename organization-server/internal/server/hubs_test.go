@@ -153,6 +153,28 @@ var _ = Describe("Hub Handlers", func() {
 			resp, err := executeRequest(app, req, otherHubToken)
 			expectStatus(resp, err, http.StatusForbidden)
 		})
+
+		DescribeTable("creation requires admin:all",
+			func(scope string) {
+				body := `{"name":"new-hub","displayName":"New Hub","description":"A new hub"}`
+				req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs", strings.NewReader(body))
+				resp, err := executeRequest(app, req, makeToken("eni", "myteam", []string{scope}))
+				expectStatus(resp, err, http.StatusForbidden)
+			},
+			Entry("group cannot create hub", "tardis:group:all"),
+			Entry("read-only admin cannot create hub", "tardis:admin:read"),
+		)
+
+		DescribeTable("group read scopes cannot mutate",
+			func(scope string) {
+				body := `{"displayName":"Updated Eni","description":"Updated description"}`
+				req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni", strings.NewReader(body))
+				resp, err := executeRequest(app, req, makeToken("eni", "myteam", []string{scope}))
+				expectStatus(resp, err, http.StatusForbidden)
+			},
+			Entry("canonical group scope", "tardis:group:read"),
+			Entry("legacy hub scope", "tardis:hub:read"),
+		)
 	})
 
 	Describe("Obfuscation", func() {

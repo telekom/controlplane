@@ -6,11 +6,19 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
+
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 )
+
+var testToken = accesstoken.NewStaticAccessToken("test-token")
 
 func TestGetResources_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -29,10 +37,6 @@ func TestGetResources_Success(t *testing.T) {
 		if team != "hyperion" {
 			t.Errorf("expected team hyperion, got %s", team)
 		}
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			t.Error("expected Authorization header")
-		}
 		acceptHeader := r.Header.Get("Accept")
 		if acceptHeader != "application/json" {
 			t.Errorf("expected Accept: application/json, got %s", acceptHeader)
@@ -49,7 +53,7 @@ func TestGetResources_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewRoverClient(server.URL, "tardis")
+	client := NewRoverClient(server.URL, testToken, "")
 	result, err := client.GetResources(context.Background(), "controlplane", "eni", "hyperion")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -75,7 +79,7 @@ func TestGetResources_EmptyList(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewRoverClient(server.URL, "tardis")
+	client := NewRoverClient(server.URL, testToken, "")
 	result, err := client.GetResources(context.Background(), "test", "eni", "team1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -92,7 +96,7 @@ func TestGetResources_ServerError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewRoverClient(server.URL, "tardis")
+	client := NewRoverClient(server.URL, testToken, "")
 	_, err := client.GetResources(context.Background(), "test", "eni", "team1")
 
 	if err == nil {
@@ -107,7 +111,7 @@ func TestGetResources_InvalidJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewRoverClient(server.URL, "tardis")
+	client := NewRoverClient(server.URL, testToken, "")
 	_, err := client.GetResources(context.Background(), "test", "eni", "team1")
 
 	if err == nil {
@@ -116,7 +120,7 @@ func TestGetResources_InvalidJSON(t *testing.T) {
 }
 
 func TestGetResources_ConnectionRefused(t *testing.T) {
-	client := NewRoverClient("http://127.0.0.1:1", "tardis")
+	client := NewRoverClient("http://127.0.0.1:1", testToken, "")
 	_, err := client.GetResources(context.Background(), "test", "eni", "team1")
 
 	if err == nil {
@@ -134,7 +138,7 @@ func TestGetResources_QueryParamConstruction(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewRoverClient(server.URL, "tardis")
+	client := NewRoverClient(server.URL, testToken, "")
 	_, _ = client.GetResources(context.Background(), "prod", "my-hub", "my-team")
 
 	if capturedGroup != "my-hub" {
@@ -145,23 +149,53 @@ func TestGetResources_QueryParamConstruction(t *testing.T) {
 	}
 }
 
-func TestGetResources_MockTokenContainsAdminScope(t *testing.T) {
-	var capturedAuth string
+// The internal listener authenticates with the projected SA token and derives
+// its admin business context from X-Environment; both must be on the wire.
+func TestGetResources_SendsProjectedTokenAndEnvironment(t *testing.T) {
+	tokenFile := writeTempToken(t)
+
+	var capturedAuth, capturedEnv string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuth = r.Header.Get("Authorization")
+		capturedEnv = r.Header.Get("X-Environment")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"items":[]}`))
 	}))
 	defer server.Close()
 
-	client := NewRoverClient(server.URL, "custom-prefix")
-	_, _ = client.GetResources(context.Background(), "env", "g", "t")
+	client := NewRoverClient(server.URL, accesstoken.NewAccessToken(tokenFile), "")
+	if _, err := client.GetResources(context.Background(), "env", "g", "t"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	if capturedAuth == "" {
-		t.Fatal("expected Authorization header to be set")
+	if capturedAuth != "Bearer "+readFile(t, tokenFile) {
+		t.Errorf("Authorization: got %q", capturedAuth)
 	}
-	// Token should start with "Bearer "
-	if len(capturedAuth) < 8 || capturedAuth[:7] != "Bearer " {
-		t.Errorf("expected Bearer token, got %s", capturedAuth)
+	if capturedEnv != "env" {
+		t.Errorf("X-Environment: want env, got %q", capturedEnv)
 	}
+}
+
+// writeTempToken writes an unsigned JWT with a future exp, matching what the
+// kubelet projects (the file token reader parses exp to decide on re-reads).
+func writeTempToken(t *testing.T) string {
+	t.Helper()
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
+	claims, _ := json.Marshal(map[string]any{"exp": time.Now().Add(time.Hour).Unix()})
+	tok := header + "." + base64.RawURLEncoding.EncodeToString(claims) + "."
+
+	path := filepath.Join(t.TempDir(), "token")
+	if err := os.WriteFile(path, []byte(tok), 0o600); err != nil {
+		t.Fatalf("writing token file: %v", err)
+	}
+	return path
+}
+
+func readFile(t *testing.T, path string) string {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading %s: %v", path, err)
+	}
+	return string(b)
 }

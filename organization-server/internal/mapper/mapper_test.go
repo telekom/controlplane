@@ -73,7 +73,7 @@ func TestTeamToTeamResponse(t *testing.T) {
 		},
 	}
 
-	resp := TeamToTeamResponse(team)
+	resp := TeamToTeamResponse(team, true)
 
 	if resp.Name != "eni--hyperion" {
 		t.Errorf("expected name=eni--hyperion, got %s", resp.Name)
@@ -96,6 +96,11 @@ func TestTeamToTeamResponse(t *testing.T) {
 	if resp.Status.ProcessingState != "done" {
 		t.Errorf("expected processingState=done for READY, got %s", resp.Status.ProcessingState)
 	}
+
+	hidden := TeamToTeamResponse(team, false)
+	if hidden.TeamToken != "" {
+		t.Errorf("expected hidden teamToken, got %s", hidden.TeamToken)
+	}
 }
 
 func TestTeamToTeamResponse_NilToken(t *testing.T) {
@@ -104,7 +109,7 @@ func TestTeamToTeamResponse_NilToken(t *testing.T) {
 		Email: "t@test.de",
 	}
 
-	resp := TeamToTeamResponse(team)
+	resp := TeamToTeamResponse(team, true)
 
 	if resp.TeamToken != "" {
 		t.Errorf("expected empty teamToken, got %s", resp.TeamToken)
@@ -125,7 +130,7 @@ func TestGetTeamToTeamResponse(t *testing.T) {
 		},
 	}
 
-	resp := GetTeamToTeamResponse(team)
+	resp := GetTeamToTeamResponse(team, true)
 
 	if resp.Name != "cit--sigma" {
 		t.Errorf("expected name, got %s", resp.Name)
@@ -139,6 +144,11 @@ func TestGetTeamToTeamResponse(t *testing.T) {
 	if resp.TeamToken != "get-token" {
 		t.Errorf("expected get-token, got %s", resp.TeamToken)
 	}
+
+	hidden := GetTeamToTeamResponse(team, false)
+	if hidden.TeamToken != "" {
+		t.Errorf("expected hidden teamToken, got %s", hidden.TeamToken)
+	}
 }
 
 func TestGetTeamToTeamResponse_NilToken(t *testing.T) {
@@ -147,7 +157,7 @@ func TestGetTeamToTeamResponse_NilToken(t *testing.T) {
 		Email: "y@test.de",
 	}
 
-	resp := GetTeamToTeamResponse(team)
+	resp := GetTeamToTeamResponse(team, true)
 
 	if resp.TeamToken != "" {
 		t.Errorf("expected empty teamToken, got %s", resp.TeamToken)

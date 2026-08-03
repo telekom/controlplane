@@ -25,7 +25,7 @@ vet: ## Run go vet against code.
 ##@ Build
 
 .PHONY: build
-build: fmt vet ## Run go build against code.
+build: generate fmt vet ## Run go build against code.
 	go build -ldflags="-X 'main.version=$(VERSION)' -X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.goVersion=$(shell go version)'" -trimpath -mod=readonly -o bin/rover-server cmd/main.go
 
 # Packages to test and measure coverage for

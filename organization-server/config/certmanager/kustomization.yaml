@@ -7,3 +7,7 @@ kind: Kustomization
 
 resources:
   - bundle.yaml
+  - certificate.yaml
+
+configurations:
+  - kustomizeconfig.yaml

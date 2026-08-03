@@ -66,6 +66,9 @@ paths:
             - tardis:admin:obfuscated
             - tardis:admin:read
             - tardis:admin:all
+            - tardis:group:obfuscated
+            - tardis:group:read
+            - tardis:group:all
             - tardis:hub:obfuscated
             - tardis:hub:read
             - tardis:hub:all
@@ -104,7 +107,6 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
-            - tardis:hub:all
   /hubs/{hubName}:
     get:
       tags:
@@ -143,6 +145,9 @@ paths:
             - tardis:admin:obfuscated
             - tardis:admin:read
             - tardis:admin:all
+            - tardis:group:obfuscated
+            - tardis:group:read
+            - tardis:group:all
             - tardis:hub:obfuscated
             - tardis:hub:read
             - tardis:hub:all
@@ -186,6 +191,7 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
+            - tardis:group:all
             - tardis:hub:all
     delete:
       tags:
@@ -218,6 +224,7 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
+            - tardis:group:all
             - tardis:hub:all
   /hubs/{hubName}/teams:
     get:
@@ -263,6 +270,9 @@ paths:
             - tardis:admin:obfuscated
             - tardis:admin:read
             - tardis:admin:all
+            - tardis:group:obfuscated
+            - tardis:group:read
+            - tardis:group:all
             - tardis:hub:obfuscated
             - tardis:hub:read
             - tardis:hub:all
@@ -310,8 +320,6 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
-            - tardis:hub:all
-            - tardis:team:all
   /hubs/{hubName}/teams/{teamName}:
     get:
       tags:
@@ -356,6 +364,9 @@ paths:
             - tardis:admin:obfuscated
             - tardis:admin:read
             - tardis:admin:all
+            - tardis:group:obfuscated
+            - tardis:group:read
+            - tardis:group:all
             - tardis:hub:obfuscated
             - tardis:hub:read
             - tardis:hub:all
@@ -407,6 +418,7 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
+            - tardis:group:all
             - tardis:hub:all
             - tardis:team:all
     delete:
@@ -453,6 +465,7 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
+            - tardis:group:all
             - tardis:hub:all
             - tardis:team:all
 
@@ -502,6 +515,9 @@ paths:
             - tardis:admin:obfuscated
             - tardis:admin:read
             - tardis:admin:all
+            - tardis:group:obfuscated
+            - tardis:group:read
+            - tardis:group:all
             - tardis:hub:obfuscated
             - tardis:hub:read
             - tardis:hub:all
@@ -550,6 +566,7 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
+            - tardis:group:all
             - tardis:hub:all
             - tardis:team:all
     delete:
@@ -590,6 +607,7 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
+            - tardis:group:all
             - tardis:hub:all
             - tardis:team:all
   /hubs/{hubName}/teams/{teamName}/resources:
@@ -648,6 +666,9 @@ paths:
             - tardis:admin:obfuscated
             - tardis:admin:read
             - tardis:admin:all
+            - tardis:group:obfuscated
+            - tardis:group:read
+            - tardis:group:all
             - tardis:hub:obfuscated
             - tardis:hub:read
             - tardis:hub:all
@@ -694,6 +715,7 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
+            - tardis:group:all
             - tardis:hub:all
             - tardis:team:all
   /hubs/{hubName}/status:
@@ -732,6 +754,9 @@ paths:
             - tardis:admin:obfuscated
             - tardis:admin:read
             - tardis:admin:all
+            - tardis:group:obfuscated
+            - tardis:group:read
+            - tardis:group:all
             - tardis:hub:obfuscated
             - tardis:hub:read
             - tardis:hub:all
@@ -777,6 +802,9 @@ paths:
             - tardis:admin:obfuscated
             - tardis:admin:read
             - tardis:admin:all
+            - tardis:group:obfuscated
+            - tardis:group:read
+            - tardis:group:all
             - tardis:hub:obfuscated
             - tardis:hub:read
             - tardis:hub:all
@@ -786,7 +814,7 @@ components:
   securitySchemes:
     OAuth2:
       type: oauth2
-      description: OAuth2 client_credentials flow
+      description: OAuth2 client_credentials flow. Legacy `tardis:hub:*` scopes are accepted as deprecated aliases for corresponding `tardis:group:*` scopes.
       flows:
         clientCredentials:
           tokenUrl: https://example.com/auth/realms/realm//protocol/openid-connect/token
@@ -794,9 +822,12 @@ components:
             tardis:admin:obfuscated: all resources are accessible, but sensitive information are omitted
             tardis:admin:read: all resources are accessible, sensitive information are visible
             tardis:admin:all: full rights to all endpoints and operations
-            tardis:hub:obfuscated: all hub related resources are accessible, but sensitive information are omitted
-            tardis:hub:read: all hub related resources are accessible, sensitive information are visible
-            tardis:hub:all: full rights to all hub related endpoints and operations
+            tardis:group:obfuscated: all group related resources are accessible, but sensitive information are omitted
+            tardis:group:read: all group related resources are accessible, sensitive information are visible
+            tardis:group:all: full rights to all group related endpoints and operations
+            tardis:hub:obfuscated: deprecated alias for tardis:group:obfuscated
+            tardis:hub:read: deprecated alias for tardis:group:read
+            tardis:hub:all: deprecated alias for tardis:group:all
             tardis:team:obfuscated: all team related resources are accessible, but sensitive information are omitted
             tardis:team:read: all team related resources are accessible, sensitive information are visible
             tardis:team:all: full rights to all team related endpoints and operations

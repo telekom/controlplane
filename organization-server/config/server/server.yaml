@@ -33,6 +33,10 @@ spec:
                 name: organization-server-env
           image: ghcr.io/telekom/controlplane/organization-server:stable
           name: server
+          ports:
+            - name: https
+              containerPort: 8443
+              protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -40,14 +44,16 @@ spec:
                 - "ALL"
           livenessProbe:
             httpGet:
+              scheme: HTTPS
               path: /healthz
-              port: 8080
+              port: 8443
             initialDelaySeconds: 15
             periodSeconds: 20
           readinessProbe:
             httpGet:
+              scheme: HTTPS
               path: /readyz
-              port: 8080
+              port: 8443
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
@@ -61,10 +67,16 @@ spec:
             - name: cpapi-trust-bundle
               mountPath: /var/run/secrets/trust-bundle
               readOnly: true
+            - name: cert-volume
+              mountPath: /etc/tls
+              readOnly: true
       volumes:
         - name: cpapi-trust-bundle
           configMap:
             name: controlplane-api-trust-bundle
+        - name: cert-volume
+          secret:
+            secretName: organization-server-cert
       serviceAccountName: organization-server
       terminationGracePeriodSeconds: 10
 ---
@@ -79,9 +91,9 @@ metadata:
   namespace: system
 spec:
   ports:
-  - name: http
-    port: 8080
+  - name: https
+    port: 443
     protocol: TCP
-    targetPort: 8080
+    targetPort: 8443
   selector:
     control-plane: organization-server

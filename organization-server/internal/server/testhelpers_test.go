@@ -11,15 +11,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	"github.com/telekom/controlplane/organization-server/internal/client"
 	"github.com/telekom/controlplane/organization-server/internal/controller"
-	mw "github.com/telekom/controlplane/organization-server/internal/middleware"
 	"github.com/telekom/controlplane/organization-server/internal/server"
 
 	. "github.com/onsi/gomega"
@@ -27,13 +29,16 @@ import (
 
 // mockGraphQLServer returns an httptest.Server that responds to GraphQL requests
 // with canned responses based on the operation name.
-func mockGraphQLServer(responses map[string]any) *httptest.Server {
+func mockGraphQLServer(responses map[string]any, operations ...*[]string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var req struct {
 			OperationName string `json:"operationName"`
 		}
 		_ = json.Unmarshal(body, &req)
+		if len(operations) > 0 {
+			*operations[0] = append(*operations[0], req.OperationName)
+		}
 
 		resp, ok := responses[req.OperationName]
 		if !ok {
@@ -69,35 +74,32 @@ func newTestApp(graphqlURL, roverURL string) *fiber.App {
 		JSONDecoder: sonic.Unmarshal,
 	})
 
-	cpapiClient := client.NewCPAPIClient(graphqlURL, nil, "")
-	roverClient := client.NewRoverClient(roverURL, "tardis")
+	token := accesstoken.NewStaticAccessToken("test-token")
+	cpapiClient := client.NewCPAPIClient(graphqlURL, token, "")
+	roverClient := client.NewRoverClient(roverURL, token, "")
 	ctrl := controller.New(cpapiClient, roverClient)
 	srv := server.New(ctrl, logr.Discard())
 
-	// In tests: mock JWT (no trusted issuers) + identity extraction + permissive team auth
-	teamAuth := mw.TeamAuthorization(logr.Discard())
-	api := app.Group("/organization/v1",
-		mw.JWTValidation(logr.Discard(), nil),
-		mw.IdentityExtraction(logr.Discard(), "test"),
-		mw.Obfuscate(),
-	)
-	srv.RegisterRoutes(api, teamAuth)
+	api := app.Group("/organization/v1")
+	family := cserver.JWTFamily(security.SecurityOpts{
+		Mode: security.ModeMock,
+		Log:  logr.Discard(),
+		BusinessContextOpts: []security.Option[*security.BusinessContextOpts]{
+			security.WithScopePrefix("tardis:"),
+		},
+		CheckAccessOpts: []security.Option[*security.CheckAccessOpts]{
+			security.WithPathParamKey("hub", "team"),
+			security.WithTemplates(server.SecurityTemplates),
+		},
+	})
+	srv.RegisterRoutes(api, family(api))
 
 	return app
 }
 
-// makeToken creates a mock JWT (unsigned) with the given claims for testing.
-// Uses the clientId format expected by IdentityExtraction: "group--team--user"
+// makeToken creates a mock JWT with common-server's standard claims.
 func makeToken(group, team string, scopes []string) string {
-	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
-	claims := map[string]any{
-		"clientId": group + "--" + team + "--test-user",
-		"scope":    strings.Join(scopes, " "),
-		"exp":      time.Now().Add(time.Hour).Unix(),
-	}
-	claimsJSON, _ := json.Marshal(claims)
-	payload := base64.RawURLEncoding.EncodeToString(claimsJSON)
-	return header + "." + payload + "."
+	return securitymock.NewMockAccessToken("test", group, team, scopes)
 }
 
 // makeTokenWithClaims creates a mock JWT with arbitrary claims.

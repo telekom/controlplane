@@ -725,7 +725,7 @@ var _ = Describe("Middleware integration", func() {
 		})
 		req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs", http.NoBody)
 		resp, err := executeRequest(app, req, tokenWithoutClientId)
-		expectStatus(resp, err, http.StatusUnauthorized)
+		expectStatus(resp, err, http.StatusForbidden)
 	})
 
 	It("should reject token with invalid clientId format", func() {
@@ -741,6 +741,6 @@ var _ = Describe("Middleware integration", func() {
 		})
 		req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs", http.NoBody)
 		resp, err := executeRequest(app, req, tokenBadClientId)
-		expectStatus(resp, err, http.StatusUnauthorized)
+		expectStatus(resp, err, http.StatusForbidden)
 	})
 })

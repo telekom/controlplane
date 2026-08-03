@@ -12,25 +12,35 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 )
 
-// RoverClient calls rover-server endpoints using service-level mock tokens.
-// It constructs the correct prefix and token from the caller's identity,
-// rather than forwarding external tokens.
+// RoverClient calls rover-server's internal (Kubernetes-authz) listener using
+// the projected ServiceAccount token for rover-server's audience. It never
+// forwards the external caller's token; the consumer identity travels as
+// explicit query params plus the X-Environment header.
 type RoverClient struct {
-	baseURL     string
-	scopePrefix string
-	httpClient  *http.Client
+	baseURL    string
+	httpClient *http.Client
 }
 
 // NewRoverClient creates a new rover-server client.
-// scopePrefix is the scope prefix rover-server expects (e.g. "tardis").
-func NewRoverClient(baseURL, scopePrefix string) *RoverClient {
+// tokenFilePath is the projected ServiceAccount token for rover-server's
+// audience; caFilePath is the CA bundle verifying rover-server's TLS cert.
+func NewRoverClient(baseURL string, token accesstoken.AccessToken, caFilePath string) *RoverClient {
+	httpClient := commonclient.NewBaseHttpClient(
+		commonclient.WithCaFilepath(caFilePath),
+		commonclient.WithClientName("rover"),
+		commonclient.WithClientTimeout(10*time.Second),
+	)
+	httpClient.Transport = &tokenTransport{
+		token: token,
+		base:  httpClient.Transport,
+	}
 	return &RoverClient{
-		baseURL:     baseURL,
-		scopePrefix: scopePrefix,
-		httpClient:  &http.Client{Timeout: 10 * time.Second},
+		baseURL:    baseURL,
+		httpClient: httpClient,
 	}
 }
 
@@ -49,7 +59,8 @@ type ResourceListResponse struct {
 }
 
 // GetResources calls GET /resources on rover-server for a specific team.
-// It constructs a mock admin token and passes explicit group+team params.
+// Authentication is the projected SA token; rover-server's internal listener
+// derives its admin business context from the X-Environment header.
 func (r *RoverClient) GetResources(ctx context.Context, environment, group, team string) (*ResourceListResponse, error) {
 	url := fmt.Sprintf("%s/resources?group=%s&team=%s", r.baseURL, group, team)
 
@@ -58,11 +69,7 @@ func (r *RoverClient) GetResources(ctx context.Context, environment, group, team
 		return nil, fmt.Errorf("building request: %w", err)
 	}
 
-	// TODO: This uses a mock token because rover-server currently runs in mock JWT mode.
-	// When rover-server gets real JWT validation, replace with a proper TokenSource
-	// (client_credentials grant) like the CP API transport uses.
-	token := mock.NewMockAccessToken(environment, "org-server", "service", []string{r.scopePrefix + ":admin:all"})
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-Environment", environment)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := r.httpClient.Do(req)

@@ -34,7 +34,7 @@ func GroupDetailToHubResponse(g *gql.GetGroupGroupsGroup) api.HubResponse {
 }
 
 // TeamToTeamResponse maps a genqlient Team node to the legacy TeamResponse.
-func TeamToTeamResponse(t *gql.ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam) api.TeamResponse {
+func TeamToTeamResponse(t *gql.ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam, includeSecrets bool) api.TeamResponse {
 	members := make([]api.TeamMember, 0, len(t.Members))
 	for _, m := range t.Members {
 		members = append(members, api.TeamMember{
@@ -52,7 +52,7 @@ func TeamToTeamResponse(t *gql.ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam
 		ClientId: clientID,
 		Status:   mapStatusPhase(t.StatusPhase, t.StatusMessage),
 	}
-	if t.TeamToken != nil {
+	if includeSecrets && t.TeamToken != nil {
 		resp.TeamToken = *t.TeamToken
 	}
 
@@ -60,7 +60,7 @@ func TeamToTeamResponse(t *gql.ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam
 }
 
 // GetTeamToTeamResponse maps a team from GetTeam query.
-func GetTeamToTeamResponse(t *gql.GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam) api.TeamResponse {
+func GetTeamToTeamResponse(t *gql.GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam, includeSecrets bool) api.TeamResponse {
 	members := make([]api.TeamMember, 0, len(t.Members))
 	for _, m := range t.Members {
 		members = append(members, api.TeamMember{
@@ -78,7 +78,7 @@ func GetTeamToTeamResponse(t *gql.GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTea
 		ClientId: clientID,
 		Status:   mapStatusPhase(t.StatusPhase, t.StatusMessage),
 	}
-	if t.TeamToken != nil {
+	if includeSecrets && t.TeamToken != nil {
 		resp.TeamToken = *t.TeamToken
 	}
 

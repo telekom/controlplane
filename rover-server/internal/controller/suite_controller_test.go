@@ -41,9 +41,13 @@ const (
 
 var ctx context.Context
 var cancel context.CancelFunc
-var teamToken string
-var groupToken string
-var teamNoResources string
+var teamReadToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:read"})
+var teamToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:all"})
+var groupReadToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:read"})
+var groupToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:all"})
+var adminReadToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:admin:read"})
+var adminToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:admin:all"})
+var teamNoResources = securitymock.NewMockAccessToken("poc", "eni", "nohyper", []string{"tardis:team:all"})
 var app *fiber.App
 var mockFileManager *filefake.MockFileManager
 var stores *store.Stores
@@ -104,10 +108,6 @@ var _ = BeforeSuite(func() {
 
 	// TODO Add more tests with teamToken in apispecification, eventspecification, rover
 	// Can be done once the issue with the team token is fixed in common-server
-	teamToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:all"})
-	groupToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:all"})
-	teamNoResources = securitymock.NewMockAccessToken("poc", "eni", "nohyper", []string{"tardis:team:all"})
-
 	// Create a new Fiber app
 	app = cserver.NewApp()
 

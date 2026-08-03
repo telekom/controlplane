@@ -5,80 +5,94 @@
 package config
 
 import (
-	"os"
-	"strings"
+	"fmt"
+
+	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
-// Config holds all configuration for the organization-server facade.
-type Config struct {
-	// Port is the HTTP listen port.
-	Port string
-
-	// CPAPIEndpoint is the GraphQL endpoint of controlplane-api.
-	CPAPIEndpoint string
-
-	// CPAPICaFilePath is the path to the CA bundle for verifying CP API's TLS cert.
-	// If empty, system default CAs are used (works when cert is publicly trusted).
-	CPAPICaFilePath string
-
-	// RoverEndpoint is the base URL of rover-server.
-	RoverEndpoint string
-
-	// RoverEnvironment is the fallback environment used when the token's issuer
-	// does not contain a realm name (e.g. in mock mode). In production, the environment
-	// is derived from the JWT issuer URL (realm name). Keep this configured as a
-	// safety net for local development and mock-mode operation.
-	RoverEnvironment string
-
-	// RoverScopePrefix is the scope prefix rover-server expects (e.g. "tardis").
-	RoverScopePrefix string
-
-	// TrustedIssuers is a comma-separated list of Keycloak issuer URLs.
-	// If empty, security runs in mock mode (tokens parsed but not verified).
-	TrustedIssuers []string
-
-	// OAuthTokenURL is the token endpoint for client_credentials grant.
-	OAuthTokenURL string
-
-	// OAuthClientID is the facade's OAuth client ID.
-	OAuthClientID string
-
-	// OAuthClientSecret is the facade's OAuth client secret.
-	OAuthClientSecret string
-
-	// LogLevel controls log verbosity ("debug" or "info").
-	LogLevel string
+// ServerConfig holds all configuration for the organization-server facade.
+type ServerConfig struct {
+	commonconfig.BaseConfig `mapstructure:",squash"`
+	CPAPI                   UpstreamConfig `mapstructure:"cpapi"`
+	Rover                   RoverConfig    `mapstructure:"rover"`
 }
 
-// Load reads configuration from environment variables with sensible defaults.
-func Load() *Config {
-	var issuers []string
-	if v := os.Getenv("SECURITY_TRUSTEDISSUERS"); v != "" {
-		for _, iss := range strings.Split(v, ",") {
-			if trimmed := strings.TrimSpace(iss); trimmed != "" {
-				issuers = append(issuers, trimmed)
-			}
-		}
-	}
-
-	return &Config{
-		Port:              envOrDefault("PORT", "8080"),
-		CPAPIEndpoint:     envOrDefault("CPAPI_ENDPOINT", "https://controlplane-api.controlplane-system.svc.cluster.local/graphql/query"),
-		CPAPICaFilePath:   envOrDefault("CPAPI_CA_FILE", "/var/run/secrets/trust-bundle/trust-bundle.pem"),
-		RoverEndpoint:     envOrDefault("ROVER_ENDPOINT", "http://rover-server.controlplane-system.svc.cluster.local"),
-		RoverEnvironment:  envOrDefault("ROVER_ENVIRONMENT", "controlplane"),
-		RoverScopePrefix:  envOrDefault("ROVER_SCOPE_PREFIX", "tardis"),
-		TrustedIssuers:    issuers,
-		OAuthTokenURL:     os.Getenv("OAUTH_TOKEN_URL"),
-		OAuthClientID:     os.Getenv("OAUTH_CLIENT_ID"),
-		OAuthClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"),
-		LogLevel:          envOrDefault("LOG_LEVEL", "info"),
-	}
+// UpstreamConfig describes an in-cluster upstream reached on its internal
+// listener with a projected ServiceAccount token.
+type UpstreamConfig struct {
+	// Endpoint is the upstream's internal (k8s-authz) URL.
+	Endpoint string `mapstructure:"endpoint"`
+	// TokenFilePath is the projected ServiceAccount token for that upstream's
+	// audience. The kubelet rotates the file; the client re-reads it on expiry.
+	TokenFilePath string `mapstructure:"tokenFilePath"`
+	// CaFilePath is the CA bundle used to verify the upstream's TLS cert.
+	// Empty means system default CAs.
+	CaFilePath string `mapstructure:"caFilePath"`
 }
 
-func envOrDefault(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+// RoverConfig points at the rover-server upstream.
+type RoverConfig struct {
+	UpstreamConfig `mapstructure:",squash"`
+	// Environment is the fallback environment used when the token's issuer does
+	// not contain a realm name (e.g. in mock mode). In production the
+	// environment is derived from the JWT issuer URL (realm name).
+	Environment string `mapstructure:"environment"`
+}
+
+// LoadConfig loads the server configuration from an optional YAML file,
+// overlaid with environment variables, on top of DefaultConfig, then validates
+// the listener config fail-closed.
+func LoadConfig(path string) *ServerConfig {
+	cfg := commonconfig.LoadOrDie(path, DefaultConfig())
+	if err := cfg.Listeners.Validate(); err != nil {
+		panic(fmt.Errorf("validating listeners config: %w", err))
 	}
-	return fallback
+	return cfg
+}
+
+func DefaultConfig() *ServerConfig {
+	return &ServerConfig{
+		BaseConfig: commonconfig.BaseConfig{
+			Log: commonconfig.LogConfig{
+				Encoding: "json",
+				Level:    "info",
+			},
+			// Default TLS cert/key paths. A tls block in the config file
+			// overrides these; empty cert/key downgrades to plain HTTP (dev only).
+			TLS: &cserver.TLSFileConfig{
+				Cert: "/etc/tls/tls.crt",
+				Key:  "/etc/tls/tls.key",
+			},
+			// ponytail: external JWT listener only. An internal k8s listener
+			// would bypass the facade's IdentityExtraction, leaving handlers
+			// without a BusinessContext; add one when in-cluster callers need it.
+			Listeners: commonconfig.ListenersConfig{
+				External: &cserver.ListenerConfig{
+					Address: ":8443",
+					JWT: &security.JWTConfig{
+						Mode:           security.ModeJWT,
+						TrustedIssuers: []string{},
+						ScopePrefix:    "tardis:",
+					},
+				},
+			},
+		},
+		CPAPI: UpstreamConfig{ // #nosec G101 -- path to projected token, not a credential
+			// Internal (k8s-authz) listener of controlplane-api.
+			Endpoint:      "https://controlplane-api.controlplane-system.svc.cluster.local:9443/graphql/query",
+			TokenFilePath: "/var/run/secrets/cpapi/token",
+			CaFilePath:    "/var/run/secrets/trust-bundle/trust-bundle.pem",
+		},
+		Rover: RoverConfig{
+			UpstreamConfig: UpstreamConfig{ // #nosec G101 -- path to projected token, not a credential
+				// Internal (k8s-authz) listener of rover-server.
+				Endpoint:      "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
+				TokenFilePath: "/var/run/secrets/rover/token",
+				CaFilePath:    "/var/run/secrets/trust-bundle/trust-bundle.pem",
+			},
+			Environment: "controlplane",
+		},
+	}
 }

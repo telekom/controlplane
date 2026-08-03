@@ -5,20 +5,37 @@
 package client
 
 import (
-	"context"
+	"fmt"
+	"net/http"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 )
 
-// NewTokenSource creates an oauth2.TokenSource that fetches tokens from the
-// given OAuth token endpoint using client_credentials grant. Token caching and
-// automatic refresh are handled by the underlying oauth2 library.
-func NewTokenSource(tokenURL, clientID, clientSecret string) oauth2.TokenSource {
-	cfg := &clientcredentials.Config{
-		TokenURL:     tokenURL,
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+// tokenTransport injects a projected ServiceAccount token as the bearer
+// credential on every request. The kubelet rotates the token file; the
+// FileAccessToken re-reads it when the cached token nears expiry.
+type tokenTransport struct {
+	token accesstoken.AccessToken
+	base  http.RoundTripper
+	// decorate runs after the token header is set, so a caller can add its own
+	// per-request headers (e.g. forwarded identity). May be nil.
+	decorate func(*http.Request)
+}
+
+func (t *tokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.token != nil {
+		tok, err := t.token.Read()
+		if err != nil {
+			return nil, fmt.Errorf("reading access token: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+tok)
 	}
-	return cfg.TokenSource(context.Background())
+	if t.decorate != nil {
+		t.decorate(req)
+	}
+	base := t.base
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return base.RoundTrip(req)
 }

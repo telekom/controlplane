@@ -7,9 +7,11 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Khan/genqlient/graphql"
 
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/organization-server/internal/api"
 	"github.com/telekom/controlplane/organization-server/internal/client"
 	gql "github.com/telekom/controlplane/organization-server/internal/graphql"
@@ -245,7 +247,10 @@ func (ctrl *Controller) ListTeams(ctx context.Context, hubName string) ([]api.Te
 
 	teams := make([]api.TeamResponse, 0, len(resp.Teams.Edges))
 	for i := range resp.Teams.Edges {
-		teams = append(teams, mapper.TeamToTeamResponse(resp.Teams.Edges[i].Node))
+		team := mapper.TeamToTeamResponse(resp.Teams.Edges[i].Node, !security.IsObfuscated(ctx))
+		// CP API exposes the canonical Team CRD name (<group>--<team>); the legacy API exposes the short name.
+		team.Name = strings.TrimPrefix(team.Name, hubName+"--")
+		teams = append(teams, team)
 	}
 	return teams, nil
 }
@@ -264,7 +269,7 @@ func (ctrl *Controller) GetTeam(ctx context.Context, hubName, teamName string) (
 		return nil, nil
 	}
 
-	result := mapper.GetTeamToTeamResponse(resp.Teams.Edges[0].Node)
+	result := mapper.GetTeamToTeamResponse(resp.Teams.Edges[0].Node, !security.IsObfuscated(ctx))
 	return &result, nil
 }
 

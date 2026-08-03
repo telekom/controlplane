@@ -34,7 +34,7 @@ vet: ## Run go vet against code.
 ##@ Build
 
 .PHONY: build
-build: fmt vet ## Run go build against code.
+build: generate fmt vet ## Run go build against code.
 	go build -ldflags="-X 'main.version=$(VERSION)' -X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.goVersion=$(shell go version)'" -trimpath -mod=readonly -o bin/organization-server cmd/main.go
 
 TEST_PACKAGES := $(shell go list ./internal/... 2>/dev/null || echo "./internal/...")

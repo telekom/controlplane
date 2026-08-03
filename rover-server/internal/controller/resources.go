@@ -7,7 +7,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -45,13 +44,7 @@ var resourceKinds = []resourceKind{
 }
 
 func (r *ResourcesControllerImpl) GetAll(ctx context.Context, params api.GetAllResourcesParams) (*api.ResourceListResponse, error) {
-	if params.Group == "" || params.Team == "" {
-		return nil, problems.BadRequest("both 'group' and 'team' query parameters must be provided")
-	}
-
-	tokenPrefix := security.PrefixFromContext(ctx)
-
-	effectivePrefix, err := buildTeamPrefix(tokenPrefix, params.Group, params.Team)
+	_, _, effectivePrefix, err := resolveResourceTeam(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -88,26 +81,40 @@ func (r *ResourcesControllerImpl) GetAll(ctx context.Context, params api.GetAllR
 	}, nil
 }
 
-// buildTeamPrefix constructs the datastore prefix for the given group and team,
-// and validates the caller's token has access to it.
-// Token prefix examples: admin="env--", group="env--group--", team="env--group--team/"
-// Effective prefix is always team-scoped: "env--group--team/"
-func buildTeamPrefix(tokenPrefix string, group, team string) (string, error) {
-	// Extract environment from the token prefix (everything before the first "--")
-	env, _, ok := strings.Cut(tokenPrefix, "--")
-	if !ok || env == "" {
-		return "", problems.Forbidden("access denied", "unable to determine environment from token")
+func resolveResourceTeam(ctx context.Context, params api.GetAllResourcesParams) (string, string, string, error) {
+	bCtx, ok := security.FromContext(ctx)
+	if !ok {
+		return "", "", "", problems.InternalServerError("Invalid Context", "Security context not found")
 	}
 
-	// Build the full team-level prefix
-	effectivePrefix := fmt.Sprintf("%s--%s--%s/", env, group, team)
-
-	// Verify the requested scope is within the caller's access scope
-	if !strings.HasPrefix(effectivePrefix, tokenPrefix) {
-		return "", problems.Forbidden("access denied", "requested group/team is outside your access scope")
+	group, team := params.Group, params.Team
+	if (group == "") != (team == "") {
+		return "", "", "", problems.BadRequest("both 'group' and 'team' query parameters must be provided together")
 	}
 
-	return effectivePrefix, nil
+	switch bCtx.ClientType {
+	case security.ClientTypeTeam:
+		if group == "" {
+			group, team = bCtx.Group, bCtx.Team
+		} else if group != bCtx.Group || team != bCtx.Team {
+			return "", "", "", problems.Forbidden("access denied", "requested group/team is outside your access scope")
+		}
+	case security.ClientTypeGroup:
+		if group == "" {
+			return "", "", "", problems.BadRequest("both 'group' and 'team' query parameters must be provided")
+		}
+		if group != bCtx.Group {
+			return "", "", "", problems.Forbidden("access denied", "requested group/team is outside your access scope")
+		}
+	case security.ClientTypeAdmin:
+		if group == "" {
+			return "", "", "", problems.BadRequest("both 'group' and 'team' query parameters must be provided")
+		}
+	default:
+		return "", "", "", problems.Forbidden("access denied", "unsupported client type")
+	}
+
+	return group, team, fmt.Sprintf("%s--%s--%s/", bCtx.Environment, group, team), nil
 }
 
 func collectFromStore[T store.Object](

@@ -1695,24 +1695,22 @@ paths:
         - Resources
       summary: List all resources for a team
       description: >-
-        Returns an aggregated list of all resource references (Rovers,
-        ApiSpecifications, EventSpecifications, ApiRoadmaps, ApiChangelogs)
-        belonging to a specific team. Both group and team parameters are required.
-        The caller's token must have access to the requested group/team combination.
+        Returns one aggregate page of Rover, ApiSpecification, EventSpecification,
+        Roadmap, ApiChangelog, and McpSpecification references for exactly one team.
+        Team tokens may omit group and team; group and admin callers must provide both.
+        The cursor is opaque and the limit applies across all resource kinds.
       operationId: getAllResources
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
         - name: group
           in: query
-          description: The group (hub) name that owns the team.
-          required: true
+          required: false
           schema:
             type: string
         - name: team
           in: query
-          description: The team name whose resources to list.
-          required: true
+          required: false
           schema:
             type: string
       responses:

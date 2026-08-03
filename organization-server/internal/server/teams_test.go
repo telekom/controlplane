@@ -20,9 +20,10 @@ import (
 
 var _ = Describe("Team Handlers", func() {
 	var (
-		app        *fiber.App
-		adminToken string
-		obfToken   string
+		app           *fiber.App
+		adminToken    string
+		obfToken      string
+		gqlOperations []string
 	)
 
 	readyPhase := "READY"
@@ -30,6 +31,7 @@ var _ = Describe("Team Handlers", func() {
 	now := time.Now().UTC().Truncate(time.Second)
 
 	BeforeEach(func() {
+		gqlOperations = nil
 		gqlServer := mockGraphQLServer(map[string]any{
 			"GetGroup": map[string]any{
 				"groups": []map[string]any{
@@ -48,7 +50,7 @@ var _ = Describe("Team Handlers", func() {
 						{
 							"node": map[string]any{
 								"id":             "10",
-								"name":           "hyperion",
+								"name":           "eni--hyperion",
 								"email":          "hyperion@telekom.de",
 								"createdAt":      now.Format(time.RFC3339),
 								"lastModifiedAt": now.Format(time.RFC3339),
@@ -58,6 +60,19 @@ var _ = Describe("Team Handlers", func() {
 								"members": []map[string]any{
 									{"name": "Alice", "email": "alice@telekom.de"},
 								},
+							},
+						},
+						{
+							"node": map[string]any{
+								"id":             "11",
+								"name":           "eni--other-team",
+								"email":          "other@telekom.de",
+								"createdAt":      now.Format(time.RFC3339),
+								"lastModifiedAt": now.Format(time.RFC3339),
+								"statusPhase":    &readyPhase,
+								"teamToken":      &teamToken,
+								"group":          map[string]any{"name": "eni"},
+								"members":        []any{},
 							},
 						},
 					},
@@ -137,7 +152,7 @@ var _ = Describe("Team Handlers", func() {
 					"errors": []any{},
 				},
 			},
-		})
+		}, &gqlOperations)
 		DeferCleanup(gqlServer.Close)
 
 		roverServer := mockRoverServer(map[string]string{
@@ -155,9 +170,26 @@ var _ = Describe("Team Handlers", func() {
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			items := expectJSONArray(resp, err)
-			Expect(items).To(HaveLen(1))
+			Expect(items).To(HaveLen(2))
 			team := items[0].(map[string]any)
 			Expect(team["name"]).To(Equal("hyperion"))
+		})
+
+		It("filters team clients before pagination", func() {
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams?limit=1", http.NoBody)
+			resp, err := executeRequest(app, req, makeToken("eni", "hyperion", []string{"tardis:team:read"}))
+			items := expectJSONArray(resp, err)
+			Expect(items).To(HaveLen(1))
+			Expect(items[0].(map[string]any)["name"]).To(Equal("hyperion"))
+			Expect(resp.Header.Get("X-Total-Count")).To(Equal("1"))
+			Expect(resp.Header.Get("X-Result-Count")).To(Equal("1"))
+		})
+
+		It("allows legacy hub:read", func() {
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams", http.NoBody)
+			resp, err := executeRequest(app, req, makeToken("eni", "hyperion", []string{"tardis:hub:read"}))
+			items := expectJSONArray(resp, err)
+			Expect(items).To(HaveLen(2))
 		})
 	})
 
@@ -228,15 +260,11 @@ var _ = Describe("Team Handlers", func() {
 			Expect(result["teamToken"]).To(Equal("new-rotated-token"))
 		})
 
-		It("should strip rotated token for obfuscated scope", func() {
+		It("should reject token rotation for obfuscated scope", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
 			resp, err := executeRequest(app, req, obfToken)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			body, _ := io.ReadAll(resp.Body)
-			var result map[string]any
-			Expect(json.Unmarshal(body, &result)).To(Succeed())
-			Expect(result).NotTo(HaveKey("teamToken"))
+			expectStatus(resp, err, http.StatusForbidden)
+			Expect(gqlOperations).NotTo(ContainElement("RotateTeamToken"))
 		})
 	})
 
@@ -250,6 +278,18 @@ var _ = Describe("Team Handlers", func() {
 	})
 
 	Describe("Authorization", func() {
+		DescribeTable("team creation requires admin:all",
+			func(scope string) {
+				body := `{"name":"newteam","email":"new@telekom.de","members":[]}`
+				req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/eni/teams", strings.NewReader(body))
+				resp, err := executeRequest(app, req, makeToken("eni", "hyperion", []string{scope}))
+				expectStatus(resp, err, http.StatusForbidden)
+			},
+			Entry("team client", "tardis:team:all"),
+			Entry("group client", "tardis:group:all"),
+			Entry("read-only admin client", "tardis:admin:read"),
+		)
+
 		It("should reject cross-team access for non-admin tokens", func() {
 			teamToken := makeToken("eni", "other-team", []string{"tardis:team:all"})
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
