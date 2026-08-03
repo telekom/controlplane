@@ -98,6 +98,7 @@ Domain operators are the core building blocks of the Control Plane. Each operato
 | [Identity](../architecture/identity.mdx) | Manages identity providers, realms, and service-account clients through Keycloak. Provides authentication and authorization for all platform interactions. |
 | [Event](../architecture/event.mdx) | Handles event publishing and subscribing, including cross-zone meshing. An optional feature that bridges user configuration (Rover) with the PubSub runtime. |
 | [PubSub](../architecture/pubsub.mdx) | The runtime configuration layer for publish/subscribe messaging via Horizon. Managed exclusively by the Event domain. |
+| [SFTP](../architecture/sftp.mdx) | Manages SFTP service instances and SSH public keys, synchronizing Kubernetes resources with the external SFTP service. |
 
 ## Services
 

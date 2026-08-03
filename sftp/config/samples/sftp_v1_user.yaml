@@ -1,0 +1,19 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: sftp.cp.ei.telekom.de/v1
+kind: User
+metadata:
+  labels:
+    cp.ei.telekom.de/environment: poc
+    cp.ei.telekom.de/instance.name: example
+    cp.ei.telekom.de/instance.namespace: default
+  namespace: default
+  name: example
+spec:
+  instanceRef:
+    name: example
+    namespace: default
+  sshPublicKeys:
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0Z7+6k5g8J9z4F5G1lY...
