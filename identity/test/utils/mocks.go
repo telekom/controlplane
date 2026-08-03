@@ -50,7 +50,7 @@ func ConfigureKeycloakClientMock(mockedClient *keycloakclient.MockKeycloakClient
 	// how controller-runtime wraps the reconciler context.
 
 	realmMatcher := mock.MatchedBy(func(s string) bool {
-		return s == Realm || s == RealmForClient || s == "deletion-guard-realm"
+		return s == Realm || s == RealmForClient || s == "deletion-guard-realm" || s == "idp-deletion-guard-realm"
 	})
 
 	mockedClient.EXPECT().GetRealmWithResponse(
