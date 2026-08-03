@@ -8,6 +8,9 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -15,8 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 var _ handler.Handler[*roverv1.FileSpecification] = (*FileSpecificationHandler)(nil)

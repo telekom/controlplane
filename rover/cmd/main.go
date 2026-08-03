@@ -71,7 +71,7 @@ func init() {
 	if cconfig.FeatureFile.IsEnabled() {
 		utilruntime.Must(filev1.AddToScheme(scheme))
 	}
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 }
 
 func main() {

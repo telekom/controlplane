@@ -2,23 +2,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:dupl // Single-resource controller scaffolds are intentionally kept parallel for clarity.
 package controller
 
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	filespec_handler "github.com/telekom/controlplane/rover/internal/handler/filespecification"
-
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
+	filespec_handler "github.com/telekom/controlplane/rover/internal/handler/filespecification"
 )
 
 // FileSpecificationReconciler reconciles a FileSpecification object

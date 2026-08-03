@@ -8,6 +8,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -15,15 +19,12 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // HandleExposure creates or updates a file-domain FileExposure owned by the Rover.
 func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover, exp *roverv1.FileExposure) error {
-	log := log.FromContext(ctx)
-	log.V(1).Info("Handle FileExposure", "fileType", exp.FileType)
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Handle FileExposure", "fileType", exp.FileType)
 
 	name := MakeName(exp.FileType, owner.Name)
 

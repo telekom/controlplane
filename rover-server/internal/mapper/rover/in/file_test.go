@@ -51,6 +51,36 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 
 			Expect(output.Visibility).To(BeEmpty())
 		})
+
+		It("must map ZONE visibility to the CRD Zone visibility", func() {
+			input := api.FileExposure{
+				Type:       "file",
+				FileType:   "demo-sftp-spec-v1",
+				Visibility: api.ZONE,
+				PublicKeys: []api.PublicKey{
+					{Label: "provider-key", Key: "ssh-ed25519 AAAA1"},
+				},
+			}
+
+			output := mapFileExposure(input)
+
+			Expect(output.Visibility).To(Equal(roverv1.VisibilityZone))
+		})
+
+		It("must map ENTERPRISE visibility to the CRD Enterprise visibility", func() {
+			input := api.FileExposure{
+				Type:       "file",
+				FileType:   "demo-sftp-spec-v1",
+				Visibility: api.ENTERPRISE,
+				PublicKeys: []api.PublicKey{
+					{Label: "provider-key", Key: "ssh-ed25519 AAAA1"},
+				},
+			}
+
+			output := mapFileExposure(input)
+
+			Expect(output.Visibility).To(Equal(roverv1.VisibilityEnterprise))
+		})
 	})
 
 	Context("mapFileSubscription", func() {

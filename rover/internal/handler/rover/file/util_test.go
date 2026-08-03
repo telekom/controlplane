@@ -38,6 +38,12 @@ func TestMapPublicKeys(t *testing.T) {
 		}
 	})
 
+	t.Run("empty slice yields nil", func(t *testing.T) {
+		if got := mapPublicKeys([]roverv1.PublicKey{}); got != nil {
+			t.Errorf("mapPublicKeys([]) = %v, want nil", got)
+		}
+	})
+
 	t.Run("maps label and key preserving order", func(t *testing.T) {
 		in := []roverv1.PublicKey{
 			{Label: "provider-key", Key: "ssh-ed25519 AAAA"},

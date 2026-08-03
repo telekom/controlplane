@@ -39,7 +39,7 @@ func (v *FileSpecificationCustomValidator) ValidateCreate(ctx context.Context, f
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type FileSpecification.
-func (v *FileSpecificationCustomValidator) ValidateUpdate(ctx context.Context, _ *roverv1.FileSpecification, filespecification *roverv1.FileSpecification) (admission.Warnings, error) {
+func (v *FileSpecificationCustomValidator) ValidateUpdate(ctx context.Context, _, filespecification *roverv1.FileSpecification) (admission.Warnings, error) {
 	return v.ValidateCreateOrUpdate(ctx, filespecification)
 }
 
@@ -49,7 +49,6 @@ func (v *FileSpecificationCustomValidator) ValidateDelete(ctx context.Context, f
 }
 
 func (v *FileSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Context, filespecification *roverv1.FileSpecification) (admission.Warnings, error) {
-
 	if controller.IsBeingDeleted(filespecification) {
 		return nil, nil
 	}

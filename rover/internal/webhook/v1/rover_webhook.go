@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/ssh"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -29,8 +30,6 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"golang.org/x/crypto/ssh"
-
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -427,6 +426,8 @@ func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bo
 }
 
 // MustNotHaveDuplicates checks if there are no duplicates in the subscriptions and exposures
+//
+//nolint:dupl // subscription and exposure loops mirror each other but operate on different types
 func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subscription, exps []roverv1.Exposure) error {
 	if len(subs) == 0 && len(exps) == 0 {
 		return nil // No subscriptions or exposures, no duplicates to check

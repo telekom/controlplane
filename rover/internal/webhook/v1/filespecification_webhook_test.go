@@ -13,18 +13,18 @@ import (
 	"crypto/rsa"
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("File Type (SFTP) Validation", func() {
-
 	newValErr := func() *cerrors.ValidationError {
 		return cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), NewRover(testZone))
 	}
@@ -156,6 +156,55 @@ var _ = Describe("File Type (SFTP) Validation", func() {
 			CreateZone(ctx, cetus)
 			rover := NewRover(cetus)
 			rover.Spec.Exposures = []roverv1.Exposure{fileExposure()}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("file validation via ValidateCreate (Rover webhook dispatch)", func() {
+		var validator RoverValidator
+
+		BeforeEach(func() {
+			validator = RoverValidator{client: k8sClient}
+		})
+
+		validKey := func(label string) roverv1.PublicKey {
+			return roverv1.PublicKey{Label: label, Key: newED25519Key()}
+		}
+
+		It("should reject a file exposure that has no public keys", func() {
+			rover := NewRover(testZone)
+			rover.Spec.Exposures = []roverv1.Exposure{
+				{File: &roverv1.FileExposure{FileType: "demo-sftp-spec-v1"}},
+			}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			assertValidationFailedWith(warnings, err, "at least one public key must be specified")
+		})
+
+		It("should reject a file subscription that has no public keys", func() {
+			rover := NewRover(testZone)
+			rover.Spec.Subscriptions = []roverv1.Subscription{
+				{File: &roverv1.FileSubscription{FileType: "demo-sftp-spec-v1"}},
+			}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			assertValidationFailedWith(warnings, err, "at least one public key must be specified")
+		})
+
+		It("should accept a file exposure and subscription that share the same fileType", func() {
+			rover := NewRover(testZone)
+			rover.Spec.Exposures = []roverv1.Exposure{
+				{File: &roverv1.FileExposure{
+					FileType:   "demo-sftp-spec-v1",
+					PublicKeys: []roverv1.PublicKey{validKey("provider-key")},
+				}},
+			}
+			rover.Spec.Subscriptions = []roverv1.Subscription{
+				{File: &roverv1.FileSubscription{
+					FileType:   "demo-sftp-spec-v1",
+					PublicKeys: []roverv1.PublicKey{validKey("consumer-key")},
+				}},
+			}
 			warnings, err := validator.ValidateCreate(ctx, rover)
 			Expect(warnings).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())

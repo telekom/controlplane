@@ -5,10 +5,9 @@
 package file
 
 import (
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 )
 
 // MakeName generates a deterministic resource name for a file exposure or
