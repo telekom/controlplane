@@ -1473,3 +1473,36 @@
  "type": "Forbidden"
 }
 ---
+
+[Rover Controller Update rover resource should apply defaults before the controller persists the rover - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked"
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---

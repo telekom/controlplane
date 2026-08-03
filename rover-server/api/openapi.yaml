@@ -2164,6 +2164,7 @@ components:
         - SIMPLE
         - FOUREYES
       type: string
+      default: SIMPLE
     Authentication:
       type: object
       properties:
@@ -2175,7 +2176,13 @@ components:
             - NONE
             - POST
             - BASIC
-          description: Configures client authentication method, according to RFC 6749.
+            - body
+            - basic
+          default: basic
+          description: >-
+            Configures client authentication according to RFC 6749. With basic
+            (default), credentials are sent in the HTTP Authorization header;
+            with body, credentials are sent in the request body.
         redirectUrls:
           type: array
           items:
@@ -2814,6 +2821,7 @@ components:
         - WORLD
         - ZONE
       type: string
+      default: ENTERPRISE
     ApiSpecification:
       type: object
       required:

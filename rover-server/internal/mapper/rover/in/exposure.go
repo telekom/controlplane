@@ -105,6 +105,8 @@ func mapApiExposure(in api.ApiExposure) *roverv1.ApiExposure {
 
 func toRoverVisibility(visibility api.Visibility) roverv1.Visibility {
 	switch visibility {
+	case "":
+		return roverv1.VisibilityEnterprise
 	case api.WORLD:
 		return roverv1.VisibilityWorld
 	case api.ZONE:
@@ -118,6 +120,8 @@ func toRoverVisibility(visibility api.Visibility) roverv1.Visibility {
 
 func toRoverApprovalStrategy(approval api.ApprovalStrategy) roverv1.ApprovalStrategy {
 	switch approval {
+	case "":
+		return roverv1.ApprovalStrategySimple
 	case api.AUTO:
 		return roverv1.ApprovalStrategyAuto
 	case api.SIMPLE:
