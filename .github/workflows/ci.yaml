@@ -229,7 +229,8 @@ jobs:
       # kept in sync with (goreleaser's `kos` pipe can't read repo vars, so
       # that file hardcodes the same values - see the comment there).
       # TODO: create vars.REGISTRY_HOST, vars.REGISTRY_ROVERCTL_REPO,
-      # and vars.ROVERCTL_BASE_IMAGE_TAG repository variables.
+      # vars.REGISTRY_ROVERCTL_BASE_REPO, and vars.ROVERCTL_BASE_IMAGE_TAG
+      # repository variables.
       #
       # container_registry is the registry HOST ONLY (for docker login /
       # Trivy auth). image_repository is a full override of the final image
@@ -238,9 +239,14 @@ jobs:
       # otherwise derives automatically - without this override, that
       # convention's org/repo/module suffix would get appended a second time
       # on top of the already-complete Artifactory path.
+      #
+      # NOTE: the base image lives in a DIFFERENT Artifactory repo/path
+      # (vars.REGISTRY_ROVERCTL_BASE_REPO) than the final rover-ctl image
+      # (vars.REGISTRY_ROVERCTL_REPO) - they are unrelated paths, not a
+      # shared prefix with a suffix appended.
       container_registry: ${{ vars.REGISTRY_HOST }}
       image_repository: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}
-      base_image: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}/rover-ctl-base:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
+      base_image: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
     secrets:
       registry_username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
       registry_password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret

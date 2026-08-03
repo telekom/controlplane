@@ -518,7 +518,7 @@ kos:
       # which .github/workflows/ci.yaml and .github/workflows/rover-ctl-base-image.yaml
       # derive dynamically from those repo variables.
       # TODO: confirm real Artifactory host/path if different.
-      - artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl
+      - artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl/dcp
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"
@@ -541,10 +541,15 @@ kos:
     # `{{ .Env.X }}`) or repo variables (`${{ vars.X }}`) - all tested and
     # confirmed non-functional. The value must be a literal, static image
     # reference, kept identical to vars.REGISTRY_HOST + "/" +
-    # vars.REGISTRY_ROVERCTL_REPO + "/rover-ctl-base:" +
-    # vars.ROVERCTL_BASE_IMAGE_TAG, which
-    # .github/workflows/ci.yaml and .github/workflows/rover-ctl-base-image.yaml
+    # vars.REGISTRY_ROVERCTL_BASE_REPO + ":" + vars.ROVERCTL_BASE_IMAGE_TAG,
+    # which .github/workflows/ci.yaml and .github/workflows/rover-ctl-base-image.yaml
     # derive dynamically from those repo variables.
+    #
+    # NOTE: the base image lives in a DIFFERENT Artifactory repo/path than
+    # the final rover-ctl image above (tardis/infra/build/... vs.
+    # tardis/customer/...) - they are not related by a shared path prefix,
+    # so this is a fully separate literal value, not a suffix of the
+    # `repositories:` value above.
     #
     # TODO: replace with the real internal Artifactory Docker registry
     # path once available (placeholder below).
@@ -552,7 +557,7 @@ kos:
     # Published to an internal Artifactory Docker registry (not GHCR) because
     # it contains GPL-3.0-or-later (bash, readline) and GPL-2.0-only
     # components inherited from its Alpine base.
-    base_image: artifactory.devops.telekom.de/tardis-oci-local/tardis/customer/roverctl/rover-ctl-base:bash-jq-yq-v1
+    base_image: artifactory.devops.telekom.de/tardis-oci-local/tardis/infra/build/controlplane/roverctl/rover-ctl-base:bash-jq-yq-v1
     user: 65532:65532
     tags:
       - latest

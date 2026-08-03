@@ -26,15 +26,19 @@ name: "Rover-CTL Base Image"
 # (bash, readline) and GPL-2.0-only (Alpine base) components.
 #
 # NOTE: the registry host/path below MUST be kept identical to the
-# `base_image`/`repositories` values on the rover-ctl entry in
-# .goreleaser.yaml and to ci.yaml's `container_registry`/`base_image` inputs.
-# Sourced from repo variables here (goreleaser's `kos` pipe does not support
-# templating `base_image`/`repositories`, so .goreleaser.yaml must hardcode
-# the same values manually - see the comment there for the variable names to
-# keep in sync):
-#   - vars.REGISTRY_HOST        (e.g. artifactory.devops.telekom.de)
-#   - vars.REGISTRY_ROVERCTL_REPO (e.g. tardis-oci-local/tardis/customer/roverctl)
-#   - vars.ROVERCTL_BASE_IMAGE_TAG (e.g. bash-jq-yq-v1)
+# `base_image` value on the rover-ctl entry in .goreleaser.yaml and to
+# ci.yaml's `base_image` input. Sourced from repo variables here
+# (goreleaser's `kos` pipe does not support templating `base_image`, so
+# .goreleaser.yaml must hardcode the same value manually - see the comment
+# there for the variable names to keep in sync):
+#   - vars.REGISTRY_HOST             (e.g. artifactory.devops.telekom.de)
+#   - vars.REGISTRY_ROVERCTL_BASE_REPO (e.g. tardis-oci-local/tardis/infra/build/controlplane/roverctl/rover-ctl-base)
+#   - vars.ROVERCTL_BASE_IMAGE_TAG    (e.g. bash-jq-yq-v1)
+#
+# NOTE: this is a DIFFERENT Artifactory repo/path than the final rover-ctl
+# image published by release.yaml's goreleaser step (vars.REGISTRY_ROVERCTL_REPO)
+# - the base image and final image live in unrelated repos, not a shared
+# path prefix.
 # TODO: create these repository variables (Settings > Secrets and variables
 # > Actions > Variables) with the real Artifactory registry host/path.
 
@@ -74,5 +78,5 @@ jobs:
           file: rover-ctl/Dockerfile.base
           push: true
           tags: |
-            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}/rover-ctl-base:latest
-            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}/rover-ctl-base:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:latest
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
