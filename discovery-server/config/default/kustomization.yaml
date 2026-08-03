@@ -32,8 +32,8 @@ configMapGenerator:
     options:
       disableNameSuffixHash: true
     literals:
-      - SECURITY_TRUSTEDISSUERS=""
-      - SECURITY_LMS_BASEPATH=""
+      - LISTENERS_EXTERNAL_JWT_TRUSTEDISSUERS=""
+      - LISTENERS_EXTERNAL_JWT_LMS_BASEPATH=""
       - DATABASE_FILEPATH=""
       - INFORMER_DISABLECACHE=true
       - SECRETMANAGER_ENABLED=true

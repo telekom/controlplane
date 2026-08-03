@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package ai_test
+package agentic_test
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/ai"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/agentic"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -79,8 +79,8 @@ var _ = Describe("HandleExposure", func() {
 		owner = createTestOwner()
 	})
 
-	It("should create an McpExposure with correct spec", func() {
-		exposure := &roverv1.AiExposure{
+	It("should create an AgenticExposure with correct spec", func() {
+		exposure := &roverv1.AgenticExposure{
 			BasePath:   "/mcp/weather/v1",
 			Visibility: roverv1.VisibilityWorld,
 			Variant:    "MCP",
@@ -92,7 +92,7 @@ var _ = Describe("HandleExposure", func() {
 			},
 		}
 
-		var capturedExposure *agenticv1.McpExposure
+		var capturedExposure *agenticv1.AgenticExposure
 
 		// Mock Get for FindTeamForObject — return not found (team lookup is best-effort)
 		fakeClient.EXPECT().
@@ -102,20 +102,20 @@ var _ = Describe("HandleExposure", func() {
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedExposure = obj.(*agenticv1.McpExposure)
+				capturedExposure = obj.(*agenticv1.AgenticExposure)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure).ToNot(BeNil())
 		Expect(capturedExposure.Spec.BasePath).To(Equal("/mcp/weather/v1"))
 		Expect(capturedExposure.Spec.Visibility).To(Equal(agenticv1.Visibility("World")))
-		Expect(capturedExposure.Spec.Variant).To(Equal(agenticv1.McpVariant("MCP")))
+		Expect(capturedExposure.Spec.Variant).To(Equal(agenticv1.AgenticVariant("MCP")))
 		Expect(capturedExposure.Spec.Upstreams).To(HaveLen(1))
 		Expect(capturedExposure.Spec.Upstreams[0].Url).To(Equal("http://backend:8080"))
 		Expect(capturedExposure.Spec.Upstreams[0].Weight).To(Equal(100))
@@ -126,7 +126,7 @@ var _ = Describe("HandleExposure", func() {
 	})
 
 	It("should set correct labels", func() {
-		exposure := &roverv1.AiExposure{
+		exposure := &roverv1.AgenticExposure{
 			BasePath:   "/mcp/weather/v1",
 			Visibility: roverv1.VisibilityWorld,
 			Variant:    "MCP",
@@ -134,7 +134,7 @@ var _ = Describe("HandleExposure", func() {
 			Approval:   roverv1.Approval{Strategy: "AUTO"},
 		}
 
-		var capturedExposure *agenticv1.McpExposure
+		var capturedExposure *agenticv1.AgenticExposure
 
 		fakeClient.EXPECT().
 			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Team")).
@@ -142,23 +142,23 @@ var _ = Describe("HandleExposure", func() {
 			Maybe()
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedExposure = obj.(*agenticv1.McpExposure)
+				capturedExposure = obj.(*agenticv1.AgenticExposure)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(capturedExposure.Labels).To(HaveKeyWithValue(agenticv1.McpBasePathLabelKey, "mcp-weather-v1"))
+		Expect(capturedExposure.Labels).To(HaveKeyWithValue(agenticv1.AgenticBasePathLabelKey, "mcp-weather-v1"))
 		Expect(capturedExposure.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone1"))
 		Expect(capturedExposure.Labels).To(HaveKeyWithValue(config.BuildLabelKey("application"), "my-app"))
 	})
 
 	It("should map security with M2M and ExternalIDP", func() {
-		exposure := &roverv1.AiExposure{
+		exposure := &roverv1.AgenticExposure{
 			BasePath:   "/mcp/secure/v1",
 			Visibility: roverv1.VisibilityWorld,
 			Variant:    "MCP",
@@ -180,7 +180,7 @@ var _ = Describe("HandleExposure", func() {
 			},
 		}
 
-		var capturedExposure *agenticv1.McpExposure
+		var capturedExposure *agenticv1.AgenticExposure
 
 		fakeClient.EXPECT().
 			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Team")).
@@ -188,14 +188,14 @@ var _ = Describe("HandleExposure", func() {
 			Maybe()
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedExposure = obj.(*agenticv1.McpExposure)
+				capturedExposure = obj.(*agenticv1.AgenticExposure)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Spec.Security).ToNot(BeNil())
@@ -207,7 +207,7 @@ var _ = Describe("HandleExposure", func() {
 	})
 
 	It("should map traffic with rate limiting and failover", func() {
-		exposure := &roverv1.AiExposure{
+		exposure := &roverv1.AgenticExposure{
 			BasePath:   "/mcp/traffic/v1",
 			Visibility: roverv1.VisibilityWorld,
 			Variant:    "MCP",
@@ -230,7 +230,7 @@ var _ = Describe("HandleExposure", func() {
 			},
 		}
 
-		var capturedExposure *agenticv1.McpExposure
+		var capturedExposure *agenticv1.AgenticExposure
 
 		fakeClient.EXPECT().
 			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Team")).
@@ -238,14 +238,14 @@ var _ = Describe("HandleExposure", func() {
 			Maybe()
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedExposure = obj.(*agenticv1.McpExposure)
+				capturedExposure = obj.(*agenticv1.AgenticExposure)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Spec.Traffic.CircuitBreaker).ToNot(BeNil())
@@ -261,7 +261,7 @@ var _ = Describe("HandleExposure", func() {
 	})
 
 	It("should map transformation", func() {
-		exposure := &roverv1.AiExposure{
+		exposure := &roverv1.AgenticExposure{
 			BasePath:   "/mcp/transform/v1",
 			Visibility: roverv1.VisibilityWorld,
 			Variant:    "MCP",
@@ -276,7 +276,7 @@ var _ = Describe("HandleExposure", func() {
 			},
 		}
 
-		var capturedExposure *agenticv1.McpExposure
+		var capturedExposure *agenticv1.AgenticExposure
 
 		fakeClient.EXPECT().
 			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Team")).
@@ -284,14 +284,14 @@ var _ = Describe("HandleExposure", func() {
 			Maybe()
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedExposure = obj.(*agenticv1.McpExposure)
+				capturedExposure = obj.(*agenticv1.AgenticExposure)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Spec.Transformation).ToNot(BeNil())
@@ -299,7 +299,7 @@ var _ = Describe("HandleExposure", func() {
 	})
 
 	It("should resolve trusted teams and include owner team", func() {
-		exposure := &roverv1.AiExposure{
+		exposure := &roverv1.AgenticExposure{
 			BasePath:   "/mcp/teams/v1",
 			Visibility: roverv1.VisibilityWorld,
 			Variant:    "MCP",
@@ -336,18 +336,18 @@ var _ = Describe("HandleExposure", func() {
 			}).
 			Return(nil).Once()
 
-		var capturedExposure *agenticv1.McpExposure
+		var capturedExposure *agenticv1.AgenticExposure
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedExposure = obj.(*agenticv1.McpExposure)
+				capturedExposure = obj.(*agenticv1.AgenticExposure)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedExposure.Spec.Approval.TrustedTeams).To(ContainElements(
@@ -356,8 +356,8 @@ var _ = Describe("HandleExposure", func() {
 		))
 	})
 
-	It("should append to owner status AiExposures", func() {
-		exposure := &roverv1.AiExposure{
+	It("should append to owner status AgenticExposures", func() {
+		exposure := &roverv1.AgenticExposure{
 			BasePath:   "/mcp/weather/v1",
 			Visibility: roverv1.VisibilityWorld,
 			Variant:    "MCP",
@@ -371,21 +371,21 @@ var _ = Describe("HandleExposure", func() {
 			Maybe()
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(owner.Status.AiExposures).To(HaveLen(1))
-		Expect(owner.Status.AiExposures[0].Namespace).To(Equal(teamNamespace))
+		Expect(owner.Status.AgenticExposures).To(HaveLen(1))
+		Expect(owner.Status.AgenticExposures[0].Namespace).To(Equal(teamNamespace))
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
-		exposure := &roverv1.AiExposure{
+		exposure := &roverv1.AgenticExposure{
 			BasePath:   "/mcp/weather/v1",
 			Visibility: roverv1.VisibilityWorld,
 			Variant:    "MCP",
@@ -399,13 +399,13 @@ var _ = Describe("HandleExposure", func() {
 			Maybe()
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticExposure"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("api server error")).Once()
 
-		err := ai.HandleExposure(ctx, fakeClient, owner, exposure)
+		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update McpExposure"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update AgenticExposure"))
 	})
 })
 
@@ -426,23 +426,23 @@ var _ = Describe("HandleSubscription", func() {
 		owner = createTestOwner()
 	})
 
-	It("should create an McpSubscription with correct spec", func() {
-		subscription := &roverv1.AiSubscription{
+	It("should create an AgenticSubscription with correct spec", func() {
+		subscription := &roverv1.AgenticSubscription{
 			BasePath: "/mcp/weather/v1",
 		}
 
-		var capturedSub *agenticv1.McpSubscription
+		var capturedSub *agenticv1.AgenticSubscription
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedSub = obj.(*agenticv1.McpSubscription)
+				capturedSub = obj.(*agenticv1.AgenticSubscription)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub).ToNot(BeNil())
@@ -454,31 +454,31 @@ var _ = Describe("HandleSubscription", func() {
 	})
 
 	It("should set correct labels", func() {
-		subscription := &roverv1.AiSubscription{
+		subscription := &roverv1.AgenticSubscription{
 			BasePath: "/mcp/weather/v1",
 		}
 
-		var capturedSub *agenticv1.McpSubscription
+		var capturedSub *agenticv1.AgenticSubscription
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedSub = obj.(*agenticv1.McpSubscription)
+				capturedSub = obj.(*agenticv1.AgenticSubscription)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(capturedSub.Labels).To(HaveKeyWithValue(agenticv1.McpBasePathLabelKey, "mcp-weather-v1"))
+		Expect(capturedSub.Labels).To(HaveKeyWithValue(agenticv1.AgenticBasePathLabelKey, "mcp-weather-v1"))
 		Expect(capturedSub.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone1"))
 		Expect(capturedSub.Labels).To(HaveKeyWithValue(config.BuildLabelKey("application"), "my-app"))
 	})
 
 	It("should map subscriber security", func() {
-		subscription := &roverv1.AiSubscription{
+		subscription := &roverv1.AgenticSubscription{
 			BasePath: "/mcp/secure/v1",
 			Security: &roverv1.SubscriberSecurity{
 				M2M: &roverv1.SubscriberMachine2MachineAuthentication{
@@ -492,18 +492,18 @@ var _ = Describe("HandleSubscription", func() {
 			},
 		}
 
-		var capturedSub *agenticv1.McpSubscription
+		var capturedSub *agenticv1.AgenticSubscription
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedSub = obj.(*agenticv1.McpSubscription)
+				capturedSub = obj.(*agenticv1.AgenticSubscription)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub.Spec.Security).ToNot(BeNil())
@@ -516,7 +516,7 @@ var _ = Describe("HandleSubscription", func() {
 	})
 
 	It("should map subscriber traffic with failover", func() {
-		subscription := &roverv1.AiSubscription{
+		subscription := &roverv1.AgenticSubscription{
 			BasePath: "/mcp/failover/v1",
 			Traffic: roverv1.SubscriberTraffic{
 				Failover: &roverv1.SubscriberFailover{
@@ -525,64 +525,64 @@ var _ = Describe("HandleSubscription", func() {
 			},
 		}
 
-		var capturedSub *agenticv1.McpSubscription
+		var capturedSub *agenticv1.AgenticSubscription
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
-				capturedSub = obj.(*agenticv1.McpSubscription)
+				capturedSub = obj.(*agenticv1.AgenticSubscription)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedSub.Spec.Traffic.Failover).ToNot(BeNil())
 		Expect(capturedSub.Spec.Traffic.Failover.Enabled).To(BeTrue())
 	})
 
-	It("should append to owner status AiSubscriptions", func() {
-		subscription := &roverv1.AiSubscription{
+	It("should append to owner status AgenticSubscriptions", func() {
+		subscription := &roverv1.AgenticSubscription{
 			BasePath: "/mcp/weather/v1",
 		}
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(owner.Status.AiSubscriptions).To(HaveLen(1))
-		Expect(owner.Status.AiSubscriptions[0].Namespace).To(Equal(teamNamespace))
+		Expect(owner.Status.AgenticSubscriptions).To(HaveLen(1))
+		Expect(owner.Status.AgenticSubscriptions[0].Namespace).To(Equal(teamNamespace))
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
-		subscription := &roverv1.AiSubscription{
+		subscription := &roverv1.AgenticSubscription{
 			BasePath: "/mcp/weather/v1",
 		}
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.McpSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.AgenticSubscription"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("api server error")).Once()
 
-		err := ai.HandleSubscription(ctx, fakeClient, owner, subscription)
+		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update McpSubscription"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update AgenticSubscription"))
 	})
 })
 
 var _ = Describe("MakeName", func() {
 	It("should combine owner name and basePath", func() {
-		name := ai.MakeName("my-app", "/mcp/weather/v1")
+		name := agentic.MakeName("my-app", "/mcp/weather/v1")
 		Expect(name).To(Equal("my-app--mcp-weather-v1"))
 	})
 })

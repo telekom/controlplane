@@ -5,63 +5,39 @@
 package config
 
 import (
-	"io"
-	"os"
+	"fmt"
 
-	"gopkg.in/yaml.v3"
-
+	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
 type ServerConfig struct {
-	Database    DatabaseConfig    `yaml:"database"`
-	Server      HTTPServerConfig  `yaml:"server"`
-	Security    SecurityConfig    `yaml:"security"`
-	GraphQL     GraphQLConfig     `yaml:"graphql"`
-	Log         LogConfig         `yaml:"log"`
-	Kubernetes  KubernetesConfig  `yaml:"kubernetes"`
-	FileManager FileManagerConfig `yaml:"fileManager"`
+	commonconfig.BaseConfig `mapstructure:",squash"`
+	Database                DatabaseConfig    `mapstructure:"database"`
+	GraphQL                 GraphQLConfig     `mapstructure:"graphql"`
+	Kubernetes              KubernetesConfig  `mapstructure:"kubernetes"`
+	FileManager             FileManagerConfig `mapstructure:"fileManager"`
 }
 
 type KubernetesConfig struct {
-	Enabled     bool   `yaml:"enabled"`
-	Kubeconfig  string `yaml:"kubeconfig"`  // optional, defaults to in-cluster config
-	Environment string `yaml:"environment"` // environment scope for the scoped client
+	Enabled     bool   `mapstructure:"enabled"`
+	Kubeconfig  string `mapstructure:"kubeconfig"`  // optional, defaults to in-cluster config
+	Environment string `mapstructure:"environment"` // environment scope for the scoped client
 }
 
 type DatabaseConfig struct {
-	URL string `yaml:"url"`
-}
-
-type HTTPServerConfig struct {
-	Address string    `yaml:"address"`
-	TLS     TLSConfig `yaml:"tls"`
-}
-
-type TLSConfig struct {
-	Enabled bool   `yaml:"enabled"`
-	Cert    string `yaml:"cert"`
-	Key     string `yaml:"key"`
-}
-
-type SecurityConfig struct {
-	// Mode controls authentication behaviour: use security.ModeJWT or security.ModeMock.
-	Mode           security.Mode `yaml:"mode"`
-	TrustedIssuers []string      `yaml:"trustedIssuers"`
+	URL string `mapstructure:"url"`
 }
 
 type GraphQLConfig struct {
-	PlaygroundEnabled bool `yaml:"playgroundEnabled"`
-}
-
-type LogConfig struct {
-	Level string `yaml:"level"`
+	PlaygroundEnabled bool `mapstructure:"playgroundEnabled"`
 }
 
 // FileManagerConfig holds the configuration for constructing specification
 // download URLs. The BaseURL is the root URL of the file-manager service.
 type FileManagerConfig struct {
-	BaseURL string `yaml:"baseUrl"`
+	BaseURL string `mapstructure:"baseUrl"`
 }
 
 func DefaultConfig() *ServerConfig {
@@ -69,22 +45,37 @@ func DefaultConfig() *ServerConfig {
 		Database: DatabaseConfig{
 			URL: "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable",
 		},
-		Server: HTTPServerConfig{
-			Address: ":8443",
-			TLS: TLSConfig{
-				Enabled: true,
-				Cert:    "/etc/tls/tls.crt",
-				Key:     "/etc/tls/tls.key",
-			},
-		},
-		Security: SecurityConfig{
-			Mode: security.ModeJWT,
-		},
 		GraphQL: GraphQLConfig{
 			PlaygroundEnabled: true,
 		},
-		Log: LogConfig{
-			Level: "debug",
+		BaseConfig: commonconfig.BaseConfig{
+			Log: commonconfig.LogConfig{
+				Level: "debug",
+			},
+			// Default TLS cert/key paths. A tls block in the config file
+			// overrides these; empty cert/key downgrades to plain HTTP (dev only).
+			TLS: &cserver.TLSFileConfig{
+				Cert: "/etc/tls/tls.crt",
+				Key:  "/etc/tls/tls.key",
+			},
+			// External JWT listener on :8443 (secure by default) plus an
+			// internal k8s listener on :9443 for in-cluster callers. Empty
+			// accessConfig = any authenticated in-cluster SA; in-cluster issuer
+			// auto-discovered.
+			Listeners: commonconfig.ListenersConfig{
+				External: &cserver.ListenerConfig{
+					Address: ":8443",
+					JWT: &security.JWTConfig{
+						Mode: security.ModeJWT,
+					},
+				},
+				Internal: &cserver.ListenerConfig{
+					Address: ":9443",
+					K8s: &cserver.K8sConfig{
+						Audience: "controlplane-api",
+					},
+				},
+			},
 		},
 		Kubernetes: KubernetesConfig{
 			Enabled:     true,
@@ -96,31 +87,13 @@ func DefaultConfig() *ServerConfig {
 	}
 }
 
-func ReadConfig(r io.Reader) (*ServerConfig, error) {
-	cfg := DefaultConfig()
-	content, err := io.ReadAll(r)
-	if err != nil {
-		return cfg, err
-	}
-	expanded := os.ExpandEnv(string(content))
-	if err := yaml.Unmarshal([]byte(expanded), &cfg); err != nil {
-		return nil, err
-	}
-	return cfg, nil
-}
-
+// GetConfigOrDie loads the server configuration from an optional YAML file,
+// overlaid with environment variables, on top of DefaultConfig, then validates
+// the listener config fail-closed.
 func GetConfigOrDie(filepath string) *ServerConfig {
-	if filepath == "" {
-		return DefaultConfig()
-	}
-	file, err := os.OpenFile(filepath, os.O_RDONLY, 0o644) //nolint:gosec
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close() //nolint:errcheck
-	cfg, err := ReadConfig(file)
-	if err != nil {
-		panic(err)
+	cfg := commonconfig.LoadOrDie(filepath, DefaultConfig())
+	if err := cfg.Listeners.Validate(); err != nil {
+		panic(fmt.Errorf("validating listeners config: %w", err))
 	}
 	return cfg
 }

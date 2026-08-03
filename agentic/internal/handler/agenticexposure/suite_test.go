@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package ai_test
+package agenticexposure_test
 
 import (
 	"testing"
@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestAiHandler(t *testing.T) {
+func TestAgenticExposureHandler(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "AI Handler Suite")
+	RunSpecs(t, "AgenticExposure Handler Suite")
 }

@@ -35,7 +35,7 @@ spec:
         description: |-
           McpServer is the Schema for the mcpservers API.
           It represents a registered MCP server definition, serving as the
-          canonical reference that McpExposure and McpSubscription point to.
+          canonical reference that AgenticExposure and AgenticSubscription point to.
         properties:
           apiVersion:
             description: |-

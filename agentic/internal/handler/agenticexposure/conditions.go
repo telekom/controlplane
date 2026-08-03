@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mcpexposure
+package agenticexposure
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NewMcpServerCondition creates a condition indicating whether the corresponding McpServer
-// exists and is active for this McpExposure.
+// exists and is active for this AgenticExposure.
 func NewMcpServerCondition(found bool) metav1.Condition {
 	cond := metav1.Condition{
 		Type:               "McpServerExists",
@@ -26,20 +26,20 @@ func NewMcpServerCondition(found bool) metav1.Condition {
 	return cond
 }
 
-// NewMcpExposureActiveCondition creates a condition indicating whether this McpExposure
+// NewAgenticExposureActiveCondition creates a condition indicating whether this AgenticExposure
 // is the active one for its basePath (oldest-wins).
-func NewMcpExposureActiveCondition(active bool) metav1.Condition {
+func NewAgenticExposureActiveCondition(active bool) metav1.Condition {
 	cond := metav1.Condition{
-		Type:               "McpExposureActive",
+		Type:               "AgenticExposureActive",
 		Status:             metav1.ConditionFalse,
 		Reason:             "NotActive",
-		Message:            "BasePath is already exposed by another McpExposure",
+		Message:            "BasePath is already exposed by another AgenticExposure",
 		LastTransitionTime: metav1.Now(),
 	}
 	if active {
 		cond.Status = metav1.ConditionTrue
 		cond.Reason = "Active"
-		cond.Message = "BasePath is exposed by this McpExposure"
+		cond.Message = "BasePath is exposed by this AgenticExposure"
 	}
 	return cond
 }

@@ -15,6 +15,9 @@ spec:
     - name: https
       port: 443
       targetPort: 8443
+    - name: internal
+      port: 9443
+      targetPort: 9443
   selector:
     app.kubernetes.io/component: manager
 ---
@@ -62,6 +65,9 @@ spec:
             - name: https
               containerPort: 8443
               protocol: TCP
+            - name: internal
+              containerPort: 9443
+              protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -84,10 +90,10 @@ spec:
           resources:
             limits:
               cpu: 500m
-              memory: 128Mi
+              memory: 1Gi
             requests:
               cpu: 30m
-              memory: 32Mi
+              memory: 128Mi
           volumeMounts:
             - name: controlplane-api-config
               mountPath: /etc/controlplane-api

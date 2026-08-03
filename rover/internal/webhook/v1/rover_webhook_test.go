@@ -640,9 +640,9 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 			It("should fail when AI exposure upstream URL points at a cluster-internal or local address", func() {
 				exposure := roverv1.Exposure{
-					Ai: &roverv1.AiExposure{
+					Agentic: &roverv1.AgenticExposure{
 						BasePath:  "/mcp",
-						Variant:   roverv1.AiVariantMCP,
+						Variant:   roverv1.AgenticVariantMCP,
 						Approval:  roverv1.Approval{},
 						Upstreams: []roverv1.Upstream{{URL: "http://localhost:8080"}},
 					},
@@ -817,6 +817,32 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				err := MustNotHaveDuplicates(valErr, []roverv1.Subscription{}, exps)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(valErr.HasErrors()).To(BeTrue())
+			})
+
+			It("should report Errors for duplicate agentic subscriptions with correct field path", func() {
+				subs := []roverv1.Subscription{
+					{Agentic: &roverv1.AgenticSubscription{BasePath: "/mcp/weather/v1"}},
+					{Agentic: &roverv1.AgenticSubscription{BasePath: "/mcp/weather/v1"}},
+				}
+
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				err := MustNotHaveDuplicates(valErr, subs, []roverv1.Exposure{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(valErr.HasErrors()).To(BeTrue())
+				Expect(valErr.Errors[0].Field).To(ContainSubstring("spec.subscriptions[1].agentic.basePath"))
+			})
+
+			It("should report Errors for duplicate agentic exposures with correct field path", func() {
+				exps := []roverv1.Exposure{
+					{Agentic: &roverv1.AgenticExposure{BasePath: "/mcp/weather/v1"}},
+					{Agentic: &roverv1.AgenticExposure{BasePath: "/mcp/weather/v1"}},
+				}
+
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				err := MustNotHaveDuplicates(valErr, []roverv1.Subscription{}, exps)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(valErr.HasErrors()).To(BeTrue())
+				Expect(valErr.Errors[0].Field).To(ContainSubstring("spec.exposures[1].agentic.basePath"))
 			})
 		})
 

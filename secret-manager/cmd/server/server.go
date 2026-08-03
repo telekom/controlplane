@@ -7,20 +7,17 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
-	"github.com/telekom/controlplane/common-server/pkg/util"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
-	"github.com/telekom/controlplane/common-server/pkg/server/serve"
 	"github.com/telekom/controlplane/secret-manager/cmd/server/config"
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
@@ -41,20 +38,12 @@ const (
 
 var (
 	logLevel    string
-	disableTls  bool
-	tlsCert     string
-	tlsKey      string
-	address     string
 	configFile  string
 	backendType string
 )
 
 func init() {
 	flag.StringVar(&logLevel, "loglevel", "info", "log level")
-	flag.BoolVar(&disableTls, "disable-tls", false, "disable TLS")
-	flag.StringVar(&tlsCert, "tls-cert", "/etc/tls/tls.crt", "path to TLS certificate")
-	flag.StringVar(&tlsKey, "tls-key", "/etc/tls/tls.key", "path to TLS key")
-	flag.StringVar(&address, "address", ":8443", "server address")
 	flag.StringVar(&configFile, "configfile", "", "path to config file")
 	flag.StringVar(&backendType, "backend", "", "backend type (kubernetes, conjur)")
 }
@@ -160,50 +149,40 @@ func main() {
 	appCfg := cs.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.ErrorHandler = handler.ErrorHandler
-	app := cs.NewAppWithConfig(appCfg)
 
-	probesCtrl := cs.NewProbesController()
-	probesCtrl.Register(app, cs.ControllerOpts{})
+	h := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
 
-	apiGroup := app.Group("/api")
-	handler := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
-
-	if cfg.Security.Enabled {
-		opts := []k8s.KubernetesAuthOption{
-			k8s.WithAudience("secret-manager"),
-			k8s.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
-			k8s.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
-			k8s.WithAccessConfig(cfg.Security.AccessConfig...),
-		}
-		if util.IsRunningInCluster() {
-			log.Info("🔑 Running in cluster")
-			opts = append(opts, k8s.WithInClusterIssuer())
-		}
-		apiGroup.Use(k8s.NewKubernetesAuthz(opts...))
+	// Pure-k8s server: adminContext=false (handlers don't read BusinessContext);
+	// internal=true yields K8sFamily with open access (empty accessConfig = any
+	// authenticated in-cluster SA). A k8s block with no issuer auto-uses the
+	// in-cluster issuer.
+	lc := cfg.Listeners.Internal
+	if lc == nil {
+		log.Error(errors.New("no internal listener configured"), "secret-manager requires listeners.internal")
+		os.Exit(1)
+	}
+	family, err := cs.FamilyFromListenerConfig(*lc, nil, cs.WithInternal())
+	if err != nil {
+		log.Error(err, "failed to build security family for internal listener", "address", lc.Address)
+		os.Exit(1)
 	}
 
-	api.RegisterHandlersWithOptions(apiGroup, handler, api.FiberServerOptions{})
+	ms := &cs.MultiServer{
+		AppConfig: appCfg,
+		TLS:       cfg.TLS.ToServerTLS(),
+		Listeners: cs.Listeners{
+			Internal: &cs.Listener{Address: lc.Address, Family: family},
+		},
+		Register: func(router fiber.Router, guard fiber.Handler) {
+			apiGroup := router.Group("/api")
+			api.RegisterHandlersWithOptions(apiGroup, h, api.FiberServerOptions{})
+		},
+	}
 
-	go func() {
-		if disableTls {
-			fmt.Println("⚠️\tUsing HTTP instead of HTTPS. This is not secure.")
-			if err := app.Listen(address); err != nil {
-				log.Error(err, "failed to start server")
-				os.Exit(1)
-			}
-			return
-		}
-
-		ctx = logr.NewContext(ctx, log.WithName("server"))
-		if err := serve.ServeTLS(ctx, app, address, tlsCert, tlsKey); err != nil {
-			log.Error(err, "failed to start server")
-			os.Exit(1)
-		}
-	}()
-
-	<-ctx.Done()
+	ctx = logr.NewContext(ctx, log.WithName("server"))
+	if err := ms.Run(ctx); err != nil {
+		log.Error(err, "server exited with error")
+		os.Exit(1)
+	}
 	log.Info("shutting down server...")
-	if err := app.Shutdown(); err != nil {
-		log.Error(err, "failed to shutdown server")
-	}
 }

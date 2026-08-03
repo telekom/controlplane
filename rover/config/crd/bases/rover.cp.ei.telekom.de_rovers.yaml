@@ -83,8 +83,9 @@ spec:
                   maxProperties: 1
                   minProperties: 1
                   properties:
-                    ai:
-                      description: Ai defines an AI/MCP server exposure configuration
+                    agentic:
+                      description: Agentic defines an Agentic(MCP or agent) server
+                        exposure configuration
                       properties:
                         approval:
                           description: Approval defines the approval workflow for
@@ -1311,8 +1312,9 @@ spec:
                   maxProperties: 1
                   minProperties: 1
                   properties:
-                    ai:
-                      description: Ai defines an AI/MCP server subscription configuration
+                    agentic:
+                      description: Agentic defines an Agentic(MCP or agent) server
+                        subscription configuration
                       properties:
                         basePath:
                           description: BasePath is the base path of the MCP server
@@ -1757,8 +1759,8 @@ spec:
             description: Status contains the observed state of the Rover resource
             properties:
               aiExposures:
-                description: AiExposures are references to McpExposure resources created
-                  by this Rover
+                description: AgenticExposures are references to AgenticExposure resources
+                  created by this Rover
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
@@ -1780,8 +1782,8 @@ spec:
                   type: object
                 type: array
               aiSubscriptions:
-                description: AiSubscriptions are references to McpSubscription resources
-                  created by this Rover
+                description: AgenticSubscriptions are references to AgenticSubscription
+                  resources created by this Rover
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package ai
+package agentic
 
 import (
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"

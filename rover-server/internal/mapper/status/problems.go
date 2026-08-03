@@ -115,8 +115,8 @@ func GetAllEventSpecificationProblems(ctx context.Context, eventSpec *v1.EventSp
 }
 
 // GetAllMcpSpecificationProblems retrieves all problems across all McpSpecification sub-resource types.
-func GetAllMcpSpecificationProblems(ctx context.Context, mcpSpec *v1.McpSpecification, stores *roverStore.Stores) (ProblemsResult, error) {
-	if mcpSpec.Status.McpServer.IsEmpty() {
+func GetAllMcpSpecificationProblems(ctx context.Context, agenticSpec *v1.McpSpecification, stores *roverStore.Stores) (ProblemsResult, error) {
+	if agenticSpec.Status.McpServer.IsEmpty() {
 		return ProblemsResult{}, nil
 	}
 
@@ -124,7 +124,7 @@ func GetAllMcpSpecificationProblems(ctx context.Context, mcpSpec *v1.McpSpecific
 		NewSubResourceChecker(stores.McpServerStore),
 	}
 
-	return runCheckers(ctx, mcpSpec, checkers)
+	return runCheckers(ctx, agenticSpec, checkers)
 }
 
 // --- Internal helpers ---

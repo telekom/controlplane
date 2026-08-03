@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mcpexposure_test
+package agenticexposure_test
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	agenticconfig "github.com/telekom/controlplane/agentic/internal/config"
-	"github.com/telekom/controlplane/agentic/internal/handler/mcpexposure"
+	"github.com/telekom/controlplane/agentic/internal/handler/agenticexposure"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
@@ -33,14 +33,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func newMcpExposure(name, basePath string) *agenticv1.McpExposure {
-	return &agenticv1.McpExposure{
+func newAgenticExposure(name, basePath string) *agenticv1.AgenticExposure {
+	return &agenticv1.AgenticExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
 			UID:       "test-uid",
 		},
-		Spec: agenticv1.McpExposureSpec{
+		Spec: agenticv1.AgenticExposureSpec{
 			BasePath: basePath,
 			Upstreams: []agenticv1.Upstream{
 				{Url: "http://mcp-server.internal:8080"},
@@ -49,7 +49,7 @@ func newMcpExposure(name, basePath string) *agenticv1.McpExposure {
 			Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
 			Zone:       ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
 			Provider:   ctypes.ObjectRef{Name: "test-app", Namespace: "default"},
-			Variant:    agenticv1.McpVariantMCP,
+			Variant:    agenticv1.AgenticVariantMCP,
 		},
 	}
 }
@@ -138,20 +138,20 @@ func makeZoneWithoutAiGateway() *adminv1.Zone {
 
 var zoneKey = k8stypes.NamespacedName{Name: "test-zone", Namespace: "default"}
 
-var _ = Describe("McpExposureHandler", func() {
+var _ = Describe("AgenticExposureHandler", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
-		h          *mcpexposure.McpExposureHandler
-		obj        *agenticv1.McpExposure
+		h          *agenticexposure.AgenticExposureHandler
+		obj        *agenticv1.AgenticExposure
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
-		h = &mcpexposure.McpExposureHandler{Config: &agenticconfig.AgenticConfig{}}
-		obj = newMcpExposure("test-exposure", "/mcp/weather/v1")
+		h = &agenticexposure.AgenticExposureHandler{Config: &agenticconfig.AgenticConfig{}}
+		obj = newAgenticExposure("test-exposure", "/mcp/weather/v1")
 	})
 
 	// --- mock helpers ---
@@ -171,18 +171,18 @@ var _ = Describe("McpExposureHandler", func() {
 			Return(err).Once()
 	}
 
-	mockListMcpExposures := func(items []agenticv1.McpExposure) {
+	mockListAgenticExposures := func(items []agenticv1.AgenticExposure) {
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.McpExposureList"), mock.Anything).
+			List(ctx, mock.AnythingOfType("*v1.AgenticExposureList"), mock.Anything).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*agenticv1.McpExposureList) = agenticv1.McpExposureList{Items: items}
+				*list.(*agenticv1.AgenticExposureList) = agenticv1.AgenticExposureList{Items: items}
 			}).
 			Return(nil).Once()
 	}
 
-	mockListMcpExposuresError := func(err error) {
+	mockListAgenticExposuresError := func(err error) {
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.McpExposureList"), mock.Anything).
+			List(ctx, mock.AnythingOfType("*v1.AgenticExposureList"), mock.Anything).
 			Return(err).Once()
 	}
 
@@ -201,11 +201,11 @@ var _ = Describe("McpExposureHandler", func() {
 			Return(err).Once()
 	}
 
-	mockListMcpSubscriptions := func(items []agenticv1.McpSubscription) {
+	mockListAgenticSubscriptions := func(items []agenticv1.AgenticSubscription) {
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.McpSubscriptionList"), mock.Anything).
+			List(ctx, mock.AnythingOfType("*v1.AgenticSubscriptionList"), mock.Anything).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*agenticv1.McpSubscriptionList) = agenticv1.McpSubscriptionList{Items: items}
+				*list.(*agenticv1.AgenticSubscriptionList) = agenticv1.AgenticSubscriptionList{Items: items}
 			}).
 			Return(nil).Once()
 	}
@@ -231,9 +231,9 @@ var _ = Describe("McpExposureHandler", func() {
 		zone := makeReadyZoneWithAiGateway()
 
 		mockListMcpServers([]agenticv1.McpServer{server})
-		mockListMcpExposures([]agenticv1.McpExposure{})
+		mockListAgenticExposures([]agenticv1.AgenticExposure{})
 		mockGetZone(zone)
-		mockListMcpSubscriptions([]agenticv1.McpSubscription{}) // no cross-zone subs
+		mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{}) // no cross-zone subs
 		mockCreateOrUpdateRoute(controllerutil.OperationResultCreated, nil)
 		mockCleanup(0, nil)
 	}
@@ -297,37 +297,37 @@ var _ = Describe("McpExposureHandler", func() {
 			Expect(readyCond.Message).To(ContainSubstring("/Mcp/Weather/V1"))
 		})
 
-		It("should return error when FindMcpExposures fails", func() {
+		It("should return error when FindAgenticExposures fails", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposuresError(fmt.Errorf("list failed"))
+			mockListAgenticExposuresError(fmt.Errorf("list failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("failed to list McpExposures"))
+			Expect(err.Error()).To(ContainSubstring("failed to list AgenticExposures"))
 		})
 
-		It("should set NotReady when another active McpExposure already exists", func() {
+		It("should set NotReady when another active AgenticExposure already exists", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			mockListMcpServers([]agenticv1.McpServer{server})
 
-			existingExposure := agenticv1.McpExposure{
+			existingExposure := agenticv1.AgenticExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "other-exposure",
 					Namespace:         "default",
 					UID:               "other-uid",
 					CreationTimestamp: metav1.Now(),
 				},
-				Spec: agenticv1.McpExposureSpec{
+				Spec: agenticv1.AgenticExposureSpec{
 					BasePath: "/mcp/weather/v1",
 					Provider: ctypes.ObjectRef{Name: "other-app", Namespace: "other-ns"},
 				},
-				Status: agenticv1.McpExposureStatus{
+				Status: agenticv1.AgenticExposureStatus{
 					Active: true,
 				},
 			}
-			mockListMcpExposures([]agenticv1.McpExposure{existingExposure})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{existingExposure})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -337,13 +337,13 @@ var _ = Describe("McpExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("McpExposureAlreadyExists"))
+			Expect(readyCond.Reason).To(Equal("AgenticExposureAlreadyExists"))
 		})
 
 		It("should return error when GetZone fails", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZoneError(fmt.Errorf("zone fetch failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -357,7 +357,7 @@ var _ = Describe("McpExposureHandler", func() {
 			zone := makeZoneWithoutAiGateway()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -384,7 +384,7 @@ var _ = Describe("McpExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(readyCond.Reason).To(Equal("McpExposureProvisioned"))
+			Expect(readyCond.Reason).To(Equal("AgenticExposureProvisioned"))
 		})
 
 		It("should set NotReady when AllReady returns false", func() {
@@ -402,14 +402,14 @@ var _ = Describe("McpExposureHandler", func() {
 			Expect(readyCond.Reason).To(Equal("ChildResourcesNotReady"))
 		})
 
-		It("should return error when CreateMcpRoute fails", func() {
+		It("should return error when CreateAgenticRoute fails", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
-			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
 			mockCreateOrUpdateRoute(controllerutil.OperationResultNone, fmt.Errorf("route creation failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -423,9 +423,9 @@ var _ = Describe("McpExposureHandler", func() {
 			zone := makeReadyZoneWithAiGateway()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
-			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
 			mockCreateOrUpdateRoute(controllerutil.OperationResultCreated, nil)
 			mockCleanup(0, fmt.Errorf("cleanup failed"))
 
@@ -436,16 +436,16 @@ var _ = Describe("McpExposureHandler", func() {
 		})
 
 		It("should fail when TELECONTEXTMCP variant is set but application ID is empty", func() {
-			obj.Spec.Variant = agenticv1.McpVariantTelecontextMCP
+			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
 			h.Config.TelecontextApplicationID = ""
 
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
-			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -454,7 +454,7 @@ var _ = Describe("McpExposureHandler", func() {
 		})
 
 		It("should add Telecontext consumer to Route DefaultConsumers when variant is TELECONTEXTMCP", func() {
-			obj.Spec.Variant = agenticv1.McpVariantTelecontextMCP
+			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
 			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
 			ctx = contextutil.WithEnv(ctx, "test-env")
 
@@ -462,9 +462,9 @@ var _ = Describe("McpExposureHandler", func() {
 			zone := makeReadyZoneWithAiGateway()
 
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
-			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
 
 			// Mock the Telecontext Application lookup — same zone as exposure
 			telecontextApp := &applicationapi.Application{
@@ -509,7 +509,7 @@ var _ = Describe("McpExposureHandler", func() {
 		})
 
 		It("should create proxy route on Telecontext zone when it differs from exposure zone", func() {
-			obj.Spec.Variant = agenticv1.McpVariantTelecontextMCP
+			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
 			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
 			ctx = contextutil.WithEnv(ctx, "test-env")
 
@@ -518,9 +518,9 @@ var _ = Describe("McpExposureHandler", func() {
 			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
 
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(providerZone)
-			mockListMcpSubscriptions([]agenticv1.McpSubscription{})
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
 
 			// Mock the Telecontext Application lookup — DIFFERENT zone
 			telecontextZone := makeReadyZoneWithAiGateway()
@@ -601,9 +601,9 @@ var _ = Describe("McpExposureHandler", func() {
 			subscriberZone.Name = "subscriber-zone"
 			subscriberZone.Status.Links.LmsIssuer = "https://lms.subscriber.example.com"
 
-			approvedSub := agenticv1.McpSubscription{
+			approvedSub := agenticv1.AgenticSubscription{
 				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
-				Spec: agenticv1.McpSubscriptionSpec{
+				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath: "/mcp/weather/v1",
 					Zone:     ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
 				},
@@ -613,9 +613,9 @@ var _ = Describe("McpExposureHandler", func() {
 			})
 
 			mockListMcpServers([]agenticv1.McpServer{server})
-			mockListMcpExposures([]agenticv1.McpExposure{})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(providerZone)
-			mockListMcpSubscriptions([]agenticv1.McpSubscription{approvedSub})
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{approvedSub})
 
 			fakeClient.EXPECT().
 				Get(ctx, k8stypes.NamespacedName{Name: "subscriber-zone", Namespace: "default"},
@@ -653,25 +653,25 @@ var _ = Describe("McpExposureHandler", func() {
 	}) // end Describe("CreateOrUpdate")
 
 	Describe("Delete", func() {
-		It("should skip Route deletion when another McpExposure exists", func() {
+		It("should skip Route deletion when another AgenticExposure exists", func() {
 			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
 
-			// AnyOtherMcpExposureExists calls FindMcpExposures which lists
-			otherExposure := agenticv1.McpExposure{
+			// AnyOtherAgenticExposureExists calls FindAgenticExposures which lists
+			otherExposure := agenticv1.AgenticExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "other-exposure",
 					Namespace: "default",
 					UID:       "other-uid",
 				},
-				Spec: agenticv1.McpExposureSpec{
+				Spec: agenticv1.AgenticExposureSpec{
 					BasePath: "/mcp/weather/v1",
 				},
 			}
 			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.McpExposureList"), mock.Anything).
+				List(ctx, mock.AnythingOfType("*v1.AgenticExposureList"), mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*agenticv1.McpExposureList) = agenticv1.McpExposureList{
-						Items: []agenticv1.McpExposure{otherExposure},
+					*list.(*agenticv1.AgenticExposureList) = agenticv1.AgenticExposureList{
+						Items: []agenticv1.AgenticExposure{otherExposure},
 					}
 				}).
 				Return(nil).Once()
@@ -681,14 +681,14 @@ var _ = Describe("McpExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should delete Route when no other McpExposure exists", func() {
+		It("should delete Route when no other AgenticExposure exists", func() {
 			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
 
 			// No other exposures
 			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.McpExposureList"), mock.Anything).
+				List(ctx, mock.AnythingOfType("*v1.AgenticExposureList"), mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*agenticv1.McpExposureList) = agenticv1.McpExposureList{Items: []agenticv1.McpExposure{}}
+					*list.(*agenticv1.AgenticExposureList) = agenticv1.AgenticExposureList{Items: []agenticv1.AgenticExposure{}}
 				}).
 				Return(nil).Once()
 

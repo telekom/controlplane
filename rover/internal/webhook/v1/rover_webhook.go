@@ -297,7 +297,7 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.V
 		return r.ValidateApiExposure(ctx, valErr, environment, exposure, zoneRef, idx)
 	case roverv1.TypeEvent:
 		return r.ValidateEventExposure(ctx, valErr, environment, exposure, zoneRef, idx)
-	case roverv1.TypeAi:
+	case roverv1.TypeAgentic:
 		return r.ValidateAiExposure(ctx, valErr, environment, exposure, zoneRef, idx)
 	case roverv1.TypeFile:
 		return r.ValidateFileExposure(valErr, exposure, idx)
@@ -459,12 +459,12 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 			)
 		}
 
-		if sub.Ai != nil {
+		if sub.Agentic != nil {
 			checkDuplicate(
 				existingSubs,
-				sub.Ai.BasePath,
-				field.NewPath("spec").Child("subscriptions").Index(idx).Child("ai").Child("basePath"),
-				fmt.Sprintf("duplicate subscription for ai base path %s", sub.Ai.BasePath),
+				sub.Agentic.BasePath,
+				field.NewPath("spec").Child("subscriptions").Index(idx).Child("agentic").Child("basePath"),
+				fmt.Sprintf("duplicate subscription for agentic base path %s", sub.Agentic.BasePath),
 			)
 		}
 
@@ -499,12 +499,12 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 			)
 		}
 
-		if exposure.Ai != nil {
+		if exposure.Agentic != nil {
 			checkDuplicate(
 				existingExps,
-				exposure.Ai.BasePath,
-				field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("basePath"),
-				fmt.Sprintf("duplicate exposure for ai base path %s", exposure.Ai.BasePath),
+				exposure.Agentic.BasePath,
+				field.NewPath("spec").Child("exposures").Index(idx).Child("agentic").Child("basePath"),
+				fmt.Sprintf("duplicate exposure for agentic base path %s", exposure.Agentic.BasePath),
 			)
 		}
 
@@ -717,19 +717,19 @@ func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerror
 }
 
 func (r *RoverValidator) ValidateAiExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
-	if exposure.Ai == nil {
+	if exposure.Agentic == nil {
 		return nil
 	}
-	for i, upstream := range exposure.Ai.Upstreams {
+	for i, upstream := range exposure.Agentic.Upstreams {
 		if upstream.URL == "" {
 			valErr.AddRequiredError(
-				field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("upstreams").Index(i).Child("url"),
+				field.NewPath("spec").Child("exposures").Index(idx).Child("agentic").Child("upstreams").Index(i).Child("url"),
 				"upstream URL must not be empty",
 			)
 			continue
 		}
 		validateExternalURL(valErr,
-			field.NewPath("spec").Child("exposures").Index(idx).Child("ai").Child("upstreams").Index(i).Child("url"),
+			field.NewPath("spec").Child("exposures").Index(idx).Child("agentic").Child("upstreams").Index(i).Child("url"),
 			upstream.URL)
 	}
 	return nil
@@ -763,7 +763,7 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerro
 				sub.Event.Delivery.Callback)
 		}
 		return nil
-	case roverv1.TypeAi:
+	case roverv1.TypeAgentic:
 		return nil // AI subscriptions have no special validation at this time
 
 	case roverv1.TypeFile:
