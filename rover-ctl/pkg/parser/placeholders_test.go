@@ -21,6 +21,13 @@ var _ = Describe("SubstitutePlaceholders", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(input))
 		})
+
+		It("should preserve formatting when no placeholders are present", func() {
+			input := "object: {quoted: \"value # text\", list: [1, 2]} # comment\nblock: |\n  text # content\n"
+			result, err := parser.SubstitutePlaceholders(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(input))
+		})
 	})
 
 	Context("when content has a single placeholder", func() {
@@ -85,6 +92,14 @@ var _ = Describe("SubstitutePlaceholders", func() {
 			Expect(err.Error()).To(ContainSubstring("TEST_PH_MISSING_A"))
 			Expect(err.Error()).To(ContainSubstring("TEST_PH_MISSING_B"))
 		})
+
+		It("should list a repeated unresolved variable only once", func() {
+			os.Unsetenv("TEST_PH_MISSING_REPEATED")
+
+			input := "a: ${TEST_PH_MISSING_REPEATED}, b: ${TEST_PH_MISSING_REPEATED}"
+			_, err := parser.SubstitutePlaceholders(input)
+			Expect(err).To(MatchError("unresolved environment variable(s): TEST_PH_MISSING_REPEATED"))
+		})
 	})
 
 	Context("when content has dollar sign without braces", func() {
@@ -97,12 +112,16 @@ var _ = Describe("SubstitutePlaceholders", func() {
 	})
 
 	Context("when content has invalid variable name in braces", func() {
-		It("should leave it unchanged", func() {
-			input := "value: ${123INVALID}"
-			result, err := parser.SubstitutePlaceholders(input)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal("value: ${123INVALID}"))
-		})
+		DescribeTable("should leave it unchanged",
+			func(input string) {
+				result, err := parser.SubstitutePlaceholders(input)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).To(Equal(input))
+			},
+			Entry("missing closing brace", "value: ${"),
+			Entry("empty name", "value: ${}"),
+			Entry("name starting with a number", "value: ${123INVALID}"),
+		)
 	})
 
 	Context("when content has a placeholder with underscores", func() {

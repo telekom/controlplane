@@ -27,7 +27,7 @@ func SubstitutePlaceholders(content string) (string, error) {
 
 	replace := func(segment string) string {
 		return placeholderRegex.ReplaceAllStringFunc(segment, func(match string) string {
-			varName := placeholderRegex.FindStringSubmatch(match)[1]
+			varName := match[2 : len(match)-1]
 			value, exists := os.LookupEnv(varName)
 			if !exists {
 				if !seen[varName] {
@@ -40,14 +40,25 @@ func SubstitutePlaceholders(content string) (string, error) {
 		})
 	}
 
-	var result strings.Builder
-	for _, tk := range lexer.Tokenize(content) {
-		origin := tk.Origin
-		if tk.Type != token.CommentType {
-			origin = replace(origin)
+	// Unquoted ${VAR} expressions span multiple lexer tokens, so replace complete
+	// runs between comments rather than individual token origins.
+	var result, segment strings.Builder
+	result.Grow(len(content))
+	flush := func() {
+		if segment.Len() > 0 {
+			result.WriteString(replace(segment.String()))
+			segment.Reset()
 		}
-		result.WriteString(origin)
 	}
+	for _, tk := range lexer.Tokenize(content) {
+		if tk.Type == token.CommentType {
+			flush()
+			result.WriteString(tk.Origin)
+			continue
+		}
+		segment.WriteString(tk.Origin)
+	}
+	flush()
 
 	if len(unresolved) > 0 {
 		return "", fmt.Errorf("unresolved environment variable(s): %s", strings.Join(unresolved, ", "))
