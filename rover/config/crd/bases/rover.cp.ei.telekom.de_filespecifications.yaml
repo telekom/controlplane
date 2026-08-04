@@ -44,7 +44,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: FileSpecificationSpec defines the desired state of FileSpecification.
+            description: |-
+              FileSpecificationSpec defines the desired state of FileSpecification.
+              It mirrors the internal Rover-domain form from spec_dcp: only description and the
+              backend selector are stored; the file type identifier lives in metadata.name.
             properties:
               description:
                 description: Description provides a human-readable summary of this
@@ -57,8 +60,7 @@ spec:
                 type: string
               storageType:
                 default: sftp
-                description: 'StorageType selects the file-transfer backend. Currently
-                  only "sftp".'
+                description: StorageType selects the file-transfer backend.
                 enum:
                 - sftp
                 type: string
@@ -126,8 +128,11 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               fileType:
-                description: FileType references the file-domain resource created from
-                  this specification.
+                description: |-
+                  FileType references the file-domain FileType created from this specification.
+                  It is populated by the FileSpecification reconciler
+                  (rover/internal/controller/filespecification_controller.go), mirroring how
+                  ApiSpecification creates Api and EventSpecification creates EventType.
                 properties:
                   name:
                     type: string
@@ -149,4 +154,3 @@ spec:
     storage: true
     subresources:
       status: {}
-

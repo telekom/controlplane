@@ -132,8 +132,8 @@ rules:
   - apichangelogs
   - apispecifications
   - eventspecifications
-  - mcpspecifications
   - filespecifications
+  - mcpspecifications
   - roadmaps
   - rovers
   verbs:
@@ -150,8 +150,8 @@ rules:
   - apichangelogs/finalizers
   - apispecifications/finalizers
   - eventspecifications/finalizers
-  - mcpspecifications/finalizers
   - filespecifications/finalizers
+  - mcpspecifications/finalizers
   - roadmaps/finalizers
   - rovers/finalizers
   verbs:
@@ -162,8 +162,8 @@ rules:
   - apichangelogs/status
   - apispecifications/status
   - eventspecifications/status
-  - mcpspecifications/status
   - filespecifications/status
+  - mcpspecifications/status
   - roadmaps/status
   - rovers/status
   verbs:

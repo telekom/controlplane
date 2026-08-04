@@ -24,7 +24,7 @@
     },
     Event:   (*v1.EventSubscription)(nil),
     Agentic: (*v1.AgenticSubscription)(nil),
-    File:  (*v1.FileSubscription)(nil),
+    File:    (*v1.FileSubscription)(nil),
 }
 ---
 
@@ -38,7 +38,7 @@
         Scopes:    nil,
     },
     Agentic: (*v1.AgenticSubscription)(nil),
-    File: (*v1.FileSubscription)(nil),
+    File:    (*v1.FileSubscription)(nil),
 }
 ---
 
@@ -48,11 +48,11 @@
 
 [Subscription Mapper mapSubscription must map a FileSubscription correctly - 1]
 &v1.Subscription{
-    Api:   (*v1.ApiSubscription)(nil),
-    Event: (*v1.EventSubscription)(nil),
-    File:  &v1.FileSubscription{
+    Api:     (*v1.ApiSubscription)(nil),
+    Event:   (*v1.EventSubscription)(nil),
+    Agentic: (*v1.AgenticSubscription)(nil),
+    File:    &v1.FileSubscription{
         FileType:   "demo-sftp-spec-v1",
-        Variant:    "sftp",
         PublicKeys: {
             {Label:"consumer-key", Key:"ssh-ed25519 AAAA-consumer"},
         },

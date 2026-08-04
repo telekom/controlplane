@@ -1117,6 +1117,47 @@ spec:
                       description: File defines a File-based (SFTP) service exposure
                         configuration
                       properties:
+                        approval:
+                          description: Approval defines the approval workflow required
+                            for subscriptions to this file type
+                          properties:
+                            strategy:
+                              default: Simple
+                              description: Strategy defines the approval process required
+                                for this API
+                              enum:
+                              - Auto
+                              - Simple
+                              - FourEyes
+                              type: string
+                            trustedTeams:
+                              description: |-
+                                TrustedTeams identifies teams that are trusted for approving this API
+                                Per default your own team is trusted
+                              items:
+                                description: TrustedTeam identifies a team that is
+                                  trusted for approvals
+                                properties:
+                                  group:
+                                    description: Group identifies the organizational
+                                      group for this trusted team
+                                    minLength: 1
+                                    type: string
+                                  team:
+                                    description: Team identifies the specific team
+                                      within the group
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - group
+                                - team
+                                type: object
+                              maxItems: 10
+                              minItems: 0
+                              type: array
+                          required:
+                          - strategy
+                          type: object
                         fileType:
                           description: |-
                             FileType identifies the file type that is exposed. It must match the
@@ -1137,8 +1178,8 @@ spec:
                                 minLength: 1
                                 type: string
                               label:
-                                description: Label is a human-readable identifier for
-                                  the key. It must be unique per fileType.
+                                description: Label is a human-readable identifier
+                                  for the key. It must be unique per fileType.
                                 minLength: 1
                                 type: string
                             required:
@@ -1147,13 +1188,6 @@ spec:
                             type: object
                           minItems: 1
                           type: array
-                        variant:
-                          description: |-
-                            Variant selects the file-transfer backend. Currently only "sftp" is
-                            supported.
-                          enum:
-                          - sftp
-                          type: string
                         visibility:
                           default: Enterprise
                           description: Visibility defines who can see and subscribe
@@ -1164,6 +1198,7 @@ spec:
                           - Enterprise
                           type: string
                       required:
+                      - approval
                       - fileType
                       - publicKeys
                       - visibility
@@ -1714,7 +1749,7 @@ spec:
                         fileType:
                           description: |-
                             FileType identifies the file type to consume. It must match the
-                            name (and spec.type) of an applied FileSpecification.
+                            name of an applied FileSpecification.
                           minLength: 1
                           type: string
                         publicKeys:
@@ -1731,8 +1766,8 @@ spec:
                                 minLength: 1
                                 type: string
                               label:
-                                description: Label is a human-readable identifier for
-                                  the key. It must be unique per fileType.
+                                description: Label is a human-readable identifier
+                                  for the key. It must be unique per fileType.
                                 minLength: 1
                                 type: string
                             required:
@@ -1976,8 +2011,12 @@ spec:
                   type: object
                 type: array
               fileExposures:
-                description: FileExposures are references to FileExposure resources
-                  created by this Rover in the file domain
+                description: |-
+                  FileExposures are references to FileExposure resources created by this Rover in the file domain.
+
+                  (make(..., 0)); it is populated (append of the created file-domain resource refs)
+                  by the file handler dispatch once the file domain module is available.
+                  Populated from: rover/internal/handler/rover/handler.go, case roverv1.TypeFile.
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
@@ -1999,8 +2038,10 @@ spec:
                   type: object
                 type: array
               fileSubscriptions:
-                description: FileSubscriptions are references to FileSubscription resources
-                  created by this Rover in the file domain
+                description: |-
+                  FileSubscriptions are references to FileSubscription resources created by this Rover in the file domain.
+
+                  (rover/internal/handler/rover/handler.go, case roverv1.TypeFile) once delivered.
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
