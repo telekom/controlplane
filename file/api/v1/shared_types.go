@@ -62,7 +62,9 @@ type Approval struct {
 // FileSFTP configures SFTP-specific settings for file exposures and subscriptions.
 type FileSFTP struct {
 	// PublicKeys contains SSH public keys for the SFTP user of the FileType.
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:uniqueItems=true
 	PublicKeys []SSHPublicKeySpec `json:"publicKeys,omitempty"`
 }
 
