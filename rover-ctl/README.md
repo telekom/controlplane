@@ -46,8 +46,8 @@ The `roverctl` container image published to the internal Artifactory Docker regi
 
 | Tool     | Pinned Version |
 |----------|-----------------|
-| `bash`   | 5.2.26          |
-| `jq`     | 1.7.1           |
+| `bash`   | 5.3.9           |
+| `jq`     | 1.8.1           |
 | `yq`     | 4.44.3          |
 
 These tools are only available inside the container image. The standalone `roverctl` binary archives (`.tar.gz`/`.zip` for Linux and Windows) do **not** bundle `bash`, `jq`, or `yq` — install them separately if you use the standalone binary outside a container.

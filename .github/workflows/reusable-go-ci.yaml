@@ -108,6 +108,9 @@ on:
       image_digest:
         description: "Image digest from the build image step"
         value: ${{ jobs.build.outputs.image_digest }}
+      image_repository:
+        description: "The effective image repository (registry host + path) the built image was pushed to"
+        value: ${{ jobs.build.outputs.image_repository }}
 
 permissions:
   contents: read

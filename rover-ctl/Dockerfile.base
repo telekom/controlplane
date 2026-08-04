@@ -23,10 +23,10 @@ FROM golang:1.24-alpine AS yq-builder
 ARG YQ_VERSION
 RUN go install "github.com/mikefarah/yq/v4@v${YQ_VERSION}"
 
-FROM alpine:3.20
+FROM alpine:3.24
 
-ARG JQ_VERSION=1.7.1-r0
-ARG BASH_VERSION=5.2.26-r0
+ARG JQ_VERSION=1.8.1-r0
+ARG BASH_VERSION=5.3.9-r1
 
 RUN apk add --no-cache \
         bash="${BASH_VERSION}" \

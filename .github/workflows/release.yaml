@@ -12,11 +12,8 @@ permissions:
 jobs:
   rover-ctl-base-image:
     name: Rover-CTL Base Image
-    # Unconditional (unlike ci.yaml's path-filtered job): release runs are
-    # already manual/infrequent, so rebuilding here isn't wasteful, and this
-    # acts as a safety net ensuring the base image is always fresh before a
-    # real release, regardless of whether ci.yaml's change-detection ran on
-    # the exact commit being released.
+    # Runs unconditionally as a safety net, ensuring the base image is
+    # always fresh before a release.
     uses: ./.github/workflows/rover-ctl-base-image.yaml
     secrets: inherit
 
@@ -60,17 +57,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Log in to Artifactory
-        # The rover-ctl-base image itself is built/pushed by the
-        # rover-ctl-base-image job above. This login is still needed here
-        # because goreleaser's `kos` pipe also pushes the final rover-ctl
-        # image to Artifactory (see the `rover-ctl` entry in
-        # .goreleaser.yaml) - it bundles the same GPL-3.0-or-later (bash,
-        # readline) and GPL-2.0-only (Alpine base) components, so it can't
-        # be published to GHCR either.
+        # Needed to push the final bash/jq/yq-bundled roverctl image (built
+        # below via docker buildx from rover-ctl/Dockerfile). It's not
+        # published to GHCR because it bundles GPL-3.0-or-later (bash,
+        # readline) and GPL-2.0-only (Alpine base) components inherited from
+        # the rover-ctl-base image built by the rover-ctl-base-image job
+        # above.
         #
-        # vars.REGISTRY_HOST must match the `repositories`/`base_image`
-        # values hardcoded in .goreleaser.yaml (which can't read repo vars -
-        # see the comment there).
+        # vars.REGISTRY_HOST must match the registry host used below and in
+        # .github/workflows/rover-ctl-base-image.yaml.
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ${{ vars.REGISTRY_HOST }}
@@ -97,3 +92,23 @@ jobs:
           args: release --release-notes /tmp/release-notes.md --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        if: steps.semantic_release.outputs.new_release_published == 'true'
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+      - name: Build and push final roverctl image (bash/jq/yq + binary)
+        # GoReleaser's `kos` pipe (run above) publishes the plain roverctl
+        # binary image to GHCR (no GPL content). This step layers that
+        # binary onto the Artifactory bash/jq/yq base image (built by the
+        # rover-ctl-base-image job above) and pushes the combined image to
+        # Artifactory - see rover-ctl/Dockerfile.
+        if: steps.semantic_release.outputs.new_release_published == 'true'
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: rover-ctl
+          push: true
+          build-args: |
+            ROVERCTL_IMAGE=ghcr.io/telekom/controlplane/rover-ctl:${{ steps.semantic_release.outputs.new_release_version }}
+            ROVERCTL_BASE_IMAGE=${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
+          tags: |
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}:${{ steps.semantic_release.outputs.new_release_version }}
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}:latest

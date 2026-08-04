@@ -196,60 +196,82 @@ jobs:
   rover-ctl-base-image:
     name: Rover-CTL Base Image
     needs: rover-ctl-base-image-changes
-    # Only rebuild/push when rover-ctl/Dockerfile.base actually changed in
-    # this push/PR - avoids rebuilding the same unchanged image on every CI
-    # run, while removing the staleness risk of a purely manual trigger
-    # (this job runs automatically the moment the Dockerfile changes, before
-    # merge). See .github/workflows/rover-ctl-base-image.yaml for the full
-    # rationale and the release.yaml safety net.
+    # Only rebuilds/pushes when rover-ctl/Dockerfile.base changed in this
+    # push/PR (see rover-ctl-base-image-changes above); still runs
+    # unconditionally in release.yaml.
     if: needs.rover-ctl-base-image-changes.outputs.changed == 'true'
     uses: ./.github/workflows/rover-ctl-base-image.yaml
     secrets: inherit
 
   rover-ctl:
     name: Rover-CTL
-    needs: rover-ctl-base-image
-    # rover-ctl-base-image is conditionally skipped when Dockerfile.base
-    # didn't change (see above) - by default a skipped `needs` job would
-    # also skip this job, so explicitly allow proceeding when it was
-    # skipped, not just when it succeeded.
-    if: ${{ !cancelled() && (needs.rover-ctl-base-image.result == 'success' || needs.rover-ctl-base-image.result == 'skipped') }}
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
       name: rover-ctl
       module: rover-ctl
       run_check_generated_files: false
       ko_build_path: "main.go"
-      # rover-ctl's release image bundles bash/jq/yq via a custom base image
-      # containing GPL-3.0-or-later (bash, readline) and GPL-2.0-only
-      # (Alpine base) components, so CI must build/scan/push it the same way
-      # as the release pipeline: against the internal Artifactory registry,
-      # not GHCR.
-      # and the `rover-ctl` kos entry in .goreleaser.yaml, which this must be
-      # kept in sync with (goreleaser's `kos` pipe can't read repo vars, so
-      # that file hardcodes the same values - see the comment there).
-      # TODO: create vars.REGISTRY_HOST, vars.REGISTRY_ROVERCTL_REPO,
-      # vars.REGISTRY_ROVERCTL_BASE_REPO, and vars.ROVERCTL_BASE_IMAGE_TAG
-      # repository variables.
-      #
-      # container_registry is the registry HOST ONLY (for docker login /
-      # Trivy auth). image_repository is a full override of the final image
-      # path, since Artifactory's path layout doesn't match GHCR's
-      # <registry>/<org>/<repo>/<module> convention that reusable-go-ci.yaml
-      # otherwise derives automatically - without this override, that
-      # convention's org/repo/module suffix would get appended a second time
-      # on top of the already-complete Artifactory path.
-      #
-      # NOTE: the base image lives in a DIFFERENT Artifactory repo/path
-      # (vars.REGISTRY_ROVERCTL_BASE_REPO) than the final rover-ctl image
-      # (vars.REGISTRY_ROVERCTL_REPO) - they are unrelated paths, not a
-      # shared prefix with a suffix appended.
-      container_registry: ${{ vars.REGISTRY_HOST }}
-      image_repository: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}
-      base_image: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
-    secrets:
-      registry_username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
-      registry_password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret
+      # This only builds/pushes the plain roverctl binary image to GHCR
+      # (ko's default distroless base, no bash/jq/yq, no GPL content) - same
+      # as every other module. The bash/jq/yq-bundled image published to the
+      # internal Artifactory registry is assembled separately by the
+      # rover-ctl-image job below, which layers this GHCR image's binary
+      # onto the Artifactory base image (see rover-ctl/Dockerfile).
+
+  rover-ctl-image:
+    name: Rover-CTL Combined Image (bash/jq/yq)
+    needs: [rover-ctl, rover-ctl-base-image]
+    # rover-ctl-base-image is conditionally skipped when Dockerfile.base
+    # didn't change - by default a skipped `needs` job would also skip this
+    # job, so explicitly allow proceeding when it was skipped, not just when
+    # it succeeded.
+    if: ${{ !cancelled() && needs.rover-ctl.result == 'success' && (needs.rover-ctl-base-image.result == 'success' || needs.rover-ctl-base-image.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Inject slug vars
+        uses: rlespinasse/github-slug-action@e6f261660910b273384c5c42b17a0217881b217a # v5.6.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+      - name: Log in to GHCR
+        # Needed so buildx can pull the ROVERCTL_IMAGE builder-stage image
+        # pushed by the rover-ctl job above, regardless of its visibility.
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to Artifactory
+        # TODO: create vars.REGISTRY_HOST, vars.REGISTRY_ROVERCTL_REPO,
+        # vars.REGISTRY_ROVERCTL_BASE_REPO, and vars.ROVERCTL_BASE_IMAGE_TAG
+        # repository variables, plus the ARTIFACTORY_O28M_PUSH_USER/TOKEN
+        # secrets referenced below.
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ vars.REGISTRY_HOST }}
+          username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
+          password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret
+      - name: Build and push combined roverctl image
+        # Layers the plain roverctl binary (just built/pushed to GHCR by the
+        # rover-ctl job above, referenced by immutable digest) onto the
+        # Artifactory bash/jq/yq base image - see rover-ctl/Dockerfile.
+        #
+        # NOTE: the base image lives in a DIFFERENT Artifactory repo/path
+        # (vars.REGISTRY_ROVERCTL_BASE_REPO) than this combined image
+        # (vars.REGISTRY_ROVERCTL_REPO) - they are unrelated paths, not a
+        # shared prefix with a suffix appended.
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: rover-ctl
+          push: true
+          build-args: |
+            ROVERCTL_IMAGE=${{ needs.rover-ctl.outputs.image_repository }}@${{ needs.rover-ctl.outputs.image_digest }}
+            ROVERCTL_BASE_IMAGE=${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
+          tags: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}:${{ env.GITHUB_HEAD_REF_SLUG || 'latest' }}
 
   snapshotter:
     name: Snapshotter
