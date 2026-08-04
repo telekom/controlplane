@@ -32,18 +32,18 @@ type AgenticExposureHandler struct {
 func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.AgenticExposure) error {
 	logger := log.FromContext(ctx)
 
-	// 1. Validate McpServer exists and is active
-	found, mcpServer, err := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
+	// 1. Validate server (McpServer or AgentCard) exists and is active
+	found, serverInfo, err := util.FindActiveServer(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return err
 	}
 	obj.SetCondition(NewMcpServerCondition(found))
 	if !found {
-		return handleMcpServerNotFound(ctx, obj, mcpServer)
+		return handleServerNotFound(ctx, obj)
 	}
 
-	// 1b. Validate exposure scopes against McpServer's declared scopes
-	if !validateExposureScopes(ctx, mcpServer, obj) {
+	// 1b. Validate exposure scopes against server's declared scopes
+	if !validateExposureScopes(ctx, serverInfo, obj) {
 		return nil
 	}
 
@@ -208,53 +208,44 @@ func checkCompetingExposures(ctx context.Context, obj *agenticv1.AgenticExposure
 
 // handleMcpServerNotFound handles the case where no active McpServer was found.
 // It checks for case-only mismatches, cleans up stale routes, and sets blocking conditions.
-func handleMcpServerNotFound(ctx context.Context, obj *agenticv1.AgenticExposure, mcpServer *agenticv1.McpServer) error {
-	if mcpServer != nil {
-		msg := fmt.Sprintf("McpServer is registered but the case does not match (got=%q, found=%q). "+
-			"Please resolve the conflict by changing the BasePath of either the McpServer or the AgenticExposure.",
-			obj.Spec.BasePath, mcpServer.Spec.BasePath)
-		obj.SetCondition(condition.NewNotReadyCondition("McpServerCaseConflict", msg))
-		obj.SetCondition(condition.NewBlockedCondition(msg))
-		return nil
-	}
-
+func handleServerNotFound(ctx context.Context, obj *agenticv1.AgenticExposure) error {
 	if obj.Status.Route != nil {
 		if cleanupErr := util.DeleteRouteIfExists(ctx, obj.Status.Route); cleanupErr != nil {
-			return errors.Wrap(cleanupErr, "failed to cleanup Route after McpServer not found")
+			return errors.Wrap(cleanupErr, "failed to cleanup Route after server not found")
 		}
 	}
 	for i := range obj.Status.ProxyRoutes {
 		if cleanupErr := util.DeleteRouteIfExists(ctx, &obj.Status.ProxyRoutes[i]); cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "failed to cleanup proxy Route after McpServer not found")
+			return errors.Wrapf(cleanupErr, "failed to cleanup proxy Route after server not found")
 		}
 	}
 
-	obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
-		"No active McpServer found for basePath "+obj.Spec.BasePath))
+	obj.SetCondition(condition.NewNotReadyCondition("ServerNotFound",
+		"No active McpServer or AgentCard found for basePath "+obj.Spec.BasePath))
 	obj.SetCondition(condition.NewBlockedCondition(
-		"McpServer " + obj.Spec.BasePath + " does not exist or is not active. " +
-			"AgenticExposure will be automatically processed when the McpServer is registered"))
+		"Server for " + obj.Spec.BasePath + " does not exist or is not active. " +
+			"AgenticExposure will be automatically processed when the server is registered"))
 	return nil
 }
 
-// validateExposureScopes checks that the M2M scopes in the AgenticExposure are a valid subset of the McpServer's scopes.
+// validateExposureScopes checks that the M2M scopes in the AgenticExposure are a valid subset of the server's scopes.
 // It sets blocking conditions on the exposure and returns false if processing should stop.
-func validateExposureScopes(_ context.Context, mcpServer *agenticv1.McpServer, obj *agenticv1.AgenticExposure) bool {
+func validateExposureScopes(_ context.Context, server *util.ServerInfo, obj *agenticv1.AgenticExposure) bool {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil || obj.HasExternalIdp() {
 		return true
 	}
-	if len(mcpServer.Spec.Oauth2Scopes) == 0 {
-		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "McpServer does not define any OAuth2 scopes"))
-		obj.SetCondition(condition.NewBlockedCondition("McpServer does not define any OAuth2 scopes. AgenticExposure will be automatically processed, if the McpServer will be updated with scopes"))
+	if len(server.Oauth2Scopes) == 0 {
+		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Server does not define any OAuth2 scopes"))
+		obj.SetCondition(condition.NewBlockedCondition("Server does not define any OAuth2 scopes. AgenticExposure will be automatically processed, if the server will be updated with scopes"))
 		return false
 	}
-	scopesExist, invalidScopes := util.IsSubsetOfScopes(mcpServer.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
+	scopesExist, invalidScopes := util.IsSubsetOfScopes(server.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
 	if !scopesExist {
 		message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
-			strings.Join(mcpServer.Spec.Oauth2Scopes, ", "),
+			strings.Join(server.Oauth2Scopes, ", "),
 			strings.Join(invalidScopes, ", "),
 		)
-		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in AgenticExposure are not defined in the McpServer"))
+		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in AgenticExposure are not defined in the server"))
 		obj.SetCondition(condition.NewBlockedCondition(message))
 		return false
 	}
