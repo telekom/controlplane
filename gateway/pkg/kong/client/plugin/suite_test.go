@@ -101,14 +101,47 @@ var _ = Describe("Plugin", func() {
 
 		It("should correctly encode a string map", func() {
 			m := New()
-			m.AddKV("key1", "value1")
 			m.AddKV("key2", "value2")
+			m.AddKV("key1", "value1")
 
 			encoded, err := m.MarshalJSON()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(encoded)).To(SatisfyAny(
-				Equal(`["key2:value2","key1:value1"]`),
-				Equal(`["key1:value1","key2:value2"]`)))
+			Expect(string(encoded)).To(Equal(`["key1:value1","key2:value2"]`))
+		})
+
+		It("should encode an empty string map as an empty array", func() {
+			encoded, err := New().MarshalJSON()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(encoded)).To(Equal(`[]`))
+		})
+
+		// Kong is written on every reconciliation if the encoding is not stable,
+		// because the config read back is compared with the config to be sent.
+		It("should encode the same map identically every time", func() {
+			m := New()
+			for _, key := range []string{"a", "b", "c", "d", "e", "f", "g", "h"} {
+				m.AddKV(key, "value")
+			}
+
+			first, err := m.MarshalJSON()
+			Expect(err).ToNot(HaveOccurred())
+			for range 20 {
+				again, err := m.MarshalJSON()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(again).To(Equal(first))
+			}
+		})
+
+		It("should escape values that are not JSON-safe", func() {
+			m := New()
+			m.AddKV("quote", `a"b`)
+
+			encoded, err := m.MarshalJSON()
+			Expect(err).ToNot(HaveOccurred())
+
+			var decoded []string
+			Expect(json.Unmarshal(encoded, &decoded)).To(Succeed())
+			Expect(decoded).To(Equal([]string{`quote:a"b`}))
 		})
 
 		It("should correctly decode a string map", func() {

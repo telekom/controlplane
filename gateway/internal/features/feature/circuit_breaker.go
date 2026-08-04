@@ -111,7 +111,6 @@ func isDeleteScenario(route *gatewayv1.Route) bool {
 func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
 	routeName := route.GetName()
 	kongClient := builder.GetKongClient()
-	kongAdminApi := kongClient.GetKongAdminApi()
 
 	// ! important - if CB is enabled then the kong service value needs to reference the kong upstream (same name as route name)
 	builder.SetUpstream(&client.CustomUpstream{
@@ -159,15 +158,6 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 		},
 	}
 
-	upstreamResponse, err := kongAdminApi.UpsertUpstreamWithResponse(ctx, upstreamName, upstreamBody)
-	if err != nil {
-		return fmt.Errorf("failed to create upstream: %w", err)
-	}
-	if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
-		return fmt.Errorf("failed to create upstream (%d): %s: %w", upstreamResponse.StatusCode(), string(upstreamResponse.Body), err)
-	}
-	route.SetUpstreamId(*upstreamResponse.JSON200.Id)
-
 	targetsName := routeName
 	targetsTarget := DefaultTargetsTarget
 	targetsWeight := 100
@@ -181,15 +171,8 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 		Weight: &targetsWeight,
 	}
 
-	// this is a special case with the kong admin API - this endpoint /upstreams/:upstreamName/targets actually accepts multiple POST requests, so this is not a mistake
-	targetsResponse, err := kongAdminApi.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
-	if err != nil {
-		return fmt.Errorf("failed to create targets for upstream: %w", err)
+	if err := kongClient.CreateOrReplaceUpstream(ctx, route, &upstreamBody, &targetsBody); err != nil {
+		return fmt.Errorf("failed to create or replace upstream: %w", err)
 	}
-	if err := client.CheckStatusCode(targetsResponse, 200, 201); err != nil {
-		return fmt.Errorf("failed to create targets for upstream (%d): %s: %w", targetsResponse.StatusCode(), string(targetsResponse.Body), err)
-	}
-	route.SetTargetsId(*targetsResponse.JSON200.Id)
-
 	return nil
 }
