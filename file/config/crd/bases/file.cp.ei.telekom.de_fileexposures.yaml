@@ -94,7 +94,10 @@ spec:
                       required:
                       - key
                       type: object
+                    minItems: 1
                     type: array
+                required:
+                - publicKeys
                 type: object
               visibility:
                 default: Enterprise

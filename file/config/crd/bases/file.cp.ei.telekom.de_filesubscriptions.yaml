@@ -70,7 +70,10 @@ spec:
                       required:
                       - key
                       type: object
+                    minItems: 1
                     type: array
+                required:
+                - publicKeys
                 type: object
               zone:
                 description: Zone identifies the zone where the subscriber is located.
