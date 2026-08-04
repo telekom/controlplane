@@ -7,7 +7,6 @@ package feature_test
 import (
 	"context"
 	"errors"
-	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -125,9 +124,8 @@ var _ = Describe("CircuitBreakerFeature", func() {
 	Describe("Apply()", func() {
 		Context("apply scenario - CircuitBreaker enabled", func() {
 			var (
-				route            *gatewayv1.Route
-				mockKongClient   *clientmock.MockKongClient
-				mockKongAdminApi *clientmock.MockKongAdminApi
+				route          *gatewayv1.Route
+				mockKongClient *clientmock.MockKongClient
 			)
 
 			BeforeEach(func() {
@@ -141,114 +139,35 @@ var _ = Describe("CircuitBreakerFeature", func() {
 					},
 				}
 				mockKongClient = clientmock.NewMockKongClient(GinkgoT())
-				mockKongAdminApi = clientmock.NewMockKongAdminApi(GinkgoT())
 			})
 
-			It("upserts upstream and creates target, storing IDs on the route", func() {
-				upstreamId := "upstream-123"
-				upstreamResp := &kong.UpsertUpstreamResponse{
-					HTTPResponse: &http.Response{StatusCode: 200},
-					JSON200:      &kong.Upstream{Id: &upstreamId},
-				}
-
-				targetId := "target-456"
-				targetResp := &kong.CreateTargetForUpstreamResponse{
-					HTTPResponse: &http.Response{StatusCode: 201},
-					JSON200:      &kong.Target{Id: &targetId},
-				}
-
+			It("delegates upstream reconciliation to the Kong client", func() {
 				builder.EXPECT().GetRoute().Return(route, true)
 				builder.EXPECT().SetUpstream(mock.Anything).Return()
 				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi)
-				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(upstreamResp, nil)
-				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetResp, nil)
+				mockKongClient.EXPECT().CreateOrReplaceUpstream(
+					mock.Anything,
+					route,
+					mock.MatchedBy(func(body *kong.CreateUpstreamJSONRequestBody) bool {
+						return body.Name == route.Name && body.Healthchecks != nil
+					}),
+					mock.MatchedBy(func(body *kong.CreateTargetForUpstreamJSONRequestBody) bool {
+						return body.Target != nil && *body.Target == feature.DefaultTargetsTarget
+					}),
+				).Return(nil)
 
-				err := f.Apply(ctx, builder)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(route.GetUpstreamId()).To(Equal("upstream-123"))
-				Expect(route.GetTargetsId()).To(Equal("target-456"))
+				Expect(f.Apply(ctx, builder)).To(Succeed())
 			})
 
-			It("returns a wrapped error when UpsertUpstreamWithResponse fails", func() {
+			It("returns a wrapped Kong client error", func() {
 				builder.EXPECT().GetRoute().Return(route, true)
 				builder.EXPECT().SetUpstream(mock.Anything).Return()
 				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi)
-				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).
-					Return(nil, errors.New("connection refused"))
+				mockKongClient.EXPECT().CreateOrReplaceUpstream(mock.Anything, route, mock.Anything, mock.Anything).
+					Return(errors.New("connection refused"))
 
 				err := f.Apply(ctx, builder)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("failed to create upstream"))
-				Expect(err.Error()).To(ContainSubstring("connection refused"))
-			})
-
-			It("returns an error when UpsertUpstreamWithResponse returns a non-200 status", func() {
-				upstreamResp := &kong.UpsertUpstreamResponse{
-					Body:         []byte(`{"message":"bad request"}`),
-					HTTPResponse: &http.Response{StatusCode: 400},
-				}
-
-				builder.EXPECT().GetRoute().Return(route, true)
-				builder.EXPECT().SetUpstream(mock.Anything).Return()
-				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi)
-				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).
-					Return(upstreamResp, nil)
-
-				err := f.Apply(ctx, builder)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("failed to create upstream"))
-				Expect(err.Error()).To(ContainSubstring("400"))
-			})
-
-			It("returns a wrapped error when CreateTargetForUpstreamWithResponse fails", func() {
-				upstreamId := "upstream-123"
-				upstreamResp := &kong.UpsertUpstreamResponse{
-					HTTPResponse: &http.Response{StatusCode: 200},
-					JSON200:      &kong.Upstream{Id: &upstreamId},
-				}
-
-				builder.EXPECT().GetRoute().Return(route, true)
-				builder.EXPECT().SetUpstream(mock.Anything).Return()
-				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi)
-				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).
-					Return(upstreamResp, nil)
-				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).
-					Return(nil, errors.New("timeout"))
-
-				err := f.Apply(ctx, builder)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("failed to create targets for upstream"))
-				Expect(err.Error()).To(ContainSubstring("timeout"))
-			})
-
-			It("returns an error when CreateTargetForUpstreamWithResponse returns a non-200/201 status", func() {
-				upstreamId := "upstream-123"
-				upstreamResp := &kong.UpsertUpstreamResponse{
-					HTTPResponse: &http.Response{StatusCode: 200},
-					JSON200:      &kong.Upstream{Id: &upstreamId},
-				}
-				targetResp := &kong.CreateTargetForUpstreamResponse{
-					Body:         []byte(`{"message":"conflict"}`),
-					HTTPResponse: &http.Response{StatusCode: 409},
-				}
-
-				builder.EXPECT().GetRoute().Return(route, true)
-				builder.EXPECT().SetUpstream(mock.Anything).Return()
-				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi)
-				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).
-					Return(upstreamResp, nil)
-				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).
-					Return(targetResp, nil)
-
-				err := f.Apply(ctx, builder)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("failed to create targets for upstream"))
-				Expect(err.Error()).To(ContainSubstring("409"))
+				Expect(err).To(MatchError("failed to create or replace upstream: connection refused"))
 			})
 		})
 

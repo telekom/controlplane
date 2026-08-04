@@ -13,8 +13,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/telekom/controlplane/common-server/pkg/client"
 	"golang.org/x/oauth2"
+
+	"github.com/telekom/controlplane/common-server/pkg/client"
 )
 
 type ApiResponse interface {
@@ -98,65 +99,6 @@ func CheckStatusCode(res ApiResponse, okStatusCodes ...int) ApiError {
 	}
 }
 
-// CheckHTTPStatus classifies a raw HTTP status code into an ApiError.
-// It returns nil when statusCode is in okStatusCodes.
-// This is the lower-level sibling of CheckStatusCode for callers that do not
-// have an ApiResponse (e.g. oauth2.RetrieveError).
-func CheckHTTPStatus(statusCode int, okStatusCodes ...int) ApiError {
-	if slices.Contains(okStatusCodes, statusCode) {
-		return nil
-	}
-
-	if statusCode == http.StatusTooManyRequests {
-		return &apiError{
-			statusCode:   statusCode,
-			message:      fmt.Sprintf("Kong rate limit error (%d)", statusCode),
-			retryAllowed: true,
-			retryDelay:   3 * time.Second,
-		}
-	}
-
-	if statusCode >= http.StatusInternalServerError {
-		return &apiError{
-			statusCode:   statusCode,
-			message:      fmt.Sprintf("Kong server error (%d)", statusCode),
-			retryAllowed: true,
-		}
-	}
-
-	return &apiError{
-		statusCode:   statusCode,
-		message:      fmt.Sprintf("Kong client error (%d)", statusCode),
-		retryAllowed: false,
-	}
-}
-
-// IsNotFound returns true if the error is an ApiError with a 404 status code.
-func IsNotFound(err error) bool {
-	var ae *apiError
-	if ok := errors.As(err, &ae); ok {
-		return ae.statusCode == http.StatusNotFound
-	}
-	return false
-}
-
-func WrapApiResponse(res *http.Response) ApiResponse {
-	return &responseWrapper{
-		response: res,
-	}
-}
-
-type responseWrapper struct {
-	response *http.Response
-}
-
-func (r *responseWrapper) StatusCode() int {
-	if r.response == nil {
-		return 0
-	}
-	return r.response.StatusCode
-}
-
 // HandleClientError classifies transport-level errors from the HTTP client so
 // that ctrlerrors.HandleError can route them correctly.
 //
@@ -171,7 +113,8 @@ func HandleClientError(err error) error {
 		return nil
 	}
 
-	if _, ok := errors.AsType[*apiError](err); ok {
+	var alreadyClassified *apiError
+	if errors.As(err, &alreadyClassified) {
 		return err
 	}
 

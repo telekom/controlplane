@@ -173,7 +173,6 @@ func setupKongMockExpectations() {
 	mockKongClient.On("DeleteRoute", mock.Anything, mock.Anything).Return(nil).Maybe()
 	mockKongClient.On("CreateOrReplaceConsumer", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
 	mockKongClient.On("DeleteConsumer", mock.Anything, mock.Anything).Return(nil).Maybe()
-	mockKongClient.On("LoadPlugin", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
 	mockKongClient.On("DeleteUpstream", mock.Anything, mock.Anything).Return(nil).Maybe()
 }
 
