@@ -8,6 +8,8 @@ import (
 	"context"
 	"os"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -15,8 +17,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
-
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {

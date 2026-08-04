@@ -28,26 +28,26 @@ func (h *McpSpecificationHandler) CreateOrUpdate(ctx context.Context, spec *rove
 	c := client.ClientFromContextOrDie(ctx)
 	name := roverv1.MakeMcpSpecificationName(spec.Spec.BasePath)
 
-	agenticServer := &agenticv1.AgenticServer{
+	mcpServer := &agenticv1.McpServer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeNameValue(name),
 			Namespace: spec.Namespace,
 		},
 	}
 
-	spec.Status.AgenticServer = *types.ObjectRefFromObject(agenticServer)
+	spec.Status.McpServer = *types.ObjectRefFromObject(mcpServer)
 
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(spec, agenticServer, c.Scheme())
+		err := controllerutil.SetControllerReference(spec, mcpServer, c.Scheme())
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
-		agenticServer.Labels = map[string]string{
+		mcpServer.Labels = map[string]string{
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(spec.Spec.BasePath),
 		}
 
-		agenticServer.Spec = agenticv1.AgenticServerSpec{
+		mcpServer.Spec = agenticv1.McpServerSpec{
 			BasePath:      spec.Spec.BasePath,
 			Version:       spec.Spec.Version,
 			Name:          spec.Spec.Name,
@@ -60,17 +60,17 @@ func (h *McpSpecificationHandler) CreateOrUpdate(ctx context.Context, spec *rove
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, agenticServer, mutator)
+	_, err := c.CreateOrUpdate(ctx, mcpServer, mutator)
 	if err != nil {
-		return errors.Wrap(err, "failed to create or update AgenticServer")
+		return errors.Wrap(err, "failed to create or update McpServer")
 	}
 
 	if c.AnyChanged() {
-		spec.SetCondition(condition.NewProcessingCondition("Provisioning", "AgenticServer updated"))
-		spec.SetCondition(condition.NewNotReadyCondition("Provisioning", "AgenticServer is not ready"))
+		spec.SetCondition(condition.NewProcessingCondition("Provisioning", "McpServer updated"))
+		spec.SetCondition(condition.NewNotReadyCondition("Provisioning", "McpServer is not ready"))
 	} else {
-		spec.SetCondition(condition.NewDoneProcessingCondition("AgenticServer created"))
-		spec.SetCondition(condition.NewReadyCondition("Provisioned", "AgenticServer is ready"))
+		spec.SetCondition(condition.NewDoneProcessingCondition("McpServer created"))
+		spec.SetCondition(condition.NewReadyCondition("Provisioned", "McpServer is ready"))
 	}
 
 	return nil

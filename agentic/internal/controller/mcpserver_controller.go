@@ -18,39 +18,39 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
-	"github.com/telekom/controlplane/agentic/internal/handler/agenticserver"
+	"github.com/telekom/controlplane/agentic/internal/handler/mcpserver"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 )
 
-// AgenticServerReconciler reconciles a AgenticServer object
-type AgenticServerReconciler struct {
+// McpServerReconciler reconciles a McpServer object
+type McpServerReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	cc.Controller[*agenticv1.AgenticServer]
+	cc.Controller[*agenticv1.McpServer]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticservers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticservers/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticservers/finalizers,verbs=update
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers/finalizers,verbs=update
 
-func (r *AgenticServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	return r.Controller.Reconcile(ctx, req, &agenticv1.AgenticServer{})
+func (r *McpServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	return r.Controller.Reconcile(ctx, req, &agenticv1.McpServer{})
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *AgenticServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.Recorder = mgr.GetEventRecorderFor("agenticserver-controller")
-	r.Controller = cc.NewController(&agenticserver.AgenticServerHandler{}, r.Client, r.Recorder)
+func (r *McpServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.Recorder = mgr.GetEventRecorderFor("mcpserver-controller")
+	r.Controller = cc.NewController(&mcpserver.McpServerHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&agenticv1.AgenticServer{}).
-		Watches(&agenticv1.AgenticServer{},
-			handler.EnqueueRequestsFromMapFunc(r.MapAgenticServerToAgenticServer),
+		For(&agenticv1.McpServer{}).
+		Watches(&agenticv1.McpServer{},
+			handler.EnqueueRequestsFromMapFunc(r.MapMcpServerToMcpServer),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
@@ -60,17 +60,17 @@ func (r *AgenticServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// MapAgenticServerToAgenticServer enqueues other AgenticServers with the same basePath
-// when any AgenticServer changes or is deleted.
+// MapMcpServerToMcpServer enqueues other McpServers with the same basePath
+// when any McpServer changes or is deleted.
 //
 //nolint:dupl // parallel structure with MapAgenticExposureToAgenticExposure; operates on different types
-func (r *AgenticServerReconciler) MapAgenticServerToAgenticServer(ctx context.Context, obj client.Object) []reconcile.Request {
-	server, ok := obj.(*agenticv1.AgenticServer)
+func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj client.Object) []reconcile.Request {
+	server, ok := obj.(*agenticv1.McpServer)
 	if !ok {
 		return nil
 	}
 
-	list := &agenticv1.AgenticServerList{}
+	list := &agenticv1.McpServerList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:       server.Labels[cconfig.EnvironmentLabelKey],
 		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath),

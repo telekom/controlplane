@@ -42,6 +42,9 @@ type Group func(*sql.Selector)
 // Member is the predicate function for member builders.
 type Member func(*sql.Selector)
 
+// PermissionSet is the predicate function for permissionset builders.
+type PermissionSet func(*sql.Selector)
+
 // Team is the predicate function for team builders.
 type Team func(*sql.Selector)
 

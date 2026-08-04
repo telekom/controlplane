@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 
@@ -565,6 +566,7 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(zone.Status.Links.Issuer).To(Equal("https://test-iris.de/auth/realms/test"))
 			// World visibility: LMS issuer includes /spacegate prefix
 			Expect(zone.Status.Links.LmsIssuer).To(Equal("https://test-stargate.de/spacegate/auth/realms/test"))
+			Expect(zone.Status.Links.InternalIssuer).To(Equal("https://test-iris.de/auth/realms/" + naming.ForInternalIdentityRealm()))
 		})
 
 		It("should compute LMS issuer without spacegate prefix for Enterprise visibility", func() {

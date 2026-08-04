@@ -145,13 +145,16 @@ type RoverSpec struct {
 
 	// Exposures is a list of APIs and Events that this Rover exposes to consumers
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Exposures []Exposure `json:"exposures,omitempty"`
 	// Subscriptions is a list of APIs and Events that this Rover consumes from providers
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Subscriptions []Subscription `json:"subscriptions,omitempty"`
 
 	// Permissions defines role-based access control permissions for this application
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=150
 	Permissions []Permission `json:"permissions,omitempty"`
 
 	// ExternalIds carries business identifiers (e.g. PSI, ICTO) attached to this
@@ -231,6 +234,7 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:items:MaxLength=43
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Allow []string `json:"allow,omitempty"`
 	// Deny is a list of IP addresses or CIDR ranges that are denied access
@@ -238,6 +242,7 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:items:MaxLength=43
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Deny []string `json:"deny,omitempty"`
 }
@@ -269,7 +274,7 @@ type Exposure struct {
 	// Event defines an Event-based service exposure configuration
 	// +kubebuilder:validation:Optional
 	Event *EventExposure `json:"event,omitempty"`
-	// Ai defines an AI/MCP server exposure configuration
+	// Agentic defines an Agentic(MCP or agent) server exposure configuration
 	// +kubebuilder:validation:Optional
 	Agentic *AgenticExposure `json:"agentic,omitempty"`
 }
@@ -297,7 +302,7 @@ type Subscription struct {
 	// Event defines an Event-based service subscription configuration
 	// +kubebuilder:validation:Optional
 	Event *EventSubscription `json:"event,omitempty"`
-	// Ai defines an AI/MCP server subscription configuration
+	// Agentic defines an Agentic(MCP or agent) server subscription configuration
 	// +kubebuilder:validation:Optional
 	Agentic *AgenticSubscription `json:"agentic,omitempty"`
 }

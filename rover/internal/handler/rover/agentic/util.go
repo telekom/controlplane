@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package ai
+package agentic
 
 import (
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
@@ -11,5 +11,5 @@ import (
 // MakeName generates a deterministic resource name for an AI exposure or subscription.
 // It combines the owner (application) name with the normalized MCP server name.
 func MakeName(ownerName, basePath string) string {
-	return ownerName + "--" + agenticv1.MakeAgenticServerName(basePath)
+	return ownerName + "--" + agenticv1.MakeMcpServerName(basePath)
 }

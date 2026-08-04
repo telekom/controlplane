@@ -23,7 +23,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/ai"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/agentic"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/event"
@@ -125,7 +125,7 @@ func (h *RoverHandler) handleExposure(ctx context.Context, c client.JanitorClien
 			logger.Info("AI exposure skipped, feature has not been enabled")
 			return nil
 		}
-		if err := ai.HandleExposure(ctx, c, roverObj, exp.Agentic); err != nil {
+		if err := agentic.HandleExposure(ctx, c, roverObj, exp.Agentic); err != nil {
 			return errors.Wrap(err, "failed to handle AI exposure")
 		}
 	default:
@@ -168,7 +168,7 @@ func (h *RoverHandler) handleSubscription(ctx context.Context, c client.JanitorC
 			logger.Info("AI subscription skipped, feature has not been enabled")
 			return nil
 		}
-		if err := ai.HandleSubscription(ctx, c, roverObj, sub.Agentic); err != nil {
+		if err := agentic.HandleSubscription(ctx, c, roverObj, sub.Agentic); err != nil {
 			return errors.Wrap(err, "failed to handle AI subscription")
 		}
 	default:

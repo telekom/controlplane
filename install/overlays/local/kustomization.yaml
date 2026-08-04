@@ -63,8 +63,12 @@ configMapGenerator:
       disableNameSuffixHash: true
     literals:
       - LOG_LEVEL=info
-      - SECURITY_TRUSTEDISSUERS=""
-      - SECURITY_LMS_BASEPATH=""
+      # Local dev: mock auth (no real issuers). Env keys map to the nested
+      # config paths (listeners.external.jwt.*). For a real deployment set
+      # mode=jwt and supply comma-separated issuers:
+      #   LISTENERS_EXTERNAL_JWT_TRUSTEDISSUERS=https://a,https://b
+      - LISTENERS_EXTERNAL_JWT_MODE=mock
+      - LISTENERS_EXTERNAL_JWT_LMS_BASEPATH=""
 
   - name: controlplane-api-config
     behavior: replace

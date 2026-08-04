@@ -85,7 +85,7 @@ spec:
                 - strategy
                 type: object
               basePath:
-                description: BasePath references the AgenticServer via its basePath.
+                description: BasePath references the McpServer via its basePath.
                 minLength: 1
                 pattern: ^/.*$
                 type: string

@@ -14,6 +14,41 @@ The Gateway domain configures the API Gateway at runtime. It manages routes, con
 
 The Gateway operator uses a plugin-based feature system for configuring route behavior. Each feature is implemented as a separate plugin that can be enabled or disabled per route, allowing fine-grained control over how requests are processed.
 
+### Audience Claim Resolution
+
+An API provider can require that every token reaching its backend carries an **audience claim** (`aud`), so the backend can confirm the token was meant for it. The provider declares this once on the API exposure, and the platform makes sure the claim is present on all traffic to that API.
+
+The interesting part is *who* decides the actual value. Some sources are known when the API is configured, while one can only be known at the moment of each request. The Control Plane resolves as much as possible up front and leaves the rest to the request-time token service.
+
+| Source | Known at configuration time? | Resolved by | Result |
+| ------ | ---------------------------- | ----------- | ------ |
+| Fixed value | Yes | The user | The literal value is used as-is. |
+| Provider identifier | Yes — always the exposing application | Control Plane | Filled in as a literal value. |
+| Base path | Yes | Control Plane | Filled in as a literal value. |
+| Consumer identifier | No — differs for every consumer | Request-time token service | Left as a symbolic reference and filled in per request. |
+
+The consumer identifier cannot be decided in advance: a single exposed API is shared by many consumers, so one fixed value could never represent all of them. Instead, the platform records the source symbolically, and the token service reads the calling consumer's identity from the incoming request and stamps it onto the outgoing token.
+
+The resolved claims are grouped into a **default** bucket that applies to all consumers of the API. The audience claim is declared only on the API exposure by the provider; consumers do not configure it.
+
+```mermaid
+flowchart LR
+    Rover["API exposure<br/>(provider declares aud)"] --> CP
+    subgraph CP["Control Plane — configuration time"]
+        Resolve["Resolve known sources<br/>(provider id, base path)<br/>into literal values"]
+    end
+    CP --> Buckets["Default bucket → applies to all consumers"]
+    Buckets --> RT
+    subgraph RT["Request time"]
+        Token["Token service fills in the<br/>consumer identifier if needed,<br/>then adds aud to the token"]
+    end
+    Token --> Backend["Provider backend"]
+```
+
+:::info
+The audience claim is configured by API teams on their Rover file. See [Security: Audience Claims](../user-journey/features/security.mdx#audience-claims) for the user-facing configuration.
+:::
+
 ## Route Types & Cross-Zone Meshing
 
 Every gateway `Route` has a **type** that determines where it sends traffic. Together, these three types let consumers and providers live in different zones while still reaching each other — a pattern we call *meshing*.

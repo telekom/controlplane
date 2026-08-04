@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -387,6 +388,25 @@ func (_u *ApplicationUpdate) AddSubscribedEvents(v ...*EventSubscription) *Appli
 	return _u.AddSubscribedEventIDs(ids...)
 }
 
+// SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
+func (_u *ApplicationUpdate) SetPermissionSetID(id int) *ApplicationUpdate {
+	_u.mutation.SetPermissionSetID(id)
+	return _u
+}
+
+// SetNillablePermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillablePermissionSetID(id *int) *ApplicationUpdate {
+	if id != nil {
+		_u = _u.SetPermissionSetID(*id)
+	}
+	return _u
+}
+
+// SetPermissionSet sets the "permission_set" edge to the PermissionSet entity.
+func (_u *ApplicationUpdate) SetPermissionSet(v *PermissionSet) *ApplicationUpdate {
+	return _u.SetPermissionSetID(v.ID)
+}
+
 // Mutation returns the ApplicationMutation object of the builder.
 func (_u *ApplicationUpdate) Mutation() *ApplicationMutation {
 	return _u.mutation
@@ -486,6 +506,12 @@ func (_u *ApplicationUpdate) RemoveSubscribedEvents(v ...*EventSubscription) *Ap
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscribedEventIDs(ids...)
+}
+
+// ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
+func (_u *ApplicationUpdate) ClearPermissionSet() *ApplicationUpdate {
+	_u.mutation.ClearPermissionSet()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -909,6 +935,35 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.PermissionSetCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PermissionSetIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{application.Label}
@@ -1277,6 +1332,25 @@ func (_u *ApplicationUpdateOne) AddSubscribedEvents(v ...*EventSubscription) *Ap
 	return _u.AddSubscribedEventIDs(ids...)
 }
 
+// SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
+func (_u *ApplicationUpdateOne) SetPermissionSetID(id int) *ApplicationUpdateOne {
+	_u.mutation.SetPermissionSetID(id)
+	return _u
+}
+
+// SetNillablePermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillablePermissionSetID(id *int) *ApplicationUpdateOne {
+	if id != nil {
+		_u = _u.SetPermissionSetID(*id)
+	}
+	return _u
+}
+
+// SetPermissionSet sets the "permission_set" edge to the PermissionSet entity.
+func (_u *ApplicationUpdateOne) SetPermissionSet(v *PermissionSet) *ApplicationUpdateOne {
+	return _u.SetPermissionSetID(v.ID)
+}
+
 // Mutation returns the ApplicationMutation object of the builder.
 func (_u *ApplicationUpdateOne) Mutation() *ApplicationMutation {
 	return _u.mutation
@@ -1376,6 +1450,12 @@ func (_u *ApplicationUpdateOne) RemoveSubscribedEvents(v ...*EventSubscription) 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscribedEventIDs(ids...)
+}
+
+// ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
+func (_u *ApplicationUpdateOne) ClearPermissionSet() *ApplicationUpdateOne {
+	_u.mutation.ClearPermissionSet()
+	return _u
 }
 
 // Where appends a list predicates to the ApplicationUpdate builder.
@@ -1822,6 +1902,35 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PermissionSetCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PermissionSetIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   application.PermissionSetTable,
+			Columns: []string{application.PermissionSetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionset.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -178,9 +178,9 @@ var _ = Describe("GetApplication", func() {
 	})
 })
 
-// ---------- FindActiveAgenticServer ----------
+// ---------- FindActiveMcpServer ----------
 
-var _ = Describe("FindActiveAgenticServer", func() {
+var _ = Describe("FindActiveMcpServer", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
@@ -192,19 +192,19 @@ var _ = Describe("FindActiveAgenticServer", func() {
 		ctx = cclient.WithClient(ctx, fakeClient)
 	})
 
-	mockList := func(items []agenticv1.AgenticServer) {
+	mockList := func(items []agenticv1.McpServer) {
 		fakeClient.EXPECT().
-			List(ctx, &agenticv1.AgenticServerList{}, mock.Anything).
+			List(ctx, &agenticv1.McpServerList{}, mock.Anything).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*agenticv1.AgenticServerList) = agenticv1.AgenticServerList{Items: items}
+				*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{Items: items}
 			}).
 			Return(nil).Once()
 	}
 
 	It("should return false when no servers exist", func() {
-		mockList([]agenticv1.AgenticServer{})
+		mockList([]agenticv1.McpServer{})
 
-		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(server).To(BeNil())
@@ -212,35 +212,35 @@ var _ = Describe("FindActiveAgenticServer", func() {
 
 	It("should return error when List fails", func() {
 		fakeClient.EXPECT().
-			List(ctx, &agenticv1.AgenticServerList{}, mock.Anything).
+			List(ctx, &agenticv1.McpServerList{}, mock.Anything).
 			Return(fmt.Errorf("api unavailable")).Once()
 
-		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).To(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(server).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to list AgenticServers"))
+		Expect(err.Error()).To(ContainSubstring("failed to list McpServers"))
 	})
 
 	It("should return false when no server is active", func() {
-		inactive := agenticv1.AgenticServer{
+		inactive := agenticv1.McpServer{
 			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
-			Spec:       agenticv1.AgenticServerSpec{BasePath: "/mcp/weather/v1"},
-			Status:     agenticv1.AgenticServerStatus{Active: false},
+			Spec:       agenticv1.McpServerSpec{BasePath: "/mcp/weather/v1"},
+			Status:     agenticv1.McpServerStatus{Active: false},
 		}
-		mockList([]agenticv1.AgenticServer{inactive})
+		mockList([]agenticv1.McpServer{inactive})
 
-		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(server).To(BeNil())
 	})
 
 	It("should return the active server when found", func() {
-		active := makeReadyAgenticServer("/mcp/weather/v1")
-		mockList([]agenticv1.AgenticServer{active})
+		active := makeReadyMcpServer("/mcp/weather/v1")
+		mockList([]agenticv1.McpServer{active})
 
-		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(server).ToNot(BeNil())
@@ -248,20 +248,20 @@ var _ = Describe("FindActiveAgenticServer", func() {
 	})
 
 	It("should ignore servers with a different basePath", func() {
-		other := makeReadyAgenticServer("/mcp/other/v1")
-		mockList([]agenticv1.AgenticServer{other})
+		other := makeReadyMcpServer("/mcp/other/v1")
+		mockList([]agenticv1.McpServer{other})
 
-		found, _, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, _, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 	})
 
 	It("should return found=false and the conflicting server when a case-only mismatch exists", func() {
 		// Server is registered as /Mcp/Weather/V1 but caller asks for /mcp/weather/v1
-		conflict := makeReadyAgenticServer("/Mcp/Weather/V1")
-		mockList([]agenticv1.AgenticServer{conflict})
+		conflict := makeReadyMcpServer("/Mcp/Weather/V1")
+		mockList([]agenticv1.McpServer{conflict})
 
-		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(server).ToNot(BeNil())
@@ -269,14 +269,14 @@ var _ = Describe("FindActiveAgenticServer", func() {
 	})
 
 	It("should not treat case-only mismatches as a conflict when the server is inactive", func() {
-		inactive := agenticv1.AgenticServer{
+		inactive := agenticv1.McpServer{
 			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
-			Spec:       agenticv1.AgenticServerSpec{BasePath: "/Mcp/Weather/V1"},
-			Status:     agenticv1.AgenticServerStatus{Active: false},
+			Spec:       agenticv1.McpServerSpec{BasePath: "/Mcp/Weather/V1"},
+			Status:     agenticv1.McpServerStatus{Active: false},
 		}
-		mockList([]agenticv1.AgenticServer{inactive})
+		mockList([]agenticv1.McpServer{inactive})
 
-		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		// inactive servers are ignored — no conflict returned
@@ -284,15 +284,15 @@ var _ = Describe("FindActiveAgenticServer", func() {
 	})
 
 	It("should return BlockedError when active server is not ready", func() {
-		notReady := agenticv1.AgenticServer{
+		notReady := agenticv1.McpServer{
 			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
-			Spec:       agenticv1.AgenticServerSpec{BasePath: "/mcp/weather/v1"},
-			Status:     agenticv1.AgenticServerStatus{Active: true},
+			Spec:       agenticv1.McpServerSpec{BasePath: "/mcp/weather/v1"},
+			Status:     agenticv1.McpServerStatus{Active: true},
 			// no Ready condition set
 		}
-		mockList([]agenticv1.AgenticServer{notReady})
+		mockList([]agenticv1.McpServer{notReady})
 
-		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(found).To(BeFalse())
 		Expect(server).ToNot(BeNil())
 		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
@@ -300,17 +300,17 @@ var _ = Describe("FindActiveAgenticServer", func() {
 
 	It("should return the oldest active server when multiple exist", func() {
 		now := time.Now()
-		older := makeReadyAgenticServer("/mcp/weather/v1")
+		older := makeReadyMcpServer("/mcp/weather/v1")
 		older.Name = "s-oldest"
 		older.CreationTimestamp = metav1.NewTime(now.Add(-time.Hour))
 
-		newer := makeReadyAgenticServer("/mcp/weather/v1")
+		newer := makeReadyMcpServer("/mcp/weather/v1")
 		newer.Name = "s-newer"
 		newer.CreationTimestamp = metav1.NewTime(now)
 
-		mockList([]agenticv1.AgenticServer{newer, older})
+		mockList([]agenticv1.McpServer{newer, older})
 
-		found, server, err := util.FindActiveAgenticServer(ctx, "/mcp/weather/v1")
+		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(server.Name).To(Equal("s-oldest"))

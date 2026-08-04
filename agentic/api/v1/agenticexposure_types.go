@@ -12,7 +12,7 @@ import (
 
 // AgenticExposureSpec defines the desired state of AgenticExposure.
 type AgenticExposureSpec struct {
-	// BasePath references the AgenticServer via its basePath.
+	// BasePath references the McpServer via its basePath.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=`^/.*$`

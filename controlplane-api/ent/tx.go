@@ -37,6 +37,8 @@ type Tx struct {
 	Group *GroupClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
+	// PermissionSet is the client for interacting with the PermissionSet builders.
+	PermissionSet *PermissionSetClient
 	// Team is the client for interacting with the Team builders.
 	Team *TeamClient
 	// Zone is the client for interacting with the Zone builders.
@@ -183,6 +185,7 @@ func (tx *Tx) init() {
 	tx.EventType = NewEventTypeClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
+	tx.PermissionSet = NewPermissionSetClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
 	tx.Zone = NewZoneClient(tx.config)
 }

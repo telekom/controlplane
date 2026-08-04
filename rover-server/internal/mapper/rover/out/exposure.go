@@ -6,6 +6,7 @@ package out
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -29,7 +30,11 @@ func tokenRequestCRDToAPI(value roverv1.TokenRequestMethod) api.Oauth2TokenReque
 
 func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 	if in.Api != nil {
-		if err := out.FromApiExposure(mapApiExposure(in.Api)); err != nil {
+		apiExposure, err := mapApiExposure(in.Api)
+		if err != nil {
+			return errors.Wrap(err, "failed to map api exposure")
+		}
+		if err := out.FromApiExposure(apiExposure); err != nil {
 			return errors.Wrap(err, "failed to map api exposure")
 		}
 
@@ -39,7 +44,11 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 		}
 
 	} else if in.Agentic != nil {
-		if err := out.FromAiExposure(mapAiExposure(in.Agentic)); err != nil {
+		aiExposure, err := mapAiExposure(in.Agentic)
+		if err != nil {
+			return errors.Wrap(err, "failed to map ai exposure")
+		}
+		if err := out.FromAiExposure(aiExposure); err != nil {
 			return errors.Wrap(err, "failed to map ai exposure")
 		}
 
@@ -49,7 +58,7 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 	return nil
 }
 
-func mapApiExposure(in *roverv1.ApiExposure) api.ApiExposure {
+func mapApiExposure(in *roverv1.ApiExposure) (api.ApiExposure, error) {
 	apiExposure := api.ApiExposure{
 		BasePath:   in.BasePath,
 		Visibility: toApiVisibility(in.Visibility),
@@ -74,11 +83,13 @@ func mapApiExposure(in *roverv1.ApiExposure) api.ApiExposure {
 		}
 	}
 
-	mapExposureSecurity(in, &apiExposure)
+	if err := mapExposureSecurity(in, &apiExposure); err != nil {
+		return apiExposure, fmt.Errorf("mapping exposure security: %w", err)
+	}
 	mapExposureTransformation(in, &apiExposure)
 	mapExposureTraffic(in, &apiExposure)
 
-	return apiExposure
+	return apiExposure, nil
 }
 
 func mapEventExposure(in *roverv1.EventExposure) api.EventExposure {
@@ -142,7 +153,7 @@ func mapEventTriggerOut(in *roverv1.EventTrigger) api.EventTrigger {
 	return out
 }
 
-func mapAiExposure(in *roverv1.AgenticExposure) api.AiExposure {
+func mapAiExposure(in *roverv1.AgenticExposure) (api.AiExposure, error) {
 	aiExposure := api.AiExposure{
 		BasePath:   in.BasePath,
 		Variant:    api.AiExposureVariant(in.Variant),
@@ -182,7 +193,9 @@ func mapAiExposure(in *roverv1.AgenticExposure) api.AiExposure {
 				Password: m2m.Basic.Password,
 			}
 			aiExposure.Security = api.Security{}
-			aiExposure.Security.FromBasicAuth(basicAuth)
+			if err := aiExposure.Security.FromBasicAuth(basicAuth); err != nil {
+				return aiExposure, fmt.Errorf("setting basic auth security: %w", err)
+			}
 		} else if m2m.ExternalIDP != nil {
 			oauth2 := api.Oauth2{
 				TokenEndpoint: m2m.ExternalIDP.TokenEndpoint,
@@ -205,13 +218,17 @@ func mapAiExposure(in *roverv1.AgenticExposure) api.AiExposure {
 				oauth2.Scopes = m2m.Scopes
 			}
 			aiExposure.Security = api.Security{}
-			aiExposure.Security.FromOauth2(oauth2)
+			if err := aiExposure.Security.FromOauth2(oauth2); err != nil {
+				return aiExposure, fmt.Errorf("setting oauth2 security: %w", err)
+			}
 		} else if len(m2m.Scopes) > 0 {
 			oauth2 := api.Oauth2{
 				Scopes: m2m.Scopes,
 			}
 			aiExposure.Security = api.Security{}
-			aiExposure.Security.FromOauth2(oauth2)
+			if err := aiExposure.Security.FromOauth2(oauth2); err != nil {
+				return aiExposure, fmt.Errorf("setting oauth2 security: %w", err)
+			}
 		}
 	}
 
@@ -232,7 +249,7 @@ func mapAiExposure(in *roverv1.AgenticExposure) api.AiExposure {
 		}
 	}
 
-	return aiExposure
+	return aiExposure, nil
 }
 
 func toApiVisibility(visibility roverv1.Visibility) api.Visibility {
@@ -261,9 +278,9 @@ func toApiApprovalStrategy(approval roverv1.ApprovalStrategy) api.ApprovalStrate
 	}
 }
 
-func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) {
+func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) error {
 	if in.Security == nil || in.Security.M2M == nil {
-		return
+		return nil
 	}
 
 	m2m := in.Security.M2M
@@ -273,8 +290,7 @@ func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) {
 			Password: m2m.Basic.Password,
 		}
 		out.Security = api.Security{}
-		out.Security.FromBasicAuth(basicAuth)
-		return
+		return out.Security.FromBasicAuth(basicAuth)
 	}
 
 	if m2m.ExternalIDP != nil {
@@ -291,6 +307,7 @@ func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) {
 			oauth2.ClientId = m2m.ExternalIDP.Client.ClientId
 			oauth2.ClientSecret = m2m.ExternalIDP.Client.ClientSecret
 			oauth2.ClientKey = m2m.ExternalIDP.Client.ClientKey
+			oauth2.RefreshToken = m2m.ExternalIDP.Client.RefreshToken
 		}
 
 		if m2m.ExternalIDP.Basic != nil {
@@ -303,16 +320,31 @@ func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) {
 		}
 
 		out.Security = api.Security{}
-		out.Security.FromOauth2(oauth2)
-		return
+		return out.Security.FromOauth2(oauth2)
 	}
 
-	if len(m2m.Scopes) > 0 {
+	if len(m2m.Scopes) > 0 || m2m.Claims != nil {
 		oauth2 := api.Oauth2{
 			Scopes: m2m.Scopes,
 		}
+		oauth2.Claims = mapExposureClaimsOut(m2m.Claims)
 		out.Security = api.Security{}
-		out.Security.FromOauth2(oauth2)
+		return out.Security.FromOauth2(oauth2)
+	}
+
+	return nil
+}
+
+// mapExposureClaimsOut echoes CRD claims back into the rover-server Oauth2 shape.
+func mapExposureClaimsOut(in *roverv1.Claims) api.Claims {
+	if in == nil || in.Aud == nil {
+		return api.Claims{}
+	}
+	return api.Claims{
+		Aud: api.Claim{
+			Value:     in.Aud.Value,
+			ValueFrom: api.ClaimValueFrom(in.Aud.ValueFrom),
+		},
 	}
 }
 

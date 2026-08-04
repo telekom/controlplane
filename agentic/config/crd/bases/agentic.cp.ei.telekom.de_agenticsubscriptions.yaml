@@ -58,8 +58,8 @@ spec:
             description: AgenticSubscriptionSpec defines the desired state of AgenticSubscription.
             properties:
               basePath:
-                description: BasePath references the AgenticServer/AgenticExposure
-                  via basePath.
+                description: BasePath references the McpServer/AgenticExposure via
+                  basePath.
                 minLength: 1
                 pattern: ^/.*$
                 type: string

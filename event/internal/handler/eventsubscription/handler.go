@@ -164,8 +164,10 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	}
 
 	properties := map[string]any{
-		"eventType": obj.Spec.EventType,
-		"scopes":    obj.Spec.Scopes,
+		"eventType":     obj.Spec.EventType,
+		"scopes":        obj.Spec.Scopes,
+		"resource_type": "event",
+		"resource_name": obj.Spec.EventType,
 	}
 	if err = requester.SetProperties(properties); err != nil {
 		return errors.Wrapf(err, "unable to set approvalRequest properties for EventSubscription %q in namespace %q",

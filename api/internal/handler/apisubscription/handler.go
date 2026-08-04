@@ -115,7 +115,9 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		Reason:         fmt.Sprintf("Team %s requested access to your API %s from zone %s", apiSubApplication.Spec.Team, api.Name, apiSub.Spec.Zone.Name),
 	}
 	properties := map[string]any{
-		"basePath": apiSub.Spec.ApiBasePath,
+		"basePath":      apiSub.Spec.ApiBasePath,
+		"resource_type": "API",
+		"resource_name": apiSub.Spec.ApiBasePath,
 	}
 
 	// Scopes: check if scopes exist and are a valid subset of the Api's scopes.
@@ -345,7 +347,7 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiSubscription) error {
 	// All route lifecycle (proxy + failover) is managed by ApiExposure.
 	// When this subscription is deleted, ApiExposure reconciles (via watch) and
-	// CleanupStaleProxyRoutes removes routes for zones with no remaining subscribers.
+	// CleanupStaleRoutes removes routes for zones with no remaining subscribers.
 	return nil
 }
 

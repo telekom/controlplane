@@ -26,8 +26,8 @@ rules:
   - agentic.cp.ei.telekom.de
   resources:
   - agenticexposures
-  - agenticservers
   - agenticsubscriptions
+  - mcpservers
   verbs:
   - create
   - delete

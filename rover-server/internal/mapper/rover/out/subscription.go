@@ -6,6 +6,7 @@ package out
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -16,7 +17,11 @@ import (
 
 func mapSubscription(in *roverv1.Subscription, out *api.Subscription) error {
 	if in.Api != nil {
-		if err := out.FromApiSubscription(mapApiSubscription(in.Api)); err != nil {
+		apiSub, err := mapApiSubscription(in.Api)
+		if err != nil {
+			return errors.Wrap(err, "failed to map api subscription")
+		}
+		if err := out.FromApiSubscription(apiSub); err != nil {
 			return errors.Wrap(err, "failed to map api subscription")
 		}
 
@@ -25,7 +30,11 @@ func mapSubscription(in *roverv1.Subscription, out *api.Subscription) error {
 			return errors.Wrap(err, "failed to map event subscription")
 		}
 	} else if in.Agentic != nil {
-		if err := out.FromAiSubscription(mapAiSubscription(in.Agentic)); err != nil {
+		aiSub, err := mapAiSubscription(in.Agentic)
+		if err != nil {
+			return errors.Wrap(err, "failed to map ai subscription")
+		}
+		if err := out.FromAiSubscription(aiSub); err != nil {
 			return errors.Wrap(err, "failed to map ai subscription")
 		}
 	} else {
@@ -75,7 +84,7 @@ func mapEventSubscription(in *roverv1.EventSubscription) api.EventSubscription {
 	return out
 }
 
-func mapAiSubscription(in *roverv1.AgenticSubscription) api.AiSubscription {
+func mapAiSubscription(in *roverv1.AgenticSubscription) (api.AiSubscription, error) {
 	out := api.AiSubscription{
 		BasePath: in.BasePath,
 	}
@@ -94,7 +103,9 @@ func mapAiSubscription(in *roverv1.AgenticSubscription) api.AiSubscription {
 				Password: m2m.Basic.Password,
 			}
 			out.Security = api.Security{}
-			out.Security.FromBasicAuth(basicAuth)
+			if err := out.Security.FromBasicAuth(basicAuth); err != nil {
+				return out, fmt.Errorf("setting basic auth security: %w", err)
+			}
 		} else {
 			oauth2 := api.Oauth2{}
 
@@ -109,12 +120,14 @@ func mapAiSubscription(in *roverv1.AgenticSubscription) api.AiSubscription {
 
 			if !reflect.ValueOf(oauth2).IsZero() {
 				out.Security = api.Security{}
-				out.Security.FromOauth2(oauth2)
+				if err := out.Security.FromOauth2(oauth2); err != nil {
+					return out, fmt.Errorf("setting oauth2 security: %w", err)
+				}
 			}
 		}
 	}
 
-	return out
+	return out, nil
 }
 
 func mapEventTriggerOutForSubscription(in *roverv1.EventTrigger) api.EventTrigger {
@@ -140,20 +153,22 @@ func mapEventTriggerOutForSubscription(in *roverv1.EventTrigger) api.EventTrigge
 	return out
 }
 
-func mapApiSubscription(in *roverv1.ApiSubscription) api.ApiSubscription {
+func mapApiSubscription(in *roverv1.ApiSubscription) (api.ApiSubscription, error) {
 	apiSub := api.ApiSubscription{
 		BasePath: in.BasePath,
 	}
 
-	mapSubscriptionSecurity(in, &apiSub)
+	if err := mapSubscriptionSecurity(in, &apiSub); err != nil {
+		return apiSub, fmt.Errorf("mapping subscription security: %w", err)
+	}
 	mapSubscriptionTransformation(in, &apiSub)
 
-	return apiSub
+	return apiSub, nil
 }
 
-func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscription) {
+func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscription) error {
 	if in.Security == nil || in.Security.M2M == nil {
-		return
+		return nil
 	}
 
 	m2m := in.Security.M2M
@@ -163,8 +178,7 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 			Password: m2m.Basic.Password,
 		}
 		out.Security = api.Security{}
-		out.Security.FromBasicAuth(basicAuth)
-		return
+		return out.Security.FromBasicAuth(basicAuth)
 	}
 
 	oauth2 := api.Oauth2{}
@@ -173,6 +187,7 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 		oauth2.ClientId = m2m.Client.ClientId
 		oauth2.ClientSecret = m2m.Client.ClientSecret
 		oauth2.ClientKey = m2m.Client.ClientKey
+		oauth2.RefreshToken = m2m.Client.RefreshToken
 	}
 
 	if len(m2m.Scopes) > 0 {
@@ -181,8 +196,10 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 
 	if !reflect.ValueOf(oauth2).IsZero() {
 		out.Security = api.Security{}
-		out.Security.FromOauth2(oauth2)
+		return out.Security.FromOauth2(oauth2)
 	}
+
+	return nil
 }
 
 func mapSubscriptionTransformation(in *roverv1.ApiSubscription, out *api.ApiSubscription) {

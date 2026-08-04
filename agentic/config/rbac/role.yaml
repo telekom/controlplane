@@ -26,8 +26,8 @@ rules:
   - agentic.cp.ei.telekom.de
   resources:
   - agenticexposures
-  - agenticservers
   - agenticsubscriptions
+  - mcpservers
   verbs:
   - create
   - delete
@@ -40,16 +40,16 @@ rules:
   - agentic.cp.ei.telekom.de
   resources:
   - agenticexposures/finalizers
-  - agenticservers/finalizers
   - agenticsubscriptions/finalizers
+  - mcpservers/finalizers
   verbs:
   - update
 - apiGroups:
   - agentic.cp.ei.telekom.de
   resources:
   - agenticexposures/status
-  - agenticservers/status
   - agenticsubscriptions/status
+  - mcpservers/status
   verbs:
   - get
   - patch

@@ -10,6 +10,9 @@ import (
 )
 
 func MapCrBasicAuthToCpApi(basic *apiv1.BasicAuthCredentials) *model.BasicAuthCredentials {
+	if basic == nil {
+		return nil
+	}
 	return &model.BasicAuthCredentials{
 		Username: basic.Username,
 		Password: basic.Password,
@@ -17,6 +20,9 @@ func MapCrBasicAuthToCpApi(basic *apiv1.BasicAuthCredentials) *model.BasicAuthCr
 }
 
 func MapCrOAuthToCpApi(oauth *apiv1.OAuth2ClientCredentials) *model.OAuth2ClientCredentials {
+	if oauth == nil {
+		return nil
+	}
 	return &model.OAuth2ClientCredentials{
 		ClientId:     oauth.ClientId,
 		ClientSecret: &oauth.ClientSecret,
@@ -25,6 +31,9 @@ func MapCrOAuthToCpApi(oauth *apiv1.OAuth2ClientCredentials) *model.OAuth2Client
 }
 
 func MapCrExternalIdpToCpApi(externalIdp *apiv1.ExternalIdentityProvider) *model.ExternalIdentityProvider {
+	if externalIdp == nil {
+		return nil
+	}
 	tokenRequest := string(externalIdp.TokenRequest)
 	grantType := string(externalIdp.GrantType)
 	return &model.ExternalIdentityProvider{

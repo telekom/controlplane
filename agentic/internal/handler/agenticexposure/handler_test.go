@@ -54,18 +54,18 @@ func newAgenticExposure(name, basePath string) *agenticv1.AgenticExposure {
 	}
 }
 
-func makeReadyAgenticServer(basePath string) agenticv1.AgenticServer {
-	s := agenticv1.AgenticServer{
+func makeReadyMcpServer(basePath string) agenticv1.McpServer {
+	s := agenticv1.McpServer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mcp-server-1",
 			Namespace: "default",
 		},
-		Spec: agenticv1.AgenticServerSpec{
+		Spec: agenticv1.McpServerSpec{
 			BasePath: basePath,
 			Version:  "1.0.0",
 			Name:     "Test MCP Server",
 		},
-		Status: agenticv1.AgenticServerStatus{
+		Status: agenticv1.McpServerStatus{
 			Active: true,
 		},
 	}
@@ -156,18 +156,18 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 	// --- mock helpers ---
 
-	mockListAgenticServers := func(items []agenticv1.AgenticServer) {
+	mockListMcpServers := func(items []agenticv1.McpServer) {
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.AgenticServerList"), mock.Anything).
+			List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*agenticv1.AgenticServerList) = agenticv1.AgenticServerList{Items: items}
+				*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{Items: items}
 			}).
 			Return(nil).Once()
 	}
 
-	mockListAgenticServersError := func(err error) {
+	mockListMcpServersError := func(err error) {
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.AgenticServerList"), mock.Anything).
+			List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
 			Return(err).Once()
 	}
 
@@ -227,10 +227,10 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 	// setupFullHappyPath sets up all mocks for a successful CreateOrUpdate without cross-zone subscriptions.
 	setupFullHappyPath := func() {
-		server := makeReadyAgenticServer("/mcp/weather/v1")
+		server := makeReadyMcpServer("/mcp/weather/v1")
 		zone := makeReadyZoneWithAiGateway()
 
-		mockListAgenticServers([]agenticv1.AgenticServer{server})
+		mockListMcpServers([]agenticv1.McpServer{server})
 		mockListAgenticExposures([]agenticv1.AgenticExposure{})
 		mockGetZone(zone)
 		mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{}) // no cross-zone subs
@@ -239,17 +239,17 @@ var _ = Describe("AgenticExposureHandler", func() {
 	}
 
 	Describe("CreateOrUpdate", func() {
-		It("should return error when FindActiveAgenticServer fails", func() {
-			mockListAgenticServersError(fmt.Errorf("connection refused"))
+		It("should return error when FindActiveMcpServer fails", func() {
+			mockListMcpServersError(fmt.Errorf("connection refused"))
 
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("failed to list AgenticServers"))
+			Expect(err.Error()).To(ContainSubstring("failed to list McpServers"))
 		})
 
-		It("should set Blocked when no active AgenticServer found", func() {
-			mockListAgenticServers([]agenticv1.AgenticServer{})
+		It("should set Blocked when no active McpServer found", func() {
+			mockListMcpServers([]agenticv1.McpServer{})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -258,14 +258,14 @@ var _ = Describe("AgenticExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("AgenticServerNotFound"))
+			Expect(readyCond.Reason).To(Equal("McpServerNotFound"))
 		})
 
-		It("should set Blocked and clean up Route when AgenticServer disappears after Route was created", func() {
+		It("should set Blocked and clean up Route when McpServer disappears after Route was created", func() {
 			// Simulate an exposure that already had a Route provisioned
 			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
 
-			mockListAgenticServers([]agenticv1.AgenticServer{})
+			mockListMcpServers([]agenticv1.McpServer{})
 
 			// Expect the stale Route to be deleted (NotFound is fine — already gone)
 			fakeClient.EXPECT().
@@ -277,13 +277,13 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
-			Expect(readyCond.Reason).To(Equal("AgenticServerNotFound"))
+			Expect(readyCond.Reason).To(Equal("McpServerNotFound"))
 		})
 
-		It("should set Blocked with case-conflict reason when AgenticServer exists under different case", func() {
+		It("should set Blocked with case-conflict reason when McpServer exists under different case", func() {
 			// Server registered as /Mcp/Weather/V1 but exposure uses /mcp/weather/v1
-			conflictingServer := makeReadyAgenticServer("/Mcp/Weather/V1")
-			mockListAgenticServers([]agenticv1.AgenticServer{conflictingServer})
+			conflictingServer := makeReadyMcpServer("/Mcp/Weather/V1")
+			mockListMcpServers([]agenticv1.McpServer{conflictingServer})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -292,14 +292,14 @@ var _ = Describe("AgenticExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("AgenticServerCaseConflict"))
+			Expect(readyCond.Reason).To(Equal("McpServerCaseConflict"))
 			Expect(readyCond.Message).To(ContainSubstring("/mcp/weather/v1"))
 			Expect(readyCond.Message).To(ContainSubstring("/Mcp/Weather/V1"))
 		})
 
 		It("should return error when FindAgenticExposures fails", func() {
-			server := makeReadyAgenticServer("/mcp/weather/v1")
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposuresError(fmt.Errorf("list failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -309,8 +309,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should set NotReady when another active AgenticExposure already exists", func() {
-			server := makeReadyAgenticServer("/mcp/weather/v1")
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			mockListMcpServers([]agenticv1.McpServer{server})
 
 			existingExposure := agenticv1.AgenticExposure{
 				ObjectMeta: metav1.ObjectMeta{
@@ -341,8 +341,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should return error when GetZone fails", func() {
-			server := makeReadyAgenticServer("/mcp/weather/v1")
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZoneError(fmt.Errorf("zone fetch failed"))
 
@@ -353,10 +353,10 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should return BlockedError when zone does not support AI Gateway feature", func() {
-			server := makeReadyAgenticServer("/mcp/weather/v1")
+			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeZoneWithoutAiGateway()
 
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
 
@@ -403,10 +403,10 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should return error when CreateAgenticRoute fails", func() {
-			server := makeReadyAgenticServer("/mcp/weather/v1")
+			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
 
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
 			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
@@ -419,10 +419,10 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should return error when Cleanup fails", func() {
-			server := makeReadyAgenticServer("/mcp/weather/v1")
+			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
 
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
 			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
@@ -439,10 +439,10 @@ var _ = Describe("AgenticExposureHandler", func() {
 			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
 			h.Config.TelecontextApplicationID = ""
 
-			server := makeReadyAgenticServer("/mcp/weather/v1")
+			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
 
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
 			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
@@ -458,10 +458,10 @@ var _ = Describe("AgenticExposureHandler", func() {
 			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
 			ctx = contextutil.WithEnv(ctx, "test-env")
 
-			server := makeReadyAgenticServer("/mcp/weather/v1")
+			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
 
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
 			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
@@ -513,11 +513,11 @@ var _ = Describe("AgenticExposureHandler", func() {
 			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
 			ctx = contextutil.WithEnv(ctx, "test-env")
 
-			server := makeReadyAgenticServer("/mcp/weather/v1")
+			server := makeReadyMcpServer("/mcp/weather/v1")
 			providerZone := makeReadyZoneWithAiGateway()
 			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
 
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(providerZone)
 			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
@@ -593,7 +593,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should add cross-zone LMS issuer to TrustedIssuers on the real route (no local subs — zone issuer excluded)", func() {
-			server := makeReadyAgenticServer("/mcp/weather/v1")
+			server := makeReadyMcpServer("/mcp/weather/v1")
 			providerZone := makeReadyZoneWithAiGateway()
 			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
 
@@ -612,7 +612,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 				Type: "ApprovalGranted", Status: metav1.ConditionTrue, Reason: "Approved",
 			})
 
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(providerZone)
 			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{approvedSub})
@@ -654,10 +654,10 @@ var _ = Describe("AgenticExposureHandler", func() {
 		It("should create Route for AGENT variant without triggering Telecontext logic", func() {
 			obj.Spec.Variant = agenticv1.AgenticVariantAgent
 
-			server := makeReadyAgenticServer("/mcp/weather/v1")
+			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
 
-			mockListAgenticServers([]agenticv1.AgenticServer{server})
+			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
 			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
