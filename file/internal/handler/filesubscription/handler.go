@@ -205,6 +205,7 @@ func subscriptionZoneName(subscription *filev1.FileSubscription) string {
 // so we drop the first segment (environment) and return everything after
 // the first "--" separator. If no "--" is found the full namespace is
 // returned as-is.
+// TODO: this can be part of common
 func teamNameFromNamespace(namespace string) string {
 	if idx := strings.Index(namespace, "--"); idx >= 0 {
 		return namespace[idx+2:]
