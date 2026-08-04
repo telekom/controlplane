@@ -8,6 +8,7 @@ metadata:
   name: organization-server-ingress
   namespace: system
   annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 spec:
   rules:
   - host: organization-server.example.com
