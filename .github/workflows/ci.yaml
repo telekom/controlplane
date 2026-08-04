@@ -210,7 +210,12 @@ jobs:
       name: rover-ctl
       module: rover-ctl
       run_check_generated_files: false
-      ko_build_path: "main.go"
+      ko_build_path: "."
+      # rover-ctl/Dockerfile copies the binary from a fixed path
+      # (/ko-app/rover-ctl) in this image, which requires ko to resolve the
+      # import path to the module directory name "rover-ctl" - "." achieves
+      # that, unlike other modules' "cmd/main.go" style paths.
+      #
       # This only builds/pushes the plain roverctl binary image to GHCR
       # (ko's default distroless base, no bash/jq/yq, no GPL content) - same
       # as every other module. The bash/jq/yq-bundled image published to the
