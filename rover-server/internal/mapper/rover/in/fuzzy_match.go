@@ -51,11 +51,11 @@ func FuzzyMatchEventResponseFilterMode(in string) roverv1.EventResponseFilterMod
 func FuzzyMatchClientAuthMethod(in string) api.AuthenticationClientAuthMethod {
 	switch strings.ToLower(in) {
 	case "basic":
-		return api.BASIC
+		return api.AuthenticationClientAuthMethodBASIC
 	case "body", "post":
-		return api.POST
+		return api.AuthenticationClientAuthMethodPOST
 	case "none":
-		return api.NONE
+		return api.AuthenticationClientAuthMethodNONE
 	default:
 		return api.AuthenticationClientAuthMethod(in)
 	}
