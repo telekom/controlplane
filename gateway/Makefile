@@ -49,6 +49,10 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="../hack/boilerplate.go.txt" paths="./..."
+	go -C tools tool oapi-codegen --config=oapi-codegen-client-config.yaml ../pkg/kong/api/openapi.yaml
+	@tmp=$$(mktemp); trap 'rm -f "$$tmp"' EXIT; \
+	{ cat ../hack/boilerplate.go.txt; printf '\n'; cat pkg/kong/api/client.gen.go; } > "$$tmp"; \
+	mv "$$tmp" pkg/kong/api/client.gen.go
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -159,7 +163,7 @@ $(ENVTEST): $(LOCALBIN)
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary
