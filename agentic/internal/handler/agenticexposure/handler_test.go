@@ -54,7 +54,7 @@ func newAgenticExposure(name, basePath string) *agenticv1.AgenticExposure {
 	}
 }
 
-func makeReadyMcpServer(basePath string) agenticv1.McpServer {
+func makeReadyMcpServer(basePath string) agenticv1.McpServer { //nolint:unparam // test helper kept parameterized for clarity
 	s := agenticv1.McpServer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mcp-server-1",

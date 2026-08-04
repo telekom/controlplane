@@ -70,6 +70,8 @@ func GetApplication(ctx context.Context, ref ctypes.ObjectRef) (*applicationapi.
 // Returns (found, mcpServer, error).
 // If found is false and mcpServer is non-nil, a server exists but with a different case
 // (e.g. /MyMcp vs /mymcp) — the caller should treat this as a conflict, not a missing server.
+//
+//nolint:dupl // parallel structure with FindActiveAgentCard; operates on different types
 func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1.McpServer, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -237,6 +239,8 @@ type ServerInfo struct {
 // FindActiveAgentCard finds the active AgentCard for a given basePath.
 // Returns (found, agentCard, error).
 // If found is false and agentCard is non-nil, a card exists but with a different case.
+//
+//nolint:dupl // parallel structure with FindActiveMcpServer; operates on different types
 func FindActiveAgentCard(ctx context.Context, basePath string) (bool, *agenticv1.AgentCard, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
