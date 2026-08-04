@@ -96,8 +96,7 @@ func DeleteSFTPInstance(ctx context.Context, instanceRef types.ObjectRef) error 
 }
 
 func CanonicalSSHPublicKeys(publicKeys []filev1.SSHPublicKeySpec) ([]string, error) {
-	byFingerprint := make(map[string]string, len(publicKeys))
-	fingerprints := make([]string, 0, len(publicKeys))
+	canonicalKeys := make([]string, 0, len(publicKeys))
 
 	for i := range publicKeys {
 		canonicalKey, err := sftpv1.CanonicalPublicKey(publicKeys[i].Key)
@@ -105,27 +104,10 @@ func CanonicalSSHPublicKeys(publicKeys []filev1.SSHPublicKeySpec) ([]string, err
 			return nil, fmt.Errorf("canonicalizing SSH public key: %w", err)
 		}
 
-		fingerprint, err := sftpv1.FingerprintForKey(canonicalKey)
-		if err != nil {
-			return nil, fmt.Errorf("fingerprinting SSH public key: %w", err)
-		}
-
-		existingKey, exists := byFingerprint[fingerprint]
-		if exists && existingKey != canonicalKey {
-			return nil, fmt.Errorf("fingerprint %q is already assigned to another SSH public key", fingerprint)
-		}
-		if exists {
-			continue
-		}
-
-		byFingerprint[fingerprint] = canonicalKey
-		fingerprints = append(fingerprints, fingerprint)
+		canonicalKeys = append(canonicalKeys, canonicalKey)
 	}
 
-	slices.Sort(fingerprints)
-	keys := make([]string, 0, len(fingerprints))
-	for i := range fingerprints {
-		keys = append(keys, byFingerprint[fingerprints[i]])
-	}
-	return keys, nil
+	slices.Sort(canonicalKeys)
+
+	return canonicalKeys, nil
 }
