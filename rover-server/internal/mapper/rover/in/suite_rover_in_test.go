@@ -43,7 +43,6 @@ var (
 	fileExposure = api.FileExposure{
 		Type:       "file",
 		FileType:   "demo-sftp-spec-v1",
-		Variant:    "sftp",
 		Visibility: "World",
 		PublicKeys: []api.PublicKey{
 			{Label: "provider-key", Key: "ssh-ed25519 AAAA-provider"},
@@ -53,7 +52,6 @@ var (
 	fileSubscription = api.FileSubscription{
 		Type:     "file",
 		FileType: "demo-sftp-spec-v1",
-		Variant:  "sftp",
 		PublicKeys: []api.PublicKey{
 			{Label: "consumer-key", Key: "ssh-ed25519 AAAA-consumer"},
 		},

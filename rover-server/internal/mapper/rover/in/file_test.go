@@ -35,10 +35,11 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 			Expect(output.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA1"))
 		})
 
-		It("must leave visibility empty when omitted (CRD default applies at admission)", func() {
-			// The mapper does not default visibility itself — consistent with
-			// mapApiExposure/mapEventExposure. An empty value is passed through and
-			// the CRD's +kubebuilder:default=Enterprise fills it in at admission.
+		It("must default visibility to Enterprise when omitted", func() {
+			// The mapper defaults visibility via the shared toRoverVisibility,
+			// which maps an empty value to Enterprise — consistent with
+			// mapApiExposure/mapEventExposure and the CRD's
+			// +kubebuilder:default=Enterprise.
 			input := api.FileExposure{
 				Type:     "file",
 				FileType: "demo-sftp-spec-v1",
@@ -49,7 +50,7 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 
 			output := mapFileExposure(input)
 
-			Expect(output.Visibility).To(BeEmpty())
+			Expect(output.Visibility).To(Equal(roverv1.VisibilityEnterprise))
 		})
 
 		It("must map ZONE visibility to the CRD Zone visibility", func() {
