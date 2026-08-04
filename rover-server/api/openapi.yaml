@@ -2164,6 +2164,7 @@ components:
         - SIMPLE
         - FOUREYES
       type: string
+      default: SIMPLE
     Authentication:
       type: object
       properties:
@@ -2175,7 +2176,13 @@ components:
             - NONE
             - POST
             - BASIC
-          description: Configures client authentication method, according to RFC 6749.
+            - body
+            - basic
+          default: basic
+          description: >-
+            Configures client authentication according to RFC 6749. With basic
+            (default), credentials are sent in the HTTP Authorization header;
+            with body, credentials are sent in the request body.
         redirectUrls:
           type: array
           items:
@@ -2234,6 +2241,8 @@ components:
           enum:
             - body
             - header
+            - BODY
+            - HEADER
           description: "Specifies if the authentication data should be sent to the external IDP via headers or in the body of the request"
         claims:
           $ref: '#/components/schemas/Claims'
@@ -2792,6 +2801,8 @@ components:
           enum:
             - include
             - exclude
+            - INCLUDE
+            - EXCLUDE
         selectionFilter:
           type: object
           additionalProperties:
@@ -2814,6 +2825,7 @@ components:
         - WORLD
         - ZONE
       type: string
+      default: ENTERPRISE
     ApiSpecification:
       type: object
       required:

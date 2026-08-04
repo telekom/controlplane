@@ -58,8 +58,8 @@ func MapRover(in *roverv1.Rover, out *api.Rover) error {
 
 // tokenRequestToAPI maps rover CRD tokenRequest values to rover-server API enum values.
 var tokenRequestToAPI = map[roverv1.TokenRequestMethod]api.AuthenticationClientAuthMethod{
-	roverv1.TokenRequestClientSecretBasic: api.BASIC,
-	roverv1.TokenRequestClientSecretPost:  api.POST,
+	roverv1.TokenRequestClientSecretBasic: api.AuthenticationClientAuthMethodBASIC,
+	roverv1.TokenRequestClientSecretPost:  api.AuthenticationClientAuthMethodPOST,
 }
 
 func mapAuthentication(in *roverv1.Rover, out *api.Rover) {
