@@ -74,7 +74,7 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *RealmReconciler) mapClientToRealm(_ context.Context, obj client.Object) []reconcile.Request {
 	identityClient, ok := obj.(*identityv1.Client)
-	if !ok || identityClient.Spec.Realm == nil {
+	if !ok || identityClient.Spec.Realm == nil || identityClient.Spec.Realm.IsEmpty() {
 		return nil
 	}
 	return []reconcile.Request{{NamespacedName: identityClient.Spec.Realm.K8s()}}

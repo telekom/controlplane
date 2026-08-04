@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
+	"github.com/telekom/controlplane/common/pkg/types"
+	secrets "github.com/telekom/controlplane/secret-manager/api"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -48,6 +50,32 @@ var _ = Describe("GatewayHandler", func() {
 
 			err := handler.Delete(cc.WithClient(context.Background(), mockClient), gw)
 			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Describe("GetGatewayByRef()", func() {
+		It("resolves secrets when the gateway is not ready", func() {
+			mockClient := fakeclient.NewMockJanitorClient(GinkgoT())
+			mockClient.On("Get", mock.Anything, mock.Anything, mock.Anything).
+				Run(func(args mock.Arguments) {
+					gateway := args.Get(2).(*gatewayv1.Gateway)
+					gateway.Spec.Admin.ClientSecret = "admin-ref"
+					gateway.Spec.Redis = &gatewayv1.RedisConfig{Password: "redis-ref"}
+				}).Return(nil)
+			originalGet := secrets.Get
+			DeferCleanup(func() { secrets.Get = originalGet })
+			secrets.Get = func(_ context.Context, ref string) (string, error) { return "resolved-" + ref, nil }
+
+			ready, gateway, err := gwhandler.GetGatewayByRef(
+				cc.WithClient(context.Background(), mockClient),
+				types.ObjectRef{Name: "gateway", Namespace: "default"},
+				true,
+			)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ready).To(BeFalse())
+			Expect(gateway.Spec.Admin.ClientSecret).To(Equal("resolved-admin-ref"))
+			Expect(gateway.Spec.Redis.Password).To(Equal("resolved-redis-ref"))
 		})
 	})
 })

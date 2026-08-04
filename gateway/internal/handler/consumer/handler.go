@@ -58,7 +58,7 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 
 	err = kc.DeleteConsumer(ctx, consumer)
 	if err != nil {
-		return errors.Wrap(err, "failed to create or update consumer")
+		return errors.Wrap(err, "failed to delete consumer")
 	}
 
 	return nil

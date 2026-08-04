@@ -62,7 +62,7 @@ func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *GatewayReconciler) mapConsumerToGateway(_ context.Context, obj client.Object) []reconcile.Request {
 	consumer, ok := obj.(*v1.Consumer)
-	if !ok {
+	if !ok || consumer.Spec.Gateway.IsEmpty() {
 		return nil
 	}
 	return []reconcile.Request{{NamespacedName: consumer.Spec.Gateway.K8s()}}
@@ -70,7 +70,7 @@ func (r *GatewayReconciler) mapConsumerToGateway(_ context.Context, obj client.O
 
 func (r *GatewayReconciler) mapRouteToGateway(_ context.Context, obj client.Object) []reconcile.Request {
 	route, ok := obj.(*v1.Route)
-	if !ok {
+	if !ok || route.Spec.GatewayRef.IsEmpty() {
 		return nil
 	}
 	return []reconcile.Request{{NamespacedName: route.Spec.GatewayRef.K8s()}}

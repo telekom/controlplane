@@ -196,6 +196,18 @@ var _ = Describe("Controller Integration", Ordered, func() {
 	})
 })
 
+var _ = Describe("Gateway reference mapping", func() {
+	reconciler := &GatewayReconciler{}
+
+	It("ignores empty route references", func() {
+		Expect(reconciler.mapRouteToGateway(context.Background(), &gatewayv1.Route{})).To(BeEmpty())
+	})
+
+	It("ignores empty consumer references", func() {
+		Expect(reconciler.mapConsumerToGateway(context.Background(), &gatewayv1.Consumer{})).To(BeEmpty())
+	})
+})
+
 var _ = Describe("Gateway deletion", Ordered, func() {
 	const (
 		gatewayName = "deletion-guard-gateway"
