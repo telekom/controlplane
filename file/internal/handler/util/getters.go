@@ -47,7 +47,7 @@ func GetChildResourceRef(obj *filev1.ZoneServiceConfig) types.ObjectRef {
 func GetZoneServiceConfig(ctx context.Context, ref *types.ObjectRef) (*filev1.ZoneServiceConfig, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	list := &filev1.ZoneServiceConfigList{}
-	err := c.List(ctx, list, client.InNamespace(getZoneNamespace(ref)), client.MatchingFields{index.FieldSpecZoneOnZoneServiceConfig: ref.String()})
+	err := c.List(ctx, list, client.InNamespace(GetZoneNamespace(ref)), client.MatchingFields{index.FieldSpecZoneOnZoneServiceConfig: ref.String()})
 	if err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
 			return nil, ctrlerrors.BlockedErrorf("ZoneServiceConfig %q not found", ref.String())
@@ -105,6 +105,6 @@ func GetPublicKeysFromSFTP(sftp *filev1.FileSFTP) []filev1.SSHPublicKeySpec {
 	return sftp.PublicKeys
 }
 
-func getZoneNamespace(ref *types.ObjectRef) string {
+func GetZoneNamespace(ref *types.ObjectRef) string {
 	return ref.Namespace + "--" + ref.Name
 }

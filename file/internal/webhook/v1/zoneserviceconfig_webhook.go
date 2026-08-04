@@ -17,6 +17,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
+	"github.com/telekom/controlplane/file/internal/handler/util"
 )
 
 var zoneserviceconfiglog = logf.Log.WithName("zoneserviceconfig-resource")
@@ -64,7 +65,7 @@ func (v *ZoneServiceConfigValidator) ValidateCreateOrUpdate(ctx context.Context,
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
 
-	if obj.Name != obj.Spec.Zone.Name || obj.Namespace != obj.Spec.Zone.Namespace {
+	if obj.Name != obj.Spec.Zone.Name || obj.Namespace != util.GetZoneNamespace(obj.Spec.Zone) {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("metadata").Child("name"),
 			obj.GetName(),
