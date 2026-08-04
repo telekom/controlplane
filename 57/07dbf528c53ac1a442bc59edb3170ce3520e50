@@ -1,0 +1,50 @@
+.pre-commit-config.yaml
+  s_4387aa84f1a7d5::t_d814bacfbd006d 21-22,26-28
+gateway/internal/handler/gateway/handler_test.go
+  s_4387aa84f1a7d5::t_61dd606d621d1a 9,16,54-86
+  s_4387aa84f1a7d5::t_22d539f33f8a4b 87-98
+identity/internal/controller/realm_controller_test.go
+  s_4387aa84f1a7d5::t_61dd606d621d1a 117-125
+  s_4387aa84f1a7d5::t_769b46ea0309c1 17
+gateway/internal/handler/gateway/util.go
+  s_4387aa84f1a7d5::t_9678153a89d2e6 28
+identity/internal/controller/identityprovider_controller.go
+  s_4387aa84f1a7d5::t_9678153a89d2e6 62
+gateway/internal/handler/route/handler_test.go
+  s_4387aa84f1a7d5::t_35cb2c363f4650 314,317-318,320-321
+  s_4387aa84f1a7d5::t_24869372cc0f09 313,315-316,319
+gateway/internal/controller/gateway_controller.go
+  s_4387aa84f1a7d5::t_9678153a89d2e6 65,73
+gateway/internal/controller/controller_test.go
+  s_4387aa84f1a7d5::t_61dd606d621d1a 199-212
+identity/internal/controller/identityprovider_controller_test.go
+  s_4387aa84f1a7d5::t_769b46ea0309c1 16
+  s_4387aa84f1a7d5::t_61dd606d621d1a 87-95
+gateway/internal/handler/consumer/handler_test.go
+  s_4387aa84f1a7d5::t_24869372cc0f09 191,193-194,197
+  s_4387aa84f1a7d5::t_35cb2c363f4650 192,195-196,198-199
+identity/internal/handler/identityprovider/handler_test.go
+  s_4387aa84f1a7d5::t_61dd606d621d1a 9,11,14-15,17,77-78,87-110
+  s_4387aa84f1a7d5::t_22d539f33f8a4b 79-86
+identity/internal/controller/realm_controller.go
+  s_4387aa84f1a7d5::t_9678153a89d2e6 77
+identity/internal/handler/realm/handler_test.go
+  s_4387aa84f1a7d5::t_22d539f33f8a4b 490-500
+  s_4387aa84f1a7d5::t_61dd606d621d1a 476-489
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5707dbf528c53ac1a442bc59edb3170ce3520e50",
+  "prompts": {},
+  "sessions": {
+    "s_4387aa84f1a7d5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_032e677ffffeKCCgyMTFLdSYTS",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
