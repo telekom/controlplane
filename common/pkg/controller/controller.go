@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -66,7 +67,10 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	if changed, setupErr := FirstSetup(ctx, c.Client, object); setupErr != nil {
 		return HandleError(ctx, setupErr, object, c.Recorder), nil
 	} else if changed {
-		return reconcile.Result{}, nil
+		// Requeue explicitly so the full reconcile runs after the finalizer write,
+		// regardless of whether the watch event fires (finalizer updates do not bump
+		// Generation, so GenerationChangedPredicate would otherwise filter it out).
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	logger.V(1).Info("Fetched object")
@@ -118,9 +122,19 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		c.Event(ctx, object, "Warning", "UnknownReady", "Resource has an unknown ready status")
 	}
 
+	// Snapshot conditions before stamping so we can detect real changes.
+	// StampObservedGeneration mutates ObservedGeneration on each condition in-place,
+	// so any generation advance will show up as a diff.
+	condsBefore := append([]metav1.Condition(nil), object.GetConditions()...)
 	StampObservedGeneration(object)
-	if err = c.Client.Status().Update(ctx, object); err != nil {
-		return HandleError(ctx, err, object, c.Recorder), nil
+
+	// Skip the status write when nothing actually changed. This prevents a
+	// ResourceVersion bump that would otherwise re-enqueue this controller
+	// (via For()) and cross-trigger downstream watchers on every periodic reconcile.
+	if !reflect.DeepEqual(condsBefore, object.GetConditions()) {
+		if err = c.Client.Status().Update(ctx, object); err != nil {
+			return HandleError(ctx, err, object, c.Recorder), nil
+		}
 	}
 
 	requeueAfter := config.RequeueWithJitter()

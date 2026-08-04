@@ -65,14 +65,17 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apisubscription.ApiSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.ApiSubscription{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		For(&apiapi.ApiSubscription{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		// ApprovalRequest and Approval are watched without a predicate so that status
+		// changes (approval decisions) re-enqueue the parent ApiSubscription.
+		// GenerationChangedPredicate would miss these since decisions update Status, not Spec.
 		Owns(&approvalapi.ApprovalRequest{}).
 		Owns(&approvalapi.Approval{}).
 		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&apiapi.RemoteApiSubscription{}).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Watches(&apiapi.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiSubscription),

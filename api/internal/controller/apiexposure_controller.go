@@ -58,14 +58,14 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apiexposure.ApiExposureHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiv1.ApiExposure{}).
+		For(&apiv1.ApiExposure{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&apiv1.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Watches(&apiv1.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		// Watch ApiSubscription with ResourceVersionChangedPredicate (not GenerationChangedPredicate)
 		// because we need to react to approval status changes, which update Status (not Spec).
@@ -78,6 +78,8 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiExposure),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
+		// Watch Zone with ResourceVersionChangedPredicate because zone readiness is conveyed
+		// via status conditions (not spec), and exposures must react when a zone becomes ready.
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
