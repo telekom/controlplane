@@ -473,6 +473,31 @@ var _ = Describe("HandlerRealm", func() {
 	})
 
 	Context("Delete", func() {
+		It("blocks deletion while a client references the realm", func() {
+			realm := newValidRealm()
+			mockClient := fake.NewMockJanitorClient(GinkgoT())
+			mockClient.On("List", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Run(func(args mock.Arguments) {
+					args.Get(1).(*identityv1.ClientList).Items = []identityv1.Client{{}}
+				}).Return(nil)
+			blockedCtx, _ := newTestContext(mockClient)
+
+			err := NewHandlerRealm(keycloak.NewServiceFactory()).Delete(blockedCtx, realm)
+			var blocked ctrlerrors.BlockedError
+			Expect(errors.As(err, &blocked)).To(BeTrue())
+		})
+
+		It("returns client lookup errors", func() {
+			realm := newValidRealm()
+			mockClient := fake.NewMockJanitorClient(GinkgoT())
+			mockClient.On("List", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(errors.New("list failed"))
+			lookupCtx, _ := newTestContext(mockClient)
+
+			err := NewHandlerRealm(keycloak.NewServiceFactory()).Delete(lookupCtx, realm)
+			Expect(err).To(MatchError(ContainSubstring("listing clients")))
+		})
+
 		It("should succeed and not mutate the admin password", func() {
 			realm := newValidRealm()
 			realm.Status = identityv1.RealmStatus{

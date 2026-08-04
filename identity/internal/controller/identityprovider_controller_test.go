@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
 	realmModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/realm"
@@ -80,6 +81,15 @@ var _ = Describe("IdentityProvider deletion", func() {
 		Eventually(func() bool {
 			return errors.IsNotFound(k8sClient.Get(ctx, idpRef, &identityv1.IdentityProvider{}))
 		}, timeout, interval).Should(BeTrue())
+	})
+})
+
+var _ = Describe("IdentityProvider reference mapping", func() {
+	It("ignores incomplete references", func() {
+		realm := &identityv1.Realm{Spec: identityv1.RealmSpec{
+			IdentityProvider: &types.ObjectRef{Name: "idp"},
+		}}
+		Expect((&IdentityProviderReconciler{}).mapRealmToIdentityProvider(context.Background(), realm)).To(BeEmpty())
 	})
 })
 

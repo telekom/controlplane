@@ -59,7 +59,7 @@ func (r *IdentityProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *IdentityProviderReconciler) mapRealmToIdentityProvider(_ context.Context, obj client.Object) []reconcile.Request {
 	realm, ok := obj.(*identityv1.Realm)
-	if !ok || realm.Spec.IdentityProvider == nil {
+	if !ok || realm.Spec.IdentityProvider == nil || realm.Spec.IdentityProvider.Name == "" || realm.Spec.IdentityProvider.Namespace == "" {
 		return nil
 	}
 	return []reconcile.Request{{NamespacedName: realm.Spec.IdentityProvider.K8s()}}
