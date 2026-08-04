@@ -1,0 +1,48 @@
+identity/internal/controller/identityprovider_controller.go
+  s_a1f524d2406e16::t_7cd58cac043216 62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "82ccafd3e9b771aaa9b5b52787ef9d1fde66a824",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_80e8f80eb4b4ac": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_037d55a79ffehV2aJOQU3a8tOl",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_a1f524d2406e16": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03803051effe8j4HXDteDKuCSe",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b35f7b2645bab2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038109be1ffeiODFUj045bd9bY",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_de19913a88ad4c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0383318eaffeVURd2olqN1jAVC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
