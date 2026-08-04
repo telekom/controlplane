@@ -21,6 +21,7 @@ spec:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
+        app.kubernetes.io/name: file
         control-plane: controller-manager
     spec:
       securityContext:
@@ -31,7 +32,7 @@ spec:
       - args:
         - --leader-elect
         - --health-probe-bind-address=:8081
-        image: controller:latest
+        image: ghcr.io/telekom/controlplane/file:stable
         name: manager
         ports:
         - containerPort: 8081
@@ -59,7 +60,7 @@ spec:
             cpu: 500m
             memory: 128Mi
           requests:
-            cpu: 10m
+            cpu: 30m
             memory: 64Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

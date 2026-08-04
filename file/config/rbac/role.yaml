@@ -23,6 +23,12 @@ rules:
   - list
   - watch
 - apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - zones/status
+  verbs:
+  - get
+- apiGroups:
   - approval.cp.ei.telekom.de
   resources:
   - approvalrequests
@@ -48,6 +54,7 @@ rules:
   - fileexposures
   - filesubscriptions
   - filetypes
+  - zoneserviceconfigs
   verbs:
   - create
   - delete
@@ -62,6 +69,7 @@ rules:
   - fileexposures/finalizers
   - filesubscriptions/finalizers
   - filetypes/finalizers
+  - zoneserviceconfigs/finalizers
   verbs:
   - update
 - apiGroups:
@@ -70,22 +78,48 @@ rules:
   - fileexposures/status
   - filesubscriptions/status
   - filetypes/status
+  - zoneserviceconfigs/status
   verbs:
   - get
   - patch
   - update
 - apiGroups:
-  - file.cp.ei.telekom.de
+  - gateway.cp.ei.telekom.de
   resources:
-  - zoneserviceconfigs
+  - consumers
+  - routes
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - gateway.cp.ei.telekom.de
+  resources:
+  - consumers/status
+  - routes/status
+  verbs:
+  - get
+- apiGroups:
+  - identity.cp.ei.telekom.de
+  resources:
+  - clients
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - sftp.cp.ei.telekom.de
   resources:
   - instances
+  - sftpserviceconfigs
   - users
   verbs:
   - create
@@ -99,6 +133,7 @@ rules:
   - sftp.cp.ei.telekom.de
   resources:
   - instances/status
+  - sftpserviceconfigs/status
   - users/status
   verbs:
   - get
