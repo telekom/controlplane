@@ -1,0 +1,24 @@
+.pre-commit-config.yaml
+  s_776868ed5c1fcc::t_1cbe158db4bbf4 21-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6af4afbaad4b2166610e2bb83b0f3dd712af8d87",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_776868ed5c1fcc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03439a832ffedIWSUzsW3LPPZh",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
