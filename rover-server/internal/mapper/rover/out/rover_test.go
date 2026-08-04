@@ -72,7 +72,7 @@ var _ = Describe("Rover Mapper", func() {
 			err := MapRover(input, output)
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.BASIC))
+			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.AuthenticationClientAuthMethodBASIC))
 		})
 
 		It("must map client_secret_post from CRD to POST in API", func() {
@@ -87,7 +87,7 @@ var _ = Describe("Rover Mapper", func() {
 			err := MapRover(input, output)
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.POST))
+			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.AuthenticationClientAuthMethodPOST))
 		})
 
 		It("must not set authentication when it is nil", func() {

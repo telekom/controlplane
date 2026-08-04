@@ -17,8 +17,8 @@ import (
 
 // oauth2TokenRequestCRDToAPI maps CRD tokenRequest values to API Oauth2TokenRequest values.
 var oauth2TokenRequestCRDToAPI = map[roverv1.TokenRequestMethod]api.Oauth2TokenRequest{
-	roverv1.TokenRequestClientSecretBasic: api.Header,
-	roverv1.TokenRequestClientSecretPost:  api.Body,
+	roverv1.TokenRequestClientSecretBasic: api.Oauth2TokenRequestHeader,
+	roverv1.TokenRequestClientSecretPost:  api.Oauth2TokenRequestBody,
 }
 
 func tokenRequestCRDToAPI(value roverv1.TokenRequestMethod) api.Oauth2TokenRequest {

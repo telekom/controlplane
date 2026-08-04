@@ -161,8 +161,8 @@ var _ = Describe("Controller", func() {
 			controller := NewController(errorHandler, k8sClient, &recorder)
 
 			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(res.RequeueAfter).To(BeNumerically(">", 0))
+			Expect(err).To(MatchError("test error"))
+			Expect(res).To(Equal(reconcile.Result{}))
 
 			var obj test.TestResource
 			Expect(k8sClient.Get(ctx, req.NamespacedName, &obj)).To(Succeed())
