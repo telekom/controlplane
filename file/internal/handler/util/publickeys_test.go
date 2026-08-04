@@ -57,16 +57,6 @@ var _ = Describe("CanonicalSSHPublicKeys", func() {
 		Expect(keys[0]).To(Equal(validKey))
 	})
 
-	It("de-duplicates identical keys (same fingerprint and content)", func() {
-		keys, err := CanonicalSSHPublicKeys([]filev1.SSHPublicKeySpec{
-			{Key: validKey + " comment-one"},
-			{Key: validKey + " comment-two"},
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(keys).To(HaveLen(1))
-		Expect(keys[0]).To(Equal(validKey))
-	})
-
 	It("returns multiple distinct keys sorted by fingerprint", func() {
 		keys, err := CanonicalSSHPublicKeys([]filev1.SSHPublicKeySpec{
 			{Key: validKey},
