@@ -65,7 +65,6 @@ func (r *ZoneServiceConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&sftpv1.SFTPServiceConfig{}).
 		Owns(&gatewayapi.Consumer{}).
 		Owns(&gatewayapi.Route{}).
-		Owns(&gatewayapi.ConsumeRoute{}).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToZoneServiceConfig),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),

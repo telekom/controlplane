@@ -315,10 +315,6 @@ func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.Zon
 			return fmt.Errorf("failed to set controller reference for route: %w", locErr)
 		}
 
-		if route.Labels == nil {
-			route.Labels = make(map[string]string, 2)
-		}
-
 		upstreamUrl, locErr := url.Parse(routeConfig.Url)
 		if locErr != nil {
 			return ctrlerrors.BlockedErrorf("cannot parse upstream url of internal route %s: %s", routeConfig.Url, locErr)
