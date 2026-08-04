@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
-	common "github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	clientModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/client"
 	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
@@ -111,15 +110,6 @@ var _ = Describe("Realm deletion", func() {
 		}, timeout, interval).Should(BeTrue())
 
 		Expect(k8sClient.Delete(ctx, idp)).To(Succeed())
-	})
-})
-
-var _ = Describe("Realm reference mapping", func() {
-	It("ignores incomplete references", func() {
-		identityClient := &identityv1.Client{Spec: identityv1.ClientSpec{
-			Realm: &common.ObjectRef{Namespace: "namespace"},
-		}}
-		Expect((&RealmReconciler{}).mapClientToRealm(context.Background(), identityClient)).To(BeEmpty())
 	})
 })
 

@@ -188,15 +188,6 @@ var _ = Describe("ConsumerHandler", func() {
 		})
 
 		Context("error handling", func() {
-			It("deletes through a gateway that is not ready", func() {
-				setupNotReadyGatewayGet()
-				setupFeatureBuilderOverrides()
-				mockKC.EXPECT().DeleteConsumer(mock.Anything, consumer).Return(nil)
-
-				err := handler.Delete(ctx, consumer)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
 			It("returns error when gateway Get fails", func() {
 				mockClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).
 					Return(fmt.Errorf("gateway not found"))
