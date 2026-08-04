@@ -6,6 +6,8 @@
 package v1
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -14,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
+	"github.com/telekom/controlplane/file/internal/handler/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,7 +40,7 @@ func newValidZoneServiceConfig(name, namespace string) *filev1.ZoneServiceConfig
 			},
 			Zone: &types.ObjectRef{
 				Name:      name,
-				Namespace: namespace,
+				Namespace: strings.Split(namespace, "--")[0],
 			},
 		},
 	}
@@ -64,7 +67,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(zone).Build()
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
-			cfg := newValidZoneServiceConfig("test-zone", "default")
+			cfg := newValidZoneServiceConfig("test-zone", util.GetZoneNamespace(types.ObjectRefFromObject(zone)))
 
 			_, err := validator.ValidateCreate(ctx, cfg)
 			Expect(err).NotTo(HaveOccurred())
@@ -81,12 +84,36 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 			Expect(err.Error()).To(ContainSubstring("Zone with name"))
 		})
 
+		It("rejects a ZoneServiceConfig when the name does not match the Zone", func() {
+			zone := newValidZone("test-zone", "default")
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(zone).Build()
+
+			validator := &ZoneServiceConfigValidator{client: fakeClient}
+			cfg := newValidZoneServiceConfig("mismatched-name", util.GetZoneNamespace(types.ObjectRefFromObject(zone)))
+
+			_, err := validator.ValidateCreate(ctx, cfg)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("must match the admin Zone it configures"))
+		})
+
+		It("rejects a ZoneServiceConfig when the namespace does not match the Zone", func() {
+			zone := newValidZone("test-zone", "default")
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(zone).Build()
+
+			validator := &ZoneServiceConfigValidator{client: fakeClient}
+			cfg := newValidZoneServiceConfig(zone.Name, "wrong--namespace")
+
+			_, err := validator.ValidateCreate(ctx, cfg)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("must match the admin Zone it configures"))
+		})
+
 		It("accepts with valid service endpoint configuration", func() {
 			zone := newValidZone("test-zone-ep", "default")
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(zone).Build()
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
-			cfg := newValidZoneServiceConfig("test-zone-ep", "default")
+			cfg := newValidZoneServiceConfig("test-zone-ep", util.GetZoneNamespace(types.ObjectRefFromObject((zone))))
 			cfg.Spec.Service = &filev1.ServiceEndpoint{
 				Host: "sftp.example.com",
 				Port: 22,
@@ -101,7 +128,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(zone).Build()
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
-			cfg := newValidZoneServiceConfig("test-zone-bad-host", "default")
+			cfg := newValidZoneServiceConfig("test-zone-bad-host", util.GetZoneNamespace(types.ObjectRefFromObject(zone)))
 			cfg.Spec.Service = &filev1.ServiceEndpoint{
 				Host: "",
 				Port: 22,
@@ -116,7 +143,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(zone).Build()
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
-			cfg := newValidZoneServiceConfig("test-zone-bad-port", "default")
+			cfg := newValidZoneServiceConfig("test-zone-bad-port", util.GetZoneNamespace(types.ObjectRefFromObject(zone)))
 			cfg.Spec.Service = &filev1.ServiceEndpoint{
 				Host: "sftp.example.com",
 				Port: 99999,
@@ -131,7 +158,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(zone).Build()
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
-			cfg := newValidZoneServiceConfig("test-zone-ip", "default")
+			cfg := newValidZoneServiceConfig("test-zone-ip", util.GetZoneNamespace(types.ObjectRefFromObject(zone)))
 			cfg.Spec.Service = &filev1.ServiceEndpoint{
 				Host: "192.168.1.100",
 				Port: 22,
@@ -148,7 +175,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(zone).Build()
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
-			cfg := newValidZoneServiceConfig("update-zone", "default")
+			cfg := newValidZoneServiceConfig("update-zone", util.GetZoneNamespace(types.ObjectRefFromObject(zone)))
 
 			_, err := validator.ValidateUpdate(ctx, cfg, cfg)
 			Expect(err).NotTo(HaveOccurred())
