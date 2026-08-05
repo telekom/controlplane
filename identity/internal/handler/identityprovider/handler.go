@@ -8,10 +8,14 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 )
@@ -39,6 +43,15 @@ func (h *HandlerIdentityProvider) CreateOrUpdate(ctx context.Context, idp *ident
 	return nil
 }
 
-func (h *HandlerIdentityProvider) Delete(ctx context.Context, obj *identityv1.IdentityProvider) error {
+func (h *HandlerIdentityProvider) Delete(ctx context.Context, idp *identityv1.IdentityProvider) error {
+	realms := &identityv1.RealmList{}
+	if err := cc.ClientFromContextOrDie(ctx).List(ctx, realms,
+		client.MatchingFields{"spec.identityProvider": types.ObjectRefFromObject(idp).String()},
+	); err != nil {
+		return fmt.Errorf("listing realms for IdentityProvider %q: %w", idp.Name, err)
+	}
+	if len(realms.Items) > 0 {
+		return ctrlerrors.BlockedErrorf("IdentityProvider %q is still referenced by %d realm(s)", idp.Name, len(realms.Items))
+	}
 	return nil
 }

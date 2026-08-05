@@ -90,6 +90,7 @@ var _ = Describe("HandlerRealm", func() {
 
 	BeforeEach(func() {
 		mockK8s = fake.NewMockJanitorClient(GinkgoT())
+		mockK8s.On("List", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 		ctx, _ = newTestContext(mockK8s)
 	})
 

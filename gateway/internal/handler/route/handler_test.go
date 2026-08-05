@@ -310,6 +310,14 @@ var _ = Describe("RouteHandler", func() {
 		})
 
 		Context("error handling", func() {
+			It("deletes through a gateway that is not ready", func() {
+				setupNotReadyGatewayGet()
+				setupFeatureBuilderOverrides()
+				mockKC.EXPECT().DeleteRoute(mock.Anything, route).Return(nil)
+
+				Expect(handler.Delete(ctx, route)).To(Succeed())
+			})
+
 			It("returns error when gateway Get fails", func() {
 				mockClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).
 					Return(fmt.Errorf("gateway not found"))

@@ -62,11 +62,22 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&identityv1.IdentityProvider{},
 			handler.EnqueueRequestsFromMapFunc(r.mapIdpObjToRealm),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		Watches(&identityv1.Client{},
+			handler.EnqueueRequestsFromMapFunc(r.mapClientToRealm),
+			builder.WithPredicates(cc.DeleteOnlyPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+func (r *RealmReconciler) mapClientToRealm(_ context.Context, obj client.Object) []reconcile.Request {
+	identityClient, ok := obj.(*identityv1.Client)
+	if !ok || identityClient.Spec.Realm == nil || identityClient.Spec.Realm.IsEmpty() {
+		return nil
+	}
+	return []reconcile.Request{{NamespacedName: identityClient.Spec.Realm.K8s()}}
 }
 
 // mapIdpObjToRealm maps identity provider object to reconcile requests.

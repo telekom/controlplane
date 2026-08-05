@@ -6,14 +6,17 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
+	realmModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/realm"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -45,6 +48,46 @@ var _ = Describe("IdentityProvider Controller", func() {
 				VerifyIdentityProvider(ctx, g, idpRef, testIdp)
 			}, timeout, interval).Should(Succeed())
 		})
+	})
+})
+
+var _ = Describe("IdentityProvider deletion", func() {
+	It("keeps a referenced IdentityProvider terminating until its Realm is gone", func() {
+		ctx := context.Background()
+		idpRef := client.ObjectKey{Name: "idp-deletion-guard-idp", Namespace: testNamespace}
+		realmRef := client.ObjectKey{Name: "idp-deletion-guard-realm", Namespace: testNamespace}
+
+		idp := identityproviderModel.NewIdentityProvider(idpRef.Name, idpRef.Namespace, testEnvironment)
+		realm := realmModel.NewRealm(realmRef.Name, realmRef.Namespace, testEnvironment, idpRef.Name)
+
+		Expect(k8sClient.Create(ctx, idp)).To(Succeed())
+		Expect(k8sClient.Create(ctx, realm)).To(Succeed())
+		VerifyRealmIsAvailable(realmRef)
+
+		Expect(k8sClient.Delete(ctx, idp)).To(Succeed())
+		Eventually(func(g Gomega) {
+			current := &identityv1.IdentityProvider{}
+			g.Expect(k8sClient.Get(ctx, idpRef, current)).To(Succeed())
+			g.Expect(current.DeletionTimestamp.IsZero()).To(BeFalse())
+		}, timeout, interval).Should(Succeed())
+		Consistently(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, idpRef, &identityv1.IdentityProvider{}))
+		}, time.Second, interval).Should(BeFalse())
+
+		Expect(k8sClient.Delete(ctx, realm)).To(Succeed())
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, realmRef, &identityv1.Realm{}))
+		}, timeout, interval).Should(BeTrue())
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, idpRef, &identityv1.IdentityProvider{}))
+		}, timeout, interval).Should(BeTrue())
+	})
+})
+
+var _ = Describe("IdentityProvider reference mapping", func() {
+	It("ignores empty references", func() {
+		realm := &identityv1.Realm{Spec: identityv1.RealmSpec{IdentityProvider: &types.ObjectRef{}}}
+		Expect((&IdentityProviderReconciler{}).mapRealmToIdentityProvider(context.Background(), realm)).To(BeEmpty())
 	})
 })
 

@@ -24,9 +24,7 @@ func GetGatewayByRef(ctx context.Context, ref types.ObjectRef, resolveSecrets bo
 	if err != nil {
 		return false, nil, errors.Wrapf(err, "failed to get gateway %s", ref.String())
 	}
-	if !meta.IsStatusConditionTrue(gateway.GetConditions(), condition.ConditionTypeReady) {
-		return false, nil, nil
-	}
+	ready := meta.IsStatusConditionTrue(gateway.GetConditions(), condition.ConditionTypeReady)
 
 	if resolveSecrets {
 		gateway.Spec.Admin.ClientSecret, err = secrets.Get(ctx, gateway.Spec.Admin.ClientSecret)
@@ -42,5 +40,5 @@ func GetGatewayByRef(ctx context.Context, ref types.ObjectRef, resolveSecrets bo
 		}
 	}
 
-	return true, gateway, nil
+	return ready, gateway, nil
 }

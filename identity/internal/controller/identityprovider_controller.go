@@ -10,8 +10,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -42,13 +45,22 @@ func (r *IdentityProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("identityprovider-controller")
 	r.Controller = cc.NewController(&identityproviderHandler.HandlerIdentityProvider{}, r.Client, r.Recorder)
 
-	// TODO CreateOrUpdate realms in keycloak
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.IdentityProvider{}).
+		Watches(&identityv1.Realm{},
+			handler.EnqueueRequestsFromMapFunc(r.mapRealmToIdentityProvider),
+			builder.WithPredicates(cc.DeleteOnlyPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+func (r *IdentityProviderReconciler) mapRealmToIdentityProvider(_ context.Context, obj client.Object) []reconcile.Request {
+	realm, ok := obj.(*identityv1.Realm)
+	if !ok || realm.Spec.IdentityProvider == nil || realm.Spec.IdentityProvider.IsEmpty() {
+		return nil
+	}
+	return []reconcile.Request{{NamespacedName: realm.Spec.IdentityProvider.K8s()}}
 }

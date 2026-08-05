@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	ghErrors "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -13,7 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
+	common "github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	clientModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/client"
 	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
 	realmModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/realm"
 
@@ -70,6 +73,51 @@ var _ = Describe("Realm Controller", func() {
 				VerifyRealm(ctx, g, realmRef, testRealm, expectedRealmStatus)
 			}, timeout, interval).Should(Succeed())
 		})
+	})
+})
+
+var _ = Describe("Realm deletion", func() {
+	It("keeps a referenced Realm terminating until its Client is gone", func() {
+		ctx := context.Background()
+		idpRef := client.ObjectKey{Name: "deletion-guard-idp", Namespace: testNamespace}
+		realmRef := client.ObjectKey{Name: "deletion-guard-realm", Namespace: testNamespace}
+		clientRef := client.ObjectKey{Name: "deletion-guard-client", Namespace: testNamespace}
+
+		idp := identityproviderModel.NewIdentityProvider(idpRef.Name, idpRef.Namespace, testEnvironment)
+		realm := realmModel.NewRealm(realmRef.Name, realmRef.Namespace, testEnvironment, idpRef.Name)
+		identityClient := clientModel.NewClient(clientRef.Name, clientRef.Namespace, testEnvironment, realmRef.Name)
+
+		Expect(k8sClient.Create(ctx, idp)).To(Succeed())
+		Expect(k8sClient.Create(ctx, realm)).To(Succeed())
+		VerifyRealmIsAvailable(realmRef)
+		Expect(k8sClient.Create(ctx, identityClient)).To(Succeed())
+
+		Expect(k8sClient.Delete(ctx, realm)).To(Succeed())
+		Eventually(func(g Gomega) {
+			current := &identityv1.Realm{}
+			g.Expect(k8sClient.Get(ctx, realmRef, current)).To(Succeed())
+			g.Expect(current.DeletionTimestamp.IsZero()).To(BeFalse())
+		}, timeout, interval).Should(Succeed())
+		Consistently(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, realmRef, &identityv1.Realm{}))
+		}, time.Second, interval).Should(BeFalse())
+
+		Expect(k8sClient.Delete(ctx, identityClient)).To(Succeed())
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, clientRef, &identityv1.Client{}))
+		}, timeout, interval).Should(BeTrue())
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, realmRef, &identityv1.Realm{}))
+		}, timeout, interval).Should(BeTrue())
+
+		Expect(k8sClient.Delete(ctx, idp)).To(Succeed())
+	})
+})
+
+var _ = Describe("Realm reference mapping", func() {
+	It("ignores empty references", func() {
+		identityClient := &identityv1.Client{Spec: identityv1.ClientSpec{Realm: &common.ObjectRef{}}}
+		Expect((&RealmReconciler{}).mapClientToRealm(context.Background(), identityClient)).To(BeEmpty())
 	})
 })
 

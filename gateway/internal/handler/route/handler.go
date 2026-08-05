@@ -23,6 +23,8 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ handler.Handler[*gatewayv1.Route] = &RouteHandler{}
@@ -110,6 +112,10 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 
 	_, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
+		// There is no gateway configuration available for deleting the Kong route.
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 

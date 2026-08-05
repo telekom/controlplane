@@ -9,11 +9,14 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/internal/handler/identityprovider"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
@@ -106,6 +109,16 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) error {
 	logger := log.FromContext(ctx)
 	logger.Info("RealmHandler Delete", "realm", realm.Name, "namespace", realm.Namespace)
+
+	clients := &identityv1.ClientList{}
+	if err := cc.ClientFromContextOrDie(ctx).List(ctx, clients,
+		client.MatchingFields{"spec.realm": types.ObjectRefFromObject(realm).String()},
+	); err != nil {
+		return fmt.Errorf("listing clients for realm %q: %w", realm.Name, err)
+	}
+	if len(clients.Items) > 0 {
+		return ctrlerrors.BlockedErrorf("realm %q is still referenced by %d client(s)", realm.Name, len(clients.Items))
+	}
 
 	adminPassword, err := secrets.Get(ctx, realm.Status.AdminPassword)
 	if err != nil {
