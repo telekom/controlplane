@@ -78,6 +78,15 @@ type McpSpecificationController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
+type AgentSpecificationController interface {
+	Create(ctx context.Context, req api.AgentSpecificationCreateRequest) (api.AgentSpecificationResponse, error)
+	Get(ctx context.Context, resourceId string) (api.AgentSpecificationResponse, error)
+	GetAll(ctx context.Context, params api.GetAllAgentSpecificationsParams) (*api.AgentSpecificationListResponse, error)
+	Update(ctx context.Context, resourceId string, req api.AgentSpecificationUpdateRequest) (api.AgentSpecificationResponse, error)
+	Delete(ctx context.Context, resourceId string) error
+	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
+}
+
 // SecurityTemplates are the rover-specific check-access comparison templates.
 // They are exported so cmd/main.go can inject them into the JWT SecurityOpts
 // when building each listener's security family.
@@ -108,6 +117,7 @@ type Server struct {
 	EventSpecifications EventSpecificationController
 	ApiChangelogs       ApiChangelogController
 	McpSpecifications   McpSpecificationController
+	AgentSpecifications AgentSpecificationController
 }
 
 func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
@@ -194,5 +204,15 @@ func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
 	router.Add(fiber.MethodGet, "/mcpspecifications/:resourceId", cserver.Guarded(guard, s.GetMcpSpecification)...)
 	router.Add(fiber.MethodPut, "/mcpspecifications/:resourceId", cserver.Guarded(guard, s.UpdateMcpSpecification)...)
 	router.Add(fiber.MethodDelete, "/mcpspecifications/:resourceId", cserver.Guarded(guard, s.DeleteMcpSpecification)...)
+
+	s.Log.Info("Registering agentspecifications routes")
+
+	router.Add(fiber.MethodGet, "/agentspecifications", cserver.Guarded(guard, s.GetAllAgentSpecifications)...)
+	router.Add(fiber.MethodPost, "/agentspecifications", cserver.Guarded(guard, s.CreateAgentSpecification)...)
+	router.Add(fiber.MethodGet, "/agentspecifications/:resourceId/status", cserver.Guarded(guard, s.GetAgentSpecificationStatus)...)
+
+	router.Add(fiber.MethodGet, "/agentspecifications/:resourceId", cserver.Guarded(guard, s.GetAgentSpecification)...)
+	router.Add(fiber.MethodPut, "/agentspecifications/:resourceId", cserver.Guarded(guard, s.UpdateAgentSpecification)...)
+	router.Add(fiber.MethodDelete, "/agentspecifications/:resourceId", cserver.Guarded(guard, s.DeleteAgentSpecification)...)
 
 }

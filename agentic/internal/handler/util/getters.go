@@ -70,6 +70,8 @@ func GetApplication(ctx context.Context, ref ctypes.ObjectRef) (*applicationapi.
 // Returns (found, mcpServer, error).
 // If found is false and mcpServer is non-nil, a server exists but with a different case
 // (e.g. /MyMcp vs /mymcp) — the caller should treat this as a conflict, not a missing server.
+//
+//nolint:dupl // parallel structure with FindActiveAgentCard; operates on different types
 func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1.McpServer, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -225,4 +227,87 @@ func FindCrossZoneAgenticSubscriptionZones(ctx context.Context, basePath, exposu
 	}
 
 	return zones, hasLocalSubs, nil
+}
+
+// ServerInfo holds the essential fields shared between McpServer and AgentCard.
+// It abstracts the "server" concept so handlers don't need to know which CRD backs the basePath.
+type ServerInfo struct {
+	BasePath     string
+	Oauth2Scopes []string
+}
+
+// FindActiveAgentCard finds the active AgentCard for a given basePath.
+// Returns (found, agentCard, error).
+// If found is false and agentCard is non-nil, a card exists but with a different case.
+//
+//nolint:dupl // parallel structure with FindActiveMcpServer; operates on different types
+func FindActiveAgentCard(ctx context.Context, basePath string) (bool, *agenticv1.AgentCard, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	cardList := &agenticv1.AgentCardList{}
+	if err := c.List(ctx, cardList, client.MatchingLabels{
+		agenticv1.AgentBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+	}); err != nil {
+		return false, nil, errors.Wrapf(err, "failed to list AgentCards for basePath %q", basePath)
+	}
+
+	var candidates []agenticv1.AgentCard
+	var caseConflict *agenticv1.AgentCard
+	for i := range cardList.Items {
+		card := &cardList.Items[i]
+		if !card.Status.Active {
+			continue
+		}
+		if card.Spec.BasePath == basePath {
+			candidates = append(candidates, *card)
+		} else if strings.EqualFold(card.Spec.BasePath, basePath) && caseConflict == nil {
+			caseConflict = card
+		}
+	}
+
+	if len(candidates) == 0 {
+		return false, caseConflict, nil
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].CreationTimestamp.Before(&candidates[j].CreationTimestamp)
+	})
+
+	activeCard := &candidates[0]
+	if err := condition.EnsureReady(activeCard); err != nil {
+		return false, activeCard, ctrlerrors.BlockedErrorf("AgentCard %q is not ready", basePath)
+	}
+
+	return true, activeCard, nil
+}
+
+// FindActiveServer looks up the active server (McpServer or AgentCard) for a basePath.
+// It tries McpServer first; if not found, tries AgentCard.
+// Returns (found, serverInfo, error). The serverInfo is nil when found is false.
+func FindActiveServer(ctx context.Context, basePath string) (bool, *ServerInfo, error) {
+	// Try McpServer first
+	mcpFound, mcpServer, err := FindActiveMcpServer(ctx, basePath)
+	if err != nil {
+		return false, nil, err
+	}
+	if mcpFound {
+		return true, &ServerInfo{
+			BasePath:     mcpServer.Spec.BasePath,
+			Oauth2Scopes: mcpServer.Spec.Oauth2Scopes,
+		}, nil
+	}
+
+	// Try AgentCard
+	agentFound, agentCard, err := FindActiveAgentCard(ctx, basePath)
+	if err != nil {
+		return false, nil, err
+	}
+	if agentFound {
+		return true, &ServerInfo{
+			BasePath:     agentCard.Spec.BasePath,
+			Oauth2Scopes: agentCard.Spec.Oauth2Scopes,
+		}, nil
+	}
+
+	return false, nil, nil
 }
