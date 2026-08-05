@@ -1,0 +1,175 @@
+organization-server/internal/client/rover_test.go
+  s_994809f06438c8::t_aad05f77de309a 109-111,113,115-117,120-129,134-136
+  s_994809f06438c8::t_4e5196030871db 112,114,118-119
+  s_e73db3c55a4b23::t_d20b26e05ef04a 212
+  s_a24864f33c122a::t_ba0aaf179025ce 386-387
+  s_de19913a88ad4c::t_d0150c23e7bd27 228-258,319-354
+  s_de19913a88ad4c::t_3c94c9ff44751d 15-16,318,355,372-382,384-385,388-393,395-414
+  s_de19913a88ad4c::t_78ce59c757b2d4 357-365,367-371
+  s_994809f06438c8::t_d66702faca3bb7 130-133
+  s_de19913a88ad4c::t_79c5ac5bc438ab 162,164,172-211,213-227,259-317
+  s_de19913a88ad4c::t_9e45cffa5236af 356
+organization-server/internal/client/rover.go
+  s_de19913a88ad4c::t_0fa5c0526909a7 79-81,90,96-102,104,108,113-121
+  s_dde1c0ed7d1de1::t_bc33fa5b50d143 21-22,142,146-147
+  s_de19913a88ad4c::t_346c9530cc1842 91
+  s_dde1c0ed7d1de1::t_2c4f3e7d3bb51f 92-95
+  s_de19913a88ad4c::t_76a1fa2ac67c61 13-14,65-67,75-78,82-89,103,105-106,109-112,122-128,148
+  s_994809f06438c8::t_4a92791951ed57 41-43
+controlplane-api/internal/service/resource_checker.go
+  s_d340fabd3b511d::t_bd29ff3250fa1d 53,57
+  s_b35f7b2645bab2::t_0a157389d9a9cd 82-83,96
+  s_994809f06438c8::t_4a92791951ed57 19-20,81,84-87
+  s_d340fabd3b511d::t_7193b7d80cc994 13,54-56,58-62
+  s_a2f9fb7351933f::t_3051263f1016a1 52,76-80
+  s_b35f7b2645bab2::t_7befa235693012 64
+rover-server/internal/controller/resources.go
+  s_b35f7b2645bab2::t_7befa235693012 20
+  s_1c0aa7000d9beb::t_5b3ae9e298d145 17,50,77,86-89,91,103,105,110,112-119,123-136,141-142,184,186,189-191,194-195,199,203,208-209,212-237
+  s_1c0aa7000d9beb::t_5c8f1745157c14 94,122
+  s_bbe4eef27de13f::t_bffe4dd711eda5 9-10,25-49,51-54
+  s_bbe4eef27de13f::t_bc93a57f4ccefa 55
+  s_1c0aa7000d9beb::t_fbd66d9686f3f7 90
+  s_1c0aa7000d9beb::t_4fe0102fcfc171 93
+  s_1c0aa7000d9beb::t_bd74acf6ed42e0 95-96
+  s_1c0aa7000d9beb::t_97c8f9748944b3 100-102
+  s_1c0aa7000d9beb::t_feedb72eb91cb1 104
+  s_1c0aa7000d9beb::t_89869e7834ad0e 106-109
+  s_1c0aa7000d9beb::t_9d9acdd970f73d 111
+rover-server/internal/server/resources_server.go
+  s_1a9373acb77770::t_985932d4bce88a 26
+  s_1a9373acb77770::t_363ea0c6dbf2ee 8-12,17,28,31-36,39-44,46,51-62
+  s_1a9373acb77770::t_ec82fb3287e01d 27
+  s_b35f7b2645bab2::t_b18997fb1aa5d6 14
+  s_1a9373acb77770::t_4706c00e09205b 63
+controlplane-api/internal/service/resource_checker_test.go
+  s_b35f7b2645bab2::t_7befa235693012 136
+  s_a2f9fb7351933f::t_9a50e4c44c31a4 9,18-36,115-132
+  s_d340fabd3b511d::t_cc42b7e826910e 1-8,10-11,13-17,37,39-40,42-49,51-68,90,92-101,133-135,138-152
+  s_d340fabd3b511d::t_701d173d54b860 38,41,50,69-71,73-74,77-82,84-89,91,137
+  s_d340fabd3b511d::t_be10eb68439618 72,75-76,83
+  s_994809f06438c8::t_aad05f77de309a 12,102-114
+rover-server/internal/controller/resources_test.go
+  s_dbd7a9e3a440e8::t_9d04f2cae8c199 47,50
+  s_1a9373acb77770::t_4b991d50a0f532 57,66,108
+  s_1a9373acb77770::t_58604d784d6659 9,11,14-16,19,21-22,69-101,131-144,155-168
+  s_b35f7b2645bab2::t_7befa235693012 54,63,105,112,119,126
+  s_1a9373acb77770::t_6fe23fa9b83c53 58-59
+  s_1a9373acb77770::t_314ed7d29be594 67-68
+rover-server/internal/controller/resources_pagination_test.go
+  s_b35f7b2645bab2::t_c392a4fef155fc 18-19,27-29
+  s_1c0aa7000d9beb::t_7ca5c91125727e 136-138
+  s_b35f7b2645bab2::t_7befa235693012 281-286
+  s_1c0aa7000d9beb::t_c5b3475e9fdce3 8,11,13-15,21-26,59-63,65-110,119-135,139-255,260-280,287-308,310-321,323-361
+  s_1c0aa7000d9beb::t_5c8f1745157c14 64,111-118
+  s_bbe4eef27de13f::t_4a1f3e8d0fa71b 1-7,9-10,12,16,20,30-33,35-37,39-58,256-259,362
+  s_1c0aa7000d9beb::t_ac57c91c2e4cb5 17,309,322
+  s_bbe4eef27de13f::t_268cb7ac6632c7 34,38
+rover-server/internal/controller/suite_controller_test.go
+  s_1c0aa7000d9beb::t_c5b3475e9fdce3 37,77-80
+  s_1c0aa7000d9beb::t_7b1db361f117d0 9,187-198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3693319223266fb6baf71a2eddfcb6fc64cb8467",
+  "prompts": {},
+  "sessions": {
+    "s_1a9373acb77770": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0386ed200ffe6RwUjItC6uSDQw",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_1c0aa7000d9beb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0388302deffed5hVAZSkHH3xjn",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_994809f06438c8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0343d02e0ffeeii1QjyzxPlIix",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_a24864f33c122a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_037bacf8bffepsJRU1W2vr7a5T",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_a2f9fb7351933f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03437a06fffeOB5fh3gKv1MAdB",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b35f7b2645bab2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038109be1ffeiODFUj045bd9bY",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_bbe4eef27de13f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038b98b06ffe7K7SllCZazV7o6",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_d340fabd3b511d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0384cba62ffeQ4vUjd0Sgfe8d3",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_dbd7a9e3a440e8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038eec438ffeWi6VazAn2GPNfj",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_dde1c0ed7d1de1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0344a0158ffetQc22abTXlw5GC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_de19913a88ad4c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0383318eaffeVURd2olqN1jAVC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e73db3c55a4b23": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d135096ffeUK0s72mYiY1HFW",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
