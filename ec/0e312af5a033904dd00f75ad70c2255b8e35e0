@@ -1,0 +1,23 @@
+organization-server/config/default/namespace_patch.yaml
+  s_23b7ea359876dc::t_0a9aa375580f57 5
+organization-server/config/certmanager/certificate.yaml
+  s_23b7ea359876dc::t_07b426a9282691 13-22
+organization-server/config/server/server.yaml
+  s_23b7ea359876dc::t_07b426a9282691 67,74,76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ec0e312af5a033904dd00f75ad70c2255b8e35e0",
+  "prompts": {},
+  "sessions": {
+    "s_23b7ea359876dc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_032f338f4ffeTZul63E5vmZo2l",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    }
+  }
+}
