@@ -42,7 +42,7 @@ See [rover-ctl help](./docs/roverctl.md) for a complete list of commands and opt
 
 ### Container Image
 
-The `roverctl` container image published to the internal Artifactory Docker registry (`artifactory.devops.telekom.de/rover-ctl` — not GHCR, due to GPL licensing considerations) bundles the following tools alongside the `roverctl` binary, so it can be used to script and chain Control Plane interactions (e.g. piping `roverctl` JSON/YAML output through `jq`/`yq`) without installing anything separately:
+The `roverctl` container image published to an internal Docker registry (not GHCR, due to GPL licensing considerations) bundles the following tools alongside the `roverctl` binary, so it can be used to script and chain Control Plane interactions (e.g. piping `roverctl` JSON/YAML output through `jq`/`yq`) without installing anything separately:
 
 | Tool     | Pinned Version |
 |----------|-----------------|
@@ -51,6 +51,26 @@ The `roverctl` container image published to the internal Artifactory Docker regi
 | `yq`     | 4.44.3          |
 
 These tools are only available inside the container image. The standalone `roverctl` binary archives (`.tar.gz`/`.zip` for Linux and Windows) do **not** bundle `bash`, `jq`, or `yq` — install them separately if you use the standalone binary outside a container.
+
+#### Building the Image Locally
+
+The image is assembled in two stages: `ko` builds the plain `roverctl` binary image, and `rover-ctl/Dockerfile` layers that binary onto a base image containing `bash`/`jq`/`yq` (built from `rover-ctl/Dockerfile.base`). Both stages need to be pushed to a registry `ko`/`docker build` can pull from — a local registry container works well for this:
+
+```bash
+# Build the bash/jq/yq base image
+docker build -f rover-ctl/Dockerfile.base -t localhost:5000/rover-ctl-base:local rover-ctl
+docker push localhost:5000/rover-ctl-base:local
+
+# Build the plain roverctl binary image with ko
+export KO_DOCKER_REPO=localhost:5000/rover-ctl-builder
+(cd rover-ctl && ko build --push=true --bare .)
+
+# Combine both into the final image
+docker build \
+  --build-arg ROVERCTL_IMAGE=localhost:5000/rover-ctl-builder:latest \
+  --build-arg ROVERCTL_BASE_IMAGE=localhost:5000/rover-ctl-base:local \
+  -f rover-ctl/Dockerfile -t roverctl:local rover-ctl
+```
 
 ## Configuration
 

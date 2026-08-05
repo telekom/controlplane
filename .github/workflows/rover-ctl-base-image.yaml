@@ -23,8 +23,8 @@ name: "Rover-CTL Base Image"
 # `base_image` value on the rover-ctl entry in .goreleaser.yaml and to
 # ci.yaml's `base_image` input (goreleaser's `kos` pipe does not support
 # templating `base_image`, so .goreleaser.yaml hardcodes the same value):
-#   - vars.REGISTRY_HOST             (e.g. artifactory.devops.telekom.de)
-#   - vars.REGISTRY_ROVERCTL_BASE_REPO (e.g. tardis-oci-local/tardis/infra/build/controlplane/roverctl/rover-ctl-base)
+#   - vars.REGISTRY_HOST             (internal Artifactory registry host)
+#   - vars.REGISTRY_ROVERCTL_BASE_REPO (internal Artifactory repository path)
 #   - vars.ROVERCTL_BASE_IMAGE_TAG    (e.g. bash-jq-yq-v1)
 #
 # NOTE: this is a different Artifactory repo/path than the final rover-ctl
