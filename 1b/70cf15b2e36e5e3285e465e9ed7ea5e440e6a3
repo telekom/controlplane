@@ -2,6 +2,7 @@ organization-server/internal/client/cpapi_test.go
   s_b553d87062a40e::t_c39c7793d530bb 5,8-11,15-17,19-26,29-32,34,36,39-46
   s_b553d87062a40e::t_f77b2b30c0d3cf 13,28,35
   s_2f15dd85a25ea6::t_7d849a5091a723 47
+  s_0d600cd7e35b12::t_c375734b4b0531 1-4,6-7,12,14,18,27,33,37-38,48-49
 organization-server/internal/server/teams_test.go
   s_e272aaa3dc1909::t_82f57d9a78c81d 23-26,155,267
   s_676f2dc4ce1b6f::t_79e954a1d48f1a 281-291
@@ -23,6 +24,7 @@ organization-server/internal/client/rover_test.go
   s_e73db3c55a4b23::t_34bd2c122a0f11 156-157
   s_e73db3c55a4b23::t_3bb0875ae606dd 195-196
   s_e73db3c55a4b23::t_e17d04ee779b63 198
+  s_0d600cd7e35b12::t_c375734b4b0531 200
 organization-server/internal/config/config_test.go
   s_e73db3c55a4b23::t_521c0b4da2d4ea 5,13-15,17-19,22-31,34-37,39-46,48-53,57-58,60-62,64,66-69
   s_e73db3c55a4b23::t_4ee2220ac5be6b 55
@@ -53,6 +55,7 @@ organization-server/internal/client/rover.go
   s_e73db3c55a4b23::t_f841664825be8d 15,19-22,24-25,29-30,32-37,39-40,42-43,62-63
   s_e73db3c55a4b23::t_7396cb2b9edf65 31,38
   s_e73db3c55a4b23::t_b94953e398cb1f 16
+  s_0d600cd7e35b12::t_c375734b4b0531 72
 organization-server/internal/api/server.gen.go
   s_e73db3c55a4b23::t_6942851831f5af 476-540
 organization-server/internal/client/token.go
@@ -60,6 +63,7 @@ organization-server/internal/client/token.go
 rover-server/internal/api/server.gen.go
   s_5f09e98ae8966b::t_086edb500d08bd 1604-1605,2259
   s_5f09e98ae8966b::t_20ae2bd0de3e5a 1
+  s_0d600cd7e35b12::t_c375734b4b0531 2257
 organization-server/internal/config/config.go
   s_0b1a12e558b711::t_bef670b1c3afd6 82,89
   s_b553d87062a40e::t_8fd1f52c122940 70
@@ -75,6 +79,7 @@ rover-server/internal/controller/resources_test.go
   s_b35f7b2645bab2::t_c392a4fef155fc 15,17
   s_dbd7a9e3a440e8::t_9d04f2cae8c199 9,13,23-31,34-40
   s_dbd7a9e3a440e8::t_9c6df4bedb9aa4 43-44
+  s_0d600cd7e35b12::t_c375734b4b0531 87-93
 organization-server/internal/server/server.go
   s_676f2dc4ce1b6f::t_49706ef1d9e4f1 9,11,17,41-66,221-224
   s_63d9b9122e9b73::t_567aa3fa41c7fc 18-19,77-81,83,95,122,143,161,176,196-200,202,215,225,248,270,289,305,321,341-344,346,395-400
@@ -114,6 +119,7 @@ organization-server/pkg/log/log.go
   s_0b1a12e558b711::t_bef670b1c3afd6 13
   s_e73db3c55a4b23::t_aee807f9f4a079 5,8-11,16,18-21,23-27,29,32-36,38-41
   s_2f15dd85a25ea6::t_5920b80c3fd522 28,30-31,37
+  s_0d600cd7e35b12::t_c375734b4b0531 1-4,6-7,12,14-15,17,22,42
 organization-server/internal/server/error_paths_test.go
   s_676f2dc4ce1b6f::t_5b472ee6e72238 728
   s_676f2dc4ce1b6f::t_45fa0d8c98fd58 744
@@ -122,6 +128,7 @@ organization-server/internal/server/security.go
   s_b553d87062a40e::t_39fb784d1e8724 41,53-56,58-60,62-64,66
   s_63d9b9122e9b73::t_567aa3fa41c7fc 5,8-9,11-13,15-17,19-26,29-30,33-37,39-40,42-49
   s_676f2dc4ce1b6f::t_5b472ee6e72238 18
+  s_0d600cd7e35b12::t_c375734b4b0531 1-4,6-7,10,14,31-32,38,50-52,57,61,65,67
 organization-server/config/certmanager/kustomization.yaml
   s_e73db3c55a4b23::t_7e74425b0d9b9c 10-13
 organization-server/internal/mapper/mapper.go
@@ -133,6 +140,7 @@ organization-server/config/certmanager/certificate.yaml
   s_e73db3c55a4b23::t_7e74425b0d9b9c 1-20
 common-server/pkg/server/middleware/security/business_context_test.go
   s_4897012d77e79e::t_95f8a5d7bdff0c 5,8-9,11,14-23,26-33
+  s_0d600cd7e35b12::t_c375734b4b0531 1-4,6-7,10,12-13,24-25
 organization-server/internal/server/hubs_test.go
   s_676f2dc4ce1b6f::t_27eeb701981791 156-177
 organization-server/config/ingress/ingress.yaml
@@ -159,6 +167,14 @@ rover-server/go.mod
       "agent_id": {
         "tool": "opencode",
         "id": "ses_047a2026bffe9qsIiDGvdJwY0z",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_0d600cd7e35b12": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02ec073ecffeJy377MZ0DSRpSk",
         "model": "gpt-5.6-sol"
       },
       "human_author": "Ron Gummich <ron.gummich@telekom.de>"
