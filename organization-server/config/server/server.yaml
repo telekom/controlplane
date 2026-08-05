@@ -64,16 +64,16 @@ spec:
               cpu: 10m
               memory: 64Mi
           volumeMounts:
-            - name: cpapi-trust-bundle
+            - name: controlplane-trust-bundle
               mountPath: /var/run/secrets/trust-bundle
               readOnly: true
             - name: cert-volume
               mountPath: /etc/tls
               readOnly: true
       volumes:
-        - name: cpapi-trust-bundle
+        - name: controlplane-trust-bundle
           configMap:
-            name: controlplane-api-trust-bundle
+            name: controlplane-trust-bundle
         - name: cert-volume
           secret:
             secretName: organization-server-cert
