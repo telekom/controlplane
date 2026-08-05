@@ -270,7 +270,10 @@ install/
 ├── base/                          # Shared foundation
 │   ├── kustomization.yaml         # Sets the namespace to controlplane-system
 │   ├── namespace.yaml             # Namespace with required labels
-│   └── issuer.yaml                # Self-signed cert-manager Issuer for internal TLS
+│   ├── bootstrap-issuer.yaml       # Self-signed Issuer used to create the root CA
+│   ├── root-ca.yaml                # Private root CA Certificate
+│   ├── issuer.yaml                 # CA-backed Issuer for internal TLS
+│   └── trust-bundle.yaml           # Shared public CA trust bundle
 │
 ├── overlays/
 │   └── default/                   # Production overlay (recommended starting point)
@@ -285,7 +288,7 @@ The three layers work together as follows:
 
 | Layer | Purpose |
 |---|---|
-| **Base** | Creates the `controlplane-system` namespace with the labels that the Secret Manager and File Manager network policies require, and provisions a self-signed TLS issuer for internal controller communication. |
+| **Base** | Creates the `controlplane-system` namespace, bootstraps a private root CA, provisions the CA-backed issuer used for internal TLS, and distributes its public certificate through a shared trust bundle. |
 | **Overlay** | Composes the base with all individual controller configurations. The default overlay references each controller's config from GitHub at a pinned release tag. |
 | **Component** | An optional add-on that can be composed into any overlay. The eventing component adds the event and pubsub controllers. |
 
@@ -447,3 +450,65 @@ For details on how application teams publish and consume events, see the user jo
 
 - [Exposing Events](../user-journey/exposing-events.mdx)
 - [Subscribing to Events](../user-journey/subscribing-to-events.mdx)
+
+## Internal certificate authority
+
+Control Plane services in `controlplane-system` share one certificate authority (CA). This allows every internal client to validate every service certificate with the same trust bundle.
+
+The default installation creates the CA in three steps:
+
+```text
+Issuer/controlplane-bootstrap-issuer (SelfSigned)
+    |
+    | creates and self-signs once
+    v
+Certificate/controlplane-root-ca
+    |
+    | stores its certificate and private key in Secret/controlplane-root-ca
+    v
+Issuer/controlplane-issuer (CA-backed)
+    |
+    | issues certificates for internal services
+    v
+Service certificates
+```
+
+### Bootstrap issuer
+
+`Issuer/controlplane-bootstrap-issuer` solves the initial trust problem: a root CA must be self-signed because no higher CA exists to sign it. The bootstrap issuer is therefore used only to create `Certificate/controlplane-root-ca`. Internal service certificates must not reference it directly.
+
+Using the self-signed issuer for each service certificate would create a separate trust anchor for every service. Clients would then need a separate trust bundle for File Manager, Secret Manager, Controlplane API, and every other internal service.
+
+### Root CA
+
+`Certificate/controlplane-root-ca` is marked as a CA certificate. cert-manager generates its private key, asks the bootstrap issuer to self-sign it, and stores both in `Secret/controlplane-root-ca`.
+
+The private key remains in `controlplane-system` and is used only for certificate issuance. Client workloads receive the public CA certificate, not its private key.
+
+### Service issuer
+
+`Issuer/controlplane-issuer` is backed by `Secret/controlplane-root-ca`. It is the stable issuer referenced by all internal service `Certificate` resources:
+
+```yaml
+issuerRef:
+  name: controlplane-issuer
+  kind: Issuer
+```
+
+This separation keeps bootstrap and day-to-day issuance distinct. The bootstrap issuer creates the root CA once; the CA-backed service issuer uses that root to issue and renew service certificates throughout the installation's lifetime.
+
+Internal clients trust `/var/run/secrets/trust-bundle/trust-bundle.pem`, distributed by trust-manager from `Bundle/controlplane-trust-bundle`. Because every service certificate chains back to `controlplane-root-ca`, one shared bundle is sufficient.
+
+## Use an externally managed issuer
+
+Disable the default `controlplane-bootstrap-issuer`, `controlplane-root-ca` Certificate, and CA-backed `controlplane-issuer`. Provide a namespaced cert-manager `Issuer` named `controlplane-issuer` in `controlplane-system`, then replace the shared Bundle source with the public CA certificate for that issuer.
+
+The replacement must preserve `kind: Issuer` and `name: controlplane-issuer`; service Certificate manifests do not need changes.
+
+## Rotate the CA
+
+Publish both old and new public CA certificates in `controlplane-trust-bundle`, reissue all service certificates from the new issuer, and remove the old CA only after every workload has loaded the new bundle and every serving certificate uses the new chain.
+
+Removing the old CA requires rolling client workloads because the current refresher retains previously loaded roots until restart.
+
+Never disable TLS verification during issuer replacement or rotation.

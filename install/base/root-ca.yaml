@@ -1,0 +1,16 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: controlplane-root-ca
+  namespace: system
+spec:
+  isCA: true
+  commonName: controlplane-root-ca
+  secretName: controlplane-root-ca
+  issuerRef:
+    name: controlplane-bootstrap-issuer
+    kind: Issuer

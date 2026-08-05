@@ -386,15 +386,15 @@ step_deploy() {
     local trust_elapsed=0
     while [ "${trust_elapsed}" -lt "${trust_timeout}" ]; do
         if kubectl --context "${ctx}" -n "${CONTROLPLANE_NAMESPACE}" \
-            get configmap secret-manager-trust-bundle &>/dev/null; then
-            success "secret-manager-trust-bundle ConfigMap exists."
+            get configmap controlplane-trust-bundle &>/dev/null; then
+            success "controlplane-trust-bundle ConfigMap exists."
             break
         fi
         sleep 2
         trust_elapsed=$((trust_elapsed + 2))
     done
     if [ "${trust_elapsed}" -ge "${trust_timeout}" ]; then
-        warn "secret-manager-trust-bundle ConfigMap not found after ${trust_timeout}s."
+        warn "controlplane-trust-bundle ConfigMap not found after ${trust_timeout}s."
         warn "trust-manager may not have processed the Bundle CR yet."
         warn "Pods that mount trust-bundle will fail until the ConfigMap appears."
     fi

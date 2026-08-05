@@ -1,0 +1,11 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: controlplane-bootstrap-issuer
+  namespace: system
+spec:
+  selfSigned: {}
