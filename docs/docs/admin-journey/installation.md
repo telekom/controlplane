@@ -499,6 +499,14 @@ This separation keeps bootstrap and day-to-day issuance distinct. The bootstrap 
 
 Internal clients trust `/var/run/secrets/trust-bundle/trust-bundle.pem`, distributed by trust-manager from `Bundle/controlplane-trust-bundle`. Because every service certificate chains back to `controlplane-root-ca`, one shared bundle is sufficient.
 
+### Certificate profiles
+
+The root CA and internal service certificates use explicit profiles for lifetimes, renewal windows, key algorithms, key usages, and private-key rotation. The deployed `Certificate` resources are the source of truth for these values.
+
+Service identity is defined exclusively through DNS Subject Alternative Names. Leaf certificate subjects remain empty because `commonName` is not used for modern TLS hostname verification.
+
+Changing the root CA profile on an existing installation is a CA rotation, not an ordinary certificate renewal. Publish both old and new CA certificates in the trust bundle before reissuing service certificates, and keep both trusted until all services and clients use the new chain.
+
 ## Use an externally managed issuer
 
 Disable the default `controlplane-bootstrap-issuer`, `controlplane-root-ca` Certificate, and CA-backed `controlplane-issuer`. Provide a namespaced cert-manager `Issuer` named `controlplane-issuer` in `controlplane-system`, then replace the shared Bundle source with the public CA certificate for that issuer.

@@ -9,8 +9,17 @@ metadata:
   namespace: system
 spec:
   isCA: true
-  commonName: controlplane-root-ca
+  commonName: Control Plane Root CA
   secretName: controlplane-root-ca
+  duration: 43800h
+  renewBefore: 8760h
+  usages:
+  - cert sign
+  - crl sign
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
   issuerRef:
     name: controlplane-bootstrap-issuer
     kind: Issuer
