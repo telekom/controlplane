@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"time"
 
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 )
 
@@ -38,14 +39,16 @@ type roverResourceChecker struct {
 // baseURL should be the rover-server internal URL (e.g. http://rover-server.controlplane-system.svc.cluster.local).
 // environment is the environment claim for the mock token (e.g. "poc").
 // scopePrefix is the scope prefix rover-server expects (e.g. "tardis").
-func NewRoverResourceChecker(baseURL, environment, scopePrefix string) ResourceChecker {
+func NewRoverResourceChecker(baseURL, environment, scopePrefix, caFilePath string) ResourceChecker {
 	return &roverResourceChecker{
 		baseURL:     baseURL,
 		environment: environment,
 		scopePrefix: scopePrefix,
-		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		httpClient: commonclient.NewBaseHttpClient(
+			commonclient.WithCaFilepath(caFilePath),
+			commonclient.WithClientName("rover"),
+			commonclient.WithClientTimeout(10*time.Second),
+		),
 	}
 }
 

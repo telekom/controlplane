@@ -46,6 +46,7 @@ type FileManagerConfig struct {
 type RoverServerConfig struct {
 	BaseURL     string `mapstructure:"baseUrl"`
 	ScopePrefix string `mapstructure:"scopePrefix"`
+	CaFilePath  string `mapstructure:"caFilePath"`
 }
 
 func DefaultConfig() *ServerConfig {
@@ -93,8 +94,9 @@ func DefaultConfig() *ServerConfig {
 			BaseURL: "file-manager.controlplane-system.svc",
 		},
 		RoverServer: RoverServerConfig{
-			BaseURL:     "http://rover-server.controlplane-system.svc.cluster.local",
+			BaseURL:     "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
 			ScopePrefix: "tardis",
+			CaFilePath:  "/var/run/secrets/trust-bundle/trust-bundle.pem",
 		},
 	}
 }

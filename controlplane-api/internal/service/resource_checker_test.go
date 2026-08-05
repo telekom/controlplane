@@ -6,9 +6,12 @@ package service
 
 import (
 	"context"
+	"encoding/pem"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -95,6 +98,25 @@ var _ = Describe("RoverResourceChecker", func() {
 		})
 		DeferCleanup(server.Close)
 
+		hasResources, err := checker.HasResources(context.Background(), "group", "team")
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(hasResources).To(BeFalse())
+	})
+
+	It("trusts rover-server certificates from the configured CA bundle", func() {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, err := w.Write([]byte(`{"items":[]}`))
+			Expect(err).NotTo(HaveOccurred())
+		}))
+		DeferCleanup(server.Close)
+
+		certPath := filepath.Join(GinkgoT().TempDir(), "ca.pem")
+		cert := server.Certificate()
+		certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
+		Expect(os.WriteFile(certPath, certPEM, 0o600)).To(Succeed())
+
+		checker := NewRoverResourceChecker(server.URL, "poc", "tardis", certPath)
 		hasResources, err := checker.HasResources(context.Background(), "group", "team")
 
 		Expect(err).NotTo(HaveOccurred())
