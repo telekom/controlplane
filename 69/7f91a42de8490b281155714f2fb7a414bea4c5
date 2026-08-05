@@ -1,0 +1,46 @@
+approval/config/certmanager/certificate.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 18-27
+file-manager/config/certmanager/certificate.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 13-22,30
+application/config/certmanager/certificate-webhook.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 16-25
+organization/config/certmanager/certificate-metrics.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 16-25
+rover/config/certmanager/certificate.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 18-27
+admin/config/certmanager/certificate-webhook.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 16-25
+event/config/certmanager/certificate-webhook.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 16-25
+docs/docs/admin-journey/installation.md
+  s_23b7ea359876dc::t_20f4f2c2e91135 502-503,505-509
+  s_23b7ea359876dc::t_be53f903b1e128 504
+organization/config/certmanager/certificate-webhook.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 16-25
+install/base/root-ca.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 12,14,16-22
+  s_23b7ea359876dc::t_8f3c1051b9b147 15
+secret-manager/config/certmanager/certificate.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 13-14,16-18,20-22,30
+  s_23b7ea359876dc::t_20f4f2c2e91135 15,19
+controlplane-api/config/certmanager/certificate.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 13-22
+rover-server/config/certmanager/certificate.yaml
+  s_23b7ea359876dc::t_1d28328b762e21 13-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "697f91a42de8490b281155714f2fb7a414bea4c5",
+  "prompts": {},
+  "sessions": {
+    "s_23b7ea359876dc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_032f338f4ffeTZul63E5vmZo2l",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
