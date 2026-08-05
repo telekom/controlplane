@@ -10,10 +10,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 )
+
+const maxRoverResponseBytes = 1024 * 1024
 
 // ResourceChecker checks whether a team has resources via rover-server.
 type ResourceChecker interface {
@@ -35,21 +39,32 @@ type roverResourceChecker struct {
 // baseURL should be the rover-server internal URL (e.g. http://rover-server.controlplane-system.svc.cluster.local).
 // environment is the environment claim for the mock token (e.g. "poc").
 // scopePrefix is the scope prefix rover-server expects (e.g. "tardis").
-func NewRoverResourceChecker(baseURL, environment, scopePrefix string) ResourceChecker {
+func NewRoverResourceChecker(baseURL, environment, scopePrefix, caFilePath string) ResourceChecker {
 	return &roverResourceChecker{
 		baseURL:     baseURL,
 		environment: environment,
 		scopePrefix: scopePrefix,
-		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		httpClient: commonclient.NewBaseHttpClient(
+			commonclient.WithCaFilepath(caFilePath),
+			commonclient.WithClientName("rover"),
+			commonclient.WithClientTimeout(10*time.Second),
+		),
 	}
 }
 
-func (r *roverResourceChecker) HasResources(ctx context.Context, group, team string) (bool, error) {
-	url := fmt.Sprintf("%s/resources?group=%s&team=%s&limit=1", r.baseURL, group, team)
+func (r *roverResourceChecker) HasResources(ctx context.Context, group, team string) (hasResources bool, err error) {
+	u, err := url.Parse(r.baseURL)
+	if err != nil {
+		return false, fmt.Errorf("parsing rover-server URL: %w", err)
+	}
+	u = u.JoinPath("resources")
+	q := u.Query()
+	q.Set("group", group)
+	q.Set("team", team)
+	q.Set("limit", "1")
+	u.RawQuery = q.Encode()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
 		return false, fmt.Errorf("building request: %w", err)
 	}
@@ -61,17 +76,27 @@ func (r *roverResourceChecker) HasResources(ctx context.Context, group, team str
 	if err != nil {
 		return false, fmt.Errorf("calling rover-server: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); err == nil && closeErr != nil {
+			err = fmt.Errorf("closing rover-server response: %w", closeErr)
+		}
+	}()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxRoverResponseBytes+1))
+	if err != nil {
+		return false, fmt.Errorf("reading rover-server response: %w", err)
+	}
+	if len(body) > maxRoverResponseBytes {
+		return false, fmt.Errorf("rover-server response exceeds %d bytes", maxRoverResponseBytes)
+	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
 		return false, fmt.Errorf("rover-server returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var result struct {
 		Items []json.RawMessage `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return false, fmt.Errorf("decoding rover-server response: %w", err)
 	}
 

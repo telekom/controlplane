@@ -12,6 +12,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -104,6 +106,34 @@ func TestGetResources_ServerError(t *testing.T) {
 	}
 }
 
+func TestGetResources_RejectsRedirectBeforeFollowing(t *testing.T) {
+	redirectedRequests := 0
+	redirectedAuthorization := ""
+	redirectedServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		redirectedRequests++
+		redirectedAuthorization = r.Header.Get("Authorization")
+	}))
+	defer redirectedServer.Close()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, redirectedServer.URL, http.StatusFound)
+	}))
+	defer server.Close()
+
+	client := NewRoverClient(server.URL, testToken, "")
+	_, err := client.GetResources(context.Background(), "test", "eni", "team1")
+
+	if err == nil {
+		t.Fatal("expected redirect error")
+	}
+	if redirectedRequests != 0 {
+		t.Errorf("expected no redirected requests, got %d", redirectedRequests)
+	}
+	if redirectedAuthorization != "" {
+		t.Errorf("expected no redirected token, got Authorization %q", redirectedAuthorization)
+	}
+}
+
 func TestGetResources_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -129,8 +159,9 @@ func TestGetResources_ConnectionRefused(t *testing.T) {
 }
 
 func TestGetResources_QueryParamConstruction(t *testing.T) {
-	var capturedGroup, capturedTeam string
+	var capturedPath, capturedGroup, capturedTeam string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
 		capturedGroup = r.URL.Query().Get("group")
 		capturedTeam = r.URL.Query().Get("team")
 		w.Header().Set("Content-Type", "application/json")
@@ -138,14 +169,249 @@ func TestGetResources_QueryParamConstruction(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewRoverClient(server.URL, testToken, "")
-	_, _ = client.GetResources(context.Background(), "prod", "my-hub", "my-team")
+	client := NewRoverClient(server.URL+"/rover/", testToken, "")
+	_, _ = client.GetResources(context.Background(), "prod", "my hub/&", "my team/?")
 
-	if capturedGroup != "my-hub" {
-		t.Errorf("group: want my-hub, got %s", capturedGroup)
+	if capturedPath != "/rover/resources" {
+		t.Errorf("path: want /rover/resources, got %s", capturedPath)
 	}
-	if capturedTeam != "my-team" {
-		t.Errorf("team: want my-team, got %s", capturedTeam)
+	if capturedGroup != "my hub/&" {
+		t.Errorf("group: want my hub/&, got %s", capturedGroup)
+	}
+	if capturedTeam != "my team/?" {
+		t.Errorf("team: want my team/?, got %s", capturedTeam)
+	}
+}
+
+func TestGetResources_ConsumesEveryPageWithHeaders(t *testing.T) {
+	requests := 0
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
+			t.Errorf("request %d Authorization: got %q", requests, got)
+		}
+		if got := r.Header.Get("X-Environment"); got != "controlplane" {
+			t.Errorf("request %d X-Environment: got %q", requests, got)
+		}
+		if got := r.Header.Get("Accept"); got != "application/json" {
+			t.Errorf("request %d Accept: got %q", requests, got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if requests == 1 {
+			_, _ = w.Write([]byte(`{"items":[{"name":"first"}],"_links":{"next":"` + server.URL + `/resources?cursor=opaque%2Fcursor"}}`))
+			return
+		}
+		if got := r.URL.Query().Get("cursor"); got != "opaque/cursor" {
+			t.Errorf("cursor: want opaque/cursor, got %q", got)
+		}
+		_, _ = w.Write([]byte(`{"items":[{"name":"second"}],"_links":{"next":""}}`))
+	}))
+	defer server.Close()
+
+	client := NewRoverClient(server.URL, testToken, "")
+	result, err := client.GetResources(context.Background(), "controlplane", "eni", "hyperion")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(result.Items))
+	}
+	if result.Items[0].Name != "first" || result.Items[1].Name != "second" {
+		t.Fatalf("unexpected items: %#v", result.Items)
+	}
+	if requests != 2 {
+		t.Fatalf("expected 2 requests, got %d", requests)
+	}
+}
+
+func TestGetResources_ResolvesRelativeNextLink(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if requests == 1 {
+			_, _ = w.Write([]byte(`{"items":[{"name":"first"}],"_links":{"next":"?cursor=next"}}`))
+			return
+		}
+		if got := r.URL.Query().Get("cursor"); got != "next" {
+			t.Errorf("cursor: want next, got %q", got)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
+			t.Errorf("Authorization: got %q", got)
+		}
+		_, _ = w.Write([]byte(`{"items":[{"name":"second"}]}`))
+	}))
+	defer server.Close()
+
+	client := NewRoverClient(server.URL, testToken, "")
+	result, err := client.GetResources(context.Background(), "env", "group", "team")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(result.Items))
+	}
+	if requests != 2 {
+		t.Fatalf("expected 2 requests, got %d", requests)
+	}
+}
+
+func TestGetResources_ReturnsErrorForLaterPageFailure(t *testing.T) {
+	tests := map[string]func(http.ResponseWriter){
+		"server error": func(w http.ResponseWriter) {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte("internal error"))
+		},
+		"invalid JSON": func(w http.ResponseWriter) {
+			_, _ = w.Write([]byte("not json"))
+		},
+	}
+
+	for name, writeFailure := range tests {
+		t.Run(name, func(t *testing.T) {
+			requests := 0
+			var server *httptest.Server
+			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				requests++
+				if requests == 1 {
+					_, _ = w.Write([]byte(`{"items":[{"name":"first"}],"_links":{"next":"` + server.URL + `/resources?cursor=next"}}`))
+					return
+				}
+				writeFailure(w)
+			}))
+			defer server.Close()
+
+			client := NewRoverClient(server.URL, testToken, "")
+			result, err := client.GetResources(context.Background(), "env", "group", "team")
+			if err == nil {
+				t.Fatal("expected later-page error")
+			}
+			if result != nil {
+				t.Fatalf("expected no partial result, got %#v", result)
+			}
+		})
+	}
+}
+
+func TestGetResources_RejectsUnsafeNextOrigin(t *testing.T) {
+	unsafeRequests := 0
+	unsafeServer := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		unsafeRequests++
+	}))
+	defer unsafeServer.Close()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"items":[{"name":"first"}],"_links":{"next":"` + unsafeServer.URL + `/resources?cursor=next"}}`))
+	}))
+	defer server.Close()
+
+	client := NewRoverClient(server.URL, testToken, "")
+	result, err := client.GetResources(context.Background(), "env", "group", "team")
+	if err == nil {
+		t.Fatal("expected unsafe next origin error")
+	}
+	if result != nil {
+		t.Fatalf("expected no partial result, got %#v", result)
+	}
+	if unsafeRequests != 0 {
+		t.Fatalf("expected no request to unsafe origin, got %d", unsafeRequests)
+	}
+}
+
+func TestGetResources_RejectsURLUserinfoBeforeRequest(t *testing.T) {
+	t.Run("configured base", func(t *testing.T) {
+		requests := 0
+		server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+			requests++
+		}))
+		defer server.Close()
+
+		client := NewRoverClient("http://user@"+server.Listener.Addr().String(), testToken, "")
+		if _, err := client.GetResources(context.Background(), "env", "group", "team"); err == nil {
+			t.Fatal("expected configured base userinfo error")
+		}
+		if requests != 0 {
+			t.Fatalf("expected no request, got %d", requests)
+		}
+	})
+
+	t.Run("continuation", func(t *testing.T) {
+		requests := 0
+		var server *httptest.Server
+		server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			requests++
+			_, _ = w.Write([]byte(`{"items":[],"_links":{"next":"http://user@` + server.Listener.Addr().String() + `/resources?cursor=next"}}`))
+		}))
+		defer server.Close()
+
+		client := NewRoverClient(server.URL, testToken, "")
+		if _, err := client.GetResources(context.Background(), "env", "group", "team"); err == nil {
+			t.Fatal("expected continuation userinfo error")
+		}
+		if requests != 1 {
+			t.Fatalf("expected only initial request, got %d", requests)
+		}
+	})
+}
+
+func TestGetResources_RejectsCursorLoop(t *testing.T) {
+	requests := 0
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		_, _ = w.Write([]byte(`{"items":[],"_links":{"next":"` + server.URL + `/resources?cursor=repeat"}}`))
+	}))
+	defer server.Close()
+
+	client := NewRoverClient(server.URL, testToken, "")
+	if _, err := client.GetResources(context.Background(), "env", "group", "team"); err == nil {
+		t.Fatal("expected cursor loop error")
+	}
+	if requests != 2 {
+		t.Fatalf("expected loop detection after 2 requests, got %d", requests)
+	}
+}
+
+func TestGetResources_StopsBeforePage1001(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		cursor, _ := strconv.Atoi(r.URL.Query().Get("cursor"))
+		_, _ = w.Write([]byte(`{"items":[],"_links":{"next":"?cursor=` + strconv.Itoa(cursor+1) + `"}}`))
+	}))
+	defer server.Close()
+
+	client := NewRoverClient(server.URL, testToken, "")
+	result, err := client.GetResources(context.Background(), "env", "group", "team")
+	if err == nil || err.Error() != "following rover-server pagination: page limit of 1000 exceeded" {
+		t.Fatalf("expected page limit error, got %v", err)
+	}
+	if result != nil {
+		t.Fatalf("expected no partial result, got %#v", result)
+	}
+	if requests != 1000 {
+		t.Fatalf("expected exactly 1000 requests, got %d", requests)
+	}
+}
+
+func TestGetResources_RejectsOversizedResponse(t *testing.T) {
+	for _, status := range []int{http.StatusOK, http.StatusInternalServerError} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(status)
+				_, _ = w.Write([]byte(strings.Repeat("x", 4*1024*1024+1)))
+			}))
+			defer server.Close()
+
+			client := NewRoverClient(server.URL, testToken, "")
+			result, err := client.GetResources(context.Background(), "env", "group", "team")
+			if err == nil || err.Error() != "rover-server response exceeds 4194304 bytes" {
+				t.Fatalf("expected response size error, got %v", err)
+			}
+			if result != nil {
+				t.Fatalf("expected no partial result, got %#v", result)
+			}
+		})
 	}
 }
 

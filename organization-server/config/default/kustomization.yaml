@@ -42,6 +42,9 @@ patches:
     target:
       kind: Deployment
       name: organization-server
+  - path: namespace_patch.yaml
+    target:
+      kind: Namespace
 
 # Substitute the serving Service name/namespace into the Certificate dnsNames.
 replacements:
