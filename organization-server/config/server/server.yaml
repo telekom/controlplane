@@ -25,6 +25,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - args: []
           env: []
@@ -58,11 +60,11 @@ spec:
             periodSeconds: 10
           resources:
             limits:
-              cpu: 200m
-              memory: 128Mi
+              cpu: 500m
+              memory: 1Gi
             requests:
-              cpu: 10m
-              memory: 64Mi
+              cpu: 30m
+              memory: 128Mi
           volumeMounts:
             - name: controlplane-trust-bundle
               mountPath: /var/run/secrets/trust-bundle
