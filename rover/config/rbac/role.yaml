@@ -93,7 +93,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - file.ei.telekom.de
+  - file.cp.ei.telekom.de
   resources:
   - fileexposures
   - filesubscriptions

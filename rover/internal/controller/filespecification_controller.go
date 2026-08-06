@@ -35,7 +35,7 @@ type FileSpecificationReconciler struct {
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=filespecifications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=filespecifications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=filespecifications/finalizers,verbs=update
-// +kubebuilder:rbac:groups=file.ei.telekom.de,resources=filetypes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=file.cp.ei.telekom.de,resources=filetypes,verbs=get;list;watch;create;update;patch;delete
 
 func (r *FileSpecificationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &rover.FileSpecification{})
