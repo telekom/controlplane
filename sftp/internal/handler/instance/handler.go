@@ -74,7 +74,7 @@ func (h *InstanceHandler) Delete(ctx context.Context, obj *sftpv1.Instance) erro
 	}
 
 	err = sftpService.DeleteSFTPUser(ctx, obj.Name)
-	if err != nil {
+	if err != nil && !errors.Is(err, service.ErrNotFound) {
 		return fmt.Errorf("deleting SFTP user %q: %w", obj.Name, err)
 	}
 
