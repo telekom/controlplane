@@ -33,6 +33,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var _ = Describe("recordStatusUpdate", func() {
+	It("uses unknown when the object kind cannot be resolved", func() {
+		before := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "unknown"))
+
+		recordStatusUpdate(statusUpdateResultSkipped, &test.TestResource{}, runtime.NewScheme())
+
+		Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "unknown"))).To(Equal(before + 1))
+	})
+})
+
 var _ = Describe("StampObservedGeneration", func() {
 	It("should set ObservedGeneration on all conditions to the object's generation", func() {
 		obj := test.NewObject("test-stamp", "default")
@@ -194,12 +204,12 @@ var _ = Describe("Controller", func() {
 
 			Expect(interceptedClient.Get(ctx, unchangedRequest.NamespacedName, obj)).To(Succeed())
 			statusUpdates.Store(0)
-			skippedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped"))
+			skippedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "testresource"))
 
 			_, err = controller.Reconcile(ctx, unchangedRequest, &test.TestResource{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(statusUpdates.Load()).To(BeZero())
-			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped"))).To(Equal(skippedBefore + 1))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "testresource"))).To(Equal(skippedBefore + 1))
 		})
 
 		It("should still update status when only the generation changed", func() {
@@ -221,11 +231,11 @@ var _ = Describe("Controller", func() {
 			Expect(k8sClient.Get(ctx, bumpRequest.NamespacedName, obj)).To(Succeed())
 			obj.Spec.Properties = &runtime.RawExtension{Raw: []byte(`{"changed":true}`)}
 			Expect(k8sClient.Update(ctx, obj)).To(Succeed())
-			updatedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated"))
+			updatedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated", "testresource"))
 
 			_, err := controller.Reconcile(ctx, bumpRequest, &test.TestResource{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated"))).To(Equal(updatedBefore + 1))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated", "testresource"))).To(Equal(updatedBefore + 1))
 
 			Expect(k8sClient.Get(ctx, bumpRequest.NamespacedName, obj)).To(Succeed())
 			for _, c := range obj.GetConditions() {
@@ -248,16 +258,16 @@ var _ = Describe("Controller", func() {
 			Expect(k8sClient.Get(ctx, req.NamespacedName, original)).To(Succeed())
 			changed := original.DeepCopy()
 			changed.SetCondition(condition.NewBlockedCondition("changed"))
-			updatedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated"))
-			skippedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped"))
-			errorBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("error"))
+			updatedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated", "testresource"))
+			skippedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "testresource"))
+			errorBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("error", "testresource"))
 
 			err = controller.updateStatusIfChanged(ctx, original, changed)
 
 			Expect(err).To(MatchError(statusErr))
-			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated"))).To(Equal(updatedBefore))
-			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped"))).To(Equal(skippedBefore))
-			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("error"))).To(Equal(errorBefore + 1))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated", "testresource"))).To(Equal(updatedBefore))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "testresource"))).To(Equal(skippedBefore))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("error", "testresource"))).To(Equal(errorBefore + 1))
 		})
 
 		It("should handle generic errors", func() {
