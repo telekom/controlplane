@@ -1,0 +1,27 @@
+common/pkg/controller/controller.go
+  s_65183020391e2c::t_08275c6e1b03aa 11,22,34-50,168,172-178
+common/go.mod
+  s_65183020391e2c::t_140677d33ccf5c 13
+  s_65183020391e2c::t_3110e7bd176a7c 51
+common/pkg/controller/controller_test.go
+  s_65183020391e2c::t_ad2517d5d4ad8e 251-252,258-259
+  s_65183020391e2c::t_b4c9d2f6bbb94a 239-241,255
+  s_65183020391e2c::t_4f313360e38fd3 9,14,197,202,224,228,237-238,242-250,253-254,256-257,260
+  s_65183020391e2c::t_9091fe5a630e80 261-262
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "60c58b53ef54a4f44b5f115c5d56a28ff50a9e95",
+  "prompts": {},
+  "sessions": {
+    "s_65183020391e2c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_029e74b54ffeqTrctNGWIghE3k",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

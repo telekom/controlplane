@@ -1,0 +1,34 @@
+install/base/namespace.yaml
+  h_0f030e7424553c 12
+rover-server/config/ingress/ingress.yaml
+  s_71e05df79f81d4::t_0f403e1ca5d393 11,23
+organization-server/config/ingress/ingress.yaml
+  s_71e05df79f81d4::t_0f403e1ca5d393 11
+controlplane-api/config/ingress/ingress.yaml
+  s_71e05df79f81d4::t_0f403e1ca5d393 10-11
+organization-server/config/default/namespace_patch.yaml
+  s_71e05df79f81d4::t_f13512651e93b8 1-8
+organization-server/config/default/kustomization.yaml
+  s_71e05df79f81d4::t_f13512651e93b8 45-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "37290976863463f302869292504910ed98b428b5",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_71e05df79f81d4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0349a31a3ffeR21Sh03XIb8wWi",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+AGENTS.md
+  s_8edae085b89e2c::t_45084c390eeb33 73-77
+.opencode/skills/implement-envoy/SKILL.md
+  s_8edae085b89e2c::t_61f3cf1901ccd5 174-217
+  s_8edae085b89e2c::t_59375127360185 252-256
+  s_8edae085b89e2c::t_cd21426d9bfc74 47-51
+  s_8edae085b89e2c::t_b26af7c934f11d 7
+  s_8edae085b89e2c::t_36e2b5733784c3 232-242
+.opencode/README.md
+  s_8edae085b89e2c::t_6a442653610120 22
+  s_8edae085b89e2c::t_477fd0557e4138 50-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "dfec47cb9ab616fad4c3da646e4f7504db5a52be",
+  "prompts": {},
+  "sessions": {
+    "s_8edae085b89e2c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04e213eabffeKnrcqLr4ti2vhl",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

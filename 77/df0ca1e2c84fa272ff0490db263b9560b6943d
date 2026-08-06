@@ -1,0 +1,44 @@
+gateway/cmd/xdsprobe/main.go
+  s_dc6faa1b80d8e4::t_5bd9e9e20dbdc9 1-62
+gateway/config/examples/gateway.yaml
+  s_03bcf6b8d8fe12::t_4413b678f8252a 1-16
+  h_0f030e7424553c 17-21
+gateway/config/examples/route-secured.yaml
+  s_03bcf6b8d8fe12::t_174fc53b4d04af 1-28,30-33,36
+  h_0f030e7424553c 29,34-35
+gateway/config/default/xds_service.yaml
+  h_0f030e7424553c 13
+  s_dc6faa1b80d8e4::t_cdccbb7ae52465 1-12,14-21
+gateway/config/examples/route-passthrough.yaml
+  s_03bcf6b8d8fe12::t_d306179720b23e 1-24,27-33
+  h_0f030e7424553c 25-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "77df0ca1e2c84fa272ff0490db263b9560b6943d",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_03bcf6b8d8fe12": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0762abd64ffeTx8R78XYfkSY9A",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_dc6faa1b80d8e4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07619949bffet4PIgah4T6cdcf",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": null
+    }
+  }
+}

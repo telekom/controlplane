@@ -1,0 +1,19 @@
+gateway/internal/controller/route_controller.go
+  s_90013575f7f69e::t_af56cd7e8f4086 50,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "39c5d203391e99efa8bb6d80ce32f7d4e5e24f47",
+  "prompts": {},
+  "sessions": {
+    "s_90013575f7f69e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d931035ffeWq0PpajCAGfSsE",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

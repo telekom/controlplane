@@ -1,0 +1,565 @@
+gateway/cmd/xdsdemo/operator.go
+  s_20e3a66c57f3f5::t_ff80266225b8e4 61,105-106,109-110,113-114,138-139,216
+  s_17dd2453b126f0::t_224a40843eb42c 50-58,71-73,132
+  s_20e3a66c57f3f5::t_49013865f22a4f 123-127,230-232
+  s_aea9a11faecf3f::t_c2345bebeb34dc 1-49,59-60,62-70,74-104,107-108,111-112,115-122,128-131,133-137,140-215,217-229,233-244
+gateway/internal/xds/api/buf.yaml
+  s_bd3a88776fc622::t_1e4eb6007fe182 1-12
+gateway/internal/features/feature/claims_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 15-17
+  s_17dd2453b126f0::t_aa15ebb44833d2 208,234,267,294,321,340,356
+gateway/internal/features/envoy/access_control_test.go
+  s_8d9af8a6981bf3::t_ea72d30faa1499 240-241
+  s_8d9af8a6981bf3::t_7013fb312b5cd0 22-24
+  s_8d9af8a6981bf3::t_da49bd689d8296 69,99
+  s_8d9af8a6981bf3::t_bfa6284a09b7e1 101
+gateway/internal/features/envoy/routing.go
+  s_8d9af8a6981bf3::t_37e13d96640c75 8,22-24,35-37
+gateway/internal/xds/publication/bundle_test.go
+  s_17dd2453b126f0::t_7f08be8123bd49 7
+  s_17dd2453b126f0::t_1e52d2e140b5ef 1-6,8,10-47,69-70
+  s_17dd2453b126f0::t_630b894664e01f 9,48-68
+gateway/cmd/main.go
+  s_17dd2453b126f0::t_f983469e418444 8
+  s_17dd2453b126f0::t_57552d36a7b25c 12,18-19,33-35,58,70,151-176,178
+gateway/internal/features/feature/load_balancing_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 18-20
+gateway/internal/controller/suite_test.go
+  s_17dd2453b126f0::t_e51e89649f67ca 192-197
+  s_17dd2453b126f0::t_ef08fa0b7a88ef 57-61,125,132
+  s_17dd2453b126f0::t_78671c7051ed2d 13,190-191,198-199
+  s_17dd2453b126f0::t_cec85f407a6c39 228
+  s_8d9af8a6981bf3::t_900ce346507c44 23,124,131,133
+  s_17dd2453b126f0::t_76446ff61e995b 182,185-187
+  s_17dd2453b126f0::t_a49a2fa5e317b0 130
+  s_17dd2453b126f0::t_a98beca71ff1c9 183-184
+gateway/internal/handler/gateway/handler_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 16-18
+gateway/internal/handler/route/handler_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 29-31
+gateway/pkg/kong/client/error.go
+  s_17dd2453b126f0::t_b8c10fc1754375 17-18
+  s_17dd2453b126f0::t_3de5d7a86a9311 175
+gateway/internal/xds/api/v1/management.proto
+  s_bd3a88776fc622::t_1e4eb6007fe182 1-100
+gateway/go.mod
+  s_bd3a88776fc622::t_9f6c097a6ac9cb 48,65,100,111,161-163
+gateway/internal/features/envoy/compiler.go
+  s_17dd2453b126f0::t_eb60b1c6d0bf08 20,22
+  s_8d9af8a6981bf3::t_da49bd689d8296 64
+  s_17dd2453b126f0::t_1de5d39bfce27c 98-105
+  s_8d9af8a6981bf3::t_412fedfd9d0419 1-13,15,17,21,24-36,38-40,42-50,52-55,57-61,66,68-70,72-77,85-96,107-150,158-175,181-183,185-186,191-192,197-198,210-211,216
+  s_20e3a66c57f3f5::t_55b9b78b663c1d 176-180
+  s_8d9af8a6981bf3::t_cbe6d0ffdadf26 199-201,203
+  s_17dd2453b126f0::t_477babf0809f4e 51,78-84
+  s_8d9af8a6981bf3::t_5dfa11eec1bb2b 14,18-19,189-190,195-196,202,206-209
+  s_8d9af8a6981bf3::t_480a2c58e6ecd3 16,151-157
+  s_17dd2453b126f0::t_8d70894021e981 56,71,187-188,193-194,204-205,212-215
+  s_17dd2453b126f0::t_597584e03dea8e 97,106
+  s_17dd2453b126f0::t_27e339aa734ad6 23,41
+  s_17dd2453b126f0::t_f831a0bd162d79 67
+  s_8d9af8a6981bf3::t_b7a96c3b800c00 37,62-63,65,184
+gateway/internal/xds/server/callbacks.go
+  s_bd3a88776fc622::t_77ec37e6389d65 138-145
+  s_bd3a88776fc622::t_e2fdae87dacc15 1-12,14-49,53-56,59-60,67-69,73-78,82-105,107-113,117-125,127-129,134-137,146-156,160-162
+  s_17dd2453b126f0::t_32471eb92968ba 157-159
+  s_17dd2453b126f0::t_1ca0a4d6f918cf 13
+  s_bd3a88776fc622::t_e777c12f5f4d84 50-52
+  s_bd3a88776fc622::t_a90f9dce76fa86 57-58,61-66,70-72,79-81,106,114-116,126,130-133
+gateway/internal/xds/server/status_details.go
+  s_bd3a88776fc622::t_d36c123e500268 1-22
+gateway/internal/xds/api/v1/suite_test.go
+  s_bd3a88776fc622::t_3c73e9f93a985f 1-16
+gateway/internal/xds/server/validation.go
+  s_17dd2453b126f0::t_ae284ab7d08d54 214-215,223,231
+  s_bd3a88776fc622::t_e0a29c79124ec0 155
+  s_17dd2453b126f0::t_106fb2ed0254db 168-170,172-173
+  s_17dd2453b126f0::t_3912b0828f0697 204,238-249,251-256,258-263,265-268
+  s_17dd2453b126f0::t_3e3dbaf5ae6c55 8,18,174-179,196-201,206-213,216-222,224-230,232-237
+  s_bd3a88776fc622::t_e2fdae87dacc15 1-7,9-17,19-21,30-34,63-69,85,96-109,122-126,129,132-144,146-154,156-159,180-194,293-297
+  s_17dd2453b126f0::t_350550dea0e1f7 22-29
+  s_17dd2453b126f0::t_b018f53c90afeb 110-113,115-121
+  s_17dd2453b126f0::t_8b369f047d521e 160-167
+  s_17dd2453b126f0::t_9f2456d35d8170 35-62,171,250,257,264,269-292
+  s_17dd2453b126f0::t_fb468e541048e4 202-203,205
+  s_17dd2453b126f0::t_969648ea9de84e 114
+  s_17dd2453b126f0::t_e720e499587ab5 145
+  s_17dd2453b126f0::t_bfa12b0f250d0a 70,72-84,86-95,127-128,130-131,195
+  s_17dd2453b126f0::t_1b0cc7473d2d74 71
+gateway/cmd/xdsdemo/docker-compose.yaml
+  s_20e3a66c57f3f5::t_a36220d5031645 94-96,105-110
+  s_20e3a66c57f3f5::t_9e40464291919f 33
+  s_17dd2453b126f0::t_224a40843eb42c 21,43-45,60
+  s_aea9a11faecf3f::t_c2853f48f29be4 1,9-12,16-18,20,22-32,34-40,46-55,61-66,68,70,77-82,88,90,101-104
+  s_17dd2453b126f0::t_a72e5e500c3d32 19,41-42,58-59,74-75
+  s_20e3a66c57f3f5::t_879b06c8324743 14-15
+  s_e0ab6e2930bcf8::t_2e0054b6a0a38a 56
+gateway/cmd/xdsdemo/.env.example
+  s_aea9a11faecf3f::t_e74d48fb22f354 1,9-10
+  s_17dd2453b126f0::t_a72e5e500c3d32 11-18
+gateway/internal/features/feature/failover_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 11,19-21
+gateway/pkg/kong/client/plugin/rtp.go
+  s_17dd2453b126f0::t_b8c10fc1754375 9
+gateway/internal/controller/consumer_controller.go
+  s_17dd2453b126f0::t_fe5f5b729ad785 21-22
+  s_17dd2453b126f0::t_90430c8f45bd88 17,73
+  s_17dd2453b126f0::t_06ee4ed26d19a3 56
+  s_17dd2453b126f0::t_e4ea45fa34c57c 13,16,18-19,23,53-54,63-72,74-80
+  s_17dd2453b126f0::t_4d181eb552785d 55
+  s_17dd2453b126f0::t_fb11052081c4e3 81
+gateway/internal/xds/publication/publisher.go
+  s_17dd2453b126f0::t_dc2ab7265ff478 75-93
+  s_bd3a88776fc622::t_4ec5ef78ed9c90 1-9,11-12,14-26,28-40,42-74,94-104
+  s_17dd2453b126f0::t_90b3070becb9c8 10
+  s_bd3a88776fc622::t_d36c123e500268 13,27,41
+gateway/internal/features/envoy/last_mile_security_test.go
+  s_8d9af8a6981bf3::t_7013fb312b5cd0 19-21
+  s_17dd2453b126f0::t_689162c307db99 73,76-79
+gateway/cmd/xdsdemo/management.go
+  s_20e3a66c57f3f5::t_ff80266225b8e4 33,46
+  s_20e3a66c57f3f5::t_49013865f22a4f 79-83
+  s_20e3a66c57f3f5::t_5248a5d526e12c 37-38,71
+  s_aea9a11faecf3f::t_c2345bebeb34dc 1-31,41-45,47-70,72-78,84-88
+  s_20e3a66c57f3f5::t_9e40464291919f 32,34-36,39-40
+gateway/internal/controller/consumeroute_controller.go
+  s_17dd2453b126f0::t_b8c10fc1754375 19-24
+  s_17dd2453b126f0::t_3de5d7a86a9311 87-88
+gateway/internal/features/feature/circuit_breaker.go
+  s_17dd2453b126f0::t_b8c10fc1754375 12,105
+gateway/internal/features/feature/load_balancing.go
+  s_17dd2453b126f0::t_b8c10fc1754375 12-13
+gateway/pkg/kongutil/client_factory.go
+  s_17dd2453b126f0::t_b8c10fc1754375 17-19,55
+  s_17dd2453b126f0::t_aa15ebb44833d2 78,81-84
+  s_17dd2453b126f0::t_3de5d7a86a9311 79-80,85
+gateway/pkg/kong/client/types.go
+  s_17dd2453b126f0::t_3de5d7a86a9311 58,62,66,70,77-78,80-81,83
+gateway/cmd/lms-issuer/main.go
+  s_17dd2453b126f0::t_aa15ebb44833d2 112
+gateway/internal/features/envoy/compiler_test.go
+  s_8d9af8a6981bf3::t_37e13d96640c75 92,124-125
+  s_8d9af8a6981bf3::t_1230c17ea36c45 95-97,99-100
+  s_8d9af8a6981bf3::t_15bd8a4ae1bdb7 10-12,167,170-178
+  s_8d9af8a6981bf3::t_480a2c58e6ecd3 13,126-127,143-157
+  s_8d9af8a6981bf3::t_7013fb312b5cd0 23-25
+  s_8d9af8a6981bf3::t_ea49971f3e061d 1-9,14-22,26-31,38-78,80-81,83-91,93-94,101-110,112-114,116,119-120,122,158,165-166,168-169,179-182,184-209,211-217
+  s_8d9af8a6981bf3::t_b7a96c3b800c00 79,82,111,115,117-118,121,123,183,210
+  s_20e3a66c57f3f5::t_4b43b44ef3ac0d 98
+  s_17dd2453b126f0::t_1de5d39bfce27c 128,135-138
+  s_17dd2453b126f0::t_7a111449992dc0 32-37
+  s_17dd2453b126f0::t_630b894664e01f 159-164
+  s_17dd2453b126f0::t_597584e03dea8e 129-134,139-142
+gateway/internal/xds/server/service.go
+  s_bd3a88776fc622::t_d36c123e500268 1-12,14-43,53-62,64-78,80-99,103-120,129-133,135-136,138-142,144-176,179-180,193-214
+  s_17dd2453b126f0::t_c65ab51ff180c1 121-128,143
+  s_bd3a88776fc622::t_371e6c3a71fb20 13,63,79,134,137,177-178,181-192
+  s_bd3a88776fc622::t_77ec37e6389d65 44-52,100-102
+gateway/cmd/xdsdemo/envoy-bootstrap.yaml
+  s_aea9a11faecf3f::t_c2853f48f29be4 1,4,41
+gateway/internal/features/feature/claims.go
+  s_17dd2453b126f0::t_b8c10fc1754375 56-57
+  s_17dd2453b126f0::t_aa15ebb44833d2 79
+gateway/internal/handler/consumer/handler_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 29-31
+gateway/internal/features/feature/ratelimit.go
+  s_17dd2453b126f0::t_3de5d7a86a9311 65,75,85,98,117,121,150
+  s_17dd2453b126f0::t_b8c10fc1754375 13
+gateway/internal/handler/route/util.go
+  s_17dd2453b126f0::t_b8c10fc1754375 11-12
+  s_17dd2453b126f0::t_3de5d7a86a9311 20,23
+gateway/pkg/kong/client/plugin/iprestriction.go
+  s_17dd2453b126f0::t_b8c10fc1754375 9
+gateway/pkg/kong/client/plugin/acl.go
+  s_17dd2453b126f0::t_b8c10fc1754375 8-9
+gateway/internal/controller/controller_test.go
+  s_17dd2453b126f0::t_8062e53cde8387 273,275-276,278,282-286,313-331,365,368
+  s_17dd2453b126f0::t_fdce164a220da7 201,203-205,207-208,214-222,229,248
+  s_8d9af8a6981bf3::t_fcf76182af8429 20,199-200,202,209,211-213,223,228,231-239,247,253-257,259-264,266-269,271-272,369,371,373-384,386-394
+  s_17dd2453b126f0::t_56540f984b9078 224-227,346,349-352,356,361-362
+  s_17dd2453b126f0::t_ef08fa0b7a88ef 210,294-312
+  s_8d9af8a6981bf3::t_a374ac85031515 258,265,270,372,385
+  s_17dd2453b126f0::t_e066cfeb6a0311 274,277,279-281,287-293
+  s_17dd2453b126f0::t_3026ecd3e5f6f3 357-360
+  s_17dd2453b126f0::t_86d7ed48af00a4 9
+  s_20e3a66c57f3f5::t_5248a5d526e12c 15,21-23
+  s_8d9af8a6981bf3::t_722c7f1945c891 230
+  s_17dd2453b126f0::t_4259c40a6cc401 353-355
+  s_17dd2453b126f0::t_a97a05bf1e8b40 249-252
+  s_17dd2453b126f0::t_78671c7051ed2d 347-348,366-367
+  s_17dd2453b126f0::t_e51e89649f67ca 206,240-246,332-345,363-364
+gateway/internal/features/feature/passthrough_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 17-19
+gateway/cmd/xdsdemo/control.go
+  s_20e3a66c57f3f5::t_6f76700832bb4d 148-152,155-161,165-168,172-221
+  s_20e3a66c57f3f5::t_ff80266225b8e4 153-154,256-257
+  s_20e3a66c57f3f5::t_49013865f22a4f 250-255,344-347,350
+  s_20e3a66c57f3f5::t_69e4def5743cdb 296-297
+  s_20e3a66c57f3f5::t_b6b08bc14b0e72 139
+  s_aea9a11faecf3f::t_e8b2dd2029e98b 17,20
+  s_17dd2453b126f0::t_224a40843eb42c 61,69-76
+  s_aea9a11faecf3f::t_c2345bebeb34dc 1-13,15-16,18-19,21-60,62-66,68,77-138,140-147,162-164,169-171,222-249,258-268,310-343,348-349,351-363
+  s_20e3a66c57f3f5::t_37af218950923d 14,67,269-295,298-309
+gateway/internal/xds/publication/bundle.go
+  s_17dd2453b126f0::t_1e52d2e140b5ef 1-21,23-72,74-80,87-109,114-117
+  s_17dd2453b126f0::t_e5483d63a78b74 73,81-86
+  s_17dd2453b126f0::t_477babf0809f4e 110-113
+  s_17dd2453b126f0::t_969648ea9de84e 22
+gateway/cmd/xdsdemo/suite_test.go
+  s_aea9a11faecf3f::t_c2853f48f29be4 1-16
+gateway/internal/xds/api/buf.gen.yaml
+  s_bd3a88776fc622::t_1e4eb6007fe182 1-13
+gateway/internal/xds/storage/store_test.go
+  s_17dd2453b126f0::t_29ce5a70f3f35d 8
+  s_bd3a88776fc622::t_3c73e9f93a985f 1-7,9-11,14-17,19,23-57,73,75-81,83,85-86,104-107,109-124,149-151,153-160
+  s_bd3a88776fc622::t_e777c12f5f4d84 12-13,18,20,74,84,90-91,108,152
+  s_17dd2453b126f0::t_0cf9b91223d5cd 58-72
+  s_17dd2453b126f0::t_c65ab51ff180c1 89,99,103,127-129
+  s_17dd2453b126f0::t_969648ea9de84e 21
+  s_bd3a88776fc622::t_1720e70cc25e3f 82,87-88,92-98,100-102
+  s_17dd2453b126f0::t_630b894664e01f 125-126,130-148
+  s_17dd2453b126f0::t_b018f53c90afeb 22
+gateway/internal/xds/storage/time.go
+  s_bd3a88776fc622::t_4ec5ef78ed9c90 1-14
+gateway/internal/features/feature/dynamic_upstream_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 15-17
+gateway/internal/features/feature/last_mile_security_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 19-21
+gateway/internal/features/feature/priority_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 12-14
+gateway/pkg/kong/client/error_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 33,38,46,72,97
+gateway/internal/features/envoy/client.go
+  s_8d9af8a6981bf3::t_aeef4d59bf6576 13,18,25-26,34-56,58-59,63-89,129,131,148
+  s_8d9af8a6981bf3::t_480a2c58e6ecd3 95,102,107-112,115-123,141
+gateway/internal/xds/publication/suite_test.go
+  s_bd3a88776fc622::t_3c73e9f93a985f 1-16
+gateway/internal/controller/index.go
+  s_20e3a66c57f3f5::t_5248a5d526e12c 13-15
+  s_8d9af8a6981bf3::t_67b056d8b6c478 61-84
+  s_8d9af8a6981bf3::t_a374ac85031515 18-23
+gateway/cmd/xdsdemo/main.go
+  s_aea9a11faecf3f::t_c2345bebeb34dc 1,4,8,13-14,17-26,28-29,33-35
+gateway/internal/features/envoy/routing_test.go
+  s_8d9af8a6981bf3::t_da49bd689d8296 35
+  s_8d9af8a6981bf3::t_bfa6284a09b7e1 48
+gateway/internal/features/feature/basic_auth_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 11,19-21
+gateway/internal/handler/consumeroute/handler.go
+  s_17dd2453b126f0::t_04840a47e9e091 12-14,18,26,41,53-54
+gateway/internal/features/feature/basic_auth.go
+  s_17dd2453b126f0::t_aa15ebb44833d2 88
+  s_17dd2453b126f0::t_b8c10fc1754375 11
+gateway/internal/features/feature/external_idp.go
+  s_17dd2453b126f0::t_b8c10fc1754375 13
+  s_17dd2453b126f0::t_3de5d7a86a9311 114-115,124,135,143,152,164,169,173-174,182,190,201
+gateway/internal/xds/server/server_test.go
+  s_bd3a88776fc622::t_c3e585e49267e5 1-10,12,14-19,22-26,28-32,36-37,49,57,82-85,90-125,127-138,140-145,218-251,260-283,285-299,326-331,333-337,341-342,344-347,351-357,359-384
+  s_bd3a88776fc622::t_e777c12f5f4d84 33-35
+  s_17dd2453b126f0::t_6b4d6a3b55b746 209
+  s_bd3a88776fc622::t_371e6c3a71fb20 338-340,343,348-350
+  s_17dd2453b126f0::t_8b369f047d521e 147-148,150,152-158
+  s_17dd2453b126f0::t_32471eb92968ba 252-259
+  s_17dd2453b126f0::t_d4b532c889942f 146,159-172,194
+  s_bd3a88776fc622::t_3e9e93b3372970 20,39,41-48,50-56,58-81
+  s_17dd2453b126f0::t_5a9c26cc5c8697 21,173-193
+  s_17dd2453b126f0::t_b018f53c90afeb 88-89
+  s_17dd2453b126f0::t_90430c8f45bd88 195-208,210-217
+  s_17dd2453b126f0::t_969648ea9de84e 87
+  s_17dd2453b126f0::t_8d0f861a4ade7f 27
+  s_17dd2453b126f0::t_e85fef063414d2 149,151
+  s_17dd2453b126f0::t_6abca0a77d9b44 300-325
+  s_bd3a88776fc622::t_74061ef096a903 38,86,126,139,284,332,358
+  s_17dd2453b126f0::t_db2d999adb16c2 40
+  s_17dd2453b126f0::t_1ca0a4d6f918cf 11,13
+gateway/Makefile
+  s_20e3a66c57f3f5::t_03a6123c8e7af6 136
+  s_bd3a88776fc622::t_3c73e9f93a985f 76,190,201,242-246
+  s_bd3a88776fc622::t_1e4eb6007fe182 50,53-57,74-75,87-89,114,118,137,186-189,197-200,222-241
+  s_bd3a88776fc622::t_1e562ce94c160a 115-117,221
+  s_bd3a88776fc622::t_77ec37e6389d65 79
+  s_bd3a88776fc622::t_8a8069df33a813 104-107
+  s_20e3a66c57f3f5::t_37d1e9e8bf3856 72-73
+  s_aea9a11faecf3f::t_e74d48fb22f354 81-86,119-135
+  s_bd3a88776fc622::t_a90f9dce76fa86 77-78
+  s_e36533b3721d0f::t_e93215427b0676 80
+gateway/internal/features/envoy/access_control.go
+  s_8d9af8a6981bf3::t_75cd0e00d31513 211-216,218-219,222-228,230-235
+  s_8d9af8a6981bf3::t_571568699a3618 217,221,236-272
+  s_20e3a66c57f3f5::t_55b9b78b663c1d 220,229,326,359,495
+  s_8d9af8a6981bf3::t_f8ace5d92c1c7f 345,347-357,361,365,377-381,409-439
+  s_8d9af8a6981bf3::t_2b01b253b23d80 171-172
+  s_8d9af8a6981bf3::t_da49bd689d8296 9-13
+  s_8d9af8a6981bf3::t_b39b2715506e00 469-470,473
+  s_8d9af8a6981bf3::t_4fa68fedc29a7f 440
+gateway/internal/xds/api/v1/bundle_test.go
+  s_bd3a88776fc622::t_e777c12f5f4d84 10-12
+  s_bd3a88776fc622::t_3c73e9f93a985f 1-9,13-44
+gateway/internal/features/envoy/last_mile_security.go
+  s_17dd2453b126f0::t_477babf0809f4e 154-155,161-167
+  s_8d9af8a6981bf3::t_b7a96c3b800c00 103-105
+  s_8d9af8a6981bf3::t_da49bd689d8296 9-10
+  s_20e3a66c57f3f5::t_55b9b78b663c1d 169,194
+gateway/internal/handler/route/handler.go
+  s_17dd2453b126f0::t_b64caa85c91b50 49-51
+  s_17dd2453b126f0::t_f831a0bd162d79 146-147,151
+  s_20e3a66c57f3f5::t_5248a5d526e12c 14-16
+  s_17dd2453b126f0::t_76446ff61e995b 43-46,181-184
+  s_17dd2453b126f0::t_dfae73ec3eb7cd 38-42,47-48,52-64
+  s_17dd2453b126f0::t_1e8423c3417034 13
+  s_17dd2453b126f0::t_a94f04c31a522e 141,148-150
+  s_17dd2453b126f0::t_04840a47e9e091 36,77,90,100-103,106,108,115
+  s_17dd2453b126f0::t_e720e499587ab5 142,144-145,152,157,171,179-180,188-194,199
+  h_052be7cb63ce69 25,170,185-187
+  s_17dd2453b126f0::t_57e60a5d74d4dc 143
+gateway/internal/xds/server/mapping.go
+  s_bd3a88776fc622::t_a90f9dce76fa86 92-97
+  s_bd3a88776fc622::t_e2fdae87dacc15 1-91
+gateway/internal/xds/api/v1/bundle.go
+  s_bd3a88776fc622::t_4ec5ef78ed9c90 1-22,27-54
+  s_bd3a88776fc622::t_e0a29c79124ec0 23-26
+gateway/cmd/xds-management-server/main.go
+  s_bd3a88776fc622::t_9f8e00148db25c 100-109
+  s_bd3a88776fc622::t_e0a29c79124ec0 9,62-63,115
+  s_bd3a88776fc622::t_1720e70cc25e3f 61,64-65
+  s_bd3a88776fc622::t_a90f9dce76fa86 1-8,10-60,66-99,110-114,116-155
+gateway/cmd/xdsdemo/scripts/validate.sh
+  s_20e3a66c57f3f5::t_37af218950923d 79-94,117-131,148,154-155
+  s_17dd2453b126f0::t_0cf9b91223d5cd 10-17
+  s_17dd2453b126f0::t_6b4a2bcff6fc62 189,198
+  s_aea9a11faecf3f::t_e74d48fb22f354 2,4-5,9,18-24,26-27,29,31-38,41-48,51-52,55-60,62-77,95-116,132-147,149-153,156-174,176-177,179-188,190-197,199-204
+gateway/cmd/xdsdemo/README.md
+  s_20e3a66c57f3f5::t_37af218950923d 32,53
+  s_aea9a11faecf3f::t_e74d48fb22f354 2,6,8,10-14,16,18,20,22-25,28,30-31,33-34,36,40,42,44,46,48-52,55
+  s_17dd2453b126f0::t_0cf9b91223d5cd 38
+  s_17dd2453b126f0::t_224a40843eb42c 57
+gateway/internal/xds/publication/publisher_test.go
+  s_bd3a88776fc622::t_e777c12f5f4d84 15-17
+  s_bd3a88776fc622::t_3c73e9f93a985f 1-14,18-59,73
+  s_17dd2453b126f0::t_90b3070becb9c8 60-72
+gateway/cmd/lms-issuer/main_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 11
+gateway/internal/features/builder.go
+  s_20e3a66c57f3f5::t_5248a5d526e12c 14,19-22,139
+  h_052be7cb63ce69 49-51
+gateway/cmd/xdsdemo/demo_test.go
+  s_20e3a66c57f3f5::t_5248a5d526e12c 11-12
+  s_aea9a11faecf3f::t_c2853f48f29be4 1-10,13-30,44-47,50-73
+  s_20e3a66c57f3f5::t_9e40464291919f 31-43
+  s_20e3a66c57f3f5::t_b6b08bc14b0e72 49
+  s_20e3a66c57f3f5::t_a36220d5031645 48
+gateway/internal/features/builder_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 20-22,152,394
+gateway/cmd/xdsdemo/Dockerfile
+  s_20e3a66c57f3f5::t_f7c8eb2761df49 28-29
+  s_aea9a11faecf3f::t_c2853f48f29be4 1,4-5,17-19,21-27,30-35
+gateway/internal/features/feature/failover.go
+  s_17dd2453b126f0::t_b8c10fc1754375 97-98,115-116
+gateway/internal/features/feature/last_mile_security.go
+  s_17dd2453b126f0::t_b8c10fc1754375 14
+  s_17dd2453b126f0::t_3de5d7a86a9311 101
+gateway/internal/handler/consumer/handler.go
+  s_17dd2453b126f0::t_477babf0809f4e 29,31-32,37-38,42-46,88,90
+  s_17dd2453b126f0::t_689162c307db99 30,33-36
+  s_17dd2453b126f0::t_055ea37a586fc4 39-40
+  s_17dd2453b126f0::t_22210b5e6c6998 28,94
+  s_17dd2453b126f0::t_dfae73ec3eb7cd 41
+  s_17dd2453b126f0::t_fe5f5b729ad785 62-68,72-80,86
+  s_17dd2453b126f0::t_04840a47e9e091 11-12,114,122,127
+  s_17dd2453b126f0::t_a94f04c31a522e 85,91-93
+  s_17dd2453b126f0::t_1e8423c3417034 69-71
+  s_17dd2453b126f0::t_5c2e5fe63b6f96 89,95,100
+  s_17dd2453b126f0::t_5f5b23b6f9d038 81-82
+  s_17dd2453b126f0::t_7464a6881c5c87 84
+  s_17dd2453b126f0::t_9761fbe7003af2 87
+gateway/internal/controller/route_controller.go
+  s_17dd2453b126f0::t_54b9901b286c20 80-90
+  s_17dd2453b126f0::t_06ee4ed26d19a3 10
+  s_17dd2453b126f0::t_4d181eb552785d 17
+  s_17dd2453b126f0::t_e4ea45fa34c57c 58-59,92-102,104-111
+  s_17dd2453b126f0::t_3127c5268186f5 61,74-79,91
+  s_17dd2453b126f0::t_29b274d1734e45 23-25,60,69-73
+  s_17dd2453b126f0::t_90430c8f45bd88 19,103
+  s_17dd2453b126f0::t_00096f7d3030df 112
+gateway/internal/features/envoy/builder.go
+  s_8d9af8a6981bf3::t_37e13d96640c75 153-154,162-163,289-290,300-325,407
+  s_8d9af8a6981bf3::t_da49bd689d8296 277-279
+  s_8d9af8a6981bf3::t_b7a96c3b800c00 284-287,295,349-352,385,408-416
+  s_8d9af8a6981bf3::t_f4f60251a27ea5 11,14,16,405-406
+  s_8d9af8a6981bf3::t_480a2c58e6ecd3 187
+  s_8d9af8a6981bf3::t_412fedfd9d0419 242,297-299,326-348,353-384,386
+  s_17dd2453b126f0::t_f831a0bd162d79 183-185
+  s_8d9af8a6981bf3::t_6f9cba98de5720 49,66,178-182,186,188-194,197,205,213,218,220-221,232,243-246,250-252,254-260,265,293-294,296,398-401
+gateway/internal/handler/consumeroute/handler_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 24-26
+gateway/internal/handler/gateway/util.go
+  s_17dd2453b126f0::t_eb60b1c6d0bf08 9,29-30
+  s_17dd2453b126f0::t_04840a47e9e091 12-14,22,25
+  s_17dd2453b126f0::t_a94f04c31a522e 33
+  s_17dd2453b126f0::t_ea4df2ff1fb8d3 31
+gateway/pkg/kong/client/client.go
+  s_17dd2453b126f0::t_1df03f0e44e256 281
+  s_17dd2453b126f0::t_b8c10fc1754375 20,53,71,88,167-168,386-387,414-415
+  s_17dd2453b126f0::t_2a80a5ea946e81 243-244
+  s_17dd2453b126f0::t_aa15ebb44833d2 89,115,117,121,255,265,275,277-279,296
+  s_17dd2453b126f0::t_6e4a957caa0c97 110,112,114,140-159,161-162
+  s_17dd2453b126f0::t_49863f625c763e 276,280
+  s_17dd2453b126f0::t_9fa0a816c35652 163-166
+gateway/internal/features/feature/circuit_breaker_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 13,21-23
+gateway/pkg/kong/client/plugin/jwt.go
+  s_17dd2453b126f0::t_b8c10fc1754375 9
+gateway/internal/features/feature/custom_scopes.go
+  s_17dd2453b126f0::t_aa15ebb44833d2 63
+gateway/internal/features/feature/iprestriction_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 15-17
+gateway/internal/xds/server/suite_test.go
+  s_bd3a88776fc622::t_c3e585e49267e5 1-16
+gateway/internal/features/feature/access_control_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 10,18-20
+gateway/internal/features/feature/custom_scopes_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 15-17
+  s_17dd2453b126f0::t_aa15ebb44833d2 133-134
+docs/docs/architecture/gateway.mdx
+  s_17dd2453b126f0::t_4d8e2ee98c2392 7,17-31,33-38
+  s_17dd2453b126f0::t_0cf9b91223d5cd 32
+  s_49214b55c79183::t_5e251d4a56aa0e 39
+gateway/internal/features/feature/external_idp_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 11,19-21
+common/pkg/controller/controller.go
+  s_17dd2453b126f0::t_b018f53c90afeb 164
+  s_17dd2453b126f0::t_e30013253cdad3 78-80
+  s_17dd2453b126f0::t_679b3b6fb44a7c 194
+  s_17dd2453b126f0::t_477babf0809f4e 117
+gateway/api/v1/gateway_types.go
+  s_17dd2453b126f0::t_679b3b6fb44a7c 47-49
+  h_052be7cb63ce69 27-33
+  s_17dd2453b126f0::t_7a111449992dc0 38-40
+gateway/internal/xds/storage/suite_test.go
+  s_bd3a88776fc622::t_3c73e9f93a985f 1-16
+gateway/internal/features/feature/header_transformation_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 15-17
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_gateways.yaml
+  s_17dd2453b126f0::t_06fce6c1033d23 153-156
+  s_17dd2453b126f0::t_cd13fc6aa8d74e 81-86,89
+gateway/cmd/xds-management-server/main_test.go
+  s_bd3a88776fc622::t_c3e585e49267e5 1-31
+gateway/internal/xds/storage/store.go
+  s_17dd2453b126f0::t_c65ab51ff180c1 309-313
+  s_17dd2453b126f0::t_785282d7d4fffa 284,287-288,291,293-294
+  s_17dd2453b126f0::t_d95545424b53a6 206-209,224,266-283,285-286,289-290,292,295-308
+  s_17dd2453b126f0::t_cb0abde3b69007 25,94-118,129-141,158,160,167,214,226,237-246,376
+  s_bd3a88776fc622::t_a5e0a38a0cff8f 19-20
+  s_bd3a88776fc622::t_4ec5ef78ed9c90 1-18,21-24,26-39,41-59,61-63,66,69-79,83-93,119-128,142-157,159,161-166,168-201,205,210-213,215-223,225,227-230,232-234,247,249-251,254,256-258,261,264,314-323,327-351,355-375,377-394,398-411,415-417
+  s_bd3a88776fc622::t_1720e70cc25e3f 40,265
+  s_bd3a88776fc622::t_e0a29c79124ec0 60,64-65,67-68,80-82,202-204,231,235-236,248,252-253,255,259-260,262-263,324-326,352-354,395-397,412-414
+gateway/internal/controller/gateway_controller.go
+  s_17dd2453b126f0::t_1ca0a4d6f918cf 150-156
+  s_17dd2453b126f0::t_16674728681044 69,78-80,87-90,92,132,135-136,374-375,381,383,385-386
+  s_17dd2453b126f0::t_e5483d63a78b74 11,98-104,118-119,121,124-126,129,175-179,182,199-207,213-220,226-229,348,350-352,355-357,359-361,364,396
+  s_17dd2453b126f0::t_a49a2fa5e317b0 16
+  s_17dd2453b126f0::t_76446ff61e995b 20,269-272,278-288,304-308,310-311,314
+  s_17dd2453b126f0::t_679b3b6fb44a7c 74-75,82,105,120,127-128,130,167,208-211,221-224,303,309,312-313,315
+  s_17dd2453b126f0::t_5e519e4bf88704 13,18,56-58,81,83-86,140,149,168,186,190-193,196-197,290-291,301-302,316,329-332,376-380,382,387-395,397-401
+  s_17dd2453b126f0::t_f0f47339e6205b 114,117,133-134,139,162-166,173-174,183-185,187-189,194,239-241
+  s_8d9af8a6981bf3::t_37e13d96640c75 464
+  s_17dd2453b126f0::t_3989180cf7bf12 12,333
+  s_17dd2453b126f0::t_e30013253cdad3 15,76-77,106,169-172,198,212,225,230-238,253-257,259-261,264,273-275,277,292-300,402-415
+  s_8d9af8a6981bf3::t_54151267f1e459 26,35,323,336,338,340
+  s_20e3a66c57f3f5::t_5248a5d526e12c 30-32
+  s_17dd2453b126f0::t_1e077d1ee6eb3b 25,326-328,334-335,384
+  s_8d9af8a6981bf3::t_b7a96c3b800c00 467
+  s_17dd2453b126f0::t_b44cd49a6ff487 337,339,349,353-354,358,362-363,365-373
+  s_17dd2453b126f0::t_f831a0bd162d79 451-453
+  s_8d9af8a6981bf3::t_67b056d8b6c478 10,22,27-28,34,41-42,91,93,97,112-113,115-116,158-159,341,416-450,454-463,465-466,468-475
+  s_17dd2453b126f0::t_f5511c8473ceeb 109-111
+  s_17dd2453b126f0::t_f478e1fd2799db 9,43,48-55,59,131,137-138,141-148,157,160-161,242-247,249-251,262-263,265-268,289,317
+  s_17dd2453b126f0::t_a15ec0f78b71e1 107-108,122-123,180-181,195,248,252,258,276
+  s_17dd2453b126f0::t_d4b532c889942f 70-73,94-96
+  s_17dd2453b126f0::t_7745b6bbb831b7 65-68
+gateway/internal/features/feature/ratelimit_test.go
+  s_17dd2453b126f0::t_b8c10fc1754375 11,20-22
+gateway/go.sum
+  s_17dd2453b126f0::t_81cbef0c3f95fa 36-37,129-130,181-182,228-229,441-468
+gateway/internal/xds/api/v1/management.pb.go
+  s_17dd2453b126f0::t_e68bee6462cc0a 1-903
+gateway/internal/xds/api/v1/management_grpc.pb.go
+  s_17dd2453b126f0::t_9dcd0317648c06 1-226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "185f71e120c0eafe7b9b5fec45768c6b141af831",
+  "prompts": {},
+  "humans": {
+    "h_052be7cb63ce69": {
+      "author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_17dd2453b126f0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_076eadf3cffeg9dGMywyDVOe62",
+        "model": "unknown"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_20e3a66c57f3f5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_076256691fferI9OYALqqX66DR",
+        "model": "unknown"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_49214b55c79183": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_071246f11ffeS1RSE1O3yGEahD",
+        "model": "unknown"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_8d9af8a6981bf3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0765b4273ffen7NIdF4KS4s3fG",
+        "model": "unknown"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_aea9a11faecf3f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0763750b2ffeX7D090rA8RBdeE",
+        "model": "unknown"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_bd3a88776fc622": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0765b40bdffeZHTe2PrOEi41RO",
+        "model": "unknown"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_e0ab6e2930bcf8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_071fa39dbffevu1UH3FXAgXjMT",
+        "model": "unknown"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_e36533b3721d0f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "2802bf4f-172e-4ef8-ad13-36c5ea47e334",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}

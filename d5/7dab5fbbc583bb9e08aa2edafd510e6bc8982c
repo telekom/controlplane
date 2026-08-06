@@ -1,0 +1,74 @@
+gateway/cmd/xdsdemo/helm/files/ratelimit-config.yaml
+  h_052be7cb63ce69 1-18
+gateway/internal/handler/route/handler.go
+  s_e36533b3721d0f::t_bdbd6c81ae5aa5 159
+gateway/internal/features/envoy/last_mile_security.go
+  s_e36533b3721d0f::t_6f86c8d0106413 99,105-116
+  s_141f12d95331f0::t_d2b016e6226d7d 117-118
+gateway/internal/features/envoy/last_mile_security_test.go
+  s_e36533b3721d0f::t_a7f4f8eed2e8e0 35,51,62
+gateway/cmd/xdsdemo/main.go
+  s_e36533b3721d0f::t_bdbd6c81ae5aa5 73
+gateway/cmd/xdsdemo/helm/templates/ratelimit.yaml
+  s_e36533b3721d0f::t_062fe7496531d6 14-31
+  s_e36533b3721d0f::t_3a653e7e879d23 48-49
+  s_e36533b3721d0f::t_c97010fad368fb 11-13
+  s_e36533b3721d0f::t_9a4573dad2f99e 32-34,45-47
+  s_e36533b3721d0f::t_b4ebebb465891e 50-52
+  s_e36533b3721d0f::t_6ea4b92d2a36c0 1-10,35-44,53-122
+gateway/internal/features/envoy/rate_limit.go
+  s_e36533b3721d0f::t_3c08ca627415dc 22,164-166,270
+  h_052be7cb63ce69 1-21,23-84,88-163,167-269
+  s_e36533b3721d0f::t_bdbd6c81ae5aa5 85-87
+gateway/cmd/xdsdemo/helm/values.yaml
+  s_e36533b3721d0f::t_f50c0f37c13cc5 59
+  h_052be7cb63ce69 60
+  s_e36533b3721d0f::t_a5699239209193 55-58,61-68
+gateway/internal/features/envoy/access_control_test.go
+  s_e36533b3721d0f::t_3eb9fc4cbf4891 76-78
+gateway/internal/features/envoy/rate_limit_test.go
+  s_e36533b3721d0f::t_25f50499f492f2 91-96
+  s_e36533b3721d0f::t_76a75b400e267f 115
+  h_052be7cb63ce69 1-90,97-114
+gateway/internal/features/envoy/access_control.go
+  s_e36533b3721d0f::t_33e1d980b0ea4a 296
+  s_e36533b3721d0f::t_3eb9fc4cbf4891 180-183
+  s_e36533b3721d0f::t_6f86c8d0106413 292-295,297,301
+gateway/internal/features/envoy/routing.go
+  s_e36533b3721d0f::t_6f86c8d0106413 56
+gateway/internal/features/envoy/builder.go
+  s_e36533b3721d0f::t_6f86c8d0106413 55-56,79,169-172,230,244,268-273
+  s_e36533b3721d0f::t_3c08ca627415dc 77-78
+  s_e36533b3721d0f::t_ccd19b0edbf9e4 274-275
+gateway/cmd/xdsdemo/helm/Chart.yaml
+  s_e36533b3721d0f::t_a5699239209193 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "d57dab5fbbc583bb9e08aa2edafd510e6bc8982c",
+  "prompts": {},
+  "humans": {
+    "h_052be7cb63ce69": {
+      "author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_141f12d95331f0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0759e067cffePpGREDaUpXlPhS",
+        "model": "unknown"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "s_e36533b3721d0f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "2802bf4f-172e-4ef8-ad13-36c5ea47e334",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}

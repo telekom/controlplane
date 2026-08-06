@@ -1,0 +1,20 @@
+api/internal/controller/apiexposure_controller.go
+  s_02e6d41c18a346::t_a5b29879fdd19a 25,50,72-75,160-181
+  s_02e6d41c18a346::t_0c5ba1db115da1 182-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7b5a5b62042278924cbe9f8dfa644c9ce437cfc5",
+  "prompts": {},
+  "sessions": {
+    "s_02e6d41c18a346": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_037e90451ffemzW7s5lu76YoZv",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

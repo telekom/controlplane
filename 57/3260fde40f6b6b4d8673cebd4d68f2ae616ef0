@@ -1,0 +1,65 @@
+install/base/kustomization.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 9-12
+admin/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35
+install/base/root-ca.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 1-16
+organization/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35,37
+controlplane-api/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 42,44,49
+pubsub/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35,55
+rover/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35,37
+install/base/trust-bundle.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 1-19
+rover-server/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35,55
+gateway/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35,37
+install/base/issuer.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 14-15
+common-server/helm/templates/deployment.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 77,110,112-113
+secret-manager/config/patches/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35,37
+install/base/namespace.yaml
+  s_23b7ea359876dc::t_d45de97489fed4 12-13
+docs/docs/admin-journey/installation.md
+  s_23b7ea359876dc::t_1a60970fd4a92e 273-276,291,453-455,457,501-514
+  s_23b7ea359876dc::t_a8a2cad34cff34 456,458-500
+application/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35
+hack/local-setup.sh
+  s_23b7ea359876dc::t_1a60970fd4a92e 389-390,397
+install/base/bootstrap-issuer.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 1-11
+discovery-server/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35
+event/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35,55
+identity/config/default/deployment_patch.yaml
+  s_23b7ea359876dc::t_1a60970fd4a92e 28,30,35,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "573260fde40f6b6b4d8673cebd4d68f2ae616ef0",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_23b7ea359876dc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_032f338f4ffeTZul63E5vmZo2l",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

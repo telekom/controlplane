@@ -1,0 +1,356 @@
+secret-manager/cmd/server/server.go
+  s_14eece4f665890::t_2eac0eab5d5297 164
+  s_63ac2ab16c5c39::t_199bff3d0a3753 172
+  s_63ac2ab16c5c39::t_dd3ac6f81d6b89 18
+  s_63ac2ab16c5c39::t_dde72b5e640e53 159-160,162-163,165-166,174
+  s_63ac2ab16c5c39::t_d9f9ccb7f82b48 155-158
+  s_63ac2ab16c5c39::t_045991b80f8a04 153,161,167,170-171,173,175-180,182-185,187
+controlplane-api/cmd/config/config_test.go
+  s_14eece4f665890::t_fd9789cd2142ae 8-9,20-26,28,30-37,40-46,48,50-57,59-61,65-70,72-73,77
+  s_14eece4f665890::t_c7e6c7d4e59f69 76,81-83
+install/overlays/local/controlplane-api-config.yaml
+  s_14eece4f665890::t_73660a0bf90632 13-20
+controlplane-api/internal/graphql/controller.go
+  s_14eece4f665890::t_13615e5c54e454 36-41,43-45
+file-manager/cmd/server/config/config.go
+  s_14eece4f665890::t_41ec209ca2753a 38,43,51-61,67-68,70-72
+  s_e045e7b1709caa::t_236e581f9e58f4 10,15-16,37,66
+  s_14eece4f665890::t_70375f67861048 8,11
+  s_14eece4f665890::t_a33f8ab181ba87 47-50
+  s_51ad3e3c3c89f5::t_58e9e0339d291a 44-46
+docs/docs/admin-journey/installation.md
+  s_fe9e750bf7ee32::t_4a5639f44cfdee 335,342,345-363
+  s_fe9e750bf7ee32::t_d73ebba9a5b506 436
+rover-server/internal/mapper/rover/in/rover_test.go
+  s_8c0fad184ec379::t_2cd31440e54fdf 255-256
+discovery-server/pkg/log/log.go
+  s_8c0fad184ec379::t_7954b5aa7d9447 10,22,26,31
+rover-server/internal/config/config.go
+  s_e045e7b1709caa::t_f6afa7aa3edf9c 11,17-19,44,46,48,51,53,57,60,63,71-77,93-101,105
+  s_63ac2ab16c5c39::t_f4e43bb00fba96 8
+  s_76ce89dae833f4::t_c9ca498dec704e 12
+  s_63ac2ab16c5c39::t_da931227b1a5ec 82-83
+  s_0b79a12d4f99d3::t_03509a2f843eb6 78-81
+  s_76ce89dae833f4::t_d106b8f1758af2 84-92
+  s_c9300b84b488d5::t_9d3c0edce8b6a8 102-104
+  s_c9300b84b488d5::t_229cca4356d352 20-38
+  s_63ac2ab16c5c39::t_461af0d90f3290 61-62,64-66,68
+rover-server/internal/config/config_test.go
+  s_c9300b84b488d5::t_142639417a608d 1-7,9-21,34,50-51,57-58
+  s_63ac2ab16c5c39::t_5087182c72e57f 8,22-33,35-49
+  s_8c0fad184ec379::t_b9ec46f47fb65d 52-56
+discovery-server/internal/config/config.go
+  s_63ac2ab16c5c39::t_8304a70161af6d 51
+  s_63ac2ab16c5c39::t_627639b0facee5 52-56
+  s_76ce89dae833f4::t_0f65b705a884a5 57-65
+  s_63ac2ab16c5c39::t_8b3e755bb71fdf 8
+  s_e045e7b1709caa::t_1957bdef2ce468 10,16,33,36,44-50,66
+  s_76ce89dae833f4::t_4906865eb31fa1 11
+  s_c9300b84b488d5::t_40e7f98687545e 17-18,21-25,28-30
+  s_c9300b84b488d5::t_00f15d84ce1114 67-69
+  s_63ac2ab16c5c39::t_b577009079a0f2 34-35,37-39,41
+  s_41b762a2b9bdc3::t_4b6bdf65392f92 70
+controlplane-api/cmd/config/config.go
+  s_14eece4f665890::t_bb3b2f6bdf25a6 8,11,54,57-59,65-70,83,86-88
+  s_51ad3e3c3c89f5::t_34882cbe26f2ad 55-56
+  s_e045e7b1709caa::t_3177d8756e8d5b 10,16-20,24-26,30,34,40,51-53,60,84
+  s_0b79a12d4f99d3::t_d7f5e444b8c0e4 61-64
+  s_14eece4f665890::t_9ec26f33ea7e62 82
+docs/docs/admin-journey/controlplane-api.md
+  s_fe9e750bf7ee32::t_d54ae556ad4f8f 291
+  s_fe9e750bf7ee32::t_a04aea7e3ed9c2 157,164,172-178,193-197,210-215
+  s_fe9e750bf7ee32::t_113bcf34bfc1f0 64
+discovery-server/internal/config/config_test.go
+  s_63ac2ab16c5c39::t_d95de9d51d4288 8,22-33,35-47
+  s_c9300b84b488d5::t_25167097c8e43c 1-7,9-21,34,48-49,54-55
+  s_8c0fad184ec379::t_4a07ee50abb4d5 50-53
+common-server/pkg/server/middleware/security/synthetic_context.go
+  s_a6465d68ce301b::t_04f1b29c65bece 1-57
+discovery-server/internal/controller/suite_controller_test.go
+  s_76ce89dae833f4::t_1c7a72c75b39e7 19
+  s_8c0fad184ec379::t_cb584bbe1f38da 72
+  s_76ce89dae833f4::t_185f60bd497a62 127,136-155
+  s_8c0fad184ec379::t_b162655c96e129 17
+common-server/pkg/config/config_suite_test.go
+  s_3d0000bf2b2e3b::t_b230a245028995 1-17
+common-server/pkg/server/middleware/kubernetes/k8s_authz.go
+  s_e045e7b1709caa::t_215c17d46f31a4 49-52
+common-server/pkg/server/middleware/security/jwt_config_test.go
+  s_b7ca553c566062::t_cb7ed1e47f61e2 1-51
+controlplane-api/cmd/main.go
+  s_0b79a12d4f99d3::t_424e7b2ec1c6f8 109-124,126-127
+  s_14eece4f665890::t_8ac98e175e32c6 98-108,125,129,132,134-135,139
+install/overlays/local/kustomization.yaml
+  s_14eece4f665890::t_1c33c43b39bd64 66-71
+discovery-server/internal/server/server.go
+  s_76ce89dae833f4::t_e84c53b472ba1e 16
+  s_63ac2ab16c5c39::t_919a4f521588c9 158
+  s_76ce89dae833f4::t_73e81bbe4ac7fc 67-70
+  s_76ce89dae833f4::t_9a4ee9aad69447 100-102,122,128-130,134-137,141-143,147-150,154-156
+  s_76ce89dae833f4::t_1ee034abfedf40 160-163
+common-server/pkg/config/listeners_test.go
+  s_63ac2ab16c5c39::t_3c1cfd3c2346e3 69
+  s_63ac2ab16c5c39::t_698849035f460a 84
+  s_b7ca553c566062::t_2b1b712be49633 1-10,14-16,18-22,25-32,35-56,59,70,85-86
+  s_b7ca553c566062::t_09ce0dd10242bc 11-13
+  s_63ac2ab16c5c39::t_3e310a5bc79e46 17,23-24,33-34,57-58,60-68,71-83
+controlplane-api/config/default/kustomization.yaml
+  s_14eece4f665890::t_8d34fef3ac6047 37-40
+install/overlays/local/secret-manager-config.yaml
+  s_14eece4f665890::t_aa41147239edaa 8-33
+rover-server/internal/controller/suite_controller_test.go
+  s_76ce89dae833f4::t_6feebd13475738 116,125-143
+rover-server/internal/mapper/rover/in/rover.go
+  s_8c0fad184ec379::t_b0da726511eceb 56
+  s_8c0fad184ec379::t_0cf1f516b56767 17-20
+  s_8c0fad184ec379::t_92c50af22dcf06 21
+common-server/pkg/server/listener_config_test.go
+  s_63ac2ab16c5c39::t_c5479070fe91c5 34-35,37-38,40-41,44,47-89
+  s_b7ca553c566062::t_09ce0dd10242bc 11-13
+  s_b7ca553c566062::t_14ed913a654ffd 1-10,14-33,36,39,42-43,45-46,90-91
+rover-server/internal/server/server.go
+  s_76ce89dae833f4::t_79bcf6164edd43 113
+  s_76ce89dae833f4::t_b20aeea129e0c8 81-84
+  s_76ce89dae833f4::t_2532c5df218ebb 16
+  s_76ce89dae833f4::t_b495aaa5122201 135-137,139-141,145-147,149-152,154-156,160-162,164-166,170-172,174-176,180-182,184-186,190-192,194-196
+docs/docs/architecture/controlplane-api.mdx
+  s_fe9e750bf7ee32::t_023e491b47325d 166
+discovery-server/cmd/main.go
+  s_63ac2ab16c5c39::t_c1ef9c0b4e82a5 67-69
+  s_14eece4f665890::t_3a82026376b815 70-77
+  s_63ac2ab16c5c39::t_777d7446627aa2 66,78-83,85-93
+  s_8c0fad184ec379::t_aad3c38034902f 16
+  s_8c0fad184ec379::t_11a6bb8853dc92 31,34-37
+  s_e045e7b1709caa::t_91f3e1073bb64d 9,25-29
+  s_76ce89dae833f4::t_8e278ba685fe9e 15,53-61,63-64,95-97
+controlplane-api/go.mod
+  s_a6465d68ce301b::t_71835efb029fc0 137
+common-server/pkg/server/multiport_test.go
+  s_63ac2ab16c5c39::t_46694db5d97307 43,46-47
+  s_63ac2ab16c5c39::t_a2be2c79d7f91b 52,65
+  s_63ac2ab16c5c39::t_edf76f57b60604 106,111,113,115-125
+  s_63ac2ab16c5c39::t_d986ea8a5b4f5b 49-51,64
+  s_63ac2ab16c5c39::t_636e1a10733b21 48,53-59,66-67,79-81
+  s_a6465d68ce301b::t_1b1e417ff694c5 1-8,10-11,13-34,36-37,39,41-42,44-45,83-89,91-95,97-101,103-105,126-160,162-168,170-186,190-202,207,209,211-214,221,225-229,235-237,240-245
+  s_63ac2ab16c5c39::t_ebf94a2081f45f 187-189
+  s_a6465d68ce301b::t_ba9e72bdfddfb0 161,169
+  s_63ac2ab16c5c39::t_956e8c749fd13f 35,38,40,62-63,68-78,82
+  s_63ac2ab16c5c39::t_765dafc7aa943f 60-61
+  s_a6465d68ce301b::t_84f13ee4d6c51a 215-217,222-224
+  s_63ac2ab16c5c39::t_68dbb83588bdf6 107,114
+  s_a6465d68ce301b::t_176f35d41cef66 203-206,208,210,230-234,238-239
+  s_a6465d68ce301b::t_9813d17239649e 12
+  s_63ac2ab16c5c39::t_8e41d8d6dcfd70 108-110
+  s_63ac2ab16c5c39::t_0f1b3fac55dc95 9
+  s_14eece4f665890::t_77fe4565ae70f9 90,96,102,112
+  s_63ac2ab16c5c39::t_e11395d42d17ec 218-220
+install/overlays/local/file-manager-config.yaml
+  s_14eece4f665890::t_7b5d094ca1d2a9 13-15
+common-server/pkg/config/config.go
+  s_3d0000bf2b2e3b::t_6de710d0a0fbd9 1-12,14,17-21,29-33,38,41-43,61-63,133-142
+  s_63ac2ab16c5c39::t_79bc6fa9adc87b 93-100,125-127
+  s_63ac2ab16c5c39::t_90043ec814ea45 101-121
+  s_b7ca553c566062::t_09ce0dd10242bc 15-16
+  s_14eece4f665890::t_20a0abf22154c3 23-28,45-60
+  s_3d0000bf2b2e3b::t_5288ae5704932c 44
+  s_63ac2ab16c5c39::t_5eb86d5a093c01 123
+  s_14eece4f665890::t_8471c7a1986159 13
+  s_e045e7b1709caa::t_c28ed22c3752c3 34-35,64-65,74-75,81,83,85-92,122,124,128-132
+  s_3d0000bf2b2e3b::t_662589739e6ad5 36
+  s_14eece4f665890::t_daa7a25d1a9c87 66-73,76-80,82,84
+  s_a6465d68ce301b::t_18c2def6be917c 22,37,39-40
+rover-server/pkg/log/log.go
+  s_8c0fad184ec379::t_fdc1d72c6c0a5d 10,22,26,31
+file-manager/cmd/server/server.go
+  s_14eece4f665890::t_3dfb3268c96f6d 142-150,152-154,157-167,169-172,174
+  s_14eece4f665890::t_83a3b099d5f964 15
+  s_14eece4f665890::t_060acaa82f53ff 151
+common-server/pkg/server/middleware/security/jwt_config.go
+  s_b7ca553c566062::t_3144c92a488f6d 1-37
+common-server/pkg/server/listener_config.go
+  s_b7ca553c566062::t_97f83d03db4441 40-41
+  s_63ac2ab16c5c39::t_552831ce1c87a6 21-29
+  s_63ac2ab16c5c39::t_881bf8c5058bdd 63-70,76-98,100-134,136-150,152
+  s_a6465d68ce301b::t_07084f29a2d182 73,75
+  s_63ac2ab16c5c39::t_52f6f8ac51026b 135
+  s_63ac2ab16c5c39::t_959c2dc403c423 56
+  s_63ac2ab16c5c39::t_484232d0986cac 9
+  s_b7ca553c566062::t_aaed8ee47e2466 1-7,10-20,30-39,42-55,57-62,71-72,74,99,151,153
+  s_a6465d68ce301b::t_2750468c03fc66 8
+rover-server/cmd/main.go
+  s_8c0fad184ec379::t_04849e2b9714fd 14,17
+  s_14eece4f665890::t_6768062e687a4d 81-88
+  s_e045e7b1709caa::t_2d85fcda0bb625 9,29-33
+  s_63ac2ab16c5c39::t_d44a00d24a469b 78-80,93,99,102-103
+  s_63ac2ab16c5c39::t_68e076a2baafe6 77,100-101
+  s_8c0fad184ec379::t_605966f8a00066 34,36,39-42
+  s_76ce89dae833f4::t_16f4a2cfdee627 13,64-72,74-75,89-92,94,96-97,104,106-108
+  s_63ac2ab16c5c39::t_ad45d9c6bac0a9 98
+common-server/pkg/server/multiport.go
+  s_63ac2ab16c5c39::t_b628a68ea5c53f 82-83,94-95,111-112
+  s_a6465d68ce301b::t_3413ae9068472b 14
+  s_63ac2ab16c5c39::t_11e4a17134c3dd 62
+  s_63ac2ab16c5c39::t_4ef09ed1201fa4 157,166,181-195,197-199,201,225
+  s_a6465d68ce301b::t_3956689a87d6f1 1-13,15-31,52-61,63-69,77-81,84-93,96-110,113-145,150-156,158,180,200
+  s_63ac2ab16c5c39::t_c2ccd0070bb2c1 179
+  s_a6465d68ce301b::t_7e927d625a94fe 146-149
+  s_63ac2ab16c5c39::t_5e98d35207a922 32-51
+  s_14eece4f665890::t_4a03f1c2f16090 159-165,171-178,196,202-224
+  s_a6465d68ce301b::t_7818b90b47e417 70-76
+  s_a6465d68ce301b::t_5e0da6e6b12585 167-170
+common-server/go.mod
+  s_14eece4f665890::t_ff73e4ac3ed297 17
+  s_3d0000bf2b2e3b::t_66c320e8bec779 80,85-87,90
+  s_3d0000bf2b2e3b::t_ff1d89c27b0942 27
+discovery-server/pkg/store/stores.go
+  s_8c0fad184ec379::t_fd2ce9624d7532 58,63-67,69-71,80,86-87
+common-server/pkg/server/family.go
+  s_a6465d68ce301b::t_93c277e98fc811 1-20,24-32,38,40-48,54-55,57-63,69,76-78,80-83
+  s_63ac2ab16c5c39::t_182b25aa57df0f 21-23
+  s_63ac2ab16c5c39::t_91965b336c3d56 64
+  s_63ac2ab16c5c39::t_b40fb7de3a35e3 33-37,39,50-53,71-74
+  s_63ac2ab16c5c39::t_e40a2417b6c612 49,56,65-68,70,75,79
+rover-server/pkg/store/stores.go
+  s_8c0fad184ec379::t_b5378b7d2b90bf 123
+  s_8c0fad184ec379::t_a7b83019df588d 132,138-139
+  s_8c0fad184ec379::t_9aaac08a8e60bd 81
+  s_8c0fad184ec379::t_3096227f8d9484 109
+  s_8c0fad184ec379::t_dbe1837c15a0a3 86-93,96-100
+  s_8c0fad184ec379::t_823d80a6f5be1e 112-115
+common-server/pkg/config/config_test.go
+  s_b7ca553c566062::t_09ce0dd10242bc 12-13
+  s_14eece4f665890::t_e047718171f08f 26-30,35
+  s_e045e7b1709caa::t_c8c462a96abce1 92-99,128-132
+  s_14eece4f665890::t_0d8b5b91228172 100-126
+  s_a6465d68ce301b::t_18328fec7d737d 84-86,88-90
+  s_3d0000bf2b2e3b::t_d4443b25f77575 1-11,14-25,31-34,36-83,87,91,127
+secret-manager/cmd/server/config/config.go
+  s_14eece4f665890::t_e839f6db35438a 47-50
+  s_63ac2ab16c5c39::t_3ef548062203e7 52-54
+  s_63ac2ab16c5c39::t_71dfc75c0606bc 11
+  s_e045e7b1709caa::t_62da5bc6fd52aa 10,15-16,37,67
+  s_63ac2ab16c5c39::t_355e5a98b761ee 8
+  s_51ad3e3c3c89f5::t_bdd10468de38c8 44-46
+  s_63ac2ab16c5c39::t_db6b86e256cb68 43,51,55-62
+  s_63ac2ab16c5c39::t_8aab2bbf85c0d5 68-69,71-73
+  s_63ac2ab16c5c39::t_7634b34edf2ddd 38
+common-server/go.sum
+  s_b7ca553c566062::t_be0a61e630b1d6 39-40,70-71,136-137,156-161,164-165,180-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "50a6b313c8a86e78524edd8199fe8fb1e8624ef6",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_0b79a12d4f99d3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06be77a0fffeKVeoi055m17ls2",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_14eece4f665890": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06c2482c6ffeC6T5eDCnLbJCY9",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_3d0000bf2b2e3b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0808f21caffe8GyEwwpqo0PIBN",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_41b762a2b9bdc3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06c3a1f29ffe5P6xp7BdZYWap4",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_51ad3e3c3c89f5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06bf460c8ffeQC2fcUYFeYIK8R",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_63ac2ab16c5c39": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06c883d74ffenEHTN8h2U51Sx8",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_76ce89dae833f4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07b6c5042ffejoCWO0HShKBOGn",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_8c0fad184ec379": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06c9c6ddcffeoXdCY0yAEie27P",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_a6465d68ce301b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_080c1fb33ffePDyVn1GTDKrgr7",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b7ca553c566062": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07bf49f7affe6UTNTtGpZJ6Mq1",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c9300b84b488d5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07fdd32ceffe3JxBwClKTAp2xJ",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e045e7b1709caa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07ff10d6affe9wRGfSU818vyyT",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fe9e750bf7ee32": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06bedc23cffe4OMciMmJpXk3S0",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

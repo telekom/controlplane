@@ -1,0 +1,19 @@
+docs/superpowers/specs/2026-07-30-controller-source-event-metrics-design.md
+  s_092cf52a35c0f4::t_b392554271e5cf 1-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "34fcbc52e7f52829b95de7e3b50c6e554d757b5c",
+  "prompts": {},
+  "sessions": {
+    "s_092cf52a35c0f4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04ddb0e4cffeZjBr8B90eXQJNP",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

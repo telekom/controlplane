@@ -1,0 +1,88 @@
+gateway/internal/controller/gateway_controller.go
+  s_ed9ebc24640ee6::t_c9dc66b1890ac7 18,51
+  s_ed9ebc24640ee6::t_e37a403327cc94 53-55,62-68
+  s_ed9ebc24640ee6::t_1c23510681117a 15,19,50,69-77
+  h_0f030e7424553c 52
+gateway/internal/controller/controller_test.go
+  s_ed9ebc24640ee6::t_b78b909a14ae92 208,239-253,273-280
+  s_0018ced65c0b21::t_2dbc2fabf4ee5c 9,198-207,209-238,254-272,281-284,286
+  s_ed9ebc24640ee6::t_c4bd7e53a878d4 285
+  s_de19913a88ad4c::t_a4e74e4d515bf6 287
+gateway/internal/controller/index.go
+  s_0018ced65c0b21::t_e23e431e4534d8 57
+  h_0f030e7424553c 69-80
+  s_2238febd05f50d::t_8fcf0a7cadf352 19,58-68
+gateway/internal/handler/route/handler.go
+  h_0f030e7424553c 26-27,116-118
+  s_ed9ebc24640ee6::t_0a5cd16bebb9fe 115
+gateway/internal/handler/gateway/handler_test.go
+  s_ed9ebc24640ee6::t_1366d16ba3081d 44
+  s_ed9ebc24640ee6::t_1c23510681117a 12-14,43,49
+identity/internal/handler/realm/handler_test.go
+  s_ed9ebc24640ee6::t_fd1b4795f9f9cf 93
+gateway/internal/handler/gateway/handler.go
+  h_0f030e7424553c 42-51
+  s_2238febd05f50d::t_8fcf0a7cadf352 9,11,13,15,17,31-41
+identity/test/utils/mocks.go
+  s_ed9ebc24640ee6::t_b78b909a14ae92 53
+gateway/internal/handler/consumer/handler.go
+  h_0f030e7424553c 19-20,47-50
+identity/internal/handler/realm/handler.go
+  s_ed9ebc24640ee6::t_fd1b4795f9f9cf 12,15,19,113-121
+  s_de19913a88ad4c::t_644059ee4ff0cc 122
+identity/internal/controller/realm_controller.go
+  h_0f030e7424553c 67
+  s_ed9ebc24640ee6::t_fd1b4795f9f9cf 65-66,75-80
+  s_de19913a88ad4c::t_15c5787174a402 81-82
+identity/internal/controller/realm_controller_test.go
+  s_ed9ebc24640ee6::t_6a2d651b5abaa8 9
+  s_ed9ebc24640ee6::t_b78b909a14ae92 82
+  s_ed9ebc24640ee6::t_8a50e0c00e7f42 18,78-81,83-99,103-112
+  s_ed9ebc24640ee6::t_7e43c2e1dc259a 100-102
+  s_de19913a88ad4c::t_b16f7f8bd0b5ca 113-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "89fb0b7eff9aa57b62a16013c679e46dbe836177",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_0018ced65c0b21": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0387c7740ffeL665QXre6I8tVZ",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_2238febd05f50d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0386a9565ffeA6iQmRJYwGITjh",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_de19913a88ad4c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0383318eaffeVURd2olqN1jAVC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ed9ebc24640ee6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038524064ffe1ZutAFlv7ANpPq",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
