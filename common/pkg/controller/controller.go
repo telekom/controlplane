@@ -66,7 +66,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	if changed, setupErr := FirstSetup(ctx, c.Client, object); setupErr != nil {
 		return HandleError(ctx, setupErr, object, c.Recorder)
 	} else if changed {
-		// Generation predicate will block the next reconcile loop until the object is updated, so we can requeue here to avoid a no-op reconcile.
+		// FirstSetup may only change metadata/status (e.g., add a finalizer), which might not trigger a follow-up reconcile when using a GenerationChangedPredicate; explicitly requeue to continue reconciliation.
 		return reconcile.Result{Requeue: true}, nil
 	}
 
