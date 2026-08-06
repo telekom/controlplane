@@ -28,6 +28,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
@@ -81,6 +82,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "..", "api", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "application", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "organization", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "file", "config", "crd", "bases"),
 		),
 		// CRDDirectoryPaths: append(
 		//	testutil.GetCrdPathsOrDie("github.com/telekom/controlplane/(api|application|organization)/api"),
@@ -106,6 +108,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = organizationv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = filev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
