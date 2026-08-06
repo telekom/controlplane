@@ -50,7 +50,6 @@ listeners:
 		Expect(cfg.Listeners.External.Address).To(Equal(":8443"))
 		Expect(cfg.Listeners.Internal).To(BeNil())
 		Expect(cfg.TLS.Cert).To(Equal("/etc/tls/tls.crt"))
-		Expect(cfg.Rover.Environment).To(Equal("controlplane"))
 		Expect(cfg.Rover.TokenFilePath).To(Equal("/var/run/secrets/rover/token"))
 		Expect(cfg.Rover.CaFilePath).To(Equal("/var/run/secrets/trust-bundle/trust-bundle.pem"))
 		Expect(cfg.CPAPI.TokenFilePath).To(Equal("/var/run/secrets/cpapi/token"))

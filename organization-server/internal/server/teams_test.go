@@ -278,6 +278,47 @@ var _ = Describe("Team Handlers", func() {
 	})
 
 	Describe("Authorization", func() {
+		DescribeTable("enforces resource ownership boundaries",
+			func(tokenGroup, tokenTeam, scope, path string, expectedStatus int) {
+				req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
+				resp, err := executeRequest(app, req, makeToken(tokenGroup, tokenTeam, []string{scope}))
+				expectStatus(resp, err, expectedStatus)
+			},
+			Entry("allows exact team", "eni", "hyperion", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusOK),
+			Entry("rejects shorter token team", "eni", "hyper", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
+			Entry("rejects longer token team", "eni", "hyperionship", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
+			Entry("rejects shorter requested team", "eni", "hyperion", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyper", http.StatusForbidden),
+			Entry("rejects longer requested team", "eni", "hyperion", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperionship", http.StatusForbidden),
+			Entry("rejects different team", "eni", "jupiter", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
+			Entry("rejects shorter token hub", "en", "hyperion", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
+			Entry("rejects longer token hub", "enigma", "hyperion", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
+			Entry("rejects longer requested hub", "eni", "hyperion", "tardis:team:read", "/organization/v1/hubs/enigma/teams/hyperion", http.StatusForbidden),
+			Entry("allows case-only differences", "ENI", "HYPERION", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusOK),
+			Entry("uses token team when path omits team", "eni", "hyperion", "tardis:team:read", "/organization/v1/hubs/eni/teams", http.StatusOK),
+			Entry("allows group within exact hub", "eni", "ignored", "tardis:group:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusOK),
+			Entry("rejects shorter group hub", "en", "ignored", "tardis:group:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
+			Entry("rejects longer group hub", "enigma", "ignored", "tardis:group:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
+			Entry("allows admin across hubs", "platform", "service", "tardis:admin:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusOK),
+			Entry("rejects unsupported scope", "eni", "hyperion", "tardis:unknown:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
+		)
+
+		It("should reject a missing token", func() {
+			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
+			resp, err := app.Test(req, -1)
+			expectStatus(resp, err, http.StatusUnauthorized)
+		})
+
+		DescribeTable("enforces mutation access type",
+			func(scope string, expectedStatus int) {
+				body := `{"email":"updated@telekom.de","members":[]}`
+				req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni/teams/hyperion", strings.NewReader(body))
+				resp, err := executeRequest(app, req, makeToken("eni", "hyperion", []string{scope}))
+				expectStatus(resp, err, expectedStatus)
+			},
+			Entry("rejects team read scope", "tardis:team:read", http.StatusForbidden),
+			Entry("allows team all scope", "tardis:team:all", http.StatusAccepted),
+		)
+
 		DescribeTable("team creation requires admin:all",
 			func(scope string) {
 				body := `{"name":"newteam","email":"new@telekom.de","members":[]}`

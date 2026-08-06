@@ -54,7 +54,6 @@ func main() {
 		opts.Log = logger
 		opts.BusinessContextOpts = append(opts.BusinessContextOpts,
 			security.WithLog(logger),
-			security.WithValueDecoder("env", server.EnvironmentDecoder(cfg.Rover.Environment)),
 		)
 		opts.CheckAccessOpts = []security.Option[*security.CheckAccessOpts]{
 			security.WithPathParamKey("hub", "team"),

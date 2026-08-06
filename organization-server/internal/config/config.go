@@ -16,7 +16,7 @@ import (
 type ServerConfig struct {
 	commonconfig.BaseConfig `mapstructure:",squash"`
 	CPAPI                   UpstreamConfig `mapstructure:"cpapi"`
-	Rover                   RoverConfig    `mapstructure:"rover"`
+	Rover                   UpstreamConfig `mapstructure:"rover"`
 }
 
 // UpstreamConfig describes an in-cluster upstream reached on its internal
@@ -30,15 +30,6 @@ type UpstreamConfig struct {
 	// CaFilePath is the CA bundle used to verify the upstream's TLS cert.
 	// Empty means system default CAs.
 	CaFilePath string `mapstructure:"caFilePath"`
-}
-
-// RoverConfig points at the rover-server upstream.
-type RoverConfig struct {
-	UpstreamConfig `mapstructure:",squash"`
-	// Environment is the fallback environment used when the token's issuer does
-	// not contain a realm name (e.g. in mock mode). In production the
-	// environment is derived from the JWT issuer URL (realm name).
-	Environment string `mapstructure:"environment"`
 }
 
 // LoadConfig loads the server configuration from an optional YAML file,
@@ -85,14 +76,11 @@ func DefaultConfig() *ServerConfig {
 			TokenFilePath: "/var/run/secrets/cpapi/token",
 			CaFilePath:    "/var/run/secrets/trust-bundle/trust-bundle.pem",
 		},
-		Rover: RoverConfig{
-			UpstreamConfig: UpstreamConfig{ // #nosec G101 -- path to projected token, not a credential
-				// Internal (k8s-authz) listener of rover-server.
-				Endpoint:      "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
-				TokenFilePath: "/var/run/secrets/rover/token",
-				CaFilePath:    "/var/run/secrets/trust-bundle/trust-bundle.pem",
-			},
-			Environment: "controlplane",
+		Rover: UpstreamConfig{ // #nosec G101 -- path to projected token, not a credential
+			// Internal (k8s-authz) listener of rover-server.
+			Endpoint:      "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
+			TokenFilePath: "/var/run/secrets/rover/token",
+			CaFilePath:    "/var/run/secrets/trust-bundle/trust-bundle.pem",
 		},
 	}
 }

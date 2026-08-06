@@ -5,13 +5,16 @@
 package server
 
 import (
-	"net/url"
-	"strings"
-
-	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
+// SecurityTemplates restrict organization resources by comparing trusted JWT
+// business context (.B) with the hub and team URL parameters (.P). For example,
+// a team token for group-a/team-a exactly matches group-a/team-a; when the team
+// parameter is absent, the token's team is used. A group token for group-a uses
+// the group-a/ prefix to match every team in that hub. Admin compares constant
+// values, so resource ownership is unrestricted; scopes and access type still
+// control whether the request may read or write.
 var SecurityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Group }}/{{ .B.Team }}",
@@ -28,40 +31,4 @@ var SecurityTemplates = map[security.ClientType]security.ComparisonTemplates{
 		UserInputTemplate: "admin",
 		MatchType:         security.MatchTypePrefix,
 	},
-}
-
-func EnvironmentDecoder(fallback string) security.ValueDecoder {
-	return func(claims map[string]any, key string) (string, problems.Problem) {
-		if environment, ok := claims[key].(string); ok && environment != "" {
-			return environment, nil
-		}
-
-		environment := ""
-		if issuer, ok := claims["iss"].(string); ok {
-			environment = environmentFromIssuer(issuer)
-		}
-		if environment == "" {
-			environment = fallback
-		}
-		if environment == "" {
-			return "", problems.Unauthorized("Unauthorized", "Unable to determine environment")
-		}
-		return environment, nil
-	}
-}
-
-func environmentFromIssuer(issuer string) string {
-	parsed, err := url.Parse(issuer)
-	if err != nil {
-		return ""
-	}
-	segments := strings.Split(strings.Trim(parsed.Path, "/"), "/")
-	if len(segments) < 2 || segments[len(segments)-2] != "realms" {
-		return ""
-	}
-	environment, found := strings.CutPrefix(segments[len(segments)-1], "team-")
-	if !found {
-		return ""
-	}
-	return environment
 }
