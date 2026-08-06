@@ -1,0 +1,17 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: file.cp.ei.telekom.de/v1
+kind: FileSubscription
+metadata:
+  labels:
+    cp.ei.telekom.de/environment: poc
+  name: sample-filesubscription
+spec:
+  fileType: sample-filetype
+  zone:
+    name: sample-zone
+    namespace: default
+  sftp:
+    publicKeys: []
