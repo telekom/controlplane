@@ -26,16 +26,16 @@ var statusUpdatesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Subsystem: "controller",
 	Name:      "status_updates_total",
 	Help:      "Total number of controller status update outcomes.",
-}, []string{"result", "cr_type"})
+}, []string{"result", "kind"})
 
 func init() {
 	metrics.Registry.MustRegister(statusUpdatesTotal)
 }
 
 func recordStatusUpdate(result statusUpdateResult, object runtime.Object, scheme *runtime.Scheme) {
-	crType := "unknown"
+	kind := "unknown"
 	if gvk, err := apiutil.GVKForObject(object, scheme); err == nil {
-		crType = strings.ToLower(gvk.Kind)
+		kind = strings.ToLower(gvk.Kind)
 	}
-	statusUpdatesTotal.WithLabelValues(string(result), crType).Inc()
+	statusUpdatesTotal.WithLabelValues(string(result), kind).Inc()
 }
