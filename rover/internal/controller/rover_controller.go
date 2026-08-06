@@ -24,6 +24,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
@@ -57,6 +58,9 @@ type RoverReconciler struct {
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticexposures,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agenticsubscriptions,verbs=get;list;watch;create;update;patch;delete
 
+// +kubebuilder:rbac:groups=file.cp.ei.telekom.de,resources=fileexposures,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=file.cp.ei.telekom.de,resources=filesubscriptions,verbs=get;list;watch;create;update;patch;delete
+
 // +kubebuilder:rbac:groups=permission.cp.ei.telekom.de,resources=permissionsets,verbs=get;list;watch;create;update;patch;delete
 
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch;create;update;patch;delete
@@ -88,6 +92,11 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		b = b.Owns(&agenticv1.AgenticExposure{}).
 			Owns(&agenticv1.AgenticSubscription{})
+	}
+
+	if cconfig.FeatureFile.IsEnabled() {
+		b = b.Owns(&filev1.FileExposure{}).
+			Owns(&filev1.FileSubscription{})
 	}
 
 	b = b.Watches(&organizationv1.Team{},

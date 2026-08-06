@@ -303,7 +303,7 @@ paths:
       description: >
         **Important:** The deletion is done asynchronously to ensure that the
         resource was actually deleted, use this or the GET resource until you
-        receive a 404 response.  
+        receive a 404 response.
 
         Delete Rover - will remove your API / Subscriptions / Exposures
       operationId: deleteRover
@@ -735,7 +735,7 @@ paths:
       description: >
         **Important:** The deletion is done asynchronously to ensure that the
         resource was actually deleted, use this or the GET resource until you
-        receive a 404 response.  
+        receive a 404 response.
 
         Delete an ApiSpecification
       operationId: deleteApiSpecification
@@ -971,7 +971,7 @@ paths:
       description: >
         **Important:** The deletion is done asynchronously to ensure that the
         resource was actually deleted, use this or the GET resource until you
-        receive a 404 response.  
+        receive a 404 response.
 
         Delete an EventSpecification
       operationId: deleteEventSpecification
@@ -1993,6 +1993,40 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventScope'
+    FileExposure:
+      type: object
+      required:
+        - type
+        - fileType
+        - publicKeys
+      properties:
+        type:
+          type: string
+        fileType:
+          type: string
+        variant:
+          type: string
+          enum:
+            - sftp
+          description: File-transfer backend. Optional; currently only "sftp" is supported.
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        publicKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKey'
+    PublicKey:
+      type: object
+      required:
+        - label
+        - key
+      properties:
+        label:
+          type: string
+          description: Human-readable identifier for the key. Must be unique per fileType.
+        key:
+          type: string
+          description: SSH public key value. Must be unique per fileType.
     Exposure:
       type: object
       discriminator:
@@ -2001,10 +2035,12 @@ components:
           api: '#/components/schemas/ApiExposure'
           event: '#/components/schemas/EventExposure'
           ai: '#/components/schemas/AiExposure'
+          file: '#/components/schemas/FileExposure'
       oneOf:
         - $ref: '#/components/schemas/ApiExposure'
         - $ref: '#/components/schemas/EventExposure'
         - $ref: '#/components/schemas/AiExposure'
+        - $ref: '#/components/schemas/FileExposure'
 
 
     ApiExposureInfo:
@@ -2034,6 +2070,15 @@ components:
               type: string
               enum:
                 - ai
+    FileExposureInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FileExposure'
+        - properties:
+            type:
+              type: string
+              enum:
+                - file
     ExposureInfo:
       discriminator:
         propertyName: type
@@ -2041,10 +2086,12 @@ components:
           api: '#/components/schemas/ApiExposureInfo'
           event: '#/components/schemas/EventExposureInfo'
           ai: '#/components/schemas/AiExposureInfo'
+          file: '#/components/schemas/FileExposureInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiExposureInfo'
         - $ref: '#/components/schemas/EventExposureInfo'
         - $ref: '#/components/schemas/AiExposureInfo'
+        - $ref: '#/components/schemas/FileExposureInfo'
 
     ApplicationInfo:
       type: object
@@ -2324,7 +2371,7 @@ components:
         - id
       allOf:
         - $ref: '#/components/schemas/RateLimit'
-        - properties: 
+        - properties:
             id:
               type: string
               description: The unique ID of this consumer (their clientId)
@@ -2727,6 +2774,21 @@ components:
           $ref: '#/components/schemas/Failover'
         security:
           $ref: '#/components/schemas/Security'
+    FileSubscription:
+      type: object
+      required:
+        - type
+        - fileType
+        - publicKeys
+      properties:
+        type:
+          type: string
+        fileType:
+          type: string
+        publicKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKey'
     Subscription:
       type: object
       discriminator:
@@ -2735,10 +2797,12 @@ components:
           api: '#/components/schemas/ApiSubscription'
           event: '#/components/schemas/EventSubscription'
           ai: '#/components/schemas/AiSubscription'
+          file: '#/components/schemas/FileSubscription'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscription'
         - $ref: '#/components/schemas/EventSubscription'
         - $ref: '#/components/schemas/AiSubscription'
+        - $ref: '#/components/schemas/FileSubscription'
 
     ApiSubscriptionInfo:
       type: object
@@ -2775,6 +2839,15 @@ components:
               type: string
               enum:
                 - ai
+    FileSubscriptionInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FileSubscription'
+        - properties:
+            type:
+              type: string
+              enum:
+                - file
     SubscriptionInfo:
       readOnly: true
       discriminator:
@@ -2783,10 +2856,12 @@ components:
           api: '#/components/schemas/ApiSubscriptionInfo'
           event: '#/components/schemas/EventSubscriptionInfo'
           ai: '#/components/schemas/AiSubscriptionInfo'
+          file: '#/components/schemas/FileSubscriptionInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscriptionInfo'
         - $ref: '#/components/schemas/EventSubscriptionInfo'
         - $ref: '#/components/schemas/AiSubscriptionInfo'
+        - $ref: '#/components/schemas/FileSubscriptionInfo'
 
     EventTrigger:
       type: object

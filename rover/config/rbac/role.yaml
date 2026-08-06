@@ -93,6 +93,20 @@ rules:
   - update
   - watch
 - apiGroups:
+  - file.cp.ei.telekom.de
+  resources:
+  - fileexposures
+  - filesubscriptions
+  - filetypes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - organization.cp.ei.telekom.de
   resources:
   - teams
@@ -118,6 +132,7 @@ rules:
   - apichangelogs
   - apispecifications
   - eventspecifications
+  - filespecifications
   - mcpspecifications
   - roadmaps
   - rovers
@@ -135,6 +150,7 @@ rules:
   - apichangelogs/finalizers
   - apispecifications/finalizers
   - eventspecifications/finalizers
+  - filespecifications/finalizers
   - mcpspecifications/finalizers
   - roadmaps/finalizers
   - rovers/finalizers
@@ -146,6 +162,7 @@ rules:
   - apichangelogs/status
   - apispecifications/status
   - eventspecifications/status
+  - filespecifications/status
   - mcpspecifications/status
   - roadmaps/status
   - rovers/status

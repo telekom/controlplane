@@ -52,5 +52,3 @@ Please review the official viper documentation for more details: https://github.
 ## Installation
 
 See [kustomize](./config/default/kustomization.yaml) for the default installation configuration. And [installation](../install/overlays/default/kustomization.yaml) for more details on how to deploy it with the entire Controlplane.
-
-
