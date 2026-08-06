@@ -33,7 +33,7 @@ var _ = Describe("Hub Error Paths", func() {
 
 			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs", strings.NewReader("not-json"))
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusBadRequest)
+			expectProblem(resp, err, http.StatusBadRequest, "Bad Request", "Invalid request body")
 		})
 
 		It("should return 502 when GQL server is down", func() {
@@ -49,7 +49,7 @@ var _ = Describe("Hub Error Paths", func() {
 			body := `{"name":"test","displayName":"Test","description":"desc"}`
 			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs", strings.NewReader(body))
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusInternalServerError)
+			expectProblem(resp, err, http.StatusInternalServerError, "Internal Server Error", "Unable to create hub")
 		})
 
 		It("should map mutation errors correctly", func() {
@@ -189,7 +189,7 @@ var _ = Describe("Hub Error Paths", func() {
 
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/nonexistent", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusNotFound)
+			expectProblem(resp, err, http.StatusNotFound, "Not Found", "Hub not found: nonexistent")
 		})
 	})
 
@@ -685,16 +685,25 @@ var _ = Describe("Team Error Paths", func() {
 			body := `{"name":"team","email":"t@test.de","members":[]}`
 			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/eni/teams", strings.NewReader(body))
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusInternalServerError)
-
-			respBody, _ := io.ReadAll(resp.Body)
-			var errResp map[string]any
-			Expect(json.Unmarshal(respBody, &errResp)).To(Succeed())
-			Expect(errResp["title"]).To(Equal("UNEXPECTED_ERROR"))
-			Expect(errResp["detail"]).To(Equal("Something weird happened"))
+			expectProblem(resp, err, http.StatusInternalServerError, "UNEXPECTED_ERROR", "Something weird happened")
 		})
 	})
 })
+
+func expectProblem(resp *http.Response, err error, status int, title, detail string) {
+	GinkgoHelper()
+	Expect(err).ToNot(HaveOccurred())
+	Expect(resp.StatusCode).To(Equal(status))
+	Expect(resp.Header.Get("Content-Type")).To(HavePrefix("application/problem+json"))
+
+	body, readErr := io.ReadAll(resp.Body)
+	Expect(readErr).ToNot(HaveOccurred())
+	var problem map[string]any
+	Expect(json.Unmarshal(body, &problem)).To(Succeed())
+	Expect(problem["status"]).To(BeNumerically("==", status))
+	Expect(problem["title"]).To(Equal(title))
+	Expect(problem["detail"]).To(Equal(detail))
+}
 
 // Ensure unused import doesn't cause issues
 var _ = Describe("Middleware integration", func() {
