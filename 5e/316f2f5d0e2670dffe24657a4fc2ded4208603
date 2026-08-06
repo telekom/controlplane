@@ -1,0 +1,56 @@
+controlplane-api/internal/service/resource_checker_test.go
+  s_608c6c33c6d198::t_fc728ebda52b7d 147,149-160
+  s_608c6c33c6d198::t_a81d93ef9341b0 19,32-37,53,66-67,128,135-146,179
+  s_608c6c33c6d198::t_db42098aa9e75f 148
+controlplane-api/cmd/main.go
+  s_7357fc4b595d27::t_96e2fdadb7420f 160-164
+  s_46e26ea1bc4e15::t_866a325cac6e45 19,85-86
+controlplane-api/cmd/config/config_test.go
+  s_46e26ea1bc4e15::t_83ac36b7979c65 50
+controlplane-api/internal/service/resource_checker.go
+  s_608c6c33c6d198::t_032ac42c75d381 17,34,40,44,73-76,78
+  s_608c6c33c6d198::t_093b4ab2d07206 70-72
+controlplane-api/config/default/kustomization.yaml
+  h_0f030e7424553c 26
+controlplane-api/config/default/deployment_patch.yaml
+  s_46e26ea1bc4e15::t_866a325cac6e45 37-53
+controlplane-api/cmd/config/config.go
+  s_46e26ea1bc4e15::t_866a325cac6e45 47-49,97-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5e316f2f5d0e2670dffe24657a4fc2ded4208603",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_46e26ea1bc4e15": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02a2e0605ffeAU5ba0PWfkKhXT",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_608c6c33c6d198": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02a35b405ffeICj6jfMEPDGijP",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_7357fc4b595d27": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02a25d0f4ffeSXN5oSM8JddfcG",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
