@@ -66,7 +66,8 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	if changed, setupErr := FirstSetup(ctx, c.Client, object); setupErr != nil {
 		return HandleError(ctx, setupErr, object, c.Recorder)
 	} else if changed {
-		return reconcile.Result{}, nil
+		// Generation predicate will block the next reconcile loop until the object is updated, so we can requeue here to avoid a no-op reconcile.
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	logger.V(1).Info("Fetched object")
