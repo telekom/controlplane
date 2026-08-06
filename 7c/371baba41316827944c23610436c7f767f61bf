@@ -1,0 +1,31 @@
+organization-server/internal/server/teams_test.go
+  s_454f9eca1afe9b::t_0835542abdcd87 281-321
+organization-server/internal/config/config.go
+  s_d75277ef615ef7::t_ae4608b8b70cc7 19,79-83
+organization-server/internal/server/security.go
+  s_454f9eca1afe9b::t_bbe42e815899d5 11-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7c371baba41316827944c23610436c7f767f61bf",
+  "prompts": {},
+  "sessions": {
+    "s_454f9eca1afe9b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_029cfc810ffeOcnCL0yC7jFzbv",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_d75277ef615ef7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_029d644b1ffeXK69WwGmltpsmj",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
