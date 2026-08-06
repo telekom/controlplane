@@ -1,0 +1,19 @@
+common/pkg/controller/metric.go
+  s_4a15a4e6ae04c4::t_3a509ad6d65bc5 29,36,38,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "35163f22ec8d598a7cad4bbf9aaf3037de33df56",
+  "prompts": {},
+  "sessions": {
+    "s_4a15a4e6ae04c4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0292179e3fferdes3A43k7yWQ9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
