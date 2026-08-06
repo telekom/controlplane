@@ -110,6 +110,11 @@ var _ = Describe("Team Webhook", func() {
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, zone)).NotTo(HaveOccurred())
+		Eventually(func(g Gomega) {
+			freshZone := &adminv1.Zone{}
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), freshZone)
+			g.Expect(errors.IsNotFound(err)).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
 	})
 
 	Context("When CreateOrUpdate a valid team", Ordered, func() {
