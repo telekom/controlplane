@@ -139,6 +139,13 @@ var _ = Describe("InstanceHandler", func() {
 		Expect(err).To(MatchError("service unavailable"))
 	})
 
+	It("does not fail delete when SFTP user does not exist in external service", func() {
+		handler, ctx, instance, mockService := newTestHandler()
+		expectDeleteSFTPUser(mockService, service.ErrNotFound)
+
+		Expect(handler.Delete(ctx, instance)).To(Succeed())
+	})
+
 	It("wraps service user deletion errors", func() {
 		handler, ctx, instance, mockService := newTestHandler()
 		expectDeleteSFTPUser(mockService, errors.New("delete failed"))
