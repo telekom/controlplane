@@ -47,6 +47,7 @@ var _ = Describe("SecurityConfig", func() {
 		It("defaults rover-server TLS to the mounted trust bundle", func() {
 			cfg := config.DefaultConfig()
 			Expect(cfg.RoverServer.BaseURL).To(Equal("https://rover-server-service.controlplane-system.svc.cluster.local:9443"))
+			Expect(cfg.RoverServer.TokenFilePath).To(Equal("/var/run/secrets/rover/token"))
 			Expect(cfg.RoverServer.CaFilePath).To(Equal("/var/run/secrets/trust-bundle/trust-bundle.pem"))
 		})
 	})

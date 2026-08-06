@@ -44,9 +44,9 @@ type FileManagerConfig struct {
 // RoverServerConfig holds the configuration for the rover-server integration
 // used for team resource pre-deletion checks.
 type RoverServerConfig struct {
-	BaseURL     string `mapstructure:"baseUrl"`
-	ScopePrefix string `mapstructure:"scopePrefix"`
-	CaFilePath  string `mapstructure:"caFilePath"`
+	BaseURL       string `mapstructure:"baseUrl"`
+	TokenFilePath string `mapstructure:"tokenFilePath"`
+	CaFilePath    string `mapstructure:"caFilePath"`
 }
 
 func DefaultConfig() *ServerConfig {
@@ -94,9 +94,9 @@ func DefaultConfig() *ServerConfig {
 			BaseURL: "file-manager.controlplane-system.svc",
 		},
 		RoverServer: RoverServerConfig{
-			BaseURL:     "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
-			ScopePrefix: "tardis",
-			CaFilePath:  "/var/run/secrets/trust-bundle/trust-bundle.pem",
+			BaseURL:       "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
+			TokenFilePath: "/var/run/secrets/rover/token",
+			CaFilePath:    "/var/run/secrets/trust-bundle/trust-bundle.pem",
 		},
 	}
 }

@@ -16,6 +16,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 )
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)
@@ -26,6 +27,12 @@ func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 
 type failingBody struct {
 	closed bool
+}
+
+type failingAccessToken struct{}
+
+func (failingAccessToken) Read() (string, error) {
+	return "", errors.New("token unavailable")
 }
 
 func (*failingBody) Read([]byte) (int, error) {
@@ -43,7 +50,7 @@ var _ = Describe("RoverResourceChecker", func() {
 		return &roverResourceChecker{
 			baseURL:     server.URL + basePath,
 			environment: "poc",
-			scopePrefix: "tardis",
+			token:       accesstoken.NewStaticAccessToken("test-token"),
 			httpClient:  server.Client(),
 		}, server
 	}
@@ -56,6 +63,8 @@ var _ = Describe("RoverResourceChecker", func() {
 			Expect(r.URL.Query().Get("group")).To(Equal("group & one"))
 			Expect(r.URL.Query().Get("team")).To(Equal("team/one"))
 			Expect(r.URL.Query().Get("limit")).To(Equal("1"))
+			Expect(r.Header.Get("Authorization")).To(Equal("Bearer test-token"))
+			Expect(r.Header.Get("X-Environment")).To(Equal("poc"))
 			w.Header().Set("Content-Type", "application/json")
 			_, err := w.Write([]byte(`{"items":[{}],"_links":{"next":"/resources?cursor=next"}}`))
 			Expect(err).NotTo(HaveOccurred())
@@ -116,11 +125,37 @@ var _ = Describe("RoverResourceChecker", func() {
 		certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 		Expect(os.WriteFile(certPath, certPEM, 0o600)).To(Succeed())
 
-		checker := NewRoverResourceChecker(server.URL, "poc", "tardis", certPath)
+		checker := NewRoverResourceChecker(server.URL, "poc", accesstoken.NewStaticAccessToken("test-token"), certPath)
 		hasResources, err := checker.HasResources(context.Background(), "group", "team")
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(hasResources).To(BeFalse())
+	})
+
+	It("returns an error when the access token cannot be read", func() {
+		checker := &roverResourceChecker{
+			baseURL:     "http://rover-server",
+			environment: "poc",
+			token:       failingAccessToken{},
+			httpClient:  http.DefaultClient,
+		}
+
+		hasResources, err := checker.HasResources(context.Background(), "group", "team")
+
+		Expect(hasResources).To(BeFalse())
+		Expect(err).To(MatchError("reading rover-server access token: token unavailable"))
+	})
+
+	It("returns an error when the access token is nil", func() {
+		checker := &roverResourceChecker{
+			baseURL:    "http://rover-server",
+			httpClient: http.DefaultClient,
+		}
+
+		hasResources, err := checker.HasResources(context.Background(), "group", "team")
+
+		Expect(hasResources).To(BeFalse())
+		Expect(err).To(MatchError("rover-server access token is not set"))
 	})
 
 	It("rejects an oversized response", func() {
@@ -141,7 +176,7 @@ var _ = Describe("RoverResourceChecker", func() {
 		checker := &roverResourceChecker{
 			baseURL:     "http://rover-server",
 			environment: "poc",
-			scopePrefix: "tardis",
+			token:       accesstoken.NewStaticAccessToken("test-token"),
 			httpClient: &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
 				return &http.Response{StatusCode: http.StatusOK, Body: body}, nil
 			})},

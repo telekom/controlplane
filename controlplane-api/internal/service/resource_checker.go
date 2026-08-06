@@ -14,7 +14,7 @@ import (
 	"time"
 
 	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
-	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 )
 
 const maxRoverResponseBytes = 1024 * 1024
@@ -31,19 +31,17 @@ type ResourceChecker interface {
 type roverResourceChecker struct {
 	baseURL     string
 	environment string
-	scopePrefix string
+	token       accesstoken.AccessToken
 	httpClient  *http.Client
 }
 
 // NewRoverResourceChecker creates a ResourceChecker that calls rover-server.
 // baseURL should be the rover-server internal URL (e.g. http://rover-server.controlplane-system.svc.cluster.local).
-// environment is the environment claim for the mock token (e.g. "poc").
-// scopePrefix is the scope prefix rover-server expects (e.g. "tardis").
-func NewRoverResourceChecker(baseURL, environment, scopePrefix, caFilePath string) ResourceChecker {
+func NewRoverResourceChecker(baseURL, environment string, token accesstoken.AccessToken, caFilePath string) ResourceChecker {
 	return &roverResourceChecker{
 		baseURL:     baseURL,
 		environment: environment,
-		scopePrefix: scopePrefix,
+		token:       token,
 		httpClient: commonclient.NewBaseHttpClient(
 			commonclient.WithCaFilepath(caFilePath),
 			commonclient.WithClientName("rover"),
@@ -69,8 +67,15 @@ func (r *roverResourceChecker) HasResources(ctx context.Context, group, team str
 		return false, fmt.Errorf("building request: %w", err)
 	}
 
-	token := mock.NewMockAccessToken(r.environment, "cpapi", "service", []string{r.scopePrefix + ":admin:all"})
+	if r.token == nil {
+		return false, fmt.Errorf("rover-server access token is not set")
+	}
+	token, err := r.token.Read()
+	if err != nil {
+		return false, fmt.Errorf("reading rover-server access token: %w", err)
+	}
 	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-Environment", r.environment)
 
 	resp, err := r.httpClient.Do(req)
 	if err != nil {

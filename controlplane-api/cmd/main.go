@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	cc "github.com/telekom/controlplane/common/pkg/client"
@@ -81,7 +82,8 @@ func main() {
 
 		var resourceChecker service.ResourceChecker
 		if cfg.RoverServer.BaseURL != "" {
-			resourceChecker = service.NewRoverResourceChecker(cfg.RoverServer.BaseURL, cfg.Kubernetes.Environment, cfg.RoverServer.ScopePrefix, cfg.RoverServer.CaFilePath)
+			token := accesstoken.NewAccessToken(cfg.RoverServer.TokenFilePath)
+			resourceChecker = service.NewRoverResourceChecker(cfg.RoverServer.BaseURL, cfg.Kubernetes.Environment, token, cfg.RoverServer.CaFilePath)
 		} else {
 			resourceChecker = service.NewNoopResourceChecker()
 		}
@@ -155,7 +157,11 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	log.Info("server started", "external", cfg.Listeners.External.Address, "internal", cfg.Listeners.Internal.Address, "tls", cfg.TLS != nil)
+	internalAddress := ""
+	if cfg.Listeners.Internal != nil {
+		internalAddress = cfg.Listeners.Internal.Address
+	}
+	log.Info("server started", "external", cfg.Listeners.External.Address, "internal", internalAddress, "tls", cfg.TLS != nil)
 
 	<-ctx.Done()
 	log.Info("shutting down server")
