@@ -5,13 +5,14 @@
 package controller
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // rejectAll is a predicate that filters out every event.
@@ -23,7 +24,6 @@ func (rejectAll) Update(event.UpdateEvent) bool   { return false }
 func (rejectAll) Generic(event.GenericEvent) bool { return false }
 
 var _ = Describe("Count predicate", func() {
-
 	// readCounter gathers the metric from the controller-runtime registry and
 	// returns the value for the given label set, or 0 if the series is absent.
 	readCounter := func(controller, role, source, verb, result string) float64 {

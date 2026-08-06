@@ -25,6 +25,7 @@ const (
 const (
 	ResultPassed   = "passed"   // admitted by this source's predicates
 	ResultFiltered = "filtered" // rejected by an inner predicate
+	unknownSource  = "unknown"
 )
 
 var eventsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -100,17 +101,17 @@ func (p *countingPredicate) admit(eval func(predicate.Predicate) bool) bool {
 // sourceOf to apiutil.GVKForObject with a scheme is the upgrade path if that happens.
 func sourceOf(obj client.Object) string {
 	if obj == nil {
-		return "unknown"
+		return unknownSource
 	}
 	t := reflect.TypeOf(obj)
 	if t == nil {
-		return "unknown"
+		return unknownSource
 	}
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
 	if t.Name() == "" {
-		return "unknown"
+		return unknownSource
 	}
 	return t.Name()
 }
