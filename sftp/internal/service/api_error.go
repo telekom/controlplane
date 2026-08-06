@@ -5,12 +5,15 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 )
+
+var ErrNotFound = errors.New("not found")
 
 func firstAPIError(apiErrors ...*ApiErrorResponse) *ApiErrorResponse {
 	for _, apiErr := range apiErrors {
@@ -32,15 +35,17 @@ func handleAPIError(operation string, statusCode int, body []byte, apiErr *ApiEr
 
 	errMessage := fmt.Sprintf("SFTP Tardis API returned %d while trying to %s: %s", statusCode, operation, message)
 	switch {
-	case statusCode == http.StatusBadRequest,
-		statusCode == http.StatusUnauthorized,
-		statusCode == http.StatusForbidden,
-		statusCode == http.StatusNotFound:
+	case statusCode == http.StatusBadRequest:
 		return ctrlerrors.BlockedErrorf("%s", errMessage)
+	case statusCode == http.StatusNotFound:
+		return fmt.Errorf("%w: %s", ErrNotFound, errMessage)
+	case statusCode == http.StatusUnauthorized,
+		statusCode == http.StatusForbidden:
+		return errors.New(errMessage)
 	case statusCode >= http.StatusInternalServerError:
-		return ctrlerrors.RetryableErrorf("%s", errMessage)
+		return errors.New(errMessage)
 	default:
-		return ctrlerrors.RetryableErrorf("%s", errMessage)
+		return errors.New(errMessage)
 	}
 }
 
