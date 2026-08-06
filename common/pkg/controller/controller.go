@@ -8,6 +8,7 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/prometheus/client_golang/prometheus"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -18,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	cc "github.com/telekom/controlplane/common/pkg/client"
@@ -28,6 +30,23 @@ import (
 	common_types "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
+
+const (
+	statusUpdateResultUpdated = "updated"
+	statusUpdateResultSkipped = "skipped"
+	statusUpdateResultError   = "error"
+)
+
+var statusUpdatesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "controlplane",
+	Subsystem: "controller",
+	Name:      "status_updates_total",
+	Help:      "Total number of controller status update outcomes.",
+}, []string{"result"})
+
+func init() {
+	metrics.Registry.MustRegister(statusUpdatesTotal)
+}
 
 type Controller[T common_types.Object] interface {
 	Reconcile(context.Context, reconcile.Request, T) (reconcile.Result, error)
@@ -146,10 +165,17 @@ func (c *ControllerImpl[T]) updateStatusIfChanged(ctx context.Context, original 
 	before, ok := statusValue(original)
 	after, hasStatus := statusValue(object)
 	if ok && hasStatus && apiequality.Semantic.DeepEqual(before, after) {
+		statusUpdatesTotal.WithLabelValues(statusUpdateResultSkipped).Inc()
 		return nil
 	}
 
-	return c.Client.Status().Update(ctx, object)
+	if err := c.Client.Status().Update(ctx, object); err != nil {
+		statusUpdatesTotal.WithLabelValues(statusUpdateResultError).Inc()
+		return err
+	}
+
+	statusUpdatesTotal.WithLabelValues(statusUpdateResultUpdated).Inc()
+	return nil
 }
 
 // statusValue returns the object's Status field. Objects without a Status field

@@ -6,10 +6,12 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -192,10 +194,12 @@ var _ = Describe("Controller", func() {
 
 			Expect(interceptedClient.Get(ctx, unchangedRequest.NamespacedName, obj)).To(Succeed())
 			statusUpdates.Store(0)
+			skippedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped"))
 
 			_, err = controller.Reconcile(ctx, unchangedRequest, &test.TestResource{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(statusUpdates.Load()).To(BeZero())
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped"))).To(Equal(skippedBefore + 1))
 		})
 
 		It("should still update status when only the generation changed", func() {
@@ -217,15 +221,43 @@ var _ = Describe("Controller", func() {
 			Expect(k8sClient.Get(ctx, bumpRequest.NamespacedName, obj)).To(Succeed())
 			obj.Spec.Properties = &runtime.RawExtension{Raw: []byte(`{"changed":true}`)}
 			Expect(k8sClient.Update(ctx, obj)).To(Succeed())
+			updatedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated"))
 
 			_, err := controller.Reconcile(ctx, bumpRequest, &test.TestResource{})
 			Expect(err).ToNot(HaveOccurred())
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated"))).To(Equal(updatedBefore + 1))
 
 			Expect(k8sClient.Get(ctx, bumpRequest.NamespacedName, obj)).To(Succeed())
 			for _, c := range obj.GetConditions() {
 				Expect(c.ObservedGeneration).To(Equal(obj.GetGeneration()),
 					"conditions must not report a stale ObservedGeneration")
 			}
+		})
+
+		It("counts failed status updates as errors", func() {
+			statusErr := errors.New("status update failed")
+			watchClient, err := client.NewWithWatch(cfg, client.Options{Scheme: scheme.Scheme})
+			Expect(err).ToNot(HaveOccurred())
+			failingClient := interceptor.NewClient(watchClient, interceptor.Funcs{
+				SubResourceUpdate: func(context.Context, client.Client, string, client.Object, ...client.SubResourceUpdateOption) error {
+					return statusErr
+				},
+			})
+			controller := NewController(nopHandler, failingClient, &recorder).(*ControllerImpl[*test.TestResource])
+			original := &test.TestResource{}
+			Expect(k8sClient.Get(ctx, req.NamespacedName, original)).To(Succeed())
+			changed := original.DeepCopy()
+			changed.SetCondition(condition.NewBlockedCondition("changed"))
+			updatedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated"))
+			skippedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped"))
+			errorBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("error"))
+
+			err = controller.updateStatusIfChanged(ctx, original, changed)
+
+			Expect(err).To(MatchError(statusErr))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated"))).To(Equal(updatedBefore))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped"))).To(Equal(skippedBefore))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("error"))).To(Equal(errorBefore + 1))
 		})
 
 		It("should handle generic errors", func() {
