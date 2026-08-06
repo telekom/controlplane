@@ -90,11 +90,11 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&notificationv1.Notification{}, builder.WithPredicates(cc.Count("notification", cc.RoleFor))).
 		Watches(&notificationv1.NotificationChannel{},
 			handler.EnqueueRequestsFromMapFunc(r.MapChannelToNotification),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("notification", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&notificationv1.NotificationTemplate{},
 			handler.EnqueueRequestsFromMapFunc(r.MapTemplateToNotification),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("notification", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Named("notification").
 		WithOptions(controller.Options{

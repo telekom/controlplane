@@ -51,7 +51,7 @@ func (r *PublisherReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&pubsubv1.Publisher{}, builder.WithPredicates(cc.Count("publisher", cc.RoleFor))).
 		Watches(&pubsubv1.EventStore{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventStoreToPublisher),
-			builder.WithPredicates(),
+			builder.WithPredicates(cc.Count("publisher", cc.RoleWatches)),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

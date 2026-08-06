@@ -62,9 +62,9 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&adminv1.Zone{}, builder.WithPredicates(cc.Count("zone", cc.RoleFor))).
 		Watches(&adminv1.Environment{},
 			handler.EnqueueRequestsFromMapFunc(r.mapEnvironmentToZone),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
-		Owns(&corev1.Namespace{}).
+		Owns(&corev1.Namespace{}, builder.WithPredicates(cc.Count("zone", cc.RoleOwns))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

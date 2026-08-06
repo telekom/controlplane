@@ -50,7 +50,7 @@ func (r *ApprovalReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&approvalv1.Approval{}, builder.WithPredicates(cc.Count("approval", cc.RoleFor))).
-		Owns(&approvalv1.ApprovalExpiration{}).
+		Owns(&approvalv1.ApprovalExpiration{}, builder.WithPredicates(cc.Count("approval", cc.RoleOwns))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
