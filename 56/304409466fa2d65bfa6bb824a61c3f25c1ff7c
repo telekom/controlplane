@@ -1,0 +1,21 @@
+docs/docs/admin-journey/features/secret-rotation.md
+  s_2cbd0eb73efccf::t_077cceb14d66e5 58
+  s_2cbd0eb73efccf::t_3ecb23903148f0 46
+  s_2cbd0eb73efccf::t_7fed1427891d06 26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "56304409466fa2d65bfa6bb824a61c3f25c1ff7c",
+  "prompts": {},
+  "sessions": {
+    "s_2cbd0eb73efccf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cc096348-c517-4ad6-9555-2e0a91388e36",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Tristan Wacht <tristan.wacht@telekom.de>"
+    }
+  }
+}
