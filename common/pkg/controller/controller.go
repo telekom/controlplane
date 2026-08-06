@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -105,7 +106,8 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		result, retryErr := HandleError(ctx, err, object, c.Recorder)
 		StampObservedGeneration(object)
 		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
-			return HandleError(ctx, statusErr, object, c.Recorder)
+			result, statusErr = HandleError(ctx, statusErr, object, c.Recorder)
+			retryErr = errors.Join(retryErr, statusErr)
 		}
 		return result, retryErr
 	}
@@ -148,7 +150,8 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 		result, retryErr := HandleError(ctx, err, object, c.Recorder)
 		StampObservedGeneration(object)
 		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
-			return HandleError(ctx, statusErr, object, c.Recorder)
+			result, statusErr = HandleError(ctx, statusErr, object, c.Recorder)
+			retryErr = errors.Join(retryErr, statusErr)
 		}
 		return result, retryErr
 	}
