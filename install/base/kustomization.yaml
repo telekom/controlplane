@@ -6,4 +6,7 @@ namespace: controlplane-system
 
 resources:
   - namespace.yaml
-  - issuer.yaml # currently this creates a self-signed issuer, in future this should be replaced by a proper issuer (e.g. ACME)
+  - bootstrap-issuer.yaml
+  - root-ca.yaml
+  - issuer.yaml
+  - trust-bundle.yaml

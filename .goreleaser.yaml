@@ -512,6 +512,13 @@ kos:
     build: rover-ctl
     main: .
     working_dir: rover-ctl
+    # This kos entry only produces the plain roverctl binary image (ko's
+    # default distroless base, no bash/jq/yq) - it contains no GPL-licensed
+    # components, so it's safe to publish to public GHCR like the other
+    # modules. The final bash/jq/yq-bundled image published to the internal
+    # Artifactory registry is built separately (see
+    # .github/workflows/release.yaml, which layers this GHCR image's binary
+    # onto the Artifactory base image via rover-ctl/Dockerfile).
     repositories:
       - ghcr.io/telekom/controlplane/rover-ctl
     labels:
