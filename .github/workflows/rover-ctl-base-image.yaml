@@ -1,0 +1,74 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Rover-CTL Base Image"
+
+# Builds and pushes rover-ctl/Dockerfile.base (bash/jq/yq bundled alongside
+# roverctl) to the internal Artifactory Docker registry.
+#
+# Invoked (via workflow_call) by:
+#   - ci.yaml: only when rover-ctl/Dockerfile.base changed in the current
+#     push/PR (see the `rover-ctl-base-image-changes` job there).
+#   - release.yaml: unconditionally, before every release.
+#
+# Also directly runnable via workflow_dispatch (Actions tab > "Rover-CTL Base
+# Image" > Run workflow) for ad-hoc rebuilds (e.g. picking up a security
+# patch with no Dockerfile.base diff).
+#
+# Published to Artifactory, not GHCR: rover-ctl-base bundles GPL-3.0-or-later
+# (bash, readline) and GPL-2.0-only (Alpine base) components.
+#
+# NOTE: the registry host/path below must be kept identical to the
+# `base_image` value on the rover-ctl entry in .goreleaser.yaml and to
+# ci.yaml's `base_image` input (goreleaser's `kos` pipe does not support
+# templating `base_image`, so .goreleaser.yaml hardcodes the same value):
+#   - vars.REGISTRY_HOST             (internal Artifactory registry host)
+#   - vars.REGISTRY_ROVERCTL_BASE_REPO (internal Artifactory repository path)
+#   - vars.ROVERCTL_BASE_IMAGE_TAG    (e.g. bash-jq-yq-v1)
+#
+# NOTE: this is a different Artifactory repo/path than the final rover-ctl
+# image published by release.yaml's goreleaser step (vars.REGISTRY_ROVERCTL_REPO)
+# - the base image and final image live in unrelated repos, not a shared
+# path prefix.
+# TODO: create these repository variables (Settings > Secrets and variables
+# > Actions > Variables) with the real Artifactory registry host/path.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    name: Build and push rover-ctl base image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Log in to Artifactory
+        # Referencing repo secrets directly (rather than declaring a
+        # `secrets:` input block) works both when this workflow is run
+        # standalone via workflow_dispatch, and when called via
+        # workflow_call by a caller using `secrets: inherit`.
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ vars.REGISTRY_HOST }}
+          username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
+          password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret
+
+      - name: Build and push rover-ctl base image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: rover-ctl
+          file: rover-ctl/Dockerfile.base
+          push: true
+          tags: |
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:latest
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}

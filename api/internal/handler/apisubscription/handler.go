@@ -78,6 +78,17 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return nil
 	}
 
+	// FindActiveAPIExposure selects by Status.Active only and may return a not-ready exposure.
+	// Fail closed here so we don't provision consume routes against a blocked exposure whose
+	// status routes may be stale from a prior reconcile.
+	if err = condition.EnsureReady(apiExposure); err != nil {
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
+			fmt.Sprintf("ApiExposure %q is not ready", apiExposure.Name)))
+		apiSub.SetCondition(condition.NewBlockedCondition(
+			fmt.Sprintf("ApiExposure %q is not ready. ApiSubscription will be automatically processed when the ApiExposure is ready", apiExposure.Name)))
+		return nil
+	}
+
 	// validate if basepathes of the api and apiexposure are really equal
 	if api.Spec.BasePath != apiSub.Spec.ApiBasePath {
 		// This should never happen as both Api and ApiExposure are looked up by the same basepath
@@ -347,7 +358,7 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiSubscription) error {
 	// All route lifecycle (proxy + failover) is managed by ApiExposure.
 	// When this subscription is deleted, ApiExposure reconciles (via watch) and
-	// CleanupStaleProxyRoutes removes routes for zones with no remaining subscribers.
+	// CleanupStaleRoutes removes routes for zones with no remaining subscribers.
 	return nil
 }
 

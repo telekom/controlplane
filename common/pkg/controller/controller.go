@@ -60,11 +60,11 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 			logger.V(1).Info("Fetched object but it was not found")
 			return reconcile.Result{}, nil
 		}
-		return HandleError(ctx, err, object, c.Recorder), nil
+		return HandleError(ctx, err, object, c.Recorder)
 	}
 
 	if changed, setupErr := FirstSetup(ctx, c.Client, object); setupErr != nil {
-		return HandleError(ctx, setupErr, object, c.Recorder), nil
+		return HandleError(ctx, setupErr, object, c.Recorder)
 	} else if changed {
 		return reconcile.Result{}, nil
 	}
@@ -78,7 +78,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		if object.SetCondition(condition.NewBlockedCondition("Environment label is missing")) {
 			StampObservedGeneration(object)
 			if updateErr := c.Client.Status().Update(ctx, object); updateErr != nil {
-				return HandleError(ctx, updateErr, object, c.Recorder), nil
+				return HandleError(ctx, updateErr, object, c.Recorder)
 			}
 		}
 		return reconcile.Result{}, nil
@@ -102,12 +102,12 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	err = c.Handler.CreateOrUpdate(ctx, object)
 	if err != nil {
 		EnsureNotReadyOnError(ctx, c.Client, object, err)
-		result := HandleError(ctx, err, object, c.Recorder)
+		result, retryErr := HandleError(ctx, err, object, c.Recorder)
 		StampObservedGeneration(object)
 		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
-			return HandleError(ctx, statusErr, object, c.Recorder), nil
+			return HandleError(ctx, statusErr, object, c.Recorder)
 		}
-		return result, nil
+		return result, retryErr
 	}
 
 	// Success
@@ -120,7 +120,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 
 	StampObservedGeneration(object)
 	if err = c.Client.Status().Update(ctx, object); err != nil {
-		return HandleError(ctx, err, object, c.Recorder), nil
+		return HandleError(ctx, err, object, c.Recorder)
 	}
 
 	requeueAfter := config.RequeueWithJitter()
@@ -145,17 +145,17 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 	err := c.Handler.Delete(ctx, object)
 	if err != nil {
 		EnsureNotReadyOnError(ctx, c.Client, object, err)
-		result := HandleError(ctx, err, object, c.Recorder)
+		result, retryErr := HandleError(ctx, err, object, c.Recorder)
 		StampObservedGeneration(object)
 		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
-			return HandleError(ctx, statusErr, object, c.Recorder), nil
+			return HandleError(ctx, statusErr, object, c.Recorder)
 		}
-		return result, nil
+		return result, retryErr
 	}
 
 	if controllerutil.RemoveFinalizer(object, config.FinalizerName) {
 		if updateErr := c.Client.Update(ctx, object); updateErr != nil {
-			return HandleError(ctx, updateErr, object, c.Recorder), nil
+			return HandleError(ctx, updateErr, object, c.Recorder)
 		}
 	}
 
@@ -211,22 +211,20 @@ func FirstSetup(ctx context.Context, c client.Client, object common_types.Object
 	return false, nil
 }
 
-func HandleError(ctx context.Context, err error, obj common_types.Object, recorder record.EventRecorder) reconcile.Result {
+func HandleError(ctx context.Context, err error, obj common_types.Object, recorder record.EventRecorder) (reconcile.Result, error) {
 	if apierrors.IsConflict(err) {
-		logger := log.FromContext(ctx).WithName("controller.error-handler")
-		logger.V(0).Info("Conflict occurred during operation", "error", err)
 		if recorder != nil {
 			recorder.Event(obj, "Warning", "Conflict", err.Error())
 		}
-		return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
+		return reconcile.Result{}, err
 	}
 
-	conditionsUpdated, result := ctrlerrors.HandleError(ctx, obj, err, recorder)
+	conditionsUpdated, result, retryErr := ctrlerrors.HandleError(ctx, obj, err, recorder)
 	if conditionsUpdated {
 		logger := log.FromContext(ctx).WithName("controller.error-handler")
 		logger.V(1).Info("Object conditions updated after error handling", "error", err)
 	}
-	return result
+	return result, retryErr
 }
 
 // EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil

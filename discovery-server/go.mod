@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	github.com/getkin/kin-openapi v0.142.0
+	github.com/getkin/kin-openapi v0.144.0
 	github.com/gkampitakis/go-snaps v0.5.23
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0

@@ -1,3 +1,31 @@
+# [0.21.0](https://github.com/telekom/controlplane/compare/v0.20.0...v0.21.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **admin:** set team API route realm to team identity realm ([#504](https://github.com/telekom/controlplane/issues/504)) ([5ab13d6](https://github.com/telekom/controlplane/commit/5ab13d64c7beae83677b5bf1438bb512516ddb9e))
+* **agentic:** add missing watches for mcpsubscription CR ([#496](https://github.com/telekom/controlplane/issues/496)) ([2a62873](https://github.com/telekom/controlplane/commit/2a628731762b25d27b52f1b1e41b4d731dec88bd))
+* **agentic:** add missing workflow ([#497](https://github.com/telekom/controlplane/issues/497)) ([7779451](https://github.com/telekom/controlplane/commit/7779451e04525c930597a5be1cb245d6a1d230ec))
+* **perf:** improve responses from notification handler ([#510](https://github.com/telekom/controlplane/issues/510)) ([bebaf75](https://github.com/telekom/controlplane/commit/bebaf752372caeb62d760bec02b384914da45f2b))
+* **projector:** back-link subscriptions to fix race-condition exposure vs subscription ([#472](https://github.com/telekom/controlplane/issues/472)) ([d7285cc](https://github.com/telekom/controlplane/commit/d7285cc1d28d8a7ac6a2139ce53221fc23ad1106))
+* **projector:** stability improvements ([#494](https://github.com/telekom/controlplane/issues/494)) ([89a306c](https://github.com/telekom/controlplane/commit/89a306cacb6464be9e2b6ae219fa1975fd6824a4))
+* resource_type is set by notification-sender ([#500](https://github.com/telekom/controlplane/issues/500)) ([3172c60](https://github.com/telekom/controlplane/commit/3172c60e01dbfa958ddd493d32338cee5ce9f19a))
+* **vulnerability:** bump versions to fix vulnerabilities ([#516](https://github.com/telekom/controlplane/issues/516)) ([d87443f](https://github.com/telekom/controlplane/commit/d87443fed56c76fcdb1c314edba1806c1f6d76ae))
+
+
+### Features
+
+* **admin:** show internal issuer url in zone links ([#499](https://github.com/telekom/controlplane/issues/499)) ([01a32ac](https://github.com/telekom/controlplane/commit/01a32ac54c2fd278fa21b68da0b9c3b229cb4ef3))
+* **agentic:** Add support for AI related exposures and subscriptions (mcp + telecontext) ([#430](https://github.com/telekom/controlplane/issues/430)) ([fab1499](https://github.com/telekom/controlplane/commit/fab1499cafc8405641b00c375aceb8e408cc2c71))
+* **controlplane-api,projector:** add requested-scopes for approval and approvalrequest ([#486](https://github.com/telekom/controlplane/issues/486)) ([f610075](https://github.com/telekom/controlplane/commit/f610075cb7bf6ad770bb79e3a0f8256ffc6b4946))
+* **cpapi, projector:** Added PermissionSet ([#492](https://github.com/telekom/controlplane/issues/492)) ([ec3211e](https://github.com/telekom/controlplane/commit/ec3211e7ceb762c6f94617c8b5c3ec9030e42a0f))
+* **event:** support proxy-zones ([#469](https://github.com/telekom/controlplane/issues/469)) ([58aa0e5](https://github.com/telekom/controlplane/commit/58aa0e5e090c1fa9bbf5387b2eeead8997be846f))
+* **oauth2:** add refresh-token  ([#490](https://github.com/telekom/controlplane/issues/490)) ([25baa34](https://github.com/telekom/controlplane/commit/25baa34f922c4cd301e519d8502a312689306524))
+* **rover:** be strict when validating any url ([#493](https://github.com/telekom/controlplane/issues/493)) ([8a86494](https://github.com/telekom/controlplane/commit/8a86494266297c1d28e38de0e87cf86d9a0f74f7))
+* **rover:** increase all size limit to 150 to not restrict any heavy-users ([#498](https://github.com/telekom/controlplane/issues/498)) ([0d37281](https://github.com/telekom/controlplane/commit/0d372817977a26453e4cd1b49612dd1302a1b7e6))
+* **servers:** enhance server-security by adding listeners for internal and external traffic ([#507](https://github.com/telekom/controlplane/issues/507)) ([a4a848f](https://github.com/telekom/controlplane/commit/a4a848f2ec44dabfa10a3a63a9d205dad1a146b9))
+* support custom-claims that are added to the lms-token; self-service aud-claims ([#491](https://github.com/telekom/controlplane/issues/491)) ([6440ef0](https://github.com/telekom/controlplane/commit/6440ef0c884905327617c35eaf71ded49e88c41b))
+
 # [0.20.0](https://github.com/telekom/controlplane/compare/v0.19.0...v0.20.0) (2026-07-14)
 
 
