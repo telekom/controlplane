@@ -1,0 +1,460 @@
+organization/internal/handler/team/handler/gateway_consumer/gateway_consumer.go
+  s_1c3df43c18012f::t_546ac58332a515 35-40,44
+admin/internal/handler/zone/handler.go
+  s_c56ff736a41bf3::t_fa7e58b111d2f8 9-10,35-44,47,56,61
+api/internal/controller/apisubscription_controller_failover_test.go
+  s_1c3df43c18012f::t_71cce188cdc494 907
+  s_1c3df43c18012f::t_87b96bb80c0398 289
+  s_1c3df43c18012f::t_d275234b572781 159,245,1308-1312
+  s_1c3df43c18012f::t_8959fdcc3021e1 81,235,239,336
+  s_1c3df43c18012f::t_5d2dadc3ebc842 69,278,736,896,1288
+  s_1c3df43c18012f::t_a790ffbfbae420 163,1299-1302
+  s_1c3df43c18012f::t_e6668be715fc77 72,281,739,899,1291
+  s_1c3df43c18012f::t_37611a3ab77989 747
+event/internal/handler/util/publish_route_test.go
+  s_1c3df43c18012f::t_22923315876b3f 210
+admin/config/samples/admin_v1_zone.yaml
+  s_2521744f5eb619::t_3f23146a09bbd3 19-26,29-60,62,64-80,82-85,88-90,92-98
+  h_0f030e7424553c 15-18,61,63
+  s_2521744f5eb619::t_0b4bcf24c0e552 27-28
+organization/internal/webhook/v1/mutator/mutate_test.go
+  s_1c3df43c18012f::t_520ba8abde6c48 26,30-36,38
+  s_1c3df43c18012f::t_47957846588791 41-43
+  s_1c3df43c18012f::t_16718fc94dd9f9 39
+admin/internal/handler/zone/suite_test.go
+  s_c56ff736a41bf3::t_b7f49cecbc9856 122,133-134,136,141-145,147-149,151-155,181
+agentic/internal/handler/agenticsubscription/handler_test.go
+  s_1c3df43c18012f::t_9425d87ffc2b58 129-134,136,142-144
+event/internal/handler/eventconfig/collect_issuers_test.go
+  s_adec41abda612f::t_c579d998bc58b3 11-13,19,27,40-60
+  s_2521744f5eb619::t_5f52b5918ed304 28-32,34-38
+  s_1c3df43c18012f::t_22923315876b3f 22-23
+  s_2521744f5eb619::t_10f51db22bafd3 17-18,20-21
+api/internal/controller/apiexposure_controller_test.go
+  s_1c3df43c18012f::t_e6668be715fc77 575,592,670,684
+  s_1c3df43c18012f::t_1f0136802fae0b 46,48-54,56-58
+  s_1c3df43c18012f::t_946236355f8bca 55
+  s_1c3df43c18012f::t_4fb4585f9b497c 42,47,63-64,68,83,86-87
+admin/internal/webhook/v1/zone_webhook_test.go
+  s_b50d56fc8dc44b::t_c58518729a21d9 432
+  s_2521744f5eb619::t_8ab4df4df1f0c6 151-158
+  s_b50d56fc8dc44b::t_37199ff428c347 502,506,509,522,528,532,535,537,550,556,560,563,565,578,585,587,592,594,599,603,614,621,631
+  s_b50d56fc8dc44b::t_40ef379bccd562 414,416,418,428-429,434,436,438,448-449,454,457,459,471,477,480,482,494
+  s_b50d56fc8dc44b::t_d353aa533cfbe7 75-76,83-86,88-89,91-98,161,165-166,181,185-187,192,196,201,205-206,221,223,227,229
+  s_b50d56fc8dc44b::t_c0e0f611072017 234-266
+  s_b50d56fc8dc44b::t_c4dc5b125a7329 345-386
+  s_b50d56fc8dc44b::t_47063b37e99895 269,271,274,276,281,283-284,289,293,299-300,307,311,317,389,392,394,406,408-409
+application/internal/handler/application/handler.go
+  s_2521744f5eb619::t_41dc42dd3aa431 132
+  s_2521744f5eb619::t_54ff5caea77776 258-259
+  s_1c3df43c18012f::t_76f571e3d440f3 390-395,398
+  s_f030a5e2d48033::t_949fc9d134f802 52-66
+  s_2521744f5eb619::t_afc46a4efdbbd4 256-257,260-261
+  s_1c3df43c18012f::t_c767b5cf854f77 439
+api/internal/handler/apiexposure/handler_test.go
+  s_1c3df43c18012f::t_baf826f837418e 193,197,208,212
+  s_1c3df43c18012f::t_7107874ad75f6d 68,70,82,87
+  s_1c3df43c18012f::t_0104e6f4106db7 90
+  s_1c3df43c18012f::t_946236355f8bca 93-98
+event/internal/handler/util/callback_route.go
+  s_adec41abda612f::t_e07da2e63ef297 61-64,89
+admin/api/v1/zone_types_test.go
+  s_2521744f5eb619::t_eafd543dbb4dbb 110,125
+  s_2521744f5eb619::t_d404f41d5d4e35 21-22
+  s_2521744f5eb619::t_019221fcb9f47c 137-151
+  s_aa18602bf016ca::t_3bcc2f8a5f2767 1-7,9-20,24-49,82-89,168
+  s_2521744f5eb619::t_fbfe339d67fabb 23,50-81
+  s_aa18602bf016ca::t_79f205b04d6d22 90-109,111-118,135-136,152-167
+  s_2521744f5eb619::t_af43f9a6acce66 8,119-124,126-134
+admin/internal/handler/zone/handlingContext.go
+  s_c56ff736a41bf3::t_fa7e58b111d2f8 10,41,48-51,56,91,93,104,114-122
+agentic/internal/handler/agenticexposure/handler_test.go
+  s_1c3df43c18012f::t_fba11a09d761a6 513,524-525,593,597
+  s_1c3df43c18012f::t_9425d87ffc2b58 87-92,94,100-102
+event/internal/handler/util/publish_route.go
+  s_adec41abda612f::t_e07da2e63ef297 49-52,78,112-115,147
+  s_1c3df43c18012f::t_55f75916f7b942 117
+event/internal/handler/eventexposure/handler.go
+  s_adec41abda612f::t_859d95efcb11e2 163-166,171-172,191-192,194,261-264,270-271,290,292-297,301-306,310
+  s_adec41abda612f::t_79d05f73ffb1ed 193
+admin/config/webhook/manifests.yaml
+  s_8fca7e8e3c1ee5::t_6bdcf08c4fda29 56-75
+rover/internal/webhook/v1/rover_webhook.go
+  s_2521744f5eb619::t_41dc42dd3aa431 121
+application/config/crd/bases/application.cp.ei.telekom.de_applications.yaml
+  s_f030a5e2d48033::t_65999bda7c6e80 328-329
+controlplane-api/ent/application/application.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 42-43,137,191-192,304-306
+  s_2521744f5eb619::t_00c5c0e37dbb52 307-308
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_1c3df43c18012f::t_efea6ee9493206 449,451,453,499,501,549,551,553,581,583,586,616,618,621,646,648,650
+  s_1c3df43c18012f::t_8300ec10fdc9e6 125-127,130
+admin/internal/handler/zone/oidc.go
+  s_c56ff736a41bf3::t_08a7aeb72392a1 1-21,24,28-41,49,51-52,54-55,58-59,71
+  s_2521744f5eb619::t_670a4da063c66e 53
+  s_c56ff736a41bf3::t_973a7d0aecf850 25-27
+  s_57145363db6ee8::t_21739b12d5ee67 22-23,42-48,50,56-57,60-70
+application/api/v1/application_types.go
+  s_f030a5e2d48033::t_6b9572113cf3e9 109-110
+projector/internal/domain/application/repository_test.go
+  s_b47a2027a85615::t_00eef4214242d5 166-182
+  s_b47a2027a85615::t_0c0c5ccb6f48e8 112,138-139,280,291-312
+admin/api/v1/zz_generated.deepcopy.go
+  s_aa18602bf016ca::t_63f465a837e04e 186,188-190,192-198,202-203,207,323-370,590-610,665-670,672-677
+  s_2521744f5eb619::t_4336d8a9221e18 585-589
+  s_2521744f5eb619::t_1ff098dd4a37a1 371
+projector/internal/domain/application/repository.go
+  s_b47a2027a85615::t_56811719c4f748 97-99,133-136
+  s_c4617acccd64e5::t_35b2c76f08ae28 137
+admin/internal/handler/zone/handler_test.go
+  s_2521744f5eb619::t_bccf0ef2498082 15,110-113,115-118,134-140,143-147
+  s_2521744f5eb619::t_4422be7b1ae12e 8,19
+  s_2521744f5eb619::t_8ab4df4df1f0c6 121-131
+  s_c56ff736a41bf3::t_e23cc61f8922bc 79-82
+  s_c56ff736a41bf3::t_b7f49cecbc9856 17-18,20,26-28,37-64,67-78,83-88,91-98,101-107
+  s_2521744f5eb619::t_41dc42dd3aa431 65-66
+projector/internal/domain/zone/translator.go
+  s_1c3df43c18012f::t_a93ac6c3d070d2 35-36,41-46
+admin/api/v1/zone_types.go
+  s_2521744f5eb619::t_0b4bcf24c0e552 306,578,584,591
+  s_aa18602bf016ca::t_efa428c94c1cee 27,88-89,93,95,102-104,162-169,180,188-189,198,203-204
+  s_aa18602bf016ca::t_29a062b6a2474e 295-296,300,302-305,307-310,312-314,333-341,350-386,400,404-405,407-409,411-414,416-417,453-467,482-487,505-520
+  s_2521744f5eb619::t_eafd543dbb4dbb 342-349
+  s_2521744f5eb619::t_4c4742ea925afe 294,297-299,387-399,401-403,406,410,415,418-423,521,575-577,596-614,620-629
+  s_c56ff736a41bf3::t_4761a7b4a432d8 91-92,125
+  s_2521744f5eb619::t_9942b9610a78e9 199
+  s_57145363db6ee8::t_21739b12d5ee67 301,311
+  s_2521744f5eb619::t_6fa8a40a31266f 424
+  s_2521744f5eb619::t_ec399ad6c7eb20 522
+  s_2521744f5eb619::t_725b4a065cd0c7 630
+api/internal/handler/util/getters.go
+  s_2521744f5eb619::t_41dc42dd3aa431 317
+  s_1c3df43c18012f::t_659b0bbd07d3bf 87,95,104,112
+application/internal/handler/application/handler_test.go
+  s_1c3df43c18012f::t_75af9f3c044aa2 63,69
+  s_f030a5e2d48033::t_58d86b6c2e1f3f 9,26,226-229,242-245
+  s_f030a5e2d48033::t_c2f819870cdab0 66,172-225,230-241,246-247
+  s_dea96f07e2f9be::t_cbc209883aaa34 248
+application/internal/handler/application/notification.go
+  s_2521744f5eb619::t_afc46a4efdbbd4 90-94
+  s_2521744f5eb619::t_54ff5caea77776 17
+agentic/internal/handler/util/route.go
+  s_1c3df43c18012f::t_b79b1c47f3278e 41,43-47,76,100-101,147,149-153,157,159,163,192,209-210
+admin/internal/webhook/v1/zone_webhook.go
+  s_b50d56fc8dc44b::t_6748f8f6793f6d 110-116,120-121,135-141,149-150,165,170,183,188,206-218,222-234,252-259,272-277,283
+  s_2521744f5eb619::t_670a4da063c66e 126,219-221,264
+  s_8fca7e8e3c1ee5::t_df075e139dbbfa 32
+admin/config/crd/bases/admin.cp.ei.telekom.de_zones.yaml
+  s_c56ff736a41bf3::t_3c7caddf35166d 179-180,359
+  s_2521744f5eb619::t_12ddf752cbee3a 245
+  s_2521744f5eb619::t_4336d8a9221e18 90-106
+  s_aa18602bf016ca::t_63f465a837e04e 107-113,115,117-143,145-178,181-190,192,194-210,212-213,215,217-218,220,222-225,228,233-236,238-244,246-250,309-358,360-391,393-397,428-430,513-579,581,662-751
+  s_57145363db6ee8::t_421bc38b48ca8c 144,392
+admin/internal/handler/zone/links.go
+  s_57145363db6ee8::t_66eba7e1c5e57c 20-21,23,49-53
+  s_57145363db6ee8::t_21739b12d5ee67 22,48,54-59
+  s_2521744f5eb619::t_eafd543dbb4dbb 31
+  s_c56ff736a41bf3::t_08a7aeb72392a1 9,11,18-19,25-30,32-47,60-69,71-72,74,76-79,81,83,85,87-89,91-92,94,96,98,100
+rover-server/test/mocks/data/zone.json
+  s_1c3df43c18012f::t_89115824a4f78e 17
+  s_1c3df43c18012f::t_8300ec10fdc9e6 11-16,18-19,21-28,44
+organization/internal/webhook/v1/mutator/mutate.go
+  s_1c3df43c18012f::t_546ac58332a515 93-101,108-109
+admin/internal/webhook/v1/zone_validator.go
+  s_8fca7e8e3c1ee5::t_b3e93403fbb6fb 172,177
+  s_8fca7e8e3c1ee5::t_ad01e4a928f92a 58-68,142,182-193,195-202
+  s_c56ff736a41bf3::t_973a7d0aecf850 72,75,91-92,125-126
+  s_2521744f5eb619::t_eafd543dbb4dbb 73-74,89,123,178
+  s_57145363db6ee8::t_21739b12d5ee67 95,138,220-229
+  s_8fca7e8e3c1ee5::t_123b85b28cc179 207
+  s_8fca7e8e3c1ee5::t_52efa996d03801 210-214
+  s_8fca7e8e3c1ee5::t_df075e139dbbfa 1-57,69-71,76-77,80-88,90,93-94,96-104,111-113,119-122,124,127-137,139-141,143-145,149,167-171,173-176,179-181,194,203-206,208-209,215-219,230-259
+  s_2521744f5eb619::t_3f1168e8b7b0b2 78,106-110,114-118,164
+  s_2521744f5eb619::t_f9abcc1b20c6a9 79,105,146-148,150-161,163,165-166
+  s_2521744f5eb619::t_e367c8c188c594 162
+rover/internal/webhook/v1/webhook_suite_test.go
+  s_1c3df43c18012f::t_ae5cc34d1be61f 201,205-216,221-222,226
+event/internal/handler/eventexposure/handler_test.go
+  s_1c3df43c18012f::t_d88d7f5399ef0a 82
+  s_1c3df43c18012f::t_22923315876b3f 192-193,604
+  s_1c3df43c18012f::t_70046fa6c24730 83-88,90,94,97,100
+controlplane-api/ent.graphql
+  s_b47a2027a85615::t_91fa0c4ac2033c 787,1129-1146
+organization/internal/webhook/v1/team_webhook_test.go
+  s_1c3df43c18012f::t_520ba8abde6c48 53,57-63,65-66,71,80,84
+  s_1c3df43c18012f::t_16718fc94dd9f9 67
+controlplane-api/ent/mutation.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 4040,4560-4608,5322,5350-5352,5400-5401,5443-5444,5531-5537,5632-5634,5682-5684,5738-5740
+event/internal/handler/util/shared_route.go
+  s_1c3df43c18012f::t_c955e8940414ce 155-156,160-161,171-172,182,196,198,201
+  s_adec41abda612f::t_e07da2e63ef297 194-195,197,199-200,202-204,258-261,289
+event/internal/handler/eventconfig/handler_test.go
+  s_1c3df43c18012f::t_d88d7f5399ef0a 115
+  s_1c3df43c18012f::t_1cbdd654321902 116-121,123
+  s_2521744f5eb619::t_ab176d42b55b46 131-132,134-137
+  s_2521744f5eb619::t_2bffa842450f78 133
+  s_2521744f5eb619::t_125bf24a7a31a7 127-130
+controlplane-api/ent/application/where.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 101-105,666-739
+  s_2521744f5eb619::t_c4c18ea4f6efbe 740
+discovery-server/test/mocks/data/zone.json
+  s_1c3df43c18012f::t_48175fe709209f 11-28
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  s_1c3df43c18012f::t_7107874ad75f6d 67-68,97
+agentic/internal/handler/agenticsubscription/handler.go
+  s_2521744f5eb619::t_41dc42dd3aa431 91
+agentic/internal/handler/agenticexposure/handler.go
+  s_2521744f5eb619::t_41dc42dd3aa431 66
+  s_1c3df43c18012f::t_9425d87ffc2b58 89-98,302-310
+admin/internal/webhook/v1/zone_validator_test.go
+  s_8fca7e8e3c1ee5::t_81bb924ec878fb 162-179,310-321
+  s_57145363db6ee8::t_cfa61d44fa576a 219,231-244
+  s_2521744f5eb619::t_3f17ba621f5313 180-203
+  s_8fca7e8e3c1ee5::t_5c29594aec1fd5 1-118,135-147,204-218,220-230,245-309,322-323
+  s_c56ff736a41bf3::t_e23cc61f8922bc 119-134
+  s_8fca7e8e3c1ee5::t_969c85ee7ba413 148-161
+application/internal/handler/application/notification_test.go
+  s_1c3df43c18012f::t_c767b5cf854f77 113,120-121
+  s_1c3df43c18012f::t_76f571e3d440f3 135,145,241,263,286
+projector/internal/domain/zone/translator_test.go
+  s_1c3df43c18012f::t_e331088e4e39c2 77
+  s_1c3df43c18012f::t_6250f612b900c9 56,94,112,134,136-138,156,158
+api/internal/handler/util_proxy_route_test.go
+  s_1c3df43c18012f::t_1f0136802fae0b 41,43-52
+  s_1c3df43c18012f::t_4fb4585f9b497c 37,42,57-58,62,75,78-79
+controlplane-api/ent/schema/application.go
+  s_b47a2027a85615::t_56811719c4f748 48-51
+admin/internal/controller/zone_controller_test.go
+  s_c56ff736a41bf3::t_c639d2d1dfa918 25,36-37,39,44-48,50-52,54-58,118,123-126,181-182
+controlplane-api/ent/migrate/schema.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 161,180,186,195
+event/internal/handler/eventconfig/handler.go
+  s_adec41abda612f::t_859d95efcb11e2 325-328,332-333,358-361,380-383,387-388,399-404,464-467,471-472,498-501,545-548,553-554,575-576,728-731,735-736,756,758-761,764-765,772-777,782
+organization/internal/controller/team_controller_test.go
+  s_1c3df43c18012f::t_520ba8abde6c48 89,93-101,103-104,109,118-120,124,589,593-601,603-604,609
+  s_1c3df43c18012f::t_16718fc94dd9f9 105,605
+admin/api/Makefile
+  s_c04124f0c5921a::t_4a79f774511fc2 1-14
+controlplane-api/ent/application_update.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 177-196,606-610,681-686,1152-1171,1594-1598,1686-1691
+controlplane-api/ent/application_create.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 146-159,448-452,535-538,859-876,1189-1209,1708-1727
+  s_2521744f5eb619::t_f699675f9a7f6d 1728
+event/internal/handler/util/sse_route.go
+  s_adec41abda612f::t_e07da2e63ef297 55-58,89,147-150,180
+event/internal/handler/util/getters.go
+  s_adec41abda612f::t_e07da2e63ef297 51-62
+projector/internal/domain/application/types.go
+  s_b47a2027a85615::t_56811719c4f748 33
+admin/internal/handler/zone/routes.go
+  s_c56ff736a41bf3::t_36b195fd9a2138 84,93,104,106,113,141,156-159
+  s_2521744f5eb619::t_670a4da063c66e 107-109
+  s_c56ff736a41bf3::t_973a7d0aecf850 152-155
+  s_2521744f5eb619::t_eafd543dbb4dbb 151
+event/internal/handler/util/voyager_route.go
+  s_1c3df43c18012f::t_55f75916f7b942 127
+  s_adec41abda612f::t_e07da2e63ef297 56-59,86,122-125,158
+projector/internal/domain/application/translator.go
+  s_b47a2027a85615::t_56811719c4f748 68-72,130
+permission/internal/controller/permissionset_controller_test.go
+  s_1c3df43c18012f::t_e394532ea52f61 165-173
+  s_1c3df43c18012f::t_fcfc36ff8f58b5 151-152,159-160,164,184,188
+projector/internal/domain/application/translator_test.go
+  s_b47a2027a85615::t_0c0c5ccb6f48e8 114-141
+controlplane-api/ent/gql_where_input.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 2094-2110,2561-2605
+discovery-server/internal/mapper/apisubscription/out.go
+  s_1c3df43c18012f::t_1a5940663e1044 186-187,189-194,196
+api/internal/handler/util/route_util.go
+  s_1c3df43c18012f::t_659b0bbd07d3bf 247-248,284,296,312-313,543-544,577
+  s_1c3df43c18012f::t_0a69adcc7c5d20 419
+controlplane-api/ent/application.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 46-47,176,264-270,443-444
+  s_2521744f5eb619::t_69ec5670586bc8 445-447
+admin/internal/handler/zone/oidc_test.go
+  s_2521744f5eb619::t_8ab4df4df1f0c6 50-62,185-192,194
+  s_57145363db6ee8::t_cfa61d44fa576a 21,66,74,135-139,155,170
+  s_c56ff736a41bf3::t_65fb1d0aa44852 92-102,104-113,115-116
+  s_57145363db6ee8::t_f6eb249ebc213d 9,13,17-20,24-29,48-49,63-65,67-73,75-79,82-88,117-134,140-154,156-169,171-180,198-205,211-212
+  s_c56ff736a41bf3::t_e23cc61f8922bc 31-35
+  s_c56ff736a41bf3::t_b7f49cecbc9856 1-8,10-12,14-16,22-23,30,36-47,89-91,103,114,196-197
+  s_57145363db6ee8::t_cbd4d80a13735e 181-184,193,195
+  s_57145363db6ee8::t_947c08548197b0 80-81,206-210
+application/internal/controller/application_controller_test.go
+  s_f030a5e2d48033::t_78ef4866d2e70b 315-318
+  s_1c3df43c18012f::t_d6d652a2a6a3c1 53,57-65,75-76,80,94-95,101,118,122-130,140-141,145,159-161
+  s_f030a5e2d48033::t_18416ca57d4bf7 99-100
+  s_f030a5e2d48033::t_51a4e72e056890 69-73,91,96-98,138,156,213,269,299
+  s_f030a5e2d48033::t_572fdb3272febd 11
+  s_2521744f5eb619::t_7b2e3f7020862c 134-137
+  s_c4617acccd64e5::t_344c10e3c1e450 291-298,300-314,319-320
+event/internal/handler/eventexposure/collect_issuers_test.go
+  s_1c3df43c18012f::t_22923315876b3f 22-23
+  s_2521744f5eb619::t_10f51db22bafd3 17-18,20-21
+  s_adec41abda612f::t_c579d998bc58b3 11-13,19,27,40-60
+  s_2521744f5eb619::t_5f52b5918ed304 28-32,34-38
+controlplane-api/ent/gql_collection.go
+  s_2521744f5eb619::t_be4af99dfd14fc 983-987
+event/internal/handler/util/callback_route_test.go
+  s_1c3df43c18012f::t_1cbdd654321902 35-40,42,46,57-62,64,68,79-84,86,90
+  s_adec41abda612f::t_c579d998bc58b3 95-100,139-145
+  s_1c3df43c18012f::t_d88d7f5399ef0a 34,56,78
+  s_adec41abda612f::t_0e65e188ee1a96 146-148
+api/internal/handler/apiexposure/handler.go
+  s_1c3df43c18012f::t_7107874ad75f6d 213-222,371,379-383,425-434
+  s_2521744f5eb619::t_41dc42dd3aa431 257,310,421
+admin/internal/handler/zone/gateway.go
+  s_c56ff736a41bf3::t_03259d5e26464d 9,24-27,30-35,37-53,59,72-75,79-82,104,106,110,128,138
+  s_c56ff736a41bf3::t_c639d2d1dfa918 21
+  s_2521744f5eb619::t_eafd543dbb4dbb 28
+  s_c56ff736a41bf3::t_973a7d0aecf850 29,36,54,71,115,129,136
+admin/internal/handler/zone/identity_routes.go
+  s_c56ff736a41bf3::t_36b195fd9a2138 68,76,87,89,95,128
+  s_2521744f5eb619::t_670a4da063c66e 90-92
+organization/internal/team_webhook_reconciler_test.go
+  s_1c3df43c18012f::t_520ba8abde6c48 97,101-107,109-110,115,124-126,130
+  s_2521744f5eb619::t_cc2851b0a390db 241-245
+  s_1c3df43c18012f::t_16718fc94dd9f9 111
+projector/internal/domain/zone/zone_integration_test.go
+  s_1c3df43c18012f::t_e331088e4e39c2 141
+  s_1c3df43c18012f::t_981742dc46d91a 92,123
+admin/internal/handler/zone/identity.go
+  s_c56ff736a41bf3::t_704e961b215546 10,32,35,47-51,55-58,117,119-122,126,131,133,145,153,156-170
+  s_2521744f5eb619::t_54ff5caea77776 64
+  s_c56ff736a41bf3::t_03259d5e26464d 9
+  s_2521744f5eb619::t_afc46a4efdbbd4 29-31,76-79,82
+discovery-server/internal/mapper/apisubscription/out_test.go
+  s_1c3df43c18012f::t_1a5940663e1044 63,67,73,77,171-173
+api/internal/handler/apisubscription/handler.go
+  s_1c3df43c18012f::t_659b0bbd07d3bf 226,229,233,238-243
+controlplane-api/ent/runtime/runtime.go
+  s_b47a2027a85615::t_91fa0c4ac2033c 213-216,218
+api/internal/controller/remoteapisubscription_controller_test.go
+  s_1c3df43c18012f::t_5d2dadc3ebc842 143
+rover-server/internal/mapper/applicationinfo/out.go
+  s_1c3df43c18012f::t_8382950d8cfcbc 138-147,149,154,156,439-447,449
+admin/internal/handler/util/naming/naming.go
+  s_c56ff736a41bf3::t_fa7e58b111d2f8 7-10,30-31,34-35,38-39
+  s_c56ff736a41bf3::t_973a7d0aecf850 42-43
+controlplane-api/internal/resolvers/ent.generated.go
+  s_2521744f5eb619::t_e0f703996bada1 55,3103-3125,11778,12513-12617,22399-22403
+controlplane-api/internal/resolvers/root_.generated.go
+  s_2521744f5eb619::t_efda53c66ffec1 219,1472-1477,4557,4899-4916,8494-8495
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b4c992da0d48c516b12681c12a28a0d90226c440",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_1c3df43c18012f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_024ff2401ffeZF32X666b73Ybp",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_2521744f5eb619": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0291064d5ffe96wDm6Hw5RtRS2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_57145363db6ee8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_023db1ba2ffeyE0BdL1vL6lYkY",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_8fca7e8e3c1ee5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02853503affepn2xYqXo79p67K",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_aa18602bf016ca": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0285c5734ffeBkhLUZ8fiJvWu8",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_adec41abda612f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_023db1bdbffenhnJF8rUE7qwFq",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b47a2027a85615": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02399b929ffe3ojiVlEw34UePW",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b50d56fc8dc44b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02842c0a9ffevug8C3hIU2Oj3H",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c04124f0c5921a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_023db1b51ffekDrgbJA8ZUt0hi",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c4617acccd64e5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_023ada540ffe0KH1VXEQvgPsCj",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c56ff736a41bf3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02838482effe1cEG7kojZTcarR",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_dea96f07e2f9be": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0239fd5ddffe6rZ55reRcIPIM2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f030a5e2d48033": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_023a1be71ffe7rmaCEp3whqUL2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
