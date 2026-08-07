@@ -10,6 +10,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -157,6 +158,125 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
+// FileExposures is the resolver for the fileExposures field.
+func (r *queryResolver) FileExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) (*ent.FileExposureConnection, error) {
+	panic(fmt.Errorf("not implemented: FileExposures - fileExposures"))
+}
+
+// FileSubscriptions is the resolver for the fileSubscriptions field.
+func (r *queryResolver) FileSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) (*ent.FileSubscriptionConnection, error) {
+	panic(fmt.Errorf("not implemented: FileSubscriptions - fileSubscriptions"))
+}
+
+// FileTypes is the resolver for the fileTypes field.
+func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) (*ent.FileTypeConnection, error) {
+	panic(fmt.Errorf("not implemented: FileTypes - fileTypes"))
+}
+
+// McpServers is the resolver for the mcpServers field.
+func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
+	panic(fmt.Errorf("not implemented: McpServers - mcpServers"))
+}
+
+// PermissionSets is the resolver for the permissionSets field.
+func (r *queryResolver) PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error) {
+	panic(fmt.Errorf("not implemented: PermissionSets - permissionSets"))
+}
+
+// Teams is the resolver for the teams field.
+func (r *queryResolver) Teams(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) (*ent.TeamConnection, error) {
+	panic(fmt.Errorf("not implemented: Teams - teams"))
+}
+
+// Zones is the resolver for the zones field.
+func (r *queryResolver) Zones(ctx context.Context) ([]*ent.Zone, error) {
+	panic(fmt.Errorf("not implemented: Zones - zones"))
+}
+
+// TeamToken is the resolver for the teamToken field.
+func (r *teamResolver) TeamToken(ctx context.Context, obj *ent.Team) (*string, error) {
+	panic(fmt.Errorf("not implemented: TeamToken - teamToken"))
+}
+
+// AgentCard returns AgentCardResolver implementation.
+func (r *Resolver) AgentCard() AgentCardResolver { return &agentCardResolver{r} }
+
+// AgenticExposure returns AgenticExposureResolver implementation.
+func (r *Resolver) AgenticExposure() AgenticExposureResolver { return &agenticExposureResolver{r} }
+
+// AgenticSubscription returns AgenticSubscriptionResolver implementation.
+func (r *Resolver) AgenticSubscription() AgenticSubscriptionResolver {
+	return &agenticSubscriptionResolver{r}
+}
+
+// Api returns ApiResolver implementation.
+func (r *Resolver) Api() ApiResolver { return &apiResolver{r} }
+
+// ApiExposure returns ApiExposureResolver implementation.
+func (r *Resolver) ApiExposure() ApiExposureResolver { return &apiExposureResolver{r} }
+
+// ApiSubscription returns ApiSubscriptionResolver implementation.
+func (r *Resolver) ApiSubscription() ApiSubscriptionResolver { return &apiSubscriptionResolver{r} }
+
+// Application returns ApplicationResolver implementation.
+func (r *Resolver) Application() ApplicationResolver { return &applicationResolver{r} }
+
+// Approval returns ApprovalResolver implementation.
+func (r *Resolver) Approval() ApprovalResolver { return &approvalResolver{r} }
+
+// ApprovalRequest returns ApprovalRequestResolver implementation.
+func (r *Resolver) ApprovalRequest() ApprovalRequestResolver { return &approvalRequestResolver{r} }
+
+// EventExposure returns EventExposureResolver implementation.
+func (r *Resolver) EventExposure() EventExposureResolver { return &eventExposureResolver{r} }
+
+// EventSubscription returns EventSubscriptionResolver implementation.
+func (r *Resolver) EventSubscription() EventSubscriptionResolver {
+	return &eventSubscriptionResolver{r}
+}
+
+// EventType returns EventTypeResolver implementation.
+func (r *Resolver) EventType() EventTypeResolver { return &eventTypeResolver{r} }
+
+// McpServer returns McpServerResolver implementation.
+func (r *Resolver) McpServer() McpServerResolver { return &mcpServerResolver{r} }
+
+// Query returns QueryResolver implementation.
+func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
+
+// Team returns TeamResolver implementation.
+func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
+
+// Zone returns ZoneResolver implementation.
+func (r *Resolver) Zone() ZoneResolver { return &zoneResolver{r} }
+
+type (
+	agentCardResolver           struct{ *Resolver }
+	agenticExposureResolver     struct{ *Resolver }
+	agenticSubscriptionResolver struct{ *Resolver }
+	apiResolver                 struct{ *Resolver }
+	apiExposureResolver         struct{ *Resolver }
+	apiSubscriptionResolver     struct{ *Resolver }
+	applicationResolver         struct{ *Resolver }
+	approvalResolver            struct{ *Resolver }
+	approvalRequestResolver     struct{ *Resolver }
+	eventExposureResolver       struct{ *Resolver }
+	eventSubscriptionResolver   struct{ *Resolver }
+	eventTypeResolver           struct{ *Resolver }
+	mcpServerResolver           struct{ *Resolver }
+	queryResolver               struct{ *Resolver }
+	teamResolver                struct{ *Resolver }
+	zoneResolver                struct{ *Resolver }
+)
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	<<<<<<< HEAD
 // McpServers is the resolver for the mcpServers field.
 func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
 	return r.client.McpServer.Query().
@@ -166,6 +286,24 @@ func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
+||||||| parent of 4506e3f4 (regenerate ent schemas)
+=======
+// FileExposures is the resolver for the fileExposures field.
+func (r *queryResolver) FileExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) (*ent.FileExposureConnection, error) {
+	panic(fmt.Errorf("not implemented: FileExposures - fileExposures"))
+}
+
+// FileSubscriptions is the resolver for the fileSubscriptions field.
+func (r *queryResolver) FileSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) (*ent.FileSubscriptionConnection, error) {
+	panic(fmt.Errorf("not implemented: FileSubscriptions - fileSubscriptions"))
+}
+
+// FileTypes is the resolver for the fileTypes field.
+func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) (*ent.FileTypeConnection, error) {
+	panic(fmt.Errorf("not implemented: FileTypes - fileTypes"))
+}
+
+>>>>>>> 4506e3f4 (regenerate ent schemas)
 // PermissionSets is the resolver for the permissionSets field.
 func (r *queryResolver) PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error) {
 	return r.client.PermissionSet.Query().
@@ -247,22 +385,4 @@ func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 
 // Zone returns ZoneResolver implementation.
 func (r *Resolver) Zone() ZoneResolver { return &zoneResolver{r} }
-
-type (
-	agentCardResolver           struct{ *Resolver }
-	agenticExposureResolver     struct{ *Resolver }
-	agenticSubscriptionResolver struct{ *Resolver }
-	apiResolver                 struct{ *Resolver }
-	apiExposureResolver         struct{ *Resolver }
-	apiSubscriptionResolver     struct{ *Resolver }
-	applicationResolver         struct{ *Resolver }
-	approvalResolver            struct{ *Resolver }
-	approvalRequestResolver     struct{ *Resolver }
-	eventExposureResolver       struct{ *Resolver }
-	eventSubscriptionResolver   struct{ *Resolver }
-	eventTypeResolver           struct{ *Resolver }
-	mcpServerResolver           struct{ *Resolver }
-	queryResolver               struct{ *Resolver }
-	teamResolver                struct{ *Resolver }
-	zoneResolver                struct{ *Resolver }
-)
+*/
