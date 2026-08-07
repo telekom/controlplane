@@ -17,9 +17,13 @@ func (r *TestResource) DeepCopy() *TestResource {
 	out := &TestResource{
 		TypeMeta:   r.TypeMeta,
 		ObjectMeta: *r.ObjectMeta.DeepCopy(),
+		Spec:       r.Spec,
+	}
+	if r.Spec.Properties != nil {
+		out.Spec.Properties = r.Spec.Properties.DeepCopy()
 	}
 	if r.Status.Conditions != nil {
-		out.Status.Conditions = append([]metav1.Condition(nil), r.Status.Conditions...)
+		out.Status.Conditions = append([]metav1.Condition{}, r.Status.Conditions...)
 	}
 	return out
 }

@@ -64,3 +64,17 @@ var _ = Describe("statusValue", func() {
 		Expect(value).ToNot(BeNil())
 	})
 })
+
+var _ = Describe("TestResource DeepCopy", func() {
+	It("preserves spec and non-nil empty status slices", func() {
+		obj := test.NewObject("deep-copy", "default")
+		obj.Spec.Properties = &runtime.RawExtension{Raw: []byte(`{"key":"value"}`)}
+		obj.Status.Conditions = []metav1.Condition{}
+
+		copy := obj.DeepCopy()
+
+		Expect(copy.Spec.Properties).To(Equal(obj.Spec.Properties))
+		Expect(copy.Spec.Properties).ToNot(BeIdenticalTo(obj.Spec.Properties))
+		Expect(copy.Status.Conditions).ToNot(BeNil())
+	})
+})
