@@ -17,6 +17,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
@@ -24,15 +26,19 @@ import (
 // ZoneQuery is the builder for querying Zone entities.
 type ZoneQuery struct {
 	config
-	ctx                   *QueryContext
-	order                 []zone.OrderOption
-	inters                []Interceptor
-	predicates            []predicate.Zone
-	withApplications      *ApplicationQuery
-	withFKs               bool
-	modifiers             []func(*sql.Selector)
-	loadTotal             []func(context.Context, []*Zone) error
-	withNamedApplications map[string]*ApplicationQuery
+	ctx                        *QueryContext
+	order                      []zone.OrderOption
+	inters                     []Interceptor
+	predicates                 []predicate.Zone
+	withApplications           *ApplicationQuery
+	withFileExposures          *FileExposureQuery
+	withFileSubscriptions      *FileSubscriptionQuery
+	withFKs                    bool
+	modifiers                  []func(*sql.Selector)
+	loadTotal                  []func(context.Context, []*Zone) error
+	withNamedApplications      map[string]*ApplicationQuery
+	withNamedFileExposures     map[string]*FileExposureQuery
+	withNamedFileSubscriptions map[string]*FileSubscriptionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -84,6 +90,50 @@ func (_q *ZoneQuery) QueryApplications() *ApplicationQuery {
 			sqlgraph.From(zone.Table, zone.FieldID, selector),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, zone.ApplicationsTable, zone.ApplicationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFileExposures chains the current query on the "file_exposures" edge.
+func (_q *ZoneQuery) QueryFileExposures() *FileExposureQuery {
+	query := (&FileExposureClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(zone.Table, zone.FieldID, selector),
+			sqlgraph.To(fileexposure.Table, fileexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, zone.FileExposuresTable, zone.FileExposuresColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFileSubscriptions chains the current query on the "file_subscriptions" edge.
+func (_q *ZoneQuery) QueryFileSubscriptions() *FileSubscriptionQuery {
+	query := (&FileSubscriptionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(zone.Table, zone.FieldID, selector),
+			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, zone.FileSubscriptionsTable, zone.FileSubscriptionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -278,12 +328,14 @@ func (_q *ZoneQuery) Clone() *ZoneQuery {
 		return nil
 	}
 	return &ZoneQuery{
-		config:           _q.config,
-		ctx:              _q.ctx.Clone(),
-		order:            append([]zone.OrderOption{}, _q.order...),
-		inters:           append([]Interceptor{}, _q.inters...),
-		predicates:       append([]predicate.Zone{}, _q.predicates...),
-		withApplications: _q.withApplications.Clone(),
+		config:                _q.config,
+		ctx:                   _q.ctx.Clone(),
+		order:                 append([]zone.OrderOption{}, _q.order...),
+		inters:                append([]Interceptor{}, _q.inters...),
+		predicates:            append([]predicate.Zone{}, _q.predicates...),
+		withApplications:      _q.withApplications.Clone(),
+		withFileExposures:     _q.withFileExposures.Clone(),
+		withFileSubscriptions: _q.withFileSubscriptions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -298,6 +350,28 @@ func (_q *ZoneQuery) WithApplications(opts ...func(*ApplicationQuery)) *ZoneQuer
 		opt(query)
 	}
 	_q.withApplications = query
+	return _q
+}
+
+// WithFileExposures tells the query-builder to eager-load the nodes that are connected to
+// the "file_exposures" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ZoneQuery) WithFileExposures(opts ...func(*FileExposureQuery)) *ZoneQuery {
+	query := (&FileExposureClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withFileExposures = query
+	return _q
+}
+
+// WithFileSubscriptions tells the query-builder to eager-load the nodes that are connected to
+// the "file_subscriptions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ZoneQuery) WithFileSubscriptions(opts ...func(*FileSubscriptionQuery)) *ZoneQuery {
+	query := (&FileSubscriptionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withFileSubscriptions = query
 	return _q
 }
 
@@ -386,8 +460,10 @@ func (_q *ZoneQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Zone, e
 		nodes       = []*Zone{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [3]bool{
 			_q.withApplications != nil,
+			_q.withFileExposures != nil,
+			_q.withFileSubscriptions != nil,
 		}
 	)
 	if withFKs {
@@ -421,10 +497,38 @@ func (_q *ZoneQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Zone, e
 			return nil, err
 		}
 	}
+	if query := _q.withFileExposures; query != nil {
+		if err := _q.loadFileExposures(ctx, query, nodes,
+			func(n *Zone) { n.Edges.FileExposures = []*FileExposure{} },
+			func(n *Zone, e *FileExposure) { n.Edges.FileExposures = append(n.Edges.FileExposures, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withFileSubscriptions; query != nil {
+		if err := _q.loadFileSubscriptions(ctx, query, nodes,
+			func(n *Zone) { n.Edges.FileSubscriptions = []*FileSubscription{} },
+			func(n *Zone, e *FileSubscription) { n.Edges.FileSubscriptions = append(n.Edges.FileSubscriptions, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedApplications {
 		if err := _q.loadApplications(ctx, query, nodes,
 			func(n *Zone) { n.appendNamedApplications(name) },
 			func(n *Zone, e *Application) { n.appendNamedApplications(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedFileExposures {
+		if err := _q.loadFileExposures(ctx, query, nodes,
+			func(n *Zone) { n.appendNamedFileExposures(name) },
+			func(n *Zone, e *FileExposure) { n.appendNamedFileExposures(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedFileSubscriptions {
+		if err := _q.loadFileSubscriptions(ctx, query, nodes,
+			func(n *Zone) { n.appendNamedFileSubscriptions(name) },
+			func(n *Zone, e *FileSubscription) { n.appendNamedFileSubscriptions(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -462,6 +566,68 @@ func (_q *ZoneQuery) loadApplications(ctx context.Context, query *ApplicationQue
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "zone_applications" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ZoneQuery) loadFileExposures(ctx context.Context, query *FileExposureQuery, nodes []*Zone, init func(*Zone), assign func(*Zone, *FileExposure)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Zone)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.FileExposure(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(zone.FileExposuresColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.zone_file_exposures
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "zone_file_exposures" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "zone_file_exposures" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ZoneQuery) loadFileSubscriptions(ctx context.Context, query *FileSubscriptionQuery, nodes []*Zone, init func(*Zone), assign func(*Zone, *FileSubscription)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Zone)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.FileSubscription(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(zone.FileSubscriptionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.zone_file_subscriptions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "zone_file_subscriptions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "zone_file_subscriptions" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -563,6 +729,34 @@ func (_q *ZoneQuery) WithNamedApplications(name string, opts ...func(*Applicatio
 		_q.withNamedApplications = make(map[string]*ApplicationQuery)
 	}
 	_q.withNamedApplications[name] = query
+	return _q
+}
+
+// WithNamedFileExposures tells the query-builder to eager-load the nodes that are connected to the "file_exposures"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ZoneQuery) WithNamedFileExposures(name string, opts ...func(*FileExposureQuery)) *ZoneQuery {
+	query := (&FileExposureClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedFileExposures == nil {
+		_q.withNamedFileExposures = make(map[string]*FileExposureQuery)
+	}
+	_q.withNamedFileExposures[name] = query
+	return _q
+}
+
+// WithNamedFileSubscriptions tells the query-builder to eager-load the nodes that are connected to the "file_subscriptions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ZoneQuery) WithNamedFileSubscriptions(name string, opts ...func(*FileSubscriptionQuery)) *ZoneQuery {
+	query := (&FileSubscriptionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedFileSubscriptions == nil {
+		_q.withNamedFileSubscriptions = make(map[string]*FileSubscriptionQuery)
+	}
+	_q.withNamedFileSubscriptions[name] = query
 	return _q
 }
 

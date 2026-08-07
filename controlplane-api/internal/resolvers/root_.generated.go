@@ -200,6 +200,7 @@ type ComplexityRoot struct {
 		Environment           func(childComplexity int) int
 		ExposedApis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
 		ExposedEvents         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
+		ExposedFileTypes      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) int
 		ExternalIds           func(childComplexity int) int
 		ID                    func(childComplexity int) int
 		IPRestrictions        func(childComplexity int) int
@@ -216,6 +217,7 @@ type ComplexityRoot struct {
 		StatusPhase           func(childComplexity int) int
 		SubscribedApis        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
 		SubscribedEvents      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
+		SubscribedFileTypes   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) int
 		Zone                  func(childComplexity int) int
 	}
 
@@ -484,6 +486,95 @@ type ComplexityRoot struct {
 		TokenRequest  func(childComplexity int) int
 	}
 
+	FileExposure struct {
+		Active         func(childComplexity int) int
+		ApprovalConfig func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		FileType       func(childComplexity int) int
+		FileTypeDef    func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		Owner          func(childComplexity int) int
+		Provider       func(childComplexity int) int
+		SftpPublicKeys func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
+		Visibility     func(childComplexity int) int
+		Zone           func(childComplexity int) int
+		ZoneName       func(childComplexity int) int
+		ZoneNamespace  func(childComplexity int) int
+	}
+
+	FileExposureConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	FileExposureEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	FileSubscription struct {
+		Approval         func(childComplexity int) int
+		ApprovalRequests func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Environment      func(childComplexity int) int
+		FileType         func(childComplexity int) int
+		FileTypeDef      func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		SftpPublicKeys   func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Zone             func(childComplexity int) int
+		ZoneName         func(childComplexity int) int
+		ZoneNamespace    func(childComplexity int) int
+	}
+
+	FileSubscriptionConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	FileSubscriptionEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	FileType struct {
+		Active                func(childComplexity int) int
+		CreatedAt             func(childComplexity int) int
+		Description           func(childComplexity int) int
+		FileType              func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		LastModifiedAt        func(childComplexity int) int
+		Namespace             func(childComplexity int) int
+		SftpInstanceName      func(childComplexity int) int
+		SftpInstanceNamespace func(childComplexity int) int
+		StatusMessage         func(childComplexity int) int
+		StatusPhase           func(childComplexity int) int
+		Variant               func(childComplexity int) int
+	}
+
+	FileTypeConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	FileTypeEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
@@ -588,6 +679,9 @@ type ComplexityRoot struct {
 		EventExposures     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
 		EventSubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
 		EventTypes         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
+		FileExposures      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) int
+		FileSubscriptions  func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) int
+		FileTypes          func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) int
 		Node               func(childComplexity int, id int) int
 		Nodes              func(childComplexity int, ids []int) int
 		PermissionSets     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) int
@@ -674,6 +768,7 @@ type ComplexityRoot struct {
 		Email          func(childComplexity int) int
 		Environment    func(childComplexity int) int
 		EventTypes     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
+		FileTypes      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) int
 		Group          func(childComplexity int) int
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
@@ -721,14 +816,16 @@ type ComplexityRoot struct {
 	}
 
 	Zone struct {
-		Applications func(childComplexity int) int
-		Environment  func(childComplexity int) int
-		GatewayURL   func(childComplexity int) int
-		ID           func(childComplexity int) int
-		IssuerURL    func(childComplexity int) int
-		Name         func(childComplexity int) int
-		TokenURL     func(childComplexity int) int
-		Visibility   func(childComplexity int) int
+		Applications      func(childComplexity int) int
+		Environment       func(childComplexity int) int
+		FileExposures     func(childComplexity int) int
+		FileSubscriptions func(childComplexity int) int
+		GatewayURL        func(childComplexity int) int
+		ID                func(childComplexity int) int
+		IssuerURL         func(childComplexity int) int
+		Name              func(childComplexity int) int
+		TokenURL          func(childComplexity int) int
+		Visibility        func(childComplexity int) int
 	}
 }
 
@@ -1335,6 +1432,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.ExposedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
+	case "Application.exposedFileTypes":
+		if e.ComplexityRoot.Application.ExposedFileTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Application_exposedFileTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.ExposedFileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileExposureOrder), args["where"].(*ent.FileExposureWhereInput)), true
 	case "Application.externalIds":
 		if e.ComplexityRoot.Application.ExternalIds == nil {
 			break
@@ -1441,6 +1549,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
+	case "Application.subscribedFileTypes":
+		if e.ComplexityRoot.Application.SubscribedFileTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Application_subscribedFileTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.SubscribedFileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileSubscriptionOrder), args["where"].(*ent.FileSubscriptionWhereInput)), true
 	case "Application.zone":
 		if e.ComplexityRoot.Application.Zone == nil {
 			break
@@ -2494,6 +2613,387 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ExternalIdentityProvider.TokenRequest(childComplexity), true
 
+	case "FileExposure.active":
+		if e.ComplexityRoot.FileExposure.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Active(childComplexity), true
+	case "FileExposure.approvalConfig":
+		if e.ComplexityRoot.FileExposure.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ApprovalConfig(childComplexity), true
+	case "FileExposure.createdAt":
+		if e.ComplexityRoot.FileExposure.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.CreatedAt(childComplexity), true
+	case "FileExposure.environment":
+		if e.ComplexityRoot.FileExposure.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Environment(childComplexity), true
+	case "FileExposure.fileType":
+		if e.ComplexityRoot.FileExposure.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.FileType(childComplexity), true
+	case "FileExposure.fileTypeDef":
+		if e.ComplexityRoot.FileExposure.FileTypeDef == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.FileTypeDef(childComplexity), true
+	case "FileExposure.id":
+		if e.ComplexityRoot.FileExposure.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ID(childComplexity), true
+	case "FileExposure.lastModifiedAt":
+		if e.ComplexityRoot.FileExposure.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.LastModifiedAt(childComplexity), true
+	case "FileExposure.namespace":
+		if e.ComplexityRoot.FileExposure.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Namespace(childComplexity), true
+	case "FileExposure.owner":
+		if e.ComplexityRoot.FileExposure.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Owner(childComplexity), true
+	case "FileExposure.provider":
+		if e.ComplexityRoot.FileExposure.Provider == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Provider(childComplexity), true
+	case "FileExposure.sftpPublicKeys":
+		if e.ComplexityRoot.FileExposure.SftpPublicKeys == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.SftpPublicKeys(childComplexity), true
+	case "FileExposure.statusMessage":
+		if e.ComplexityRoot.FileExposure.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.StatusMessage(childComplexity), true
+	case "FileExposure.statusPhase":
+		if e.ComplexityRoot.FileExposure.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.StatusPhase(childComplexity), true
+	case "FileExposure.visibility":
+		if e.ComplexityRoot.FileExposure.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Visibility(childComplexity), true
+	case "FileExposure.zone":
+		if e.ComplexityRoot.FileExposure.Zone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Zone(childComplexity), true
+	case "FileExposure.zoneName":
+		if e.ComplexityRoot.FileExposure.ZoneName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ZoneName(childComplexity), true
+	case "FileExposure.zoneNamespace":
+		if e.ComplexityRoot.FileExposure.ZoneNamespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ZoneNamespace(childComplexity), true
+
+	case "FileExposureConnection.edges":
+		if e.ComplexityRoot.FileExposureConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureConnection.Edges(childComplexity), true
+	case "FileExposureConnection.pageInfo":
+		if e.ComplexityRoot.FileExposureConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureConnection.PageInfo(childComplexity), true
+	case "FileExposureConnection.totalCount":
+		if e.ComplexityRoot.FileExposureConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureConnection.TotalCount(childComplexity), true
+
+	case "FileExposureEdge.cursor":
+		if e.ComplexityRoot.FileExposureEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureEdge.Cursor(childComplexity), true
+	case "FileExposureEdge.node":
+		if e.ComplexityRoot.FileExposureEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureEdge.Node(childComplexity), true
+
+	case "FileSubscription.approval":
+		if e.ComplexityRoot.FileSubscription.Approval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Approval(childComplexity), true
+	case "FileSubscription.approvalRequests":
+		if e.ComplexityRoot.FileSubscription.ApprovalRequests == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ApprovalRequests(childComplexity), true
+	case "FileSubscription.createdAt":
+		if e.ComplexityRoot.FileSubscription.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.CreatedAt(childComplexity), true
+	case "FileSubscription.environment":
+		if e.ComplexityRoot.FileSubscription.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Environment(childComplexity), true
+	case "FileSubscription.fileType":
+		if e.ComplexityRoot.FileSubscription.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.FileType(childComplexity), true
+	case "FileSubscription.fileTypeDef":
+		if e.ComplexityRoot.FileSubscription.FileTypeDef == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.FileTypeDef(childComplexity), true
+	case "FileSubscription.id":
+		if e.ComplexityRoot.FileSubscription.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ID(childComplexity), true
+	case "FileSubscription.lastModifiedAt":
+		if e.ComplexityRoot.FileSubscription.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.LastModifiedAt(childComplexity), true
+	case "FileSubscription.name":
+		if e.ComplexityRoot.FileSubscription.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Name(childComplexity), true
+	case "FileSubscription.namespace":
+		if e.ComplexityRoot.FileSubscription.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Namespace(childComplexity), true
+	case "FileSubscription.owner":
+		if e.ComplexityRoot.FileSubscription.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Owner(childComplexity), true
+	case "FileSubscription.sftpPublicKeys":
+		if e.ComplexityRoot.FileSubscription.SftpPublicKeys == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.SftpPublicKeys(childComplexity), true
+	case "FileSubscription.statusMessage":
+		if e.ComplexityRoot.FileSubscription.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.StatusMessage(childComplexity), true
+	case "FileSubscription.statusPhase":
+		if e.ComplexityRoot.FileSubscription.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.StatusPhase(childComplexity), true
+	case "FileSubscription.zone":
+		if e.ComplexityRoot.FileSubscription.Zone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Zone(childComplexity), true
+	case "FileSubscription.zoneName":
+		if e.ComplexityRoot.FileSubscription.ZoneName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ZoneName(childComplexity), true
+	case "FileSubscription.zoneNamespace":
+		if e.ComplexityRoot.FileSubscription.ZoneNamespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ZoneNamespace(childComplexity), true
+
+	case "FileSubscriptionConnection.edges":
+		if e.ComplexityRoot.FileSubscriptionConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionConnection.Edges(childComplexity), true
+	case "FileSubscriptionConnection.pageInfo":
+		if e.ComplexityRoot.FileSubscriptionConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionConnection.PageInfo(childComplexity), true
+	case "FileSubscriptionConnection.totalCount":
+		if e.ComplexityRoot.FileSubscriptionConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionConnection.TotalCount(childComplexity), true
+
+	case "FileSubscriptionEdge.cursor":
+		if e.ComplexityRoot.FileSubscriptionEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionEdge.Cursor(childComplexity), true
+	case "FileSubscriptionEdge.node":
+		if e.ComplexityRoot.FileSubscriptionEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionEdge.Node(childComplexity), true
+
+	case "FileType.active":
+		if e.ComplexityRoot.FileType.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.Active(childComplexity), true
+	case "FileType.createdAt":
+		if e.ComplexityRoot.FileType.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.CreatedAt(childComplexity), true
+	case "FileType.description":
+		if e.ComplexityRoot.FileType.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.Description(childComplexity), true
+	case "FileType.fileType":
+		if e.ComplexityRoot.FileType.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.FileType(childComplexity), true
+	case "FileType.id":
+		if e.ComplexityRoot.FileType.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.ID(childComplexity), true
+	case "FileType.lastModifiedAt":
+		if e.ComplexityRoot.FileType.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.LastModifiedAt(childComplexity), true
+	case "FileType.namespace":
+		if e.ComplexityRoot.FileType.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.Namespace(childComplexity), true
+	case "FileType.sftpInstanceName":
+		if e.ComplexityRoot.FileType.SftpInstanceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.SftpInstanceName(childComplexity), true
+	case "FileType.sftpInstanceNamespace":
+		if e.ComplexityRoot.FileType.SftpInstanceNamespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.SftpInstanceNamespace(childComplexity), true
+	case "FileType.statusMessage":
+		if e.ComplexityRoot.FileType.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.StatusMessage(childComplexity), true
+	case "FileType.statusPhase":
+		if e.ComplexityRoot.FileType.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.StatusPhase(childComplexity), true
+	case "FileType.variant":
+		if e.ComplexityRoot.FileType.Variant == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.Variant(childComplexity), true
+
+	case "FileTypeConnection.edges":
+		if e.ComplexityRoot.FileTypeConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeConnection.Edges(childComplexity), true
+	case "FileTypeConnection.pageInfo":
+		if e.ComplexityRoot.FileTypeConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeConnection.PageInfo(childComplexity), true
+	case "FileTypeConnection.totalCount":
+		if e.ComplexityRoot.FileTypeConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeConnection.TotalCount(childComplexity), true
+
+	case "FileTypeEdge.cursor":
+		if e.ComplexityRoot.FileTypeEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeEdge.Cursor(childComplexity), true
+	case "FileTypeEdge.node":
+		if e.ComplexityRoot.FileTypeEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeEdge.Node(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -2976,6 +3476,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
+	case "Query.fileExposures":
+		if e.ComplexityRoot.Query.FileExposures == nil {
+			break
+		}
+
+		args, err := ec.field_Query_fileExposures_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.FileExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileExposureOrder), args["where"].(*ent.FileExposureWhereInput)), true
+	case "Query.fileSubscriptions":
+		if e.ComplexityRoot.Query.FileSubscriptions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_fileSubscriptions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.FileSubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileSubscriptionOrder), args["where"].(*ent.FileSubscriptionWhereInput)), true
+	case "Query.fileTypes":
+		if e.ComplexityRoot.Query.FileTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_fileTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.FileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileTypeOrder), args["where"].(*ent.FileTypeWhereInput)), true
 
 	case "Query.node":
 		if e.ComplexityRoot.Query.Node == nil {
@@ -3290,6 +3823,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
+	case "Team.fileTypes":
+		if e.ComplexityRoot.Team.FileTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Team_fileTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Team.FileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileTypeOrder), args["where"].(*ent.FileTypeWhereInput)), true
 	case "Team.group":
 		if e.ComplexityRoot.Team.Group == nil {
 			break
@@ -3465,6 +4009,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.Environment(childComplexity), true
+	case "Zone.fileExposures":
+		if e.ComplexityRoot.Zone.FileExposures == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.FileExposures(childComplexity), true
+	case "Zone.fileSubscriptions":
+		if e.ComplexityRoot.Zone.FileSubscriptions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.FileSubscriptions(childComplexity), true
 	case "Zone.gatewayURL":
 		if e.ComplexityRoot.Zone.GatewayURL == nil {
 			break
@@ -3530,6 +4086,12 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEventSubscriptionWhereInput,
 		ec.unmarshalInputEventTypeOrder,
 		ec.unmarshalInputEventTypeWhereInput,
+		ec.unmarshalInputFileExposureOrder,
+		ec.unmarshalInputFileExposureWhereInput,
+		ec.unmarshalInputFileSubscriptionOrder,
+		ec.unmarshalInputFileSubscriptionWhereInput,
+		ec.unmarshalInputFileTypeOrder,
+		ec.unmarshalInputFileTypeWhereInput,
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
@@ -4467,6 +5029,68 @@ type Application implements Node {
     """
     where: ApiSubscriptionWhereInput
   ): ApiSubscriptionConnection!
+  exposedFileTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileExposures returned from the connection.
+    """
+    orderBy: FileExposureOrder
+
+    """
+    Filtering options for FileExposures returned from the connection.
+    """
+    where: FileExposureWhereInput
+  ): FileExposureConnection!
+  subscribedFileTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileSubscriptions returned from the connection.
+    """
+    orderBy: FileSubscriptionOrder
+
+    """
+    Filtering options for FileSubscriptions returned from the connection.
+    """
+    where: FileSubscriptionWhereInput
+  ): FileSubscriptionConnection!
   exposedEvents(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -4808,6 +5432,16 @@ input ApplicationWhereInput {
   """
   hasSubscribedApis: Boolean
   hasSubscribedApisWith: [ApiSubscriptionWhereInput!]
+  """
+  exposed_file_types edge predicates
+  """
+  hasExposedFileTypes: Boolean
+  hasExposedFileTypesWith: [FileExposureWhereInput!]
+  """
+  subscribed_file_types edge predicates
+  """
+  hasSubscribedFileTypes: Boolean
+  hasSubscribedFileTypesWith: [FileSubscriptionWhereInput!]
   """
   exposed_events edge predicates
   """
@@ -5165,6 +5799,11 @@ input ApprovalRequestWhereInput {
   hasAPISubscription: Boolean
   hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
   """
+  file_subscription edge predicates
+  """
+  hasFileSubscription: Boolean
+  hasFileSubscriptionWith: [FileSubscriptionWhereInput!]
+  """
   event_subscription edge predicates
   """
   hasEventSubscription: Boolean
@@ -5380,6 +6019,11 @@ input ApprovalWhereInput {
   """
   hasAPISubscription: Boolean
   hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
+  """
+  file_subscription edge predicates
+  """
+  hasFileSubscription: Boolean
+  hasFileSubscriptionWith: [FileSubscriptionWhereInput!]
   """
   event_subscription edge predicates
   """
@@ -6164,6 +6808,841 @@ input EventTypeWhereInput {
   hasExposures: Boolean
   hasExposuresWith: [EventExposureWhereInput!]
 }
+type FileExposure implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: FileExposureStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  fileType: String!
+  provider: String
+  visibility: FileExposureVisibility!
+  active: Boolean
+  zoneName: String!
+  zoneNamespace: String
+  sftpPublicKeys: [String!]!
+  approvalConfig: ApprovalConfig!
+  owner: Application!
+  fileTypeDef: FileType
+  zone: Zone!
+}
+"""
+A connection to a list of items.
+"""
+type FileExposureConnection {
+  """
+  A list of edges.
+  """
+  edges: [FileExposureEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type FileExposureEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: FileExposure
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for FileExposure connections
+"""
+input FileExposureOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order FileExposures.
+  """
+  field: FileExposureOrderField!
+}
+"""
+Properties by which FileExposure connections can be ordered.
+"""
+enum FileExposureOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+FileExposureStatusPhase is enum for the field status_phase
+"""
+enum FileExposureStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/fileexposure.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+FileExposureVisibility is enum for the field visibility
+"""
+enum FileExposureVisibility @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/fileexposure.Visibility") {
+  WORLD
+  ZONE
+  ENTERPRISE
+}
+"""
+FileExposureWhereInput is used for filtering FileExposure objects.
+Input was generated by ent.
+"""
+input FileExposureWhereInput {
+  not: FileExposureWhereInput
+  and: [FileExposureWhereInput!]
+  or: [FileExposureWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: FileExposureStatusPhase
+  statusPhaseNEQ: FileExposureStatusPhase
+  statusPhaseIn: [FileExposureStatusPhase!]
+  statusPhaseNotIn: [FileExposureStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  file_type field predicates
+  """
+  fileType: String
+  fileTypeNEQ: String
+  fileTypeIn: [String!]
+  fileTypeNotIn: [String!]
+  fileTypeGT: String
+  fileTypeGTE: String
+  fileTypeLT: String
+  fileTypeLTE: String
+  fileTypeContains: String
+  fileTypeHasPrefix: String
+  fileTypeHasSuffix: String
+  fileTypeEqualFold: String
+  fileTypeContainsFold: String
+  """
+  provider field predicates
+  """
+  provider: String
+  providerNEQ: String
+  providerIn: [String!]
+  providerNotIn: [String!]
+  providerGT: String
+  providerGTE: String
+  providerLT: String
+  providerLTE: String
+  providerContains: String
+  providerHasPrefix: String
+  providerHasSuffix: String
+  providerIsNil: Boolean
+  providerNotNil: Boolean
+  providerEqualFold: String
+  providerContainsFold: String
+  """
+  visibility field predicates
+  """
+  visibility: FileExposureVisibility
+  visibilityNEQ: FileExposureVisibility
+  visibilityIn: [FileExposureVisibility!]
+  visibilityNotIn: [FileExposureVisibility!]
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  activeIsNil: Boolean
+  activeNotNil: Boolean
+  """
+  zone_name field predicates
+  """
+  zoneName: String
+  zoneNameNEQ: String
+  zoneNameIn: [String!]
+  zoneNameNotIn: [String!]
+  zoneNameGT: String
+  zoneNameGTE: String
+  zoneNameLT: String
+  zoneNameLTE: String
+  zoneNameContains: String
+  zoneNameHasPrefix: String
+  zoneNameHasSuffix: String
+  zoneNameEqualFold: String
+  zoneNameContainsFold: String
+  """
+  zone_namespace field predicates
+  """
+  zoneNamespace: String
+  zoneNamespaceNEQ: String
+  zoneNamespaceIn: [String!]
+  zoneNamespaceNotIn: [String!]
+  zoneNamespaceGT: String
+  zoneNamespaceGTE: String
+  zoneNamespaceLT: String
+  zoneNamespaceLTE: String
+  zoneNamespaceContains: String
+  zoneNamespaceHasPrefix: String
+  zoneNamespaceHasSuffix: String
+  zoneNamespaceIsNil: Boolean
+  zoneNamespaceNotNil: Boolean
+  zoneNamespaceEqualFold: String
+  zoneNamespaceContainsFold: String
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  file_type_def edge predicates
+  """
+  hasFileTypeDef: Boolean
+  hasFileTypeDefWith: [FileTypeWhereInput!]
+  """
+  zone edge predicates
+  """
+  hasZone: Boolean
+  hasZoneWith: [ZoneWhereInput!]
+  """
+  subscriptions edge predicates
+  """
+  hasSubscriptions: Boolean
+  hasSubscriptionsWith: [FileSubscriptionWhereInput!]
+}
+type FileSubscription implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: FileSubscriptionStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  name: String!
+  fileType: String!
+  zoneName: String!
+  zoneNamespace: String
+  sftpPublicKeys: [String!]!
+  owner: Application!
+  fileTypeDef: FileType
+  zone: Zone!
+  approval: Approval
+  approvalRequests: [ApprovalRequest!]
+}
+"""
+A connection to a list of items.
+"""
+type FileSubscriptionConnection {
+  """
+  A list of edges.
+  """
+  edges: [FileSubscriptionEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type FileSubscriptionEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: FileSubscription
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for FileSubscription connections
+"""
+input FileSubscriptionOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order FileSubscriptions.
+  """
+  field: FileSubscriptionOrderField!
+}
+"""
+Properties by which FileSubscription connections can be ordered.
+"""
+enum FileSubscriptionOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+FileSubscriptionStatusPhase is enum for the field status_phase
+"""
+enum FileSubscriptionStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/filesubscription.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+FileSubscriptionWhereInput is used for filtering FileSubscription objects.
+Input was generated by ent.
+"""
+input FileSubscriptionWhereInput {
+  not: FileSubscriptionWhereInput
+  and: [FileSubscriptionWhereInput!]
+  or: [FileSubscriptionWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: FileSubscriptionStatusPhase
+  statusPhaseNEQ: FileSubscriptionStatusPhase
+  statusPhaseIn: [FileSubscriptionStatusPhase!]
+  statusPhaseNotIn: [FileSubscriptionStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  """
+  file_type field predicates
+  """
+  fileType: String
+  fileTypeNEQ: String
+  fileTypeIn: [String!]
+  fileTypeNotIn: [String!]
+  fileTypeGT: String
+  fileTypeGTE: String
+  fileTypeLT: String
+  fileTypeLTE: String
+  fileTypeContains: String
+  fileTypeHasPrefix: String
+  fileTypeHasSuffix: String
+  fileTypeEqualFold: String
+  fileTypeContainsFold: String
+  """
+  zone_name field predicates
+  """
+  zoneName: String
+  zoneNameNEQ: String
+  zoneNameIn: [String!]
+  zoneNameNotIn: [String!]
+  zoneNameGT: String
+  zoneNameGTE: String
+  zoneNameLT: String
+  zoneNameLTE: String
+  zoneNameContains: String
+  zoneNameHasPrefix: String
+  zoneNameHasSuffix: String
+  zoneNameEqualFold: String
+  zoneNameContainsFold: String
+  """
+  zone_namespace field predicates
+  """
+  zoneNamespace: String
+  zoneNamespaceNEQ: String
+  zoneNamespaceIn: [String!]
+  zoneNamespaceNotIn: [String!]
+  zoneNamespaceGT: String
+  zoneNamespaceGTE: String
+  zoneNamespaceLT: String
+  zoneNamespaceLTE: String
+  zoneNamespaceContains: String
+  zoneNamespaceHasPrefix: String
+  zoneNamespaceHasSuffix: String
+  zoneNamespaceIsNil: Boolean
+  zoneNamespaceNotNil: Boolean
+  zoneNamespaceEqualFold: String
+  zoneNamespaceContainsFold: String
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  file_type_def edge predicates
+  """
+  hasFileTypeDef: Boolean
+  hasFileTypeDefWith: [FileTypeWhereInput!]
+  """
+  target edge predicates
+  """
+  hasTarget: Boolean
+  hasTargetWith: [FileExposureWhereInput!]
+  """
+  zone edge predicates
+  """
+  hasZone: Boolean
+  hasZoneWith: [ZoneWhereInput!]
+  """
+  approval edge predicates
+  """
+  hasApproval: Boolean
+  hasApprovalWith: [ApprovalWhereInput!]
+  """
+  approval_requests edge predicates
+  """
+  hasApprovalRequests: Boolean
+  hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
+}
+type FileType implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: FileTypeStatusPhase
+  statusMessage: String
+  namespace: String!
+  fileType: String!
+  description: String
+  variant: String
+  active: Boolean!
+  sftpInstanceName: String
+  sftpInstanceNamespace: String
+}
+"""
+A connection to a list of items.
+"""
+type FileTypeConnection {
+  """
+  A list of edges.
+  """
+  edges: [FileTypeEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type FileTypeEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: FileType
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for FileType connections
+"""
+input FileTypeOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order FileTypes.
+  """
+  field: FileTypeOrderField!
+}
+"""
+Properties by which FileType connections can be ordered.
+"""
+enum FileTypeOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+FileTypeStatusPhase is enum for the field status_phase
+"""
+enum FileTypeStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/filetype.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+FileTypeWhereInput is used for filtering FileType objects.
+Input was generated by ent.
+"""
+input FileTypeWhereInput {
+  not: FileTypeWhereInput
+  and: [FileTypeWhereInput!]
+  or: [FileTypeWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: FileTypeStatusPhase
+  statusPhaseNEQ: FileTypeStatusPhase
+  statusPhaseIn: [FileTypeStatusPhase!]
+  statusPhaseNotIn: [FileTypeStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  file_type field predicates
+  """
+  fileType: String
+  fileTypeNEQ: String
+  fileTypeIn: [String!]
+  fileTypeNotIn: [String!]
+  fileTypeGT: String
+  fileTypeGTE: String
+  fileTypeLT: String
+  fileTypeLTE: String
+  fileTypeContains: String
+  fileTypeHasPrefix: String
+  fileTypeHasSuffix: String
+  fileTypeEqualFold: String
+  fileTypeContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
+  """
+  variant field predicates
+  """
+  variant: String
+  variantNEQ: String
+  variantIn: [String!]
+  variantNotIn: [String!]
+  variantGT: String
+  variantGTE: String
+  variantLT: String
+  variantLTE: String
+  variantContains: String
+  variantHasPrefix: String
+  variantHasSuffix: String
+  variantIsNil: Boolean
+  variantNotNil: Boolean
+  variantEqualFold: String
+  variantContainsFold: String
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  """
+  sftp_instance_name field predicates
+  """
+  sftpInstanceName: String
+  sftpInstanceNameNEQ: String
+  sftpInstanceNameIn: [String!]
+  sftpInstanceNameNotIn: [String!]
+  sftpInstanceNameGT: String
+  sftpInstanceNameGTE: String
+  sftpInstanceNameLT: String
+  sftpInstanceNameLTE: String
+  sftpInstanceNameContains: String
+  sftpInstanceNameHasPrefix: String
+  sftpInstanceNameHasSuffix: String
+  sftpInstanceNameIsNil: Boolean
+  sftpInstanceNameNotNil: Boolean
+  sftpInstanceNameEqualFold: String
+  sftpInstanceNameContainsFold: String
+  """
+  sftp_instance_namespace field predicates
+  """
+  sftpInstanceNamespace: String
+  sftpInstanceNamespaceNEQ: String
+  sftpInstanceNamespaceIn: [String!]
+  sftpInstanceNamespaceNotIn: [String!]
+  sftpInstanceNamespaceGT: String
+  sftpInstanceNamespaceGTE: String
+  sftpInstanceNamespaceLT: String
+  sftpInstanceNamespaceLTE: String
+  sftpInstanceNamespaceContains: String
+  sftpInstanceNamespaceHasPrefix: String
+  sftpInstanceNamespaceHasSuffix: String
+  sftpInstanceNamespaceIsNil: Boolean
+  sftpInstanceNamespaceNotNil: Boolean
+  sftpInstanceNamespaceEqualFold: String
+  sftpInstanceNamespaceContainsFold: String
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [TeamWhereInput!]
+  """
+  exposures edge predicates
+  """
+  hasExposures: Boolean
+  hasExposuresWith: [FileExposureWhereInput!]
+  """
+  subscriptions edge predicates
+  """
+  hasSubscriptions: Boolean
+  hasSubscriptionsWith: [FileSubscriptionWhereInput!]
+}
 type Group implements Node {
   id: ID!
   environment: String
@@ -6882,6 +8361,99 @@ type Query {
     """
     where: EventTypeWhereInput
   ): EventTypeConnection!
+  fileExposures(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileExposures returned from the connection.
+    """
+    orderBy: FileExposureOrder
+
+    """
+    Filtering options for FileExposures returned from the connection.
+    """
+    where: FileExposureWhereInput
+  ): FileExposureConnection!
+  fileSubscriptions(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileSubscriptions returned from the connection.
+    """
+    orderBy: FileSubscriptionOrder
+
+    """
+    Filtering options for FileSubscriptions returned from the connection.
+    """
+    where: FileSubscriptionWhereInput
+  ): FileSubscriptionConnection!
+  fileTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileTypes returned from the connection.
+    """
+    orderBy: FileTypeOrder
+
+    """
+    Filtering options for FileTypes returned from the connection.
+    """
+    where: FileTypeWhereInput
+  ): FileTypeConnection!
   permissionSets(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -7024,6 +8596,37 @@ type Team implements Node {
     """
     where: ApiWhereInput
   ): ApiConnection!
+  fileTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileTypes returned from the connection.
+    """
+    orderBy: FileTypeOrder
+
+    """
+    Filtering options for FileTypes returned from the connection.
+    """
+    where: FileTypeWhereInput
+  ): FileTypeConnection!
   eventTypes(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -7339,6 +8942,11 @@ input TeamWhereInput {
   hasApis: Boolean
   hasApisWith: [ApiWhereInput!]
   """
+  file_types edge predicates
+  """
+  hasFileTypes: Boolean
+  hasFileTypesWith: [FileTypeWhereInput!]
+  """
   event_types edge predicates
   """
   hasEventTypes: Boolean
@@ -7356,6 +8964,8 @@ type Zone implements Node {
   issuerURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
+  fileExposures: [FileExposure!]
+  fileSubscriptions: [FileSubscription!]
 }
 """
 ZoneVisibility is enum for the field visibility
@@ -7465,6 +9075,16 @@ input ZoneWhereInput {
   """
   hasApplications: Boolean
   hasApplicationsWith: [ApplicationWhereInput!]
+  """
+  file_exposures edge predicates
+  """
+  hasFileExposures: Boolean
+  hasFileExposuresWith: [FileExposureWhereInput!]
+  """
+  file_subscriptions edge predicates
+  """
+  hasFileSubscriptions: Boolean
+  hasFileSubscriptionsWith: [FileSubscriptionWhereInput!]
 }
 `, BuiltIn: false},
 	{Name: "../../mutation.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH
@@ -8273,6 +9893,10 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_exposedApis(ctx, field)
 	case "subscribedApis":
 		return ec.fieldContext_Application_subscribedApis(ctx, field)
+	case "exposedFileTypes":
+		return ec.fieldContext_Application_exposedFileTypes(ctx, field)
+	case "subscribedFileTypes":
+		return ec.fieldContext_Application_subscribedFileTypes(ctx, field)
 	case "exposedEvents":
 		return ec.fieldContext_Application_exposedEvents(ctx, field)
 	case "subscribedEvents":
@@ -8815,6 +10439,184 @@ func (ec *executionContext) childFields_ExternalIdentityProvider(ctx context.Con
 	return nil, fmt.Errorf("no field named %q was found under type ExternalIdentityProvider", field.Name)
 }
 
+func (ec *executionContext) childFields_FileExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileExposure_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_FileExposure_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_FileExposure_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_FileExposure_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_FileExposure_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_FileExposure_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_FileExposure_namespace(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileExposure_fileType(ctx, field)
+	case "provider":
+		return ec.fieldContext_FileExposure_provider(ctx, field)
+	case "visibility":
+		return ec.fieldContext_FileExposure_visibility(ctx, field)
+	case "active":
+		return ec.fieldContext_FileExposure_active(ctx, field)
+	case "zoneName":
+		return ec.fieldContext_FileExposure_zoneName(ctx, field)
+	case "zoneNamespace":
+		return ec.fieldContext_FileExposure_zoneNamespace(ctx, field)
+	case "sftpPublicKeys":
+		return ec.fieldContext_FileExposure_sftpPublicKeys(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_FileExposure_approvalConfig(ctx, field)
+	case "owner":
+		return ec.fieldContext_FileExposure_owner(ctx, field)
+	case "fileTypeDef":
+		return ec.fieldContext_FileExposure_fileTypeDef(ctx, field)
+	case "zone":
+		return ec.fieldContext_FileExposure_zone(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileExposure", field.Name)
+}
+
+func (ec *executionContext) childFields_FileExposureConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_FileExposureConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_FileExposureConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_FileExposureConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileExposureConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_FileExposureEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_FileExposureEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_FileExposureEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileExposureEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileSubscription_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_FileSubscription_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_FileSubscription_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_FileSubscription_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_FileSubscription_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_FileSubscription_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_FileSubscription_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_FileSubscription_name(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileSubscription_fileType(ctx, field)
+	case "zoneName":
+		return ec.fieldContext_FileSubscription_zoneName(ctx, field)
+	case "zoneNamespace":
+		return ec.fieldContext_FileSubscription_zoneNamespace(ctx, field)
+	case "sftpPublicKeys":
+		return ec.fieldContext_FileSubscription_sftpPublicKeys(ctx, field)
+	case "owner":
+		return ec.fieldContext_FileSubscription_owner(ctx, field)
+	case "fileTypeDef":
+		return ec.fieldContext_FileSubscription_fileTypeDef(ctx, field)
+	case "zone":
+		return ec.fieldContext_FileSubscription_zone(ctx, field)
+	case "approval":
+		return ec.fieldContext_FileSubscription_approval(ctx, field)
+	case "approvalRequests":
+		return ec.fieldContext_FileSubscription_approvalRequests(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSubscription", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSubscriptionConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_FileSubscriptionConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_FileSubscriptionConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_FileSubscriptionConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSubscriptionConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSubscriptionEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_FileSubscriptionEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_FileSubscriptionEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSubscriptionEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_FileType(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileType_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_FileType_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_FileType_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_FileType_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_FileType_statusMessage(ctx, field)
+	case "namespace":
+		return ec.fieldContext_FileType_namespace(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileType_fileType(ctx, field)
+	case "description":
+		return ec.fieldContext_FileType_description(ctx, field)
+	case "variant":
+		return ec.fieldContext_FileType_variant(ctx, field)
+	case "active":
+		return ec.fieldContext_FileType_active(ctx, field)
+	case "sftpInstanceName":
+		return ec.fieldContext_FileType_sftpInstanceName(ctx, field)
+	case "sftpInstanceNamespace":
+		return ec.fieldContext_FileType_sftpInstanceNamespace(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileType", field.Name)
+}
+
+func (ec *executionContext) childFields_FileTypeConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_FileTypeConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_FileTypeConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_FileTypeConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileTypeConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_FileTypeEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_FileTypeEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_FileTypeEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileTypeEdge", field.Name)
+}
+
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -9153,6 +10955,8 @@ func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.
 		return ec.fieldContext_Team_applications(ctx, field)
 	case "apis":
 		return ec.fieldContext_Team_apis(ctx, field)
+	case "fileTypes":
+		return ec.fieldContext_Team_fileTypes(ctx, field)
 	case "eventTypes":
 		return ec.fieldContext_Team_eventTypes(ctx, field)
 	}
@@ -9245,6 +11049,10 @@ func (ec *executionContext) childFields_Zone(ctx context.Context, field graphql.
 		return ec.fieldContext_Zone_visibility(ctx, field)
 	case "applications":
 		return ec.fieldContext_Zone_applications(ctx, field)
+	case "fileExposures":
+		return ec.fieldContext_Zone_fileExposures(ctx, field)
+	case "fileSubscriptions":
+		return ec.fieldContext_Zone_fileSubscriptions(ctx, field)
 	case "tokenURL":
 		return ec.fieldContext_Zone_tokenURL(ctx, field)
 	}

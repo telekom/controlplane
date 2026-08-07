@@ -32,6 +32,10 @@ const (
 	FieldVisibility = "visibility"
 	// EdgeApplications holds the string denoting the applications edge name in mutations.
 	EdgeApplications = "applications"
+	// EdgeFileExposures holds the string denoting the file_exposures edge name in mutations.
+	EdgeFileExposures = "file_exposures"
+	// EdgeFileSubscriptions holds the string denoting the file_subscriptions edge name in mutations.
+	EdgeFileSubscriptions = "file_subscriptions"
 	// Table holds the table name of the zone in the database.
 	Table = "zones"
 	// ApplicationsTable is the table that holds the applications relation/edge.
@@ -41,6 +45,20 @@ const (
 	ApplicationsInverseTable = "applications"
 	// ApplicationsColumn is the table column denoting the applications relation/edge.
 	ApplicationsColumn = "zone_applications"
+	// FileExposuresTable is the table that holds the file_exposures relation/edge.
+	FileExposuresTable = "file_exposures"
+	// FileExposuresInverseTable is the table name for the FileExposure entity.
+	// It exists in this package in order to avoid circular dependency with the "fileexposure" package.
+	FileExposuresInverseTable = "file_exposures"
+	// FileExposuresColumn is the table column denoting the file_exposures relation/edge.
+	FileExposuresColumn = "zone_file_exposures"
+	// FileSubscriptionsTable is the table that holds the file_subscriptions relation/edge.
+	FileSubscriptionsTable = "file_subscriptions"
+	// FileSubscriptionsInverseTable is the table name for the FileSubscription entity.
+	// It exists in this package in order to avoid circular dependency with the "filesubscription" package.
+	FileSubscriptionsInverseTable = "file_subscriptions"
+	// FileSubscriptionsColumn is the table column denoting the file_subscriptions relation/edge.
+	FileSubscriptionsColumn = "zone_file_subscriptions"
 )
 
 // Columns holds all SQL columns for zone fields.
@@ -158,11 +176,53 @@ func ByApplications(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newApplicationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByFileExposuresCount orders the results by file_exposures count.
+func ByFileExposuresCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFileExposuresStep(), opts...)
+	}
+}
+
+// ByFileExposures orders the results by file_exposures terms.
+func ByFileExposures(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFileExposuresStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByFileSubscriptionsCount orders the results by file_subscriptions count.
+func ByFileSubscriptionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFileSubscriptionsStep(), opts...)
+	}
+}
+
+// ByFileSubscriptions orders the results by file_subscriptions terms.
+func ByFileSubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFileSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newApplicationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ApplicationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ApplicationsTable, ApplicationsColumn),
+	)
+}
+func newFileExposuresStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FileExposuresInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, FileExposuresTable, FileExposuresColumn),
+	)
+}
+func newFileSubscriptionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FileSubscriptionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, FileSubscriptionsTable, FileSubscriptionsColumn),
 	)
 }
 
