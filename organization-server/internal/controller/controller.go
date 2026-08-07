@@ -15,6 +15,7 @@ import (
 	"github.com/telekom/controlplane/organization-server/internal/api"
 	"github.com/telekom/controlplane/organization-server/internal/client"
 	gql "github.com/telekom/controlplane/organization-server/internal/graphql"
+	"github.com/telekom/controlplane/organization-server/internal/graphqlinputs"
 	"github.com/telekom/controlplane/organization-server/internal/mapper"
 )
 
@@ -104,7 +105,7 @@ func (ctrl *Controller) List(ctx context.Context) ([]api.HubResponse, error) {
 }
 
 func (ctrl *Controller) Get(ctx context.Context, hubName string) (*api.HubResponse, error) {
-	resp, err := gql.GetGroup(ctx, ctrl.cpapi, &gql.GroupWhereInput{
+	resp, err := gql.GetGroup(ctx, ctrl.cpapi, &graphqlinputs.GroupWhereInput{
 		Name: &hubName,
 	})
 	if err != nil {
@@ -238,8 +239,8 @@ func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req
 }
 
 func (ctrl *Controller) ListTeams(ctx context.Context, hubName string) ([]api.TeamResponse, error) {
-	resp, err := gql.ListTeams(ctx, ctrl.cpapi, &gql.TeamWhereInput{
-		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
+	resp, err := gql.ListTeams(ctx, ctrl.cpapi, &graphqlinputs.TeamWhereInput{
+		HasGroupWith: []graphqlinputs.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {
 		return nil, err
@@ -257,9 +258,9 @@ func (ctrl *Controller) ListTeams(ctx context.Context, hubName string) ([]api.Te
 
 func (ctrl *Controller) GetTeam(ctx context.Context, hubName, teamName string) (*api.TeamResponse, error) {
 	fullTeamName := hubName + "--" + teamName
-	resp, err := gql.GetTeam(ctx, ctrl.cpapi, &gql.TeamWhereInput{
+	resp, err := gql.GetTeam(ctx, ctrl.cpapi, &graphqlinputs.TeamWhereInput{
 		Name:         &fullTeamName,
-		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
+		HasGroupWith: []graphqlinputs.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {
 		return nil, err
@@ -343,9 +344,9 @@ func (ctrl *Controller) DeleteTeam(ctx context.Context, hubName, teamName string
 
 func (ctrl *Controller) GetTeamStatus(ctx context.Context, hubName, teamName string) (*api.ResourceStatusResponse, error) {
 	fullTeamName := hubName + "--" + teamName
-	resp, err := gql.GetTeam(ctx, ctrl.cpapi, &gql.TeamWhereInput{
+	resp, err := gql.GetTeam(ctx, ctrl.cpapi, &graphqlinputs.TeamWhereInput{
 		Name:         &fullTeamName,
-		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
+		HasGroupWith: []graphqlinputs.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {
 		return nil, err
@@ -396,7 +397,7 @@ func (ctrl *Controller) GetResources(ctx context.Context, env, hubName, teamName
 // --- helpers ---
 
 func (ctrl *Controller) resolveGroupID(ctx context.Context, name string) (string, error) {
-	resp, err := gql.GetGroup(ctx, ctrl.cpapi, &gql.GroupWhereInput{
+	resp, err := gql.GetGroup(ctx, ctrl.cpapi, &graphqlinputs.GroupWhereInput{
 		Name: &name,
 	})
 	if err != nil {
@@ -410,9 +411,9 @@ func (ctrl *Controller) resolveGroupID(ctx context.Context, name string) (string
 
 func (ctrl *Controller) resolveTeamID(ctx context.Context, hubName, teamName string) (string, error) {
 	fullTeamName := hubName + "--" + teamName
-	resp, err := gql.GetTeam(ctx, ctrl.cpapi, &gql.TeamWhereInput{
+	resp, err := gql.GetTeam(ctx, ctrl.cpapi, &graphqlinputs.TeamWhereInput{
 		Name:         &fullTeamName,
-		HasGroupWith: []gql.GroupWhereInput{{Name: &hubName}},
+		HasGroupWith: []graphqlinputs.GroupWhereInput{{Name: &hubName}},
 	})
 	if err != nil {
 		return "", err
