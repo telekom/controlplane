@@ -48,10 +48,10 @@ func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&api.ApiHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.Api{}).
+		For(&apiapi.Api{}, builder.WithPredicates(cc.Count("api", cc.RoleFor))).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApi),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("api", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

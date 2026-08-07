@@ -48,10 +48,10 @@ func (r *PublisherReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&publisher.PublisherHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&pubsubv1.Publisher{}).
+		For(&pubsubv1.Publisher{}, builder.WithPredicates(cc.Count("publisher", cc.RoleFor))).
 		Watches(&pubsubv1.EventStore{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventStoreToPublisher),
-			builder.WithPredicates(),
+			builder.WithPredicates(cc.Count("publisher", cc.RoleWatches)),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

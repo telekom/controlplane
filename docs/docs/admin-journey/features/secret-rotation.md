@@ -23,8 +23,8 @@ spec:
       gracePeriod: 168h          # 7 days
       notificationThresholds:
         - before: 720h           # exactly once with 30 days remaining
-        - before: 168h           # the for last 7 days
-          repeat: 24h       # daily
+        - before: 168h           # for the last 7 days
+          repeat: 24h            # daily
 ```
 
 ### Configuration Reference
@@ -43,7 +43,7 @@ Each threshold entry defines when a reminder email is sent relative to the secre
 | Field | Description | Example |
 | ----- | ----------- | ------- |
 | `before` | Time before expiry when the first notification is sent. | `720h` (30 days) |
-| `repeatEvery` | *(Optional)* If set, the notification repeats at this interval until expiry or the next threshold takes over. | `24h` |
+| `repeat` | *(Optional)* If set, the notification repeats at this interval until expiry or the next threshold takes over. | `24h` |
 
 :::info Duration format
 All duration fields use Go's standard duration format. Supported units are `h` (hours), `m` (minutes), and `s` (seconds). Day-based units like `d` are **not** supported — use hours instead (e.g. 7 days = `168h`, 30 days = `720h`).
@@ -55,7 +55,7 @@ All duration fields use Go's standard duration format. Supported units are `h` (
 notificationThresholds:
   - before: 720h             # Single reminder 30 days before expiry
   - before: 168h             # Daily reminders starting 7 days before expiry
-    repeatEvery: 24h
+    repeat: 24h
 ```
 
 With this configuration, a team receives a single email at 30 days, then daily emails starting at 7 days until the secret expires or is rotated.
