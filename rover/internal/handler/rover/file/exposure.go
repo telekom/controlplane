@@ -47,7 +47,8 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 		}
 
 		fileExposure.Labels = map[string]string{
-			filev1.FileTypeLabelKey:             labelutil.NormalizeLabelValue(exp.FileType),
+			filev1.FileTypeNameLabelKey:         labelutil.NormalizeLabelValue(FileTypeRefName(exp.FileType)),
+			filev1.FileTypeNamespaceLabelKey:    labelutil.NormalizeLabelValue(owner.Namespace),
 			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}
@@ -55,11 +56,11 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 		fileExposure.Spec = filev1.FileExposureSpec{
 			Approval:   filev1.Approval{Strategy: filev1.ApprovalStrategy(exp.Approval.Strategy)},
 			Visibility: filev1.Visibility(exp.Visibility.String()),
-			FileType:   exp.FileType,
-			Sftp: filev1.SftpExposure{
+			FileType:   FileTypeRefName(exp.FileType),
+			SFTP: &filev1.FileSFTP{
 				PublicKeys: mapPublicKeys(exp.PublicKeys),
 			},
-			Zone: zoneRef,
+			Zone: &zoneRef,
 		}
 		return nil
 	}

@@ -29,13 +29,11 @@ type FileSpecificationHandler struct{}
 func (h *FileSpecificationHandler) CreateOrUpdate(ctx context.Context, fileSpec *roverv1.FileSpecification) error {
 	c := client.ClientFromContextOrDie(ctx)
 
-	// The FileType name is derived from the FileSpecification name (the file type
-	// identifier); they live in the same namespace.
 	name := roverv1.MakeFileSpecificationName(fileSpec)
 
 	fileType := &filev1.FileType{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeNameValue(name),
+			Name:      name,
 			Namespace: fileSpec.Namespace,
 		},
 	}
@@ -48,13 +46,12 @@ func (h *FileSpecificationHandler) CreateOrUpdate(ctx context.Context, fileSpec 
 		}
 
 		fileType.Labels = map[string]string{
-			filev1.FileTypeLabelKey: labelutil.NormalizeLabelValue(fileSpec.Name),
+			filev1.FileTypeNameLabelKey:      labelutil.NormalizeLabelValue(name),
+			filev1.FileTypeNamespaceLabelKey: labelutil.NormalizeLabelValue(fileSpec.Namespace),
 		}
 
 		fileType.Spec = filev1.FileTypeSpec{
-			Type:          fileSpec.Name,
-			Description:   fileSpec.Spec.Description,
-			Specification: fileSpec.Spec.Specification,
+			Description: fileSpec.Spec.Description,
 		}
 		return nil
 	}

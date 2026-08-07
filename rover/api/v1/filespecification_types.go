@@ -8,15 +8,18 @@ import (
 	"strings"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeFileSpecificationName generates a name for the FileType resource based on
-// the file type identifier of the FileSpecification (its metadata name).
-// MakeEventSpecificationName / MakeName (api).
+func MakeFileTypeName(fileType string) string {
+	return labelutil.NormalizeNameValue(strings.ReplaceAll(fileType, ".", "-"))
+}
+
+// MakeFileSpecificationName derives the FileType name from a FileSpecification.
 func MakeFileSpecificationName(fileSpec *FileSpecification) string {
-	return strings.ToLower(strings.ReplaceAll(fileSpec.Name, ".", "-"))
+	return MakeFileTypeName(fileSpec.Name)
 }
 
 // FileStorageType selects the file-transfer backend used to store/exchange files

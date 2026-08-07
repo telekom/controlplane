@@ -32,16 +32,14 @@ var _ = Describe("mapPublicKeys", func() {
 		Expect(mapPublicKeys([]roverv1.PublicKey{})).To(BeNil())
 	})
 
-	It("maps label and key preserving order", func() {
+	It("maps keys preserving order (label is dropped: file domain tracks only the key)", func() {
 		in := []roverv1.PublicKey{
 			{Label: "provider-key", Key: "ssh-ed25519 AAAA"},
 			{Label: "consumer-key", Key: "ssh-ed25519 BBBB"},
 		}
 		got := mapPublicKeys(in)
 		Expect(got).To(HaveLen(2))
-		Expect(got[0].Label).To(Equal("provider-key"))
 		Expect(got[0].Key).To(Equal("ssh-ed25519 AAAA"))
-		Expect(got[1].Label).To(Equal("consumer-key"))
 		Expect(got[1].Key).To(Equal("ssh-ed25519 BBBB"))
 	})
 })
