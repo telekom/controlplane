@@ -1,0 +1,27 @@
+organization-server/internal/graphqlinputs/inputs_test.go
+  s_2521744f5eb619::t_1fa2fbccbe96dc 1-30
+organization-server/internal/graphqlinputs/inputs.go
+  s_2521744f5eb619::t_1fa2fbccbe96dc 1-14
+organization-server/genqlient.yaml
+  s_2521744f5eb619::t_5deaa1f15ce288 27-30
+organization-server/internal/controller/controller.go
+  s_2521744f5eb619::t_0f4ad780ed5f13 18,108,242-243,261,263,347,349,400,414,416
+organization-server/internal/graphql/generated.go
+  s_2521744f5eb619::t_487b4bb8c805ba 14,17-20,23-25,28-31,33-37,39-41,44-47,49-55,57-58,60-61,63-64,66-67,69-74,76-77,79-80,82-83,85-86,88-92,94-97,99-103,105-107,110-113,115-119,121-122,124-127,129-141,143-144,146-147,149-152,154-157,159-162,164-165,167-168,170-171,173-176,178-181,183-186,188-189,191-195,197-198,200-201,203-211,213-214,216-217,219-220,222-223,225-226,228-229,231-232,234-238,240-242,245-249,251-252,254-257,259-263,265-268,270-273,275-277,279-280,282-286,288-291,293-297,299-300,302-304,307-311,313-314,316-319,321-322,325-326,328-332,334-337,339,341-347,349-354,631-634,636-639,641-644,646-647,649-653,655-658,660-663,665-668,670-671,673-674,996,1000,1004,1008,1012,1016,1230,1282,1371
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7d7582ccbc4147d6ae3409a4fb0bfc4f41fdbbb8",
+  "prompts": {},
+  "sessions": {
+    "s_2521744f5eb619": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0291064d5ffe96wDm6Hw5RtRS2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
