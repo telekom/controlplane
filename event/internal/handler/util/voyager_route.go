@@ -53,6 +53,10 @@ func CreateVoyagerRoute(
 	if err != nil {
 		return nil, err
 	}
+	gatewayRef, err := gatewayRef(zone)
+	if err != nil {
+		return nil, err
+	}
 
 	upstream, err := parseUpstream(eventConfig.Spec.Local.VoyagerApiUrl)
 	if err != nil {
@@ -79,7 +83,7 @@ func CreateVoyagerRoute(
 			config.BuildLabelKey("type"): "voyager",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *zone.Status.Gateway,
+			GatewayRef: *gatewayRef,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  meshHostnames,
@@ -115,8 +119,12 @@ func CreateProxyLocalVoyagerRoute(
 	if err != nil {
 		return nil, err
 	}
+	sourceGatewayRef, err := gatewayRef(sourceZone)
+	if err != nil {
+		return nil, err
+	}
 
-	targetPreset, err := targetZone.Spec.Gateway.GetDefaultPreset()
+	targetPreset, err := targetZone.Spec.GetDefaultPreset()
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
 	}
@@ -147,7 +155,7 @@ func CreateProxyLocalVoyagerRoute(
 			config.BuildLabelKey("type"): "voyager",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *sourceZone.Status.Gateway,
+			GatewayRef: *sourceGatewayRef,
 			Type:       gatewayapi.RouteTypeProxy,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  meshHostnames,

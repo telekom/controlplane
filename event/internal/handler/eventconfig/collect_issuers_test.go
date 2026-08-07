@@ -5,69 +5,56 @@
 package eventconfig
 
 import (
-	"testing"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func zoneWithIssuers(name, issuer, lmsIssuer string) *adminv1.Zone {
-	z := &adminv1.Zone{ObjectMeta: metav1.ObjectMeta{Name: name}}
-	z.Status.Links.Issuer = issuer
-	z.Status.Links.LmsIssuer = lmsIssuer
+	z := &adminv1.Zone{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec:       adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+		Status:     adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
+	}
+	z.Status.Presets[0].Links.Issuer = issuer
+	z.Status.Presets[0].Links.LmsIssuer = lmsIssuer
 	return z
 }
 
-func TestCollectPrimaryTrustedIssuers(t *testing.T) {
-	tests := []struct {
-		name          string
-		myZone        *adminv1.Zone
-		otherZones    []*adminv1.Zone
-		isProxyTarget bool
-		want          []string
-	}{
-		{
-			name:          "own issuer only when not a proxy target",
-			myZone:        zoneWithIssuers("zone-a", "idp-a", "lms-a"),
-			otherZones:    []*adminv1.Zone{zoneWithIssuers("zone-b", "idp-b", "lms-b")},
-			isProxyTarget: false,
-			want:          []string{"idp-a"},
+var _ = Describe("collectPrimaryTrustedIssuers", func() {
+	DescribeTable("collects issuers",
+		func(myZone *adminv1.Zone, otherZones []*adminv1.Zone, isProxyTarget bool, expected []string) {
+			issuers, err := collectPrimaryTrustedIssuers(myZone, otherZones, isProxyTarget)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(issuers).To(Equal(expected))
 		},
-		{
-			name:          "empty own issuer is skipped",
-			myZone:        zoneWithIssuers("zone-a", "", "lms-a"),
-			otherZones:    nil,
-			isProxyTarget: false,
-			want:          nil,
-		},
-		{
-			name:          "proxy target adds peer LMS issuers",
-			myZone:        zoneWithIssuers("zone-a", "idp-a", "lms-a"),
-			otherZones:    []*adminv1.Zone{zoneWithIssuers("zone-b", "idp-b", "lms-b"), zoneWithIssuers("zone-c", "idp-c", "lms-c")},
-			isProxyTarget: true,
-			want:          []string{"idp-a", "lms-b", "lms-c"},
-		},
-		{
-			name:          "proxy target skips peers with empty LMS issuer",
-			myZone:        zoneWithIssuers("zone-a", "idp-a", "lms-a"),
-			otherZones:    []*adminv1.Zone{zoneWithIssuers("zone-b", "idp-b", ""), zoneWithIssuers("zone-c", "idp-c", "lms-c")},
-			isProxyTarget: true,
-			want:          []string{"idp-a", "lms-c"},
-		},
-	}
+		Entry("own issuer only", zoneWithIssuers("zone-a", "idp-a", "lms-a"), []*adminv1.Zone{zoneWithIssuers("zone-b", "idp-b", "lms-b")}, false, []string{"idp-a"}),
+		Entry("empty own issuer", zoneWithIssuers("zone-a", "", "lms-a"), nil, false, nil),
+		Entry("peer LMS issuers", zoneWithIssuers("zone-a", "idp-a", "lms-a"), []*adminv1.Zone{zoneWithIssuers("zone-b", "idp-b", "lms-b"), zoneWithIssuers("zone-c", "idp-c", "lms-c")}, true, []string{"idp-a", "lms-b", "lms-c"}),
+		Entry("empty peer LMS issuer", zoneWithIssuers("zone-a", "idp-a", "lms-a"), []*adminv1.Zone{zoneWithIssuers("zone-b", "idp-b", ""), zoneWithIssuers("zone-c", "idp-c", "lms-c")}, true, []string{"idp-a", "lms-c"}),
+	)
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := collectPrimaryTrustedIssuers(tc.myZone, tc.otherZones, tc.isProxyTarget)
-			if len(got) != len(tc.want) {
-				t.Fatalf("collectPrimaryTrustedIssuers() = %v, want %v", got, tc.want)
-			}
-			for i, iss := range got {
-				if iss != tc.want[i] {
-					t.Errorf("issuer[%d] = %q, want %q", i, iss, tc.want[i])
-				}
-			}
-		})
-	}
-}
+	It("uses the matching default preset status rather than the first status", func() {
+		zone := zoneWithIssuers("zone-a", "default-idp", "default-lms")
+		zone.Spec.Presets = append([]adminv1.Preset{{Name: "alpha"}}, zone.Spec.Presets...)
+		zone.Status.Presets = append([]adminv1.PresetStatus{{Name: "alpha", Links: adminv1.Links{Issuer: "wrong-idp"}}}, zone.Status.Presets...)
+
+		issuers, err := collectPrimaryTrustedIssuers(zone, nil, false)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(issuers).To(Equal([]string{"default-idp"}))
+	})
+
+	It("returns an error when the default preset status is missing", func() {
+		zone := zoneWithIssuers("zone-a", "default-idp", "default-lms")
+		zone.Status.Presets = nil
+
+		issuers, err := collectPrimaryTrustedIssuers(zone, nil, false)
+
+		Expect(err).To(HaveOccurred())
+		Expect(issuers).To(BeNil())
+	})
+})

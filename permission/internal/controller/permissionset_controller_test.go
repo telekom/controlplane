@@ -148,29 +148,29 @@ var _ = Describe("PermissionSet Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
-					IdentityProvider: adminv1.IdentityProviderConfig{
-						Url: "https://idp.example.com",
+					IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default",
+						TokenUrl: "https://idp.example.com",
 						Admin: adminv1.IdentityProviderAdminConfig{
 							Url:      ptr.To("https://idp-admin.example.com"),
 							UserName: "admin",
 							Password: "password",
 							ClientId: "client-id",
 						},
-					},
-					Gateway: adminv1.GatewayConfig{
+					}},
+					Gateways: []adminv1.GatewayConfig{{Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "https://gateway-admin.example.com",
 						},
-						Presets: []adminv1.GatewayConfigPreset{
-							{
-								Name:    "test",
-								Default: true,
-								Urls: []adminv1.UrlConfig{
-									{
-										Hostname: "gateway.example.com",
-										Scheme:   "https",
-										BasePath: "/",
-									},
+					}}, Presets: []adminv1.Preset{
+						{
+							Name:       "test",
+							Default:    true,
+							GatewayRef: "default", IdentityProviderRef: "default",
+							Urls: []adminv1.UrlConfig{
+								{
+									Hostname: "gateway.example.com",
+									Scheme:   "https",
+									BasePath: "/",
 								},
 							},
 						},
@@ -181,11 +181,11 @@ var _ = Describe("PermissionSet Controller", func() {
 
 			// Update status in a separate step
 			zone.Status.Namespace = zoneNs.Name
-			zone.Status.Links = adminv1.Links{
+			zone.Status.Presets = []adminv1.PresetStatus{{Name: "test", Links: adminv1.Links{
 				Url:       "https://gateway.example.com",
 				Issuer:    "https://idp.example.com/auth/realms/default",
 				LmsIssuer: "https://gateway.example.com/auth/realms/default",
-			}
+			}}}
 			zone.SetCondition(condition.NewReadyCondition("ZoneReady", "Zone is ready"))
 			Expect(k8sClient.Status().Update(ctx, zone)).To(Succeed())
 

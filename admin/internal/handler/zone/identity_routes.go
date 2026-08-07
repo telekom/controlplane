@@ -57,11 +57,6 @@ const jumperIdentityPort int32 = 8081
 // These passthrough routes allow external consumers to discover JWKS keys and validate
 // last-mile-security tokens issued by this zone's gateway.
 func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
-	defaultPreset, err := hc.Zone.Spec.Gateway.GetDefaultPreset()
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("cannot resolve default gateway preset for identity routes: %s", err)
-	}
-
 	// World-visible zones prefix identity routes with /spacegate to avoid path conflicts
 	var pathPrefix string
 	if hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
@@ -70,7 +65,7 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 
 	// Create routes for the default identity realm
 	for _, cfg := range identityRouteConfigs {
-		if err := createIdentityRoute(ctx, hc, hc.DefaultIdentityRealm.Name, cfg, defaultPreset, pathPrefix); err != nil {
+		if err := createIdentityRoute(ctx, hc, hc.DefaultIdentityRealm.Name, cfg, hc.DefaultPreset, pathPrefix); err != nil {
 			return err
 		}
 	}
@@ -78,7 +73,7 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 	// Create routes for the team-api identity realm if it was set up
 	if hc.TeamApiIdentityRealm != nil {
 		for _, cfg := range identityRouteConfigs {
-			if err := createIdentityRoute(ctx, hc, hc.TeamApiIdentityRealm.Name, cfg, defaultPreset, pathPrefix); err != nil {
+			if err := createIdentityRoute(ctx, hc, hc.TeamApiIdentityRealm.Name, cfg, hc.DefaultPreset, pathPrefix); err != nil {
 				return err
 			}
 		}
@@ -89,11 +84,15 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 
 // createIdentityRoute creates a single passthrough route that exposes an OIDC endpoint
 // through the gateway, proxying to the Jumper identity container.
-func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName string, cfg identityRouteConfig, preset *adminv1.GatewayConfigPreset, pathPrefix string) error {
+func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName string, cfg identityRouteConfig, preset *adminv1.Preset, pathPrefix string) error {
 	c := cclient.ClientFromContextOrDie(ctx)
+	gateway := hc.Gateways[preset.GatewayRef]
+	if gateway == nil {
+		return ctrlerrors.BlockedErrorf("cannot resolve gateway %q for preset %q", preset.GatewayRef, preset.Name)
+	}
 
 	// Route name: gateway--<realmName>--<suffix>
-	routeName := hc.Gateway.Name + "--" + realmName + "--" + cfg.suffix
+	routeName := gateway.Name + "--" + realmName + "--" + cfg.suffix
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -126,7 +125,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef:  *types.ObjectRefFromObject(hc.Gateway),
+			GatewayRef:  *types.ObjectRefFromObject(gateway),
 			Type:        gatewayapi.RouteTypePrimary,
 			Backend:     gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:   hostnames,

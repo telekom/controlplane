@@ -119,7 +119,7 @@ func createTestEnvironment() {
 // newTestZone creates a fully populated zone fixture using the Presets-based GatewayConfig.
 func newTestZone(name string) *adminv1.Zone {
 	gatewayAdminSecret := "test-gateway-admin-secret"
-	identityAdminUrl := "https://test-iris.de/auth/admin/realms"
+	identityAdminURL := "https://test-iris.de/auth/admin/realms"
 
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
@@ -130,34 +130,29 @@ func newTestZone(name string) *adminv1.Zone {
 			},
 		},
 		Spec: adminv1.ZoneSpec{
-			IdentityProvider: adminv1.IdentityProviderConfig{
+			IdentityProviders: []adminv1.IdentityProviderConfig{{
+				Name: "primary",
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url:      &identityAdminUrl,
+					Url:      &identityAdminURL,
 					ClientId: "test-idp-admin-id",
 					UserName: "test-idp-admin-username",
 					Password: "test-idp-admin-password",
 				},
-				Url: "https://test-iris.de/",
-			},
-			Gateway: adminv1.GatewayConfig{
+				IssuerHostname: "test-iris.de",
+				TokenUrl:       "https://test-iris.de/auth/realms/test/protocol/openid-connect/token",
+			}},
+			Gateways: []adminv1.GatewayConfig{{
+				Name: "standard",
 				Admin: adminv1.GatewayAdminConfig{
-					ClientSecret: &gatewayAdminSecret,
-					Url:          "https://test-stargate.de/admin-api",
+					ClientSecret:        &gatewayAdminSecret,
+					Url:                 "https://test-stargate.de/admin-api",
+					IdentityProviderRef: "primary",
 				},
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{
-								Hostname: "test-stargate.de",
-								Scheme:   "https",
-								BasePath: "/",
-							},
-						},
-					},
-				},
-			},
+			}},
+			Presets: []adminv1.Preset{{
+				Name: "default", Default: true, GatewayRef: "standard", IdentityProviderRef: "primary",
+				Urls: []adminv1.UrlConfig{{Hostname: "test-stargate.de", BasePath: "/"}},
+			}},
 			Redis: &adminv1.RedisConfig{
 				Host:      "http://test-redis.de/",
 				Port:      123,
@@ -183,7 +178,7 @@ func newTestContext(zone *adminv1.Zone) context.Context {
 // newTestHandlingContext creates a HandlingContext by running the constructor
 // (which creates the namespace and fetches the environment).
 func newTestHandlingContext(testCtx context.Context, zone *adminv1.Zone) *HandlingContext {
-	hc, err := newHandlingContext(testCtx, zone)
+	hc, err := newHandlingContext(testCtx, zone, (&ZoneHandler{}).httpClient())
 	Expect(err).NotTo(HaveOccurred())
 	return hc
 }

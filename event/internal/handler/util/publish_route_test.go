@@ -207,7 +207,7 @@ var _ = Describe("CreatePublishRoute", func() {
 // zone's downstream hostnames.
 func makeTargetZone(name, statusNs string) *adminv1.Zone {
 	zone := makeZone(name, statusNs)
-	zone.Spec.Gateway.Presets[0].Urls[0].Hostname = "target-gateway.example.com"
+	zone.Spec.Presets[0].Urls[0].Hostname = "target-gateway.example.com"
 	return zone
 }
 

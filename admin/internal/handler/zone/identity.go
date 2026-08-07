@@ -6,6 +6,8 @@ package zone
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -24,9 +26,13 @@ import (
 func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 
+	idp, err := hc.Zone.Spec.GetIdentityProvider()
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", hc.Zone.Name, err)
+	}
 	identityProvider := &identityapi.IdentityProvider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(naming.ForIdentityProvider(hc.Zone)),
+			Name:      naming.ForIdentityProvider(hc.Zone, idp.Name),
 			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
 		},
 	}
@@ -38,22 +44,24 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 		identityProvider.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		identityProvider.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 
-		adminUrl := urls.ForIdentityProviderAdminUrl(hc.Zone.Spec.IdentityProvider.Url)
-		if hc.Zone.Spec.IdentityProvider.Admin.Url != nil {
-			adminUrl = *hc.Zone.Spec.IdentityProvider.Admin.Url
+		adminURL := ""
+		if idp.Admin.Url != nil {
+			adminURL = *idp.Admin.Url
+		} else if idp.IssuerHostname != "" {
+			adminURL = urls.ForIdentityProviderAdminUrl("https://" + idp.IssuerHostname)
 		}
 
 		identityProvider.Spec = identityapi.IdentityProviderSpec{
-			AdminUrl:      adminUrl,
-			AdminPassword: hc.Zone.Spec.IdentityProvider.Admin.Password,
-			AdminClientId: hc.Zone.Spec.IdentityProvider.Admin.ClientId,
-			AdminUserName: hc.Zone.Spec.IdentityProvider.Admin.UserName,
+			AdminUrl:      adminURL,
+			AdminPassword: idp.Admin.Password,
+			AdminClientId: idp.Admin.ClientId,
+			AdminUserName: idp.Admin.UserName,
 		}
 
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, identityProvider, mutator)
+	_, err = c.CreateOrUpdate(ctx, identityProvider, mutator)
 	if err != nil {
 		return ctrlerrors.RetryableErrorf("failed to create or update IdentityProvider %s in zone %s: %s", identityProvider.Name, hc.Zone.Name, err)
 	}
@@ -65,9 +73,13 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 
 // createDefaultIdentityRealm creates the default identity realm for the zone.
 func createDefaultIdentityRealm(ctx context.Context, hc *HandlingContext) error {
+	idp, err := hc.Zone.Spec.GetIdentityProvider()
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", hc.Zone.Name, err)
+	}
 	opts := createIdentityRealmOptions{
 		Claims:         hc.DefaultClaims,
-		SecretRotation: hc.Zone.Spec.IdentityProvider.SecretRotation,
+		SecretRotation: idp.SecretRotation,
 	}
 	realm, err := createIdentityRealm(ctx, hc, naming.ForDefaultIdentityRealm(hc.Environment), opts)
 	if err != nil {
@@ -102,22 +114,23 @@ func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error
 	return nil
 }
 
-// createGatewayAdminClient creates the "rover" client in the internal identity realm
-// for gateway admin API authentication. This step is a no-op when the gateway admin
-// is externally managed (i.e., the user provides clientId/clientSecret/tokenUrl).
-func createGatewayAdminClient(ctx context.Context, hc *HandlingContext) error {
+func createGatewayAdminClient(ctx context.Context, hc *HandlingContext, gatewayConfig *adminv1.GatewayConfig) (*identityapi.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
+	clientID := naming.ForGatewayAdminClientId(gatewayConfig.Name)
+	if gatewayConfig.Admin.ClientId != nil {
+		clientID = *gatewayConfig.Admin.ClientId
+	}
 
 	adminClient := &identityapi.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(naming.ForGatewayAdminClientId()),
+			Name:      naming.ForGatewayAdminClientId(gatewayConfig.Name),
 			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
 		},
 	}
 
-	clientSecret := hc.Zone.Spec.Gateway.Admin.ClientSecret
+	clientSecret := gatewayConfig.Admin.ClientSecret
 	if clientSecret == nil {
-		return ctrlerrors.BlockedErrorf("gateway admin client secret must be provided for zone %q", hc.Zone.Name)
+		return nil, ctrlerrors.BlockedErrorf("gateway %q admin client secret must be provided for zone %q", gatewayConfig.Name, hc.Zone.Name)
 	}
 
 	mutator := func() error {
@@ -129,7 +142,7 @@ func createGatewayAdminClient(ctx context.Context, hc *HandlingContext) error {
 
 		adminClient.Spec = identityapi.ClientSpec{
 			Realm:        types.ObjectRefFromObject(hc.InternalIdentityRealm),
-			ClientId:     naming.ForGatewayAdminClientId(),
+			ClientId:     clientID,
 			ClientSecret: *clientSecret,
 		}
 		return nil
@@ -137,12 +150,24 @@ func createGatewayAdminClient(ctx context.Context, hc *HandlingContext) error {
 
 	_, err := c.CreateOrUpdate(ctx, adminClient, mutator)
 	if err != nil {
-		return ctrlerrors.RetryableErrorf("failed to create or update Gateway Admin Client %s in zone %s: %s", adminClient.Name, hc.Zone.Name, err)
+		return nil, ctrlerrors.RetryableErrorf("failed to create or update Gateway Admin Client %s in zone %s: %s", adminClient.Name, hc.Zone.Name, err)
 	}
 
-	hc.GatewayAdminClient = adminClient
-	hc.Zone.Status.GatewayAdminClient = types.ObjectRefFromObject(adminClient)
-	return nil
+	return adminClient, nil
+}
+
+func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
+	if idp.IssuerHostname != "" {
+		return idp.IssuerHostname, nil
+	}
+	if idp.Admin.Url == nil {
+		return "", fmt.Errorf("identity provider %q has neither issuerHostname nor admin.url", idp.Name)
+	}
+	u, err := url.Parse(*idp.Admin.Url)
+	if err != nil || u.Hostname() == "" {
+		return "", fmt.Errorf("identity provider %q has invalid admin.url", idp.Name)
+	}
+	return u.Hostname(), nil
 }
 
 // createIdentityRealmOptions configures the creation of an identity realm.

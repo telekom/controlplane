@@ -58,6 +58,10 @@ func CreateCallbackRoute(
 	if err != nil {
 		return nil, err
 	}
+	gatewayRef, err := gatewayRef(zone)
+	if err != nil {
+		return nil, err
+	}
 
 	upstream := gatewayapi.Upstream{
 		Scheme:   "http",
@@ -82,7 +86,7 @@ func CreateCallbackRoute(
 			config.BuildLabelKey("type"): "callback",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *zone.Status.Gateway,
+			GatewayRef: *gatewayRef,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  hostnames,

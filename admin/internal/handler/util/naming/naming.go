@@ -4,16 +4,15 @@
 
 package naming
 
-import adminv1 "github.com/telekom/controlplane/admin/api/v1"
+import (
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+)
 
 const (
 	teamApiIdentityRealmPrefix = "team-"
 	internalIdentityRealmName  = "rover"
 	gatewayAdminClientId       = "rover"
-	gateway                    = "gateway"
-	gatewayConsumer            = "gateway"
-	aiGateway                  = "ai-gateway"
-	aiGatewayRealmPrefix       = "ai-"
 )
 
 func ForDefaultIdentityRealm(environment *adminv1.Environment) string {
@@ -28,30 +27,22 @@ func ForTeamApiIdentityRealm(environment *adminv1.Environment) string {
 	return teamApiIdentityRealmPrefix + environment.GetRealmName()
 }
 
-func ForIdentityProvider(zone *adminv1.Zone) string {
-	return zone.Name
+func ForIdentityProvider(zone *adminv1.Zone, identityProviderName string) string {
+	return labelutil.NormalizeValue(zone.Name + "-" + identityProviderName)
 }
 
-func ForGatewayAdminClientId() string {
-	return gatewayAdminClientId
+func ForGatewayAdminClientId(gatewayName string) string {
+	return labelutil.NormalizeValue(gatewayAdminClientId + "-" + gatewayName)
 }
 
-func ForGateway() string {
-	return gateway
+func ForGateway(zone *adminv1.Zone, gatewayName string) string {
+	return labelutil.NormalizeValue(zone.Name + "-" + gatewayName)
 }
 
-func ForGatewayConsumer() string {
-	return gatewayConsumer
+func ForGatewayConsumer(zone *adminv1.Zone, gatewayName string) string {
+	return labelutil.NormalizeValue(zone.Name + "-" + gatewayName)
 }
 
 func ForGatewayRoute(config adminv1.ManagedRouteConfig) string {
 	return config.Name
-}
-
-func ForAiGateway() string {
-	return aiGateway
-}
-
-func ForAiGatewayRealm(environment *adminv1.Environment) string {
-	return aiGatewayRealmPrefix + environment.GetName()
 }

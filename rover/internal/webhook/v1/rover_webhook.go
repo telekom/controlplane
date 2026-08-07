@@ -118,7 +118,7 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 	}
 
 	// Validate ConsumerFailover: feature must be enabled on this zone if ConsumerFailover is configured
-	if !zone.IsFeatureEnabled(adminv1.FeatureConsumerFailover) && rover.HasFailoverEnabledOnAnySubscription() {
+	if !zone.Spec.FeaturesSupported(adminv1.FeatureConsumerFailover) && rover.HasFailoverEnabledOnAnySubscription() {
 		valErr.AddInvalidError(
 			field.NewPath("spec").Child("zone"),
 			rover.Spec.Zone,
