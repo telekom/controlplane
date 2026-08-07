@@ -113,11 +113,12 @@ func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) erro
 	clients := &identityv1.ClientList{}
 	if err := cc.ClientFromContextOrDie(ctx).List(ctx, clients,
 		client.MatchingFields{"spec.realm": types.ObjectRefFromObject(realm).String()},
+		client.Limit(1),
 	); err != nil {
 		return fmt.Errorf("listing clients for realm %q: %w", realm.Name, err)
 	}
 	if len(clients.Items) > 0 {
-		return ctrlerrors.BlockedErrorf("realm %q is still referenced by %d client(s)", realm.Name, len(clients.Items))
+		return ctrlerrors.BlockedErrorf("realm %q is still referenced by client %q", realm.Name, clients.Items[0].Name)
 	}
 
 	adminPassword, err := secrets.Get(ctx, realm.Status.AdminPassword)

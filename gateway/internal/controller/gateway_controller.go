@@ -60,18 +60,26 @@ func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *GatewayReconciler) mapConsumerToGateway(_ context.Context, obj client.Object) []reconcile.Request {
+func (r *GatewayReconciler) mapConsumerToGateway(ctx context.Context, obj client.Object) []reconcile.Request {
 	consumer, ok := obj.(*v1.Consumer)
 	if !ok || consumer.Spec.Gateway.IsEmpty() {
 		return nil
 	}
-	return []reconcile.Request{{NamespacedName: consumer.Spec.Gateway.K8s()}}
+	return r.mapToDeletingGateway(ctx, consumer.Spec.Gateway.K8s())
 }
 
-func (r *GatewayReconciler) mapRouteToGateway(_ context.Context, obj client.Object) []reconcile.Request {
+func (r *GatewayReconciler) mapRouteToGateway(ctx context.Context, obj client.Object) []reconcile.Request {
 	route, ok := obj.(*v1.Route)
 	if !ok || route.Spec.GatewayRef.IsEmpty() {
 		return nil
 	}
-	return []reconcile.Request{{NamespacedName: route.Spec.GatewayRef.K8s()}}
+	return r.mapToDeletingGateway(ctx, route.Spec.GatewayRef.K8s())
+}
+
+func (r *GatewayReconciler) mapToDeletingGateway(ctx context.Context, key client.ObjectKey) []reconcile.Request {
+	gateway := &v1.Gateway{}
+	if err := r.Get(ctx, key, gateway); err != nil || gateway.DeletionTimestamp.IsZero() {
+		return nil
+	}
+	return []reconcile.Request{{NamespacedName: key}}
 }

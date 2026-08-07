@@ -11,7 +11,11 @@ import (
 	ghErrors "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	common "github.com/telekom/controlplane/common/pkg/types"
@@ -118,6 +122,25 @@ var _ = Describe("Realm reference mapping", func() {
 	It("ignores empty references", func() {
 		identityClient := &identityv1.Client{Spec: identityv1.ClientSpec{Realm: &common.ObjectRef{}}}
 		Expect((&RealmReconciler{}).mapClientToRealm(context.Background(), identityClient)).To(BeEmpty())
+	})
+
+	It("ignores a Client deletion referencing an active Realm", func() {
+		realm := realmModel.NewRealm("active-realm", testNamespace, testEnvironment, "idp")
+		reconciler := &RealmReconciler{Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(realm).Build()}
+		identityClient := &identityv1.Client{Spec: identityv1.ClientSpec{Realm: common.ObjectRefFromObject(realm)}}
+
+		Expect(reconciler.mapClientToRealm(context.Background(), identityClient)).To(BeEmpty())
+	})
+
+	It("maps a Client deletion referencing a terminating Realm", func() {
+		deletedAt := metav1.Now()
+		realm := realmModel.NewRealm("terminating-realm", testNamespace, testEnvironment, "idp")
+		realm.DeletionTimestamp = &deletedAt
+		realm.Finalizers = []string{"test-finalizer"}
+		reconciler := &RealmReconciler{Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(realm).Build()}
+		identityClient := &identityv1.Client{Spec: identityv1.ClientSpec{Realm: common.ObjectRefFromObject(realm)}}
+
+		Expect(reconciler.mapClientToRealm(context.Background(), identityClient)).To(ConsistOf(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(realm)}))
 	})
 })
 

@@ -17,7 +17,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var _ = Describe("Controller Integration", Ordered, func() {
@@ -197,14 +200,34 @@ var _ = Describe("Controller Integration", Ordered, func() {
 })
 
 var _ = Describe("Gateway reference mapping", func() {
-	reconciler := &GatewayReconciler{}
-
 	It("ignores empty route references", func() {
-		Expect(reconciler.mapRouteToGateway(context.Background(), &gatewayv1.Route{})).To(BeEmpty())
+		Expect((&GatewayReconciler{}).mapRouteToGateway(context.Background(), &gatewayv1.Route{})).To(BeEmpty())
 	})
 
 	It("ignores empty consumer references", func() {
-		Expect(reconciler.mapConsumerToGateway(context.Background(), &gatewayv1.Consumer{})).To(BeEmpty())
+		Expect((&GatewayReconciler{}).mapConsumerToGateway(context.Background(), &gatewayv1.Consumer{})).To(BeEmpty())
+	})
+
+	It("ignores deletions referencing an active Gateway", func() {
+		gateway := newGateway("active-gateway", testNamespace)
+		reconciler := &GatewayReconciler{Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(gateway).Build()}
+		ref := types.ObjectRef{Name: gateway.Name, Namespace: gateway.Namespace}
+
+		Expect(reconciler.mapRouteToGateway(context.Background(), &gatewayv1.Route{Spec: gatewayv1.RouteSpec{GatewayRef: ref}})).To(BeEmpty())
+		Expect(reconciler.mapConsumerToGateway(context.Background(), &gatewayv1.Consumer{Spec: gatewayv1.ConsumerSpec{Gateway: ref}})).To(BeEmpty())
+	})
+
+	It("maps deletions referencing a terminating Gateway", func() {
+		deletedAt := metav1.Now()
+		gateway := newGateway("terminating-gateway", testNamespace)
+		gateway.DeletionTimestamp = &deletedAt
+		gateway.Finalizers = []string{"test-finalizer"}
+		reconciler := &GatewayReconciler{Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(gateway).Build()}
+		ref := types.ObjectRef{Name: gateway.Name, Namespace: gateway.Namespace}
+		expected := client.ObjectKeyFromObject(gateway)
+
+		Expect(reconciler.mapRouteToGateway(context.Background(), &gatewayv1.Route{Spec: gatewayv1.RouteSpec{GatewayRef: ref}})).To(ConsistOf(reconcile.Request{NamespacedName: expected}))
+		Expect(reconciler.mapConsumerToGateway(context.Background(), &gatewayv1.Consumer{Spec: gatewayv1.ConsumerSpec{Gateway: ref}})).To(ConsistOf(reconcile.Request{NamespacedName: expected}))
 	})
 })
 

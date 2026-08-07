@@ -6,6 +6,7 @@ package gateway_test
 
 import (
 	"context"
+	"errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,8 +19,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	gwhandler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("GatewayHandler", func() {
@@ -50,6 +53,29 @@ var _ = Describe("GatewayHandler", func() {
 
 			err := handler.Delete(cc.WithClient(context.Background(), mockClient), gw)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("limits the lookup and identifies a referencing route", func() {
+			handler := &gwhandler.GatewayHandler{}
+			mockClient := fakeclient.NewMockJanitorClient(GinkgoT())
+			mockClient.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.RouteList"), mock.Anything, mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, opts ...client.ListOption) {
+					list.(*gatewayv1.RouteList).Items = []gatewayv1.Route{{ObjectMeta: metav1.ObjectMeta{Name: "blocking-route"}}}
+					listOptions := &client.ListOptions{}
+					for _, opt := range opts {
+						opt.ApplyToList(listOptions)
+					}
+					Expect(listOptions.Limit).To(Equal(int64(1)))
+				}).
+				Return(nil)
+			gw := &gatewayv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "test-gw"}}
+
+			err := handler.Delete(cc.WithClient(context.Background(), mockClient), gw)
+
+			var blocked ctrlerrors.BlockedError
+			Expect(errors.As(err, &blocked)).To(BeTrue())
+			Expect(err).To(MatchError(`gateway "test-gw" is still referenced by route "blocking-route"`))
 		})
 	})
 

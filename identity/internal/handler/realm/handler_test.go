@@ -473,6 +473,29 @@ var _ = Describe("HandlerRealm", func() {
 	})
 
 	Context("Delete", func() {
+		It("limits the lookup and identifies a referencing client", func() {
+			realm := newValidRealm()
+			mockK8s = fake.NewMockJanitorClient(GinkgoT())
+			mockK8s.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.ClientList"), mock.Anything, mock.Anything).
+				Run(func(_ context.Context, list pkgclient.ObjectList, opts ...pkgclient.ListOption) {
+					list.(*identityv1.ClientList).Items = []identityv1.Client{{ObjectMeta: metav1.ObjectMeta{Name: "blocking-client"}}}
+					listOptions := &pkgclient.ListOptions{}
+					for _, opt := range opts {
+						opt.ApplyToList(listOptions)
+					}
+					Expect(listOptions.Limit).To(Equal(int64(1)))
+				}).
+				Return(nil)
+			ctx, _ = newTestContext(mockK8s)
+
+			err := NewHandlerRealm(keycloak.NewServiceFactory()).Delete(ctx, realm)
+
+			var blocked ctrlerrors.BlockedError
+			Expect(errors.As(err, &blocked)).To(BeTrue())
+			Expect(err).To(MatchError(`realm "test-realm" is still referenced by client "blocking-client"`))
+		})
+
 		It("should succeed and not mutate the admin password", func() {
 			realm := newValidRealm()
 			realm.Status = identityv1.RealmStatus{

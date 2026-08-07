@@ -33,21 +33,23 @@ func (h *GatewayHandler) Delete(ctx context.Context, gw *gatewayv1.Gateway) erro
 	routes := &gatewayv1.RouteList{}
 	if err := kubeClient.List(ctx, routes,
 		client.MatchingFields{"spec.gatewayRef": types.ObjectRefFromObject(gw).String()},
+		client.Limit(1),
 	); err != nil {
 		return fmt.Errorf("listing routes for gateway %q: %w", gw.Name, err)
 	}
 	if len(routes.Items) > 0 {
-		return ctrlerrors.BlockedErrorf("gateway %q is still referenced by %d route(s)", gw.Name, len(routes.Items))
+		return ctrlerrors.BlockedErrorf("gateway %q is still referenced by route %q", gw.Name, routes.Items[0].Name)
 	}
 
 	consumers := &gatewayv1.ConsumerList{}
 	if err := kubeClient.List(ctx, consumers,
 		client.MatchingFields{"spec.gatewayRef": types.ObjectRefFromObject(gw).String()},
+		client.Limit(1),
 	); err != nil {
 		return fmt.Errorf("listing consumers for gateway %q: %w", gw.Name, err)
 	}
 	if len(consumers.Items) > 0 {
-		return ctrlerrors.BlockedErrorf("gateway %q is still referenced by %d consumer(s)", gw.Name, len(consumers.Items))
+		return ctrlerrors.BlockedErrorf("gateway %q is still referenced by consumer %q", gw.Name, consumers.Items[0].Name)
 	}
 
 	return nil

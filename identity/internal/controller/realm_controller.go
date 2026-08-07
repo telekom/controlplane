@@ -72,9 +72,13 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *RealmReconciler) mapClientToRealm(_ context.Context, obj client.Object) []reconcile.Request {
+func (r *RealmReconciler) mapClientToRealm(ctx context.Context, obj client.Object) []reconcile.Request {
 	identityClient, ok := obj.(*identityv1.Client)
 	if !ok || identityClient.Spec.Realm == nil || identityClient.Spec.Realm.IsEmpty() {
+		return nil
+	}
+	realm := &identityv1.Realm{}
+	if err := r.Get(ctx, identityClient.Spec.Realm.K8s(), realm); err != nil || realm.DeletionTimestamp.IsZero() {
 		return nil
 	}
 	return []reconcile.Request{{NamespacedName: identityClient.Spec.Realm.K8s()}}
