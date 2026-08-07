@@ -52,6 +52,10 @@ input UpdateTeamInput {
   description: String
 }
 
+input DeleteTeamInput {
+  teamId: ID!
+}
+
 type CreateTeamPayload {
   team: Team
   accepted: Boolean!
@@ -60,6 +64,11 @@ type CreateTeamPayload {
 
 type UpdateTeamPayload {
   team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DeleteTeamPayload {
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -76,6 +85,44 @@ type RemoveTeamMemberPayload {
 
 type RotateTeamTokenPayload {
   team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Group mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+input CreateGroupInput {
+  environment: String!
+  name: String!
+  displayName: String!
+  description: String
+}
+
+input UpdateGroupInput {
+  groupId: ID!
+  displayName: String
+  description: String
+}
+
+input DeleteGroupInput {
+  groupId: ID!
+}
+
+type CreateGroupPayload {
+  group: Group
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type UpdateGroupPayload {
+  group: Group
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DeleteGroupPayload {
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -117,6 +164,9 @@ type Mutation {
   "Update team metadata (email, description, displayName). Does not manage members."
   updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
 
+  "Delete a Team. Fails if the team still has resources (Rovers, ApiSpecs, etc.)."
+  deleteTeam(input: DeleteTeamInput!): DeleteTeamPayload!
+
   "Add a member to a team. Takes effect immediately."
   addTeamMember(teamId: ID!, member: MemberInput!): AddTeamMemberPayload!
 
@@ -128,6 +178,15 @@ type Mutation {
 
   "Rotate the client secret for an application. Triggers async secret regeneration."
   rotateApplicationSecret(applicationId: ID!): RotateApplicationSecretPayload!
+
+  "Create a new Group in Kubernetes"
+  createGroup(input: CreateGroupInput!): CreateGroupPayload!
+
+  "Update group metadata (displayName, description)."
+  updateGroup(input: UpdateGroupInput!): UpdateGroupPayload!
+
+  "Delete a Group. Fails if the group still has teams."
+  deleteGroup(input: DeleteGroupInput!): DeleteGroupPayload!
 
   "Decide on an ApprovalRequest (approve or deny initial access)."
   decideApprovalRequest(approvalRequestId: ID!, input: DecisionInput!): DecideApprovalRequestPayload!

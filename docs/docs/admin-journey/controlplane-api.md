@@ -239,6 +239,8 @@ To issue JWTs compatible with the ControlPlane API, configure Keycloak with the 
 
 The `clientId` claim uses the format `<group>--<team>--<service>` and determines team-level access scoping. The `scope` claim controls the caller type (`tardis:team:all`, `tardis:group:all`, `tardis:admin:all`).
 
+Legacy `tardis:hub:*` scopes remain accepted at runtime as deprecated aliases for the corresponding `tardis:group:*` scopes.
+
 #### Example JWT payload
 
 ```json

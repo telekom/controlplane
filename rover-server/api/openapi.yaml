@@ -49,6 +49,8 @@ tags:
     description: Manage Rovers
   - name: ApiRoadmap
     description: Manage ApiRoadmaps
+  - name: Resources
+    description: Aggregated resource listing
 paths:
   /rovers:
     get:
@@ -60,6 +62,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/ResourcePrefix'
         - $ref: '#/components/parameters/Sort'
       responses:
         '200':
@@ -1686,6 +1689,53 @@ paths:
             - tardis:hub:read
             - tardis:team:all
             - tardis:team:read
+  /resources:
+    get:
+      tags:
+        - Resources
+      summary: List all resources for a team
+      description: >-
+        Returns one aggregate page of Rover, ApiSpecification, EventSpecification,
+        Roadmap, ApiChangelog, and McpSpecification references for exactly one team.
+        Team tokens may omit group and team; group and admin callers must provide both.
+        The cursor is opaque and the limit applies across all resource kinds.
+      operationId: getAllResources
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - name: group
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: team
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
 components:
   securitySchemes:
     OAuth2:
@@ -1759,6 +1809,17 @@ components:
         minimum: 1
         maximum: 20
         default: 20
+    ResourcePrefix:
+      name: prefix
+      in: query
+      description: >-
+        Optional prefix filter to narrow results to a specific team or group.
+        Must be encompassed by the caller's token prefix (e.g. an admin with
+        prefix "env--" can request "env--group--team--" but a team token cannot
+        request a different team's prefix). Format: environment--group--team--
+      required: false
+      schema:
+        type: string
     Sort:
       name: sort
       in: query
@@ -2549,6 +2610,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApplicationInfo'
+    ResourceListResponse:
+      type: object
+      required:
+        - _links
+        - items
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
     RoverListResponse:
       type: object
       required:
