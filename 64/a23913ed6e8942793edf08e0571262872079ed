@@ -1,0 +1,28 @@
+organization-server/internal/graphql/generated.go
+  s_2521744f5eb619::t_0645b39688d2f3 2302
+  s_c4617acccd64e5::t_6a2fd01f414868 1858-1873,2258-2301
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "64a23913ed6e8942793edf08e0571262872079ed",
+  "prompts": {},
+  "sessions": {
+    "s_2521744f5eb619": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0291064d5ffe96wDm6Hw5RtRS2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c4617acccd64e5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_023ada540ffe0KH1VXEQvgPsCj",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
