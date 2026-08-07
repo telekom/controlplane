@@ -2091,6 +2091,23 @@ type ApplicationWhereInput struct {
 	ClientIDEqualFold    *string  `json:"clientIDEqualFold,omitempty"`
 	ClientIDContainsFold *string  `json:"clientIDContainsFold,omitempty"`
 
+	// "token_url" field predicates.
+	TokenURL             *string  `json:"tokenURL,omitempty"`
+	TokenURLNEQ          *string  `json:"tokenURLNEQ,omitempty"`
+	TokenURLIn           []string `json:"tokenURLIn,omitempty"`
+	TokenURLNotIn        []string `json:"tokenURLNotIn,omitempty"`
+	TokenURLGT           *string  `json:"tokenURLGT,omitempty"`
+	TokenURLGTE          *string  `json:"tokenURLGTE,omitempty"`
+	TokenURLLT           *string  `json:"tokenURLLT,omitempty"`
+	TokenURLLTE          *string  `json:"tokenURLLTE,omitempty"`
+	TokenURLContains     *string  `json:"tokenURLContains,omitempty"`
+	TokenURLHasPrefix    *string  `json:"tokenURLHasPrefix,omitempty"`
+	TokenURLHasSuffix    *string  `json:"tokenURLHasSuffix,omitempty"`
+	TokenURLIsNil        bool     `json:"tokenURLIsNil,omitempty"`
+	TokenURLNotNil       bool     `json:"tokenURLNotNil,omitempty"`
+	TokenURLEqualFold    *string  `json:"tokenURLEqualFold,omitempty"`
+	TokenURLContainsFold *string  `json:"tokenURLContainsFold,omitempty"`
+
 	// "rotated_expires_at" field predicates.
 	RotatedExpiresAt       *time.Time  `json:"rotatedExpiresAt,omitempty"`
 	RotatedExpiresAtNEQ    *time.Time  `json:"rotatedExpiresAtNEQ,omitempty"`
@@ -2540,6 +2557,51 @@ func (i *ApplicationWhereInput) P() (predicate.Application, error) {
 	}
 	if i.ClientIDContainsFold != nil {
 		predicates = append(predicates, application.ClientIDContainsFold(*i.ClientIDContainsFold))
+	}
+	if i.TokenURL != nil {
+		predicates = append(predicates, application.TokenURLEQ(*i.TokenURL))
+	}
+	if i.TokenURLNEQ != nil {
+		predicates = append(predicates, application.TokenURLNEQ(*i.TokenURLNEQ))
+	}
+	if len(i.TokenURLIn) > 0 {
+		predicates = append(predicates, application.TokenURLIn(i.TokenURLIn...))
+	}
+	if len(i.TokenURLNotIn) > 0 {
+		predicates = append(predicates, application.TokenURLNotIn(i.TokenURLNotIn...))
+	}
+	if i.TokenURLGT != nil {
+		predicates = append(predicates, application.TokenURLGT(*i.TokenURLGT))
+	}
+	if i.TokenURLGTE != nil {
+		predicates = append(predicates, application.TokenURLGTE(*i.TokenURLGTE))
+	}
+	if i.TokenURLLT != nil {
+		predicates = append(predicates, application.TokenURLLT(*i.TokenURLLT))
+	}
+	if i.TokenURLLTE != nil {
+		predicates = append(predicates, application.TokenURLLTE(*i.TokenURLLTE))
+	}
+	if i.TokenURLContains != nil {
+		predicates = append(predicates, application.TokenURLContains(*i.TokenURLContains))
+	}
+	if i.TokenURLHasPrefix != nil {
+		predicates = append(predicates, application.TokenURLHasPrefix(*i.TokenURLHasPrefix))
+	}
+	if i.TokenURLHasSuffix != nil {
+		predicates = append(predicates, application.TokenURLHasSuffix(*i.TokenURLHasSuffix))
+	}
+	if i.TokenURLIsNil {
+		predicates = append(predicates, application.TokenURLIsNil())
+	}
+	if i.TokenURLNotNil {
+		predicates = append(predicates, application.TokenURLNotNil())
+	}
+	if i.TokenURLEqualFold != nil {
+		predicates = append(predicates, application.TokenURLEqualFold(*i.TokenURLEqualFold))
+	}
+	if i.TokenURLContainsFold != nil {
+		predicates = append(predicates, application.TokenURLContainsFold(*i.TokenURLContainsFold))
 	}
 	if i.RotatedExpiresAt != nil {
 		predicates = append(predicates, application.RotatedExpiresAtEQ(*i.RotatedExpiresAt))

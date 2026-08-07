@@ -31,21 +31,19 @@ func makeZone(name, statusNs string) *adminv1.Zone {
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "default",
-					Default: true,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: "gateway.example.com",
-						Port:     443,
-						Scheme:   "https",
-					}},
+			Presets: []adminv1.Preset{{
+				Name:    "default",
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
 				}},
-			},
+			}},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: statusNs,
-			Gateway:   &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"},
+			Presets:   []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"}}},
 		},
 	}
 }
@@ -55,21 +53,19 @@ func makeZoneNoPreset(name, statusNs string) *adminv1.Zone {
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "non-default",
-					Default: false,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: "gateway.example.com",
-						Port:     443,
-						Scheme:   "https",
-					}},
+			Presets: []adminv1.Preset{{
+				Name:    "non-default",
+				Default: false,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
 				}},
-			},
+			}},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: statusNs,
-			Gateway:   &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"},
+			Presets:   []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"}}},
 		},
 	}
 }
@@ -79,23 +75,27 @@ func makeZoneNoGateway(name, statusNs string) *adminv1.Zone {
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "default",
-					Default: true,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: "gateway.example.com",
-						Port:     443,
-						Scheme:   "https",
-					}},
+			Presets: []adminv1.Preset{{
+				Name:    "default",
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
 				}},
-			},
+			}},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: statusNs,
-			Gateway:   nil,
+			Presets:   nil,
 		},
 	}
+}
+
+func makeZoneNilGateway(name, statusNs string) *adminv1.Zone {
+	zone := makeZone(name, statusNs)
+	zone.Status.Presets[0].GatewayRef = nil
+	return zone
 }
 
 // ---------- CreateCallbackRoute ----------
@@ -133,6 +133,16 @@ var _ = Describe("CreateCallbackRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
+	})
+
+	It("should return BlockedError when the default preset status has a nil gateway reference", func() {
+		zoneNoGw := makeZoneNilGateway("zone-a", "zone-a-ns")
+
+		route, err := util.CreateCallbackRoute(ctx, zoneNoGw)
+		Expect(err).To(HaveOccurred())
+		Expect(route).To(BeNil())
+		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
 		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 

@@ -79,28 +79,25 @@ func makeReadyZone() *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "default",
-					Default: true,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: "gateway.example.com",
-						Port:     443,
-						Scheme:   "https",
-					}},
+			Presets: []adminv1.Preset{{
+				Name:    "default",
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
 				}},
-			},
+			}},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			Gateway: &ctypes.ObjectRef{
+			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 				Name:      "gw",
 				Namespace: "default",
-			},
-			Links: adminv1.Links{
+			}, Links: adminv1.Links{
 				Issuer:    "https://idp.test-zone.example.com",
 				LmsIssuer: "https://lms.test-zone.example.com",
-			},
+			}}},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -192,8 +189,8 @@ func makeReadyTargetZone() *adminv1.Zone {
 	z := makeReadyZone()
 	z.Name = "target-zone"
 	z.Status.Namespace = "target-ns"
-	z.Status.Gateway = &ctypes.ObjectRef{Name: "target-gw", Namespace: "default"}
-	z.Status.Links = adminv1.Links{
+	z.Status.Presets[0].GatewayRef = &ctypes.ObjectRef{Name: "target-gw", Namespace: "default"}
+	z.Status.Presets[0].Links = adminv1.Links{
 		Issuer:    "https://idp.target-zone.example.com",
 		LmsIssuer: "https://lms.target-zone.example.com",
 	}
@@ -604,7 +601,7 @@ var _ = Describe("EventExposureHandler", func() {
 		It("should return error when CreateSSERoute fails", func() {
 			et := makeReadyEventType()
 			zone := makeReadyZone()
-			zone.Spec.Gateway.Presets = nil // no default preset → CreateSSERoute returns BlockedError
+			zone.Spec.Presets = nil // no default preset → CreateSSERoute returns BlockedError
 			ec := makeReadyEventConfig()
 			es := makeReadyEventStore()
 			app := makeReadyApplication()

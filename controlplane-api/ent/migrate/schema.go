@@ -158,6 +158,7 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "client_id", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "client_secret", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "token_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "rotated_client_secret", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "rotated_expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "current_expires_at", Type: field.TypeTime, Nullable: true},
@@ -176,13 +177,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "applications_teams_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[17]},
+				Columns:    []*schema.Column{ApplicationsColumns[18]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "applications_zones_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[18]},
+				Columns:    []*schema.Column{ApplicationsColumns[19]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -191,7 +192,7 @@ var (
 			{
 				Name:    "application_name_team_applications",
 				Unique:  true,
-				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[17]},
+				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[18]},
 			},
 		},
 	}

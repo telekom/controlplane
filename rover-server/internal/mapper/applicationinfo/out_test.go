@@ -122,8 +122,12 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 			// Zone mock
 			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{
+					Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "stargate.example.com"}},
+				}}},
 				Status: adminv1.ZoneStatus{
 					Namespace: "zone-ns",
+					Presets:   []adminv1.PresetStatus{{Name: "default"}},
 				},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -442,10 +446,11 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
 				Status: adminv1.ZoneStatus{
-					Links: adminv1.Links{
+					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",
-					},
+					}}},
 				},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -491,8 +496,9 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
 				Status: adminv1.ZoneStatus{
-					Links: adminv1.Links{}, // No PermissionsUrl
+					Presets: []adminv1.PresetStatus{{Name: "default"}}, // No PermissionsUrl
 				},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -540,10 +546,11 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
 				Status: adminv1.ZoneStatus{
-					Links: adminv1.Links{
+					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",
-					},
+					}}},
 				},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -571,11 +578,12 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
 				Status: adminv1.ZoneStatus{
-					Links: adminv1.Links{
+					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						// Base URL already has query params
 						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission?env=prod&tenant=acme",
-					},
+					}}},
 				},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -605,11 +613,12 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
 				Status: adminv1.ZoneStatus{
-					Links: adminv1.Links{
+					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						// Invalid URL scheme
 						PermissionsUrl: "ht!tp://invalid url with spaces",
-					},
+					}}},
 				},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -634,10 +643,11 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
 				Status: adminv1.ZoneStatus{
-					Links: adminv1.Links{
+					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",
-					},
+					}}},
 				},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())

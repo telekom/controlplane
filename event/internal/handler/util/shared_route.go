@@ -152,12 +152,13 @@ func RouteDownstreamURL(route *gatewayapi.Route) string {
 // resolvePreset returns the zone's default gateway preset and verifies the zone
 // has a gateway reference in its status. Used for the downstream (own) zone of a
 // Route, where both the preset (hostnames/paths) and the gateway ref are needed.
-func resolvePreset(zone *adminv1.Zone) (*adminv1.GatewayConfigPreset, error) {
-	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+func resolvePreset(zone *adminv1.Zone) (*adminv1.Preset, error) {
+	preset, err := zone.Spec.GetDefaultPreset()
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("zone %q has no default preset: %s", zone.Name, err)
 	}
-	if zone.Status.Gateway == nil {
+	status, err := zone.Status.GetPreset(preset.Name)
+	if err != nil || status.GatewayRef == nil {
 		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status", zone.Name)
 	}
 	return preset, nil
@@ -167,8 +168,8 @@ func resolvePreset(zone *adminv1.Zone) (*adminv1.GatewayConfigPreset, error) {
 // upstream. Unlike resolvePreset it does NOT require Status.Gateway: the target
 // zone of a cross-zone proxy only contributes its public URL, not a GatewayRef,
 // so its gateway status being unpopulated must not block the proxy Route.
-func targetPreset(zone *adminv1.Zone) (*adminv1.GatewayConfigPreset, error) {
-	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+func targetPreset(zone *adminv1.Zone) (*adminv1.Preset, error) {
+	preset, err := zone.Spec.GetDefaultPreset()
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", zone.Name, err)
 	}
@@ -178,7 +179,7 @@ func targetPreset(zone *adminv1.Zone) (*adminv1.GatewayConfigPreset, error) {
 // gatewayUpstream builds a proxy Upstream pointing at a target preset's gateway URL,
 // optionally joined with path. path=="" yields the base URL only (publish-proxy relies
 // on the gateway preserving the request path when the upstream carries none).
-func gatewayUpstream(preset *adminv1.GatewayConfigPreset, path string) (gatewayapi.Upstream, error) {
+func gatewayUpstream(preset *adminv1.Preset, path string) (gatewayapi.Upstream, error) {
 	full := preset.Urls[0].GetFullUrl()
 	if path != "" {
 		joined, err := url.JoinPath(full, path)
@@ -188,6 +189,17 @@ func gatewayUpstream(preset *adminv1.GatewayConfigPreset, path string) (gatewaya
 		full = joined
 	}
 	return parseUpstream(full)
+}
+
+func gatewayRef(zone *adminv1.Zone) (*ctypes.ObjectRef, error) {
+	status, err := DefaultPresetStatus(zone)
+	if err != nil {
+		return nil, err
+	}
+	if status.GatewayRef == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status for default preset %q", zone.Name, status.Name)
+	}
+	return status.GatewayRef, nil
 }
 
 // finalizeRoute runs the shared mutator tail every builder needs: apply owner,
@@ -243,6 +255,10 @@ func buildCrossZoneProxyRoute(
 	if err != nil {
 		return nil, err
 	}
+	sourceGatewayRef, err := gatewayRef(sourceZone)
+	if err != nil {
+		return nil, err
+	}
 
 	tgtPreset, err := targetPreset(targetZone)
 	if err != nil {
@@ -270,7 +286,7 @@ func buildCrossZoneProxyRoute(
 			config.BuildLabelKey("type"): kind + "-proxy",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *sourceZone.Status.Gateway,
+			GatewayRef: *sourceGatewayRef,
 			Type:       gatewayapi.RouteTypeProxy,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  hostnames,

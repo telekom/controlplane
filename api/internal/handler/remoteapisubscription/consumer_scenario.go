@@ -64,7 +64,8 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 	if err != nil {
 		return errors.Wrapf(err, "failed to get default preset for zone %s", remoteOrg.Spec.Zone.Name)
 	}
-	if zone.Status.Gateway == nil {
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil || presetStatus.GatewayRef == nil {
 		return errors.Errorf("zone %s has no gateway reference in status", remoteOrg.Spec.Zone.Name)
 	}
 
@@ -93,7 +94,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 		hostnames, paths := preset.ResolveHostnamesAndPaths(obj.Spec.ApiBasePath)
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *zone.Status.Gateway,
+			GatewayRef: *presetStatus.GatewayRef,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend: gatewayapi.Backend{
 				Upstreams: []gatewayapi.Upstream{
