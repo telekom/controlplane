@@ -1855,6 +1855,22 @@ type ApplicationWhereInput struct {
 	ClientIDNotNil       *bool    `json:"clientIDNotNil"`
 	ClientIDEqualFold    *string  `json:"clientIDEqualFold"`
 	ClientIDContainsFold *string  `json:"clientIDContainsFold"`
+	// token_url field predicates
+	TokenURL             *string  `json:"tokenURL"`
+	TokenURLNEQ          *string  `json:"tokenURLNEQ"`
+	TokenURLIn           []string `json:"tokenURLIn"`
+	TokenURLNotIn        []string `json:"tokenURLNotIn"`
+	TokenURLGT           *string  `json:"tokenURLGT"`
+	TokenURLGTE          *string  `json:"tokenURLGTE"`
+	TokenURLLT           *string  `json:"tokenURLLT"`
+	TokenURLLTE          *string  `json:"tokenURLLTE"`
+	TokenURLContains     *string  `json:"tokenURLContains"`
+	TokenURLHasPrefix    *string  `json:"tokenURLHasPrefix"`
+	TokenURLHasSuffix    *string  `json:"tokenURLHasSuffix"`
+	TokenURLIsNil        *bool    `json:"tokenURLIsNil"`
+	TokenURLNotNil       *bool    `json:"tokenURLNotNil"`
+	TokenURLEqualFold    *string  `json:"tokenURLEqualFold"`
+	TokenURLContainsFold *string  `json:"tokenURLContainsFold"`
 	// rotated_expires_at field predicates
 	RotatedExpiresAt       *time.Time  `json:"rotatedExpiresAt"`
 	RotatedExpiresAtNEQ    *time.Time  `json:"rotatedExpiresAtNEQ"`
@@ -2238,6 +2254,51 @@ func (v *ApplicationWhereInput) GetClientIDEqualFold() *string { return v.Client
 
 // GetClientIDContainsFold returns ApplicationWhereInput.ClientIDContainsFold, and is useful for accessing the field via an interface.
 func (v *ApplicationWhereInput) GetClientIDContainsFold() *string { return v.ClientIDContainsFold }
+
+// GetTokenURL returns ApplicationWhereInput.TokenURL, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURL() *string { return v.TokenURL }
+
+// GetTokenURLNEQ returns ApplicationWhereInput.TokenURLNEQ, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLNEQ() *string { return v.TokenURLNEQ }
+
+// GetTokenURLIn returns ApplicationWhereInput.TokenURLIn, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLIn() []string { return v.TokenURLIn }
+
+// GetTokenURLNotIn returns ApplicationWhereInput.TokenURLNotIn, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLNotIn() []string { return v.TokenURLNotIn }
+
+// GetTokenURLGT returns ApplicationWhereInput.TokenURLGT, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLGT() *string { return v.TokenURLGT }
+
+// GetTokenURLGTE returns ApplicationWhereInput.TokenURLGTE, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLGTE() *string { return v.TokenURLGTE }
+
+// GetTokenURLLT returns ApplicationWhereInput.TokenURLLT, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLLT() *string { return v.TokenURLLT }
+
+// GetTokenURLLTE returns ApplicationWhereInput.TokenURLLTE, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLLTE() *string { return v.TokenURLLTE }
+
+// GetTokenURLContains returns ApplicationWhereInput.TokenURLContains, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLContains() *string { return v.TokenURLContains }
+
+// GetTokenURLHasPrefix returns ApplicationWhereInput.TokenURLHasPrefix, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLHasPrefix() *string { return v.TokenURLHasPrefix }
+
+// GetTokenURLHasSuffix returns ApplicationWhereInput.TokenURLHasSuffix, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLHasSuffix() *string { return v.TokenURLHasSuffix }
+
+// GetTokenURLIsNil returns ApplicationWhereInput.TokenURLIsNil, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLIsNil() *bool { return v.TokenURLIsNil }
+
+// GetTokenURLNotNil returns ApplicationWhereInput.TokenURLNotNil, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLNotNil() *bool { return v.TokenURLNotNil }
+
+// GetTokenURLEqualFold returns ApplicationWhereInput.TokenURLEqualFold, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLEqualFold() *string { return v.TokenURLEqualFold }
+
+// GetTokenURLContainsFold returns ApplicationWhereInput.TokenURLContainsFold, and is useful for accessing the field via an interface.
+func (v *ApplicationWhereInput) GetTokenURLContainsFold() *string { return v.TokenURLContainsFold }
 
 // GetRotatedExpiresAt returns ApplicationWhereInput.RotatedExpiresAt, and is useful for accessing the field via an interface.
 func (v *ApplicationWhereInput) GetRotatedExpiresAt() *time.Time { return v.RotatedExpiresAt }
