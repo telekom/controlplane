@@ -138,7 +138,7 @@ var _ = Describe("Controller", func() {
 
 			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(res).To(Equal(reconcile.Result{}))
+			Expect(res).To(Equal(reconcile.Result{Requeue: true}))
 
 			Expect(k8sClient.Get(ctx, req.NamespacedName, obj)).To(Succeed())
 			Expect(controllerutil.ContainsFinalizer(obj, config.FinalizerName)).To(BeTrue())
