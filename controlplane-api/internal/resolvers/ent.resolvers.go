@@ -10,6 +10,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -128,6 +129,21 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 			ent.WithEventTypeOrder(orderBy),
 			ent.WithEventTypeFilter(where.Filter),
 		)
+}
+
+// FileExposures is the resolver for the fileExposures field.
+func (r *queryResolver) FileExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) (*ent.FileExposureConnection, error) {
+	panic(fmt.Errorf("not implemented: FileExposures - fileExposures"))
+}
+
+// FileSubscriptions is the resolver for the fileSubscriptions field.
+func (r *queryResolver) FileSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) (*ent.FileSubscriptionConnection, error) {
+	panic(fmt.Errorf("not implemented: FileSubscriptions - fileSubscriptions"))
+}
+
+// FileTypes is the resolver for the fileTypes field.
+func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) (*ent.FileTypeConnection, error) {
+	panic(fmt.Errorf("not implemented: FileTypes - fileTypes"))
 }
 
 // PermissionSets is the resolver for the permissionSets field.

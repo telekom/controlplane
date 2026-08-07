@@ -27,6 +27,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
@@ -57,6 +60,12 @@ type Client struct {
 	EventSubscription *EventSubscriptionClient
 	// EventType is the client for interacting with the EventType builders.
 	EventType *EventTypeClient
+	// FileExposure is the client for interacting with the FileExposure builders.
+	FileExposure *FileExposureClient
+	// FileSubscription is the client for interacting with the FileSubscription builders.
+	FileSubscription *FileSubscriptionClient
+	// FileType is the client for interacting with the FileType builders.
+	FileType *FileTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// Member is the client for interacting with the Member builders.
@@ -89,6 +98,9 @@ func (c *Client) init() {
 	c.EventExposure = NewEventExposureClient(c.config)
 	c.EventSubscription = NewEventSubscriptionClient(c.config)
 	c.EventType = NewEventTypeClient(c.config)
+	c.FileExposure = NewFileExposureClient(c.config)
+	c.FileSubscription = NewFileSubscriptionClient(c.config)
+	c.FileType = NewFileTypeClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.Member = NewMemberClient(c.config)
 	c.PermissionSet = NewPermissionSetClient(c.config)
@@ -195,6 +207,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		EventExposure:     NewEventExposureClient(cfg),
 		EventSubscription: NewEventSubscriptionClient(cfg),
 		EventType:         NewEventTypeClient(cfg),
+		FileExposure:      NewFileExposureClient(cfg),
+		FileSubscription:  NewFileSubscriptionClient(cfg),
+		FileType:          NewFileTypeClient(cfg),
 		Group:             NewGroupClient(cfg),
 		Member:            NewMemberClient(cfg),
 		PermissionSet:     NewPermissionSetClient(cfg),
@@ -228,6 +243,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		EventExposure:     NewEventExposureClient(cfg),
 		EventSubscription: NewEventSubscriptionClient(cfg),
 		EventType:         NewEventTypeClient(cfg),
+		FileExposure:      NewFileExposureClient(cfg),
+		FileSubscription:  NewFileSubscriptionClient(cfg),
+		FileType:          NewFileTypeClient(cfg),
 		Group:             NewGroupClient(cfg),
 		Member:            NewMemberClient(cfg),
 		PermissionSet:     NewPermissionSetClient(cfg),
@@ -263,8 +281,9 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Api, c.ApiExposure, c.ApiSubscription, c.Application, c.Approval,
-		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType, c.Group,
-		c.Member, c.PermissionSet, c.Team, c.Zone,
+		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType,
+		c.FileExposure, c.FileSubscription, c.FileType, c.Group, c.Member,
+		c.PermissionSet, c.Team, c.Zone,
 	} {
 		n.Use(hooks...)
 	}
@@ -275,8 +294,9 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Api, c.ApiExposure, c.ApiSubscription, c.Application, c.Approval,
-		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType, c.Group,
-		c.Member, c.PermissionSet, c.Team, c.Zone,
+		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType,
+		c.FileExposure, c.FileSubscription, c.FileType, c.Group, c.Member,
+		c.PermissionSet, c.Team, c.Zone,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -303,6 +323,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.EventSubscription.mutate(ctx, m)
 	case *EventTypeMutation:
 		return c.EventType.mutate(ctx, m)
+	case *FileExposureMutation:
+		return c.FileExposure.mutate(ctx, m)
+	case *FileSubscriptionMutation:
+		return c.FileSubscription.mutate(ctx, m)
+	case *FileTypeMutation:
+		return c.FileType.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *MemberMutation:
@@ -1052,6 +1078,38 @@ func (c *ApplicationClient) QuerySubscribedApis(_m *Application) *ApiSubscriptio
 	return query
 }
 
+// QueryExposedFileTypes queries the exposed_file_types edge of a Application.
+func (c *ApplicationClient) QueryExposedFileTypes(_m *Application) *FileExposureQuery {
+	query := (&FileExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(fileexposure.Table, fileexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ExposedFileTypesTable, application.ExposedFileTypesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscribedFileTypes queries the subscribed_file_types edge of a Application.
+func (c *ApplicationClient) QuerySubscribedFileTypes(_m *Application) *FileSubscriptionQuery {
+	query := (&FileSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedFileTypesTable, application.SubscribedFileTypesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryExposedEvents queries the exposed_events edge of a Application.
 func (c *ApplicationClient) QueryExposedEvents(_m *Application) *EventExposureQuery {
 	query := (&EventExposureClient{config: c.config}).Query()
@@ -1250,6 +1308,22 @@ func (c *ApprovalClient) QueryAPISubscription(_m *Approval) *ApiSubscriptionQuer
 	return query
 }
 
+// QueryFileSubscription queries the file_subscription edge of a Approval.
+func (c *ApprovalClient) QueryFileSubscription(_m *Approval) *FileSubscriptionQuery {
+	query := (&FileSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approval.Table, approval.FieldID, id),
+			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, approval.FileSubscriptionTable, approval.FileSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryEventSubscription queries the event_subscription edge of a Approval.
 func (c *ApprovalClient) QueryEventSubscription(_m *Approval) *EventSubscriptionQuery {
 	query := (&EventSubscriptionClient{config: c.config}).Query()
@@ -1409,6 +1483,22 @@ func (c *ApprovalRequestClient) QueryAPISubscription(_m *ApprovalRequest) *ApiSu
 			sqlgraph.From(approvalrequest.Table, approvalrequest.FieldID, id),
 			sqlgraph.To(apisubscription.Table, apisubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, approvalrequest.APISubscriptionTable, approvalrequest.APISubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFileSubscription queries the file_subscription edge of a ApprovalRequest.
+func (c *ApprovalRequestClient) QueryFileSubscription(_m *ApprovalRequest) *FileSubscriptionQuery {
+	query := (&FileSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approvalrequest.Table, approvalrequest.FieldID, id),
+			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, approvalrequest.FileSubscriptionTable, approvalrequest.FileSubscriptionColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2001,6 +2091,616 @@ func (c *EventTypeClient) mutate(ctx context.Context, m *EventTypeMutation) (Val
 		return (&EventTypeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown EventType mutation op: %q", m.Op())
+	}
+}
+
+// FileExposureClient is a client for the FileExposure schema.
+type FileExposureClient struct {
+	config
+}
+
+// NewFileExposureClient returns a client for the FileExposure from the given config.
+func NewFileExposureClient(c config) *FileExposureClient {
+	return &FileExposureClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `fileexposure.Hooks(f(g(h())))`.
+func (c *FileExposureClient) Use(hooks ...Hook) {
+	c.hooks.FileExposure = append(c.hooks.FileExposure, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `fileexposure.Intercept(f(g(h())))`.
+func (c *FileExposureClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FileExposure = append(c.inters.FileExposure, interceptors...)
+}
+
+// Create returns a builder for creating a FileExposure entity.
+func (c *FileExposureClient) Create() *FileExposureCreate {
+	mutation := newFileExposureMutation(c.config, OpCreate)
+	return &FileExposureCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FileExposure entities.
+func (c *FileExposureClient) CreateBulk(builders ...*FileExposureCreate) *FileExposureCreateBulk {
+	return &FileExposureCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FileExposureClient) MapCreateBulk(slice any, setFunc func(*FileExposureCreate, int)) *FileExposureCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FileExposureCreateBulk{err: fmt.Errorf("calling to FileExposureClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FileExposureCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FileExposureCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FileExposure.
+func (c *FileExposureClient) Update() *FileExposureUpdate {
+	mutation := newFileExposureMutation(c.config, OpUpdate)
+	return &FileExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FileExposureClient) UpdateOne(_m *FileExposure) *FileExposureUpdateOne {
+	mutation := newFileExposureMutation(c.config, OpUpdateOne, withFileExposure(_m))
+	return &FileExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FileExposureClient) UpdateOneID(id int) *FileExposureUpdateOne {
+	mutation := newFileExposureMutation(c.config, OpUpdateOne, withFileExposureID(id))
+	return &FileExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FileExposure.
+func (c *FileExposureClient) Delete() *FileExposureDelete {
+	mutation := newFileExposureMutation(c.config, OpDelete)
+	return &FileExposureDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FileExposureClient) DeleteOne(_m *FileExposure) *FileExposureDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FileExposureClient) DeleteOneID(id int) *FileExposureDeleteOne {
+	builder := c.Delete().Where(fileexposure.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FileExposureDeleteOne{builder}
+}
+
+// Query returns a query builder for FileExposure.
+func (c *FileExposureClient) Query() *FileExposureQuery {
+	return &FileExposureQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFileExposure},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FileExposure entity by its id.
+func (c *FileExposureClient) Get(ctx context.Context, id int) (*FileExposure, error) {
+	return c.Query().Where(fileexposure.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FileExposureClient) GetX(ctx context.Context, id int) *FileExposure {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a FileExposure.
+func (c *FileExposureClient) QueryOwner(_m *FileExposure) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(fileexposure.Table, fileexposure.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, fileexposure.OwnerTable, fileexposure.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFileTypeDef queries the file_type_def edge of a FileExposure.
+func (c *FileExposureClient) QueryFileTypeDef(_m *FileExposure) *FileTypeQuery {
+	query := (&FileTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(fileexposure.Table, fileexposure.FieldID, id),
+			sqlgraph.To(filetype.Table, filetype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, fileexposure.FileTypeDefTable, fileexposure.FileTypeDefColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryZone queries the zone edge of a FileExposure.
+func (c *FileExposureClient) QueryZone(_m *FileExposure) *ZoneQuery {
+	query := (&ZoneClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(fileexposure.Table, fileexposure.FieldID, id),
+			sqlgraph.To(zone.Table, zone.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, fileexposure.ZoneTable, fileexposure.ZoneColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscriptions queries the subscriptions edge of a FileExposure.
+func (c *FileExposureClient) QuerySubscriptions(_m *FileExposure) *FileSubscriptionQuery {
+	query := (&FileSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(fileexposure.Table, fileexposure.FieldID, id),
+			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, fileexposure.SubscriptionsTable, fileexposure.SubscriptionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FileExposureClient) Hooks() []Hook {
+	hooks := c.hooks.FileExposure
+	return append(hooks[:len(hooks):len(hooks)], fileexposure.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *FileExposureClient) Interceptors() []Interceptor {
+	return c.inters.FileExposure
+}
+
+func (c *FileExposureClient) mutate(ctx context.Context, m *FileExposureMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FileExposureCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FileExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FileExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FileExposureDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FileExposure mutation op: %q", m.Op())
+	}
+}
+
+// FileSubscriptionClient is a client for the FileSubscription schema.
+type FileSubscriptionClient struct {
+	config
+}
+
+// NewFileSubscriptionClient returns a client for the FileSubscription from the given config.
+func NewFileSubscriptionClient(c config) *FileSubscriptionClient {
+	return &FileSubscriptionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `filesubscription.Hooks(f(g(h())))`.
+func (c *FileSubscriptionClient) Use(hooks ...Hook) {
+	c.hooks.FileSubscription = append(c.hooks.FileSubscription, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `filesubscription.Intercept(f(g(h())))`.
+func (c *FileSubscriptionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FileSubscription = append(c.inters.FileSubscription, interceptors...)
+}
+
+// Create returns a builder for creating a FileSubscription entity.
+func (c *FileSubscriptionClient) Create() *FileSubscriptionCreate {
+	mutation := newFileSubscriptionMutation(c.config, OpCreate)
+	return &FileSubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FileSubscription entities.
+func (c *FileSubscriptionClient) CreateBulk(builders ...*FileSubscriptionCreate) *FileSubscriptionCreateBulk {
+	return &FileSubscriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FileSubscriptionClient) MapCreateBulk(slice any, setFunc func(*FileSubscriptionCreate, int)) *FileSubscriptionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FileSubscriptionCreateBulk{err: fmt.Errorf("calling to FileSubscriptionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FileSubscriptionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FileSubscriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FileSubscription.
+func (c *FileSubscriptionClient) Update() *FileSubscriptionUpdate {
+	mutation := newFileSubscriptionMutation(c.config, OpUpdate)
+	return &FileSubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FileSubscriptionClient) UpdateOne(_m *FileSubscription) *FileSubscriptionUpdateOne {
+	mutation := newFileSubscriptionMutation(c.config, OpUpdateOne, withFileSubscription(_m))
+	return &FileSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FileSubscriptionClient) UpdateOneID(id int) *FileSubscriptionUpdateOne {
+	mutation := newFileSubscriptionMutation(c.config, OpUpdateOne, withFileSubscriptionID(id))
+	return &FileSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FileSubscription.
+func (c *FileSubscriptionClient) Delete() *FileSubscriptionDelete {
+	mutation := newFileSubscriptionMutation(c.config, OpDelete)
+	return &FileSubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FileSubscriptionClient) DeleteOne(_m *FileSubscription) *FileSubscriptionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FileSubscriptionClient) DeleteOneID(id int) *FileSubscriptionDeleteOne {
+	builder := c.Delete().Where(filesubscription.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FileSubscriptionDeleteOne{builder}
+}
+
+// Query returns a query builder for FileSubscription.
+func (c *FileSubscriptionClient) Query() *FileSubscriptionQuery {
+	return &FileSubscriptionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFileSubscription},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FileSubscription entity by its id.
+func (c *FileSubscriptionClient) Get(ctx context.Context, id int) (*FileSubscription, error) {
+	return c.Query().Where(filesubscription.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FileSubscriptionClient) GetX(ctx context.Context, id int) *FileSubscription {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a FileSubscription.
+func (c *FileSubscriptionClient) QueryOwner(_m *FileSubscription) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filesubscription.Table, filesubscription.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, filesubscription.OwnerTable, filesubscription.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFileTypeDef queries the file_type_def edge of a FileSubscription.
+func (c *FileSubscriptionClient) QueryFileTypeDef(_m *FileSubscription) *FileTypeQuery {
+	query := (&FileTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filesubscription.Table, filesubscription.FieldID, id),
+			sqlgraph.To(filetype.Table, filetype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, filesubscription.FileTypeDefTable, filesubscription.FileTypeDefColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTarget queries the target edge of a FileSubscription.
+func (c *FileSubscriptionClient) QueryTarget(_m *FileSubscription) *FileExposureQuery {
+	query := (&FileExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filesubscription.Table, filesubscription.FieldID, id),
+			sqlgraph.To(fileexposure.Table, fileexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, filesubscription.TargetTable, filesubscription.TargetColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryZone queries the zone edge of a FileSubscription.
+func (c *FileSubscriptionClient) QueryZone(_m *FileSubscription) *ZoneQuery {
+	query := (&ZoneClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filesubscription.Table, filesubscription.FieldID, id),
+			sqlgraph.To(zone.Table, zone.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, filesubscription.ZoneTable, filesubscription.ZoneColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApproval queries the approval edge of a FileSubscription.
+func (c *FileSubscriptionClient) QueryApproval(_m *FileSubscription) *ApprovalQuery {
+	query := (&ApprovalClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filesubscription.Table, filesubscription.FieldID, id),
+			sqlgraph.To(approval.Table, approval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, filesubscription.ApprovalTable, filesubscription.ApprovalColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApprovalRequests queries the approval_requests edge of a FileSubscription.
+func (c *FileSubscriptionClient) QueryApprovalRequests(_m *FileSubscription) *ApprovalRequestQuery {
+	query := (&ApprovalRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filesubscription.Table, filesubscription.FieldID, id),
+			sqlgraph.To(approvalrequest.Table, approvalrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, filesubscription.ApprovalRequestsTable, filesubscription.ApprovalRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FileSubscriptionClient) Hooks() []Hook {
+	hooks := c.hooks.FileSubscription
+	return append(hooks[:len(hooks):len(hooks)], filesubscription.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *FileSubscriptionClient) Interceptors() []Interceptor {
+	return c.inters.FileSubscription
+}
+
+func (c *FileSubscriptionClient) mutate(ctx context.Context, m *FileSubscriptionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FileSubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FileSubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FileSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FileSubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FileSubscription mutation op: %q", m.Op())
+	}
+}
+
+// FileTypeClient is a client for the FileType schema.
+type FileTypeClient struct {
+	config
+}
+
+// NewFileTypeClient returns a client for the FileType from the given config.
+func NewFileTypeClient(c config) *FileTypeClient {
+	return &FileTypeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `filetype.Hooks(f(g(h())))`.
+func (c *FileTypeClient) Use(hooks ...Hook) {
+	c.hooks.FileType = append(c.hooks.FileType, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `filetype.Intercept(f(g(h())))`.
+func (c *FileTypeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FileType = append(c.inters.FileType, interceptors...)
+}
+
+// Create returns a builder for creating a FileType entity.
+func (c *FileTypeClient) Create() *FileTypeCreate {
+	mutation := newFileTypeMutation(c.config, OpCreate)
+	return &FileTypeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FileType entities.
+func (c *FileTypeClient) CreateBulk(builders ...*FileTypeCreate) *FileTypeCreateBulk {
+	return &FileTypeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FileTypeClient) MapCreateBulk(slice any, setFunc func(*FileTypeCreate, int)) *FileTypeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FileTypeCreateBulk{err: fmt.Errorf("calling to FileTypeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FileTypeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FileTypeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FileType.
+func (c *FileTypeClient) Update() *FileTypeUpdate {
+	mutation := newFileTypeMutation(c.config, OpUpdate)
+	return &FileTypeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FileTypeClient) UpdateOne(_m *FileType) *FileTypeUpdateOne {
+	mutation := newFileTypeMutation(c.config, OpUpdateOne, withFileType(_m))
+	return &FileTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FileTypeClient) UpdateOneID(id int) *FileTypeUpdateOne {
+	mutation := newFileTypeMutation(c.config, OpUpdateOne, withFileTypeID(id))
+	return &FileTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FileType.
+func (c *FileTypeClient) Delete() *FileTypeDelete {
+	mutation := newFileTypeMutation(c.config, OpDelete)
+	return &FileTypeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FileTypeClient) DeleteOne(_m *FileType) *FileTypeDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FileTypeClient) DeleteOneID(id int) *FileTypeDeleteOne {
+	builder := c.Delete().Where(filetype.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FileTypeDeleteOne{builder}
+}
+
+// Query returns a query builder for FileType.
+func (c *FileTypeClient) Query() *FileTypeQuery {
+	return &FileTypeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFileType},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FileType entity by its id.
+func (c *FileTypeClient) Get(ctx context.Context, id int) (*FileType, error) {
+	return c.Query().Where(filetype.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FileTypeClient) GetX(ctx context.Context, id int) *FileType {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a FileType.
+func (c *FileTypeClient) QueryOwner(_m *FileType) *TeamQuery {
+	query := (&TeamClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filetype.Table, filetype.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, filetype.OwnerTable, filetype.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExposures queries the exposures edge of a FileType.
+func (c *FileTypeClient) QueryExposures(_m *FileType) *FileExposureQuery {
+	query := (&FileExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filetype.Table, filetype.FieldID, id),
+			sqlgraph.To(fileexposure.Table, fileexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, filetype.ExposuresTable, filetype.ExposuresColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscriptions queries the subscriptions edge of a FileType.
+func (c *FileTypeClient) QuerySubscriptions(_m *FileType) *FileSubscriptionQuery {
+	query := (&FileSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(filetype.Table, filetype.FieldID, id),
+			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, filetype.SubscriptionsTable, filetype.SubscriptionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FileTypeClient) Hooks() []Hook {
+	hooks := c.hooks.FileType
+	return append(hooks[:len(hooks):len(hooks)], filetype.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *FileTypeClient) Interceptors() []Interceptor {
+	return c.inters.FileType
+}
+
+func (c *FileTypeClient) mutate(ctx context.Context, m *FileTypeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FileTypeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FileTypeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FileTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FileTypeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FileType mutation op: %q", m.Op())
 	}
 }
 
@@ -2626,6 +3326,22 @@ func (c *TeamClient) QueryApis(_m *Team) *APIQuery {
 	return query
 }
 
+// QueryFileTypes queries the file_types edge of a Team.
+func (c *TeamClient) QueryFileTypes(_m *Team) *FileTypeQuery {
+	query := (&FileTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(filetype.Table, filetype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.FileTypesTable, team.FileTypesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryEventTypes queries the event_types edge of a Team.
 func (c *TeamClient) QueryEventTypes(_m *Team) *EventTypeQuery {
 	query := (&EventTypeClient{config: c.config}).Query()
@@ -2792,6 +3508,38 @@ func (c *ZoneClient) QueryApplications(_m *Zone) *ApplicationQuery {
 	return query
 }
 
+// QueryFileExposures queries the file_exposures edge of a Zone.
+func (c *ZoneClient) QueryFileExposures(_m *Zone) *FileExposureQuery {
+	query := (&FileExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(zone.Table, zone.FieldID, id),
+			sqlgraph.To(fileexposure.Table, fileexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, zone.FileExposuresTable, zone.FileExposuresColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFileSubscriptions queries the file_subscriptions edge of a Zone.
+func (c *ZoneClient) QueryFileSubscriptions(_m *Zone) *FileSubscriptionQuery {
+	query := (&FileSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(zone.Table, zone.FieldID, id),
+			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, zone.FileSubscriptionsTable, zone.FileSubscriptionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ZoneClient) Hooks() []Hook {
 	hooks := c.hooks.Zone
@@ -2822,12 +3570,12 @@ func (c *ZoneClient) mutate(ctx context.Context, m *ZoneMutation) (Value, error)
 type (
 	hooks struct {
 		Api, ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		EventExposure, EventSubscription, EventType, Group, Member, PermissionSet,
-		Team, Zone []ent.Hook
+		EventExposure, EventSubscription, EventType, FileExposure, FileSubscription,
+		FileType, Group, Member, PermissionSet, Team, Zone []ent.Hook
 	}
 	inters struct {
 		Api, ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		EventExposure, EventSubscription, EventType, Group, Member, PermissionSet,
-		Team, Zone []ent.Interceptor
+		EventExposure, EventSubscription, EventType, FileExposure, FileSubscription,
+		FileType, Group, Member, PermissionSet, Team, Zone []ent.Interceptor
 	}
 )

@@ -1040,6 +1040,52 @@ func HasSubscribedApisWith(preds ...predicate.ApiSubscription) predicate.Applica
 	})
 }
 
+// HasExposedFileTypes applies the HasEdge predicate on the "exposed_file_types" edge.
+func HasExposedFileTypes() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ExposedFileTypesTable, ExposedFileTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasExposedFileTypesWith applies the HasEdge predicate on the "exposed_file_types" edge with a given conditions (other predicates).
+func HasExposedFileTypesWith(preds ...predicate.FileExposure) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newExposedFileTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSubscribedFileTypes applies the HasEdge predicate on the "subscribed_file_types" edge.
+func HasSubscribedFileTypes() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubscribedFileTypesTable, SubscribedFileTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSubscribedFileTypesWith applies the HasEdge predicate on the "subscribed_file_types" edge with a given conditions (other predicates).
+func HasSubscribedFileTypesWith(preds ...predicate.FileSubscription) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newSubscribedFileTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasExposedEvents applies the HasEdge predicate on the "exposed_events" edge.
 func HasExposedEvents() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {

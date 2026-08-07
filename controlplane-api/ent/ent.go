@@ -24,6 +24,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
@@ -98,6 +101,9 @@ func checkColumn(t, c string) error {
 			eventexposure.Table:     eventexposure.ValidColumn,
 			eventsubscription.Table: eventsubscription.ValidColumn,
 			eventtype.Table:         eventtype.ValidColumn,
+			fileexposure.Table:      fileexposure.ValidColumn,
+			filesubscription.Table:  filesubscription.ValidColumn,
+			filetype.Table:          filetype.ValidColumn,
 			group.Table:             group.ValidColumn,
 			member.Table:            member.ValidColumn,
 			permissionset.Table:     permissionset.ValidColumn,

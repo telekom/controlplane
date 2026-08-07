@@ -23,6 +23,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
@@ -50,6 +53,9 @@ const (
 	TypeEventExposure     = "EventExposure"
 	TypeEventSubscription = "EventSubscription"
 	TypeEventType         = "EventType"
+	TypeFileExposure      = "FileExposure"
+	TypeFileSubscription  = "FileSubscription"
+	TypeFileType          = "FileType"
 	TypeGroup             = "Group"
 	TypeMember            = "Member"
 	TypePermissionSet     = "PermissionSet"
@@ -4025,48 +4031,54 @@ func (m *ApiSubscriptionMutation) ResetEdge(name string) error {
 // ApplicationMutation represents an operation that mutates the Application nodes in the graph.
 type ApplicationMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *int
-	created_at               *time.Time
-	last_modified_at         *time.Time
-	status_phase             *application.StatusPhase
-	status_message           *string
-	environment              *string
-	namespace                *string
-	name                     *string
-	client_id                *string
-	client_secret            *string
-	rotated_client_secret    *string
-	rotated_expires_at       *time.Time
-	current_expires_at       *time.Time
-	secret_rotation_phase    *application.SecretRotationPhase
-	secret_rotation_message  *string
-	external_ids             *[]model.ExternalId
-	appendexternal_ids       []model.ExternalId
-	ip_restrictions          *model.IpRestrictions
-	clearedFields            map[string]struct{}
-	zone                     *int
-	clearedzone              bool
-	owner_team               *int
-	clearedowner_team        bool
-	exposed_apis             map[int]struct{}
-	removedexposed_apis      map[int]struct{}
-	clearedexposed_apis      bool
-	subscribed_apis          map[int]struct{}
-	removedsubscribed_apis   map[int]struct{}
-	clearedsubscribed_apis   bool
-	exposed_events           map[int]struct{}
-	removedexposed_events    map[int]struct{}
-	clearedexposed_events    bool
-	subscribed_events        map[int]struct{}
-	removedsubscribed_events map[int]struct{}
-	clearedsubscribed_events bool
-	permission_set           *int
-	clearedpermission_set    bool
-	done                     bool
-	oldValue                 func(context.Context) (*Application, error)
-	predicates               []predicate.Application
+	op                           Op
+	typ                          string
+	id                           *int
+	created_at                   *time.Time
+	last_modified_at             *time.Time
+	status_phase                 *application.StatusPhase
+	status_message               *string
+	environment                  *string
+	namespace                    *string
+	name                         *string
+	client_id                    *string
+	client_secret                *string
+	rotated_client_secret        *string
+	rotated_expires_at           *time.Time
+	current_expires_at           *time.Time
+	secret_rotation_phase        *application.SecretRotationPhase
+	secret_rotation_message      *string
+	external_ids                 *[]model.ExternalId
+	appendexternal_ids           []model.ExternalId
+	ip_restrictions              *model.IpRestrictions
+	clearedFields                map[string]struct{}
+	zone                         *int
+	clearedzone                  bool
+	owner_team                   *int
+	clearedowner_team            bool
+	exposed_apis                 map[int]struct{}
+	removedexposed_apis          map[int]struct{}
+	clearedexposed_apis          bool
+	subscribed_apis              map[int]struct{}
+	removedsubscribed_apis       map[int]struct{}
+	clearedsubscribed_apis       bool
+	exposed_file_types           map[int]struct{}
+	removedexposed_file_types    map[int]struct{}
+	clearedexposed_file_types    bool
+	subscribed_file_types        map[int]struct{}
+	removedsubscribed_file_types map[int]struct{}
+	clearedsubscribed_file_types bool
+	exposed_events               map[int]struct{}
+	removedexposed_events        map[int]struct{}
+	clearedexposed_events        bool
+	subscribed_events            map[int]struct{}
+	removedsubscribed_events     map[int]struct{}
+	clearedsubscribed_events     bool
+	permission_set               *int
+	clearedpermission_set        bool
+	done                         bool
+	oldValue                     func(context.Context) (*Application, error)
+	predicates                   []predicate.Application
 }
 
 var _ ent.Mutation = (*ApplicationMutation)(nil)
@@ -5088,6 +5100,114 @@ func (m *ApplicationMutation) ResetSubscribedApis() {
 	m.removedsubscribed_apis = nil
 }
 
+// AddExposedFileTypeIDs adds the "exposed_file_types" edge to the FileExposure entity by ids.
+func (m *ApplicationMutation) AddExposedFileTypeIDs(ids ...int) {
+	if m.exposed_file_types == nil {
+		m.exposed_file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.exposed_file_types[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExposedFileTypes clears the "exposed_file_types" edge to the FileExposure entity.
+func (m *ApplicationMutation) ClearExposedFileTypes() {
+	m.clearedexposed_file_types = true
+}
+
+// ExposedFileTypesCleared reports if the "exposed_file_types" edge to the FileExposure entity was cleared.
+func (m *ApplicationMutation) ExposedFileTypesCleared() bool {
+	return m.clearedexposed_file_types
+}
+
+// RemoveExposedFileTypeIDs removes the "exposed_file_types" edge to the FileExposure entity by IDs.
+func (m *ApplicationMutation) RemoveExposedFileTypeIDs(ids ...int) {
+	if m.removedexposed_file_types == nil {
+		m.removedexposed_file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.exposed_file_types, ids[i])
+		m.removedexposed_file_types[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExposedFileTypes returns the removed IDs of the "exposed_file_types" edge to the FileExposure entity.
+func (m *ApplicationMutation) RemovedExposedFileTypesIDs() (ids []int) {
+	for id := range m.removedexposed_file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExposedFileTypesIDs returns the "exposed_file_types" edge IDs in the mutation.
+func (m *ApplicationMutation) ExposedFileTypesIDs() (ids []int) {
+	for id := range m.exposed_file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExposedFileTypes resets all changes to the "exposed_file_types" edge.
+func (m *ApplicationMutation) ResetExposedFileTypes() {
+	m.exposed_file_types = nil
+	m.clearedexposed_file_types = false
+	m.removedexposed_file_types = nil
+}
+
+// AddSubscribedFileTypeIDs adds the "subscribed_file_types" edge to the FileSubscription entity by ids.
+func (m *ApplicationMutation) AddSubscribedFileTypeIDs(ids ...int) {
+	if m.subscribed_file_types == nil {
+		m.subscribed_file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscribed_file_types[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscribedFileTypes clears the "subscribed_file_types" edge to the FileSubscription entity.
+func (m *ApplicationMutation) ClearSubscribedFileTypes() {
+	m.clearedsubscribed_file_types = true
+}
+
+// SubscribedFileTypesCleared reports if the "subscribed_file_types" edge to the FileSubscription entity was cleared.
+func (m *ApplicationMutation) SubscribedFileTypesCleared() bool {
+	return m.clearedsubscribed_file_types
+}
+
+// RemoveSubscribedFileTypeIDs removes the "subscribed_file_types" edge to the FileSubscription entity by IDs.
+func (m *ApplicationMutation) RemoveSubscribedFileTypeIDs(ids ...int) {
+	if m.removedsubscribed_file_types == nil {
+		m.removedsubscribed_file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscribed_file_types, ids[i])
+		m.removedsubscribed_file_types[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscribedFileTypes returns the removed IDs of the "subscribed_file_types" edge to the FileSubscription entity.
+func (m *ApplicationMutation) RemovedSubscribedFileTypesIDs() (ids []int) {
+	for id := range m.removedsubscribed_file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscribedFileTypesIDs returns the "subscribed_file_types" edge IDs in the mutation.
+func (m *ApplicationMutation) SubscribedFileTypesIDs() (ids []int) {
+	for id := range m.subscribed_file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscribedFileTypes resets all changes to the "subscribed_file_types" edge.
+func (m *ApplicationMutation) ResetSubscribedFileTypes() {
+	m.subscribed_file_types = nil
+	m.clearedsubscribed_file_types = false
+	m.removedsubscribed_file_types = nil
+}
+
 // AddExposedEventIDs adds the "exposed_events" edge to the EventExposure entity by ids.
 func (m *ApplicationMutation) AddExposedEventIDs(ids ...int) {
 	if m.exposed_events == nil {
@@ -5692,7 +5812,7 @@ func (m *ApplicationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApplicationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 9)
 	if m.zone != nil {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -5704,6 +5824,12 @@ func (m *ApplicationMutation) AddedEdges() []string {
 	}
 	if m.subscribed_apis != nil {
 		edges = append(edges, application.EdgeSubscribedApis)
+	}
+	if m.exposed_file_types != nil {
+		edges = append(edges, application.EdgeExposedFileTypes)
+	}
+	if m.subscribed_file_types != nil {
+		edges = append(edges, application.EdgeSubscribedFileTypes)
 	}
 	if m.exposed_events != nil {
 		edges = append(edges, application.EdgeExposedEvents)
@@ -5741,6 +5867,18 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeExposedFileTypes:
+		ids := make([]ent.Value, 0, len(m.exposed_file_types))
+		for id := range m.exposed_file_types {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeSubscribedFileTypes:
+		ids := make([]ent.Value, 0, len(m.subscribed_file_types))
+		for id := range m.subscribed_file_types {
+			ids = append(ids, id)
+		}
+		return ids
 	case application.EdgeExposedEvents:
 		ids := make([]ent.Value, 0, len(m.exposed_events))
 		for id := range m.exposed_events {
@@ -5763,12 +5901,18 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApplicationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 9)
 	if m.removedexposed_apis != nil {
 		edges = append(edges, application.EdgeExposedApis)
 	}
 	if m.removedsubscribed_apis != nil {
 		edges = append(edges, application.EdgeSubscribedApis)
+	}
+	if m.removedexposed_file_types != nil {
+		edges = append(edges, application.EdgeExposedFileTypes)
+	}
+	if m.removedsubscribed_file_types != nil {
+		edges = append(edges, application.EdgeSubscribedFileTypes)
 	}
 	if m.removedexposed_events != nil {
 		edges = append(edges, application.EdgeExposedEvents)
@@ -5795,6 +5939,18 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeExposedFileTypes:
+		ids := make([]ent.Value, 0, len(m.removedexposed_file_types))
+		for id := range m.removedexposed_file_types {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeSubscribedFileTypes:
+		ids := make([]ent.Value, 0, len(m.removedsubscribed_file_types))
+		for id := range m.removedsubscribed_file_types {
+			ids = append(ids, id)
+		}
+		return ids
 	case application.EdgeExposedEvents:
 		ids := make([]ent.Value, 0, len(m.removedexposed_events))
 		for id := range m.removedexposed_events {
@@ -5813,7 +5969,7 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApplicationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 9)
 	if m.clearedzone {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -5825,6 +5981,12 @@ func (m *ApplicationMutation) ClearedEdges() []string {
 	}
 	if m.clearedsubscribed_apis {
 		edges = append(edges, application.EdgeSubscribedApis)
+	}
+	if m.clearedexposed_file_types {
+		edges = append(edges, application.EdgeExposedFileTypes)
+	}
+	if m.clearedsubscribed_file_types {
+		edges = append(edges, application.EdgeSubscribedFileTypes)
 	}
 	if m.clearedexposed_events {
 		edges = append(edges, application.EdgeExposedEvents)
@@ -5850,6 +6012,10 @@ func (m *ApplicationMutation) EdgeCleared(name string) bool {
 		return m.clearedexposed_apis
 	case application.EdgeSubscribedApis:
 		return m.clearedsubscribed_apis
+	case application.EdgeExposedFileTypes:
+		return m.clearedexposed_file_types
+	case application.EdgeSubscribedFileTypes:
+		return m.clearedsubscribed_file_types
 	case application.EdgeExposedEvents:
 		return m.clearedexposed_events
 	case application.EdgeSubscribedEvents:
@@ -5893,6 +6059,12 @@ func (m *ApplicationMutation) ResetEdge(name string) error {
 	case application.EdgeSubscribedApis:
 		m.ResetSubscribedApis()
 		return nil
+	case application.EdgeExposedFileTypes:
+		m.ResetExposedFileTypes()
+		return nil
+	case application.EdgeSubscribedFileTypes:
+		m.ResetSubscribedFileTypes()
+		return nil
 	case application.EdgeExposedEvents:
 		m.ResetExposedEvents()
 		return nil
@@ -5935,6 +6107,8 @@ type ApprovalMutation struct {
 	clearedFields               map[string]struct{}
 	api_subscription            *int
 	clearedapi_subscription     bool
+	file_subscription           *int
+	clearedfile_subscription    bool
 	event_subscription          *int
 	clearedevent_subscription   bool
 	done                        bool
@@ -6816,6 +6990,45 @@ func (m *ApprovalMutation) ResetAPISubscription() {
 	m.clearedapi_subscription = false
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by id.
+func (m *ApprovalMutation) SetFileSubscriptionID(id int) {
+	m.file_subscription = &id
+}
+
+// ClearFileSubscription clears the "file_subscription" edge to the FileSubscription entity.
+func (m *ApprovalMutation) ClearFileSubscription() {
+	m.clearedfile_subscription = true
+}
+
+// FileSubscriptionCleared reports if the "file_subscription" edge to the FileSubscription entity was cleared.
+func (m *ApprovalMutation) FileSubscriptionCleared() bool {
+	return m.clearedfile_subscription
+}
+
+// FileSubscriptionID returns the "file_subscription" edge ID in the mutation.
+func (m *ApprovalMutation) FileSubscriptionID() (id int, exists bool) {
+	if m.file_subscription != nil {
+		return *m.file_subscription, true
+	}
+	return
+}
+
+// FileSubscriptionIDs returns the "file_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FileSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *ApprovalMutation) FileSubscriptionIDs() (ids []int) {
+	if id := m.file_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFileSubscription resets all changes to the "file_subscription" edge.
+func (m *ApprovalMutation) ResetFileSubscription() {
+	m.file_subscription = nil
+	m.clearedfile_subscription = false
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by id.
 func (m *ApprovalMutation) SetEventSubscriptionID(id int) {
 	m.event_subscription = &id
@@ -7299,9 +7512,12 @@ func (m *ApprovalMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApprovalMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.api_subscription != nil {
 		edges = append(edges, approval.EdgeAPISubscription)
+	}
+	if m.file_subscription != nil {
+		edges = append(edges, approval.EdgeFileSubscription)
 	}
 	if m.event_subscription != nil {
 		edges = append(edges, approval.EdgeEventSubscription)
@@ -7317,6 +7533,10 @@ func (m *ApprovalMutation) AddedIDs(name string) []ent.Value {
 		if id := m.api_subscription; id != nil {
 			return []ent.Value{*id}
 		}
+	case approval.EdgeFileSubscription:
+		if id := m.file_subscription; id != nil {
+			return []ent.Value{*id}
+		}
 	case approval.EdgeEventSubscription:
 		if id := m.event_subscription; id != nil {
 			return []ent.Value{*id}
@@ -7327,7 +7547,7 @@ func (m *ApprovalMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApprovalMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -7339,9 +7559,12 @@ func (m *ApprovalMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApprovalMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedapi_subscription {
 		edges = append(edges, approval.EdgeAPISubscription)
+	}
+	if m.clearedfile_subscription {
+		edges = append(edges, approval.EdgeFileSubscription)
 	}
 	if m.clearedevent_subscription {
 		edges = append(edges, approval.EdgeEventSubscription)
@@ -7355,6 +7578,8 @@ func (m *ApprovalMutation) EdgeCleared(name string) bool {
 	switch name {
 	case approval.EdgeAPISubscription:
 		return m.clearedapi_subscription
+	case approval.EdgeFileSubscription:
+		return m.clearedfile_subscription
 	case approval.EdgeEventSubscription:
 		return m.clearedevent_subscription
 	}
@@ -7367,6 +7592,9 @@ func (m *ApprovalMutation) ClearEdge(name string) error {
 	switch name {
 	case approval.EdgeAPISubscription:
 		m.ClearAPISubscription()
+		return nil
+	case approval.EdgeFileSubscription:
+		m.ClearFileSubscription()
 		return nil
 	case approval.EdgeEventSubscription:
 		m.ClearEventSubscription()
@@ -7381,6 +7609,9 @@ func (m *ApprovalMutation) ResetEdge(name string) error {
 	switch name {
 	case approval.EdgeAPISubscription:
 		m.ResetAPISubscription()
+		return nil
+	case approval.EdgeFileSubscription:
+		m.ResetFileSubscription()
 		return nil
 	case approval.EdgeEventSubscription:
 		m.ResetEventSubscription()
@@ -7417,6 +7648,8 @@ type ApprovalRequestMutation struct {
 	clearedFields               map[string]struct{}
 	api_subscription            *int
 	clearedapi_subscription     bool
+	file_subscription           *int
+	clearedfile_subscription    bool
 	event_subscription          *int
 	clearedevent_subscription   bool
 	done                        bool
@@ -8249,6 +8482,45 @@ func (m *ApprovalRequestMutation) ResetAPISubscription() {
 	m.clearedapi_subscription = false
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by id.
+func (m *ApprovalRequestMutation) SetFileSubscriptionID(id int) {
+	m.file_subscription = &id
+}
+
+// ClearFileSubscription clears the "file_subscription" edge to the FileSubscription entity.
+func (m *ApprovalRequestMutation) ClearFileSubscription() {
+	m.clearedfile_subscription = true
+}
+
+// FileSubscriptionCleared reports if the "file_subscription" edge to the FileSubscription entity was cleared.
+func (m *ApprovalRequestMutation) FileSubscriptionCleared() bool {
+	return m.clearedfile_subscription
+}
+
+// FileSubscriptionID returns the "file_subscription" edge ID in the mutation.
+func (m *ApprovalRequestMutation) FileSubscriptionID() (id int, exists bool) {
+	if m.file_subscription != nil {
+		return *m.file_subscription, true
+	}
+	return
+}
+
+// FileSubscriptionIDs returns the "file_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FileSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *ApprovalRequestMutation) FileSubscriptionIDs() (ids []int) {
+	if id := m.file_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFileSubscription resets all changes to the "file_subscription" edge.
+func (m *ApprovalRequestMutation) ResetFileSubscription() {
+	m.file_subscription = nil
+	m.clearedfile_subscription = false
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by id.
 func (m *ApprovalRequestMutation) SetEventSubscriptionID(id int) {
 	m.event_subscription = &id
@@ -8709,9 +8981,12 @@ func (m *ApprovalRequestMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApprovalRequestMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.api_subscription != nil {
 		edges = append(edges, approvalrequest.EdgeAPISubscription)
+	}
+	if m.file_subscription != nil {
+		edges = append(edges, approvalrequest.EdgeFileSubscription)
 	}
 	if m.event_subscription != nil {
 		edges = append(edges, approvalrequest.EdgeEventSubscription)
@@ -8727,6 +9002,10 @@ func (m *ApprovalRequestMutation) AddedIDs(name string) []ent.Value {
 		if id := m.api_subscription; id != nil {
 			return []ent.Value{*id}
 		}
+	case approvalrequest.EdgeFileSubscription:
+		if id := m.file_subscription; id != nil {
+			return []ent.Value{*id}
+		}
 	case approvalrequest.EdgeEventSubscription:
 		if id := m.event_subscription; id != nil {
 			return []ent.Value{*id}
@@ -8737,7 +9016,7 @@ func (m *ApprovalRequestMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApprovalRequestMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -8749,9 +9028,12 @@ func (m *ApprovalRequestMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApprovalRequestMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedapi_subscription {
 		edges = append(edges, approvalrequest.EdgeAPISubscription)
+	}
+	if m.clearedfile_subscription {
+		edges = append(edges, approvalrequest.EdgeFileSubscription)
 	}
 	if m.clearedevent_subscription {
 		edges = append(edges, approvalrequest.EdgeEventSubscription)
@@ -8765,6 +9047,8 @@ func (m *ApprovalRequestMutation) EdgeCleared(name string) bool {
 	switch name {
 	case approvalrequest.EdgeAPISubscription:
 		return m.clearedapi_subscription
+	case approvalrequest.EdgeFileSubscription:
+		return m.clearedfile_subscription
 	case approvalrequest.EdgeEventSubscription:
 		return m.clearedevent_subscription
 	}
@@ -8777,6 +9061,9 @@ func (m *ApprovalRequestMutation) ClearEdge(name string) error {
 	switch name {
 	case approvalrequest.EdgeAPISubscription:
 		m.ClearAPISubscription()
+		return nil
+	case approvalrequest.EdgeFileSubscription:
+		m.ClearFileSubscription()
 		return nil
 	case approvalrequest.EdgeEventSubscription:
 		m.ClearEventSubscription()
@@ -8791,6 +9078,9 @@ func (m *ApprovalRequestMutation) ResetEdge(name string) error {
 	switch name {
 	case approvalrequest.EdgeAPISubscription:
 		m.ResetAPISubscription()
+		return nil
+	case approvalrequest.EdgeFileSubscription:
+		m.ResetFileSubscription()
 		return nil
 	case approvalrequest.EdgeEventSubscription:
 		m.ResetEventSubscription()
@@ -12558,6 +12848,4004 @@ func (m *EventTypeMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown EventType edge %s", name)
 }
 
+// FileExposureMutation represents an operation that mutates the FileExposure nodes in the graph.
+type FileExposureMutation struct {
+	config
+	op                     Op
+	typ                    string
+	id                     *int
+	created_at             *time.Time
+	last_modified_at       *time.Time
+	status_phase           *fileexposure.StatusPhase
+	status_message         *string
+	environment            *string
+	namespace              *string
+	file_type              *string
+	provider               *string
+	visibility             *fileexposure.Visibility
+	active                 *bool
+	zone_name              *string
+	zone_namespace         *string
+	sftp_public_keys       *[]string
+	appendsftp_public_keys []string
+	approval_config        *model.ApprovalConfig
+	clearedFields          map[string]struct{}
+	owner                  *int
+	clearedowner           bool
+	file_type_def          *int
+	clearedfile_type_def   bool
+	zone                   *int
+	clearedzone            bool
+	subscriptions          map[int]struct{}
+	removedsubscriptions   map[int]struct{}
+	clearedsubscriptions   bool
+	done                   bool
+	oldValue               func(context.Context) (*FileExposure, error)
+	predicates             []predicate.FileExposure
+}
+
+var _ ent.Mutation = (*FileExposureMutation)(nil)
+
+// fileexposureOption allows management of the mutation configuration using functional options.
+type fileexposureOption func(*FileExposureMutation)
+
+// newFileExposureMutation creates new mutation for the FileExposure entity.
+func newFileExposureMutation(c config, op Op, opts ...fileexposureOption) *FileExposureMutation {
+	m := &FileExposureMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFileExposure,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFileExposureID sets the ID field of the mutation.
+func withFileExposureID(id int) fileexposureOption {
+	return func(m *FileExposureMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FileExposure
+		)
+		m.oldValue = func(ctx context.Context) (*FileExposure, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FileExposure.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFileExposure sets the old FileExposure of the mutation.
+func withFileExposure(node *FileExposure) fileexposureOption {
+	return func(m *FileExposureMutation) {
+		m.oldValue = func(context.Context) (*FileExposure, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FileExposureMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FileExposureMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FileExposureMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FileExposureMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FileExposure.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FileExposureMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FileExposureMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FileExposureMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *FileExposureMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *FileExposureMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *FileExposureMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *FileExposureMutation) SetStatusPhase(fp fileexposure.StatusPhase) {
+	m.status_phase = &fp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *FileExposureMutation) StatusPhase() (r fileexposure.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldStatusPhase(ctx context.Context) (v *fileexposure.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *FileExposureMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[fileexposure.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *FileExposureMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *FileExposureMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, fileexposure.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *FileExposureMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *FileExposureMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *FileExposureMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[fileexposure.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *FileExposureMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *FileExposureMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, fileexposure.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *FileExposureMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *FileExposureMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *FileExposureMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[fileexposure.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *FileExposureMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *FileExposureMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, fileexposure.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *FileExposureMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *FileExposureMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *FileExposureMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetFileType sets the "file_type" field.
+func (m *FileExposureMutation) SetFileType(s string) {
+	m.file_type = &s
+}
+
+// FileType returns the value of the "file_type" field in the mutation.
+func (m *FileExposureMutation) FileType() (r string, exists bool) {
+	v := m.file_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFileType returns the old "file_type" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldFileType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFileType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFileType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFileType: %w", err)
+	}
+	return oldValue.FileType, nil
+}
+
+// ResetFileType resets all changes to the "file_type" field.
+func (m *FileExposureMutation) ResetFileType() {
+	m.file_type = nil
+}
+
+// SetProvider sets the "provider" field.
+func (m *FileExposureMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *FileExposureMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldProvider(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (m *FileExposureMutation) ClearProvider() {
+	m.provider = nil
+	m.clearedFields[fileexposure.FieldProvider] = struct{}{}
+}
+
+// ProviderCleared returns if the "provider" field was cleared in this mutation.
+func (m *FileExposureMutation) ProviderCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldProvider]
+	return ok
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *FileExposureMutation) ResetProvider() {
+	m.provider = nil
+	delete(m.clearedFields, fileexposure.FieldProvider)
+}
+
+// SetVisibility sets the "visibility" field.
+func (m *FileExposureMutation) SetVisibility(f fileexposure.Visibility) {
+	m.visibility = &f
+}
+
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *FileExposureMutation) Visibility() (r fileexposure.Visibility, exists bool) {
+	v := m.visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVisibility returns the old "visibility" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldVisibility(ctx context.Context) (v fileexposure.Visibility, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVisibility requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
+	}
+	return oldValue.Visibility, nil
+}
+
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *FileExposureMutation) ResetVisibility() {
+	m.visibility = nil
+}
+
+// SetActive sets the "active" field.
+func (m *FileExposureMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *FileExposureMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldActive(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ClearActive clears the value of the "active" field.
+func (m *FileExposureMutation) ClearActive() {
+	m.active = nil
+	m.clearedFields[fileexposure.FieldActive] = struct{}{}
+}
+
+// ActiveCleared returns if the "active" field was cleared in this mutation.
+func (m *FileExposureMutation) ActiveCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldActive]
+	return ok
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *FileExposureMutation) ResetActive() {
+	m.active = nil
+	delete(m.clearedFields, fileexposure.FieldActive)
+}
+
+// SetZoneName sets the "zone_name" field.
+func (m *FileExposureMutation) SetZoneName(s string) {
+	m.zone_name = &s
+}
+
+// ZoneName returns the value of the "zone_name" field in the mutation.
+func (m *FileExposureMutation) ZoneName() (r string, exists bool) {
+	v := m.zone_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldZoneName returns the old "zone_name" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldZoneName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldZoneName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldZoneName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldZoneName: %w", err)
+	}
+	return oldValue.ZoneName, nil
+}
+
+// ResetZoneName resets all changes to the "zone_name" field.
+func (m *FileExposureMutation) ResetZoneName() {
+	m.zone_name = nil
+}
+
+// SetZoneNamespace sets the "zone_namespace" field.
+func (m *FileExposureMutation) SetZoneNamespace(s string) {
+	m.zone_namespace = &s
+}
+
+// ZoneNamespace returns the value of the "zone_namespace" field in the mutation.
+func (m *FileExposureMutation) ZoneNamespace() (r string, exists bool) {
+	v := m.zone_namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldZoneNamespace returns the old "zone_namespace" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldZoneNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldZoneNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldZoneNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldZoneNamespace: %w", err)
+	}
+	return oldValue.ZoneNamespace, nil
+}
+
+// ClearZoneNamespace clears the value of the "zone_namespace" field.
+func (m *FileExposureMutation) ClearZoneNamespace() {
+	m.zone_namespace = nil
+	m.clearedFields[fileexposure.FieldZoneNamespace] = struct{}{}
+}
+
+// ZoneNamespaceCleared returns if the "zone_namespace" field was cleared in this mutation.
+func (m *FileExposureMutation) ZoneNamespaceCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldZoneNamespace]
+	return ok
+}
+
+// ResetZoneNamespace resets all changes to the "zone_namespace" field.
+func (m *FileExposureMutation) ResetZoneNamespace() {
+	m.zone_namespace = nil
+	delete(m.clearedFields, fileexposure.FieldZoneNamespace)
+}
+
+// SetSftpPublicKeys sets the "sftp_public_keys" field.
+func (m *FileExposureMutation) SetSftpPublicKeys(s []string) {
+	m.sftp_public_keys = &s
+	m.appendsftp_public_keys = nil
+}
+
+// SftpPublicKeys returns the value of the "sftp_public_keys" field in the mutation.
+func (m *FileExposureMutation) SftpPublicKeys() (r []string, exists bool) {
+	v := m.sftp_public_keys
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSftpPublicKeys returns the old "sftp_public_keys" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldSftpPublicKeys(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSftpPublicKeys is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSftpPublicKeys requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSftpPublicKeys: %w", err)
+	}
+	return oldValue.SftpPublicKeys, nil
+}
+
+// AppendSftpPublicKeys adds s to the "sftp_public_keys" field.
+func (m *FileExposureMutation) AppendSftpPublicKeys(s []string) {
+	m.appendsftp_public_keys = append(m.appendsftp_public_keys, s...)
+}
+
+// AppendedSftpPublicKeys returns the list of values that were appended to the "sftp_public_keys" field in this mutation.
+func (m *FileExposureMutation) AppendedSftpPublicKeys() ([]string, bool) {
+	if len(m.appendsftp_public_keys) == 0 {
+		return nil, false
+	}
+	return m.appendsftp_public_keys, true
+}
+
+// ResetSftpPublicKeys resets all changes to the "sftp_public_keys" field.
+func (m *FileExposureMutation) ResetSftpPublicKeys() {
+	m.sftp_public_keys = nil
+	m.appendsftp_public_keys = nil
+}
+
+// SetApprovalConfig sets the "approval_config" field.
+func (m *FileExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
+	m.approval_config = &mc
+}
+
+// ApprovalConfig returns the value of the "approval_config" field in the mutation.
+func (m *FileExposureMutation) ApprovalConfig() (r model.ApprovalConfig, exists bool) {
+	v := m.approval_config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldApprovalConfig returns the old "approval_config" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldApprovalConfig(ctx context.Context) (v model.ApprovalConfig, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldApprovalConfig is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldApprovalConfig requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApprovalConfig: %w", err)
+	}
+	return oldValue.ApprovalConfig, nil
+}
+
+// ResetApprovalConfig resets all changes to the "approval_config" field.
+func (m *FileExposureMutation) ResetApprovalConfig() {
+	m.approval_config = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Application entity by id.
+func (m *FileExposureMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Application entity.
+func (m *FileExposureMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
+func (m *FileExposureMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *FileExposureMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *FileExposureMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *FileExposureMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetFileTypeDefID sets the "file_type_def" edge to the FileType entity by id.
+func (m *FileExposureMutation) SetFileTypeDefID(id int) {
+	m.file_type_def = &id
+}
+
+// ClearFileTypeDef clears the "file_type_def" edge to the FileType entity.
+func (m *FileExposureMutation) ClearFileTypeDef() {
+	m.clearedfile_type_def = true
+}
+
+// FileTypeDefCleared reports if the "file_type_def" edge to the FileType entity was cleared.
+func (m *FileExposureMutation) FileTypeDefCleared() bool {
+	return m.clearedfile_type_def
+}
+
+// FileTypeDefID returns the "file_type_def" edge ID in the mutation.
+func (m *FileExposureMutation) FileTypeDefID() (id int, exists bool) {
+	if m.file_type_def != nil {
+		return *m.file_type_def, true
+	}
+	return
+}
+
+// FileTypeDefIDs returns the "file_type_def" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FileTypeDefID instead. It exists only for internal usage by the builders.
+func (m *FileExposureMutation) FileTypeDefIDs() (ids []int) {
+	if id := m.file_type_def; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFileTypeDef resets all changes to the "file_type_def" edge.
+func (m *FileExposureMutation) ResetFileTypeDef() {
+	m.file_type_def = nil
+	m.clearedfile_type_def = false
+}
+
+// SetZoneID sets the "zone" edge to the Zone entity by id.
+func (m *FileExposureMutation) SetZoneID(id int) {
+	m.zone = &id
+}
+
+// ClearZone clears the "zone" edge to the Zone entity.
+func (m *FileExposureMutation) ClearZone() {
+	m.clearedzone = true
+}
+
+// ZoneCleared reports if the "zone" edge to the Zone entity was cleared.
+func (m *FileExposureMutation) ZoneCleared() bool {
+	return m.clearedzone
+}
+
+// ZoneID returns the "zone" edge ID in the mutation.
+func (m *FileExposureMutation) ZoneID() (id int, exists bool) {
+	if m.zone != nil {
+		return *m.zone, true
+	}
+	return
+}
+
+// ZoneIDs returns the "zone" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ZoneID instead. It exists only for internal usage by the builders.
+func (m *FileExposureMutation) ZoneIDs() (ids []int) {
+	if id := m.zone; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetZone resets all changes to the "zone" edge.
+func (m *FileExposureMutation) ResetZone() {
+	m.zone = nil
+	m.clearedzone = false
+}
+
+// AddSubscriptionIDs adds the "subscriptions" edge to the FileSubscription entity by ids.
+func (m *FileExposureMutation) AddSubscriptionIDs(ids ...int) {
+	if m.subscriptions == nil {
+		m.subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptions clears the "subscriptions" edge to the FileSubscription entity.
+func (m *FileExposureMutation) ClearSubscriptions() {
+	m.clearedsubscriptions = true
+}
+
+// SubscriptionsCleared reports if the "subscriptions" edge to the FileSubscription entity was cleared.
+func (m *FileExposureMutation) SubscriptionsCleared() bool {
+	return m.clearedsubscriptions
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to the FileSubscription entity by IDs.
+func (m *FileExposureMutation) RemoveSubscriptionIDs(ids ...int) {
+	if m.removedsubscriptions == nil {
+		m.removedsubscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscriptions, ids[i])
+		m.removedsubscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the FileSubscription entity.
+func (m *FileExposureMutation) RemovedSubscriptionsIDs() (ids []int) {
+	for id := range m.removedsubscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
+func (m *FileExposureMutation) SubscriptionsIDs() (ids []int) {
+	for id := range m.subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptions resets all changes to the "subscriptions" edge.
+func (m *FileExposureMutation) ResetSubscriptions() {
+	m.subscriptions = nil
+	m.clearedsubscriptions = false
+	m.removedsubscriptions = nil
+}
+
+// Where appends a list predicates to the FileExposureMutation builder.
+func (m *FileExposureMutation) Where(ps ...predicate.FileExposure) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FileExposureMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FileExposureMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FileExposure, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FileExposureMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FileExposureMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FileExposure).
+func (m *FileExposureMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FileExposureMutation) Fields() []string {
+	fields := make([]string, 0, 14)
+	if m.created_at != nil {
+		fields = append(fields, fileexposure.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, fileexposure.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, fileexposure.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, fileexposure.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, fileexposure.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, fileexposure.FieldNamespace)
+	}
+	if m.file_type != nil {
+		fields = append(fields, fileexposure.FieldFileType)
+	}
+	if m.provider != nil {
+		fields = append(fields, fileexposure.FieldProvider)
+	}
+	if m.visibility != nil {
+		fields = append(fields, fileexposure.FieldVisibility)
+	}
+	if m.active != nil {
+		fields = append(fields, fileexposure.FieldActive)
+	}
+	if m.zone_name != nil {
+		fields = append(fields, fileexposure.FieldZoneName)
+	}
+	if m.zone_namespace != nil {
+		fields = append(fields, fileexposure.FieldZoneNamespace)
+	}
+	if m.sftp_public_keys != nil {
+		fields = append(fields, fileexposure.FieldSftpPublicKeys)
+	}
+	if m.approval_config != nil {
+		fields = append(fields, fileexposure.FieldApprovalConfig)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FileExposureMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case fileexposure.FieldCreatedAt:
+		return m.CreatedAt()
+	case fileexposure.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case fileexposure.FieldStatusPhase:
+		return m.StatusPhase()
+	case fileexposure.FieldStatusMessage:
+		return m.StatusMessage()
+	case fileexposure.FieldEnvironment:
+		return m.Environment()
+	case fileexposure.FieldNamespace:
+		return m.Namespace()
+	case fileexposure.FieldFileType:
+		return m.FileType()
+	case fileexposure.FieldProvider:
+		return m.Provider()
+	case fileexposure.FieldVisibility:
+		return m.Visibility()
+	case fileexposure.FieldActive:
+		return m.Active()
+	case fileexposure.FieldZoneName:
+		return m.ZoneName()
+	case fileexposure.FieldZoneNamespace:
+		return m.ZoneNamespace()
+	case fileexposure.FieldSftpPublicKeys:
+		return m.SftpPublicKeys()
+	case fileexposure.FieldApprovalConfig:
+		return m.ApprovalConfig()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FileExposureMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case fileexposure.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case fileexposure.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case fileexposure.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case fileexposure.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case fileexposure.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case fileexposure.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case fileexposure.FieldFileType:
+		return m.OldFileType(ctx)
+	case fileexposure.FieldProvider:
+		return m.OldProvider(ctx)
+	case fileexposure.FieldVisibility:
+		return m.OldVisibility(ctx)
+	case fileexposure.FieldActive:
+		return m.OldActive(ctx)
+	case fileexposure.FieldZoneName:
+		return m.OldZoneName(ctx)
+	case fileexposure.FieldZoneNamespace:
+		return m.OldZoneNamespace(ctx)
+	case fileexposure.FieldSftpPublicKeys:
+		return m.OldSftpPublicKeys(ctx)
+	case fileexposure.FieldApprovalConfig:
+		return m.OldApprovalConfig(ctx)
+	}
+	return nil, fmt.Errorf("unknown FileExposure field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileExposureMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case fileexposure.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case fileexposure.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case fileexposure.FieldStatusPhase:
+		v, ok := value.(fileexposure.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case fileexposure.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case fileexposure.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case fileexposure.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case fileexposure.FieldFileType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFileType(v)
+		return nil
+	case fileexposure.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case fileexposure.FieldVisibility:
+		v, ok := value.(fileexposure.Visibility)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibility(v)
+		return nil
+	case fileexposure.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	case fileexposure.FieldZoneName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetZoneName(v)
+		return nil
+	case fileexposure.FieldZoneNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetZoneNamespace(v)
+		return nil
+	case fileexposure.FieldSftpPublicKeys:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSftpPublicKeys(v)
+		return nil
+	case fileexposure.FieldApprovalConfig:
+		v, ok := value.(model.ApprovalConfig)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetApprovalConfig(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FileExposureMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FileExposureMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileExposureMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FileExposure numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FileExposureMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(fileexposure.FieldStatusPhase) {
+		fields = append(fields, fileexposure.FieldStatusPhase)
+	}
+	if m.FieldCleared(fileexposure.FieldStatusMessage) {
+		fields = append(fields, fileexposure.FieldStatusMessage)
+	}
+	if m.FieldCleared(fileexposure.FieldEnvironment) {
+		fields = append(fields, fileexposure.FieldEnvironment)
+	}
+	if m.FieldCleared(fileexposure.FieldProvider) {
+		fields = append(fields, fileexposure.FieldProvider)
+	}
+	if m.FieldCleared(fileexposure.FieldActive) {
+		fields = append(fields, fileexposure.FieldActive)
+	}
+	if m.FieldCleared(fileexposure.FieldZoneNamespace) {
+		fields = append(fields, fileexposure.FieldZoneNamespace)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FileExposureMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FileExposureMutation) ClearField(name string) error {
+	switch name {
+	case fileexposure.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case fileexposure.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case fileexposure.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case fileexposure.FieldProvider:
+		m.ClearProvider()
+		return nil
+	case fileexposure.FieldActive:
+		m.ClearActive()
+		return nil
+	case fileexposure.FieldZoneNamespace:
+		m.ClearZoneNamespace()
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FileExposureMutation) ResetField(name string) error {
+	switch name {
+	case fileexposure.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case fileexposure.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case fileexposure.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case fileexposure.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case fileexposure.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case fileexposure.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case fileexposure.FieldFileType:
+		m.ResetFileType()
+		return nil
+	case fileexposure.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case fileexposure.FieldVisibility:
+		m.ResetVisibility()
+		return nil
+	case fileexposure.FieldActive:
+		m.ResetActive()
+		return nil
+	case fileexposure.FieldZoneName:
+		m.ResetZoneName()
+		return nil
+	case fileexposure.FieldZoneNamespace:
+		m.ResetZoneNamespace()
+		return nil
+	case fileexposure.FieldSftpPublicKeys:
+		m.ResetSftpPublicKeys()
+		return nil
+	case fileexposure.FieldApprovalConfig:
+		m.ResetApprovalConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FileExposureMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.owner != nil {
+		edges = append(edges, fileexposure.EdgeOwner)
+	}
+	if m.file_type_def != nil {
+		edges = append(edges, fileexposure.EdgeFileTypeDef)
+	}
+	if m.zone != nil {
+		edges = append(edges, fileexposure.EdgeZone)
+	}
+	if m.subscriptions != nil {
+		edges = append(edges, fileexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FileExposureMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case fileexposure.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case fileexposure.EdgeFileTypeDef:
+		if id := m.file_type_def; id != nil {
+			return []ent.Value{*id}
+		}
+	case fileexposure.EdgeZone:
+		if id := m.zone; id != nil {
+			return []ent.Value{*id}
+		}
+	case fileexposure.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.subscriptions))
+		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FileExposureMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedsubscriptions != nil {
+		edges = append(edges, fileexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FileExposureMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case fileexposure.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
+		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FileExposureMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedowner {
+		edges = append(edges, fileexposure.EdgeOwner)
+	}
+	if m.clearedfile_type_def {
+		edges = append(edges, fileexposure.EdgeFileTypeDef)
+	}
+	if m.clearedzone {
+		edges = append(edges, fileexposure.EdgeZone)
+	}
+	if m.clearedsubscriptions {
+		edges = append(edges, fileexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FileExposureMutation) EdgeCleared(name string) bool {
+	switch name {
+	case fileexposure.EdgeOwner:
+		return m.clearedowner
+	case fileexposure.EdgeFileTypeDef:
+		return m.clearedfile_type_def
+	case fileexposure.EdgeZone:
+		return m.clearedzone
+	case fileexposure.EdgeSubscriptions:
+		return m.clearedsubscriptions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FileExposureMutation) ClearEdge(name string) error {
+	switch name {
+	case fileexposure.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case fileexposure.EdgeFileTypeDef:
+		m.ClearFileTypeDef()
+		return nil
+	case fileexposure.EdgeZone:
+		m.ClearZone()
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FileExposureMutation) ResetEdge(name string) error {
+	switch name {
+	case fileexposure.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case fileexposure.EdgeFileTypeDef:
+		m.ResetFileTypeDef()
+		return nil
+	case fileexposure.EdgeZone:
+		m.ResetZone()
+		return nil
+	case fileexposure.EdgeSubscriptions:
+		m.ResetSubscriptions()
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure edge %s", name)
+}
+
+// FileSubscriptionMutation represents an operation that mutates the FileSubscription nodes in the graph.
+type FileSubscriptionMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	last_modified_at         *time.Time
+	status_phase             *filesubscription.StatusPhase
+	status_message           *string
+	environment              *string
+	namespace                *string
+	name                     *string
+	file_type                *string
+	zone_name                *string
+	zone_namespace           *string
+	sftp_public_keys         *[]string
+	appendsftp_public_keys   []string
+	clearedFields            map[string]struct{}
+	owner                    *int
+	clearedowner             bool
+	file_type_def            *int
+	clearedfile_type_def     bool
+	target                   *int
+	clearedtarget            bool
+	zone                     *int
+	clearedzone              bool
+	approval                 *int
+	clearedapproval          bool
+	approval_requests        map[int]struct{}
+	removedapproval_requests map[int]struct{}
+	clearedapproval_requests bool
+	done                     bool
+	oldValue                 func(context.Context) (*FileSubscription, error)
+	predicates               []predicate.FileSubscription
+}
+
+var _ ent.Mutation = (*FileSubscriptionMutation)(nil)
+
+// filesubscriptionOption allows management of the mutation configuration using functional options.
+type filesubscriptionOption func(*FileSubscriptionMutation)
+
+// newFileSubscriptionMutation creates new mutation for the FileSubscription entity.
+func newFileSubscriptionMutation(c config, op Op, opts ...filesubscriptionOption) *FileSubscriptionMutation {
+	m := &FileSubscriptionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFileSubscription,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFileSubscriptionID sets the ID field of the mutation.
+func withFileSubscriptionID(id int) filesubscriptionOption {
+	return func(m *FileSubscriptionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FileSubscription
+		)
+		m.oldValue = func(ctx context.Context) (*FileSubscription, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FileSubscription.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFileSubscription sets the old FileSubscription of the mutation.
+func withFileSubscription(node *FileSubscription) filesubscriptionOption {
+	return func(m *FileSubscriptionMutation) {
+		m.oldValue = func(context.Context) (*FileSubscription, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FileSubscriptionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FileSubscriptionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FileSubscriptionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FileSubscriptionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FileSubscription.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FileSubscriptionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FileSubscriptionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FileSubscriptionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *FileSubscriptionMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *FileSubscriptionMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *FileSubscriptionMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *FileSubscriptionMutation) SetStatusPhase(fp filesubscription.StatusPhase) {
+	m.status_phase = &fp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *FileSubscriptionMutation) StatusPhase() (r filesubscription.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldStatusPhase(ctx context.Context) (v *filesubscription.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *FileSubscriptionMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[filesubscription.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *FileSubscriptionMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, filesubscription.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *FileSubscriptionMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *FileSubscriptionMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *FileSubscriptionMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[filesubscription.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *FileSubscriptionMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, filesubscription.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *FileSubscriptionMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *FileSubscriptionMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *FileSubscriptionMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[filesubscription.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *FileSubscriptionMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, filesubscription.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *FileSubscriptionMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *FileSubscriptionMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *FileSubscriptionMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetName sets the "name" field.
+func (m *FileSubscriptionMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *FileSubscriptionMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *FileSubscriptionMutation) ResetName() {
+	m.name = nil
+}
+
+// SetFileType sets the "file_type" field.
+func (m *FileSubscriptionMutation) SetFileType(s string) {
+	m.file_type = &s
+}
+
+// FileType returns the value of the "file_type" field in the mutation.
+func (m *FileSubscriptionMutation) FileType() (r string, exists bool) {
+	v := m.file_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFileType returns the old "file_type" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldFileType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFileType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFileType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFileType: %w", err)
+	}
+	return oldValue.FileType, nil
+}
+
+// ResetFileType resets all changes to the "file_type" field.
+func (m *FileSubscriptionMutation) ResetFileType() {
+	m.file_type = nil
+}
+
+// SetZoneName sets the "zone_name" field.
+func (m *FileSubscriptionMutation) SetZoneName(s string) {
+	m.zone_name = &s
+}
+
+// ZoneName returns the value of the "zone_name" field in the mutation.
+func (m *FileSubscriptionMutation) ZoneName() (r string, exists bool) {
+	v := m.zone_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldZoneName returns the old "zone_name" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldZoneName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldZoneName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldZoneName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldZoneName: %w", err)
+	}
+	return oldValue.ZoneName, nil
+}
+
+// ResetZoneName resets all changes to the "zone_name" field.
+func (m *FileSubscriptionMutation) ResetZoneName() {
+	m.zone_name = nil
+}
+
+// SetZoneNamespace sets the "zone_namespace" field.
+func (m *FileSubscriptionMutation) SetZoneNamespace(s string) {
+	m.zone_namespace = &s
+}
+
+// ZoneNamespace returns the value of the "zone_namespace" field in the mutation.
+func (m *FileSubscriptionMutation) ZoneNamespace() (r string, exists bool) {
+	v := m.zone_namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldZoneNamespace returns the old "zone_namespace" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldZoneNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldZoneNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldZoneNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldZoneNamespace: %w", err)
+	}
+	return oldValue.ZoneNamespace, nil
+}
+
+// ClearZoneNamespace clears the value of the "zone_namespace" field.
+func (m *FileSubscriptionMutation) ClearZoneNamespace() {
+	m.zone_namespace = nil
+	m.clearedFields[filesubscription.FieldZoneNamespace] = struct{}{}
+}
+
+// ZoneNamespaceCleared returns if the "zone_namespace" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) ZoneNamespaceCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldZoneNamespace]
+	return ok
+}
+
+// ResetZoneNamespace resets all changes to the "zone_namespace" field.
+func (m *FileSubscriptionMutation) ResetZoneNamespace() {
+	m.zone_namespace = nil
+	delete(m.clearedFields, filesubscription.FieldZoneNamespace)
+}
+
+// SetSftpPublicKeys sets the "sftp_public_keys" field.
+func (m *FileSubscriptionMutation) SetSftpPublicKeys(s []string) {
+	m.sftp_public_keys = &s
+	m.appendsftp_public_keys = nil
+}
+
+// SftpPublicKeys returns the value of the "sftp_public_keys" field in the mutation.
+func (m *FileSubscriptionMutation) SftpPublicKeys() (r []string, exists bool) {
+	v := m.sftp_public_keys
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSftpPublicKeys returns the old "sftp_public_keys" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldSftpPublicKeys(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSftpPublicKeys is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSftpPublicKeys requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSftpPublicKeys: %w", err)
+	}
+	return oldValue.SftpPublicKeys, nil
+}
+
+// AppendSftpPublicKeys adds s to the "sftp_public_keys" field.
+func (m *FileSubscriptionMutation) AppendSftpPublicKeys(s []string) {
+	m.appendsftp_public_keys = append(m.appendsftp_public_keys, s...)
+}
+
+// AppendedSftpPublicKeys returns the list of values that were appended to the "sftp_public_keys" field in this mutation.
+func (m *FileSubscriptionMutation) AppendedSftpPublicKeys() ([]string, bool) {
+	if len(m.appendsftp_public_keys) == 0 {
+		return nil, false
+	}
+	return m.appendsftp_public_keys, true
+}
+
+// ResetSftpPublicKeys resets all changes to the "sftp_public_keys" field.
+func (m *FileSubscriptionMutation) ResetSftpPublicKeys() {
+	m.sftp_public_keys = nil
+	m.appendsftp_public_keys = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Application entity by id.
+func (m *FileSubscriptionMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Application entity.
+func (m *FileSubscriptionMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
+func (m *FileSubscriptionMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *FileSubscriptionMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *FileSubscriptionMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetFileTypeDefID sets the "file_type_def" edge to the FileType entity by id.
+func (m *FileSubscriptionMutation) SetFileTypeDefID(id int) {
+	m.file_type_def = &id
+}
+
+// ClearFileTypeDef clears the "file_type_def" edge to the FileType entity.
+func (m *FileSubscriptionMutation) ClearFileTypeDef() {
+	m.clearedfile_type_def = true
+}
+
+// FileTypeDefCleared reports if the "file_type_def" edge to the FileType entity was cleared.
+func (m *FileSubscriptionMutation) FileTypeDefCleared() bool {
+	return m.clearedfile_type_def
+}
+
+// FileTypeDefID returns the "file_type_def" edge ID in the mutation.
+func (m *FileSubscriptionMutation) FileTypeDefID() (id int, exists bool) {
+	if m.file_type_def != nil {
+		return *m.file_type_def, true
+	}
+	return
+}
+
+// FileTypeDefIDs returns the "file_type_def" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FileTypeDefID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) FileTypeDefIDs() (ids []int) {
+	if id := m.file_type_def; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFileTypeDef resets all changes to the "file_type_def" edge.
+func (m *FileSubscriptionMutation) ResetFileTypeDef() {
+	m.file_type_def = nil
+	m.clearedfile_type_def = false
+}
+
+// SetTargetID sets the "target" edge to the FileExposure entity by id.
+func (m *FileSubscriptionMutation) SetTargetID(id int) {
+	m.target = &id
+}
+
+// ClearTarget clears the "target" edge to the FileExposure entity.
+func (m *FileSubscriptionMutation) ClearTarget() {
+	m.clearedtarget = true
+}
+
+// TargetCleared reports if the "target" edge to the FileExposure entity was cleared.
+func (m *FileSubscriptionMutation) TargetCleared() bool {
+	return m.clearedtarget
+}
+
+// TargetID returns the "target" edge ID in the mutation.
+func (m *FileSubscriptionMutation) TargetID() (id int, exists bool) {
+	if m.target != nil {
+		return *m.target, true
+	}
+	return
+}
+
+// TargetIDs returns the "target" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TargetID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) TargetIDs() (ids []int) {
+	if id := m.target; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTarget resets all changes to the "target" edge.
+func (m *FileSubscriptionMutation) ResetTarget() {
+	m.target = nil
+	m.clearedtarget = false
+}
+
+// SetZoneID sets the "zone" edge to the Zone entity by id.
+func (m *FileSubscriptionMutation) SetZoneID(id int) {
+	m.zone = &id
+}
+
+// ClearZone clears the "zone" edge to the Zone entity.
+func (m *FileSubscriptionMutation) ClearZone() {
+	m.clearedzone = true
+}
+
+// ZoneCleared reports if the "zone" edge to the Zone entity was cleared.
+func (m *FileSubscriptionMutation) ZoneCleared() bool {
+	return m.clearedzone
+}
+
+// ZoneID returns the "zone" edge ID in the mutation.
+func (m *FileSubscriptionMutation) ZoneID() (id int, exists bool) {
+	if m.zone != nil {
+		return *m.zone, true
+	}
+	return
+}
+
+// ZoneIDs returns the "zone" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ZoneID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) ZoneIDs() (ids []int) {
+	if id := m.zone; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetZone resets all changes to the "zone" edge.
+func (m *FileSubscriptionMutation) ResetZone() {
+	m.zone = nil
+	m.clearedzone = false
+}
+
+// SetApprovalID sets the "approval" edge to the Approval entity by id.
+func (m *FileSubscriptionMutation) SetApprovalID(id int) {
+	m.approval = &id
+}
+
+// ClearApproval clears the "approval" edge to the Approval entity.
+func (m *FileSubscriptionMutation) ClearApproval() {
+	m.clearedapproval = true
+}
+
+// ApprovalCleared reports if the "approval" edge to the Approval entity was cleared.
+func (m *FileSubscriptionMutation) ApprovalCleared() bool {
+	return m.clearedapproval
+}
+
+// ApprovalID returns the "approval" edge ID in the mutation.
+func (m *FileSubscriptionMutation) ApprovalID() (id int, exists bool) {
+	if m.approval != nil {
+		return *m.approval, true
+	}
+	return
+}
+
+// ApprovalIDs returns the "approval" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ApprovalID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) ApprovalIDs() (ids []int) {
+	if id := m.approval; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApproval resets all changes to the "approval" edge.
+func (m *FileSubscriptionMutation) ResetApproval() {
+	m.approval = nil
+	m.clearedapproval = false
+}
+
+// AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by ids.
+func (m *FileSubscriptionMutation) AddApprovalRequestIDs(ids ...int) {
+	if m.approval_requests == nil {
+		m.approval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.approval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// ClearApprovalRequests clears the "approval_requests" edge to the ApprovalRequest entity.
+func (m *FileSubscriptionMutation) ClearApprovalRequests() {
+	m.clearedapproval_requests = true
+}
+
+// ApprovalRequestsCleared reports if the "approval_requests" edge to the ApprovalRequest entity was cleared.
+func (m *FileSubscriptionMutation) ApprovalRequestsCleared() bool {
+	return m.clearedapproval_requests
+}
+
+// RemoveApprovalRequestIDs removes the "approval_requests" edge to the ApprovalRequest entity by IDs.
+func (m *FileSubscriptionMutation) RemoveApprovalRequestIDs(ids ...int) {
+	if m.removedapproval_requests == nil {
+		m.removedapproval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.approval_requests, ids[i])
+		m.removedapproval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApprovalRequests returns the removed IDs of the "approval_requests" edge to the ApprovalRequest entity.
+func (m *FileSubscriptionMutation) RemovedApprovalRequestsIDs() (ids []int) {
+	for id := range m.removedapproval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApprovalRequestsIDs returns the "approval_requests" edge IDs in the mutation.
+func (m *FileSubscriptionMutation) ApprovalRequestsIDs() (ids []int) {
+	for id := range m.approval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApprovalRequests resets all changes to the "approval_requests" edge.
+func (m *FileSubscriptionMutation) ResetApprovalRequests() {
+	m.approval_requests = nil
+	m.clearedapproval_requests = false
+	m.removedapproval_requests = nil
+}
+
+// Where appends a list predicates to the FileSubscriptionMutation builder.
+func (m *FileSubscriptionMutation) Where(ps ...predicate.FileSubscription) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FileSubscriptionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FileSubscriptionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FileSubscription, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FileSubscriptionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FileSubscriptionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FileSubscription).
+func (m *FileSubscriptionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FileSubscriptionMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, filesubscription.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, filesubscription.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, filesubscription.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, filesubscription.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, filesubscription.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, filesubscription.FieldNamespace)
+	}
+	if m.name != nil {
+		fields = append(fields, filesubscription.FieldName)
+	}
+	if m.file_type != nil {
+		fields = append(fields, filesubscription.FieldFileType)
+	}
+	if m.zone_name != nil {
+		fields = append(fields, filesubscription.FieldZoneName)
+	}
+	if m.zone_namespace != nil {
+		fields = append(fields, filesubscription.FieldZoneNamespace)
+	}
+	if m.sftp_public_keys != nil {
+		fields = append(fields, filesubscription.FieldSftpPublicKeys)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FileSubscriptionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case filesubscription.FieldCreatedAt:
+		return m.CreatedAt()
+	case filesubscription.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case filesubscription.FieldStatusPhase:
+		return m.StatusPhase()
+	case filesubscription.FieldStatusMessage:
+		return m.StatusMessage()
+	case filesubscription.FieldEnvironment:
+		return m.Environment()
+	case filesubscription.FieldNamespace:
+		return m.Namespace()
+	case filesubscription.FieldName:
+		return m.Name()
+	case filesubscription.FieldFileType:
+		return m.FileType()
+	case filesubscription.FieldZoneName:
+		return m.ZoneName()
+	case filesubscription.FieldZoneNamespace:
+		return m.ZoneNamespace()
+	case filesubscription.FieldSftpPublicKeys:
+		return m.SftpPublicKeys()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FileSubscriptionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case filesubscription.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case filesubscription.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case filesubscription.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case filesubscription.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case filesubscription.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case filesubscription.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case filesubscription.FieldName:
+		return m.OldName(ctx)
+	case filesubscription.FieldFileType:
+		return m.OldFileType(ctx)
+	case filesubscription.FieldZoneName:
+		return m.OldZoneName(ctx)
+	case filesubscription.FieldZoneNamespace:
+		return m.OldZoneNamespace(ctx)
+	case filesubscription.FieldSftpPublicKeys:
+		return m.OldSftpPublicKeys(ctx)
+	}
+	return nil, fmt.Errorf("unknown FileSubscription field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileSubscriptionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case filesubscription.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case filesubscription.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case filesubscription.FieldStatusPhase:
+		v, ok := value.(filesubscription.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case filesubscription.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case filesubscription.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case filesubscription.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case filesubscription.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case filesubscription.FieldFileType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFileType(v)
+		return nil
+	case filesubscription.FieldZoneName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetZoneName(v)
+		return nil
+	case filesubscription.FieldZoneNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetZoneNamespace(v)
+		return nil
+	case filesubscription.FieldSftpPublicKeys:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSftpPublicKeys(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FileSubscriptionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FileSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileSubscriptionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FileSubscription numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FileSubscriptionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(filesubscription.FieldStatusPhase) {
+		fields = append(fields, filesubscription.FieldStatusPhase)
+	}
+	if m.FieldCleared(filesubscription.FieldStatusMessage) {
+		fields = append(fields, filesubscription.FieldStatusMessage)
+	}
+	if m.FieldCleared(filesubscription.FieldEnvironment) {
+		fields = append(fields, filesubscription.FieldEnvironment)
+	}
+	if m.FieldCleared(filesubscription.FieldZoneNamespace) {
+		fields = append(fields, filesubscription.FieldZoneNamespace)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FileSubscriptionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FileSubscriptionMutation) ClearField(name string) error {
+	switch name {
+	case filesubscription.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case filesubscription.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case filesubscription.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case filesubscription.FieldZoneNamespace:
+		m.ClearZoneNamespace()
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FileSubscriptionMutation) ResetField(name string) error {
+	switch name {
+	case filesubscription.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case filesubscription.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case filesubscription.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case filesubscription.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case filesubscription.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case filesubscription.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case filesubscription.FieldName:
+		m.ResetName()
+		return nil
+	case filesubscription.FieldFileType:
+		m.ResetFileType()
+		return nil
+	case filesubscription.FieldZoneName:
+		m.ResetZoneName()
+		return nil
+	case filesubscription.FieldZoneNamespace:
+		m.ResetZoneNamespace()
+		return nil
+	case filesubscription.FieldSftpPublicKeys:
+		m.ResetSftpPublicKeys()
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FileSubscriptionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 6)
+	if m.owner != nil {
+		edges = append(edges, filesubscription.EdgeOwner)
+	}
+	if m.file_type_def != nil {
+		edges = append(edges, filesubscription.EdgeFileTypeDef)
+	}
+	if m.target != nil {
+		edges = append(edges, filesubscription.EdgeTarget)
+	}
+	if m.zone != nil {
+		edges = append(edges, filesubscription.EdgeZone)
+	}
+	if m.approval != nil {
+		edges = append(edges, filesubscription.EdgeApproval)
+	}
+	if m.approval_requests != nil {
+		edges = append(edges, filesubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FileSubscriptionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case filesubscription.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeFileTypeDef:
+		if id := m.file_type_def; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeTarget:
+		if id := m.target; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeZone:
+		if id := m.zone; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeApproval:
+		if id := m.approval; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.approval_requests))
+		for id := range m.approval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FileSubscriptionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 6)
+	if m.removedapproval_requests != nil {
+		edges = append(edges, filesubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FileSubscriptionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case filesubscription.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.removedapproval_requests))
+		for id := range m.removedapproval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FileSubscriptionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 6)
+	if m.clearedowner {
+		edges = append(edges, filesubscription.EdgeOwner)
+	}
+	if m.clearedfile_type_def {
+		edges = append(edges, filesubscription.EdgeFileTypeDef)
+	}
+	if m.clearedtarget {
+		edges = append(edges, filesubscription.EdgeTarget)
+	}
+	if m.clearedzone {
+		edges = append(edges, filesubscription.EdgeZone)
+	}
+	if m.clearedapproval {
+		edges = append(edges, filesubscription.EdgeApproval)
+	}
+	if m.clearedapproval_requests {
+		edges = append(edges, filesubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FileSubscriptionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case filesubscription.EdgeOwner:
+		return m.clearedowner
+	case filesubscription.EdgeFileTypeDef:
+		return m.clearedfile_type_def
+	case filesubscription.EdgeTarget:
+		return m.clearedtarget
+	case filesubscription.EdgeZone:
+		return m.clearedzone
+	case filesubscription.EdgeApproval:
+		return m.clearedapproval
+	case filesubscription.EdgeApprovalRequests:
+		return m.clearedapproval_requests
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FileSubscriptionMutation) ClearEdge(name string) error {
+	switch name {
+	case filesubscription.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case filesubscription.EdgeFileTypeDef:
+		m.ClearFileTypeDef()
+		return nil
+	case filesubscription.EdgeTarget:
+		m.ClearTarget()
+		return nil
+	case filesubscription.EdgeZone:
+		m.ClearZone()
+		return nil
+	case filesubscription.EdgeApproval:
+		m.ClearApproval()
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FileSubscriptionMutation) ResetEdge(name string) error {
+	switch name {
+	case filesubscription.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case filesubscription.EdgeFileTypeDef:
+		m.ResetFileTypeDef()
+		return nil
+	case filesubscription.EdgeTarget:
+		m.ResetTarget()
+		return nil
+	case filesubscription.EdgeZone:
+		m.ResetZone()
+		return nil
+	case filesubscription.EdgeApproval:
+		m.ResetApproval()
+		return nil
+	case filesubscription.EdgeApprovalRequests:
+		m.ResetApprovalRequests()
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription edge %s", name)
+}
+
+// FileTypeMutation represents an operation that mutates the FileType nodes in the graph.
+type FileTypeMutation struct {
+	config
+	op                      Op
+	typ                     string
+	id                      *int
+	created_at              *time.Time
+	last_modified_at        *time.Time
+	status_phase            *filetype.StatusPhase
+	status_message          *string
+	namespace               *string
+	file_type               *string
+	description             *string
+	variant                 *string
+	active                  *bool
+	sftp_instance_name      *string
+	sftp_instance_namespace *string
+	clearedFields           map[string]struct{}
+	owner                   *int
+	clearedowner            bool
+	exposures               map[int]struct{}
+	removedexposures        map[int]struct{}
+	clearedexposures        bool
+	subscriptions           map[int]struct{}
+	removedsubscriptions    map[int]struct{}
+	clearedsubscriptions    bool
+	done                    bool
+	oldValue                func(context.Context) (*FileType, error)
+	predicates              []predicate.FileType
+}
+
+var _ ent.Mutation = (*FileTypeMutation)(nil)
+
+// filetypeOption allows management of the mutation configuration using functional options.
+type filetypeOption func(*FileTypeMutation)
+
+// newFileTypeMutation creates new mutation for the FileType entity.
+func newFileTypeMutation(c config, op Op, opts ...filetypeOption) *FileTypeMutation {
+	m := &FileTypeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFileType,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFileTypeID sets the ID field of the mutation.
+func withFileTypeID(id int) filetypeOption {
+	return func(m *FileTypeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FileType
+		)
+		m.oldValue = func(ctx context.Context) (*FileType, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FileType.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFileType sets the old FileType of the mutation.
+func withFileType(node *FileType) filetypeOption {
+	return func(m *FileTypeMutation) {
+		m.oldValue = func(context.Context) (*FileType, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FileTypeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FileTypeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FileTypeMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FileTypeMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FileType.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FileTypeMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FileTypeMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FileTypeMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *FileTypeMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *FileTypeMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *FileTypeMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *FileTypeMutation) SetStatusPhase(fp filetype.StatusPhase) {
+	m.status_phase = &fp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *FileTypeMutation) StatusPhase() (r filetype.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldStatusPhase(ctx context.Context) (v *filetype.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *FileTypeMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[filetype.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *FileTypeMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *FileTypeMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, filetype.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *FileTypeMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *FileTypeMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *FileTypeMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[filetype.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *FileTypeMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *FileTypeMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, filetype.FieldStatusMessage)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *FileTypeMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *FileTypeMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *FileTypeMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetFileType sets the "file_type" field.
+func (m *FileTypeMutation) SetFileType(s string) {
+	m.file_type = &s
+}
+
+// FileType returns the value of the "file_type" field in the mutation.
+func (m *FileTypeMutation) FileType() (r string, exists bool) {
+	v := m.file_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFileType returns the old "file_type" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldFileType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFileType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFileType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFileType: %w", err)
+	}
+	return oldValue.FileType, nil
+}
+
+// ResetFileType resets all changes to the "file_type" field.
+func (m *FileTypeMutation) ResetFileType() {
+	m.file_type = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *FileTypeMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *FileTypeMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *FileTypeMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[filetype.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *FileTypeMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *FileTypeMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, filetype.FieldDescription)
+}
+
+// SetVariant sets the "variant" field.
+func (m *FileTypeMutation) SetVariant(s string) {
+	m.variant = &s
+}
+
+// Variant returns the value of the "variant" field in the mutation.
+func (m *FileTypeMutation) Variant() (r string, exists bool) {
+	v := m.variant
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVariant returns the old "variant" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldVariant(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVariant is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVariant requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVariant: %w", err)
+	}
+	return oldValue.Variant, nil
+}
+
+// ClearVariant clears the value of the "variant" field.
+func (m *FileTypeMutation) ClearVariant() {
+	m.variant = nil
+	m.clearedFields[filetype.FieldVariant] = struct{}{}
+}
+
+// VariantCleared returns if the "variant" field was cleared in this mutation.
+func (m *FileTypeMutation) VariantCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldVariant]
+	return ok
+}
+
+// ResetVariant resets all changes to the "variant" field.
+func (m *FileTypeMutation) ResetVariant() {
+	m.variant = nil
+	delete(m.clearedFields, filetype.FieldVariant)
+}
+
+// SetActive sets the "active" field.
+func (m *FileTypeMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *FileTypeMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *FileTypeMutation) ResetActive() {
+	m.active = nil
+}
+
+// SetSftpInstanceName sets the "sftp_instance_name" field.
+func (m *FileTypeMutation) SetSftpInstanceName(s string) {
+	m.sftp_instance_name = &s
+}
+
+// SftpInstanceName returns the value of the "sftp_instance_name" field in the mutation.
+func (m *FileTypeMutation) SftpInstanceName() (r string, exists bool) {
+	v := m.sftp_instance_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSftpInstanceName returns the old "sftp_instance_name" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldSftpInstanceName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSftpInstanceName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSftpInstanceName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSftpInstanceName: %w", err)
+	}
+	return oldValue.SftpInstanceName, nil
+}
+
+// ClearSftpInstanceName clears the value of the "sftp_instance_name" field.
+func (m *FileTypeMutation) ClearSftpInstanceName() {
+	m.sftp_instance_name = nil
+	m.clearedFields[filetype.FieldSftpInstanceName] = struct{}{}
+}
+
+// SftpInstanceNameCleared returns if the "sftp_instance_name" field was cleared in this mutation.
+func (m *FileTypeMutation) SftpInstanceNameCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldSftpInstanceName]
+	return ok
+}
+
+// ResetSftpInstanceName resets all changes to the "sftp_instance_name" field.
+func (m *FileTypeMutation) ResetSftpInstanceName() {
+	m.sftp_instance_name = nil
+	delete(m.clearedFields, filetype.FieldSftpInstanceName)
+}
+
+// SetSftpInstanceNamespace sets the "sftp_instance_namespace" field.
+func (m *FileTypeMutation) SetSftpInstanceNamespace(s string) {
+	m.sftp_instance_namespace = &s
+}
+
+// SftpInstanceNamespace returns the value of the "sftp_instance_namespace" field in the mutation.
+func (m *FileTypeMutation) SftpInstanceNamespace() (r string, exists bool) {
+	v := m.sftp_instance_namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSftpInstanceNamespace returns the old "sftp_instance_namespace" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldSftpInstanceNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSftpInstanceNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSftpInstanceNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSftpInstanceNamespace: %w", err)
+	}
+	return oldValue.SftpInstanceNamespace, nil
+}
+
+// ClearSftpInstanceNamespace clears the value of the "sftp_instance_namespace" field.
+func (m *FileTypeMutation) ClearSftpInstanceNamespace() {
+	m.sftp_instance_namespace = nil
+	m.clearedFields[filetype.FieldSftpInstanceNamespace] = struct{}{}
+}
+
+// SftpInstanceNamespaceCleared returns if the "sftp_instance_namespace" field was cleared in this mutation.
+func (m *FileTypeMutation) SftpInstanceNamespaceCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldSftpInstanceNamespace]
+	return ok
+}
+
+// ResetSftpInstanceNamespace resets all changes to the "sftp_instance_namespace" field.
+func (m *FileTypeMutation) ResetSftpInstanceNamespace() {
+	m.sftp_instance_namespace = nil
+	delete(m.clearedFields, filetype.FieldSftpInstanceNamespace)
+}
+
+// SetOwnerID sets the "owner" edge to the Team entity by id.
+func (m *FileTypeMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Team entity.
+func (m *FileTypeMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Team entity was cleared.
+func (m *FileTypeMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *FileTypeMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *FileTypeMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *FileTypeMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// AddExposureIDs adds the "exposures" edge to the FileExposure entity by ids.
+func (m *FileTypeMutation) AddExposureIDs(ids ...int) {
+	if m.exposures == nil {
+		m.exposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.exposures[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExposures clears the "exposures" edge to the FileExposure entity.
+func (m *FileTypeMutation) ClearExposures() {
+	m.clearedexposures = true
+}
+
+// ExposuresCleared reports if the "exposures" edge to the FileExposure entity was cleared.
+func (m *FileTypeMutation) ExposuresCleared() bool {
+	return m.clearedexposures
+}
+
+// RemoveExposureIDs removes the "exposures" edge to the FileExposure entity by IDs.
+func (m *FileTypeMutation) RemoveExposureIDs(ids ...int) {
+	if m.removedexposures == nil {
+		m.removedexposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.exposures, ids[i])
+		m.removedexposures[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExposures returns the removed IDs of the "exposures" edge to the FileExposure entity.
+func (m *FileTypeMutation) RemovedExposuresIDs() (ids []int) {
+	for id := range m.removedexposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExposuresIDs returns the "exposures" edge IDs in the mutation.
+func (m *FileTypeMutation) ExposuresIDs() (ids []int) {
+	for id := range m.exposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExposures resets all changes to the "exposures" edge.
+func (m *FileTypeMutation) ResetExposures() {
+	m.exposures = nil
+	m.clearedexposures = false
+	m.removedexposures = nil
+}
+
+// AddSubscriptionIDs adds the "subscriptions" edge to the FileSubscription entity by ids.
+func (m *FileTypeMutation) AddSubscriptionIDs(ids ...int) {
+	if m.subscriptions == nil {
+		m.subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptions clears the "subscriptions" edge to the FileSubscription entity.
+func (m *FileTypeMutation) ClearSubscriptions() {
+	m.clearedsubscriptions = true
+}
+
+// SubscriptionsCleared reports if the "subscriptions" edge to the FileSubscription entity was cleared.
+func (m *FileTypeMutation) SubscriptionsCleared() bool {
+	return m.clearedsubscriptions
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to the FileSubscription entity by IDs.
+func (m *FileTypeMutation) RemoveSubscriptionIDs(ids ...int) {
+	if m.removedsubscriptions == nil {
+		m.removedsubscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscriptions, ids[i])
+		m.removedsubscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the FileSubscription entity.
+func (m *FileTypeMutation) RemovedSubscriptionsIDs() (ids []int) {
+	for id := range m.removedsubscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
+func (m *FileTypeMutation) SubscriptionsIDs() (ids []int) {
+	for id := range m.subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptions resets all changes to the "subscriptions" edge.
+func (m *FileTypeMutation) ResetSubscriptions() {
+	m.subscriptions = nil
+	m.clearedsubscriptions = false
+	m.removedsubscriptions = nil
+}
+
+// Where appends a list predicates to the FileTypeMutation builder.
+func (m *FileTypeMutation) Where(ps ...predicate.FileType) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FileTypeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FileTypeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FileType, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FileTypeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FileTypeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FileType).
+func (m *FileTypeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FileTypeMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, filetype.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, filetype.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, filetype.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, filetype.FieldStatusMessage)
+	}
+	if m.namespace != nil {
+		fields = append(fields, filetype.FieldNamespace)
+	}
+	if m.file_type != nil {
+		fields = append(fields, filetype.FieldFileType)
+	}
+	if m.description != nil {
+		fields = append(fields, filetype.FieldDescription)
+	}
+	if m.variant != nil {
+		fields = append(fields, filetype.FieldVariant)
+	}
+	if m.active != nil {
+		fields = append(fields, filetype.FieldActive)
+	}
+	if m.sftp_instance_name != nil {
+		fields = append(fields, filetype.FieldSftpInstanceName)
+	}
+	if m.sftp_instance_namespace != nil {
+		fields = append(fields, filetype.FieldSftpInstanceNamespace)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FileTypeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case filetype.FieldCreatedAt:
+		return m.CreatedAt()
+	case filetype.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case filetype.FieldStatusPhase:
+		return m.StatusPhase()
+	case filetype.FieldStatusMessage:
+		return m.StatusMessage()
+	case filetype.FieldNamespace:
+		return m.Namespace()
+	case filetype.FieldFileType:
+		return m.FileType()
+	case filetype.FieldDescription:
+		return m.Description()
+	case filetype.FieldVariant:
+		return m.Variant()
+	case filetype.FieldActive:
+		return m.Active()
+	case filetype.FieldSftpInstanceName:
+		return m.SftpInstanceName()
+	case filetype.FieldSftpInstanceNamespace:
+		return m.SftpInstanceNamespace()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FileTypeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case filetype.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case filetype.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case filetype.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case filetype.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case filetype.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case filetype.FieldFileType:
+		return m.OldFileType(ctx)
+	case filetype.FieldDescription:
+		return m.OldDescription(ctx)
+	case filetype.FieldVariant:
+		return m.OldVariant(ctx)
+	case filetype.FieldActive:
+		return m.OldActive(ctx)
+	case filetype.FieldSftpInstanceName:
+		return m.OldSftpInstanceName(ctx)
+	case filetype.FieldSftpInstanceNamespace:
+		return m.OldSftpInstanceNamespace(ctx)
+	}
+	return nil, fmt.Errorf("unknown FileType field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileTypeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case filetype.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case filetype.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case filetype.FieldStatusPhase:
+		v, ok := value.(filetype.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case filetype.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case filetype.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case filetype.FieldFileType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFileType(v)
+		return nil
+	case filetype.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case filetype.FieldVariant:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVariant(v)
+		return nil
+	case filetype.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	case filetype.FieldSftpInstanceName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSftpInstanceName(v)
+		return nil
+	case filetype.FieldSftpInstanceNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSftpInstanceNamespace(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FileType field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FileTypeMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FileTypeMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileTypeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FileType numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FileTypeMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(filetype.FieldStatusPhase) {
+		fields = append(fields, filetype.FieldStatusPhase)
+	}
+	if m.FieldCleared(filetype.FieldStatusMessage) {
+		fields = append(fields, filetype.FieldStatusMessage)
+	}
+	if m.FieldCleared(filetype.FieldDescription) {
+		fields = append(fields, filetype.FieldDescription)
+	}
+	if m.FieldCleared(filetype.FieldVariant) {
+		fields = append(fields, filetype.FieldVariant)
+	}
+	if m.FieldCleared(filetype.FieldSftpInstanceName) {
+		fields = append(fields, filetype.FieldSftpInstanceName)
+	}
+	if m.FieldCleared(filetype.FieldSftpInstanceNamespace) {
+		fields = append(fields, filetype.FieldSftpInstanceNamespace)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FileTypeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FileTypeMutation) ClearField(name string) error {
+	switch name {
+	case filetype.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case filetype.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case filetype.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case filetype.FieldVariant:
+		m.ClearVariant()
+		return nil
+	case filetype.FieldSftpInstanceName:
+		m.ClearSftpInstanceName()
+		return nil
+	case filetype.FieldSftpInstanceNamespace:
+		m.ClearSftpInstanceNamespace()
+		return nil
+	}
+	return fmt.Errorf("unknown FileType nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FileTypeMutation) ResetField(name string) error {
+	switch name {
+	case filetype.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case filetype.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case filetype.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case filetype.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case filetype.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case filetype.FieldFileType:
+		m.ResetFileType()
+		return nil
+	case filetype.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case filetype.FieldVariant:
+		m.ResetVariant()
+		return nil
+	case filetype.FieldActive:
+		m.ResetActive()
+		return nil
+	case filetype.FieldSftpInstanceName:
+		m.ResetSftpInstanceName()
+		return nil
+	case filetype.FieldSftpInstanceNamespace:
+		m.ResetSftpInstanceNamespace()
+		return nil
+	}
+	return fmt.Errorf("unknown FileType field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FileTypeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.owner != nil {
+		edges = append(edges, filetype.EdgeOwner)
+	}
+	if m.exposures != nil {
+		edges = append(edges, filetype.EdgeExposures)
+	}
+	if m.subscriptions != nil {
+		edges = append(edges, filetype.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FileTypeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case filetype.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case filetype.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.exposures))
+		for id := range m.exposures {
+			ids = append(ids, id)
+		}
+		return ids
+	case filetype.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.subscriptions))
+		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FileTypeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removedexposures != nil {
+		edges = append(edges, filetype.EdgeExposures)
+	}
+	if m.removedsubscriptions != nil {
+		edges = append(edges, filetype.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FileTypeMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case filetype.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.removedexposures))
+		for id := range m.removedexposures {
+			ids = append(ids, id)
+		}
+		return ids
+	case filetype.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
+		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FileTypeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedowner {
+		edges = append(edges, filetype.EdgeOwner)
+	}
+	if m.clearedexposures {
+		edges = append(edges, filetype.EdgeExposures)
+	}
+	if m.clearedsubscriptions {
+		edges = append(edges, filetype.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FileTypeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case filetype.EdgeOwner:
+		return m.clearedowner
+	case filetype.EdgeExposures:
+		return m.clearedexposures
+	case filetype.EdgeSubscriptions:
+		return m.clearedsubscriptions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FileTypeMutation) ClearEdge(name string) error {
+	switch name {
+	case filetype.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown FileType unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FileTypeMutation) ResetEdge(name string) error {
+	switch name {
+	case filetype.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case filetype.EdgeExposures:
+		m.ResetExposures()
+		return nil
+	case filetype.EdgeSubscriptions:
+		m.ResetSubscriptions()
+		return nil
+	}
+	return fmt.Errorf("unknown FileType edge %s", name)
+}
+
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
 type GroupMutation struct {
 	config
@@ -14581,6 +18869,9 @@ type TeamMutation struct {
 	apis                map[int]struct{}
 	removedapis         map[int]struct{}
 	clearedapis         bool
+	file_types          map[int]struct{}
+	removedfile_types   map[int]struct{}
+	clearedfile_types   bool
 	event_types         map[int]struct{}
 	removedevent_types  map[int]struct{}
 	clearedevent_types  bool
@@ -15398,6 +19689,60 @@ func (m *TeamMutation) ResetApis() {
 	m.removedapis = nil
 }
 
+// AddFileTypeIDs adds the "file_types" edge to the FileType entity by ids.
+func (m *TeamMutation) AddFileTypeIDs(ids ...int) {
+	if m.file_types == nil {
+		m.file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.file_types[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFileTypes clears the "file_types" edge to the FileType entity.
+func (m *TeamMutation) ClearFileTypes() {
+	m.clearedfile_types = true
+}
+
+// FileTypesCleared reports if the "file_types" edge to the FileType entity was cleared.
+func (m *TeamMutation) FileTypesCleared() bool {
+	return m.clearedfile_types
+}
+
+// RemoveFileTypeIDs removes the "file_types" edge to the FileType entity by IDs.
+func (m *TeamMutation) RemoveFileTypeIDs(ids ...int) {
+	if m.removedfile_types == nil {
+		m.removedfile_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.file_types, ids[i])
+		m.removedfile_types[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFileTypes returns the removed IDs of the "file_types" edge to the FileType entity.
+func (m *TeamMutation) RemovedFileTypesIDs() (ids []int) {
+	for id := range m.removedfile_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FileTypesIDs returns the "file_types" edge IDs in the mutation.
+func (m *TeamMutation) FileTypesIDs() (ids []int) {
+	for id := range m.file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFileTypes resets all changes to the "file_types" edge.
+func (m *TeamMutation) ResetFileTypes() {
+	m.file_types = nil
+	m.clearedfile_types = false
+	m.removedfile_types = nil
+}
+
 // AddEventTypeIDs adds the "event_types" edge to the EventType entity by ids.
 func (m *TeamMutation) AddEventTypeIDs(ids ...int) {
 	if m.event_types == nil {
@@ -15811,7 +20156,7 @@ func (m *TeamMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TeamMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.group != nil {
 		edges = append(edges, team.EdgeGroup)
 	}
@@ -15823,6 +20168,9 @@ func (m *TeamMutation) AddedEdges() []string {
 	}
 	if m.apis != nil {
 		edges = append(edges, team.EdgeApis)
+	}
+	if m.file_types != nil {
+		edges = append(edges, team.EdgeFileTypes)
 	}
 	if m.event_types != nil {
 		edges = append(edges, team.EdgeEventTypes)
@@ -15856,6 +20204,12 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case team.EdgeFileTypes:
+		ids := make([]ent.Value, 0, len(m.file_types))
+		for id := range m.file_types {
+			ids = append(ids, id)
+		}
+		return ids
 	case team.EdgeEventTypes:
 		ids := make([]ent.Value, 0, len(m.event_types))
 		for id := range m.event_types {
@@ -15868,7 +20222,7 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TeamMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedmembers != nil {
 		edges = append(edges, team.EdgeMembers)
 	}
@@ -15877,6 +20231,9 @@ func (m *TeamMutation) RemovedEdges() []string {
 	}
 	if m.removedapis != nil {
 		edges = append(edges, team.EdgeApis)
+	}
+	if m.removedfile_types != nil {
+		edges = append(edges, team.EdgeFileTypes)
 	}
 	if m.removedevent_types != nil {
 		edges = append(edges, team.EdgeEventTypes)
@@ -15906,6 +20263,12 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case team.EdgeFileTypes:
+		ids := make([]ent.Value, 0, len(m.removedfile_types))
+		for id := range m.removedfile_types {
+			ids = append(ids, id)
+		}
+		return ids
 	case team.EdgeEventTypes:
 		ids := make([]ent.Value, 0, len(m.removedevent_types))
 		for id := range m.removedevent_types {
@@ -15918,7 +20281,7 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TeamMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedgroup {
 		edges = append(edges, team.EdgeGroup)
 	}
@@ -15930,6 +20293,9 @@ func (m *TeamMutation) ClearedEdges() []string {
 	}
 	if m.clearedapis {
 		edges = append(edges, team.EdgeApis)
+	}
+	if m.clearedfile_types {
+		edges = append(edges, team.EdgeFileTypes)
 	}
 	if m.clearedevent_types {
 		edges = append(edges, team.EdgeEventTypes)
@@ -15949,6 +20315,8 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 		return m.clearedapplications
 	case team.EdgeApis:
 		return m.clearedapis
+	case team.EdgeFileTypes:
+		return m.clearedfile_types
 	case team.EdgeEventTypes:
 		return m.clearedevent_types
 	}
@@ -15982,6 +20350,9 @@ func (m *TeamMutation) ResetEdge(name string) error {
 	case team.EdgeApis:
 		m.ResetApis()
 		return nil
+	case team.EdgeFileTypes:
+		m.ResetFileTypes()
+		return nil
 	case team.EdgeEventTypes:
 		m.ResetEventTypes()
 		return nil
@@ -15992,21 +20363,27 @@ func (m *TeamMutation) ResetEdge(name string) error {
 // ZoneMutation represents an operation that mutates the Zone nodes in the graph.
 type ZoneMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *int
-	environment         *string
-	name                *string
-	gateway_url         *string
-	issuer_url          *string
-	visibility          *zone.Visibility
-	clearedFields       map[string]struct{}
-	applications        map[int]struct{}
-	removedapplications map[int]struct{}
-	clearedapplications bool
-	done                bool
-	oldValue            func(context.Context) (*Zone, error)
-	predicates          []predicate.Zone
+	op                        Op
+	typ                       string
+	id                        *int
+	environment               *string
+	name                      *string
+	gateway_url               *string
+	issuer_url                *string
+	visibility                *zone.Visibility
+	clearedFields             map[string]struct{}
+	applications              map[int]struct{}
+	removedapplications       map[int]struct{}
+	clearedapplications       bool
+	file_exposures            map[int]struct{}
+	removedfile_exposures     map[int]struct{}
+	clearedfile_exposures     bool
+	file_subscriptions        map[int]struct{}
+	removedfile_subscriptions map[int]struct{}
+	clearedfile_subscriptions bool
+	done                      bool
+	oldValue                  func(context.Context) (*Zone, error)
+	predicates                []predicate.Zone
 }
 
 var _ ent.Mutation = (*ZoneMutation)(nil)
@@ -16380,6 +20757,114 @@ func (m *ZoneMutation) ResetApplications() {
 	m.removedapplications = nil
 }
 
+// AddFileExposureIDs adds the "file_exposures" edge to the FileExposure entity by ids.
+func (m *ZoneMutation) AddFileExposureIDs(ids ...int) {
+	if m.file_exposures == nil {
+		m.file_exposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.file_exposures[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFileExposures clears the "file_exposures" edge to the FileExposure entity.
+func (m *ZoneMutation) ClearFileExposures() {
+	m.clearedfile_exposures = true
+}
+
+// FileExposuresCleared reports if the "file_exposures" edge to the FileExposure entity was cleared.
+func (m *ZoneMutation) FileExposuresCleared() bool {
+	return m.clearedfile_exposures
+}
+
+// RemoveFileExposureIDs removes the "file_exposures" edge to the FileExposure entity by IDs.
+func (m *ZoneMutation) RemoveFileExposureIDs(ids ...int) {
+	if m.removedfile_exposures == nil {
+		m.removedfile_exposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.file_exposures, ids[i])
+		m.removedfile_exposures[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFileExposures returns the removed IDs of the "file_exposures" edge to the FileExposure entity.
+func (m *ZoneMutation) RemovedFileExposuresIDs() (ids []int) {
+	for id := range m.removedfile_exposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FileExposuresIDs returns the "file_exposures" edge IDs in the mutation.
+func (m *ZoneMutation) FileExposuresIDs() (ids []int) {
+	for id := range m.file_exposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFileExposures resets all changes to the "file_exposures" edge.
+func (m *ZoneMutation) ResetFileExposures() {
+	m.file_exposures = nil
+	m.clearedfile_exposures = false
+	m.removedfile_exposures = nil
+}
+
+// AddFileSubscriptionIDs adds the "file_subscriptions" edge to the FileSubscription entity by ids.
+func (m *ZoneMutation) AddFileSubscriptionIDs(ids ...int) {
+	if m.file_subscriptions == nil {
+		m.file_subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.file_subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFileSubscriptions clears the "file_subscriptions" edge to the FileSubscription entity.
+func (m *ZoneMutation) ClearFileSubscriptions() {
+	m.clearedfile_subscriptions = true
+}
+
+// FileSubscriptionsCleared reports if the "file_subscriptions" edge to the FileSubscription entity was cleared.
+func (m *ZoneMutation) FileSubscriptionsCleared() bool {
+	return m.clearedfile_subscriptions
+}
+
+// RemoveFileSubscriptionIDs removes the "file_subscriptions" edge to the FileSubscription entity by IDs.
+func (m *ZoneMutation) RemoveFileSubscriptionIDs(ids ...int) {
+	if m.removedfile_subscriptions == nil {
+		m.removedfile_subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.file_subscriptions, ids[i])
+		m.removedfile_subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFileSubscriptions returns the removed IDs of the "file_subscriptions" edge to the FileSubscription entity.
+func (m *ZoneMutation) RemovedFileSubscriptionsIDs() (ids []int) {
+	for id := range m.removedfile_subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FileSubscriptionsIDs returns the "file_subscriptions" edge IDs in the mutation.
+func (m *ZoneMutation) FileSubscriptionsIDs() (ids []int) {
+	for id := range m.file_subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFileSubscriptions resets all changes to the "file_subscriptions" edge.
+func (m *ZoneMutation) ResetFileSubscriptions() {
+	m.file_subscriptions = nil
+	m.clearedfile_subscriptions = false
+	m.removedfile_subscriptions = nil
+}
+
 // Where appends a list predicates to the ZoneMutation builder.
 func (m *ZoneMutation) Where(ps ...predicate.Zone) {
 	m.predicates = append(m.predicates, ps...)
@@ -16602,9 +21087,15 @@ func (m *ZoneMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ZoneMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.applications != nil {
 		edges = append(edges, zone.EdgeApplications)
+	}
+	if m.file_exposures != nil {
+		edges = append(edges, zone.EdgeFileExposures)
+	}
+	if m.file_subscriptions != nil {
+		edges = append(edges, zone.EdgeFileSubscriptions)
 	}
 	return edges
 }
@@ -16619,15 +21110,33 @@ func (m *ZoneMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case zone.EdgeFileExposures:
+		ids := make([]ent.Value, 0, len(m.file_exposures))
+		for id := range m.file_exposures {
+			ids = append(ids, id)
+		}
+		return ids
+	case zone.EdgeFileSubscriptions:
+		ids := make([]ent.Value, 0, len(m.file_subscriptions))
+		for id := range m.file_subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ZoneMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.removedapplications != nil {
 		edges = append(edges, zone.EdgeApplications)
+	}
+	if m.removedfile_exposures != nil {
+		edges = append(edges, zone.EdgeFileExposures)
+	}
+	if m.removedfile_subscriptions != nil {
+		edges = append(edges, zone.EdgeFileSubscriptions)
 	}
 	return edges
 }
@@ -16642,15 +21151,33 @@ func (m *ZoneMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case zone.EdgeFileExposures:
+		ids := make([]ent.Value, 0, len(m.removedfile_exposures))
+		for id := range m.removedfile_exposures {
+			ids = append(ids, id)
+		}
+		return ids
+	case zone.EdgeFileSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedfile_subscriptions))
+		for id := range m.removedfile_subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ZoneMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.clearedapplications {
 		edges = append(edges, zone.EdgeApplications)
+	}
+	if m.clearedfile_exposures {
+		edges = append(edges, zone.EdgeFileExposures)
+	}
+	if m.clearedfile_subscriptions {
+		edges = append(edges, zone.EdgeFileSubscriptions)
 	}
 	return edges
 }
@@ -16661,6 +21188,10 @@ func (m *ZoneMutation) EdgeCleared(name string) bool {
 	switch name {
 	case zone.EdgeApplications:
 		return m.clearedapplications
+	case zone.EdgeFileExposures:
+		return m.clearedfile_exposures
+	case zone.EdgeFileSubscriptions:
+		return m.clearedfile_subscriptions
 	}
 	return false
 }
@@ -16679,6 +21210,12 @@ func (m *ZoneMutation) ResetEdge(name string) error {
 	switch name {
 	case zone.EdgeApplications:
 		m.ResetApplications()
+		return nil
+	case zone.EdgeFileExposures:
+		m.ResetFileExposures()
+		return nil
+	case zone.EdgeFileSubscriptions:
+		m.ResetFileSubscriptions()
 		return nil
 	}
 	return fmt.Errorf("unknown Zone edge %s", name)
