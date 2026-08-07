@@ -34,6 +34,23 @@
     mountPath: /var/run/secrets/secretmgr
     readOnly: true
 
+- op: add
+  path: /spec/template/spec/volumes/-
+  value:
+    name: rover-token
+    projected:
+      sources:
+        - serviceAccountToken:
+            path: token
+            expirationSeconds: 600
+            audience: rover-server
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: rover-token
+    mountPath: /var/run/secrets/rover
+    readOnly: true
+
 # This patch will add the trust-manager bundle to the deployment
 # Only if trust-manager is installed, see https://cert-manager.io/docs/trust/trust-manager
 - op: add

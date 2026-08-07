@@ -70,29 +70,31 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("rover-controller")
 	r.Controller = cc.NewController(&rover_handler.RoverHandler{}, r.Client, r.Recorder)
 
+	owns := builder.WithPredicates(cc.Count("rover", cc.RoleOwns))
+
 	b := ctrl.NewControllerManagedBy(mgr).
-		For(&rover.Rover{}).
-		Owns(&apiapi.ApiSubscription{}).
-		Owns(&apiapi.ApiExposure{}).
-		Owns(&application.Application{})
+		For(&rover.Rover{}, builder.WithPredicates(cc.Count("rover", cc.RoleFor))).
+		Owns(&apiapi.ApiSubscription{}, owns).
+		Owns(&apiapi.ApiExposure{}, owns).
+		Owns(&application.Application{}, owns)
 
 	if cconfig.FeaturePubSub.IsEnabled() {
-		b = b.Owns(&eventv1.EventExposure{}).
-			Owns(&eventv1.EventSubscription{})
+		b = b.Owns(&eventv1.EventExposure{}, owns).
+			Owns(&eventv1.EventSubscription{}, owns)
 	}
 
 	if cconfig.FeaturePermission.IsEnabled() {
-		b = b.Owns(&permissionv1.PermissionSet{})
+		b = b.Owns(&permissionv1.PermissionSet{}, owns)
 	}
 
 	if cconfig.FeatureAiGateway.IsEnabled() {
-		b = b.Owns(&agenticv1.AgenticExposure{}).
-			Owns(&agenticv1.AgenticSubscription{})
+		b = b.Owns(&agenticv1.AgenticExposure{}, owns).
+			Owns(&agenticv1.AgenticSubscription{}, owns)
 	}
 
 	b = b.Watches(&organizationv1.Team{},
 		handler.EnqueueRequestsFromMapFunc(r.MapTeamToRovers),
-		builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 	)
 
 	return b.WithOptions(controller.Options{

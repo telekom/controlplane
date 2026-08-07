@@ -69,7 +69,8 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	if changed, setupErr := FirstSetup(ctx, c.Client, object); setupErr != nil {
 		return HandleError(ctx, setupErr, object, c.Recorder)
 	} else if changed {
-		return reconcile.Result{}, nil
+		// FirstSetup may only change metadata/status (e.g., add a finalizer), which might not trigger a follow-up reconcile when using a GenerationChangedPredicate; explicitly requeue to continue reconciliation.
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	logger.V(1).Info("Fetched object")

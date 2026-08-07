@@ -43,6 +43,13 @@ var _ = Describe("SecurityConfig", func() {
 			Expect(cfg.TLS.Cert).To(Equal("/etc/tls/tls.crt"))
 			Expect(cfg.TLS.Key).To(Equal("/etc/tls/tls.key"))
 		})
+
+		It("defaults rover-server TLS to the mounted trust bundle", func() {
+			cfg := config.DefaultConfig()
+			Expect(cfg.RoverServer.BaseURL).To(Equal("https://rover-server-service.controlplane-system.svc.cluster.local:9443"))
+			Expect(cfg.RoverServer.TokenFilePath).To(Equal("/var/run/secrets/rover/token"))
+			Expect(cfg.RoverServer.CaFilePath).To(Equal("/var/run/secrets/trust-bundle/trust-bundle.pem"))
+		})
 	})
 
 	Describe("GetConfigOrDie", func() {

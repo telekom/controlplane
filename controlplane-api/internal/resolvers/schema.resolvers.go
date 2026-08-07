@@ -541,6 +541,19 @@ func (r *queryResolver) APICategories(ctx context.Context) ([]*gqlmodel.APICateg
 	return categories, nil
 }
 
+// Groups is the resolver for the groups field.
+func (r *queryResolver) Groups(ctx context.Context, where *ent.GroupWhereInput) ([]*ent.Group, error) {
+	query := r.client.Group.Query()
+	if where != nil {
+		p, err := where.P()
+		if err != nil {
+			return nil, fmt.Errorf("invalid filter: %w", err)
+		}
+		query = query.Where(p)
+	}
+	return query.All(ctx)
+}
+
 // Mode is the resolver for the mode field.
 func (r *responseFilterResolver) Mode(ctx context.Context, obj *model.ResponseFilter) (*gqlmodel.ResponseFilterMode, error) {
 	if obj.Mode == "" {

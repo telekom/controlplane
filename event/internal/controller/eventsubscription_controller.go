@@ -61,25 +61,25 @@ func (r *EventSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&eventsubscription.EventSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&eventv1.EventSubscription{}).
-		Owns(&approvalv1.ApprovalRequest{}).
-		Owns(&approvalv1.Approval{}).
-		Owns(&pubsubv1.Subscriber{}).
+		For(&eventv1.EventSubscription{}, builder.WithPredicates(cc.Count("eventsubscription", cc.RoleFor))).
+		Owns(&approvalv1.ApprovalRequest{}, builder.WithPredicates(cc.Count("eventsubscription", cc.RoleOwns))).
+		Owns(&approvalv1.Approval{}, builder.WithPredicates(cc.Count("eventsubscription", cc.RoleOwns))).
+		Owns(&pubsubv1.Subscriber{}, builder.WithPredicates(cc.Count("eventsubscription", cc.RoleOwns))).
 		Watches(&eventv1.EventExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventExposureToEventSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&eventv1.EventConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventConfigToEventSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToEventSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventSubscription),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
