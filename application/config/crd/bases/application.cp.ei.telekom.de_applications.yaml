@@ -325,6 +325,8 @@ spec:
                   - threshold
                   type: object
                 type: array
+              tokenUrl:
+                type: string
             required:
             - clientId
             - clientSecret

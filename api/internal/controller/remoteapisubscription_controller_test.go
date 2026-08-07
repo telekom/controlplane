@@ -140,7 +140,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 		By("Creating the remote Zone with custom gateway URL")
 		remoteZone = CreateZone(remoteOrgId + "-" + zoneName)
 		// Update the zone's preset to use the expected gateway URL
-		remoteZone.Spec.Gateway.Presets[0].Urls = []adminapi.UrlConfig{
+		remoteZone.Spec.Presets[0].Urls = []adminapi.UrlConfig{
 			{
 				Hostname: "ger.gateway.es",
 				Scheme:   "https",

@@ -12,26 +12,87 @@ metadata:
   name: zone-a
   namespace: default
 spec:
-  identityProvider:
-    admin:
-#      url: https://iris-integration.test.dhei.telekom.de/auth/admin/realms
-      clientId: admin-cli
-      userName: admin
-      password: somePassword
-    url: https://iris-integration.test.dhei.telekom.de/
-  gateway:
-    admin:
-      clientSecret: someRoverSecret
-      url: https://stargate-admin-distcp2-dataplane1.dev.dhei.telekom.de/admin-api
-    url: https://stargate-admin-distcp2-dataplane1.dev.dhei.telekom.de/
+  # zone-level features
+  features:
+    - name: BasicAuth
+      enabled: true
+  visibility: Enterprise
+  identityProviders:
+    - name: primary
+      admin:
+        url: https://identity.example.com/auth/admin/realms
+        clientId: admin-cli
+        userName: admin
+        password: change-me
+      issuerHostname: identity.example.com
+      # tokenUrl is discovered from each generated realm issuer when omitted.
+      secretRotation:
+        enabled: true
+        gracePeriod: 168h
+        expirationPeriod: 2160h
+        notificationThresholds:
+          - before: 720h
+          - before: 168h
+            repeat: 24h
+  gateways:
+    - name: standard
+      admin:
+        identityProviderRef: primary
+        url: https://gateway-admin.example.com/admin-api
+        clientId: gateway-admin
+    - name: ai
+      admin:
+        identityProviderRef: primary
+        url: https://ai-gateway-admin.example.com/admin-api
+        clientId: ai-gateway-admin
+  presets:
+    - name: default
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: gateway.example.com
+          scheme: https
+          basePath: /
+          hidden: false
+    - name: consumer-failover
+      gatewayRef: standard
+      identityProviderRef: primary
+      tokenUrl: https://dtc.identity.example.com/auth/realms/default/protocol/openid-connect/token
+      urls:
+        - hostname: dtc.gateway.example.com
+          scheme: https
+          basePath: /
+          hidden: false
+      features:
+        - name: ConsumerFailover
+          enabled: true
+    - name: ai
+      gatewayRef: ai
+      identityProviderRef: primary
+      urls:
+        - hostname: ai.gateway.example.com
+          scheme: https
+          basePath: /
+          hidden: false
+      features:
+        - name: AiGateway
+          enabled: true
   redis:
-    host: bla
-    port: 0
-    password: password
+    host: redis-master.default.svc.cluster.local
+    port: 6379
+    password: change-me
+    enableTLS: true
   managedRoutes:
     routes:
-      - name: my-first-team-api
-        path: /my/first/team/api
-        url: https://somewhere.com/other/api/path
+      - name: team-api
+        path: /team-api
+        url: https://team-api.default.svc.cluster.local
         type: TeamAPI
-
+  permissions:
+    apiBasePath: /eni/chevron/v2/permission
+    consoleUrl: https://permissions.example.com
+  externalIdPolicies:
+    - scheme: psi
+      required: true
+      pattern: "^[0-9]{8}$"

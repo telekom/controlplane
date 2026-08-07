@@ -39,6 +39,8 @@ const (
 	FieldClientID = "client_id"
 	// FieldClientSecret holds the string denoting the client_secret field in the database.
 	FieldClientSecret = "client_secret"
+	// FieldTokenURL holds the string denoting the token_url field in the database.
+	FieldTokenURL = "token_url"
 	// FieldRotatedClientSecret holds the string denoting the rotated_client_secret field in the database.
 	FieldRotatedClientSecret = "rotated_client_secret"
 	// FieldRotatedExpiresAt holds the string denoting the rotated_expires_at field in the database.
@@ -132,6 +134,7 @@ var Columns = []string{
 	FieldName,
 	FieldClientID,
 	FieldClientSecret,
+	FieldTokenURL,
 	FieldRotatedClientSecret,
 	FieldRotatedExpiresAt,
 	FieldCurrentExpiresAt,
@@ -185,6 +188,8 @@ var (
 	ClientIDValidator func(string) error
 	// ClientSecretValidator is a validator for the "client_secret" field. It is called by the builders before save.
 	ClientSecretValidator func(string) error
+	// TokenURLValidator is a validator for the "token_url" field. It is called by the builders before save.
+	TokenURLValidator func(string) error
 	// RotatedClientSecretValidator is a validator for the "rotated_client_secret" field. It is called by the builders before save.
 	RotatedClientSecretValidator func(string) error
 )
@@ -294,6 +299,11 @@ func ByClientID(opts ...sql.OrderTermOption) OrderOption {
 // ByClientSecret orders the results by the client_secret field.
 func ByClientSecret(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldClientSecret, opts...).ToFunc()
+}
+
+// ByTokenURL orders the results by the token_url field.
+func ByTokenURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTokenURL, opts...).ToFunc()
 }
 
 // ByRotatedClientSecret orders the results by the rotated_client_secret field.

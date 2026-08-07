@@ -65,9 +65,9 @@ func makeReadyApi() apiapi.Api {
 	return api
 }
 
-func makeReadyZone(name, namespace, issuer, lmsIssuer string, presets ...adminv1.GatewayConfigPreset) *adminv1.Zone {
+func makeReadyZone(name, namespace, issuer, lmsIssuer string, presets ...adminv1.Preset) *adminv1.Zone {
 	if len(presets) == 0 {
-		presets = []adminv1.GatewayConfigPreset{{
+		presets = []adminv1.Preset{{
 			Name: "default", Default: true,
 			Urls: []adminv1.UrlConfig{{
 				Hostname: name + ".gw.example.com",
@@ -79,17 +79,22 @@ func makeReadyZone(name, namespace, issuer, lmsIssuer string, presets ...adminv1
 	z := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{Presets: presets},
+			Presets: presets,
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: namespace,
-			Gateway:   &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace},
 			RealmName: testEnv,
-			Links: adminv1.Links{
+			Presets: []adminv1.PresetStatus{{Name: presets[0].Name, GatewayRef: &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace}, Links: adminv1.Links{
 				Issuer:    issuer,
 				LmsIssuer: lmsIssuer,
-			},
+			}}},
 		},
+	}
+	for _, preset := range presets[1:] {
+		z.Status.Presets = append(z.Status.Presets, adminv1.PresetStatus{
+			Name: preset.Name, GatewayRef: &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace},
+			Links: adminv1.Links{Issuer: issuer, LmsIssuer: lmsIssuer},
+		})
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
 		Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
@@ -185,11 +190,11 @@ var _ = Describe("ApiExposureHandler", func() {
 		zoneACF = func() *adminv1.Zone {
 			z := makeReadyZone("zone-a", "ns-a",
 				"https://idp.zone-a.example.com", "https://lms.zone-a.example.com",
-				adminv1.GatewayConfigPreset{
+				adminv1.Preset{
 					Name: "default", Default: true,
 					Urls: []adminv1.UrlConfig{{Hostname: "zone-a.gw.example.com", Scheme: "https", BasePath: "/"}},
 				},
-				adminv1.GatewayConfigPreset{
+				adminv1.Preset{
 					Name:     "consumer-failover",
 					Urls:     []adminv1.UrlConfig{{Hostname: "zone-a.cf.example.com", Scheme: "https", BasePath: "/cf"}},
 					Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
@@ -200,11 +205,11 @@ var _ = Describe("ApiExposureHandler", func() {
 		zoneCCF = func() *adminv1.Zone {
 			z := makeReadyZone("zone-c", "ns-c",
 				"https://idp.zone-c.example.com", "https://lms.zone-c.example.com",
-				adminv1.GatewayConfigPreset{
+				adminv1.Preset{
 					Name: "default", Default: true,
 					Urls: []adminv1.UrlConfig{{Hostname: "zone-c.gw.example.com", Scheme: "https", BasePath: "/"}},
 				},
-				adminv1.GatewayConfigPreset{
+				adminv1.Preset{
 					Name:     "consumer-failover",
 					Urls:     []adminv1.UrlConfig{{Hostname: "zone-c.cf.example.com", Scheme: "https", BasePath: "/cf"}},
 					Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},

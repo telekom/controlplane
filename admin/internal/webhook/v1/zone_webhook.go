@@ -29,6 +29,7 @@ func SetupZoneWebhookWithManager(mgr ctrl.Manager, secretManager secretsapi.Secr
 		WithDefaulter(&ZoneCustomDefaulter{
 			secretManager: secretManager,
 		}).
+		WithValidator(&ZoneCustomValidator{}).
 		Complete()
 }
 
@@ -100,26 +101,29 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 
 	zoneName := zone.Name
 
-	idpPasswordPath := fmt.Sprintf("zones/%s/admin/identityProvider/password", zoneName)
 	redisPasswordPath := fmt.Sprintf("zones/%s/admin/redis/password", zoneName)
-	gatewaySecretPath := fmt.Sprintf("zones/%s/admin/gateway/clientSecret", zoneName)
 
 	options := []secretsapi.OnboardingOption{
 		secretsapi.WithMergeStrategy(),
 	}
 
-	// IDP admin password
-	needsIdpPassword := !secretsapi.IsRef(zone.Spec.IdentityProvider.Admin.Password)
-	if needsIdpPassword {
-		secretValue, err := secretValueOrGenerate(zone.Spec.IdentityProvider.Admin.Password)
+	idpPasswordPaths := make(map[int]string)
+	for i := range zone.Spec.IdentityProviders {
+		identityProvider := &zone.Spec.IdentityProviders[i]
+		if secretsapi.IsRef(identityProvider.Admin.Password) {
+			continue
+		}
+		secretValue, err := secretValueOrGenerate(identityProvider.Admin.Password)
 		if err != nil {
 			return errors.Wrap(err, "failed to determine IDP admin password value")
 		}
+		idpPasswordPath := fmt.Sprintf("zones/%s/admin/identityProviders/%s/password", zoneName, identityProvider.Name)
+		idpPasswordPaths[i] = idpPasswordPath
 		options = append(options, secretsapi.WithSecretValue(idpPasswordPath, secretValue))
 	}
 
 	// Redis password
-	needsRedisPassword := !secretsapi.IsRef(zone.Spec.Redis.Password)
+	needsRedisPassword := zone.Spec.Redis != nil && !secretsapi.IsRef(zone.Spec.Redis.Password)
 	if needsRedisPassword {
 		secretValue, err := secretValueOrGenerate(zone.Spec.Redis.Password)
 		if err != nil {
@@ -128,18 +132,22 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 		options = append(options, secretsapi.WithSecretValue(redisPasswordPath, secretValue))
 	}
 
-	// Gateway client secret
-	gatewayAdminClientSecret := zone.Spec.Gateway.Admin.ClientSecret
-	needsGatewaySecret := gatewayAdminClientSecret == nil || !secretsapi.IsRef(*gatewayAdminClientSecret)
-	if needsGatewaySecret {
+	gatewaySecretPaths := make(map[int]string)
+	for i := range zone.Spec.Gateways {
+		gateway := &zone.Spec.Gateways[i]
+		gatewayAdminClientSecret := gateway.Admin.ClientSecret
+		if gatewayAdminClientSecret != nil && secretsapi.IsRef(*gatewayAdminClientSecret) {
+			continue
+		}
 		if gatewayAdminClientSecret == nil {
-			// Initialize pointer to avoid nil dereference in secretValueOrGenerate
 			gatewayAdminClientSecret = new(string)
 		}
 		secretValue, err := secretValueOrGenerate(*gatewayAdminClientSecret)
 		if err != nil {
 			return errors.Wrap(err, "failed to determine gateway client secret value")
 		}
+		gatewaySecretPath := fmt.Sprintf("zones/%s/admin/gateways/%s/clientSecret", zoneName, gateway.Name)
+		gatewaySecretPaths[i] = gatewaySecretPath
 		options = append(options, secretsapi.WithSecretValue(gatewaySecretPath, secretValue))
 	}
 
@@ -154,12 +162,12 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 	}
 	zonelog.Info("Successfully onboarded secrets for Zone", "environment", envName, "secrets", len(availableSecrets))
 
-	if needsIdpPassword {
+	for i, idpPasswordPath := range idpPasswordPaths {
 		ref, found := secretsapi.FindSecretId(availableSecrets, idpPasswordPath)
 		if !found {
 			return fmt.Errorf("IDP admin password reference not found in onboarding response")
 		}
-		zone.Spec.IdentityProvider.Admin.Password = ref
+		zone.Spec.IdentityProviders[i].Admin.Password = ref
 		zonelog.Info("Onboarded IDP admin password for Zone", "secretId", idpPasswordPath)
 	}
 
@@ -172,12 +180,12 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 		zonelog.Info("Onboarded Redis password for Zone", "secretId", redisPasswordPath)
 	}
 
-	if needsGatewaySecret {
+	for i, gatewaySecretPath := range gatewaySecretPaths {
 		ref, found := secretsapi.FindSecretId(availableSecrets, gatewaySecretPath)
 		if !found {
 			return fmt.Errorf("gateway client secret reference not found in onboarding response")
 		}
-		zone.Spec.Gateway.Admin.ClientSecret = &ref
+		zone.Spec.Gateways[i].Admin.ClientSecret = &ref
 		zonelog.Info("Onboarded gateway client secret for Zone", "secretId", gatewaySecretPath)
 	}
 
@@ -195,18 +203,35 @@ func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) e
 	// On UPDATE: preserve existing secrets when the new value is empty.
 	// This prevents accidental secret regeneration when users omit the field.
 	if oldZone, isUpdate := getOldZone(ctx); isUpdate {
-		zone.Spec.IdentityProvider.Admin.Password = resolveSecretForUpdate(
-			zone.Spec.IdentityProvider.Admin.Password,
-			oldZone.Spec.IdentityProvider.Admin.Password,
-		)
-		zone.Spec.Redis.Password = resolveSecretForUpdate(
-			zone.Spec.Redis.Password,
-			oldZone.Spec.Redis.Password,
-		)
-		zone.Spec.Gateway.Admin.ClientSecret = resolveOptionalSecretForUpdate(
-			zone.Spec.Gateway.Admin.ClientSecret,
-			oldZone.Spec.Gateway.Admin.ClientSecret,
-		)
+		oldIdentityProviders := make(map[string]adminv1.IdentityProviderConfig, len(oldZone.Spec.IdentityProviders))
+		for _, identityProvider := range oldZone.Spec.IdentityProviders {
+			oldIdentityProviders[identityProvider.Name] = identityProvider
+		}
+		for i := range zone.Spec.IdentityProviders {
+			oldIdentityProvider, found := oldIdentityProviders[zone.Spec.IdentityProviders[i].Name]
+			if found {
+				zone.Spec.IdentityProviders[i].Admin.Password = resolveSecretForUpdate(
+					zone.Spec.IdentityProviders[i].Admin.Password,
+					oldIdentityProvider.Admin.Password,
+				)
+			}
+		}
+		if zone.Spec.Redis != nil && oldZone.Spec.Redis != nil {
+			zone.Spec.Redis.Password = resolveSecretForUpdate(zone.Spec.Redis.Password, oldZone.Spec.Redis.Password)
+		}
+		oldGateways := make(map[string]adminv1.GatewayConfig, len(oldZone.Spec.Gateways))
+		for _, gateway := range oldZone.Spec.Gateways {
+			oldGateways[gateway.Name] = gateway
+		}
+		for i := range zone.Spec.Gateways {
+			oldGateway, found := oldGateways[zone.Spec.Gateways[i].Name]
+			if found {
+				zone.Spec.Gateways[i].Admin.ClientSecret = resolveOptionalSecretForUpdate(
+					zone.Spec.Gateways[i].Admin.ClientSecret,
+					oldGateway.Admin.ClientSecret,
+				)
+			}
+		}
 	}
 
 	if config.FeatureSecretManager.IsEnabled() {
@@ -224,18 +249,19 @@ func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) e
 
 	zonelog.Info("Secret-Manager is disabled, generating secrets inline for Zone")
 
-	// Generate IDP admin password if empty or rotate
-	if zone.Spec.IdentityProvider.Admin.Password == "" ||
-		zone.Spec.IdentityProvider.Admin.Password == secretsapi.KeywordRotate {
-		secret, err := secretsapi.GenerateSecret()
-		if err != nil {
-			return errors.Wrap(err, "failed to generate IDP admin password")
+	for i := range zone.Spec.IdentityProviders {
+		password := zone.Spec.IdentityProviders[i].Admin.Password
+		if password == "" || password == secretsapi.KeywordRotate {
+			secret, err := secretsapi.GenerateSecret()
+			if err != nil {
+				return errors.Wrap(err, "failed to generate IDP admin password")
+			}
+			zone.Spec.IdentityProviders[i].Admin.Password = secret
 		}
-		zone.Spec.IdentityProvider.Admin.Password = secret
 	}
 
 	// Generate Redis password if empty or rotate
-	if zone.Spec.Redis.Password == "" || zone.Spec.Redis.Password == secretsapi.KeywordRotate {
+	if zone.Spec.Redis != nil && (zone.Spec.Redis.Password == "" || zone.Spec.Redis.Password == secretsapi.KeywordRotate) {
 		secret, err := secretsapi.GenerateSecret()
 		if err != nil {
 			return errors.Wrap(err, "failed to generate Redis password")
@@ -243,15 +269,18 @@ func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) e
 		zone.Spec.Redis.Password = secret
 	}
 
-	// Generate gateway client secret only when non-nil and empty/rotate
-	if zone.Spec.Gateway.Admin.ClientSecret != nil {
-		cs := *zone.Spec.Gateway.Admin.ClientSecret
+	for i := range zone.Spec.Gateways {
+		clientSecret := zone.Spec.Gateways[i].Admin.ClientSecret
+		if clientSecret == nil {
+			continue
+		}
+		cs := *clientSecret
 		if cs == "" || cs == secretsapi.KeywordRotate {
 			secret, err := secretsapi.GenerateSecret()
 			if err != nil {
 				return errors.Wrap(err, "failed to generate gateway client secret")
 			}
-			zone.Spec.Gateway.Admin.ClientSecret = &secret
+			zone.Spec.Gateways[i].Admin.ClientSecret = &secret
 		}
 	}
 

@@ -8,13 +8,24 @@
       "cp.ei.telekom.de/environment": "poc"
     }
   },
-  "spec": {},
+  "spec": {
+    "presets": [{
+      "name": "default",
+      "default": true,
+      "gatewayRef": "default",
+      "identityProviderRef": "default",
+      "urls": [{"hostname": "stargate-distcp1-dataplane1.dev.dhei.telekom.de", "scheme": "https", "basePath": "/", "hidden": false}]
+    }]
+  },
   "status": {
-    "links": {
-      "GatewayIssuer": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
-      "GatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
-      "GatewayLmsIssuer": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc"
-    },
+    "presets": [{
+      "name": "default",
+      "links": {
+        "gatewayIssuer": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
+        "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
+        "gatewayLmsIssuer": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc"
+      }
+    }],
     "conditions": [
       {
         "type": "Ready",

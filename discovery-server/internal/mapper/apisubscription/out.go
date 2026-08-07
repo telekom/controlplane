@@ -182,14 +182,16 @@ func joinURL(base, path string) string {
 }
 
 // gatewayBaseUrl returns the appropriate gateway base URL for a zone.
-// When failover is enabled, it selects the ConsumerFailover preset URL;
-// otherwise it falls back to the default URL from Status.Links.
 func gatewayBaseUrl(zone *adminv1.Zone, failover bool) string {
+	var preset *adminv1.Preset
+	var err error
 	if failover {
-		preset, err := zone.SelectGatewayPreset(adminv1.FeatureConsumerFailover)
-		if err == nil {
-			return preset.GetDefaultUrl()
-		}
+		preset, err = zone.Spec.SelectPreset(adminv1.FeatureConsumerFailover)
+	} else {
+		preset, err = zone.Spec.GetDefaultPreset()
 	}
-	return zone.Status.Links.Url
+	if err != nil {
+		return ""
+	}
+	return preset.GetDefaultURL()
 }

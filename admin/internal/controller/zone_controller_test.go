@@ -22,7 +22,7 @@ import (
 
 func newZone(name string) *adminv1.Zone {
 	gatewayAdminSecret := "test-gateway-admin-secret"
-	identityAdminUrl := "https://test-iris.de/auth/admin/realms"
+	identityAdminURL := "https://test-iris.de/auth/admin/realms"
 
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
@@ -33,34 +33,29 @@ func newZone(name string) *adminv1.Zone {
 			},
 		},
 		Spec: adminv1.ZoneSpec{
-			IdentityProvider: adminv1.IdentityProviderConfig{
+			IdentityProviders: []adminv1.IdentityProviderConfig{{
+				Name: "primary",
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url:      &identityAdminUrl,
+					Url:      &identityAdminURL,
 					ClientId: "test-idp-admin-id",
 					UserName: "test-idp-admin-username",
 					Password: "test-idp-admin-password",
 				},
-				Url: "https://test-iris.de/",
-			},
-			Gateway: adminv1.GatewayConfig{
+				IssuerHostname: "test-iris.de",
+				TokenUrl:       "https://test-iris.de/auth/realms/test/protocol/openid-connect/token",
+			}},
+			Gateways: []adminv1.GatewayConfig{{
+				Name: "standard",
 				Admin: adminv1.GatewayAdminConfig{
-					ClientSecret: &gatewayAdminSecret,
-					Url:          "https://test-stargate.de/admin-api",
+					ClientSecret:        &gatewayAdminSecret,
+					Url:                 "https://test-stargate.de/admin-api",
+					IdentityProviderRef: "primary",
 				},
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{
-								Hostname: "test-stargate.de",
-								Scheme:   "https",
-								BasePath: "/",
-							},
-						},
-					},
-				},
-			},
+			}},
+			Presets: []adminv1.Preset{{
+				Name: "default", Default: true, GatewayRef: "standard", IdentityProviderRef: "primary",
+				Urls: []adminv1.UrlConfig{{Hostname: "test-stargate.de", BasePath: "/"}},
+			}},
 			Redis: &adminv1.RedisConfig{
 				Host:      "http://test-redis.de/",
 				Port:      123,
@@ -120,16 +115,15 @@ var _ = Describe("Zone Controller", func() {
 				g.Expect(got.Status.IdentityProvider).NotTo(BeNil())
 				g.Expect(got.Status.IdentityRealm).NotTo(BeNil())
 				g.Expect(got.Status.InternalIdentityRealm).NotTo(BeNil())
-				g.Expect(got.Status.Gateway).NotTo(BeNil())
-				g.Expect(got.Status.GatewayAdminClient).NotTo(BeNil())
-				g.Expect(got.Status.GatewayConsumer).NotTo(BeNil())
+				g.Expect(got.Status.Gateways).To(HaveLen(1))
 				g.Expect(got.Status.TeamApiIdentityRealm).NotTo(BeNil())
 				g.Expect(got.Status.ManagedRoutes).NotTo(BeEmpty())
 
 				By("verifying links are populated")
-				g.Expect(got.Status.Links.Url).NotTo(BeEmpty())
-				g.Expect(got.Status.Links.Issuer).NotTo(BeEmpty())
-				g.Expect(got.Status.Links.LmsIssuer).NotTo(BeEmpty())
+				g.Expect(got.Status.Presets).To(HaveLen(1))
+				g.Expect(got.Status.Presets[0].Links.Url).NotTo(BeEmpty())
+				g.Expect(got.Status.Presets[0].Links.Issuer).NotTo(BeEmpty())
+				g.Expect(got.Status.Presets[0].Links.LmsIssuer).NotTo(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -184,8 +178,8 @@ var _ = Describe("Zone Controller", func() {
 					"environment label should be the env name, not the realm name")
 
 				// Issuer URLs contain the realmName, not the environment name
-				g.Expect(got.Status.Links.Issuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
-				g.Expect(got.Status.Links.LmsIssuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
+				g.Expect(got.Status.Presets[0].Links.Issuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
+				g.Expect(got.Status.Presets[0].Links.LmsIssuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

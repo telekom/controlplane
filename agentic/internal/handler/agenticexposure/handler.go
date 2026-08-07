@@ -63,7 +63,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	}
 
 	// 4. Check zone supports AI Gateway
-	if !zone.IsFeatureEnabled(adminv1.FeatureAiGateway) {
+	if !zone.Spec.FeaturesSupported(adminv1.FeatureAiGateway) {
 		obj.SetCondition(condition.NewNotReadyCondition("AiGatewayNotSupported",
 			"Zone "+zone.Name+" does not support the AI Gateway feature"))
 		return ctrlerrors.BlockedErrorf("zone %q does not support the AI Gateway feature", zone.Name)
@@ -86,8 +86,16 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		}
 
 		// Collect LMS issuer so the real route trusts traffic forwarded by this proxy gateway
-		if subscriberZone.Status.Links.LmsIssuer != "" {
-			crossZoneLmsIssuers = append(crossZoneLmsIssuers, subscriberZone.Status.Links.LmsIssuer)
+		subscriberPreset, presetErr := subscriberZone.Spec.SelectPreset(adminv1.FeatureAiGateway)
+		if presetErr != nil {
+			return ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway preset: %v", subscriberZone.Name, presetErr)
+		}
+		subscriberPresetStatus, presetErr := subscriberZone.Status.GetPreset(subscriberPreset.Name)
+		if presetErr != nil {
+			return ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway preset status: %v", subscriberZone.Name, presetErr)
+		}
+		if subscriberPresetStatus.Links.LmsIssuer != "" {
+			crossZoneLmsIssuers = append(crossZoneLmsIssuers, subscriberPresetStatus.Links.LmsIssuer)
 		}
 
 		proxyRoute, routeErr := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, subscriberZone, zone)
@@ -291,7 +299,15 @@ func ensureTelecontextProxyRoute(
 		return nil, "", errors.Wrapf(err, "failed to create MCP proxy Route for Telecontext zone %q", info.Zone.Name)
 	}
 
-	return ctypes.ObjectRefFromObject(proxyRoute), telecontextZone.Status.Links.LmsIssuer, nil
+	preset, err := telecontextZone.Spec.SelectPreset(adminv1.FeatureAiGateway)
+	if err != nil {
+		return nil, "", ctrlerrors.BlockedErrorf("Telecontext zone %q has no AI Gateway preset: %v", info.Zone.Name, err)
+	}
+	presetStatus, err := telecontextZone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return nil, "", ctrlerrors.BlockedErrorf("Telecontext zone %q has no AI Gateway preset status: %v", info.Zone.Name, err)
+	}
+	return ctypes.ObjectRefFromObject(proxyRoute), presetStatus.Links.LmsIssuer, nil
 }
 
 func (h *AgenticExposureHandler) Delete(ctx context.Context, obj *agenticv1.AgenticExposure) error {

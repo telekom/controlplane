@@ -84,7 +84,7 @@ func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationapi.A
 }
 
 // GetDefaultPresetForZone fetches the Zone for the given ref and returns its default gateway preset.
-func GetDefaultPresetForZone(ctx context.Context, zoneRef types.ObjectRef) (*adminapi.GatewayConfigPreset, *adminapi.Zone, error) {
+func GetDefaultPresetForZone(ctx context.Context, zoneRef types.ObjectRef) (*adminapi.Preset, *adminapi.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	zone, err := GetZone(ctx, c, zoneRef.K8s())
@@ -92,7 +92,7 @@ func GetDefaultPresetForZone(ctx context.Context, zoneRef types.ObjectRef) (*adm
 		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
 	}
 
-	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+	preset, err := zone.Spec.GetDefaultPreset()
 	if err != nil {
 		return nil, zone, errors.Wrapf(err, "failed to get default preset for zone %s", zoneRef.String())
 	}
@@ -101,7 +101,7 @@ func GetDefaultPresetForZone(ctx context.Context, zoneRef types.ObjectRef) (*adm
 }
 
 // GetPresetForZone fetches the Zone for the given ref and returns the gateway preset with the given name.
-func GetPresetForZone(ctx context.Context, zoneRef types.ObjectRef, presetName string) (*adminapi.GatewayConfigPreset, *adminapi.Zone, error) {
+func GetPresetForZone(ctx context.Context, zoneRef types.ObjectRef, presetName string) (*adminapi.Preset, *adminapi.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	zone, err := GetZone(ctx, c, zoneRef.K8s())
@@ -109,7 +109,7 @@ func GetPresetForZone(ctx context.Context, zoneRef types.ObjectRef, presetName s
 		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
 	}
 
-	preset, err := zone.Spec.Gateway.GetPresetByName(presetName)
+	preset, err := zone.Spec.GetPreset(presetName)
 	if err != nil {
 		return nil, zone, errors.Wrapf(err, "failed to get preset %q for zone %s", presetName, zoneRef.String())
 	}
@@ -314,7 +314,7 @@ func FindAllZonesWithFeatureEnabled(ctx context.Context, featureName adminapi.Fe
 			continue
 		}
 
-		if zone.IsFeatureEnabled(featureName) {
+		if zone.Spec.FeaturesSupported(featureName) {
 			zonesWithFeature = append(zonesWithFeature, zone)
 		}
 	}

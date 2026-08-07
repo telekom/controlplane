@@ -6,27 +6,57 @@ package zone
 
 import (
 	"context"
+	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
-	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	identityapi "github.com/telekom/controlplane/identity/api/v1"
 )
 
-// createGateway creates the Gateway resource for the zone.
-func createGateway(ctx context.Context, hc *HandlingContext) error {
+func reconcileGateways(ctx context.Context, hc *HandlingContext) error {
+	hc.Zone.Status.Gateways = nil
+	for i := range hc.Zone.Spec.Gateways {
+		config := &hc.Zone.Spec.Gateways[i]
+		idp, err := hc.Zone.Spec.GetIdentityProviderByName(config.Admin.IdentityProviderRef)
+		if err != nil {
+			return ctrlerrors.BlockedErrorf("cannot resolve admin identity provider for gateway %q: %s", config.Name, err)
+		}
+		adminClient, err := createGatewayAdminClient(ctx, hc, config)
+		if err != nil {
+			return err
+		}
+		gateway, err := createGateway(ctx, hc, config, idp, adminClient)
+		if err != nil {
+			return err
+		}
+		consumer, err := createGatewayConsumer(ctx, hc, config.Name, gateway)
+		if err != nil {
+			return err
+		}
+		hc.GatewayAdminClients[config.Name] = adminClient
+		hc.Gateways[config.Name] = gateway
+		hc.GatewayConsumers[config.Name] = consumer
+		hc.Zone.Status.Gateways = append(hc.Zone.Status.Gateways, adminapi.GatewayStatus{
+			Name: config.Name, Gateway: types.ObjectRefFromObject(gateway), AdminClient: types.ObjectRefFromObject(adminClient), Consumer: types.ObjectRefFromObject(consumer),
+		})
+	}
+	return nil
+}
+
+func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.GatewayConfig, idp *adminapi.IdentityProviderConfig, adminClient *identityapi.Client) (*gatewayapi.Gateway, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	gateway := &gatewayapi.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(naming.ForGateway()),
+			Name:      naming.ForGateway(hc.Zone, config.Name),
 			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
 		},
 	}
@@ -38,18 +68,18 @@ func createGateway(ctx context.Context, hc *HandlingContext) error {
 		gateway.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		gateway.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 
-		adminUrl := hc.Zone.Spec.Gateway.Admin.Url
-
-		clientId := hc.GatewayAdminClient.Spec.ClientId
-		clientSecret := hc.GatewayAdminClient.Spec.ClientSecret
-		issuerUrl := urls.ForGatewayAdminIssuerUrl(hc.Zone.Spec.IdentityProvider.Url)
+		hostname, err := issuerHostname(idp)
+		if err != nil {
+			return err
+		}
+		issuerURL := fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.InternalIdentityRealm.Name)
 
 		gateway.Spec = gatewayapi.GatewaySpec{
 			Admin: gatewayapi.AdminConfig{
-				ClientId:     clientId,
-				ClientSecret: clientSecret,
-				IssuerUrl:    issuerUrl,
-				Url:          adminUrl,
+				ClientId:     adminClient.Spec.ClientId,
+				ClientSecret: adminClient.Spec.ClientSecret,
+				IssuerUrl:    issuerURL,
+				Url:          config.Admin.Url,
 			},
 		}
 
@@ -71,21 +101,18 @@ func createGateway(ctx context.Context, hc *HandlingContext) error {
 
 	_, err := c.CreateOrUpdate(ctx, gateway, mutator)
 	if err != nil {
-		return ctrlerrors.RetryableErrorf("failed to create or update Gateway %s in zone %s: %s", gateway.Name, hc.Zone.Name, err)
+		return nil, ctrlerrors.RetryableErrorf("failed to create or update Gateway %s in zone %s: %s", gateway.Name, hc.Zone.Name, err)
 	}
-
-	hc.Gateway = gateway
-	hc.Zone.Status.Gateway = types.ObjectRefFromObject(gateway)
-	return nil
+	return gateway, nil
 }
 
 // createGatewayConsumer creates the default gateway consumer for the zone.
-func createGatewayConsumer(ctx context.Context, hc *HandlingContext) error {
+func createGatewayConsumer(ctx context.Context, hc *HandlingContext, gatewayName string, gateway *gatewayapi.Gateway) (*gatewayapi.Consumer, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	gatewayConsumer := &gatewayapi.Consumer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      naming.ForGatewayConsumer(),
+			Name:      naming.ForGatewayConsumer(hc.Zone, gatewayName),
 			Namespace: hc.Namespace.Name,
 		},
 	}
@@ -98,18 +125,15 @@ func createGatewayConsumer(ctx context.Context, hc *HandlingContext) error {
 		gatewayConsumer.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 
 		gatewayConsumer.Spec = gatewayapi.ConsumerSpec{
-			Gateway: *types.ObjectRefFromObject(hc.Gateway),
-			Name:    naming.ForGatewayConsumer(),
+			Gateway: *types.ObjectRefFromObject(gateway),
+			Name:    naming.ForGatewayConsumer(hc.Zone, gatewayName),
 		}
 		return nil
 	}
 
 	_, err := c.CreateOrUpdate(ctx, gatewayConsumer, mutator)
 	if err != nil {
-		return ctrlerrors.RetryableErrorf("failed to create or update Gateway Consumer %s in zone %s: %s", naming.ForGatewayConsumer(), hc.Zone.Name, err)
+		return nil, ctrlerrors.RetryableErrorf("failed to create or update Gateway Consumer %s in zone %s: %s", naming.ForGatewayConsumer(hc.Zone, gatewayName), hc.Zone.Name, err)
 	}
-
-	hc.GatewayConsumer = gatewayConsumer
-	hc.Zone.Status.GatewayConsumer = types.ObjectRefFromObject(gatewayConsumer)
-	return nil
+	return gatewayConsumer, nil
 }

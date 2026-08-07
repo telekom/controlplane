@@ -94,6 +94,9 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 	if data.ClientSecret != nil {
 		create.SetClientSecret(*data.ClientSecret)
 	}
+	if data.TokenURL != nil {
+		create.SetTokenURL(*data.TokenURL)
+	}
 	if data.RotatedClientSecret != nil {
 		create.SetRotatedClientSecret(*data.RotatedClientSecret)
 	}
@@ -126,6 +129,11 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 			}
 			if data.ClientSecret != nil {
 				u.SetClientSecret(*data.ClientSecret)
+			}
+			if data.TokenURL != nil {
+				u.SetTokenURL(*data.TokenURL)
+			} else {
+				u.ClearTokenURL()
 			}
 			if data.RotatedClientSecret != nil {
 				u.SetRotatedClientSecret(*data.RotatedClientSecret)
