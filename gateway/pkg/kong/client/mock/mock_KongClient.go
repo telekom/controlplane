@@ -1,4 +1,4 @@
-// Copyright 2026 Deutsche Telekom IT GmbH
+// SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -244,6 +244,55 @@ func (_c *MockKongClient_CreateOrReplaceRoute_Call) RunAndReturn(run func(contex
 	return _c
 }
 
+// CreateOrReplaceUpstream provides a mock function with given fields: ctx, route, upstream, target
+func (_m *MockKongClient) CreateOrReplaceUpstream(ctx context.Context, route client.CustomRoute, upstream *kong.CreateUpstreamRequest, target *kong.CreateTargetForUpstreamRequest) error {
+	ret := _m.Called(ctx, route, upstream, target)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateOrReplaceUpstream")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, client.CustomRoute, *kong.CreateUpstreamRequest, *kong.CreateTargetForUpstreamRequest) error); ok {
+		r0 = rf(ctx, route, upstream, target)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockKongClient_CreateOrReplaceUpstream_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateOrReplaceUpstream'
+type MockKongClient_CreateOrReplaceUpstream_Call struct {
+	*mock.Call
+}
+
+// CreateOrReplaceUpstream is a helper method to define mock.On call
+//   - ctx context.Context
+//   - route client.CustomRoute
+//   - upstream *kong.CreateUpstreamRequest
+//   - target *kong.CreateTargetForUpstreamRequest
+func (_e *MockKongClient_Expecter) CreateOrReplaceUpstream(ctx interface{}, route interface{}, upstream interface{}, target interface{}) *MockKongClient_CreateOrReplaceUpstream_Call {
+	return &MockKongClient_CreateOrReplaceUpstream_Call{Call: _e.mock.On("CreateOrReplaceUpstream", ctx, route, upstream, target)}
+}
+
+func (_c *MockKongClient_CreateOrReplaceUpstream_Call) Run(run func(ctx context.Context, route client.CustomRoute, upstream *kong.CreateUpstreamRequest, target *kong.CreateTargetForUpstreamRequest)) *MockKongClient_CreateOrReplaceUpstream_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(client.CustomRoute), args[2].(*kong.CreateUpstreamRequest), args[3].(*kong.CreateTargetForUpstreamRequest))
+	})
+	return _c
+}
+
+func (_c *MockKongClient_CreateOrReplaceUpstream_Call) Return(_a0 error) *MockKongClient_CreateOrReplaceUpstream_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockKongClient_CreateOrReplaceUpstream_Call) RunAndReturn(run func(context.Context, client.CustomRoute, *kong.CreateUpstreamRequest, *kong.CreateTargetForUpstreamRequest) error) *MockKongClient_CreateOrReplaceUpstream_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteConsumer provides a mock function with given fields: ctx, consumer
 func (_m *MockKongClient) DeleteConsumer(ctx context.Context, consumer client.CustomConsumer) error {
 	ret := _m.Called(ctx, consumer)
@@ -428,113 +477,6 @@ func (_c *MockKongClient_DeleteUpstream_Call) Return(_a0 error) *MockKongClient_
 }
 
 func (_c *MockKongClient_DeleteUpstream_Call) RunAndReturn(run func(context.Context, client.CustomRoute) error) *MockKongClient_DeleteUpstream_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetKongAdminApi provides a mock function with no fields
-func (_m *MockKongClient) GetKongAdminApi() client.KongAdminApi {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetKongAdminApi")
-	}
-
-	var r0 client.KongAdminApi
-	if rf, ok := ret.Get(0).(func() client.KongAdminApi); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(client.KongAdminApi)
-		}
-	}
-
-	return r0
-}
-
-// MockKongClient_GetKongAdminApi_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetKongAdminApi'
-type MockKongClient_GetKongAdminApi_Call struct {
-	*mock.Call
-}
-
-// GetKongAdminApi is a helper method to define mock.On call
-func (_e *MockKongClient_Expecter) GetKongAdminApi() *MockKongClient_GetKongAdminApi_Call {
-	return &MockKongClient_GetKongAdminApi_Call{Call: _e.mock.On("GetKongAdminApi")}
-}
-
-func (_c *MockKongClient_GetKongAdminApi_Call) Run(run func()) *MockKongClient_GetKongAdminApi_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockKongClient_GetKongAdminApi_Call) Return(_a0 client.KongAdminApi) *MockKongClient_GetKongAdminApi_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockKongClient_GetKongAdminApi_Call) RunAndReturn(run func() client.KongAdminApi) *MockKongClient_GetKongAdminApi_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// LoadPlugin provides a mock function with given fields: ctx, plugin, copyConfig
-func (_m *MockKongClient) LoadPlugin(ctx context.Context, plugin client.CustomPlugin, copyConfig bool) (*kong.Plugin, error) {
-	ret := _m.Called(ctx, plugin, copyConfig)
-
-	if len(ret) == 0 {
-		panic("no return value specified for LoadPlugin")
-	}
-
-	var r0 *kong.Plugin
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, client.CustomPlugin, bool) (*kong.Plugin, error)); ok {
-		return rf(ctx, plugin, copyConfig)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, client.CustomPlugin, bool) *kong.Plugin); ok {
-		r0 = rf(ctx, plugin, copyConfig)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*kong.Plugin)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, client.CustomPlugin, bool) error); ok {
-		r1 = rf(ctx, plugin, copyConfig)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockKongClient_LoadPlugin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LoadPlugin'
-type MockKongClient_LoadPlugin_Call struct {
-	*mock.Call
-}
-
-// LoadPlugin is a helper method to define mock.On call
-//   - ctx context.Context
-//   - plugin client.CustomPlugin
-//   - copyConfig bool
-func (_e *MockKongClient_Expecter) LoadPlugin(ctx interface{}, plugin interface{}, copyConfig interface{}) *MockKongClient_LoadPlugin_Call {
-	return &MockKongClient_LoadPlugin_Call{Call: _e.mock.On("LoadPlugin", ctx, plugin, copyConfig)}
-}
-
-func (_c *MockKongClient_LoadPlugin_Call) Run(run func(ctx context.Context, plugin client.CustomPlugin, copyConfig bool)) *MockKongClient_LoadPlugin_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(client.CustomPlugin), args[2].(bool))
-	})
-	return _c
-}
-
-func (_c *MockKongClient_LoadPlugin_Call) Return(kongPlugin *kong.Plugin, err error) *MockKongClient_LoadPlugin_Call {
-	_c.Call.Return(kongPlugin, err)
-	return _c
-}
-
-func (_c *MockKongClient_LoadPlugin_Call) RunAndReturn(run func(context.Context, client.CustomPlugin, bool) (*kong.Plugin, error)) *MockKongClient_LoadPlugin_Call {
 	_c.Call.Return(run)
 	return _c
 }

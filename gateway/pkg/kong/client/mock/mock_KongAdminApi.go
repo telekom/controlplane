@@ -1,4 +1,4 @@
-// Copyright 2026 Deutsche Telekom IT GmbH
+// SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -621,6 +621,80 @@ func (_c *MockKongAdminApi_DeleteUpstreamWithResponse_Call) RunAndReturn(run fun
 	return _c
 }
 
+// GetConsumerWithResponse provides a mock function with given fields: ctx, consumerUsernameOrId, reqEditors
+func (_m *MockKongAdminApi) GetConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, reqEditors ...kong.RequestEditorFn) (*kong.GetConsumerResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, consumerUsernameOrId)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetConsumerWithResponse")
+	}
+
+	var r0 *kong.GetConsumerResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetConsumerResponse, error)); ok {
+		return rf(ctx, consumerUsernameOrId, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...kong.RequestEditorFn) *kong.GetConsumerResponse); ok {
+		r0 = rf(ctx, consumerUsernameOrId, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*kong.GetConsumerResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...kong.RequestEditorFn) error); ok {
+		r1 = rf(ctx, consumerUsernameOrId, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKongAdminApi_GetConsumerWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetConsumerWithResponse'
+type MockKongAdminApi_GetConsumerWithResponse_Call struct {
+	*mock.Call
+}
+
+// GetConsumerWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - consumerUsernameOrId string
+//   - reqEditors ...kong.RequestEditorFn
+func (_e *MockKongAdminApi_Expecter) GetConsumerWithResponse(ctx interface{}, consumerUsernameOrId interface{}, reqEditors ...interface{}) *MockKongAdminApi_GetConsumerWithResponse_Call {
+	return &MockKongAdminApi_GetConsumerWithResponse_Call{Call: _e.mock.On("GetConsumerWithResponse",
+		append([]interface{}{ctx, consumerUsernameOrId}, reqEditors...)...)}
+}
+
+func (_c *MockKongAdminApi_GetConsumerWithResponse_Call) Run(run func(ctx context.Context, consumerUsernameOrId string, reqEditors ...kong.RequestEditorFn)) *MockKongAdminApi_GetConsumerWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]kong.RequestEditorFn, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(kong.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKongAdminApi_GetConsumerWithResponse_Call) Return(_a0 *kong.GetConsumerResponse, _a1 error) *MockKongAdminApi_GetConsumerWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKongAdminApi_GetConsumerWithResponse_Call) RunAndReturn(run func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetConsumerResponse, error)) *MockKongAdminApi_GetConsumerWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPluginWithResponse provides a mock function with given fields: ctx, pluginId, reqEditors
 func (_m *MockKongAdminApi) GetPluginWithResponse(ctx context.Context, pluginId string, reqEditors ...kong.RequestEditorFn) (*kong.GetPluginResponse, error) {
 	_va := make([]interface{}, len(reqEditors))
@@ -691,6 +765,228 @@ func (_c *MockKongAdminApi_GetPluginWithResponse_Call) Return(_a0 *kong.GetPlugi
 }
 
 func (_c *MockKongAdminApi_GetPluginWithResponse_Call) RunAndReturn(run func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetPluginResponse, error)) *MockKongAdminApi_GetPluginWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetRouteWithResponse provides a mock function with given fields: ctx, routeIdOrName, reqEditors
+func (_m *MockKongAdminApi) GetRouteWithResponse(ctx context.Context, routeIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.GetRouteResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, routeIdOrName)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRouteWithResponse")
+	}
+
+	var r0 *kong.GetRouteResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetRouteResponse, error)); ok {
+		return rf(ctx, routeIdOrName, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...kong.RequestEditorFn) *kong.GetRouteResponse); ok {
+		r0 = rf(ctx, routeIdOrName, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*kong.GetRouteResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...kong.RequestEditorFn) error); ok {
+		r1 = rf(ctx, routeIdOrName, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKongAdminApi_GetRouteWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRouteWithResponse'
+type MockKongAdminApi_GetRouteWithResponse_Call struct {
+	*mock.Call
+}
+
+// GetRouteWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - routeIdOrName string
+//   - reqEditors ...kong.RequestEditorFn
+func (_e *MockKongAdminApi_Expecter) GetRouteWithResponse(ctx interface{}, routeIdOrName interface{}, reqEditors ...interface{}) *MockKongAdminApi_GetRouteWithResponse_Call {
+	return &MockKongAdminApi_GetRouteWithResponse_Call{Call: _e.mock.On("GetRouteWithResponse",
+		append([]interface{}{ctx, routeIdOrName}, reqEditors...)...)}
+}
+
+func (_c *MockKongAdminApi_GetRouteWithResponse_Call) Run(run func(ctx context.Context, routeIdOrName string, reqEditors ...kong.RequestEditorFn)) *MockKongAdminApi_GetRouteWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]kong.RequestEditorFn, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(kong.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKongAdminApi_GetRouteWithResponse_Call) Return(_a0 *kong.GetRouteResponse, _a1 error) *MockKongAdminApi_GetRouteWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKongAdminApi_GetRouteWithResponse_Call) RunAndReturn(run func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetRouteResponse, error)) *MockKongAdminApi_GetRouteWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetServiceWithResponse provides a mock function with given fields: ctx, serviceIdOrName, reqEditors
+func (_m *MockKongAdminApi) GetServiceWithResponse(ctx context.Context, serviceIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.GetServiceResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, serviceIdOrName)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetServiceWithResponse")
+	}
+
+	var r0 *kong.GetServiceResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetServiceResponse, error)); ok {
+		return rf(ctx, serviceIdOrName, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...kong.RequestEditorFn) *kong.GetServiceResponse); ok {
+		r0 = rf(ctx, serviceIdOrName, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*kong.GetServiceResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...kong.RequestEditorFn) error); ok {
+		r1 = rf(ctx, serviceIdOrName, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKongAdminApi_GetServiceWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetServiceWithResponse'
+type MockKongAdminApi_GetServiceWithResponse_Call struct {
+	*mock.Call
+}
+
+// GetServiceWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - serviceIdOrName string
+//   - reqEditors ...kong.RequestEditorFn
+func (_e *MockKongAdminApi_Expecter) GetServiceWithResponse(ctx interface{}, serviceIdOrName interface{}, reqEditors ...interface{}) *MockKongAdminApi_GetServiceWithResponse_Call {
+	return &MockKongAdminApi_GetServiceWithResponse_Call{Call: _e.mock.On("GetServiceWithResponse",
+		append([]interface{}{ctx, serviceIdOrName}, reqEditors...)...)}
+}
+
+func (_c *MockKongAdminApi_GetServiceWithResponse_Call) Run(run func(ctx context.Context, serviceIdOrName string, reqEditors ...kong.RequestEditorFn)) *MockKongAdminApi_GetServiceWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]kong.RequestEditorFn, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(kong.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKongAdminApi_GetServiceWithResponse_Call) Return(_a0 *kong.GetServiceResponse, _a1 error) *MockKongAdminApi_GetServiceWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKongAdminApi_GetServiceWithResponse_Call) RunAndReturn(run func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetServiceResponse, error)) *MockKongAdminApi_GetServiceWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetUpstreamWithResponse provides a mock function with given fields: ctx, upstreamIdOrName, reqEditors
+func (_m *MockKongAdminApi) GetUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.GetUpstreamResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, upstreamIdOrName)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUpstreamWithResponse")
+	}
+
+	var r0 *kong.GetUpstreamResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetUpstreamResponse, error)); ok {
+		return rf(ctx, upstreamIdOrName, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...kong.RequestEditorFn) *kong.GetUpstreamResponse); ok {
+		r0 = rf(ctx, upstreamIdOrName, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*kong.GetUpstreamResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...kong.RequestEditorFn) error); ok {
+		r1 = rf(ctx, upstreamIdOrName, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKongAdminApi_GetUpstreamWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUpstreamWithResponse'
+type MockKongAdminApi_GetUpstreamWithResponse_Call struct {
+	*mock.Call
+}
+
+// GetUpstreamWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - upstreamIdOrName string
+//   - reqEditors ...kong.RequestEditorFn
+func (_e *MockKongAdminApi_Expecter) GetUpstreamWithResponse(ctx interface{}, upstreamIdOrName interface{}, reqEditors ...interface{}) *MockKongAdminApi_GetUpstreamWithResponse_Call {
+	return &MockKongAdminApi_GetUpstreamWithResponse_Call{Call: _e.mock.On("GetUpstreamWithResponse",
+		append([]interface{}{ctx, upstreamIdOrName}, reqEditors...)...)}
+}
+
+func (_c *MockKongAdminApi_GetUpstreamWithResponse_Call) Run(run func(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn)) *MockKongAdminApi_GetUpstreamWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]kong.RequestEditorFn, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(kong.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKongAdminApi_GetUpstreamWithResponse_Call) Return(_a0 *kong.GetUpstreamResponse, _a1 error) *MockKongAdminApi_GetUpstreamWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKongAdminApi_GetUpstreamWithResponse_Call) RunAndReturn(run func(context.Context, string, ...kong.RequestEditorFn) (*kong.GetUpstreamResponse, error)) *MockKongAdminApi_GetUpstreamWithResponse_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -769,6 +1065,81 @@ func (_c *MockKongAdminApi_ListPluginWithResponse_Call) RunAndReturn(run func(co
 	return _c
 }
 
+// ListTargetsForUpstreamWithResponse provides a mock function with given fields: ctx, upstreamIdOrName, params, reqEditors
+func (_m *MockKongAdminApi) ListTargetsForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, params *kong.ListTargetsForUpstreamParams, reqEditors ...kong.RequestEditorFn) (*kong.ListTargetsForUpstreamResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, upstreamIdOrName, params)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListTargetsForUpstreamWithResponse")
+	}
+
+	var r0 *kong.ListTargetsForUpstreamResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, *kong.ListTargetsForUpstreamParams, ...kong.RequestEditorFn) (*kong.ListTargetsForUpstreamResponse, error)); ok {
+		return rf(ctx, upstreamIdOrName, params, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, *kong.ListTargetsForUpstreamParams, ...kong.RequestEditorFn) *kong.ListTargetsForUpstreamResponse); ok {
+		r0 = rf(ctx, upstreamIdOrName, params, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*kong.ListTargetsForUpstreamResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, *kong.ListTargetsForUpstreamParams, ...kong.RequestEditorFn) error); ok {
+		r1 = rf(ctx, upstreamIdOrName, params, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListTargetsForUpstreamWithResponse'
+type MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call struct {
+	*mock.Call
+}
+
+// ListTargetsForUpstreamWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - upstreamIdOrName string
+//   - params *kong.ListTargetsForUpstreamParams
+//   - reqEditors ...kong.RequestEditorFn
+func (_e *MockKongAdminApi_Expecter) ListTargetsForUpstreamWithResponse(ctx interface{}, upstreamIdOrName interface{}, params interface{}, reqEditors ...interface{}) *MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call {
+	return &MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call{Call: _e.mock.On("ListTargetsForUpstreamWithResponse",
+		append([]interface{}{ctx, upstreamIdOrName, params}, reqEditors...)...)}
+}
+
+func (_c *MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call) Run(run func(ctx context.Context, upstreamIdOrName string, params *kong.ListTargetsForUpstreamParams, reqEditors ...kong.RequestEditorFn)) *MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]kong.RequestEditorFn, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(kong.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(*kong.ListTargetsForUpstreamParams), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call) Return(_a0 *kong.ListTargetsForUpstreamResponse, _a1 error) *MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call) RunAndReturn(run func(context.Context, string, *kong.ListTargetsForUpstreamParams, ...kong.RequestEditorFn) (*kong.ListTargetsForUpstreamResponse, error)) *MockKongAdminApi_ListTargetsForUpstreamWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpsertConsumerWithResponse provides a mock function with given fields: ctx, consumerUsernameOrId, body, reqEditors
 func (_m *MockKongAdminApi) UpsertConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, body kong.CreateConsumerRequest, reqEditors ...kong.RequestEditorFn) (*kong.UpsertConsumerResponse, error) {
 	_va := make([]interface{}, len(reqEditors))
@@ -840,6 +1211,233 @@ func (_c *MockKongAdminApi_UpsertConsumerWithResponse_Call) Return(_a0 *kong.Ups
 }
 
 func (_c *MockKongAdminApi_UpsertConsumerWithResponse_Call) RunAndReturn(run func(context.Context, string, kong.CreateConsumerRequest, ...kong.RequestEditorFn) (*kong.UpsertConsumerResponse, error)) *MockKongAdminApi_UpsertConsumerWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpsertPluginForConsumerWithResponse provides a mock function with given fields: ctx, consumerUsernameOrId, pluginId, body, reqEditors
+func (_m *MockKongAdminApi) UpsertPluginForConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, pluginId string, body kong.CreatePluginForConsumerRequest, reqEditors ...kong.RequestEditorFn) (*kong.UpsertPluginForConsumerResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, consumerUsernameOrId, pluginId, body)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpsertPluginForConsumerWithResponse")
+	}
+
+	var r0 *kong.UpsertPluginForConsumerResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) (*kong.UpsertPluginForConsumerResponse, error)); ok {
+		return rf(ctx, consumerUsernameOrId, pluginId, body, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) *kong.UpsertPluginForConsumerResponse); ok {
+		r0 = rf(ctx, consumerUsernameOrId, pluginId, body, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*kong.UpsertPluginForConsumerResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) error); ok {
+		r1 = rf(ctx, consumerUsernameOrId, pluginId, body, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpsertPluginForConsumerWithResponse'
+type MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call struct {
+	*mock.Call
+}
+
+// UpsertPluginForConsumerWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - consumerUsernameOrId string
+//   - pluginId string
+//   - body kong.CreatePluginForConsumerRequest
+//   - reqEditors ...kong.RequestEditorFn
+func (_e *MockKongAdminApi_Expecter) UpsertPluginForConsumerWithResponse(ctx interface{}, consumerUsernameOrId interface{}, pluginId interface{}, body interface{}, reqEditors ...interface{}) *MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call {
+	return &MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call{Call: _e.mock.On("UpsertPluginForConsumerWithResponse",
+		append([]interface{}{ctx, consumerUsernameOrId, pluginId, body}, reqEditors...)...)}
+}
+
+func (_c *MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call) Run(run func(ctx context.Context, consumerUsernameOrId string, pluginId string, body kong.CreatePluginForConsumerRequest, reqEditors ...kong.RequestEditorFn)) *MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]kong.RequestEditorFn, len(args)-4)
+		for i, a := range args[4:] {
+			if a != nil {
+				variadicArgs[i] = a.(kong.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(kong.CreatePluginForConsumerRequest), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call) Return(_a0 *kong.UpsertPluginForConsumerResponse, _a1 error) *MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call) RunAndReturn(run func(context.Context, string, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) (*kong.UpsertPluginForConsumerResponse, error)) *MockKongAdminApi_UpsertPluginForConsumerWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpsertPluginForRouteWithResponse provides a mock function with given fields: ctx, routeIdOrName, pluginId, body, reqEditors
+func (_m *MockKongAdminApi) UpsertPluginForRouteWithResponse(ctx context.Context, routeIdOrName string, pluginId string, body kong.CreatePluginForConsumerRequest, reqEditors ...kong.RequestEditorFn) (*kong.UpsertPluginForRouteResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, routeIdOrName, pluginId, body)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpsertPluginForRouteWithResponse")
+	}
+
+	var r0 *kong.UpsertPluginForRouteResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) (*kong.UpsertPluginForRouteResponse, error)); ok {
+		return rf(ctx, routeIdOrName, pluginId, body, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) *kong.UpsertPluginForRouteResponse); ok {
+		r0 = rf(ctx, routeIdOrName, pluginId, body, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*kong.UpsertPluginForRouteResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) error); ok {
+		r1 = rf(ctx, routeIdOrName, pluginId, body, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKongAdminApi_UpsertPluginForRouteWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpsertPluginForRouteWithResponse'
+type MockKongAdminApi_UpsertPluginForRouteWithResponse_Call struct {
+	*mock.Call
+}
+
+// UpsertPluginForRouteWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - routeIdOrName string
+//   - pluginId string
+//   - body kong.CreatePluginForConsumerRequest
+//   - reqEditors ...kong.RequestEditorFn
+func (_e *MockKongAdminApi_Expecter) UpsertPluginForRouteWithResponse(ctx interface{}, routeIdOrName interface{}, pluginId interface{}, body interface{}, reqEditors ...interface{}) *MockKongAdminApi_UpsertPluginForRouteWithResponse_Call {
+	return &MockKongAdminApi_UpsertPluginForRouteWithResponse_Call{Call: _e.mock.On("UpsertPluginForRouteWithResponse",
+		append([]interface{}{ctx, routeIdOrName, pluginId, body}, reqEditors...)...)}
+}
+
+func (_c *MockKongAdminApi_UpsertPluginForRouteWithResponse_Call) Run(run func(ctx context.Context, routeIdOrName string, pluginId string, body kong.CreatePluginForConsumerRequest, reqEditors ...kong.RequestEditorFn)) *MockKongAdminApi_UpsertPluginForRouteWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]kong.RequestEditorFn, len(args)-4)
+		for i, a := range args[4:] {
+			if a != nil {
+				variadicArgs[i] = a.(kong.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(kong.CreatePluginForConsumerRequest), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKongAdminApi_UpsertPluginForRouteWithResponse_Call) Return(_a0 *kong.UpsertPluginForRouteResponse, _a1 error) *MockKongAdminApi_UpsertPluginForRouteWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKongAdminApi_UpsertPluginForRouteWithResponse_Call) RunAndReturn(run func(context.Context, string, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) (*kong.UpsertPluginForRouteResponse, error)) *MockKongAdminApi_UpsertPluginForRouteWithResponse_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpsertPluginWithResponse provides a mock function with given fields: ctx, pluginId, body, reqEditors
+func (_m *MockKongAdminApi) UpsertPluginWithResponse(ctx context.Context, pluginId string, body kong.CreatePluginForConsumerRequest, reqEditors ...kong.RequestEditorFn) (*kong.UpsertPluginResponse, error) {
+	_va := make([]interface{}, len(reqEditors))
+	for _i := range reqEditors {
+		_va[_i] = reqEditors[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, pluginId, body)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpsertPluginWithResponse")
+	}
+
+	var r0 *kong.UpsertPluginResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) (*kong.UpsertPluginResponse, error)); ok {
+		return rf(ctx, pluginId, body, reqEditors...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) *kong.UpsertPluginResponse); ok {
+		r0 = rf(ctx, pluginId, body, reqEditors...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*kong.UpsertPluginResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) error); ok {
+		r1 = rf(ctx, pluginId, body, reqEditors...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKongAdminApi_UpsertPluginWithResponse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpsertPluginWithResponse'
+type MockKongAdminApi_UpsertPluginWithResponse_Call struct {
+	*mock.Call
+}
+
+// UpsertPluginWithResponse is a helper method to define mock.On call
+//   - ctx context.Context
+//   - pluginId string
+//   - body kong.CreatePluginForConsumerRequest
+//   - reqEditors ...kong.RequestEditorFn
+func (_e *MockKongAdminApi_Expecter) UpsertPluginWithResponse(ctx interface{}, pluginId interface{}, body interface{}, reqEditors ...interface{}) *MockKongAdminApi_UpsertPluginWithResponse_Call {
+	return &MockKongAdminApi_UpsertPluginWithResponse_Call{Call: _e.mock.On("UpsertPluginWithResponse",
+		append([]interface{}{ctx, pluginId, body}, reqEditors...)...)}
+}
+
+func (_c *MockKongAdminApi_UpsertPluginWithResponse_Call) Run(run func(ctx context.Context, pluginId string, body kong.CreatePluginForConsumerRequest, reqEditors ...kong.RequestEditorFn)) *MockKongAdminApi_UpsertPluginWithResponse_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]kong.RequestEditorFn, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(kong.RequestEditorFn)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(kong.CreatePluginForConsumerRequest), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockKongAdminApi_UpsertPluginWithResponse_Call) Return(_a0 *kong.UpsertPluginResponse, _a1 error) *MockKongAdminApi_UpsertPluginWithResponse_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKongAdminApi_UpsertPluginWithResponse_Call) RunAndReturn(run func(context.Context, string, kong.CreatePluginForConsumerRequest, ...kong.RequestEditorFn) (*kong.UpsertPluginResponse, error)) *MockKongAdminApi_UpsertPluginWithResponse_Call {
 	_c.Call.Return(run)
 	return _c
 }

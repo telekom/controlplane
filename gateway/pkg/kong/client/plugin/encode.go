@@ -5,7 +5,8 @@
 package plugin
 
 import (
-	"fmt"
+	"encoding/json"
+	"slices"
 	"strings"
 )
 
@@ -55,17 +56,17 @@ func (m *StringMap) Get(key string) string {
 	return ""
 }
 
-// MarshalJSON encodes the map into a format like ["key1:value1", "key2:value2"]
+// MarshalJSON encodes the map into a format like ["key1:value1", "key2:value2"].
+// Entries are sorted because Go randomizes map iteration order: an unsorted
+// array would differ on every call, which makes the Kong client see a config
+// change on every reconciliation and write when nothing changed.
 func (m *StringMap) MarshalJSON() ([]byte, error) {
-	if len(m.items) == 0 {
-		return []byte("[]"), nil
-	}
-	result := "["
+	entries := make([]string, 0, len(m.items))
 	for k, v := range m.items {
-		result += fmt.Sprintf("\"%s:%s\",", k, v)
+		entries = append(entries, k+":"+v)
 	}
-	result = result[:len(result)-1] + "]" // remove the last comma and add the closing bracket
-	return []byte(result), nil
+	slices.Sort(entries)
+	return json.Marshal(entries)
 }
 
 // UnmarshalJSON decodes a string like ["key1:value1","key2:value2"] into a map
