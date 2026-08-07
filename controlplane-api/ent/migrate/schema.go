@@ -159,6 +159,7 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "client_id", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "client_secret", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "token_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "rotated_client_secret", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "rotated_expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "current_expires_at", Type: field.TypeTime, Nullable: true},

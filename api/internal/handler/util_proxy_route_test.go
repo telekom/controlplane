@@ -34,30 +34,32 @@ func CreateZone(name string) *adminapi.Zone {
 		},
 		Spec: adminapi.ZoneSpec{
 			Visibility: adminapi.ZoneVisibilityWorld,
-			Gateway: adminapi.GatewayConfig{
+			Gateways: []adminapi.GatewayConfig{{Name: "default",
 				Admin: adminapi.GatewayAdminConfig{
 					Url: "http://gateway-admin.test.local:8001",
 				},
-				Presets: []adminapi.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminapi.UrlConfig{
-							{
-								Hostname: fmt.Sprintf("test.%s.de", name),
-								Scheme:   "http",
-								BasePath: "/",
-							},
+			}},
+			Presets: []adminapi.Preset{
+				{
+					Name:                "default",
+					Default:             true,
+					GatewayRef:          "default",
+					IdentityProviderRef: "default",
+					Urls: []adminapi.UrlConfig{
+						{
+							Hostname: fmt.Sprintf("test.%s.de", name),
+							Scheme:   "http",
+							BasePath: "/",
 						},
 					},
 				},
 			},
-			IdentityProvider: adminapi.IdentityProviderConfig{
-				Url: "http://idp.test.local:8080",
+			IdentityProviders: []adminapi.IdentityProviderConfig{{Name: "default",
+				TokenUrl: "http://idp.test.local:8080",
 				Admin: adminapi.IdentityProviderAdminConfig{
 					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
-			},
+			}},
 			Redis: &adminapi.RedisConfig{
 				Host: "redis://redis.test.local:6379",
 			},
@@ -70,11 +72,11 @@ func CreateZone(name string) *adminapi.Zone {
 
 	zone.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 	zone.Status.Namespace = testEnvironment + "--" + name
-	zone.Status.Gateway = &types.ObjectRef{
+	zone.Status.Presets = []adminapi.PresetStatus{{Name: "default", GatewayRef: &types.ObjectRef{
 		Name:      "test-gateway",
 		Namespace: testEnvironment + "--" + name,
-	}
-	zone.Status.Links = adminapi.Links{
+	}}}
+	zone.Status.Presets[0].Links = adminapi.Links{
 		Url:       fmt.Sprintf("http://test.%s.de", name),
 		Issuer:    fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", name),
 		LmsIssuer: fmt.Sprintf("http://lms-issuer.%s.de:8080/auth/realms/test", name),

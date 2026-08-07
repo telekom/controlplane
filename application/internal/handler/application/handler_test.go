@@ -6,6 +6,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/stretchr/testify/mock"
@@ -22,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -58,12 +60,13 @@ func newZone() *adminv1.Zone {
 			Name:      "test-zone",
 			Namespace: "test-ns",
 		},
+		Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
 		Status: adminv1.ZoneStatus{
 			Namespace: "zone-ns",
-			Gateway: &commontypes.ObjectRef{
+			Presets: []adminv1.PresetStatus{{Name: "default", TokenUrl: "https://identity.example.com/token", GatewayRef: &commontypes.ObjectRef{
 				Name:      "test-gateway",
 				Namespace: "zone-ns",
-			},
+			}}},
 			IdentityRealm: &commontypes.ObjectRef{
 				Name:      "test-env",
 				Namespace: "zone-ns",
@@ -165,6 +168,83 @@ func setupHappyPath(mockClient *fake.MockJanitorClient, zone *adminv1.Zone, anyC
 			Return(controllerutil.OperationResultCreated, nil).Maybe()
 	}
 }
+
+var _ = Describe("ApplicationHandler - Token URL", func() {
+	var (
+		ctx     context.Context
+		handler *ApplicationHandler
+		app     *applicationv1.Application
+		zone    *adminv1.Zone
+	)
+
+	BeforeEach(func() {
+		ctx = contextutil.WithEnv(context.Background(), "test-env")
+		handler = &ApplicationHandler{}
+		app = newTestApp()
+		zone = newZone()
+	})
+
+	It("publishes the default preset token URL", func() {
+		mockClient := fake.NewMockJanitorClient(GinkgoT())
+		ctx = client.WithClient(ctx, mockClient)
+		setupHappyPath(mockClient, zone, false)
+
+		Expect(handler.CreateOrUpdate(ctx, app)).To(Succeed())
+		Expect(app.Status.TokenUrl).To(Equal("https://identity.example.com/token"))
+	})
+
+	It("publishes the ConsumerFailover preset token URL from the primary zone", func() {
+		app.Spec.Failover.Enabled = true
+		zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
+			Name:     "consumer-failover",
+			Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+		})
+		zone.Status.Presets = append(zone.Status.Presets, adminv1.PresetStatus{
+			Name:     "consumer-failover",
+			TokenUrl: "https://failover-identity.example.com/token",
+		})
+
+		mockClient := fake.NewMockJanitorClient(GinkgoT())
+		ctx = client.WithClient(ctx, mockClient)
+		setupHappyPath(mockClient, zone, false)
+		mockClient.EXPECT().List(mock.Anything, mock.AnythingOfType("*v1.ZoneList")).Return(nil)
+
+		Expect(handler.CreateOrUpdate(ctx, app)).To(Succeed())
+		Expect(app.Status.TokenUrl).To(Equal("https://failover-identity.example.com/token"))
+	})
+
+	It("blocks when the selected preset status is missing", func() {
+		zone.Status.Presets = nil
+		mockClient := fake.NewMockJanitorClient(GinkgoT())
+		ctx = client.WithClient(ctx, mockClient)
+		mockClient.EXPECT().AddKnownTypeToState(mock.Anything).Maybe()
+		mockClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: zone.Name, Namespace: zone.Namespace}, mock.AnythingOfType("*v1.Zone"), mock.Anything).
+			Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+				*obj.(*adminv1.Zone) = *zone
+			}).Return(nil)
+
+		err := handler.CreateOrUpdate(ctx, app)
+		var blockedErr ctrlerrors.BlockedError
+		Expect(errors.As(err, &blockedErr)).To(BeTrue())
+		Expect(err).To(MatchError(`zone "test-zone" does not contain status for preset "default"`))
+	})
+
+	It("blocks when the selected preset token URL is empty", func() {
+		zone.Status.Presets[0].TokenUrl = ""
+		mockClient := fake.NewMockJanitorClient(GinkgoT())
+		ctx = client.WithClient(ctx, mockClient)
+		mockClient.EXPECT().AddKnownTypeToState(mock.Anything).Maybe()
+		mockClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: zone.Name, Namespace: zone.Namespace}, mock.AnythingOfType("*v1.Zone"), mock.Anything).
+			Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+				*obj.(*adminv1.Zone) = *zone
+			}).Return(nil)
+
+		err := handler.CreateOrUpdate(ctx, app)
+		var blockedErr ctrlerrors.BlockedError
+		Expect(errors.As(err, &blockedErr)).To(BeTrue())
+		Expect(err).To(MatchError(`zone "test-zone" preset "default" does not contain a token URL`))
+	})
+})
 
 var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 	var (

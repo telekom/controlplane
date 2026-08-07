@@ -160,12 +160,16 @@ func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *even
 	// This is the same shape as a cross-zone subscriber proxy Route (proxy Route in
 	// the zone's namespace, upstream = backend zone's gateway SSE path).
 	if eventConfig.IsProxy() {
+		presetStatus, statusErr := util.DefaultPresetStatus(zone)
+		if statusErr != nil {
+			return statusErr
+		}
 		// Subscribers in this zone connect to the own-zone proxy Route directly via the
 		// local alias path with their IDP token, so trust the zone's IDP issuer. The mesh
 		// hop to the backend zone is authenticated separately (LMS issuer on the primary).
 		var proxyTrustedIssuers []string
-		if zone.Status.Links.Issuer != "" {
-			proxyTrustedIssuers = []string{zone.Status.Links.Issuer}
+		if presetStatus.Links.Issuer != "" {
+			proxyTrustedIssuers = []string{presetStatus.Links.Issuer}
 		}
 		ownProxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, zone, backendZone,
 			util.WithTrustedIssuers(proxyTrustedIssuers),
@@ -184,7 +188,10 @@ func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *even
 
 	// Primary SSE route in the backend zone: trusted issuers = [backend IDP issuer] + [LMS issuers from proxy zones].
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
-	primaryTrustedIssuers := collectPrimaryTrustedIssuers(backendZone, subscriberZones, isProxyTarget)
+	primaryTrustedIssuers, err := collectPrimaryTrustedIssuers(backendZone, subscriberZones, isProxyTarget)
+	if err != nil {
+		return errors.Wrap(err, "failed to create SSE Route")
+	}
 
 	route, err := util.CreateSSERoute(ctx, obj.Spec.EventType, backendZone, backendConfig,
 		util.WithProxyTarget(isProxyTarget),
@@ -251,13 +258,17 @@ func (h *EventExposureHandler) createProxySSERoutes(ctx context.Context, obj *ev
 			return nil, errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
 		}
 		subscriberZones = append(subscriberZones, subscriberZone)
+		presetStatus, statusErr := util.DefaultPresetStatus(subscriberZone)
+		if statusErr != nil {
+			return nil, statusErr
+		}
 
 		// Subscribers connect to this proxy Route directly via the local alias path with
 		// their own zone's IDP token, so trust the subscriber zone's IDP issuer. The mesh
 		// hop to the backend zone is authenticated with the LMS issuer, trusted on the primary.
 		var proxyTrustedIssuers []string
-		if subscriberZone.Status.Links.Issuer != "" {
-			proxyTrustedIssuers = []string{subscriberZone.Status.Links.Issuer}
+		if presetStatus.Links.Issuer != "" {
+			proxyTrustedIssuers = []string{presetStatus.Links.Issuer}
 		}
 
 		proxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, subscriberZone, backendZone,
@@ -276,19 +287,27 @@ func (h *EventExposureHandler) createProxySSERoutes(ctx context.Context, obj *ev
 }
 
 // collectPrimaryTrustedIssuers builds the trusted issuer list for the primary SSE route.
-func collectPrimaryTrustedIssuers(zone *adminv1.Zone, subscriberZones []*adminv1.Zone, isProxyTarget bool) []string {
+func collectPrimaryTrustedIssuers(zone *adminv1.Zone, subscriberZones []*adminv1.Zone, isProxyTarget bool) ([]string, error) {
 	var issuers []string
-	if zone.Status.Links.Issuer != "" {
-		issuers = append(issuers, zone.Status.Links.Issuer)
+	presetStatus, err := util.DefaultPresetStatus(zone)
+	if err != nil {
+		return nil, err
+	}
+	if presetStatus.Links.Issuer != "" {
+		issuers = append(issuers, presetStatus.Links.Issuer)
 	}
 	if isProxyTarget {
 		for _, subZone := range subscriberZones {
-			if subZone.Status.Links.LmsIssuer != "" {
-				issuers = append(issuers, subZone.Status.Links.LmsIssuer)
+			subscriberPresetStatus, statusErr := util.DefaultPresetStatus(subZone)
+			if statusErr != nil {
+				return nil, statusErr
+			}
+			if subscriberPresetStatus.Links.LmsIssuer != "" {
+				issuers = append(issuers, subscriberPresetStatus.Links.LmsIssuer)
 			}
 		}
 	}
-	return issuers
+	return issuers, nil
 }
 
 func (h *EventExposureHandler) Delete(ctx context.Context, obj *eventv1.EventExposure) error {

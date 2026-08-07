@@ -38,15 +38,13 @@ func CreateAgenticRoute(
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// 1. Get AI Gateway preset and gateway ref
-	if zone.Status.AiGateway == nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no AI Gateway configured", zone.Name)
-	}
-	if zone.Spec.AiGateway == nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no AI Gateway spec configured", zone.Name)
-	}
-	preset, err := zone.Spec.AiGateway.GetDefaultPreset()
+	preset, err := zone.Spec.SelectPreset(adminv1.FeatureAiGateway)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no default AI Gateway preset: %v", zone.Name, err)
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no AI Gateway preset: %v", zone.Name, err)
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil || presetStatus.GatewayRef == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no AI Gateway configured", zone.Name)
 	}
 
 	// 2. Map upstreams
@@ -75,7 +73,7 @@ func CreateAgenticRoute(
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *zone.Status.AiGateway,
+			GatewayRef: *presetStatus.GatewayRef,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
 			Hostnames:  hostnames,
@@ -99,8 +97,8 @@ func CreateAgenticRoute(
 		// there are local subscribers (direct callers). Cross-zone proxy gateways
 		// are trusted via their LMS issuers instead.
 		var trustedIssuers []string
-		if hasLocalSubs && zone.Status.Links.Issuer != "" {
-			trustedIssuers = append(trustedIssuers, zone.Status.Links.Issuer)
+		if hasLocalSubs && presetStatus.Links.Issuer != "" {
+			trustedIssuers = append(trustedIssuers, presetStatus.Links.Issuer)
 		}
 		trustedIssuers = append(trustedIssuers, crossZoneLmsIssuers...)
 		if len(trustedIssuers) > 0 {
@@ -146,28 +144,23 @@ func CreateAgenticProxyRoute(
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// 1. Resolve subscriber zone's AI Gateway preset (for downstream hostnames/paths)
-	if subscriberZone.Status.AiGateway == nil {
-		return nil, ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway configured", subscriberZone.Name)
-	}
-	if subscriberZone.Spec.AiGateway == nil {
-		return nil, ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway spec configured", subscriberZone.Name)
-	}
-	subscriberPreset, err := subscriberZone.Spec.AiGateway.GetDefaultPreset()
+	subscriberPreset, err := subscriberZone.Spec.SelectPreset(adminv1.FeatureAiGateway)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("subscriber zone %q has no default AI Gateway preset: %v", subscriberZone.Name, err)
+		return nil, ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway preset: %v", subscriberZone.Name, err)
+	}
+	subscriberPresetStatus, err := subscriberZone.Status.GetPreset(subscriberPreset.Name)
+	if err != nil || subscriberPresetStatus.GatewayRef == nil {
+		return nil, ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway configured", subscriberZone.Name)
 	}
 
 	// 2. Resolve provider zone's AI Gateway preset (for upstream URL)
-	if providerZone.Spec.AiGateway == nil {
-		return nil, ctrlerrors.BlockedErrorf("provider zone %q has no AI Gateway spec configured", providerZone.Name)
-	}
-	providerPreset, err := providerZone.Spec.AiGateway.GetDefaultPreset()
+	providerPreset, err := providerZone.Spec.SelectPreset(adminv1.FeatureAiGateway)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("provider zone %q has no default AI Gateway preset: %v", providerZone.Name, err)
+		return nil, ctrlerrors.BlockedErrorf("provider zone %q has no AI Gateway preset: %v", providerZone.Name, err)
 	}
 
 	// 3. Build upstream from provider zone's preset URL
-	upstreamUrl, err := url.JoinPath(providerPreset.GetDefaultUrl(), basePath)
+	upstreamUrl, err := url.JoinPath(providerPreset.GetDefaultURL(), basePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build upstream URL for proxy route")
 	}
@@ -196,7 +189,7 @@ func CreateAgenticProxyRoute(
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *subscriberZone.Status.AiGateway,
+			GatewayRef: *subscriberPresetStatus.GatewayRef,
 			Type:       gatewayapi.RouteTypeProxy,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  hostnames,
@@ -213,8 +206,8 @@ func CreateAgenticProxyRoute(
 		}
 
 		// Set trusted issuers from subscriber zone's IDP for consumer token validation
-		if subscriberZone.Status.Links.Issuer != "" {
-			route.Spec.Security.TrustedIssuers = []string{subscriberZone.Status.Links.Issuer}
+		if subscriberPresetStatus.Links.Issuer != "" {
+			route.Spec.Security.TrustedIssuers = []string{subscriberPresetStatus.Links.Issuer}
 		}
 
 		return nil

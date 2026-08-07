@@ -84,27 +84,22 @@ func makeReadyZoneWithAiGateway() *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
-			AiGateway: &adminv1.AiGatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
-						},
+			Presets: []adminv1.Preset{
+				{
+					Name:    "default",
+					Default: true,
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
 					},
+					Features: []adminv1.Feature{{Name: adminv1.FeatureAiGateway, Enabled: true}},
 				},
 			},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			AiGateway: &ctypes.ObjectRef{
-				Name:      "ai-gateway",
-				Namespace: "default",
-			},
-			Links: adminv1.Links{
-				Issuer: "https://issuer.example.com",
-			},
+			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
+				Name: "ai-gateway", Namespace: "default",
+			}, Links: adminv1.Links{Issuer: "https://issuer.example.com"}}},
 			Features: []adminv1.Feature{
 				{Name: adminv1.FeatureAiGateway, Enabled: true},
 			},
@@ -513,7 +508,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			providerZone := makeReadyZoneWithAiGateway()
-			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
+			providerZone.Status.Presets[0].Links.Issuer = "https://issuer.provider.example.com"
 
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
@@ -524,8 +519,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			telecontextZone := makeReadyZoneWithAiGateway()
 			telecontextZone.Name = "telecontext-zone"
 			telecontextZone.Status.Namespace = "telecontext-zone-ns"
-			telecontextZone.Status.Links.LmsIssuer = "https://lms.telecontext.example.com"
-			telecontextZone.Status.Links.Issuer = "https://issuer.telecontext.example.com"
+			telecontextZone.Status.Presets[0].Links.LmsIssuer = "https://lms.telecontext.example.com"
+			telecontextZone.Status.Presets[0].Links.Issuer = "https://issuer.telecontext.example.com"
 
 			telecontextApp := &applicationapi.Application{
 				ObjectMeta: metav1.ObjectMeta{
@@ -593,11 +588,11 @@ var _ = Describe("AgenticExposureHandler", func() {
 		It("should add cross-zone LMS issuer to TrustedIssuers on the real route (no local subs — zone issuer excluded)", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			providerZone := makeReadyZoneWithAiGateway()
-			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
+			providerZone.Status.Presets[0].Links.Issuer = "https://issuer.provider.example.com"
 
 			subscriberZone := makeReadyZoneWithAiGateway()
 			subscriberZone.Name = "subscriber-zone"
-			subscriberZone.Status.Links.LmsIssuer = "https://lms.subscriber.example.com"
+			subscriberZone.Status.Presets[0].Links.LmsIssuer = "https://lms.subscriber.example.com"
 
 			approvedSub := agenticv1.AgenticSubscription{
 				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},

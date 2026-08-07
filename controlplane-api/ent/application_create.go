@@ -143,6 +143,20 @@ func (_c *ApplicationCreate) SetNillableClientSecret(v *string) *ApplicationCrea
 	return _c
 }
 
+// SetTokenURL sets the "token_url" field.
+func (_c *ApplicationCreate) SetTokenURL(v string) *ApplicationCreate {
+	_c.mutation.SetTokenURL(v)
+	return _c
+}
+
+// SetNillableTokenURL sets the "token_url" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableTokenURL(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetTokenURL(*v)
+	}
+	return _c
+}
+
 // SetRotatedClientSecret sets the "rotated_client_secret" field.
 func (_c *ApplicationCreate) SetRotatedClientSecret(v string) *ApplicationCreate {
 	_c.mutation.SetRotatedClientSecret(v)
@@ -445,6 +459,11 @@ func (_c *ApplicationCreate) check() error {
 			return &ValidationError{Name: "client_secret", err: fmt.Errorf(`ent: validator failed for field "Application.client_secret": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.TokenURL(); ok {
+		if err := application.TokenURLValidator(v); err != nil {
+			return &ValidationError{Name: "token_url", err: fmt.Errorf(`ent: validator failed for field "Application.token_url": %w`, err)}
+		}
+	}
 	if v, ok := _c.mutation.RotatedClientSecret(); ok {
 		if err := application.RotatedClientSecretValidator(v); err != nil {
 			return &ValidationError{Name: "rotated_client_secret", err: fmt.Errorf(`ent: validator failed for field "Application.rotated_client_secret": %w`, err)}
@@ -526,6 +545,10 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ClientSecret(); ok {
 		_spec.SetField(application.FieldClientSecret, field.TypeString, value)
 		_node.ClientSecret = &value
+	}
+	if value, ok := _c.mutation.TokenURL(); ok {
+		_spec.SetField(application.FieldTokenURL, field.TypeString, value)
+		_node.TokenURL = &value
 	}
 	if value, ok := _c.mutation.RotatedClientSecret(); ok {
 		_spec.SetField(application.FieldRotatedClientSecret, field.TypeString, value)
@@ -848,6 +871,24 @@ func (u *ApplicationUpsert) UpdateClientSecret() *ApplicationUpsert {
 // ClearClientSecret clears the value of the "client_secret" field.
 func (u *ApplicationUpsert) ClearClientSecret() *ApplicationUpsert {
 	u.SetNull(application.FieldClientSecret)
+	return u
+}
+
+// SetTokenURL sets the "token_url" field.
+func (u *ApplicationUpsert) SetTokenURL(v string) *ApplicationUpsert {
+	u.Set(application.FieldTokenURL, v)
+	return u
+}
+
+// UpdateTokenURL sets the "token_url" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateTokenURL() *ApplicationUpsert {
+	u.SetExcluded(application.FieldTokenURL)
+	return u
+}
+
+// ClearTokenURL clears the value of the "token_url" field.
+func (u *ApplicationUpsert) ClearTokenURL() *ApplicationUpsert {
+	u.SetNull(application.FieldTokenURL)
 	return u
 }
 
@@ -1178,6 +1219,27 @@ func (u *ApplicationUpsertOne) UpdateClientSecret() *ApplicationUpsertOne {
 func (u *ApplicationUpsertOne) ClearClientSecret() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearClientSecret()
+	})
+}
+
+// SetTokenURL sets the "token_url" field.
+func (u *ApplicationUpsertOne) SetTokenURL(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetTokenURL(v)
+	})
+}
+
+// UpdateTokenURL sets the "token_url" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateTokenURL() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateTokenURL()
+	})
+}
+
+// ClearTokenURL clears the value of the "token_url" field.
+func (u *ApplicationUpsertOne) ClearTokenURL() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearTokenURL()
 	})
 }
 
@@ -1697,6 +1759,27 @@ func (u *ApplicationUpsertBulk) UpdateClientSecret() *ApplicationUpsertBulk {
 func (u *ApplicationUpsertBulk) ClearClientSecret() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearClientSecret()
+	})
+}
+
+// SetTokenURL sets the "token_url" field.
+func (u *ApplicationUpsertBulk) SetTokenURL(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetTokenURL(v)
+	})
+}
+
+// UpdateTokenURL sets the "token_url" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateTokenURL() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateTokenURL()
+	})
+}
+
+// ClearTokenURL clears the value of the "token_url" field.
+func (u *ApplicationUpsertBulk) ClearTokenURL() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearTokenURL()
 	})
 }
 

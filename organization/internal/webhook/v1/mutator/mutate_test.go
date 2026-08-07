@@ -23,21 +23,24 @@ import (
 func TestMutateSecret(t *testing.T) {
 	zone := &adminv1.Zone{
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
+			Gateways: []adminv1.GatewayConfig{{Name: "default",
 				Admin: adminv1.GatewayAdminConfig{
 					Url: "https://example.com/gateway",
 				},
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "default",
-					Default: true,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: "example.com",
-						BasePath: "/gateway",
-					}},
+			}}, Presets: []adminv1.Preset{{
+				Name:       "default",
+				Default:    true,
+				GatewayRef: "default", IdentityProviderRef: "default",
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "example.com",
+					BasePath: "/gateway",
 				}},
-			},
-			IdentityProvider: adminv1.IdentityProviderConfig{Url: "https://example.com/identity"},
+			}},
+			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default", TokenUrl: "https://example.com/identity"}},
 		},
+		Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{
+			Name: "default", Links: adminv1.Links{Url: "https://example.com/gateway", TeamIssuer: "https://example.com/identity"},
+		}}},
 	}
 
 	RegisterTestingT(t)

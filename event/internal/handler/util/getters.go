@@ -50,6 +50,18 @@ func GetZone(ctx context.Context, ref client.ObjectKey) (*adminv1.Zone, error) {
 	return zone, nil
 }
 
+func DefaultPresetStatus(zone *adminv1.Zone) (*adminv1.PresetStatus, error) {
+	preset, err := zone.Spec.GetDefaultPreset()
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no default preset: %s", zone.Name, err)
+	}
+	status, err := zone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no status for default preset %q", zone.Name, preset.Name)
+	}
+	return status, nil
+}
+
 // GetEventConfigForZone finds the EventConfig for a given zone name using the field index.
 // Returns BlockedError if no EventConfig is found or if it is not ready.
 func GetEventConfigForZone(ctx context.Context, zoneName string) (*eventv1.EventConfig, error) {

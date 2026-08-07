@@ -110,15 +110,15 @@ var _ = Describe("Notification Helpers", func() {
 					Namespace: "test-ns",
 				},
 				Spec: adminv1.ZoneSpec{
-					IdentityProvider: adminv1.IdentityProviderConfig{
+					IdentityProviders: []adminv1.IdentityProviderConfig{{
 						SecretRotation: &adminv1.SecretRotationConfig{
 							Enabled:          true,
 							ExpirationPeriod: metav1.Duration{Duration: 30 * 24 * time.Hour},
 							GracePeriod:      metav1.Duration{Duration: 24 * time.Hour},
 							NotificationThresholds: []reminder.Threshold{
 								{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}},
-							},
-						},
+							}},
+					},
 					},
 				},
 			}
@@ -132,7 +132,7 @@ var _ = Describe("Notification Helpers", func() {
 		})
 
 		It("should return nil when secret rotation is not configured", func() {
-			zone.Spec.IdentityProvider.SecretRotation = nil
+			zone.Spec.IdentityProviders[0].SecretRotation = nil
 			expiresAt := metav1.NewTime(time.Now().Add(1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
@@ -142,7 +142,7 @@ var _ = Describe("Notification Helpers", func() {
 		})
 
 		It("should return nil when secret rotation is disabled", func() {
-			zone.Spec.IdentityProvider.SecretRotation.Enabled = false
+			zone.Spec.IdentityProviders[0].SecretRotation.Enabled = false
 			expiresAt := metav1.NewTime(time.Now().Add(1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
@@ -238,7 +238,7 @@ var _ = Describe("Notification Helpers", func() {
 			ctx = client.WithClient(ctx, mockClient)
 			setupNotificationMocks(mockClient)
 
-			zone.Spec.IdentityProvider.SecretRotation.NotificationThresholds = []reminder.Threshold{
+			zone.Spec.IdentityProviders[0].SecretRotation.NotificationThresholds = []reminder.Threshold{
 				{Before: metav1.Duration{Duration: 30 * 24 * time.Hour}}, // 30d
 				{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}},  // 7d
 				{Before: metav1.Duration{Duration: 24 * time.Hour}},      // 1d
@@ -260,7 +260,7 @@ var _ = Describe("Notification Helpers", func() {
 			setupNotificationMocks(mockClient)
 
 			repeatInterval := metav1.Duration{Duration: 24 * time.Hour}
-			zone.Spec.IdentityProvider.SecretRotation.NotificationThresholds = []reminder.Threshold{
+			zone.Spec.IdentityProviders[0].SecretRotation.NotificationThresholds = []reminder.Threshold{
 				{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}, Repeat: &repeatInterval},
 			}
 
@@ -283,7 +283,7 @@ var _ = Describe("Notification Helpers", func() {
 
 		It("should not repeat notification when repeat interval has not elapsed", func() {
 			repeatInterval := metav1.Duration{Duration: 24 * time.Hour}
-			zone.Spec.IdentityProvider.SecretRotation.NotificationThresholds = []reminder.Threshold{
+			zone.Spec.IdentityProviders[0].SecretRotation.NotificationThresholds = []reminder.Threshold{
 				{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}, Repeat: &repeatInterval},
 			}
 

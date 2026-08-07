@@ -32,15 +32,18 @@ func (t *Translator) ShouldSkip(_ *adminv1.Zone) (bool, string) {
 // GatewayURL is taken from the default preset's first URL; nil if no preset is configured.
 func (t *Translator) Translate(_ context.Context, obj *adminv1.Zone) (*ZoneData, error) {
 	var gatewayURL *string
-	if preset, err := obj.Spec.Gateway.GetDefaultPreset(); err == nil {
-		url := preset.GetDefaultUrl()
+	if preset, err := obj.Spec.GetDefaultPreset(); err == nil {
+		url := preset.GetDefaultURL()
 		gatewayURL = &url
 	}
 
 	var issuerURL *string
-	if obj.Status.Links.Issuer != "" {
-		u := obj.Status.Links.Issuer
-		issuerURL = &u
+	if preset, err := obj.Spec.GetDefaultPreset(); err == nil {
+		status, statusErr := obj.Status.GetPreset(preset.Name)
+		if statusErr == nil && status.Links.Issuer != "" {
+			u := status.Links.Issuer
+			issuerURL = &u
+		}
 	}
 
 	var permissionsURL *string

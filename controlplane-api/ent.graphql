@@ -785,6 +785,7 @@ type Application implements Node {
   name: String!
   clientID: String
   clientSecret: String
+  tokenURL: String
   rotatedClientSecret: String
   rotatedExpiresAt: Time
   currentExpiresAt: Time
@@ -1126,6 +1127,24 @@ input ApplicationWhereInput {
   clientIDNotNil: Boolean
   clientIDEqualFold: String
   clientIDContainsFold: String
+  """
+  token_url field predicates
+  """
+  tokenURL: String
+  tokenURLNEQ: String
+  tokenURLIn: [String!]
+  tokenURLNotIn: [String!]
+  tokenURLGT: String
+  tokenURLGTE: String
+  tokenURLLT: String
+  tokenURLLTE: String
+  tokenURLContains: String
+  tokenURLHasPrefix: String
+  tokenURLHasSuffix: String
+  tokenURLIsNil: Boolean
+  tokenURLNotNil: Boolean
+  tokenURLEqualFold: String
+  tokenURLContainsFold: String
   """
   rotated_expires_at field predicates
   """
