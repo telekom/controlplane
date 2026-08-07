@@ -756,6 +756,29 @@ func HasAPISubscriptionWith(preds ...predicate.ApiSubscription) predicate.Approv
 	})
 }
 
+// HasFileSubscription applies the HasEdge predicate on the "file_subscription" edge.
+func HasFileSubscription() predicate.Approval {
+	return predicate.Approval(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, FileSubscriptionTable, FileSubscriptionColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFileSubscriptionWith applies the HasEdge predicate on the "file_subscription" edge with a given conditions (other predicates).
+func HasFileSubscriptionWith(preds ...predicate.FileSubscription) predicate.Approval {
+	return predicate.Approval(func(s *sql.Selector) {
+		step := newFileSubscriptionStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasEventSubscription applies the HasEdge predicate on the "event_subscription" edge.
 func HasEventSubscription() predicate.Approval {
 	return predicate.Approval(func(s *sql.Selector) {

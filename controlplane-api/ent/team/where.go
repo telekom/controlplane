@@ -900,6 +900,29 @@ func HasApisWith(preds ...predicate.Api) predicate.Team {
 	})
 }
 
+// HasFileTypes applies the HasEdge predicate on the "file_types" edge.
+func HasFileTypes() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FileTypesTable, FileTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFileTypesWith applies the HasEdge predicate on the "file_types" edge with a given conditions (other predicates).
+func HasFileTypesWith(preds ...predicate.FileType) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := newFileTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasEventTypes applies the HasEdge predicate on the "event_types" edge.
 func HasEventTypes() predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {
