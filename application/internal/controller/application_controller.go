@@ -76,16 +76,16 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&applicationv1.Application{}).
+		For(&applicationv1.Application{}, builder.WithPredicates(cc.Count("application", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
-		Owns(&identity.Client{}).
-		Owns(&gateway.Consumer{}).
+		Owns(&identity.Client{}, builder.WithPredicates(cc.Count("application", cc.RoleOwns))).
+		Owns(&gateway.Consumer{}, builder.WithPredicates(cc.Count("application", cc.RoleOwns))).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApplication),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("application", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Complete(r)
 }

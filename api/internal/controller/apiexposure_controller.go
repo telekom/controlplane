@@ -60,14 +60,14 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apiexposure.ApiExposureHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiv1.ApiExposure{}).
+		For(&apiv1.ApiExposure{}, builder.WithPredicates(cc.Count("apiexposure", cc.RoleFor))).
 		Watches(&apiv1.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&apiv1.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToApiExposure),
@@ -78,15 +78,15 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// When a subscription is approved, ApiExposure needs to reconcile to create/update proxy routes.
 		Watches(&apiv1.ApiSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiSubscriptionToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiExposure),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

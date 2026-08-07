@@ -232,3 +232,32 @@ func (r *MyResourceReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 All your business logic should be implemented in the `MyResourceHandler` struct (see [example](./pkg/handler/nop.go)). The controller will take care of the rest.
 Additionally, your resource `MyResource` must implement the `Object` interface. 
 
+## Controller source event metrics
+
+`controlplane_controller_source_events_total{controller,role,source,verb,result}`
+counts every event delivered to a controller, attributed to the watch that
+produced it. `role` is `for`, `owns` or `watches`; `source` is the Kind of the
+watched object; `verb` is `create`, `update`, `delete` or `generic`; `result` is
+`passed` or `filtered` depending on whether that watch's own predicates admitted
+the event.
+
+Wire it into a watch with `controller.Count`, passing any filtering predicates as
+trailing arguments rather than listing them alongside it:
+
+```go
+For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor))).
+Watches(&gatewayv1.ConsumeRoute{},
+    handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
+    builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{})))
+```
+
+Passing predicates to `Count` rather than beside it is what makes `result`
+meaningful: `Count` sees the filtering decision and records it, instead of
+counting events the controller then discards.
+
+The `controller` argument must be the primary Kind lowercased ("route", not
+"route-controller"), matching how controller-runtime labels its own metrics.
+
+Query `result="passed"` for the traffic that actually drives reconciles, and the
+`filtered` share to see how much noise a watch's predicates are absorbing.
+

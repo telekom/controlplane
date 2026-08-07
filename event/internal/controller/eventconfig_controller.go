@@ -58,17 +58,17 @@ func (r *EventConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&eventconfig.EventConfigHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&eventv1.EventConfig{}).
-		Owns(&pubsubv1.EventStore{}).
-		Owns(&gatewayv1.Route{}, builder.WithPredicates(LabelPredicate)).
-		Owns(&identityv1.Client{}, builder.WithPredicates(LabelPredicate)).
+		For(&eventv1.EventConfig{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleFor))).
+		Owns(&pubsubv1.EventStore{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns))).
+		Owns(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
+		Owns(&identityv1.Client{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventConfig),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventconfig", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&eventv1.EventConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventConfigToEventConfig),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventconfig", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
