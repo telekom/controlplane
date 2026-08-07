@@ -21,12 +21,14 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/agentic"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/event"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/file"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/permission"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
@@ -76,6 +78,10 @@ func addKnownTypes(c client.JanitorClient) {
 	if config.FeaturePermission.IsEnabled() {
 		c.AddKnownTypeToState(&permissionv1.PermissionSet{})
 	}
+	if config.FeatureFile.IsEnabled() {
+		c.AddKnownTypeToState(&filev1.FileExposure{})
+		c.AddKnownTypeToState(&filev1.FileSubscription{})
+	}
 	if config.FeatureAiGateway.IsEnabled() {
 		c.AddKnownTypeToState(&agenticv1.AgenticExposure{})
 		c.AddKnownTypeToState(&agenticv1.AgenticSubscription{})
@@ -86,6 +92,7 @@ func (h *RoverHandler) handleExposures(ctx context.Context, c client.JanitorClie
 	roverObj.Status.ApiExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	roverObj.Status.EventExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	roverObj.Status.AgenticExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
+	roverObj.Status.FileExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 
 	seenDiscriminators := make(map[string]struct{})
 	for _, exp := range roverObj.Spec.Exposures {
@@ -128,10 +135,19 @@ func (h *RoverHandler) handleExposure(ctx context.Context, c client.JanitorClien
 		if err := agentic.HandleExposure(ctx, c, roverObj, exp.Agentic); err != nil {
 			return errors.Wrap(err, "failed to handle AI exposure")
 		}
+	case roverv1.TypeFile:
+		// Duplicate file types are rejected by the Rover admission webhook
+		if !config.FeatureFile.IsEnabled() {
+			logger.Info("file exposure skipped, feature has not been enabled")
+			return nil
+		}
+		if err := file.HandleExposure(ctx, c, roverObj, exp.File); err != nil {
+			return errors.Wrap(err, "failed to handle file exposure")
+		}
+
 	default:
 		return errors.New("unknown exposure type: " + exp.Type().String())
 	}
-
 	return nil
 }
 
@@ -140,6 +156,7 @@ func (h *RoverHandler) handleSubscriptions(ctx context.Context, c client.Janitor
 	roverObj.Status.EventSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 	roverObj.Status.AgenticSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 
+	roverObj.Status.FileSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 	for _, sub := range roverObj.Spec.Subscriptions {
 		if err := h.handleSubscription(ctx, c, roverObj, sub, logger); err != nil {
 			return err
@@ -171,10 +188,19 @@ func (h *RoverHandler) handleSubscription(ctx context.Context, c client.JanitorC
 		if err := agentic.HandleSubscription(ctx, c, roverObj, sub.Agentic); err != nil {
 			return errors.Wrap(err, "failed to handle AI subscription")
 		}
+
+	case roverv1.TypeFile:
+		if !config.FeatureFile.IsEnabled() {
+			logger.Info("file subscription skipped, feature has not been enabled")
+			return nil
+		}
+		if err := file.HandleSubscription(ctx, c, roverObj, sub.File); err != nil {
+			return errors.Wrap(err, "failed to handle file subscription")
+		}
+
 	default:
 		return errors.New("unknown subscription type: " + sub.Type().String())
 	}
-
 	return nil
 }
 

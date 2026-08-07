@@ -32,6 +32,18 @@ type RoverStatus struct {
 	EventExposures []types.ObjectRef `json:"eventExposures,omitempty"`
 	// EventSubscriptions are references to EventSubscription resources created by this Rover
 	EventSubscriptions []types.ObjectRef `json:"eventSubscriptions,omitempty"`
+	// FileExposures are references to FileExposure resources created by this Rover in the file domain.
+	//
+	// TODO(DHEI-20903): today RoverHandler.CreateOrUpdate only initialises this slice
+	// (make(..., 0)); it is populated (append of the created file-domain resource refs)
+	// by the file handler dispatch once the file domain module is available.
+	// Populated from: rover/internal/handler/rover/handler.go, case roverv1.TypeFile.
+	FileExposures []types.ObjectRef `json:"fileExposures,omitempty"`
+	// FileSubscriptions are references to FileSubscription resources created by this Rover in the file domain.
+	//
+	// TODO(DHEI-20903): see FileExposures — populated by the file handler dispatch
+	// (rover/internal/handler/rover/handler.go, case roverv1.TypeFile) once delivered.
+	FileSubscriptions []types.ObjectRef `json:"fileSubscriptions,omitempty"`
 	// PermissionSets are references to PermissionSet resources created by this Rover
 	PermissionSets []types.ObjectRef `json:"permissionSets,omitempty"`
 	// AgenticExposures are references to AgenticExposure resources created by this Rover
@@ -214,6 +226,8 @@ const (
 	TypeEvent Type = "event"
 	// TypeAgentic represents an Agentic type resource (MCP, A2A)
 	TypeAgentic Type = "agentic"
+	// TypeFile represents a File type resource (SFTP integration)
+	TypeFile Type = "file"
 )
 
 // ApprovalStrategy defines the approval workflow for API exposure
@@ -277,6 +291,9 @@ type Exposure struct {
 	// Agentic defines an Agentic(MCP or agent) server exposure configuration
 	// +kubebuilder:validation:Optional
 	Agentic *AgenticExposure `json:"agentic,omitempty"`
+	// File defines a File-based (SFTP) service exposure configuration
+	// +kubebuilder:validation:Optional
+	File *FileExposure `json:"file,omitempty"`
 }
 
 func (e *Exposure) Type() Type {
@@ -288,6 +305,9 @@ func (e *Exposure) Type() Type {
 	}
 	if e.Agentic != nil {
 		return TypeAgentic
+	}
+	if e.File != nil {
+		return TypeFile
 	}
 	return ""
 }
@@ -305,6 +325,9 @@ type Subscription struct {
 	// Agentic defines an Agentic(MCP or agent) server subscription configuration
 	// +kubebuilder:validation:Optional
 	Agentic *AgenticSubscription `json:"agentic,omitempty"`
+	// File defines a File-based (SFTP) service subscription configuration
+	// +kubebuilder:validation:Optional
+	File *FileSubscription `json:"file,omitempty"`
 }
 
 func (s *Subscription) Type() Type {
@@ -316,6 +339,9 @@ func (s *Subscription) Type() Type {
 	}
 	if s.Agentic != nil {
 		return TypeAgentic
+	}
+	if s.File != nil {
+		return TypeFile
 	}
 	return ""
 }
@@ -508,6 +534,90 @@ type AgenticSubscription struct {
 	// Security defines optional security configuration
 	// +kubebuilder:validation:Optional
 	Security *SubscriberSecurity `json:"security,omitempty"`
+}
+
+// FileExposure defines a file type that is exposed by this Rover via SFTP.
+// Applying it registers the provider's SSH public keys on the corresponding
+// SFTP user (shared space) created from the matching FileSpecification.
+type FileExposure struct {
+	// FileType identifies the file type that is exposed. It must match the
+	// name (and spec.type) of an applied FileSpecification.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	FileType string `json:"fileType"`
+
+	// Visibility defines who can see and subscribe to this file type
+	// +kubebuilder:validation:Enum=World;Zone;Enterprise
+	// +kubebuilder:default=Enterprise
+	Visibility Visibility `json:"visibility"`
+
+	// Approval defines the approval workflow required for subscriptions to this file type
+	// +kubebuilder:validation:Required
+	Approval Approval `json:"approval"`
+
+	// PublicKeys are the SSH public keys registered for the producer's SFTP user.
+	// At least one key is required. Both label and key value must be unique per fileType.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	PublicKeys []PublicKey `json:"publicKeys"`
+}
+
+// FileSubscription defines a file type that this Rover consumes via SFTP.
+// Applying it registers the consumer's SSH public keys on the corresponding
+// SFTP user (shared space) created from the matching FileSpecification.
+type FileSubscription struct {
+	// FileType identifies the file type to consume. It must match the
+	// name of an applied FileSpecification.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	FileType string `json:"fileType"`
+
+	// PublicKeys are the SSH public keys registered for the consumer's SFTP user.
+	// At least one key is required. Both label and key value must be unique per fileType.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	PublicKeys []PublicKey `json:"publicKeys"`
+}
+
+// PublicKey is a labelled SSH public key registered on a SFTP user.
+type PublicKey struct {
+	// Label is a human-readable identifier for the key. It must be unique per fileType.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Label string `json:"label"`
+
+	// Key is the SSH public key value. It must be unique per fileType.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Key string `json:"key"`
+}
+
+// SSHKeyType identifies the algorithm prefix of an SSH public key registered on
+// a SFTP user. Only these algorithms are accepted for file exposures and subscriptions.
+type SSHKeyType string
+
+const (
+	SSHKeyTypeRSA           SSHKeyType = "ssh-rsa"
+	SSHKeyTypeECDSANistP521 SSHKeyType = "ecdsa-sha2-nistp521"
+	SSHKeyTypeED25519       SSHKeyType = "ssh-ed25519"
+)
+
+var AllSSHKeyTypes = []SSHKeyType{
+	SSHKeyTypeRSA,
+	SSHKeyTypeECDSANistP521,
+	SSHKeyTypeED25519,
+}
+
+func (t SSHKeyType) String() string {
+	return string(t)
+}
+
+func (t SSHKeyType) IsValid() bool {
+	switch t {
+	case SSHKeyTypeRSA, SSHKeyTypeECDSANistP521, SSHKeyTypeED25519:
+		return true
+	}
+	return false
 }
 
 // Approval defines the approval workflow for API exposure

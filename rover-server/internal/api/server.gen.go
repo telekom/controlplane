@@ -261,6 +261,66 @@ func (e EventTriggerResponseFilterMode) Valid() bool {
 	}
 }
 
+// Defines values for FileExposureVariant.
+const (
+	FileExposureVariantSftp FileExposureVariant = "sftp"
+)
+
+// Valid indicates whether the value is a known member of the FileExposureVariant enum.
+func (e FileExposureVariant) Valid() bool {
+	switch e {
+	case FileExposureVariantSftp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FileExposureInfoType.
+const (
+	FileExposureInfoTypeFile FileExposureInfoType = "file"
+)
+
+// Valid indicates whether the value is a known member of the FileExposureInfoType enum.
+func (e FileExposureInfoType) Valid() bool {
+	switch e {
+	case FileExposureInfoTypeFile:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FileExposureInfoVariant.
+const (
+	FileExposureInfoVariantSftp FileExposureInfoVariant = "sftp"
+)
+
+// Valid indicates whether the value is a known member of the FileExposureInfoVariant enum.
+func (e FileExposureInfoVariant) Valid() bool {
+	switch e {
+	case FileExposureInfoVariantSftp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FileSubscriptionInfoType.
+const (
+	FileSubscriptionInfoTypeFile FileSubscriptionInfoType = "file"
+)
+
+// Valid indicates whether the value is a known member of the FileSubscriptionInfoType enum.
+func (e FileSubscriptionInfoType) Valid() bool {
+	switch e {
+	case FileSubscriptionInfoTypeFile:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GrantType.
 const (
 	CLIENTCREDENTIALS GrantType = "CLIENT_CREDENTIALS"
@@ -1145,6 +1205,54 @@ type FieldProblem struct {
 	Title  string `json:"title"`
 }
 
+// FileExposure defines model for FileExposure.
+type FileExposure struct {
+	FileType   string      `json:"fileType"`
+	PublicKeys []PublicKey `json:"publicKeys"`
+	Type       string      `json:"type"`
+
+	// Variant File-transfer backend. Optional; currently only "sftp" is supported.
+	Variant    FileExposureVariant `json:"variant,omitempty,omitzero"`
+	Visibility Visibility          `json:"visibility,omitempty,omitzero"`
+}
+
+// FileExposureVariant File-transfer backend. Optional; currently only "sftp" is supported.
+type FileExposureVariant string
+
+// FileExposureInfo defines model for FileExposureInfo.
+type FileExposureInfo struct {
+	FileType   string               `json:"fileType"`
+	PublicKeys []PublicKey          `json:"publicKeys"`
+	Type       FileExposureInfoType `json:"type"`
+
+	// Variant File-transfer backend. Optional; currently only "sftp" is supported.
+	Variant    FileExposureInfoVariant `json:"variant,omitempty,omitzero"`
+	Visibility Visibility              `json:"visibility,omitempty,omitzero"`
+}
+
+// FileExposureInfoType defines model for FileExposureInfo.Type.
+type FileExposureInfoType string
+
+// FileExposureInfoVariant File-transfer backend. Optional; currently only "sftp" is supported.
+type FileExposureInfoVariant string
+
+// FileSubscription defines model for FileSubscription.
+type FileSubscription struct {
+	FileType   string      `json:"fileType"`
+	PublicKeys []PublicKey `json:"publicKeys"`
+	Type       string      `json:"type"`
+}
+
+// FileSubscriptionInfo defines model for FileSubscriptionInfo.
+type FileSubscriptionInfo struct {
+	FileType   string                   `json:"fileType"`
+	PublicKeys []PublicKey              `json:"publicKeys"`
+	Type       FileSubscriptionInfoType `json:"type"`
+}
+
+// FileSubscriptionInfoType defines model for FileSubscriptionInfo.Type.
+type FileSubscriptionInfoType string
+
 // GrantType defines model for GrantType.
 type GrantType string
 
@@ -1243,6 +1351,15 @@ type Problem struct {
 
 // ProcessingState defines model for ProcessingState.
 type ProcessingState string
+
+// PublicKey defines model for PublicKey.
+type PublicKey struct {
+	// Key SSH public key value. Must be unique per fileType.
+	Key string `json:"key"`
+
+	// Label Human-readable identifier for the key. Must be unique per fileType.
+	Label string `json:"label"`
+}
 
 // RateLimit defines model for RateLimit.
 type RateLimit struct {
@@ -1770,6 +1887,34 @@ func (t *Exposure) MergeAiExposure(v AiExposure) error {
 	return err
 }
 
+// AsFileExposure returns the union data inside the Exposure as a FileExposure
+func (t Exposure) AsFileExposure() (FileExposure, error) {
+	var body FileExposure
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFileExposure overwrites any union data inside the Exposure as the provided FileExposure
+func (t *Exposure) FromFileExposure(v FileExposure) error {
+	v.Type = "file"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFileExposure performs a merge with any union data inside the Exposure, using the provided FileExposure
+func (t *Exposure) MergeFileExposure(v FileExposure) error {
+	v.Type = "file"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t Exposure) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1790,6 +1935,8 @@ func (t Exposure) ValueByDiscriminator() (interface{}, error) {
 		return t.AsApiExposure()
 	case "event":
 		return t.AsEventExposure()
+	case "file":
+		return t.AsFileExposure()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}
@@ -1889,6 +2036,34 @@ func (t *ExposureInfo) MergeAiExposureInfo(v AiExposureInfo) error {
 	return err
 }
 
+// AsFileExposureInfo returns the union data inside the ExposureInfo as a FileExposureInfo
+func (t ExposureInfo) AsFileExposureInfo() (FileExposureInfo, error) {
+	var body FileExposureInfo
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFileExposureInfo overwrites any union data inside the ExposureInfo as the provided FileExposureInfo
+func (t *ExposureInfo) FromFileExposureInfo(v FileExposureInfo) error {
+	v.Type = "file"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFileExposureInfo performs a merge with any union data inside the ExposureInfo, using the provided FileExposureInfo
+func (t *ExposureInfo) MergeFileExposureInfo(v FileExposureInfo) error {
+	v.Type = "file"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t ExposureInfo) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1909,6 +2084,8 @@ func (t ExposureInfo) ValueByDiscriminator() (interface{}, error) {
 		return t.AsApiExposureInfo()
 	case "event":
 		return t.AsEventExposureInfo()
+	case "file":
+		return t.AsFileExposureInfo()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}
@@ -2097,6 +2274,34 @@ func (t *Subscription) MergeAiSubscription(v AiSubscription) error {
 	return err
 }
 
+// AsFileSubscription returns the union data inside the Subscription as a FileSubscription
+func (t Subscription) AsFileSubscription() (FileSubscription, error) {
+	var body FileSubscription
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFileSubscription overwrites any union data inside the Subscription as the provided FileSubscription
+func (t *Subscription) FromFileSubscription(v FileSubscription) error {
+	v.Type = "file"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFileSubscription performs a merge with any union data inside the Subscription, using the provided FileSubscription
+func (t *Subscription) MergeFileSubscription(v FileSubscription) error {
+	v.Type = "file"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t Subscription) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -2117,6 +2322,8 @@ func (t Subscription) ValueByDiscriminator() (interface{}, error) {
 		return t.AsApiSubscription()
 	case "event":
 		return t.AsEventSubscription()
+	case "file":
+		return t.AsFileSubscription()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}
@@ -2216,6 +2423,34 @@ func (t *SubscriptionInfo) MergeAiSubscriptionInfo(v AiSubscriptionInfo) error {
 	return err
 }
 
+// AsFileSubscriptionInfo returns the union data inside the SubscriptionInfo as a FileSubscriptionInfo
+func (t SubscriptionInfo) AsFileSubscriptionInfo() (FileSubscriptionInfo, error) {
+	var body FileSubscriptionInfo
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFileSubscriptionInfo overwrites any union data inside the SubscriptionInfo as the provided FileSubscriptionInfo
+func (t *SubscriptionInfo) FromFileSubscriptionInfo(v FileSubscriptionInfo) error {
+	v.Type = "file"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFileSubscriptionInfo performs a merge with any union data inside the SubscriptionInfo, using the provided FileSubscriptionInfo
+func (t *SubscriptionInfo) MergeFileSubscriptionInfo(v FileSubscriptionInfo) error {
+	v.Type = "file"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SubscriptionInfo) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -2236,6 +2471,8 @@ func (t SubscriptionInfo) ValueByDiscriminator() (interface{}, error) {
 		return t.AsApiSubscriptionInfo()
 	case "event":
 		return t.AsEventSubscriptionInfo()
+	case "file":
+		return t.AsFileSubscriptionInfo()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}
