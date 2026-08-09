@@ -23,7 +23,7 @@ resources:
   - ../manager
   - ../rbac
   - ../certmanager
-  - ../network-policy
+#  - ../network-policy
   - ../prometheus
   - ../ingress
 

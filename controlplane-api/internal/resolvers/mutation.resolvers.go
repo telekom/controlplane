@@ -67,6 +67,35 @@ func (r *mutationResolver) UpdateTeam(ctx context.Context, input model.UpdateTea
 	return payload, nil
 }
 
+// DeleteTeam is the resolver for the deleteTeam field.
+func (r *mutationResolver) DeleteTeam(ctx context.Context, input model.DeleteTeamInput) (*model.DeleteTeamPayload, error) {
+	if r.services.Team == nil {
+		return &model.DeleteTeamPayload{
+			Errors: []model.MutationError{mutationsDisabledError()},
+		}, nil
+	}
+
+	_, ref, err := r.resolveTeamRef(ctx, input.TeamID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &model.DeleteTeamPayload{
+				Errors: []model.MutationError{notFoundMutationError("team not found")},
+			}, nil
+		}
+		return nil, fmt.Errorf("resolving team reference: %w", err)
+	}
+
+	payload, err := r.services.Team.DeleteTeam(ctx, ref)
+	if err != nil {
+		return nil, fmt.Errorf("deleting team: %w", err)
+	}
+	if payload == nil {
+		return nil, fmt.Errorf("deleting team: service returned nil payload")
+	}
+
+	return payload, nil
+}
+
 // AddTeamMember is the resolver for the addTeamMember field.
 func (r *mutationResolver) AddTeamMember(ctx context.Context, teamID int, member model.MemberInput) (*model.AddTeamMemberPayload, error) {
 	if r.services.Team == nil {
@@ -190,6 +219,100 @@ func (r *mutationResolver) RotateApplicationSecret(ctx context.Context, applicat
 	}
 	if len(payload.Errors) == 0 {
 		payload.Application = app
+	}
+
+	return payload, nil
+}
+
+// CreateGroup is the resolver for the createGroup field.
+func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGroupInput) (*model.CreateGroupPayload, error) {
+	if r.services.Group == nil {
+		return &model.CreateGroupPayload{
+			Errors: []model.MutationError{mutationsDisabledError()},
+		}, nil
+	}
+
+	payload, err := r.services.Group.CreateGroup(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("creating group: %w", err)
+	}
+	if payload == nil {
+		return nil, fmt.Errorf("creating group: service returned nil payload")
+	}
+
+	return payload, nil
+}
+
+// UpdateGroup is the resolver for the updateGroup field.
+func (r *mutationResolver) UpdateGroup(ctx context.Context, input model.UpdateGroupInput) (*model.UpdateGroupPayload, error) {
+	if r.services.Group == nil {
+		return &model.UpdateGroupPayload{
+			Errors: []model.MutationError{mutationsDisabledError()},
+		}, nil
+	}
+
+	g, ref, err := r.resolveGroupRef(ctx, input.GroupID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &model.UpdateGroupPayload{
+				Errors: []model.MutationError{notFoundMutationError("group not found")},
+			}, nil
+		}
+		return nil, fmt.Errorf("resolving group reference: %w", err)
+	}
+
+	payload, err := r.services.Group.UpdateGroup(ctx, ref, input)
+	if err != nil {
+		return nil, fmt.Errorf("updating group: %w", err)
+	}
+	if payload == nil {
+		return nil, fmt.Errorf("updating group: service returned nil payload")
+	}
+	if len(payload.Errors) == 0 {
+		payload.Group = g
+	}
+
+	return payload, nil
+}
+
+// DeleteGroup is the resolver for the deleteGroup field.
+func (r *mutationResolver) DeleteGroup(ctx context.Context, input model.DeleteGroupInput) (*model.DeleteGroupPayload, error) {
+	if r.services.Group == nil {
+		return &model.DeleteGroupPayload{
+			Errors: []model.MutationError{mutationsDisabledError()},
+		}, nil
+	}
+
+	g, ref, err := r.resolveGroupRef(ctx, input.GroupID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &model.DeleteGroupPayload{
+				Errors: []model.MutationError{notFoundMutationError("group not found")},
+			}, nil
+		}
+		return nil, fmt.Errorf("resolving group reference: %w", err)
+	}
+
+	// Pre-check: group must have no teams before deletion.
+	teamCount, err := g.QueryTeams().Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("counting group teams: %w", err)
+	}
+	if teamCount > 0 {
+		return &model.DeleteGroupPayload{
+			Errors: []model.MutationError{{
+				Code:    model.ErrorCodePreconditionFailed,
+				Message: fmt.Sprintf("cannot delete group: %d team(s) still exist — delete all teams first", teamCount),
+			}},
+		}, nil
+	}
+
+	payload, err := r.services.Group.DeleteGroup(ctx, ref)
+	if err != nil {
+		return nil, fmt.Errorf("deleting group: %w", err)
+	}
+	if payload == nil {
+		return nil, fmt.Errorf("deleting group: service returned nil payload")
 	}
 
 	return payload, nil

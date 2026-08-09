@@ -181,6 +181,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: organization-server
+    dir: organization-server
+    main: cmd/main.go
+    binary: organization-server
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
   - id: notification
     dir: notification
     main: cmd/main.go
@@ -450,6 +459,25 @@ kos:
       - "{{.Tag}}"
       - "{{if not .Prerelease}}stable{{end}}"
     bare: true
+  - id: organization-server
+    build: organization-server
+    main: .
+    working_dir: organization-server/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/organization-server
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
   - id: rover
     build: rover
     main: .
@@ -512,6 +540,13 @@ kos:
     build: rover-ctl
     main: .
     working_dir: rover-ctl
+    # This kos entry only produces the plain roverctl binary image (ko's
+    # default distroless base, no bash/jq/yq) - it contains no GPL-licensed
+    # components, so it's safe to publish to public GHCR like the other
+    # modules. The final bash/jq/yq-bundled image published to the internal
+    # Artifactory registry is built separately (see
+    # .github/workflows/release.yaml, which layers this GHCR image's binary
+    # onto the Artifactory base image via rover-ctl/Dockerfile).
     repositories:
       - ghcr.io/telekom/controlplane/rover-ctl
     labels:

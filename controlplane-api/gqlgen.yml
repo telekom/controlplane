@@ -75,6 +75,30 @@ models:
   DecideApprovalPayload:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalPayload
+  DeleteTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeleteTeamInput
+  DeleteTeamPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeleteTeamPayload
+  CreateGroupInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateGroupInput
+  UpdateGroupInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateGroupInput
+  DeleteGroupInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeleteGroupInput
+  CreateGroupPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateGroupPayload
+  UpdateGroupPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateGroupPayload
+  DeleteGroupPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeleteGroupPayload
   Node:
     model:
       - github.com/telekom/controlplane/controlplane-api/ent.Noder

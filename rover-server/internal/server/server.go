@@ -87,6 +87,10 @@ type AgentSpecificationController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
+type ResourcesController interface {
+	GetAll(ctx context.Context, params api.GetAllResourcesParams) (*api.ResourceListResponse, error)
+}
+
 // SecurityTemplates are the rover-specific check-access comparison templates.
 // They are exported so cmd/main.go can inject them into the JWT SecurityOpts
 // when building each listener's security family.
@@ -118,6 +122,7 @@ type Server struct {
 	ApiChangelogs       ApiChangelogController
 	McpSpecifications   McpSpecificationController
 	AgentSpecifications AgentSpecificationController
+	Resources           ResourcesController
 }
 
 func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
@@ -214,5 +219,9 @@ func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
 	router.Add(fiber.MethodGet, "/agentspecifications/:resourceId", cserver.Guarded(guard, s.GetAgentSpecification)...)
 	router.Add(fiber.MethodPut, "/agentspecifications/:resourceId", cserver.Guarded(guard, s.UpdateAgentSpecification)...)
 	router.Add(fiber.MethodDelete, "/agentspecifications/:resourceId", cserver.Guarded(guard, s.DeleteAgentSpecification)...)
+
+	s.Log.Info("Registering resources routes")
+
+	router.Add(fiber.MethodGet, "/resources", cserver.Guarded(guard, s.GetAllResources)...)
 
 }
