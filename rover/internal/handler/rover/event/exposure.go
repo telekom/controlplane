@@ -9,6 +9,11 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -17,16 +22,12 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // HandleExposure creates or updates an EventExposure resource owned by the given Rover.
 func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Rover, exp *rover.EventExposure) error {
-	log := log.FromContext(ctx)
-	log.V(1).Info("Handle EventExposure", "eventType", exp.EventType)
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Handle EventExposure", "eventType", exp.EventType)
 
 	name := MakeName(owner.Name, exp.EventType)
 
@@ -56,18 +57,19 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		// Map trusted teams from rover Group/Team format to resolved team names
-		trustedTeams, err := mapTrustedTeams(ctx, c, exp.Approval.TrustedTeams)
+		trustedTeams, err := mapTrustedTeams(ctx, exp.Approval.TrustedTeams)
 		if err != nil {
 			return errors.Wrap(err, "failed to map trusted teams")
 		}
 
 		// Add owner team to trusted teams
 		ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-		} else if err != nil {
+		switch {
+		case err != nil && apierrors.IsNotFound(err):
+			logger.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
+		case err != nil:
 			return err
-		} else {
+		default:
 			trustedTeams = append(trustedTeams, ownerTeam.GetName())
 		}
 
@@ -106,8 +108,8 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 }
 
 // mapTrustedTeams resolves rover TrustedTeam references (Group/Team) to team resource names.
-func mapTrustedTeams(ctx context.Context, c client.JanitorClient, teams []rover.TrustedTeam) ([]string, error) {
-	log := log.FromContext(ctx)
+func mapTrustedTeams(ctx context.Context, teams []rover.TrustedTeam) ([]string, error) {
+	logger := log.FromContext(ctx)
 	if len(teams) == 0 {
 		return nil, nil
 	}
@@ -116,11 +118,12 @@ func mapTrustedTeams(ctx context.Context, c client.JanitorClient, teams []rover.
 	for _, team := range teams {
 		namespace := contextutil.EnvFromContextOrDie(ctx) + "--" + team.Group + "--" + team.Team
 		t, err := organizationv1.FindTeamForNamespace(ctx, namespace)
-		if err != nil && apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Trusted team %s/%s not found", team.Group, team.Team))
-		} else if err != nil {
+		switch {
+		case err != nil && apierrors.IsNotFound(err):
+			logger.Info(fmt.Sprintf("Trusted team %s/%s not found", team.Group, team.Team))
+		case err != nil:
 			return nil, err
-		} else {
+		default:
 			resolved = append(resolved, t.GetName())
 		}
 	}

@@ -6,19 +6,18 @@ package main
 
 import (
 	"context"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"flag"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/common-server/pkg/store/inmemory"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	roverin "github.com/telekom/controlplane/rover-server/internal/mapper/rover/in"
 	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/controller"
@@ -28,22 +27,24 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		panic(errors.Wrap(err, "failed to load configuration"))
-	}
+	var configFile string
+	flag.StringVar(&configFile, "configfile", "", "path to config file")
+	flag.Parse()
 
-	log.Init()
+	cfg := config.LoadConfig(configFile)
+	roverin.MigrationActive = cfg.Migration.Active
+
+	log.Init(cfg.Log)
+	ctrllog.SetLogger(log.Log) // controller-runtime internals (informer cache) log via its root logger
 	rootCtx := logr.NewContext(context.Background(), log.Log)
 
-	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie())
+	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie(),
+		inmemory.DatabaseOpts{Filepath: cfg.Database.Filepath, ReduceMemory: cfg.Database.ReduceMemory},
+		inmemory.InformerOpts{DisableCache: cfg.Informer.DisableCache},
+	)
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log.Log
-	app := cserver.NewAppWithConfig(appCfg)
-
-	probesCtrl := cserver.NewProbesController()
-	probesCtrl.Register(app, cserver.ControllerOpts{})
 
 	file.AppendOption(
 		filesapi.WithSkipTLSVerify(cfg.FileManager.SkipTLS),
@@ -59,27 +60,55 @@ func main() {
 		Roadmaps:            controller.NewRoadmapController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),
 		ApiChangelogs:       controller.NewApiChangelogController(stores),
+		McpSpecifications:   controller.NewMcpSpecificationController(stores),
+		Resources:           controller.NewResourcesController(stores),
 	}
 
-	s.RegisterRoutes(app)
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		err := app.Listen(cfg.Address)
-		if err != nil && err != http.ErrServerClosed {
-			log.Log.Error(err, "Failed to start server")
+	// jwtOpts injects rover's server-specific check-access templates into the
+	// JWT SecurityOpts derived from each listener's jwt block.
+	jwtOpts := func(jc security.JWTConfig) security.SecurityOpts {
+		opts := jc.ToSecurityOpts()
+		opts.Log = log.Log
+		opts.BusinessContextOpts = append(opts.BusinessContextOpts, security.WithLog(log.Log))
+		opts.CheckAccessOpts = []security.Option[*security.CheckAccessOpts]{
+			security.WithPathParamKey("resourceId"),
+			security.WithTemplates(server.SecurityTemplates),
 		}
-	}()
+		return opts
+	}
 
-	sig := <-quit
-	log.Log.Info("Shutting down server", "signal", sig)
+	buildListener := func(lc *cserver.ListenerConfig, internal bool) *cserver.Listener {
+		if lc == nil {
+			return nil
+		}
+		// rover is a JWT-server: an internal k8s listener gets admin-context
+		// (which also marks it internal for open-access). External listeners
+		// are JWT; the k8s-only options are ignored there.
+		var opts []cserver.FamilyOption
+		if internal {
+			opts = append(opts, cserver.WithAdminContext())
+		}
+		fam, err := cserver.FamilyFromListenerConfig(*lc, jwtOpts, opts...)
+		if err != nil {
+			log.Log.Error(err, "Failed to build security family for listener", "address", lc.Address)
+			panic(err)
+		}
+		return &cserver.Listener{Address: lc.Address, Family: fam}
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	ms := &cserver.MultiServer{
+		AppConfig: appCfg,
+		TLS:       cfg.TLS.ToServerTLS(),
+		Listeners: cserver.Listeners{
+			Internal: buildListener(cfg.Listeners.Internal, true),
+			External: buildListener(cfg.Listeners.External, false),
+		},
+		Register: s.RegisterRoutes,
+	}
 
-	if err := app.ShutdownWithContext(ctx); err != nil {
-		log.Log.Error(err, "Failed to gracefully shutdown server")
+	if err := ms.Run(rootCtx); err != nil {
+		log.Log.Error(err, "server exited with error")
+		panic(err)
 	}
 
 	log.Log.Info("Server gracefully stopped")

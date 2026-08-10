@@ -62,38 +62,38 @@ func (r *EventExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&eventexposure.EventExposureHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&eventv1.EventExposure{}).
-		Owns(&pubsubv1.Publisher{}).
+		For(&eventv1.EventExposure{}, builder.WithPredicates(cc.Count("eventexposure", cc.RoleFor))).
+		Owns(&pubsubv1.Publisher{}, builder.WithPredicates(cc.Count("eventexposure", cc.RoleOwns))).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToEventExposure),
-			builder.WithPredicates(LabelPredicate),
+			builder.WithPredicates(cc.Count("eventexposure", cc.RoleWatches, LabelPredicate)),
 		).
 		Watches(&eventv1.EventType{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventTypeToEventExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&eventv1.EventExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventExposureToEventExposure),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventExposure),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
 		Watches(&eventv1.EventConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventConfigToEventExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&eventv1.EventSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventSubscriptionToEventExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		// Watch Application because EventExposure needs the Application's ClientId to create
 		// Publisher resources. Without this watch, a BlockedError from a not-yet-ready Application
 		// would never be unblocked since nothing else triggers reconciliation.
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToEventExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("eventexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

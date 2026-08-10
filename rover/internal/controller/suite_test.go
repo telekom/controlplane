@@ -13,13 +13,9 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/test/mock"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,11 +27,14 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretsapifake "github.com/telekom/controlplane/secret-manager/api/fake"
-	//+kubebuilder:scaffold:imports
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -83,10 +82,10 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "..", "application", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "organization", "config", "crd", "bases"),
 		),
-		//CRDDirectoryPaths: append(
+		// CRDDirectoryPaths: append(
 		//	testutil.GetCrdPathsOrDie("github.com/telekom/controlplane/(api|application|organization)/api"),
 		//	filepath.Join("..", "..", "config", "crd", "bases"),
-		//),
+		// ),
 		ErrorIfCRDPathMissing: true,
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
 			fmt.Sprintf("%s-%s-%s", os.Getenv("ENVTEST_K8S_VERSION"), runtime.GOOS, runtime.GOARCH)),
@@ -109,7 +108,7 @@ var _ = BeforeSuite(func() {
 	err = organizationv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
@@ -165,7 +164,6 @@ var _ = BeforeSuite(func() {
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
-
 })
 
 var _ = AfterSuite(func() {

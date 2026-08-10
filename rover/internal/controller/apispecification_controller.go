@@ -7,18 +7,18 @@ package controller
 import (
 	"context"
 
-	apiapi "github.com/telekom/controlplane/api/api/v1"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	apispec_handler "github.com/telekom/controlplane/rover/internal/handler/apispecification"
-
+	apiapi "github.com/telekom/controlplane/api/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	rover "github.com/telekom/controlplane/rover/api/v1"
+	apispec_handler "github.com/telekom/controlplane/rover/internal/handler/apispecification"
 )
 
 // ApiSpecificationReconciler reconciles a ApiSpecification object
@@ -51,8 +51,8 @@ func (r *ApiSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(h, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&rover.ApiSpecification{}).
-		Owns(&apiapi.Api{}).
+		For(&rover.ApiSpecification{}, builder.WithPredicates(cc.Count("apispecification", cc.RoleFor))).
+		Owns(&apiapi.Api{}, builder.WithPredicates(cc.Count("apispecification", cc.RoleOwns))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

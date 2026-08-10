@@ -11,6 +11,7 @@ go.work*
 # editor and IDE paraphernalia
 .idea
 .vscode
+.codeintel
 
 # ignore test output
 gotest.log

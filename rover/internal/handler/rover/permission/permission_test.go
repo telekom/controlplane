@@ -8,18 +8,20 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/config"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("HandlePermission", func() {
@@ -151,7 +153,6 @@ var _ = Describe("HandlePermission", func() {
 })
 
 var _ = Describe("normalizePermissions", func() {
-
 	Context("resource-oriented format", func() {
 		It("must expand resource with multiple role entries", func() {
 			input := []roverv1.Permission{

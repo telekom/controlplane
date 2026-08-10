@@ -22,7 +22,8 @@
         Traffic:        v1.SubscriberTraffic{},
         Security:       (*v1.SubscriberSecurity)(nil),
     },
-    Event: (*v1.EventSubscription)(nil),
+    Event:   (*v1.EventSubscription)(nil),
+    Agentic: (*v1.AgenticSubscription)(nil),
 }
 ---
 
@@ -35,6 +36,7 @@
         Trigger:   (*v1.EventTrigger)(nil),
         Scopes:    nil,
     },
+    Agentic: (*v1.AgenticSubscription)(nil),
 }
 ---
 

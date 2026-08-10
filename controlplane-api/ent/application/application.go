@@ -65,6 +65,8 @@ const (
 	EdgeExposedEvents = "exposed_events"
 	// EdgeSubscribedEvents holds the string denoting the subscribed_events edge name in mutations.
 	EdgeSubscribedEvents = "subscribed_events"
+	// EdgePermissionSet holds the string denoting the permission_set edge name in mutations.
+	EdgePermissionSet = "permission_set"
 	// Table holds the table name of the application in the database.
 	Table = "applications"
 	// ZoneTable is the table that holds the zone relation/edge.
@@ -109,6 +111,13 @@ const (
 	SubscribedEventsInverseTable = "event_subscriptions"
 	// SubscribedEventsColumn is the table column denoting the subscribed_events relation/edge.
 	SubscribedEventsColumn = "application_subscribed_events"
+	// PermissionSetTable is the table that holds the permission_set relation/edge.
+	PermissionSetTable = "permission_sets"
+	// PermissionSetInverseTable is the table name for the PermissionSet entity.
+	// It exists in this package in order to avoid circular dependency with the "permissionset" package.
+	PermissionSetInverseTable = "permission_sets"
+	// PermissionSetColumn is the table column denoting the permission_set relation/edge.
+	PermissionSetColumn = "application_permission_set"
 )
 
 // Columns holds all SQL columns for application fields.
@@ -381,6 +390,13 @@ func BySubscribedEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newSubscribedEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByPermissionSetField orders the results by permission_set field.
+func ByPermissionSetField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPermissionSetStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newZoneStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -421,6 +437,13 @@ func newSubscribedEventsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscribedEventsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedEventsTable, SubscribedEventsColumn),
+	)
+}
+func newPermissionSetStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PermissionSetInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, PermissionSetTable, PermissionSetColumn),
 	)
 }
 

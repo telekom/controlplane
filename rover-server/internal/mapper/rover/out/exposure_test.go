@@ -20,7 +20,8 @@ var _ = Describe("Exposure Mapper", func() {
 		It("must map ApiExposure correctly", func() {
 			input := &apiExposure
 
-			output := mapApiExposure(input)
+			output, err := mapApiExposure(input)
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
@@ -29,7 +30,8 @@ var _ = Describe("Exposure Mapper", func() {
 		It("must handle empty ApiExposure input", func() {
 			input := &roverv1.ApiExposure{}
 
-			output := mapApiExposure(input)
+			output, err := mapApiExposure(input)
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
@@ -81,7 +83,8 @@ var _ = Describe("Exposure Mapper", func() {
 				},
 			}
 
-			output := mapApiExposure(input)
+			output, err := mapApiExposure(input)
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output.Upstream).To(BeEmpty())
 			Expect(output.LoadBalancing.Servers).To(HaveLen(2))

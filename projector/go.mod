@@ -9,20 +9,20 @@ go 1.26.5
 require (
 	entgo.io/ent v0.14.6
 	github.com/dgraph-io/ristretto/v2 v2.4.2
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/mattn/go-sqlite3 v1.14.48
+	github.com/mattn/go-sqlite3 v1.14.49
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega v1.42.1
-	github.com/prometheus/client_golang v1.23.2
+	github.com/prometheus/client_golang v1.24.1
 	github.com/spf13/viper v1.21.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/time v0.15.0
-	k8s.io/api v0.36.2
-	k8s.io/apimachinery v0.36.2
-	k8s.io/client-go v0.36.2
+	k8s.io/api v0.36.3
+	k8s.io/apimachinery v0.36.3
+	k8s.io/client-go v0.36.3
 	sigs.k8s.io/controller-runtime v0.24.1
 )
 
@@ -35,7 +35,8 @@ require (
 	github.com/telekom/controlplane/controlplane-api v0.0.0
 	github.com/telekom/controlplane/event/api v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0
-	k8s.io/apiextensions-apiserver v0.36.2
+	github.com/telekom/controlplane/permission/api v0.0.0-00010101000000-000000000000
+	k8s.io/apiextensions-apiserver v0.36.3
 )
 
 replace (
@@ -48,6 +49,7 @@ replace (
 	github.com/telekom/controlplane/controlplane-api => ../controlplane-api
 	github.com/telekom/controlplane/event/api => ../event/api
 	github.com/telekom/controlplane/organization/api => ../organization/api
+	github.com/telekom/controlplane/permission/api => ../permission/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )
 
@@ -103,8 +105,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.70.0 // indirect
-	github.com/prometheus/procfs v0.21.0 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sosodev/duration v1.4.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
@@ -139,6 +141,6 @@ require (
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.3 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )

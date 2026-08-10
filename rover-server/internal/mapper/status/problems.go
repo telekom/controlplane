@@ -114,6 +114,19 @@ func GetAllEventSpecificationProblems(ctx context.Context, eventSpec *v1.EventSp
 	return runCheckers(ctx, eventSpec, checkers)
 }
 
+// GetAllMcpSpecificationProblems retrieves all problems across all McpSpecification sub-resource types.
+func GetAllMcpSpecificationProblems(ctx context.Context, agenticSpec *v1.McpSpecification, stores *roverStore.Stores) (ProblemsResult, error) {
+	if agenticSpec.Status.McpServer.IsEmpty() {
+		return ProblemsResult{}, nil
+	}
+
+	checkers := []SubResourceChecker{
+		NewSubResourceChecker(stores.McpServerStore),
+	}
+
+	return runCheckers(ctx, agenticSpec, checkers)
+}
+
 // --- Internal helpers ---
 
 // runCheckers runs a list of SubResourceCheckers against the given owner and

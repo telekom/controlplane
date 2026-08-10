@@ -168,22 +168,24 @@ var _ = Describe("CreateCallbackRoute", func() {
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Paths).To(HaveLen(1))
-		Expect(route.Spec.Paths[0]).To(Equal("/zone-a/callback/v1"))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon-zone-a/callback/v1"))
 
 		// Verify DynamicUpstream
 		Expect(route.Spec.Traffic.DynamicUpstream).ToNot(BeNil())
 		Expect(route.Spec.Traffic.DynamicUpstream.QueryParameter).To(Equal("callback"))
 
-		// Verify Security
+		// Verify Security: callback routes always trust the Horizon callback client,
+		// even when not a proxy target.
 		Expect(route.Spec.Security.DisableAccessControl).To(BeFalse())
-		Expect(route.Spec.Security.DefaultConsumers).To(BeEmpty())
+		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(util.CallbackClientName))
+		Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(gatewayapi.GatewayConsumerName))
 
 		// Verify GatewayRef
 		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
 		Expect(route.Spec.GatewayRef.Namespace).To(Equal("default"))
 	})
 
-	It("should add util.MeshClientName to DefaultConsumers when IsProxyTarget", func() {
+	It("should trust both the callback client and the gateway when IsProxyTarget", func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
@@ -194,7 +196,8 @@ var _ = Describe("CreateCallbackRoute", func() {
 		route, err := util.CreateCallbackRoute(ctx, zone, util.WithProxyTarget(true))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
-		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement("eventstore"))
+		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(util.CallbackClientName))
+		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(gatewayapi.GatewayConsumerName))
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
@@ -205,7 +208,7 @@ var _ = Describe("CreateCallbackRoute", func() {
 		route, err := util.CreateCallbackRoute(ctx, zone)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update callback Route"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
 		Expect(err.Error()).To(ContainSubstring("create failed"))
 	})
 })
@@ -287,18 +290,19 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		Expect(route.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
 		Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(int32(443)))
-		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/zone-b/callback/v1"))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/horizon-zone-b/callback/v1"))
 
 		// Verify hostnames and paths from source zone's preset
 		Expect(route.Spec.Hostnames).To(HaveLen(1))
 		Expect(route.Spec.Hostnames[0]).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Paths).To(HaveLen(1))
-		Expect(route.Spec.Paths[0]).To(Equal("/zone-b/callback/v1"))
+		Expect(route.Spec.Paths[0]).To(Equal("/horizon-zone-b/callback/v1"))
 
-		// Verify Security
+		// Verify Security: the proxy callback route is what Horizon hits cross-zone,
+		// so it must trust the callback client (and not the gateway mesh-client).
 		Expect(route.Spec.Security.DisableAccessControl).To(BeFalse())
-
-		// Verify GatewayRef points to source zone's gateway
+		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(util.CallbackClientName))
+		Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(gatewayapi.GatewayConsumerName))
 		Expect(route.Spec.GatewayRef.Name).To(Equal("gateway-zone-a"))
 		Expect(route.Spec.GatewayRef.Namespace).To(Equal("default"))
 
@@ -314,7 +318,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		route, err := util.CreateProxyCallbackRoute(ctx, sourceZone, targetZone)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("failed to create or update proxy callback Route"))
+		Expect(err.Error()).To(ContainSubstring("failed to create or update Route"))
 		Expect(err.Error()).To(ContainSubstring("create failed"))
 	})
 })

@@ -583,6 +583,16 @@ func AvailableTransitionsNotNil() predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.FieldNotNull(FieldAvailableTransitions))
 }
 
+// RequestedScopesIsNil applies the IsNil predicate on the "requested_scopes" field.
+func RequestedScopesIsNil() predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldIsNull(FieldRequestedScopes))
+}
+
+// RequestedScopesNotNil applies the NotNil predicate on the "requested_scopes" field.
+func RequestedScopesNotNil() predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldNotNull(FieldRequestedScopes))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.FieldEQ(FieldName, v))

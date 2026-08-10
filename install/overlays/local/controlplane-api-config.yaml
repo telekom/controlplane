@@ -5,11 +5,16 @@
 database:
   url: ${DATABASE_URL}
 
-security:
-  enabled: false
-
 graphql:
   playgroundEnabled: true
 
 log:
   level: debug
+
+# Local dev: single external listener, mock auth (no issuers required), plain
+# HTTP (no tls block). Set mode: jwt + trustedIssuers for a real deployment.
+listeners:
+  external:
+    address: ":8443"
+    jwt:
+      mode: mock

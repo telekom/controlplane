@@ -13,6 +13,7 @@ import (
 	requestValidator "github.com/oapi-codegen/fiber-middleware"
 	"github.com/pkg/errors"
 
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/config"
@@ -63,7 +64,10 @@ type EventTypeController interface {
 	GetStatus(ctx context.Context, eventTypeId string) (api.ResourceStatusResponse, error)
 }
 
-var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
+// SecurityTemplates are the discovery-specific check-access comparison
+// templates. They are exported so cmd/main.go can inject them into the JWT
+// SecurityOpts when building each listener's security family.
+var SecurityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--",
 		UserInputTemplate: "{{ .B.Environment }}--{{ .P.Applicationid }}",
@@ -93,26 +97,9 @@ type Server struct {
 	EventTypes         EventTypeController
 }
 
-// RegisterRoutes sets up security middleware, OpenAPI validation, and all route handlers.
-func (s *Server) RegisterRoutes(router fiber.Router) {
-	checkAccess := security.ConfigureSecurity(router, security.SecurityOpts{
-		Mode: s.Config.Security.Mode,
-		Log:  s.Log,
-		JWTOpts: []security.Option[*security.JWTOpts]{
-			security.WithLmsCheck(s.Config.Security.LMS.BasePath),
-			security.WithTrustedIssuers(s.Config.Security.TrustedIssuers),
-		},
-		BusinessContextOpts: []security.Option[*security.BusinessContextOpts]{
-			security.WithDefaultScope(s.Config.Security.DefaultScope),
-			security.WithLog(s.Log),
-			security.WithScopePrefix(s.Config.Security.ScopePrefix),
-		},
-		CheckAccessOpts: []security.Option[*security.CheckAccessOpts]{
-			security.WithPathParamKey("applicationId"),
-			security.WithTemplates(securityTemplates),
-		},
-	})
-
+// RegisterRoutes sets up OpenAPI validation and all route handlers, attaching
+// the security family's per-route guard (nil = no per-route guard).
+func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
 	swagger, err := api.GetSwagger()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to get swagger"))
@@ -132,46 +119,46 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 
 	// Deprecated write endpoints must be registered before the OpenAPI validator
 	// because the spec does not define these methods — the validator would reject them first.
-	s.registerDeprecatedRoutes(router, checkAccess)
+	s.registerDeprecatedRoutes(router, guard)
 
 	router.Use(openapiValidator)
 
 	// Application routes (read-only)
 	s.Log.Info("Registering application routes")
-	router.Get("/applications", checkAccess, s.GetAllApplications)
-	router.Get("/applications/:applicationId", checkAccess, s.GetApplication)
-	router.Get("/applications/:applicationId/status", checkAccess, s.GetApplicationStatus)
+	router.Add(fiber.MethodGet, "/applications", cserver.Guarded(guard, s.GetAllApplications)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId", cserver.Guarded(guard, s.GetApplication)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/status", cserver.Guarded(guard, s.GetApplicationStatus)...)
 
 	// ApiExposure routes (read-only)
 	s.Log.Info("Registering apiexposure routes")
-	router.Get("/applications/:applicationId/apiexposures", checkAccess, s.GetAllApiExposures)
-	router.Get("/applications/:applicationId/apiexposures/:apiExposureName", checkAccess, s.GetApiExposure)
-	router.Get("/applications/:applicationId/apiexposures/:apiExposureName/status", checkAccess, s.GetApiExposureStatus)
-	router.Get("/applications/:applicationId/apiexposures/:apiExposureName/apisubscriptions", checkAccess, s.GetApiExposureSubscriptions)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/apiexposures", cserver.Guarded(guard, s.GetAllApiExposures)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/apiexposures/:apiExposureName", cserver.Guarded(guard, s.GetApiExposure)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/apiexposures/:apiExposureName/status", cserver.Guarded(guard, s.GetApiExposureStatus)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/apiexposures/:apiExposureName/apisubscriptions", cserver.Guarded(guard, s.GetApiExposureSubscriptions)...)
 
 	// ApiSubscription routes (read-only)
 	s.Log.Info("Registering apisubscription routes")
-	router.Get("/applications/:applicationId/apisubscriptions", checkAccess, s.GetAllApiSubscriptions)
-	router.Get("/applications/:applicationId/apisubscriptions/:apiSubscriptionName", checkAccess, s.GetApiSubscription)
-	router.Get("/applications/:applicationId/apisubscriptions/:apiSubscriptionName/status", checkAccess, s.GetApiSubscriptionStatus)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/apisubscriptions", cserver.Guarded(guard, s.GetAllApiSubscriptions)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/apisubscriptions/:apiSubscriptionName", cserver.Guarded(guard, s.GetApiSubscription)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/apisubscriptions/:apiSubscriptionName/status", cserver.Guarded(guard, s.GetApiSubscriptionStatus)...)
 
 	// EventExposure routes (read-only)
 	s.Log.Info("Registering eventexposure routes")
-	router.Get("/applications/:applicationId/eventexposures", checkAccess, s.GetAllEventExposures)
-	router.Get("/applications/:applicationId/eventexposures/:eventExposureName", checkAccess, s.GetEventExposure)
-	router.Get("/applications/:applicationId/eventexposures/:eventExposureName/status", checkAccess, s.GetEventExposureStatus)
-	router.Get("/applications/:applicationId/eventexposures/:eventExposureName/eventsubscriptions", checkAccess, s.GetEventExposureSubscriptions)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/eventexposures", cserver.Guarded(guard, s.GetAllEventExposures)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/eventexposures/:eventExposureName", cserver.Guarded(guard, s.GetEventExposure)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/eventexposures/:eventExposureName/status", cserver.Guarded(guard, s.GetEventExposureStatus)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/eventexposures/:eventExposureName/eventsubscriptions", cserver.Guarded(guard, s.GetEventExposureSubscriptions)...)
 
 	// EventSubscription routes (read-only)
 	s.Log.Info("Registering eventsubscription routes")
-	router.Get("/applications/:applicationId/eventsubscriptions", checkAccess, s.GetAllEventSubscriptions)
-	router.Get("/applications/:applicationId/eventsubscriptions/:eventSubscriptionName", checkAccess, s.GetEventSubscription)
-	router.Get("/applications/:applicationId/eventsubscriptions/:eventSubscriptionName/status", checkAccess, s.GetEventSubscriptionStatus)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/eventsubscriptions", cserver.Guarded(guard, s.GetAllEventSubscriptions)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/eventsubscriptions/:eventSubscriptionName", cserver.Guarded(guard, s.GetEventSubscription)...)
+	router.Add(fiber.MethodGet, "/applications/:applicationId/eventsubscriptions/:eventSubscriptionName/status", cserver.Guarded(guard, s.GetEventSubscriptionStatus)...)
 
-	// EventType routes (read-only)
+	// EventType routes (read-only) — intentionally unguarded (public).
 	s.Log.Info("Registering eventtype routes")
-	router.Get("/eventtypes", s.GetAllEventTypes)
-	router.Get("/eventtypes/:eventTypeId", s.GetEventType)
-	router.Get("/eventtypes/:eventTypeId/status", s.GetEventTypeStatus)
-	router.Get("/eventtypes/:eventTypeName/active", s.GetActiveEventType)
+	router.Add(fiber.MethodGet, "/eventtypes", s.GetAllEventTypes)
+	router.Add(fiber.MethodGet, "/eventtypes/:eventTypeId", s.GetEventType)
+	router.Add(fiber.MethodGet, "/eventtypes/:eventTypeId/status", s.GetEventTypeStatus)
+	router.Add(fiber.MethodGet, "/eventtypes/:eventTypeName/active", s.GetActiveEventType)
 }

@@ -215,6 +215,24 @@ func (_u *ApprovalRequestUpdate) ClearAvailableTransitions() *ApprovalRequestUpd
 	return _u
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *ApprovalRequestUpdate) SetRequestedScopes(v []string) *ApprovalRequestUpdate {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *ApprovalRequestUpdate) AppendRequestedScopes(v []string) *ApprovalRequestUpdate {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *ApprovalRequestUpdate) ClearRequestedScopes() *ApprovalRequestUpdate {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *ApprovalRequestUpdate) SetName(v string) *ApprovalRequestUpdate {
 	_u.mutation.SetName(v)
@@ -449,6 +467,17 @@ func (_u *ApprovalRequestUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if _u.mutation.AvailableTransitionsCleared() {
 		_spec.ClearField(approvalrequest.FieldAvailableTransitions, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(approvalrequest.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, approvalrequest.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(approvalrequest.FieldRequestedScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approvalrequest.FieldName, field.TypeString, value)
@@ -711,6 +740,24 @@ func (_u *ApprovalRequestUpdateOne) AppendAvailableTransitions(v []model.Availab
 // ClearAvailableTransitions clears the value of the "available_transitions" field.
 func (_u *ApprovalRequestUpdateOne) ClearAvailableTransitions() *ApprovalRequestUpdateOne {
 	_u.mutation.ClearAvailableTransitions()
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *ApprovalRequestUpdateOne) SetRequestedScopes(v []string) *ApprovalRequestUpdateOne {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *ApprovalRequestUpdateOne) AppendRequestedScopes(v []string) *ApprovalRequestUpdateOne {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *ApprovalRequestUpdateOne) ClearRequestedScopes() *ApprovalRequestUpdateOne {
+	_u.mutation.ClearRequestedScopes()
 	return _u
 }
 
@@ -978,6 +1025,17 @@ func (_u *ApprovalRequestUpdateOne) sqlSave(ctx context.Context) (_node *Approva
 	}
 	if _u.mutation.AvailableTransitionsCleared() {
 		_spec.ClearField(approvalrequest.FieldAvailableTransitions, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(approvalrequest.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, approvalrequest.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(approvalrequest.FieldRequestedScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(approvalrequest.FieldName, field.TypeString, value)

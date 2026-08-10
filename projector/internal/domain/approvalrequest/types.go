@@ -52,4 +52,7 @@ type ApprovalRequestData struct {
 	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string
+
+	// AccessScopes is the list of access scopes requested by the approval request.
+	AccessScopes []string
 }

@@ -1,0 +1,19 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: controlplane-trust-bundle
+spec:
+  sources:
+    - secret:
+        name: controlplane-root-ca
+        key: tls.crt
+  target:
+    configMap:
+      key: trust-bundle.pem
+    namespaceSelector:
+      matchLabels:
+        app.kubernetes.io/name: controlplane-system

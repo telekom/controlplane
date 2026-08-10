@@ -270,7 +270,10 @@ install/
 ├── base/                          # Shared foundation
 │   ├── kustomization.yaml         # Sets the namespace to controlplane-system
 │   ├── namespace.yaml             # Namespace with required labels
-│   └── issuer.yaml                # Self-signed cert-manager Issuer for internal TLS
+│   ├── bootstrap-issuer.yaml       # Self-signed Issuer used to create the root CA
+│   ├── root-ca.yaml                # Private root CA Certificate
+│   ├── issuer.yaml                 # CA-backed Issuer for internal TLS
+│   └── trust-bundle.yaml           # Shared public CA trust bundle
 │
 ├── overlays/
 │   └── default/                   # Production overlay (recommended starting point)
@@ -285,7 +288,7 @@ The three layers work together as follows:
 
 | Layer | Purpose |
 |---|---|
-| **Base** | Creates the `controlplane-system` namespace with the labels that the Secret Manager and File Manager network policies require, and provisions a self-signed TLS issuer for internal controller communication. |
+| **Base** | Creates the `controlplane-system` namespace, bootstraps a private root CA, provisions the CA-backed issuer used for internal TLS, and distributes its public certificate through a shared trust bundle. |
 | **Overlay** | Composes the base with all individual controller configurations. The default overlay references each controller's config from GitHub at a pinned release tag. |
 | **Component** | An optional add-on that can be composed into any overlay. The eventing component adds the event and pubsub controllers. |
 
@@ -332,34 +335,35 @@ configMapGenerator:
       disableNameSuffixHash: true
 ```
 
-Then create a `secret-manager-config.yaml` next to your overlay. Here is an example that uses the Kubernetes backend:
+Then create a `secret-manager-config.yaml` next to your overlay. The Secret Manager authenticates callers on an internal listener using in-cluster Kubernetes service account tokens. A minimal example using the Kubernetes backend:
+
+```yaml
+backend:
+  type: kubernetes
+```
+
+With no `accessConfig`, any authenticated in-cluster service account is allowed. To restrict which service accounts may read or write secrets — recommended in production — add an `accessConfig` allow-list under the internal listener's `k8s` block:
 
 ```yaml
 backend:
   type: kubernetes
 
-security:
-  enabled: true
-```
-
-When security is enabled, you can optionally restrict which service accounts are allowed to read or write secrets by adding an `access_config` section. This is useful in production to ensure that only the controllers that need secret access can reach the Secret Manager:
-
-```yaml
-security:
-  enabled: true
-  access_config:
-    - service_account_name: identity-controller-manager
-      deployment_name: identity-controller-manager
-      namespace: identity-system
-      allowed_access:
-        - secrets_read
-    - service_account_name: organization-controller-manager
-      deployment_name: organization-controller-manager
-      namespace: organization-system
-      allowed_access:
-        - onboarding_write
-        - secrets_write
-        - secrets_read
+listeners:
+  internal:
+    address: ":8443"
+    k8s:
+      audience: secret-manager
+      accessConfig:
+        - service_account_name: identity-controller-manager
+          namespace: identity-system
+          allowed_access:
+            - secrets_read
+        - service_account_name: organization-controller-manager
+          namespace: organization-system
+          allowed_access:
+            - onboarding_write
+            - secrets_write
+            - secrets_read
 ```
 
 The available access rights are:
@@ -408,9 +412,6 @@ backend:
   sts_endpoint: https://sts.amazonaws.com
   role_arn: arn:aws:iam::123456789012:role/my-file-manager-role
   token_path: /var/run/secrets/file-manager/file-manager-token
-
-security:
-  enabled: true
 ```
 
 Replace the `bucket_name` and `role_arn` with your actual S3 bucket and IAM role. The `token_path` points to a projected service account token that the File Manager uses for STS authentication — this is configured automatically by the default deployment.
@@ -427,9 +428,6 @@ backend:
   bucket_name: controlplane-files
   access_key: myAccessKey
   secret_key: mySecretKey
-
-security:
-  enabled: true
 ```
 
 Replace the `endpoint`, `access_key`, and `secret_key` with your MinIO instance details. The repository includes an example MinIO Helm values file under `file-manager/examples/minio/` that you can use as a starting point.
@@ -438,7 +436,7 @@ Replace the `endpoint`, `access_key`, and `secret_key` with your MinIO instance 
 
 #### Security
 
-When `security.enabled` is set to `true`, callers must provide a valid authentication token in the request header. The controllers that interact with the File Manager (such as the API and Rover controllers) handle this automatically.
+The File Manager authenticates callers on its internal listener using in-cluster Kubernetes service account tokens. The controllers that interact with the File Manager (such as the API and Rover controllers) provide these automatically. To restrict which service accounts are allowed, add an `accessConfig` allow-list under the internal listener's `k8s` block; with no `accessConfig`, any authenticated in-cluster service account is allowed.
 
 ### Reference: eventing component details {#reference-eventing-component-details}
 
@@ -452,3 +450,73 @@ For details on how application teams publish and consume events, see the user jo
 
 - [Exposing Events](../user-journey/exposing-events.mdx)
 - [Subscribing to Events](../user-journey/subscribing-to-events.mdx)
+
+## Internal certificate authority
+
+Control Plane services in `controlplane-system` share one certificate authority (CA). This allows every internal client to validate every service certificate with the same trust bundle.
+
+The default installation creates the CA in three steps:
+
+```text
+Issuer/controlplane-bootstrap-issuer (SelfSigned)
+    |
+    | creates and self-signs once
+    v
+Certificate/controlplane-root-ca
+    |
+    | stores its certificate and private key in Secret/controlplane-root-ca
+    v
+Issuer/controlplane-issuer (CA-backed)
+    |
+    | issues certificates for internal services
+    v
+Service certificates
+```
+
+### Bootstrap issuer
+
+`Issuer/controlplane-bootstrap-issuer` solves the initial trust problem: a root CA must be self-signed because no higher CA exists to sign it. The bootstrap issuer is therefore used only to create `Certificate/controlplane-root-ca`. Internal service certificates must not reference it directly.
+
+Using the self-signed issuer for each service certificate would create a separate trust anchor for every service. Clients would then need a separate trust bundle for File Manager, Secret Manager, Controlplane API, and every other internal service.
+
+### Root CA
+
+`Certificate/controlplane-root-ca` is marked as a CA certificate. cert-manager generates its private key, asks the bootstrap issuer to self-sign it, and stores both in `Secret/controlplane-root-ca`.
+
+The private key remains in `controlplane-system` and is used only for certificate issuance. Client workloads receive the public CA certificate, not its private key.
+
+### Service issuer
+
+`Issuer/controlplane-issuer` is backed by `Secret/controlplane-root-ca`. It is the stable issuer referenced by all internal service `Certificate` resources:
+
+```yaml
+issuerRef:
+  name: controlplane-issuer
+  kind: Issuer
+```
+
+This separation keeps bootstrap and day-to-day issuance distinct. The bootstrap issuer creates the root CA once; the CA-backed service issuer uses that root to issue and renew service certificates throughout the installation's lifetime.
+
+Internal clients trust `/var/run/secrets/trust-bundle/trust-bundle.pem`, distributed by trust-manager from `Bundle/controlplane-trust-bundle`. Because every service certificate chains back to `controlplane-root-ca`, one shared bundle is sufficient.
+
+### Certificate profiles
+
+The root CA and internal service certificates use explicit profiles for lifetimes, renewal windows, key algorithms, key usages, and private-key rotation. The deployed `Certificate` resources are the source of truth for these values.
+
+Service identity is defined exclusively through DNS Subject Alternative Names. Leaf certificate subjects remain empty because `commonName` is not used for modern TLS hostname verification.
+
+Changing the root CA profile on an existing installation is a CA rotation, not an ordinary certificate renewal. Publish both old and new CA certificates in the trust bundle before reissuing service certificates, and keep both trusted until all services and clients use the new chain.
+
+## Use an externally managed issuer
+
+Disable the default `controlplane-bootstrap-issuer`, `controlplane-root-ca` Certificate, and CA-backed `controlplane-issuer`. Provide a namespaced cert-manager `Issuer` named `controlplane-issuer` in `controlplane-system`, then replace the shared Bundle source with the public CA certificate for that issuer.
+
+The replacement must preserve `kind: Issuer` and `name: controlplane-issuer`; service Certificate manifests do not need changes.
+
+## Rotate the CA
+
+Publish both old and new public CA certificates in `controlplane-trust-bundle`, reissue all service certificates from the new issuer, and remove the old CA only after every workload has loaded the new bundle and every serving certificate uses the new chain.
+
+Removing the old CA requires rolling client workloads because the current refresher retains previously loaded roots until restart.
+
+Never disable TLS verification during issuer replacement or rotation.

@@ -30,7 +30,8 @@ var _ = Describe("Exposure Mapper", func() {
 			output := mapApiExposure(input)
 
 			Expect(output).ToNot(BeNil())
-			snaps.MatchSnapshot(GinkgoT(), output)
+			Expect(output.Visibility).To(Equal(roverv1.VisibilityEnterprise))
+			Expect(output.Approval.Strategy).To(Equal(roverv1.ApprovalStrategySimple))
 		})
 
 		It("must map load balancing with multiple servers", func() {
@@ -286,6 +287,10 @@ var _ = Describe("Exposure Mapper", func() {
 	})
 
 	Context("toRoverVisibility", func() {
+		It("must default empty visibility to ENTERPRISE", func() {
+			Expect(toRoverVisibility("")).To(Equal(roverv1.VisibilityEnterprise))
+		})
+
 		It("must map WORLD visibility correctly", func() {
 			input := api.WORLD
 
@@ -320,6 +325,10 @@ var _ = Describe("Exposure Mapper", func() {
 	})
 
 	Context("toRoverApprovalStrategy", func() {
+		It("must default empty approval strategy to SIMPLE", func() {
+			Expect(toRoverApprovalStrategy("")).To(Equal(roverv1.ApprovalStrategySimple))
+		})
+
 		It("must map AUTO approval strategy correctly", func() {
 			input := api.AUTO
 

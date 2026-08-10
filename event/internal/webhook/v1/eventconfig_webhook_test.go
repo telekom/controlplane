@@ -74,14 +74,18 @@ func newValidEventConfig() *eventv1.EventConfig {
 				Name:      "test-zone",
 				Namespace: "default",
 			},
-			Admin: eventv1.AdminConfig{
-				Url: "https://admin.example.com",
-				Client: eventv1.ClientConfig{
-					Realm: ctypes.ObjectRef{
-						Name:      "admin-realm",
-						Namespace: "default",
+			Local: &eventv1.LocalBackend{
+				Admin: eventv1.AdminConfig{
+					Url: "https://admin.example.com",
+					Client: eventv1.ClientConfig{
+						Realm: ctypes.ObjectRef{
+							Name:      "admin-realm",
+							Namespace: "default",
+						},
 					},
 				},
+				ServerSendEventUrl: "https://sse.example.com",
+				PublishEventUrl:    "https://publish.example.com",
 			},
 			Mesh: &eventv1.MeshConfig{
 				FullMesh: true,
@@ -92,8 +96,6 @@ func newValidEventConfig() *eventv1.EventConfig {
 					},
 				},
 			},
-			ServerSendEventUrl: "https://sse.example.com",
-			PublishEventUrl:    "https://publish.example.com",
 		},
 	}
 }
@@ -135,7 +137,7 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			It("should accept when admin realm is empty (auto-resolved at reconcile time)", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
+				obj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{}
 
 				warnings, err := validator.ValidateCreate(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
@@ -153,7 +155,7 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			It("should accept when both realms are empty (auto-resolved at reconcile time)", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
+				obj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{}
 				obj.Spec.Mesh.Client.Realm = ctypes.ObjectRef{}
 
 				warnings, err := validator.ValidateCreate(ctx, obj)
@@ -172,7 +174,7 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			It("should reject when admin realm has only Name set (partial realm)", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.Realm = ctypes.ObjectRef{Name: "admin-realm"}
+				obj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{Name: "admin-realm"}
 
 				warnings, err := validator.ValidateCreate(ctx, obj)
 				Expect(err).To(HaveOccurred())
@@ -197,7 +199,7 @@ var _ = Describe("EventConfig Webhook", func() {
 			It("should reject partial realm on update", func() {
 				oldObj := newValidEventConfig()
 				newObj := newValidEventConfig()
-				newObj.Spec.Admin.Client.Realm = ctypes.ObjectRef{Name: "only-name"}
+				newObj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{Name: "only-name"}
 
 				warnings, err := validator.ValidateUpdate(ctx, oldObj, newObj)
 				Expect(err).To(HaveOccurred())
@@ -209,7 +211,7 @@ var _ = Describe("EventConfig Webhook", func() {
 			It("should accept clearing realm on update (auto-resolved at reconcile time)", func() {
 				oldObj := newValidEventConfig()
 				newObj := newValidEventConfig()
-				newObj.Spec.Admin.Client.Realm = ctypes.ObjectRef{}
+				newObj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{}
 
 				warnings, err := validator.ValidateUpdate(ctx, oldObj, newObj)
 				Expect(err).NotTo(HaveOccurred())
@@ -264,11 +266,11 @@ var _ = Describe("EventConfig Webhook", func() {
 
 		It("should set default admin ClientId when empty", func() {
 			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientId = ""
+			obj.Spec.Local.Admin.Client.ClientId = ""
 
 			err := defaulter.Default(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientId).To(Equal(util.AdminClientName))
+			Expect(obj.Spec.Local.Admin.Client.ClientId).To(Equal(util.AdminClientName))
 		})
 
 		It("should set default mesh ClientId when empty", func() {
@@ -277,16 +279,16 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			err := defaulter.Default(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Mesh.Client.ClientId).To(Equal(util.MeshClientName))
+			Expect(obj.Spec.Mesh.Client.ClientId).To(Equal(util.CallbackClientName))
 		})
 
 		It("should preserve existing admin ClientId", func() {
 			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientId = "custom-admin-client"
+			obj.Spec.Local.Admin.Client.ClientId = "custom-admin-client"
 
 			err := defaulter.Default(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientId).To(Equal("custom-admin-client"))
+			Expect(obj.Spec.Local.Admin.Client.ClientId).To(Equal("custom-admin-client"))
 		})
 
 		It("should preserve existing mesh ClientId", func() {
@@ -301,17 +303,17 @@ var _ = Describe("EventConfig Webhook", func() {
 		Context("on CREATE", func() {
 			It("should generate admin ClientSecret when empty", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.ClientSecret = ""
+				obj.Spec.Local.Admin.Client.ClientSecret = ""
 				obj.Spec.Mesh.Client.ClientSecret = "existing-secret"
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(BeEmpty())
+				Expect(obj.Spec.Local.Admin.Client.ClientSecret).NotTo(BeEmpty())
 			})
 
 			It("should generate mesh ClientSecret when empty", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.ClientSecret = "existing-secret"
+				obj.Spec.Local.Admin.Client.ClientSecret = "existing-secret"
 				obj.Spec.Mesh.Client.ClientSecret = ""
 
 				err := defaulter.Default(ctx, obj)
@@ -321,18 +323,18 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			It("should rotate admin ClientSecret when set to 'rotate'", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
+				obj.Spec.Local.Admin.Client.ClientSecret = secretsapi.KeywordRotate
 				obj.Spec.Mesh.Client.ClientSecret = "existing-secret"
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
-				Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(BeEmpty())
+				Expect(obj.Spec.Local.Admin.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(obj.Spec.Local.Admin.Client.ClientSecret).NotTo(BeEmpty())
 			})
 
 			It("should rotate mesh ClientSecret when set to 'rotate'", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.ClientSecret = "existing-secret"
+				obj.Spec.Local.Admin.Client.ClientSecret = "existing-secret"
 				obj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
 
 				err := defaulter.Default(ctx, obj)
@@ -343,12 +345,12 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			It("should preserve existing non-empty ClientSecrets", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.ClientSecret = "admin-secret-123"
+				obj.Spec.Local.Admin.Client.ClientSecret = "admin-secret-123"
 				obj.Spec.Mesh.Client.ClientSecret = "mesh-secret-456"
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("admin-secret-123"))
+				Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal("admin-secret-123"))
 				Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("mesh-secret-456"))
 			})
 		})
@@ -356,35 +358,35 @@ var _ = Describe("EventConfig Webhook", func() {
 		Context("on UPDATE", func() {
 			It("should preserve existing secret when new value is empty", func() {
 				oldObj := newValidEventConfig()
-				oldObj.Spec.Admin.Client.ClientSecret = "old-admin-secret"
+				oldObj.Spec.Local.Admin.Client.ClientSecret = "old-admin-secret"
 				oldObj.Spec.Mesh.Client.ClientSecret = "old-mesh-secret"
 
 				newObj := newValidEventConfig()
-				newObj.Spec.Admin.Client.ClientSecret = ""
+				newObj.Spec.Local.Admin.Client.ClientSecret = ""
 				newObj.Spec.Mesh.Client.ClientSecret = ""
 
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("old-admin-secret"))
+				Expect(newObj.Spec.Local.Admin.Client.ClientSecret).To(Equal("old-admin-secret"))
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("old-mesh-secret"))
 			})
 
 			It("should rotate secret when set to 'rotate' even on update", func() {
 				oldObj := newValidEventConfig()
-				oldObj.Spec.Admin.Client.ClientSecret = "old-admin-secret"
+				oldObj.Spec.Local.Admin.Client.ClientSecret = "old-admin-secret"
 				oldObj.Spec.Mesh.Client.ClientSecret = "old-mesh-secret"
 
 				newObj := newValidEventConfig()
-				newObj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
+				newObj.Spec.Local.Admin.Client.ClientSecret = secretsapi.KeywordRotate
 				newObj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
 
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.Admin.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
-				Expect(newObj.Spec.Admin.Client.ClientSecret).NotTo(Equal("old-admin-secret"))
-				Expect(newObj.Spec.Admin.Client.ClientSecret).NotTo(BeEmpty())
+				Expect(newObj.Spec.Local.Admin.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(newObj.Spec.Local.Admin.Client.ClientSecret).NotTo(Equal("old-admin-secret"))
+				Expect(newObj.Spec.Local.Admin.Client.ClientSecret).NotTo(BeEmpty())
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).NotTo(Equal("old-mesh-secret"))
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).NotTo(BeEmpty())
@@ -392,17 +394,17 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			It("should preserve user-provided non-empty secret on update", func() {
 				oldObj := newValidEventConfig()
-				oldObj.Spec.Admin.Client.ClientSecret = "old-admin-secret"
+				oldObj.Spec.Local.Admin.Client.ClientSecret = "old-admin-secret"
 				oldObj.Spec.Mesh.Client.ClientSecret = "old-mesh-secret"
 
 				newObj := newValidEventConfig()
-				newObj.Spec.Admin.Client.ClientSecret = "new-admin-secret"
+				newObj.Spec.Local.Admin.Client.ClientSecret = "new-admin-secret"
 				newObj.Spec.Mesh.Client.ClientSecret = "new-mesh-secret"
 
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("new-admin-secret"))
+				Expect(newObj.Spec.Local.Admin.Client.ClientSecret).To(Equal("new-admin-secret"))
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("new-mesh-secret"))
 			})
 		})
@@ -432,7 +434,7 @@ var _ = Describe("EventConfig Webhook", func() {
 		Context("on CREATE", func() {
 			It("should onboard secrets and set secret refs for both clients when empty", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.ClientSecret = ""
+				obj.Spec.Local.Admin.Client.ClientSecret = ""
 				obj.Spec.Mesh.Client.ClientSecret = ""
 
 				adminSecretId := "zones/test-zone/event/admin/clientSecret"
@@ -447,13 +449,13 @@ var _ = Describe("EventConfig Webhook", func() {
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-secret-uuid>"))
+				Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<admin-secret-uuid>"))
 				Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-secret-uuid>"))
 			})
 
 			It("should upload user-provided plain secret to secret manager", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.ClientSecret = "my-custom-admin-secret"
+				obj.Spec.Local.Admin.Client.ClientSecret = "my-custom-admin-secret"
 				obj.Spec.Mesh.Client.ClientSecret = "my-custom-mesh-secret"
 
 				adminSecretId := "zones/test-zone/event/admin/clientSecret"
@@ -472,13 +474,13 @@ var _ = Describe("EventConfig Webhook", func() {
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-custom-uuid>"))
+				Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<admin-custom-uuid>"))
 				Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-custom-uuid>"))
 			})
 
 			It("should generate new secret when set to 'rotate'", func() {
 				obj := newValidEventConfig()
-				obj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
+				obj.Spec.Local.Admin.Client.ClientSecret = secretsapi.KeywordRotate
 				obj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
 
 				adminSecretId := "zones/test-zone/event/admin/clientSecret"
@@ -493,7 +495,7 @@ var _ = Describe("EventConfig Webhook", func() {
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-rotated-uuid>"))
+				Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<admin-rotated-uuid>"))
 				Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-rotated-uuid>"))
 			})
 		})
@@ -501,11 +503,11 @@ var _ = Describe("EventConfig Webhook", func() {
 		Context("on UPDATE", func() {
 			It("should preserve existing secret ref when new value is empty", func() {
 				oldObj := newValidEventConfig()
-				oldObj.Spec.Admin.Client.ClientSecret = "$<existing-admin-ref>"
+				oldObj.Spec.Local.Admin.Client.ClientSecret = "$<existing-admin-ref>"
 				oldObj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
 
 				newObj := newValidEventConfig()
-				newObj.Spec.Admin.Client.ClientSecret = ""
+				newObj.Spec.Local.Admin.Client.ClientSecret = ""
 				newObj.Spec.Mesh.Client.ClientSecret = ""
 
 				// After resolving, both secrets become the old refs.
@@ -513,17 +515,17 @@ var _ = Describe("EventConfig Webhook", func() {
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("$<existing-admin-ref>"))
+				Expect(newObj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<existing-admin-ref>"))
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("$<existing-mesh-ref>"))
 			})
 
 			It("should rotate secret when set to 'rotate' even on update", func() {
 				oldObj := newValidEventConfig()
-				oldObj.Spec.Admin.Client.ClientSecret = "$<existing-admin-ref>"
+				oldObj.Spec.Local.Admin.Client.ClientSecret = "$<existing-admin-ref>"
 				oldObj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
 
 				newObj := newValidEventConfig()
-				newObj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
+				newObj.Spec.Local.Admin.Client.ClientSecret = secretsapi.KeywordRotate
 				newObj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
 
 				adminSecretId := "zones/test-zone/event/admin/clientSecret"
@@ -539,17 +541,17 @@ var _ = Describe("EventConfig Webhook", func() {
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-rotated-uuid>"))
+				Expect(newObj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<admin-rotated-uuid>"))
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-rotated-uuid>"))
 			})
 
 			It("should upload user-provided plain secret on update", func() {
 				oldObj := newValidEventConfig()
-				oldObj.Spec.Admin.Client.ClientSecret = "$<existing-admin-ref>"
+				oldObj.Spec.Local.Admin.Client.ClientSecret = "$<existing-admin-ref>"
 				oldObj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
 
 				newObj := newValidEventConfig()
-				newObj.Spec.Admin.Client.ClientSecret = "new-custom-secret"
+				newObj.Spec.Local.Admin.Client.ClientSecret = "new-custom-secret"
 				newObj.Spec.Mesh.Client.ClientSecret = "new-custom-mesh-secret"
 
 				adminSecretId := "zones/test-zone/event/admin/clientSecret"
@@ -565,26 +567,26 @@ var _ = Describe("EventConfig Webhook", func() {
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-new-uuid>"))
+				Expect(newObj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<admin-new-uuid>"))
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-new-uuid>"))
 			})
 		})
 
 		It("should skip onboarding when secrets are already refs", func() {
 			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = "$<existing-admin-ref>"
+			obj.Spec.Local.Admin.Client.ClientSecret = "$<existing-admin-ref>"
 			obj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
 
 			// No UpsertEnvironment call expected since both are already refs
 			err := defaulter.Default(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<existing-admin-ref>"))
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<existing-admin-ref>"))
 			Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<existing-mesh-ref>"))
 		})
 
 		It("should onboard only non-ref secrets", func() {
 			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = "$<existing-admin-ref>"
+			obj.Spec.Local.Admin.Client.ClientSecret = "$<existing-admin-ref>"
 			obj.Spec.Mesh.Client.ClientSecret = "" // needs onboarding
 
 			meshSecretId := "zones/test-zone/event/mesh/clientSecret"
@@ -597,14 +599,14 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			err := defaulter.Default(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<existing-admin-ref>"))
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<existing-admin-ref>"))
 			Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<new-mesh-secret-uuid>"))
 		})
 
 		It("should return an error when environment label is missing", func() {
 			obj := newValidEventConfig()
 			obj.Labels = nil
-			obj.Spec.Admin.Client.ClientSecret = ""
+			obj.Spec.Local.Admin.Client.ClientSecret = ""
 
 			err := defaulter.Default(ctx, obj)
 			Expect(err).To(HaveOccurred())
@@ -614,7 +616,7 @@ var _ = Describe("EventConfig Webhook", func() {
 		It("should return an error when secretManager is nil", func() {
 			nilDefaulter := EventConfigCustomDefaulter{secretManager: nil}
 			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = ""
+			obj.Spec.Local.Admin.Client.ClientSecret = ""
 
 			err := nilDefaulter.Default(ctx, obj)
 			Expect(err).To(HaveOccurred())
@@ -623,15 +625,15 @@ var _ = Describe("EventConfig Webhook", func() {
 
 		It("should set default ClientIds before onboarding secrets", func() {
 			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientId = ""
+			obj.Spec.Local.Admin.Client.ClientId = ""
 			obj.Spec.Mesh.Client.ClientId = ""
-			obj.Spec.Admin.Client.ClientSecret = "$<existing-ref>"
+			obj.Spec.Local.Admin.Client.ClientSecret = "$<existing-ref>"
 			obj.Spec.Mesh.Client.ClientSecret = "$<existing-ref>"
 
 			err := defaulter.Default(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientId).To(Equal(util.AdminClientName))
-			Expect(obj.Spec.Mesh.Client.ClientId).To(Equal(util.MeshClientName))
+			Expect(obj.Spec.Local.Admin.Client.ClientId).To(Equal(util.AdminClientName))
+			Expect(obj.Spec.Mesh.Client.ClientId).To(Equal(util.CallbackClientName))
 		})
 	})
 })

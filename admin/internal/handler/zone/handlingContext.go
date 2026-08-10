@@ -46,6 +46,7 @@ type HandlingContext struct {
 	Gateway               *gatewayapi.Gateway
 	GatewayConsumer       *gatewayapi.Consumer
 	TeamApiIdentityRealm  *identityapi.Realm
+	AiGateway             *gatewayapi.Gateway
 }
 
 // newHandlingContext fetches the Environment, creates/updates the zone Namespace,

@@ -44,14 +44,20 @@ ALL_CONTROLLERS=(
     "pubsub:pubsub/cmd:ghcr.io/telekom/controlplane/pubsub"
     "application:application/cmd:ghcr.io/telekom/controlplane/application"
     "approval:approval/cmd:ghcr.io/telekom/controlplane/approval"
+    "controlplane-api:controlplane-api/cmd:ghcr.io/telekom/controlplane/controlplane-api"
+    "discovery-server:discovery-server/cmd:ghcr.io/telekom/controlplane/discovery-server"
     "file-manager:file-manager/cmd/server:ghcr.io/telekom/controlplane/file-manager"
     "gateway:gateway/cmd:ghcr.io/telekom/controlplane/gateway"
     "identity:identity/cmd:ghcr.io/telekom/controlplane/identity"
     "notification:notification/cmd:ghcr.io/telekom/controlplane/notification"
     "organization:organization/cmd:ghcr.io/telekom/controlplane/organization"
+    "organization-server:organization-server/cmd:ghcr.io/telekom/controlplane/organization-server"
+    "permission:permission/cmd:ghcr.io/telekom/controlplane/permission"
+    "projector:projector/.:ghcr.io/telekom/controlplane/projector"
     "rover:rover/cmd:ghcr.io/telekom/controlplane/rover"
     "rover-server:rover-server/cmd:ghcr.io/telekom/controlplane/rover-server"
     "secret-manager:secret-manager/cmd/server:ghcr.io/telekom/controlplane/secret-manager"
+    "agentic:agentic/cmd:ghcr.io/telekom/controlplane/agentic"
 )
 
 # ── Flags ──────────────────────────────────────────────────────────────
@@ -385,15 +391,15 @@ step_deploy() {
     local trust_elapsed=0
     while [ "${trust_elapsed}" -lt "${trust_timeout}" ]; do
         if kubectl --context "${ctx}" -n "${CONTROLPLANE_NAMESPACE}" \
-            get configmap secret-manager-trust-bundle &>/dev/null; then
-            success "secret-manager-trust-bundle ConfigMap exists."
+            get configmap controlplane-trust-bundle &>/dev/null; then
+            success "controlplane-trust-bundle ConfigMap exists."
             break
         fi
         sleep 2
         trust_elapsed=$((trust_elapsed + 2))
     done
     if [ "${trust_elapsed}" -ge "${trust_timeout}" ]; then
-        warn "secret-manager-trust-bundle ConfigMap not found after ${trust_timeout}s."
+        warn "controlplane-trust-bundle ConfigMap not found after ${trust_timeout}s."
         warn "trust-manager may not have processed the Bundle CR yet."
         warn "Pods that mount trust-bundle will fail until the ConfigMap appears."
     fi

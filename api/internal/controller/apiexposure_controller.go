@@ -22,6 +22,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/apiexposure"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -46,6 +47,7 @@ type ApiExposureReconciler struct {
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch
 // +kubebuilder:rbac:groups=organization.cp.ei.telekom.de,resources=teams,verbs=get;list;watch
 
 func (r *ApiExposureReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -58,13 +60,17 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apiexposure.ApiExposureHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiv1.ApiExposure{}).
+		For(&apiv1.ApiExposure{}, builder.WithPredicates(cc.Count("apiexposure", cc.RoleFor))).
 		Watches(&apiv1.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&apiv1.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiExposure),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		Watches(&applicationv1.Application{},
+			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToApiExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		// Watch ApiSubscription with ResourceVersionChangedPredicate (not GenerationChangedPredicate)
@@ -72,15 +78,15 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// When a subscription is approved, ApiExposure needs to reconcile to create/update proxy routes.
 		Watches(&apiv1.ApiSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiSubscriptionToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiExposure),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
@@ -146,6 +152,32 @@ func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context,
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
+	}
+
+	return reqs
+}
+
+func (r *ApiExposureReconciler) MapApplicationToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	application, ok := obj.(*applicationv1.Application)
+	if !ok {
+		logger.Info("object is not an Application")
+		return nil
+	}
+
+	list := &apiv1.ApiExposureList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
+	}, client.InNamespace(application.Namespace))
+	if err != nil {
+		logger.Error(err, "failed to list API-Exposures")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
 	}
 
 	return reqs

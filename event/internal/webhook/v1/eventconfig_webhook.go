@@ -106,10 +106,12 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 		secretsapi.WithMergeStrategy(), // Preserve existing secrets not in the request
 	}
 
-	needsAdminSecret := !secretsapi.IsRef(eventCfg.Spec.Admin.Client.ClientSecret)
+	// Proxy zones have no admin client of their own; they forward config
+	// traffic to their target zone, so no admin secret is onboarded.
+	needsAdminSecret := eventCfg.Spec.Local != nil && !secretsapi.IsRef(eventCfg.Spec.Local.Admin.Client.ClientSecret)
 	if needsAdminSecret {
 		var secretValue string
-		secretValue, err = secretValueOrGenerate(eventCfg.Spec.Admin.Client.ClientSecret)
+		secretValue, err = secretValueOrGenerate(eventCfg.Spec.Local.Admin.Client.ClientSecret)
 		if err != nil {
 			return errors.Wrap(err, "failed to determine admin client secret value")
 		}
@@ -141,7 +143,7 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 		if !found {
 			return fmt.Errorf("admin client secret reference not found in onboarding response")
 		}
-		eventCfg.Spec.Admin.Client.ClientSecret = ref
+		eventCfg.Spec.Local.Admin.Client.ClientSecret = ref
 		log.Info("Onboarded admin client secret for EventConfig", "secretId", adminSecretPath)
 	}
 
@@ -172,14 +174,19 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 		}
 	}
 
-	adminClient := &eventCfg.Spec.Admin.Client
-	if adminClient.ClientId == "" {
-		adminClient.ClientId = util.AdminClientName
+	// Admin client only applies to local zones. Proxy zones forward config
+	// traffic to their target zone and have no admin client of their own.
+	var adminClient *eventv1.ClientConfig
+	if eventCfg.Spec.Local != nil {
+		adminClient = &eventCfg.Spec.Local.Admin.Client
+		if adminClient.ClientId == "" {
+			adminClient.ClientId = util.AdminClientName
+		}
 	}
 
 	meshClient := &eventCfg.Spec.Mesh.Client
 	if meshClient.ClientId == "" {
-		meshClient.ClientId = util.MeshClientName
+		meshClient.ClientId = util.CallbackClientName
 	}
 
 	// Resolve realm references from the Zone if not explicitly specified.
@@ -190,7 +197,9 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 	// On UPDATE, preserve existing secrets when the new value is empty.
 	// This prevents accidental secret regeneration when users omit the field.
 	if oldCfg, isUpdate := getOldEventConfig(ctx); isUpdate {
-		adminClient.ClientSecret = resolveSecretForUpdate(adminClient.ClientSecret, oldCfg.Spec.Admin.Client.ClientSecret)
+		if adminClient != nil && oldCfg.Spec.Local != nil {
+			adminClient.ClientSecret = resolveSecretForUpdate(adminClient.ClientSecret, oldCfg.Spec.Local.Admin.Client.ClientSecret)
+		}
 		if oldCfg.Spec.Mesh != nil {
 			meshClient.ClientSecret = resolveSecretForUpdate(meshClient.ClientSecret, oldCfg.Spec.Mesh.Client.ClientSecret)
 		}
@@ -214,8 +223,11 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 }
 
 // defaultRealmsFromZone resolves realm references from the Zone if not explicitly specified.
+// adminClient may be nil for proxy zones, in which case only the mesh realm is resolved.
 func (d *EventConfigCustomDefaulter) defaultRealmsFromZone(ctx context.Context, eventCfg *eventv1.EventConfig, adminClient, meshClient *eventv1.ClientConfig) error {
-	if !adminClient.Realm.IsEmpty() && !meshClient.Realm.IsEmpty() {
+	adminNeedsRealm := adminClient != nil && adminClient.Realm.IsEmpty()
+	meshNeedsRealm := meshClient.Realm.IsEmpty()
+	if !adminNeedsRealm && !meshNeedsRealm {
 		return nil
 	}
 
@@ -223,11 +235,11 @@ func (d *EventConfigCustomDefaulter) defaultRealmsFromZone(ctx context.Context, 
 	if err := d.reader.Get(ctx, eventCfg.Spec.Zone.K8s(), zone); err != nil {
 		return errors.Wrapf(err, "failed to get Zone %q for realm defaulting", eventCfg.Spec.Zone.String())
 	}
-	if adminClient.Realm.IsEmpty() && zone.Status.InternalIdentityRealm != nil {
+	if adminNeedsRealm && zone.Status.InternalIdentityRealm != nil {
 		adminClient.Realm = *zone.Status.InternalIdentityRealm
 		log.Info("Defaulted admin client realm from zone", "realm", adminClient.Realm.String())
 	}
-	if meshClient.Realm.IsEmpty() && zone.Status.IdentityRealm != nil {
+	if meshNeedsRealm && zone.Status.IdentityRealm != nil {
 		meshClient.Realm = *zone.Status.IdentityRealm
 		log.Info("Defaulted mesh client realm from zone", "realm", meshClient.Realm.String())
 	}
@@ -235,8 +247,9 @@ func (d *EventConfigCustomDefaulter) defaultRealmsFromZone(ctx context.Context, 
 }
 
 // generateLocalSecrets generates secrets locally when the Secret-Manager is disabled.
+// adminClient may be nil for proxy zones, in which case only the mesh secret is generated.
 func (d *EventConfigCustomDefaulter) generateLocalSecrets(adminClient, meshClient *eventv1.ClientConfig) error {
-	if adminClient.ClientSecret == "" || adminClient.ClientSecret == secretsapi.KeywordRotate {
+	if adminClient != nil && (adminClient.ClientSecret == "" || adminClient.ClientSecret == secretsapi.KeywordRotate) {
 		secret, err := secretsapi.GenerateSecret()
 		if err != nil {
 			return errors.Wrap(err, "failed to generate admin client secret")
@@ -291,9 +304,22 @@ func (v *EventConfigCustomValidator) ValidateCreateOrUpdate(ctx context.Context,
 	// Realm fields are optional: when empty, the handler resolves them
 	// from the Zone's identity realms (InternalIdentityRealm for admin, IdentityRealm for mesh).
 	// However, if a realm is partially specified (only name or only namespace), that is invalid.
-	adminClient := eventCfg.Spec.Admin.Client
-	if !adminClient.Realm.IsEmpty() && (adminClient.Realm.Name == "" || adminClient.Realm.Namespace == "") {
-		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("client").Child("realm"), adminClient.Realm, "realm must have both name and namespace if specified")
+	// The local/proxy XOR itself is enforced by a CEL rule on the spec.
+	if eventCfg.Spec.Local != nil {
+		adminClient := eventCfg.Spec.Local.Admin.Client
+		if !adminClient.Realm.IsEmpty() && (adminClient.Realm.Name == "" || adminClient.Realm.Namespace == "") {
+			valErr.AddInvalidError(field.NewPath("spec").Child("local").Child("admin").Child("client").Child("realm"), adminClient.Realm, "realm must have both name and namespace if specified")
+		}
+	}
+
+	if eventCfg.Spec.Proxy != nil {
+		targetZone := eventCfg.Spec.Proxy.TargetZone
+		if targetZone.Name == "" || targetZone.Namespace == "" {
+			valErr.AddInvalidError(field.NewPath("spec").Child("proxy").Child("targetZone"), targetZone, "targetZone must have both name and namespace")
+		}
+		if targetZone.Name == eventCfg.Spec.Zone.Name {
+			valErr.AddInvalidError(field.NewPath("spec").Child("proxy").Child("targetZone"), targetZone, "targetZone must differ from the EventConfig's own zone")
+		}
 	}
 
 	if eventCfg.Spec.Mesh != nil {

@@ -94,6 +94,10 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return err
 	}
 
+	// Resolve static ValueFrom claim sources (ProviderClientId, BasePath) into literals
+	// using the application's client id. ConsumerClientId stays symbolic for Jumper.
+	state.resolvedClaims = util.ResolveExposureClaims(apiExp, apiExpApplication.Status.ClientId)
+
 	// 2. Create proxy routes (also collects consumer failover enrichment into state)
 	if manageErr := h.manageProxyRoutes(ctx, apiExp, state); manageErr != nil {
 		return manageErr
@@ -103,6 +107,17 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	realRoute, err := h.createRealRoute(ctx, apiExp, state)
 	if err != nil {
 		return err
+	}
+
+	// 4. Cleanup stale routes for this basepath. Must run after all routes (proxy,
+	// failover, real) are created/updated so only genuinely orphaned routes are deleted.
+	// Catches routes orphaned when a zone change moves the derived route namespace.
+	deleted, err := util.CleanupStaleRoutes(ctx, apiExp.Spec.ApiBasePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to cleanup stale routes")
+	}
+	if deleted > 0 {
+		logger.V(1).Info("Cleaned up stale routes", "deleted", deleted)
 	}
 
 	apiExp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
@@ -217,6 +232,7 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 
 		options := []util.CreateRouteOption{
 			util.WithRealmName(state.realmName),
+			util.WithOwner(apiExp),
 		}
 
 		// Pass provider failover zones if configured (so the proxy route knows the secondary targets)
@@ -252,15 +268,6 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 		return err
 	}
 
-	// Cleanup stale proxy routes that were not touched in this reconciliation
-	deleted, err := util.CleanupStaleProxyRoutes(ctx, apiExp.Spec.ApiBasePath)
-	if err != nil {
-		return errors.Wrap(err, "failed to cleanup stale proxy routes")
-	}
-	if deleted > 0 {
-		logger.V(1).Info("Cleaned up stale proxy routes", "deleted", deleted)
-	}
-
 	return nil
 }
 
@@ -286,6 +293,7 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 
 		options := []util.CreateRouteOption{
 			util.WithRealmName(state.realmName),
+			util.WithOwner(apiExp),
 		}
 
 		// If the provider failover zone has the ConsumerFailover feature enabled, enrich the failover route with all consumer failover hostnames, paths, and issuers.
@@ -302,6 +310,7 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 		options = append(options,
 			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
 			util.WithFailoverSecurity(apiExp.Spec.Security),
+			util.WithResolvedClaims(state.resolvedClaims),
 			util.AddTrustedIssuers(state.CrossZoneLmsIssuers(failoverZone)...),
 		)
 
@@ -390,6 +399,7 @@ func (h *ApiExposureHandler) createRealRoute(ctx context.Context, apiExp *apiapi
 	options := []util.CreateRouteOption{
 		util.WithRealmName(state.realmName),
 		util.WithProxyTarget(state.hasCrossZoneSubs),
+		util.WithResolvedClaims(state.resolvedClaims),
 	}
 
 	// The exposure zone only participates in the consumer failover pool if it has the

@@ -6,11 +6,13 @@ package approvalrequest
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	approval_domain "github.com/telekom/controlplane/projector/internal/domain/approval"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -78,6 +80,11 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.ApprovalReques
 		targetNamespace = obj.Namespace
 	}
 
+	properties, err := approval_domain.FromProperties(obj.Spec.Requester)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode properties of ApprovalRequest %q: %w", obj.GetName(), err)
+	}
+
 	return &ApprovalRequestData{
 		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:           phase,
@@ -92,6 +99,7 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.ApprovalReques
 		TargetKind:            obj.Spec.Target.TypeMeta.Kind,
 		SubscriptionNamespace: targetNamespace,
 		SubscriptionName:      obj.Spec.Target.Name,
+		AccessScopes:          properties.Scopes,
 	}, nil
 }
 

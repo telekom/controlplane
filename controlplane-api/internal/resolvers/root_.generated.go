@@ -207,6 +207,7 @@ type ComplexityRoot struct {
 		Name                  func(childComplexity int) int
 		Namespace             func(childComplexity int) int
 		OwnerTeam             func(childComplexity int) int
+		PermissionSet         func(childComplexity int) int
 		RotatedClientSecret   func(childComplexity int) int
 		RotatedExpiresAt      func(childComplexity int) int
 		SecretRotationMessage func(childComplexity int) int
@@ -242,6 +243,7 @@ type ComplexityRoot struct {
 		LastModifiedAt       func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Namespace            func(childComplexity int) int
+		RequestedScopes      func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -279,6 +281,7 @@ type ComplexityRoot struct {
 		LastModifiedAt       func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Namespace            func(childComplexity int) int
+		RequestedScopes      func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -306,6 +309,12 @@ type ComplexityRoot struct {
 	BasicAuthCredentials struct {
 		Password func(childComplexity int) int
 		Username func(childComplexity int) int
+	}
+
+	CreateGroupPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+		Group    func(childComplexity int) int
 	}
 
 	CreateTeamPayload struct {
@@ -337,6 +346,16 @@ type ComplexityRoot struct {
 		Name           func(childComplexity int) int
 		ResultingState func(childComplexity int) int
 		Timestamp      func(childComplexity int) int
+	}
+
+	DeleteGroupPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+	}
+
+	DeleteTeamPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
 	}
 
 	EventDelivery struct {
@@ -518,12 +537,16 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddTeamMember           func(childComplexity int, teamID int, member model.MemberInput) int
+		CreateGroup             func(childComplexity int, input model.CreateGroupInput) int
 		CreateTeam              func(childComplexity int, input model.CreateTeamInput) int
 		DecideApproval          func(childComplexity int, approvalID int, input model.DecisionInput) int
 		DecideApprovalRequest   func(childComplexity int, approvalRequestID int, input model.DecisionInput) int
+		DeleteGroup             func(childComplexity int, input model.DeleteGroupInput) int
+		DeleteTeam              func(childComplexity int, input model.DeleteTeamInput) int
 		RemoveTeamMember        func(childComplexity int, teamID int, memberEmail string) int
 		RotateApplicationSecret func(childComplexity int, applicationID int) int
 		RotateTeamToken         func(childComplexity int, teamID int) int
+		UpdateGroup             func(childComplexity int, input model.UpdateGroupInput) int
 		UpdateTeam              func(childComplexity int, input model.UpdateTeamInput) int
 	}
 
@@ -546,6 +569,34 @@ type ComplexityRoot struct {
 		StartCursor     func(childComplexity int) int
 	}
 
+	Permission struct {
+		Actions  func(childComplexity int) int
+		Resource func(childComplexity int) int
+		Role     func(childComplexity int) int
+	}
+
+	PermissionSet struct {
+		CreatedAt      func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		Permissions    func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
+	}
+
+	PermissionSetConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	PermissionSetEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Query struct {
 		APICategories      func(childComplexity int) int
 		APIExposures       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
@@ -557,8 +608,10 @@ type ComplexityRoot struct {
 		EventExposures     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
 		EventSubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
 		EventTypes         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
+		Groups             func(childComplexity int, where *ent.GroupWhereInput) int
 		Node               func(childComplexity int, id int) int
 		Nodes              func(childComplexity int, ids []int) int
+		PermissionSets     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) int
 		Teams              func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) int
 		Zones              func(childComplexity int) int
 	}
@@ -675,6 +728,12 @@ type ComplexityRoot struct {
 
 	Traffic struct {
 		RateLimit func(childComplexity int) int
+	}
+
+	UpdateGroupPayload struct {
+		Accepted func(childComplexity int) int
+		Errors   func(childComplexity int) int
+		Group    func(childComplexity int) int
 	}
 
 	UpdateTeamPayload struct {
@@ -1345,6 +1404,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.OwnerTeam(childComplexity), true
+	case "Application.permissionSet":
+		if e.ComplexityRoot.Application.PermissionSet == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.PermissionSet(childComplexity), true
 	case "Application.rotatedClientSecret":
 		if e.ComplexityRoot.Application.RotatedClientSecret == nil {
 			break
@@ -1514,6 +1579,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.Namespace(childComplexity), true
+	case "Approval.requestedScopes":
+		if e.ComplexityRoot.Approval.RequestedScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.RequestedScopes(childComplexity), true
 	case "Approval.requester":
 		if e.ComplexityRoot.Approval.Requester == nil {
 			break
@@ -1668,6 +1739,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Namespace(childComplexity), true
+	case "ApprovalRequest.requestedScopes":
+		if e.ComplexityRoot.ApprovalRequest.RequestedScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.RequestedScopes(childComplexity), true
 	case "ApprovalRequest.requester":
 		if e.ComplexityRoot.ApprovalRequest.Requester == nil {
 			break
@@ -1762,6 +1839,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.BasicAuthCredentials.Username(childComplexity), true
+
+	case "CreateGroupPayload.accepted":
+		if e.ComplexityRoot.CreateGroupPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateGroupPayload.Accepted(childComplexity), true
+	case "CreateGroupPayload.errors":
+		if e.ComplexityRoot.CreateGroupPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateGroupPayload.Errors(childComplexity), true
+	case "CreateGroupPayload.group":
+		if e.ComplexityRoot.CreateGroupPayload.Group == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateGroupPayload.Group(childComplexity), true
 
 	case "CreateTeamPayload.accepted":
 		if e.ComplexityRoot.CreateTeamPayload.Accepted == nil {
@@ -1863,6 +1959,32 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Decision.Timestamp(childComplexity), true
+
+	case "DeleteGroupPayload.accepted":
+		if e.ComplexityRoot.DeleteGroupPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteGroupPayload.Accepted(childComplexity), true
+	case "DeleteGroupPayload.errors":
+		if e.ComplexityRoot.DeleteGroupPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteGroupPayload.Errors(childComplexity), true
+
+	case "DeleteTeamPayload.accepted":
+		if e.ComplexityRoot.DeleteTeamPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteTeamPayload.Accepted(childComplexity), true
+	case "DeleteTeamPayload.errors":
+		if e.ComplexityRoot.DeleteTeamPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteTeamPayload.Errors(childComplexity), true
 
 	case "EventDelivery.circuitBreakerOptOut":
 		if e.ComplexityRoot.EventDelivery.CircuitBreakerOptOut == nil {
@@ -2580,6 +2702,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddTeamMember(childComplexity, args["teamId"].(int), args["member"].(model.MemberInput)), true
+	case "Mutation.createGroup":
+		if e.ComplexityRoot.Mutation.CreateGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateGroup(childComplexity, args["input"].(model.CreateGroupInput)), true
 	case "Mutation.createTeam":
 		if e.ComplexityRoot.Mutation.CreateTeam == nil {
 			break
@@ -2613,6 +2746,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DecideApprovalRequest(childComplexity, args["approvalRequestId"].(int), args["input"].(model.DecisionInput)), true
+	case "Mutation.deleteGroup":
+		if e.ComplexityRoot.Mutation.DeleteGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteGroup(childComplexity, args["input"].(model.DeleteGroupInput)), true
+	case "Mutation.deleteTeam":
+		if e.ComplexityRoot.Mutation.DeleteTeam == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteTeam_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteTeam(childComplexity, args["input"].(model.DeleteTeamInput)), true
 	case "Mutation.removeTeamMember":
 		if e.ComplexityRoot.Mutation.RemoveTeamMember == nil {
 			break
@@ -2646,6 +2801,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RotateTeamToken(childComplexity, args["teamId"].(int)), true
+	case "Mutation.updateGroup":
+		if e.ComplexityRoot.Mutation.UpdateGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateGroup_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateGroup(childComplexity, args["input"].(model.UpdateGroupInput)), true
 	case "Mutation.updateTeam":
 		if e.ComplexityRoot.Mutation.UpdateTeam == nil {
 			break
@@ -2720,6 +2886,106 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.PageInfo.StartCursor(childComplexity), true
+
+	case "Permission.actions":
+		if e.ComplexityRoot.Permission.Actions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Permission.Actions(childComplexity), true
+	case "Permission.resource":
+		if e.ComplexityRoot.Permission.Resource == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Permission.Resource(childComplexity), true
+	case "Permission.role":
+		if e.ComplexityRoot.Permission.Role == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Permission.Role(childComplexity), true
+
+	case "PermissionSet.createdAt":
+		if e.ComplexityRoot.PermissionSet.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.CreatedAt(childComplexity), true
+	case "PermissionSet.environment":
+		if e.ComplexityRoot.PermissionSet.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.Environment(childComplexity), true
+	case "PermissionSet.id":
+		if e.ComplexityRoot.PermissionSet.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.ID(childComplexity), true
+	case "PermissionSet.lastModifiedAt":
+		if e.ComplexityRoot.PermissionSet.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.LastModifiedAt(childComplexity), true
+	case "PermissionSet.namespace":
+		if e.ComplexityRoot.PermissionSet.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.Namespace(childComplexity), true
+	case "PermissionSet.permissions":
+		if e.ComplexityRoot.PermissionSet.Permissions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.Permissions(childComplexity), true
+	case "PermissionSet.statusMessage":
+		if e.ComplexityRoot.PermissionSet.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.StatusMessage(childComplexity), true
+	case "PermissionSet.statusPhase":
+		if e.ComplexityRoot.PermissionSet.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSet.StatusPhase(childComplexity), true
+
+	case "PermissionSetConnection.edges":
+		if e.ComplexityRoot.PermissionSetConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetConnection.Edges(childComplexity), true
+	case "PermissionSetConnection.pageInfo":
+		if e.ComplexityRoot.PermissionSetConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetConnection.PageInfo(childComplexity), true
+	case "PermissionSetConnection.totalCount":
+		if e.ComplexityRoot.PermissionSetConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetConnection.TotalCount(childComplexity), true
+
+	case "PermissionSetEdge.cursor":
+		if e.ComplexityRoot.PermissionSetEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetEdge.Cursor(childComplexity), true
+	case "PermissionSetEdge.node":
+		if e.ComplexityRoot.PermissionSetEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PermissionSetEdge.Node(childComplexity), true
 
 	case "Query.apiCategories":
 		if e.ComplexityRoot.Query.APICategories == nil {
@@ -2826,6 +3092,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
+	case "Query.groups":
+		if e.ComplexityRoot.Query.Groups == nil {
+			break
+		}
+
+		args, err := ec.field_Query_groups_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Groups(childComplexity, args["where"].(*ent.GroupWhereInput)), true
 
 	case "Query.node":
 		if e.ComplexityRoot.Query.Node == nil {
@@ -2849,6 +3126,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Nodes(childComplexity, args["ids"].([]int)), true
+	case "Query.permissionSets":
+		if e.ComplexityRoot.Query.PermissionSets == nil {
+			break
+		}
+
+		args, err := ec.field_Query_permissionSets_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.PermissionSets(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.PermissionSetOrder), args["where"].(*ent.PermissionSetWhereInput)), true
 	case "Query.teams":
 		if e.ComplexityRoot.Query.Teams == nil {
 			break
@@ -3260,6 +3548,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Traffic.RateLimit(childComplexity), true
 
+	case "UpdateGroupPayload.accepted":
+		if e.ComplexityRoot.UpdateGroupPayload.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpdateGroupPayload.Accepted(childComplexity), true
+	case "UpdateGroupPayload.errors":
+		if e.ComplexityRoot.UpdateGroupPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpdateGroupPayload.Errors(childComplexity), true
+	case "UpdateGroupPayload.group":
+		if e.ComplexityRoot.UpdateGroupPayload.Group == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpdateGroupPayload.Group(childComplexity), true
+
 	case "UpdateTeamPayload.accepted":
 		if e.ComplexityRoot.UpdateTeamPayload.Accepted == nil {
 			break
@@ -3361,8 +3668,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApprovalRequestOrder,
 		ec.unmarshalInputApprovalRequestWhereInput,
 		ec.unmarshalInputApprovalWhereInput,
+		ec.unmarshalInputCreateGroupInput,
 		ec.unmarshalInputCreateTeamInput,
 		ec.unmarshalInputDecisionInput,
+		ec.unmarshalInputDeleteGroupInput,
+		ec.unmarshalInputDeleteTeamInput,
 		ec.unmarshalInputEventExposureOrder,
 		ec.unmarshalInputEventExposureWhereInput,
 		ec.unmarshalInputEventSubscriptionOrder,
@@ -3372,8 +3682,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
+		ec.unmarshalInputPermissionSetOrder,
+		ec.unmarshalInputPermissionSetWhereInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
+		ec.unmarshalInputUpdateGroupInput,
 		ec.unmarshalInputUpdateTeamInput,
 		ec.unmarshalInputZoneWhereInput,
 	)
@@ -4366,6 +4679,7 @@ type Application implements Node {
     """
     where: EventSubscriptionWhereInput
   ): EventSubscriptionConnection!
+  permissionSet: PermissionSet
 }
 """
 A connection to a list of items.
@@ -4654,6 +4968,11 @@ input ApplicationWhereInput {
   """
   hasSubscribedEvents: Boolean
   hasSubscribedEventsWith: [EventSubscriptionWhereInput!]
+  """
+  permission_set edge predicates
+  """
+  hasPermissionSet: Boolean
+  hasPermissionSetWith: [PermissionSetWhereInput!]
 }
 type Approval implements Node {
   id: ID!
@@ -4670,6 +4989,10 @@ type Approval implements Node {
   deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  """
+  If any, the access-scopes requested.
+  """
+  requestedScopes: [String!]
   name: String!
   expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
   state: ApprovalState!
@@ -4739,6 +5062,10 @@ type ApprovalRequest implements Node {
   deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  """
+  If any, the access-scopes requested.
+  """
+  requestedScopes: [String!]
   name: String!
   state: ApprovalRequestState!
 }
@@ -6230,6 +6557,183 @@ type PageInfo {
   """
   endCursor: Cursor
 }
+type PermissionSet implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: PermissionSetStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  permissions: [Permission]
+}
+"""
+A connection to a list of items.
+"""
+type PermissionSetConnection {
+  """
+  A list of edges.
+  """
+  edges: [PermissionSetEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type PermissionSetEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: PermissionSet
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for PermissionSet connections
+"""
+input PermissionSetOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order PermissionSets.
+  """
+  field: PermissionSetOrderField!
+}
+"""
+Properties by which PermissionSet connections can be ordered.
+"""
+enum PermissionSetOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+PermissionSetStatusPhase is enum for the field status_phase
+"""
+enum PermissionSetStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/permissionset.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+PermissionSetWhereInput is used for filtering PermissionSet objects.
+Input was generated by ent.
+"""
+input PermissionSetWhereInput {
+  not: PermissionSetWhereInput
+  and: [PermissionSetWhereInput!]
+  or: [PermissionSetWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: PermissionSetStatusPhase
+  statusPhaseNEQ: PermissionSetStatusPhase
+  statusPhaseIn: [PermissionSetStatusPhase!]
+  statusPhaseNotIn: [PermissionSetStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  owner_application edge predicates
+  """
+  hasOwnerApplication: Boolean
+  hasOwnerApplicationWith: [ApplicationWhereInput!]
+}
 type Query {
   """
   Fetches an object given its ID.
@@ -6528,6 +7032,37 @@ type Query {
     """
     where: EventTypeWhereInput
   ): EventTypeConnection!
+  permissionSets(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for PermissionSets returned from the connection.
+    """
+    orderBy: PermissionSetOrder
+
+    """
+    Filtering options for PermissionSets returned from the connection.
+    """
+    where: PermissionSetWhereInput
+  ): PermissionSetConnection!
   teams(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -7136,6 +7671,10 @@ input UpdateTeamInput {
   description: String
 }
 
+input DeleteTeamInput {
+  teamId: ID!
+}
+
 type CreateTeamPayload {
   team: Team
   accepted: Boolean!
@@ -7144,6 +7683,11 @@ type CreateTeamPayload {
 
 type UpdateTeamPayload {
   team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DeleteTeamPayload {
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -7160,6 +7704,44 @@ type RemoveTeamMemberPayload {
 
 type RotateTeamTokenPayload {
   team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Group mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+input CreateGroupInput {
+  environment: String!
+  name: String!
+  displayName: String!
+  description: String
+}
+
+input UpdateGroupInput {
+  groupId: ID!
+  displayName: String
+  description: String
+}
+
+input DeleteGroupInput {
+  groupId: ID!
+}
+
+type CreateGroupPayload {
+  group: Group
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type UpdateGroupPayload {
+  group: Group
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DeleteGroupPayload {
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -7201,6 +7783,9 @@ type Mutation {
   "Update team metadata (email, description, displayName). Does not manage members."
   updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
 
+  "Delete a Team. Fails if the team still has resources (Rovers, ApiSpecs, etc.)."
+  deleteTeam(input: DeleteTeamInput!): DeleteTeamPayload!
+
   "Add a member to a team. Takes effect immediately."
   addTeamMember(teamId: ID!, member: MemberInput!): AddTeamMemberPayload!
 
@@ -7212,6 +7797,15 @@ type Mutation {
 
   "Rotate the client secret for an application. Triggers async secret regeneration."
   rotateApplicationSecret(applicationId: ID!): RotateApplicationSecretPayload!
+
+  "Create a new Group in Kubernetes"
+  createGroup(input: CreateGroupInput!): CreateGroupPayload!
+
+  "Update group metadata (displayName, description)."
+  updateGroup(input: UpdateGroupInput!): UpdateGroupPayload!
+
+  "Delete a Group. Fails if the group still has teams."
+  deleteGroup(input: DeleteGroupInput!): DeleteGroupPayload!
 
   "Decide on an ApprovalRequest (approve or deny initial access)."
   decideApprovalRequest(approvalRequestId: ID!, input: DecisionInput!): DecideApprovalRequestPayload!
@@ -7244,6 +7838,13 @@ type TeamInfo {
 type Upstream {
   url: String!
   weight: Int!
+}
+
+"A single role-resource-actions grant within a PermissionSet."
+type Permission {
+  role: String!
+  resource: String!
+  actions: [String!]!
 }
 
 type ApprovalConfig {
@@ -7559,6 +8160,9 @@ extend type EventType {
 extend type Query {
   "Returns all distinct API categories currently in use."
   apiCategories: [ApiCategory!]! @goField(forceResolver: true)
+
+  "Returns all groups visible to the current viewer."
+  groups(where: GroupWhereInput): [Group!]! @goField(forceResolver: true)
 }
 
 "A category that APIs can be classified under."
@@ -7885,6 +8489,8 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_exposedEvents(ctx, field)
 	case "subscribedEvents":
 		return ec.fieldContext_Application_subscribedEvents(ctx, field)
+	case "permissionSet":
+		return ec.fieldContext_Application_permissionSet(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_Application_ownerTeam(ctx, field)
 	}
@@ -7943,6 +8549,8 @@ func (ec *executionContext) childFields_Approval(ctx context.Context, field grap
 		return ec.fieldContext_Approval_decisions(ctx, field)
 	case "availableTransitions":
 		return ec.fieldContext_Approval_availableTransitions(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_Approval_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_Approval_name(ctx, field)
 	case "expiresat":
@@ -8017,6 +8625,8 @@ func (ec *executionContext) childFields_ApprovalRequest(ctx context.Context, fie
 		return ec.fieldContext_ApprovalRequest_decisions(ctx, field)
 	case "availableTransitions":
 		return ec.fieldContext_ApprovalRequest_availableTransitions(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_ApprovalRequest_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_ApprovalRequest_name(ctx, field)
 	case "state":
@@ -8069,6 +8679,18 @@ func (ec *executionContext) childFields_BasicAuthCredentials(ctx context.Context
 		return ec.fieldContext_BasicAuthCredentials_password(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type BasicAuthCredentials", field.Name)
+}
+
+func (ec *executionContext) childFields_CreateGroupPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "group":
+		return ec.fieldContext_CreateGroupPayload_group(ctx, field)
+	case "accepted":
+		return ec.fieldContext_CreateGroupPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_CreateGroupPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CreateGroupPayload", field.Name)
 }
 
 func (ec *executionContext) childFields_CreateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8131,6 +8753,26 @@ func (ec *executionContext) childFields_Decision(ctx context.Context, field grap
 		return ec.fieldContext_Decision_resultingState(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Decision", field.Name)
+}
+
+func (ec *executionContext) childFields_DeleteGroupPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "accepted":
+		return ec.fieldContext_DeleteGroupPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_DeleteGroupPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DeleteGroupPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_DeleteTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "accepted":
+		return ec.fieldContext_DeleteTeamPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_DeleteTeamPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DeleteTeamPayload", field.Name)
 }
 
 func (ec *executionContext) childFields_EventDelivery(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8525,6 +9167,62 @@ func (ec *executionContext) childFields_PageInfo(ctx context.Context, field grap
 	return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
 }
 
+func (ec *executionContext) childFields_Permission(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "role":
+		return ec.fieldContext_Permission_role(ctx, field)
+	case "resource":
+		return ec.fieldContext_Permission_resource(ctx, field)
+	case "actions":
+		return ec.fieldContext_Permission_actions(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Permission", field.Name)
+}
+
+func (ec *executionContext) childFields_PermissionSet(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_PermissionSet_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_PermissionSet_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_PermissionSet_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_PermissionSet_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_PermissionSet_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_PermissionSet_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_PermissionSet_namespace(ctx, field)
+	case "permissions":
+		return ec.fieldContext_PermissionSet_permissions(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PermissionSet", field.Name)
+}
+
+func (ec *executionContext) childFields_PermissionSetConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_PermissionSetConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_PermissionSetConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_PermissionSetConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PermissionSetConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_PermissionSetEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_PermissionSetEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_PermissionSetEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PermissionSetEdge", field.Name)
+}
+
 func (ec *executionContext) childFields_RateLimit(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "provider":
@@ -8751,6 +9449,18 @@ func (ec *executionContext) childFields_Traffic(ctx context.Context, field graph
 		return ec.fieldContext_Traffic_rateLimit(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Traffic", field.Name)
+}
+
+func (ec *executionContext) childFields_UpdateGroupPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "group":
+		return ec.fieldContext_UpdateGroupPayload_group(ctx, field)
+	case "accepted":
+		return ec.fieldContext_UpdateGroupPayload_accepted(ctx, field)
+	case "errors":
+		return ec.fieldContext_UpdateGroupPayload_errors(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type UpdateGroupPayload", field.Name)
 }
 
 func (ec *executionContext) childFields_UpdateTeamPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

@@ -53,6 +53,10 @@ func (m *mockSubscriptionDeps) FindAPIExposureByBasePath(_ context.Context, base
 	return 0, fmt.Errorf("api_exposure basePath %q: %w", basePath, infrastructure.ErrEntityNotFound)
 }
 
+func (m *mockSubscriptionDeps) EvictAPIExposureByBasePath(basePath string) {
+	delete(m.exposureIDs, basePath)
+}
+
 var _ = Describe("ApiSubscription Repository", func() {
 	var (
 		client     *ent.Client
@@ -378,6 +382,33 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+		})
+
+		It("should return an error when the cached target exposure ID is stale", func() {
+			// Cached exposure ID points to a row that does not exist. On a
+			// Postgres backend this surfaces as an FK violation (23503) which
+			// the repository maps to ErrDependencyMissing after evicting the
+			// stale cache entry (see IsFKViolation + fkTargetExposure).
+			// ponytail: the repo test harness is SQLite, whose FK error is not
+			// a *pgconn.PgError, so the pg-specific remap branch cannot fire
+			// here; the constraint-name matching itself is unit-tested in
+			// infrastructure/errors_test.go. We assert the stale ID is not
+			// silently persisted.
+			staleDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+				exposureIDs: map[string]int{"/api/v1/users": exposureID + 9999}, // nonexistent
+			}
+			repo = apisubscription.NewRepository(client, cache, staleDeps)
+
+			err := repo.Upsert(ctx, baseData())
+			Expect(err).To(HaveOccurred())
+
+			// The bad target FK must not have been persisted.
+			count, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(0))
 		})
 
 		It("should maintain meta cache entry", func() {

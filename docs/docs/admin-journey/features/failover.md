@@ -19,7 +19,7 @@ A secondary route is a backup copy of the provider's API placed in the failover 
 
 ## Consumer Failover (DTC)
 
-Consumer Failover — also called **Data Traffic Control (DTC)** — allows consumers to be transparently redirected to a different zone at the DNS level when their home zone is unavailable.
+Consumer Failover — also called **Dynamic Traffic Control (DTC)** — allows consumers to be transparently redirected to a different zone at the DNS level when their home zone is unavailable.
 
 For this to work, participating zones must be explicitly configured with a dedicated gateway preset that carries the `ConsumerFailover` feature flag.
 

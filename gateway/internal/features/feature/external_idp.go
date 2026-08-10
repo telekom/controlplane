@@ -125,6 +125,7 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	in.ClientId = client.ClientId
 	secret := client.ClientSecret
 	clientKey := client.ClientKey
+	refreshToken := client.RefreshToken
 
 	if clientKey != "" {
 		clientKey, err = secretManagerApi.Get(ctx, clientKey)
@@ -141,6 +142,15 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 		}
 
 		in.ClientSecret = secret
+	}
+
+	if refreshToken != "" {
+		refreshToken, err = secretManagerApi.Get(ctx, refreshToken)
+		if err != nil {
+			return in, err
+		}
+
+		in.RefreshToken = refreshToken
 	}
 
 	if len(scopes) > 0 {

@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
@@ -49,7 +50,7 @@ func (r *PermissionSetReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&permissionset.PermissionSetHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&permissionv1.PermissionSet{}).
+		For(&permissionv1.PermissionSet{}, builder.WithPredicates(cc.Count("permissionset", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

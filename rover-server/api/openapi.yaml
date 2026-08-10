@@ -41,12 +41,16 @@ tags:
     description: Manage ApiSpecifications
   - name: EventSpecification
     description: Manage EventSpecifications
+  - name: McpSpecification
+    description: Manage McpSpecifications
   - name: Changelog
     description: Manage Changelogs
   - name: Rover
     description: Manage Rovers
   - name: ApiRoadmap
     description: Manage ApiRoadmaps
+  - name: Resources
+    description: Aggregated resource listing
 paths:
   /rovers:
     get:
@@ -58,6 +62,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/ResourcePrefix'
         - $ref: '#/components/parameters/Sort'
       responses:
         '200':
@@ -1476,6 +1481,261 @@ paths:
             - tardis:hub:read
             - tardis:team:all
             - tardis:team:read
+  /mcpspecifications:
+    get:
+      tags:
+        - McpSpecification
+      summary: Get all MCP specifications
+      operationId: getAllMcpSpecifications
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpSpecificationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    post:
+      tags:
+        - McpSpecification
+      summary: Create an MCP specification
+      operationId: createMcpSpecification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/McpSpecificationCreateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /mcpspecifications/{resourceId}:
+    parameters:
+      - name: resourceId
+        description: The unique id of this resource following the pattern group--team--resourceName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - McpSpecification
+      summary: Get an MCP specification
+      operationId: getMcpSpecification
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    put:
+      tags:
+        - McpSpecification
+      summary: Update an MCP specification
+      operationId: updateMcpSpecification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/McpSpecificationUpdateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+    delete:
+      tags:
+        - McpSpecification
+      summary: Delete an MCP specification
+      operationId: deleteMcpSpecification
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /mcpspecifications/{resourceId}/status:
+    parameters:
+      - name: resourceId
+        description: The unique id of this resource following the pattern group--team--resourceName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - McpSpecification
+      summary: Get the status of an MCP specification
+      operationId: getMcpSpecificationStatus
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+  /resources:
+    get:
+      tags:
+        - Resources
+      summary: List all resources for a team
+      description: >-
+        Returns one aggregate page of Rover, ApiSpecification, EventSpecification,
+        Roadmap, ApiChangelog, and McpSpecification references for exactly one team.
+        Team tokens may omit group and team; group and admin callers must provide both.
+        The cursor is opaque and the limit applies across all resource kinds.
+      operationId: getAllResources
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - name: group
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: team
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
 components:
   securitySchemes:
     OAuth2:
@@ -1549,6 +1809,17 @@ components:
         minimum: 1
         maximum: 20
         default: 20
+    ResourcePrefix:
+      name: prefix
+      in: query
+      description: >-
+        Optional prefix filter to narrow results to a specific team or group.
+        Must be encompassed by the caller's token prefix (e.g. an admin with
+        prefix "env--" can request "env--group--team--" but a team token cannot
+        request a different team's prefix). Format: environment--group--team--
+      required: false
+      schema:
+        type: string
     Sort:
       name: sort
       in: query
@@ -1708,6 +1979,50 @@ components:
           description: "Allows you to specify a list of header names that will be removed before forwarding the request to the provider"
         circuitBreaker:
           $ref: '#/components/schemas/CircuitBreaker'
+    AiExposure:
+      type: object
+      required:
+        - type
+        - approval
+        - visibility
+        - basePath
+        - variant
+      properties:
+        type:
+          type: string
+        approval:
+          $ref: '#/components/schemas/ApprovalStrategy'
+        trustedTeams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrustedTeam'
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+        basePath:
+          type: string
+        variant:
+          type: string
+          enum:
+            - MCP
+            - TELECONTEXTMCP
+          description: "The MCP exposure variant"
+        upstream:
+          type: string
+        security:
+          $ref: '#/components/schemas/Security'
+        rateLimit:
+          $ref: '#/components/schemas/RateLimitContainer'
+        failover:
+          $ref: '#/components/schemas/Failover'
+        loadBalancing:
+          $ref: '#/components/schemas/LoadBalancing'
+        removeHeaders:
+          type: array
+          items:
+            type: string
+          description: "Allows you to specify a list of header names that will be removed before forwarding the request to the MCP server"
+        circuitBreaker:
+          $ref: '#/components/schemas/CircuitBreaker'
     EventExposure:
       type: object
       required:
@@ -1746,9 +2061,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiExposure'
           event: '#/components/schemas/EventExposure'
+          ai: '#/components/schemas/AiExposure'
       oneOf:
         - $ref: '#/components/schemas/ApiExposure'
         - $ref: '#/components/schemas/EventExposure'
+        - $ref: '#/components/schemas/AiExposure'
 
 
     ApiExposureInfo:
@@ -1769,15 +2086,26 @@ components:
               type: string
               enum:
                 - event
+    AiExposureInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/AiExposure'
+        - properties:
+            type:
+              type: string
+              enum:
+                - ai
     ExposureInfo:
       discriminator:
         propertyName: type
         mapping:
           api: '#/components/schemas/ApiExposureInfo'
           event: '#/components/schemas/EventExposureInfo'
+          ai: '#/components/schemas/AiExposureInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiExposureInfo'
         - $ref: '#/components/schemas/EventExposureInfo'
+        - $ref: '#/components/schemas/AiExposureInfo'
 
     ApplicationInfo:
       type: object
@@ -1897,6 +2225,7 @@ components:
         - SIMPLE
         - FOUREYES
       type: string
+      default: SIMPLE
     Authentication:
       type: object
       properties:
@@ -1908,7 +2237,13 @@ components:
             - NONE
             - POST
             - BASIC
-          description: Configures client authentication method, according to RFC 6749.
+            - body
+            - basic
+          default: basic
+          description: >-
+            Configures client authentication according to RFC 6749. With basic
+            (default), credentials are sent in the HTTP Authorization header;
+            with body, credentials are sent in the request body.
         redirectUrls:
           type: array
           items:
@@ -1967,7 +2302,31 @@ components:
           enum:
             - body
             - header
+            - BODY
+            - HEADER
           description: "Specifies if the authentication data should be sent to the external IDP via headers or in the body of the request"
+        claims:
+          $ref: '#/components/schemas/Claims'
+    Claims:
+      type: object
+      description: "Token claims written into the platform-managed LMS token. Provider-side only: honored on an API exposure's security and ignored on a subscription's security. Only valid on the LMS token (not with an external IDP tokenEndpoint or basic auth)."
+      properties:
+        aud:
+          $ref: '#/components/schemas/Claim'
+    Claim:
+      type: object
+      description: "A single claim value. Exactly one of value or valueFrom must be set."
+      properties:
+        value:
+          type: string
+          description: "A literal claim value."
+        valueFrom:
+          type: string
+          description: "A predefined source resolved into the claim value."
+          enum:
+            - ProviderClientId
+            - ConsumerClientId
+            - BasePath
     Problem:
       type: object
       required:
@@ -2204,6 +2563,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApplicationInfo'
+    ResourceListResponse:
+      type: object
+      required:
+        - _links
+        - items
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
     RoverListResponse:
       type: object
       required:
@@ -2415,6 +2786,20 @@ components:
           description: >
             If true, the health check will be performed with a GET request
             instead of a HEAD request
+    AiSubscription:
+      type: object
+      required:
+        - type
+        - basePath
+      properties:
+        type:
+          type: string
+        basePath:
+          type: string
+        failover:
+          $ref: '#/components/schemas/Failover'
+        security:
+          $ref: '#/components/schemas/Security'
     Subscription:
       type: object
       discriminator:
@@ -2422,9 +2807,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiSubscription'
           event: '#/components/schemas/EventSubscription'
+          ai: '#/components/schemas/AiSubscription'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscription'
         - $ref: '#/components/schemas/EventSubscription'
+        - $ref: '#/components/schemas/AiSubscription'
 
     ApiSubscriptionInfo:
       type: object
@@ -2452,6 +2839,15 @@ components:
               type: string
             horizonSubscriptionUrl:
               type: string
+    AiSubscriptionInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/AiSubscription'
+        - properties:
+            type:
+              type: string
+              enum:
+                - ai
     SubscriptionInfo:
       readOnly: true
       discriminator:
@@ -2459,9 +2855,11 @@ components:
         mapping:
           api: '#/components/schemas/ApiSubscriptionInfo'
           event: '#/components/schemas/EventSubscriptionInfo'
+          ai: '#/components/schemas/AiSubscriptionInfo'
       oneOf:
         - $ref: '#/components/schemas/ApiSubscriptionInfo'
         - $ref: '#/components/schemas/EventSubscriptionInfo'
+        - $ref: '#/components/schemas/AiSubscriptionInfo'
 
     EventTrigger:
       type: object
@@ -2476,6 +2874,8 @@ components:
           enum:
             - include
             - exclude
+            - INCLUDE
+            - EXCLUDE
         selectionFilter:
           type: object
           additionalProperties:
@@ -2498,6 +2898,7 @@ components:
         - WORLD
         - ZONE
       type: string
+      default: ENTERPRISE
     ApiSpecification:
       type: object
       required:
@@ -2570,6 +2971,49 @@ components:
                 This field is only used for hub-scoped access to control the
                 target team of the resource. For everything else, it can be
                 ignored
+    McpSpecification:
+      type: object
+      required:
+        - specification
+      properties:
+        specification:
+          type: object
+          additionalProperties: true
+    McpSpecificationCreateRequest:
+      $ref: '#/components/schemas/McpSpecification'
+    McpSpecificationUpdateRequest:
+      $ref: '#/components/schemas/McpSpecification'
+    McpSpecificationResponse:
+      type: object
+      required:
+        - id
+        - name
+        - specification
+        - status
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        specification:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/ResourceStatusResponse'
+    McpSpecificationListResponse:
+      type: object
+      required:
+        - items
+        - _links
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/McpSpecificationResponse'
+        _links:
+          $ref: '#/components/schemas/Links'
     EventSpecification:
       type: object
       required:

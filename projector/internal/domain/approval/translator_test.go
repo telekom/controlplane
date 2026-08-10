@@ -16,6 +16,7 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/telekom/controlplane/projector/internal/domain/approval"
@@ -324,6 +325,75 @@ var _ = Describe("Approval Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.ExpiresAt).NotTo(BeNil())
 			Expect(*data.ExpiresAt).To(Equal(expiresTime))
+		})
+
+		It("should populate AccessScopes from requester properties", func() {
+			req := approvalv1.Requester{TeamName: "t"}
+			Expect(req.SetProperties(map[string]any{"scopes": []string{"read", "write"}})).To(Succeed())
+
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: req,
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AccessScopes).To(Equal([]string{"read", "write"}))
+		})
+
+		It("should leave AccessScopes empty when no properties are set", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AccessScopes).To(BeEmpty())
+		})
+
+		It("should return an error when requester properties are malformed", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "bad-approval", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{
+						TeamName:   "t",
+						Properties: runtime.RawExtension{Raw: []byte("{not-json")},
+					},
+					Decider: approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			_, err := t.Translate(context.Background(), obj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("bad-approval"))
 		})
 
 		It("should return nil ExpiresAt when status.expiresAt is nil", func() {

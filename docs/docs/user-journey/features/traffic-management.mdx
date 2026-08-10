@@ -174,7 +174,7 @@ Your API must be reachable from the backup zone. The Control Plane creates a sec
 
 ### Consumer Failover — DTC (API Subscription)
 
-Consumer Failover, also known as **Data Traffic Control (DTC)**, takes a different approach. Instead of the gateway switching upstreams, the entire consumer is redirected to a different zone at the DNS level.
+Consumer Failover, also known as **Dynamic Traffic Control (DTC)**, takes a different approach. Instead of the gateway switching upstreams, the entire consumer is redirected to a different zone at the DNS level.
 
 When you enable consumer failover on a subscription, the Control Plane automatically discovers all zones that support this feature and pre-configures them to accept your traffic. If your home zone goes down, external DNS redirects you to another zone's gateway — and because that gateway already knows about your subscription and trusts your identity token, the switch is transparent.
 

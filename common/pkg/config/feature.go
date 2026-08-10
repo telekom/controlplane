@@ -48,6 +48,7 @@ var (
 	FeaturePermission    Feature = NewFeature("permission", false)    // Permission feature disabled by default
 	FeatureSecretManager Feature = NewFeature("secret_manager", true) // Secret Manager feature enabled by default
 	FeatureFileManager   Feature = NewFeature("file_manager", true)   // File Manager feature enabled by default
+	FeatureAiGateway     Feature = NewFeature("ai_gateway", false)    // AI Gateway (MCP) feature disabled by default
 )
 
 // SetFeatureEnabled sets the enabled state for a feature. Intended for tests.

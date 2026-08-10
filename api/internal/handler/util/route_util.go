@@ -26,9 +26,7 @@ import (
 )
 
 const (
-	// GatewayConsumerName is the name of the gateway mesh-client that is used to proxy requests across zones.
-	// It must be added to DefaultConsumers on routes that are the target of a cross-zone proxy.
-	GatewayConsumerName = "gateway"
+	GatewayConsumerName = gatewayapi.GatewayConsumerName
 )
 
 const labelTrue = "true"
@@ -67,6 +65,16 @@ type CreateRouteOptions struct {
 	AdditionalHostnames []string
 	// AdditionalPaths are used to add extra paths to the route's Paths list.
 	AdditionalPaths []string
+
+	// ResolvedClaims holds the exposure's M2M claims after static ValueFrom sources
+	// (ProviderClientId, BasePath) have been resolved to literals in the handler.
+	// When set, it overrides the claims mapped from the exposure's own security spec.
+	ResolvedClaims *apiapi.Claims
+
+	// OwnerUID is the UID of the resource that owns this route. When set, it is stamped
+	// onto the route as the owner.uid label. The label is informational (records which
+	// resource provisioned the route); route cleanup is keyed by basepath, not this label.
+	OwnerUID string
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
@@ -96,6 +104,14 @@ func WithFailoverUpstreams(failoverUpstreams ...apiapi.Upstream) CreateRouteOpti
 func WithFailoverZones(failoverZones []types.ObjectRef) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.FailoverZones = failoverZones
+	}
+}
+
+// WithResolvedClaims sets the exposure's M2M claims after static ValueFrom sources
+// (ProviderClientId, BasePath) have been resolved to literals in the handler.
+func WithResolvedClaims(claims *apiapi.Claims) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.ResolvedClaims = claims
 	}
 }
 
@@ -169,6 +185,15 @@ func AddTrustedIssuers(issuers ...string) CreateRouteOption {
 func WithRealmName(realmName string) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.RealmName = realmName
+	}
+}
+
+// WithOwner stamps the owner.uid label on the route using the owner's UID.
+// The label is informational (debugging/observability): it records which resource
+// provisioned the route. Route cleanup is keyed by basepath, not by this label.
+func WithOwner(owner metav1.Object) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.OwnerUID = string(owner.GetUID())
 	}
 }
 
@@ -249,6 +274,9 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
 			config.BuildLabelKey("zone"): labelutil.NormalizeValue(downstreamZone.GetName()),
 			config.BuildLabelKey("type"): "proxy",
+		}
+		if options.OwnerUID != "" {
+			proxyRoute.Labels[config.OwnerUidLabelKey] = options.OwnerUID
 		}
 
 		// Upstream for proxy route: points at the upstream zone's gateway URL for this basepath
@@ -363,7 +391,7 @@ func configureAsFailoverTarget(_ context.Context, proxyRoute *gatewayapi.Route, 
 	// Add the provided security config (mostly copied from primary-route)
 	// to the failover config of the secondary route
 	if options.FailoverSecurity != nil {
-		proxyRoute.Spec.Traffic.Failover.Security = mapSecurity(options.FailoverSecurity)
+		proxyRoute.Spec.Traffic.Failover.Security = mapSecurity(options.FailoverSecurity, options.ResolvedClaims)
 	}
 
 	if options.RealmName != "" {
@@ -473,24 +501,26 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	return nil
 }
 
-// CleanupStaleProxyRoutes uses the JanitorClient's Cleanup() to delete any stale proxy Routes
-// for the given apiBasePath that were NOT created/updated in this reconciliation cycle.
-// This handles zone changes: when subscriptions move or are deleted, old proxy routes are cleaned up.
-// NOTE: This does NOT delete provider failover routes (labeled with failover.secondary=true),
-// as those are managed separately by ApiExposure and should not be cleaned up here.
-func CleanupStaleProxyRoutes(ctx context.Context, apiBasePath string) (int, error) {
+// CleanupStaleRoutes deletes any Routes (proxy, secondary/failover, and real) for the
+// given apiBasePath that were not created/updated in this reconciliation cycle, using the
+// JanitorClient's Cleanup(). This removes routes orphaned when a zone change moves their
+// derived namespace: the janitor tracks routes touched via CreateOrUpdate this cycle, so
+// listing all routes for the basepath and deleting the untouched ones sweeps up orphans.
+//
+// IMPORTANT: Call only AFTER all routes for this reconciliation (proxy, failover, and
+// real) have been created/updated, otherwise routes not yet provisioned this cycle would
+// be deleted.
+func CleanupStaleRoutes(ctx context.Context, apiBasePath string) (int, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// Use janitor's Cleanup for all proxy routes with this basepath
-	// The janitor will only delete routes that were NOT touched in this reconciliation cycle
+	// Cleanup deletes only routes for this basepath not touched this cycle.
 	deleted, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, []client.ListOption{
 		client.MatchingLabels{
-			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
-			config.BuildLabelKey("type"): "proxy",
+			apiapi.BasePathLabelKey: labelutil.NormalizeLabelValue(apiBasePath),
 		},
 	})
 	if err != nil {
-		return deleted, errors.Wrapf(err, "failed to cleanup stale proxy routes for basepath %q", apiBasePath)
+		return deleted, errors.Wrapf(err, "failed to cleanup stale routes for basepath %q", apiBasePath)
 	}
 
 	return deleted, nil
@@ -526,6 +556,9 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 			config.BuildLabelKey("zone"): labelutil.NormalizeValue(zone.Name),
 			config.BuildLabelKey("type"): "real",
 		}
+		if apiExposure.GetUID() != "" {
+			route.Labels[config.OwnerUidLabelKey] = string(apiExposure.GetUID())
+		}
 
 		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
 		for _, upstream := range apiExposure.Spec.Upstreams {
@@ -552,7 +585,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		route.Spec.Paths = slices.Compact(slices.Clip(route.Spec.Paths))
 
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
-		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
+		route.Spec.Security = mapSecurity(apiExposure.Spec.Security, options.ResolvedClaims)
 
 		if options.IsProxyTarget {
 			// If this Route is the target of a cross-zone proxy Route,
@@ -641,7 +674,39 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 	return routeConsumer, nil
 }
 
-func mapSecurity(apiSecurity *apiapi.Security) gatewayapi.Security {
+// ResolveExposureClaims resolves the static ValueFrom claim sources of an exposure's
+// M2M claims into literals: ProviderClientId -> the application's client id,
+// BasePath -> the exposure base path. ConsumerClientId stays symbolic for Jumper to
+// resolve per-request. A user-provided literal is copied through unchanged. Returns nil
+// when there are no M2M claims to resolve.
+func ResolveExposureClaims(apiExp *apiapi.ApiExposure, clientId string) *apiapi.Claims {
+	if apiExp.Spec.Security == nil || apiExp.Spec.Security.M2M == nil {
+		return nil
+	}
+	claims := apiExp.Spec.Security.M2M.Claims
+	if claims == nil || claims.Aud == nil {
+		return nil
+	}
+
+	aud := claims.Aud
+	resolved := &apiapi.Claim{}
+	switch {
+	case aud.Value != "":
+		resolved.Value = aud.Value
+	case aud.ValueFrom == apiapi.ClaimValueFromProviderClientId:
+		resolved.Value = clientId
+	case aud.ValueFrom == apiapi.ClaimValueFromBasePath:
+		resolved.Value = apiExp.Spec.ApiBasePath
+	case aud.ValueFrom == apiapi.ClaimValueFromConsumerClientId:
+		resolved.ValueFrom = apiapi.ClaimValueFromConsumerClientId
+	default:
+		return nil
+	}
+
+	return &apiapi.Claims{Aud: resolved}
+}
+
+func mapSecurity(apiSecurity *apiapi.Security, resolvedClaims *apiapi.Claims) gatewayapi.Security {
 	if apiSecurity == nil {
 		return gatewayapi.Security{}
 	}
@@ -659,9 +724,27 @@ func mapSecurity(apiSecurity *apiapi.Security) gatewayapi.Security {
 				Password: apiSecurity.M2M.Basic.Password,
 			}
 		}
+		claims := apiSecurity.M2M.Claims
+		if resolvedClaims != nil {
+			claims = resolvedClaims
+		}
+		security.M2M.Claims = mapClaims(claims)
 	}
 
 	return security
+}
+
+// mapClaims flattens the api Claims (currently only aud) into the gateway's flat
+// []Claim list. Value is the CP-resolved literal; ValueFrom stays symbolic.
+func mapClaims(apiClaims *apiapi.Claims) []gatewayapi.Claim {
+	if apiClaims == nil || apiClaims.Aud == nil {
+		return nil
+	}
+	return []gatewayapi.Claim{{
+		Key:       "aud",
+		Value:     apiClaims.Aud.Value,
+		ValueFrom: gatewayapi.ClaimValueFrom(apiClaims.Aud.ValueFrom),
+	}}
 }
 
 func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.ExternalIdentityProvider {
@@ -685,6 +768,7 @@ func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.Ex
 			ClientId:     externalIDP.Client.ClientId,
 			ClientSecret: externalIDP.Client.ClientSecret,
 			ClientKey:    externalIDP.Client.ClientKey,
+			RefreshToken: externalIDP.Client.RefreshToken,
 		}
 	}
 
@@ -707,6 +791,7 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 				ClientId:     apiSecurity.M2M.Client.ClientId,
 				ClientSecret: apiSecurity.M2M.Client.ClientSecret,
 				ClientKey:    apiSecurity.M2M.Client.ClientKey,
+				RefreshToken: apiSecurity.M2M.Client.RefreshToken,
 			}
 		} else if apiSecurity.M2M.Basic != nil {
 			security.M2M.Basic = &gatewayapi.BasicAuthCredentials{

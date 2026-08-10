@@ -10,6 +10,12 @@ import (
 	"strconv"
 )
 
+const (
+	// GatewayConsumerName is the name of the gateway mesh-client that is used to proxy requests across zones.
+	// It must be added to DefaultConsumers on routes that are the target of a cross-zone proxy.
+	GatewayConsumerName = "gateway"
+)
+
 // GetPortOrDefaultFromScheme returns the port number from the URL if specified.
 // If the URL does not specify a port or if the specified port is invalid, it returns the default port for the URL's scheme (80 for http, 443 for https).
 // If the URL has an invalid port (non-numeric or out of range), it falls back to the default port for the scheme.

@@ -11,6 +11,7 @@ resources:
 - bases/rover.cp.ei.telekom.de_eventspecifications.yaml
 - bases/rover.cp.ei.telekom.de_apichangelogs.yaml
 - bases/rover.cp.ei.telekom.de_roadmaps.yaml
+- bases/rover.cp.ei.telekom.de_mcpspecifications.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:

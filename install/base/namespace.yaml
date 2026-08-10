@@ -8,7 +8,8 @@ metadata:
   labels:
     app.kubernetes.io/name: controlplane-system
     app.kubernetes.io/managed-by: kustomize
-    cp.ei.telekom.de/file-manager: enabled
     cp.ei.telekom.de/secret-manager: enabled
+    cp.ei.telekom.de/file-manager: enabled
+    cp.ei.telekom.de/controlplane-api: enabled
   name: system # this name is overwritten in kustomization.yaml
 ---

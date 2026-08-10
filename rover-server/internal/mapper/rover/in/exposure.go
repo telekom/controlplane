@@ -6,6 +6,7 @@ package in
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -53,6 +54,14 @@ func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
 
 		out.Event = mapEventExposure(eventExp)
 
+	case "ai":
+		aiExp, err := in.AsAiExposure()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to AiExposure")
+		}
+
+		out.Agentic = mapAiExposure(aiExp)
+
 	default:
 		return errors.Errorf("unknown exposure type: %s", expType)
 	}
@@ -96,6 +105,8 @@ func mapApiExposure(in api.ApiExposure) *roverv1.ApiExposure {
 
 func toRoverVisibility(visibility api.Visibility) roverv1.Visibility {
 	switch visibility {
+	case "":
+		return roverv1.VisibilityEnterprise
 	case api.WORLD:
 		return roverv1.VisibilityWorld
 	case api.ZONE:
@@ -109,6 +120,8 @@ func toRoverVisibility(visibility api.Visibility) roverv1.Visibility {
 
 func toRoverApprovalStrategy(approval api.ApprovalStrategy) roverv1.ApprovalStrategy {
 	switch approval {
+	case "":
+		return roverv1.ApprovalStrategySimple
 	case api.AUTO:
 		return roverv1.ApprovalStrategyAuto
 	case api.SIMPLE:
@@ -156,6 +169,7 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 					ClientId:     oauth2.ClientId,
 					ClientSecret: oauth2.ClientSecret,
 					ClientKey:    oauth2.ClientKey,
+					RefreshToken: oauth2.RefreshToken,
 				}
 			}
 			if oauth2.Username != "" {
@@ -169,12 +183,27 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 			// scopes
 			m2mSecurity.Scopes = oauth2.Scopes
 		}
+		m2mSecurity.Claims = mapExposureClaims(oauth2.Claims)
 	}
 
-	if m2mSecurity.Basic != nil || m2mSecurity.ExternalIDP != nil || m2mSecurity.Scopes != nil {
+	if m2mSecurity.Basic != nil || m2mSecurity.ExternalIDP != nil || m2mSecurity.Scopes != nil || m2mSecurity.Claims != nil {
 		out.Security = &roverv1.Security{
 			M2M: m2mSecurity,
 		}
+	}
+}
+
+// mapExposureClaims maps the rover-server Oauth2 claims (only aud is supported) into
+// the CRD Claims shape. value is copied through; valueFrom stays symbolic.
+func mapExposureClaims(in api.Claims) *roverv1.Claims {
+	if in.Aud.Value == "" && in.Aud.ValueFrom == "" {
+		return nil
+	}
+	return &roverv1.Claims{
+		Aud: &roverv1.Claim{
+			Value:     in.Aud.Value,
+			ValueFrom: roverv1.ClaimValueFrom(in.Aud.ValueFrom),
+		},
 	}
 }
 
@@ -281,4 +310,214 @@ func mapEventTrigger(in api.EventTrigger) *roverv1.EventTrigger {
 	}
 
 	return out
+}
+
+func mapAiExposure(in api.AiExposure) *roverv1.AgenticExposure {
+	out := &roverv1.AgenticExposure{}
+	out.BasePath = in.BasePath
+	out.Variant = roverv1.AgenticVariant(in.Variant)
+	out.Visibility = toRoverVisibility(in.Visibility)
+	out.Approval = roverv1.Approval{
+		Strategy: toRoverApprovalStrategy(in.Approval),
+	}
+	mapAiTrustedTeams(in, out)
+
+	if in.Upstream != "" {
+		out.Upstreams = []roverv1.Upstream{
+			{
+				URL: in.Upstream,
+			},
+		}
+	} else if len(in.LoadBalancing.Servers) > 0 {
+		out.Upstreams = make([]roverv1.Upstream, len(in.LoadBalancing.Servers))
+		for i, server := range in.LoadBalancing.Servers {
+			out.Upstreams[i] = roverv1.Upstream{
+				URL: server.Upstream,
+			}
+			if server.Weight != 0 {
+				out.Upstreams[i].Weight = server.Weight
+			}
+		}
+	}
+
+	mapAiExposureSecurity(in, out)
+	mapAiExposureTransformation(in, out)
+	mapAiExposureTraffic(in, out)
+
+	return out
+}
+
+func mapAiTrustedTeams(in api.AiExposure, out *roverv1.AgenticExposure) {
+	if len(in.TrustedTeams) == 0 {
+		return
+	}
+
+	out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
+	for i, team := range in.TrustedTeams {
+		parts := strings.Split(team.Team, "--")
+		if len(parts) != 2 {
+			continue
+		}
+		out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
+			Group: parts[0],
+			Team:  parts[1],
+		}
+	}
+}
+
+func mapAiExposureSecurity(in api.AiExposure, out *roverv1.AgenticExposure) {
+	m2mSecurity := &roverv1.Machine2MachineAuthentication{}
+
+	secType, err := in.Security.Discriminator()
+	if err != nil {
+		return
+	}
+	switch secType {
+	case "basicAuth":
+		basicAuth, err := in.Security.AsBasicAuth()
+		if err != nil {
+			return
+		}
+		m2mSecurity.Basic = &roverv1.BasicAuthCredentials{
+			Username: basicAuth.Username,
+			Password: basicAuth.Password,
+		}
+
+	case "oauth2":
+		oauth2, err := in.Security.AsOauth2()
+		if err != nil {
+			return
+		}
+
+		if oauth2.TokenEndpoint != "" {
+			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
+				TokenEndpoint: oauth2.TokenEndpoint,
+				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
+				GrantType:     roverv1.GrantType(strings.ToLower(string(oauth2.GrantType))),
+			}
+			if oauth2.ClientId != "" {
+				m2mSecurity.ExternalIDP.Client = &roverv1.OAuth2ClientCredentials{
+					ClientId:     oauth2.ClientId,
+					ClientSecret: oauth2.ClientSecret,
+					ClientKey:    oauth2.ClientKey,
+				}
+			}
+			if oauth2.Username != "" {
+				m2mSecurity.ExternalIDP.Basic = &roverv1.BasicAuthCredentials{
+					Username: oauth2.Username,
+					Password: oauth2.Password,
+				}
+			}
+		}
+		if oauth2.Scopes != nil {
+			m2mSecurity.Scopes = oauth2.Scopes
+		}
+	}
+
+	if m2mSecurity.Basic != nil || m2mSecurity.ExternalIDP != nil || m2mSecurity.Scopes != nil {
+		out.Security = &roverv1.Security{
+			M2M: m2mSecurity,
+		}
+	}
+}
+
+func mapAiExposureTransformation(in api.AiExposure, out *roverv1.AgenticExposure) {
+	if len(in.RemoveHeaders) == 0 {
+		return
+	}
+	out.Transformation = &roverv1.Transformation{
+		Request: roverv1.RequestResponseTransformation{
+			Headers: roverv1.HeaderTransformation{
+				Remove: in.RemoveHeaders,
+			},
+		},
+	}
+}
+
+func mapAiExposureTraffic(in api.AiExposure, out *roverv1.AgenticExposure) {
+	if out.Traffic == nil {
+		out.Traffic = &roverv1.Traffic{}
+	}
+
+	// Failover
+	if len(in.Failover.Zones) > 0 {
+		out.Traffic.Failover = &roverv1.ProviderFailover{
+			Zones: in.Failover.Zones,
+		}
+	}
+
+	// CircuitBreaker
+	if in.CircuitBreaker.Enabled {
+		out.Traffic.CircuitBreaker = &roverv1.CircuitBreaker{
+			Enabled: in.CircuitBreaker.Enabled,
+		}
+	}
+
+	// RateLimit
+	if !reflect.ValueOf(in.RateLimit).IsZero() {
+		mapAiRateLimit(in, out)
+	}
+
+	// Clean up empty traffic
+	if out.Traffic.Failover == nil && out.Traffic.CircuitBreaker == nil && out.Traffic.RateLimit == nil {
+		out.Traffic = nil
+	}
+}
+
+func mapAiRateLimit(in api.AiExposure, out *roverv1.AgenticExposure) {
+	rl := in.RateLimit
+	hasProviderLimit := rl.Provider.Second != 0 || rl.Provider.Minute != 0 || rl.Provider.Hour != 0
+	hasConsumerDefaultLimit := rl.ConsumerDefault.Second != 0 || rl.ConsumerDefault.Minute != 0 || rl.ConsumerDefault.Hour != 0
+	hasConsumerOverrides := len(rl.Consumers) > 0
+
+	if !hasProviderLimit && !hasConsumerDefaultLimit && !hasConsumerOverrides {
+		return
+	}
+
+	if out.Traffic.RateLimit == nil {
+		out.Traffic.RateLimit = &roverv1.RateLimit{}
+	}
+
+	if hasProviderLimit {
+		out.Traffic.RateLimit.Provider = &roverv1.RateLimitConfig{
+			Limits: &roverv1.Limits{
+				Second: int(rl.Provider.Second),
+				Minute: int(rl.Provider.Minute),
+				Hour:   int(rl.Provider.Hour),
+			},
+			Options: roverv1.RateLimitOptions{
+				FaultTolerant:     rl.Provider.FaultTolerant,
+				HideClientHeaders: rl.Provider.HideClientHeaders,
+			},
+		}
+	}
+
+	if hasConsumerDefaultLimit || hasConsumerOverrides {
+		out.Traffic.RateLimit.Consumers = &roverv1.ConsumerRateLimits{}
+
+		if hasConsumerDefaultLimit {
+			out.Traffic.RateLimit.Consumers.Default = &roverv1.ConsumerRateLimitDefaults{
+				Limits: roverv1.Limits{
+					Second: int(rl.ConsumerDefault.Second),
+					Minute: int(rl.ConsumerDefault.Minute),
+					Hour:   int(rl.ConsumerDefault.Hour),
+				},
+			}
+		}
+
+		if hasConsumerOverrides {
+			overrides := make([]roverv1.ConsumerRateLimitOverrides, len(rl.Consumers))
+			for i, consumer := range rl.Consumers {
+				overrides[i] = roverv1.ConsumerRateLimitOverrides{
+					Consumer: consumer.Id,
+					Limits: roverv1.Limits{
+						Second: int(consumer.Second),
+						Minute: int(consumer.Minute),
+						Hour:   int(consumer.Hour),
+					},
+				}
+			}
+			out.Traffic.RateLimit.Consumers.Overrides = overrides
+		}
+	}
 }

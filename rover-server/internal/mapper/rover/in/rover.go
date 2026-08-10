@@ -6,14 +6,19 @@ package in
 
 import (
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
+
+// MigrationActive controls whether the client secret is copied through on
+// mapping. Set once at startup from config; defaults off.
+// ponytail: package var over threading cfg through every MapRequest caller.
+var MigrationActive bool
 
 func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *roverv1.Rover, err error) {
 	res = &roverv1.Rover{
@@ -46,10 +51,13 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 		FailoverEnabled: in.FailoverEnabled,
 	}
 	if err = MapRover(apiRover, res); err != nil {
+		if problems.IsValidationError(err) {
+			return res, err
+		}
 		return res, errors.Wrap(err, "failed to map rover")
 	}
 
-	if viper.GetBool("migration.active") {
+	if MigrationActive {
 		res.Spec.ClientSecret = in.ClientSecret
 	}
 	return
@@ -106,6 +114,9 @@ func mapExposures(in *api.Rover, out *roverv1.Rover) error {
 func mapSubscriptions(in *api.Rover, out *roverv1.Rover) error {
 	out.Spec.Subscriptions = make([]roverv1.Subscription, len(in.Subscriptions))
 	for i := range out.Spec.Subscriptions {
+		if err := validateSubscription(&in.Subscriptions[i]); err != nil {
+			return err
+		}
 		err := mapSubscription(&in.Subscriptions[i], &out.Spec.Subscriptions[i])
 		if err != nil {
 			return errors.Wrap(err, "failed to map subscription")
@@ -160,8 +171,8 @@ func mapPermissions(in *api.Rover, out *roverv1.Rover) error {
 
 // clientAuthMethodToCRD maps rover-server API enum values to rover CRD tokenRequest values.
 var clientAuthMethodToCRD = map[api.AuthenticationClientAuthMethod]roverv1.TokenRequestMethod{
-	api.BASIC: roverv1.TokenRequestClientSecretBasic,
-	api.POST:  roverv1.TokenRequestClientSecretPost,
+	api.AuthenticationClientAuthMethodBASIC: roverv1.TokenRequestClientSecretBasic,
+	api.AuthenticationClientAuthMethodPOST:  roverv1.TokenRequestClientSecretPost,
 }
 
 func mapAuthentication(in *api.Rover, out *roverv1.Rover) {
