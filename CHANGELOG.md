@@ -1,3 +1,10 @@
+## [0.22.1](https://github.com/telekom/controlplane/compare/v0.22.0...v0.22.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **releasing:** add missing entries for some operators for releases ([#558](https://github.com/telekom/controlplane/issues/558)) ([31e6323](https://github.com/telekom/controlplane/commit/31e6323c2fa42109031ba38b4104761d1c988934))
+
 # [0.22.0](https://github.com/telekom/controlplane/compare/v0.21.0...v0.22.0) (2026-08-10)
 
 
