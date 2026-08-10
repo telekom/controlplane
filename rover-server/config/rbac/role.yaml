@@ -67,3 +67,16 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpservers
+  - mcpexposures
+  - mcpsubscriptions
+  - agentcards
+  - agenticexposures
+  - agenticsubscriptions
+  verbs:
+  - get
+  - list
+  - watch
