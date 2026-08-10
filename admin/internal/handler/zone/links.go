@@ -18,9 +18,9 @@ import (
 func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 	statuses := make([]adminv1.PresetStatus, 0, len(hc.Zone.Spec.Presets))
 	tokenURLs := make(map[string]string, len(hc.Zone.Spec.Presets))
-	previousStatuses := make(map[string]adminv1.PresetStatus, len(hc.Zone.Status.Presets))
-	for _, status := range hc.Zone.Status.Presets {
-		previousStatuses[status.Name] = status
+	previousStatuses := make(map[string]int, len(hc.Zone.Status.Presets))
+	for i := range hc.Zone.Status.Presets {
+		previousStatuses[hc.Zone.Status.Presets[i].Name] = i
 	}
 	for i := range hc.Zone.Spec.Presets {
 		preset := &hc.Zone.Spec.Presets[i]
@@ -44,12 +44,14 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 		if tokenURL == "" {
 			tokenURL = idp.TokenUrl
 		}
-		if tokenURL == "" {
+		if tokenURL == "" { //nolint:nestif // Token URL precedence is intentionally evaluated in one place.
 			tokenURL = tokenURLs[issuer]
-			previous := previousStatuses[preset.Name]
-			if tokenURL == "" && previous.Links.Issuer == issuer && validateDiscoveredTokenURL(previous.TokenUrl) == nil {
-				tokenURL = previous.TokenUrl
-				tokenURLs[issuer] = tokenURL
+			if previousIndex, found := previousStatuses[preset.Name]; found {
+				previous := &hc.Zone.Status.Presets[previousIndex]
+				if tokenURL == "" && previous.Links.Issuer == issuer && validateDiscoveredTokenURL(previous.TokenUrl) == nil {
+					tokenURL = previous.TokenUrl
+					tokenURLs[issuer] = tokenURL
+				}
 			}
 			if tokenURL == "" {
 				tokenURL, err = discoverTokenURL(ctx, hc.HTTPClient, issuer)

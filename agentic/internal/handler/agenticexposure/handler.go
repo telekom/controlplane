@@ -29,7 +29,7 @@ type AgenticExposureHandler struct {
 	Config *agenticconfig.AgenticConfig
 }
 
-func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.AgenticExposure) error {
+func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.AgenticExposure) error { //nolint:gocyclo // Reconciliation is a linear sequence of independently failing operations.
 	logger := log.FromContext(ctx)
 
 	// 1. Validate server (McpServer or AgentCard) exists and is active

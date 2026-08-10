@@ -55,11 +55,12 @@ func init() {
 }
 
 var (
-	cfg       *rest.Config
-	k8sClient client.Client
-	testEnv   *envtest.Environment
-	ctx       context.Context
-	cancel    context.CancelFunc
+	cfg         *rest.Config
+	k8sClient   client.Client
+	testEnv     *envtest.Environment
+	managerDone chan struct{}
+	ctx         context.Context
+	cancel      context.CancelFunc
 )
 
 var syncerFactoryMock = syncer.NewSyncerFactoryMock()
@@ -171,8 +172,10 @@ var _ = BeforeSuite(func() {
 	By("Creating the test API category")
 	CreateTestApiCategory()
 
+	managerDone = make(chan struct{})
 	go func() {
 		defer GinkgoRecover()
+		defer close(managerDone)
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
@@ -226,6 +229,7 @@ var _ = AfterSuite(func() {
 
 	By("tearing down the test environment")
 	cancel()
+	Eventually(managerDone).Should(BeClosed())
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

@@ -12,13 +12,15 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 type failingRoundTripper struct{}

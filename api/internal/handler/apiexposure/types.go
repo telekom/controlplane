@@ -12,15 +12,15 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 )
 
-// ──────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Route Provisioning Pipeline
-// ──────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 //
 // The route provisioning pipeline runs in three steps:
 //
-//  1. determineRoutingState — fetches subscribers and zone data, derives flags.
-//  2. manageProxyRoutes    — creates proxy routes, collects consumer failover enrichment.
-//  3. createRealRoute      — creates the real route using the enriched state.
+//  1. determineRoutingState fetches subscribers and zone data, derives flags.
+//  2. manageProxyRoutes creates proxy routes, collects consumer failover enrichment.
+//  3. createRealRoute creates the real route using the enriched state.
 //
 // All steps share a single routingState instance to avoid redundant API calls
 // and make the data flow between steps explicit.
@@ -36,9 +36,9 @@ import (
 //     upstreams, allowing traffic to be served from a different zone if the provider fails.
 //     Managed separately via WithFailoverUpstreams/WithFailoverSecurity.
 type routingState struct {
-	// ──────────────────────────────────────────────────────────────────────────
+	// -------------------------------------------------------------------------
 	// Determined up front by determineRoutingState
-	// ──────────────────────────────────────────────────────────────────────────
+	// -------------------------------------------------------------------------
 
 	// realmName is the environment/realm name used for token validation on all routes.
 	realmName string
@@ -68,12 +68,12 @@ type routingState struct {
 	// client id. Applied to the real route and provider failover routes.
 	resolvedClaims *apiapi.Claims
 
-	// ──────────────────────────────────────────────────────────────────────────
-	// Consumer failover enrichment — produced by manageProxyRoutes
+	// -------------------------------------------------------------------------
+	// Consumer failover enrichment produced by manageProxyRoutes
 	// Applied to ALL proxy routes AND the real route.
 	// Collected from every zone that has the ConsumerFailover feature enabled
 	// (including the exposure zone itself).
-	// ──────────────────────────────────────────────────────────────────────────
+	// -------------------------------------------------------------------------
 
 	// consumerFailoverHosts are the hostnames from the ConsumerFailover gateway presets of all
 	// eligible zones. Added as additional hostnames so that any zone's gateway can accept
@@ -89,10 +89,10 @@ type routingState struct {
 	// gateway, the route can validate the consumer's home-zone IDP token directly.
 	consumerFailoverIssuers []string
 
-	// ──────────────────────────────────────────────────────────────────────────
-	// Mesh trust — produced by manageProxyRoutes
+	// -------------------------------------------------------------------------
+	// Mesh trust produced by manageProxyRoutes
 	// Only for the real route. NOT related to consumer failover.
-	// ──────────────────────────────────────────────────────────────────────────
+	// -------------------------------------------------------------------------
 
 	// crossZoneLmsIssuers are the LMS (Last-Mile-Security) issuers from all non-exposure
 	// zones that have proxy routes. The real route must trust these because proxy gateways

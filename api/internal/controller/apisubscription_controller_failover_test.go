@@ -1338,7 +1338,6 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 			g.Expect(getErr).ToNot(HaveOccurred())
 			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), condition.ReasonProvisioned)
 		}, timeout, interval).Should(Succeed())
-
 	})
 
 	It("should approve the subscription", func() {

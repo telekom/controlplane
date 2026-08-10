@@ -12,12 +12,13 @@ import (
 	"strings"
 	"unicode"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilvalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 )
 
 // +kubebuilder:webhook:path=/validate-admin-cp-ei-telekom-de-v1-zone,mutating=false,failurePolicy=fail,sideEffects=None,groups=admin.cp.ei.telekom.de,resources=zones,verbs=create;update,versions=v1,name=vzone-v1.kb.io,admissionReviewVersions=v1
@@ -51,7 +52,7 @@ func invalidZone(name string, errs field.ErrorList) error {
 	return apierrors.NewInvalid(schema.GroupKind{Group: adminv1.GroupVersion.Group, Kind: "Zone"}, name, errs)
 }
 
-func validateZoneFields(zone *adminv1.Zone) field.ErrorList {
+func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo // Validation intentionally reports all independent field errors at once.
 	specPath := field.NewPath("spec")
 	var errs field.ErrorList
 
@@ -225,7 +226,11 @@ func validateTokenURL(path *field.Path, rawURL string) field.ErrorList {
 	if errs := validateHTTPSURL(path, rawURL); len(errs) != 0 {
 		return errs
 	}
-	if u, _ := url.ParseRequestURI(rawURL); u.RawQuery != "" {
+	u, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return field.ErrorList{field.Invalid(path, rawURL, "must be a valid URL")}
+	}
+	if u.RawQuery != "" {
 		return field.ErrorList{field.Invalid(path, rawURL, "must not contain query parameters")}
 	}
 	return nil

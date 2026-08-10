@@ -148,7 +148,8 @@ var _ = Describe("PermissionSet Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
-					IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default",
+					IdentityProviders: []adminv1.IdentityProviderConfig{{
+						Name:     "default",
 						TokenUrl: "https://idp.example.com",
 						Admin: adminv1.IdentityProviderAdminConfig{
 							Url:      ptr.To("https://idp-admin.example.com"),
@@ -157,7 +158,8 @@ var _ = Describe("PermissionSet Controller", func() {
 							ClientId: "client-id",
 						},
 					}},
-					Gateways: []adminv1.GatewayConfig{{Name: "default",
+					Gateways: []adminv1.GatewayConfig{{
+						Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "https://gateway-admin.example.com",
 						},

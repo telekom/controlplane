@@ -94,7 +94,8 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
-				Gateways: []adminv1.GatewayConfig{{Name: "default",
+				Gateways: []adminv1.GatewayConfig{{
+					Name: "default",
 					Admin: adminv1.GatewayAdminConfig{
 						Url: "http://gateway-admin.test.local:8001",
 					},
@@ -107,7 +108,8 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 						BasePath: "/",
 					}},
 				}},
-				IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default",
+				IdentityProviders: []adminv1.IdentityProviderConfig{{
+					Name:     "default",
 					TokenUrl: "http://idp.test.local:8080",
 					Admin: adminv1.IdentityProviderAdminConfig{
 						Url: ptr.To("http://idp-admin.test.local:8080"),

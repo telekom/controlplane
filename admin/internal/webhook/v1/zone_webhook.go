@@ -93,7 +93,7 @@ func secretValueOrGenerate(value string) (string, error) {
 }
 
 // OnboardSecrets uploads zone secrets to the secret-manager and replaces clear-text values with refs.
-func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.Zone) error {
+func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.Zone) error { //nolint:gocyclo // Secret types share one atomic onboarding request.
 	envName, ok := controller.GetEnvironment(zone)
 	if !ok {
 		return fmt.Errorf("environment label is required")
@@ -193,7 +193,7 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 }
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the Kind Zone.
-func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) error {
+func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) error { //nolint:gocyclo // Defaulting handles each optional secret independently.
 	if controller.IsBeingDeleted(zone) {
 		return nil
 	}

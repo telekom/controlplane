@@ -34,7 +34,8 @@ func CreateZone(name string) *adminapi.Zone {
 		},
 		Spec: adminapi.ZoneSpec{
 			Visibility: adminapi.ZoneVisibilityWorld,
-			Gateways: []adminapi.GatewayConfig{{Name: "default",
+			Gateways: []adminapi.GatewayConfig{{
+				Name: "default",
 				Admin: adminapi.GatewayAdminConfig{
 					Url: "http://gateway-admin.test.local:8001",
 				},
@@ -54,7 +55,8 @@ func CreateZone(name string) *adminapi.Zone {
 					},
 				},
 			},
-			IdentityProviders: []adminapi.IdentityProviderConfig{{Name: "default",
+			IdentityProviders: []adminapi.IdentityProviderConfig{{
+				Name:     "default",
 				TokenUrl: "http://idp.test.local:8080",
 				Admin: adminapi.IdentityProviderAdminConfig{
 					Url: ptr.To("http://idp-admin.test.local:8080"),
