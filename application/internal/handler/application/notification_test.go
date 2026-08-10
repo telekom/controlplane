@@ -110,15 +110,17 @@ var _ = Describe("Notification Helpers", func() {
 					Namespace: "test-ns",
 				},
 				Spec: adminv1.ZoneSpec{
-					IdentityProviders: []adminv1.IdentityProviderConfig{{
-						SecretRotation: &adminv1.SecretRotationConfig{
-							Enabled:          true,
-							ExpirationPeriod: metav1.Duration{Duration: 30 * 24 * time.Hour},
-							GracePeriod:      metav1.Duration{Duration: 24 * time.Hour},
-							NotificationThresholds: []reminder.Threshold{
-								{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}},
-							}},
-					},
+					IdentityProviders: []adminv1.IdentityProviderConfig{
+						{
+							SecretRotation: &adminv1.SecretRotationConfig{
+								Enabled:          true,
+								ExpirationPeriod: metav1.Duration{Duration: 30 * 24 * time.Hour},
+								GracePeriod:      metav1.Duration{Duration: 24 * time.Hour},
+								NotificationThresholds: []reminder.Threshold{
+									{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}},
+								},
+							},
+						},
 					},
 				},
 			}

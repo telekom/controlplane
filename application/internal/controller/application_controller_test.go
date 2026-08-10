@@ -50,7 +50,8 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
-					Gateways: []adminv1.GatewayConfig{{Name: "default",
+					Gateways: []adminv1.GatewayConfig{{
+						Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
@@ -72,7 +73,8 @@ var _ = Describe("Application Controller", func() {
 							Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
 						},
 					},
-					IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default",
+					IdentityProviders: []adminv1.IdentityProviderConfig{{
+						Name:     "default",
 						TokenUrl: "http://idp.test.local:8080",
 						Admin: adminv1.IdentityProviderAdminConfig{
 							Url: ptr.To("http://idp-admin.test.local:8080"),
@@ -115,7 +117,8 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
-					Gateways: []adminv1.GatewayConfig{{Name: "default",
+					Gateways: []adminv1.GatewayConfig{{
+						Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
@@ -137,7 +140,8 @@ var _ = Describe("Application Controller", func() {
 							Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
 						},
 					},
-					IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default",
+					IdentityProviders: []adminv1.IdentityProviderConfig{{
+						Name:     "default",
 						TokenUrl: "http://idp.test.local:8080",
 						Admin: adminv1.IdentityProviderAdminConfig{
 							Url: ptr.To("http://idp-admin.test.local:8080"),

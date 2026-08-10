@@ -415,9 +415,8 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 			consumer.Labels[config.BuildLabelKey("failover")] = "true"
 		}
 
-		err := ctrl.SetControllerReference(owner, consumer, c.Scheme())
-		if err != nil {
-			return errors.Wrapf(err, "failed to set controller reference for gateway consumer %s", resourceName)
+		if refErr := ctrl.SetControllerReference(owner, consumer, c.Scheme()); refErr != nil {
+			return errors.Wrapf(refErr, "failed to set controller reference for gateway consumer %s", resourceName)
 		}
 		consumer.Spec = gateway.ConsumerSpec{
 			Gateway: gatewayRef,
