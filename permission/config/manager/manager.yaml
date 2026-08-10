@@ -58,6 +58,13 @@ spec:
           - --health-probe-bind-address=:8081
         image: ghcr.io/telekom/controlplane/permission:stable
         name: manager
+        envFrom:
+          - configMapRef:
+              name: controlplane-env
+              optional: true
+          - configMapRef:
+              name: permission-env
+              optional: true
         ports: []
         securityContext:
           readOnlyRootFilesystem: true

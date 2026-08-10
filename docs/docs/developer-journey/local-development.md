@@ -46,10 +46,12 @@ Backend services that are not Kubernetes operators:
 
 | Path | Purpose |
 |------|---------|
-| `install/base/` | Shared Kustomize base (namespace, issuer, controller references) |
+| `install/base/` | Shared Kustomize base (namespace and trust infrastructure) |
+| `install/bundle/` | Core workloads without site configuration |
 | `install/overlays/default/` | Production overlay (pulls images from GitHub Container Registry) |
 | `install/overlays/local/` | Local development overlay (images at `latest`, eventing enabled) |
 | `install/components/eventing/` | Optional kustomize Component for event and pubsub controllers |
+| `install/components/permission/` | Optional kustomize Component for permission support |
 
 ### Tools
 
@@ -84,6 +86,8 @@ This is the fastest way to get a complete local environment. The script also sup
 # Rebuild a single controller
 ./hack/local-setup.sh --build-only --only gateway
 ```
+
+The local overlay reads shared settings from `install/overlays/local/global-config.env`. Workloads then consume an optional unique `<component>-env` ConfigMap before explicit container environment entries; application code supplies shipped defaults. Create component ConfigMaps as top-level generators rather than merging or replacing nested generators. Eventing is selected as an atomic component: the overlay installs both Event and PubSub and enables their required global feature flag automatically. Do not duplicate that flag in `global-config.env`.
 
 ### Option B — Manual Kustomize
 

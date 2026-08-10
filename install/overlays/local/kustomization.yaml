@@ -9,20 +9,11 @@
 # Usage:
 #   kubectl apply -k install/overlays/local
 
+# Parent-generated ConfigMaps must share the workload namespace for name-reference hashing.
+namespace: controlplane-system
+
 resources:
-  - ../../base
-  - ../../../file-manager/config/default
-  - ../../../secret-manager/config/default
-  - ../../../identity/config/default
-  - ../../../gateway/config/default
-  - ../../../approval/config/default
-  - ../../../rover/config/default
-  - ../../../application/config/default
-  - ../../../organization/config/default
-  - ../../../api/config/default
-  - ../../../admin/config/default
-  - ../../../rover-server/config/default
-  - ../../../notification/config/default
+  - ../../bundle
   - ../../../controlplane-api/config/default
   - ../../../projector/config/default
 
@@ -33,35 +24,25 @@ components:
   - ../../components/rustfs
 
 configMapGenerator:
+  - name: controlplane-env
+    envs:
+      - global-config.env
   - name: secret-manager-config
     behavior: replace
     files:
       - config.yaml=secret-manager-config.yaml
-    options:
-      disableNameSuffixHash: true
   - name: secret-manager-env
-    behavior: merge
-    options:
-      disableNameSuffixHash: true
     literals: []
 
   - name: file-manager-config
     behavior: replace
     files:
       - config.yaml=file-manager-config.yaml
-    options:
-      disableNameSuffixHash: true
 
   - name: file-manager-env
-    behavior: merge
-    options:
-      disableNameSuffixHash: true
     literals: []
 
   - name: rover-server-env
-    behavior: merge
-    options:
-      disableNameSuffixHash: true
     literals:
       - LOG_LEVEL=info
       # Local dev: mock auth (no real issuers). Env keys map to the nested
@@ -75,12 +56,8 @@ configMapGenerator:
     behavior: replace
     files:
       - config.yaml=controlplane-api-config.yaml
-    options:
-      disableNameSuffixHash: true
 
-  - name: notification-smtp-config
-    options:
-      disableNameSuffixHash: true
+  - name: notification-env
     literals:
       - SMTPCONNECTION_HOST=mailpit
       - SMTPCONNECTION_PORT=1025
@@ -96,16 +73,6 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: IfNotPresent
-  # Inject SMTP config into the notification controller.
-  - target:
-      kind: Deployment
-      name: notification-controller-manager
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/envFrom
-        value:
-          - configMapRef:
-              name: notification-smtp-config
   # Give File Manager the local RustFS credentials under the names supported by
   # its S3 client.
   - target:

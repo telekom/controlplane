@@ -60,6 +60,13 @@ spec:
             - --health-probe-bind-address=:8081
           image: ghcr.io/telekom/controlplane/approval:stable
           name: manager
+          envFrom:
+            - configMapRef:
+                name: controlplane-env
+                optional: true
+            - configMapRef:
+                name: approval-env
+                optional: true
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

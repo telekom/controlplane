@@ -95,30 +95,17 @@ ArgoCD will clone the repository at the specified tag, render the Kustomize over
 
 To upgrade to a new release, update the `targetRevision` in your ArgoCD Application to the new tag (for example `v0.19.0`). ArgoCD will detect the change and sync the updated manifests.
 
-## Optional: enable the eventing subsystem
+## Optional capabilities
 
-The event and pubsub controllers are **not included** in the default overlay. These controllers enable event-driven communication between teams through publish/subscribe patterns.
-
-To enable eventing, create a custom Kustomize overlay that includes the eventing component. Create a `kustomization.yaml` in your own repository:
+Eventing and Permission are not included in the default overlay. Add either capability to a [custom downstream overlay](#creating-a-custom-overlay) when needed:
 
 ```yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-  - https://github.com/telekom/controlplane//install/overlays/default/?ref=v0.18.0
-
 components:
-  - https://github.com/telekom/controlplane//install/components/eventing/?ref=v0.18.0
-
-images:
-  - name: ghcr.io/telekom/controlplane/event
-    newTag: v0.18.0
-  - name: ghcr.io/telekom/controlplane/pubsub
-    newTag: v0.18.0
+  - https://github.com/telekom/controlplane//install/components/eventing/?ref=v0.22.0
+  - https://github.com/telekom/controlplane//install/components/permission/?ref=v0.22.0
 ```
 
-Then point your ArgoCD Application at this custom overlay instead of the upstream path.
+Each component is atomic: Eventing installs the Event and PubSub workloads and enables `FEATURE_PUBSUB_ENABLED`; Permission installs the Permission workload and enables `FEATURE_PERMISSION_ENABLED`. Do not add these flags to `global-config.env` yourself.
 
 ## Alternative: deploy with kubectl {#deploy-with-kubectl}
 
@@ -263,52 +250,87 @@ spec:
 
 ### Reference: Kustomize layout {#reference-kustomize-layout}
 
-The Control Plane ships its deployment manifests as a set of [Kustomize](https://kustomize.io/) layers. Understanding this layout is helpful when you need to create a custom overlay — for example, to configure the Secret Manager backend, the File Manager storage, or to enable the optional eventing subsystem.
+The Control Plane ships its deployment manifests as a set of [Kustomize](https://kustomize.io/) layers. Understanding this layout is helpful when you need to create a custom overlay — for example, to configure global settings, a component, or a storage backend.
 
 ```text
 install/
 ├── base/                          # Shared foundation
-│   ├── kustomization.yaml         # Sets the namespace to controlplane-system
-│   ├── namespace.yaml             # Namespace with required labels
-│   ├── bootstrap-issuer.yaml       # Self-signed Issuer used to create the root CA
-│   ├── root-ca.yaml                # Private root CA Certificate
-│   ├── issuer.yaml                 # CA-backed Issuer for internal TLS
-│   └── trust-bundle.yaml           # Shared public CA trust bundle
+├── bundle/                        # Core workloads without site configuration
 │
 ├── overlays/
-│   └── default/                   # Production overlay (recommended starting point)
-│       └── kustomization.yaml     # Pulls all controller configs from GitHub at a pinned tag
+│   ├── default/                   # Ready-to-install production defaults
+│   └── local/                     # Ready-to-install local environment
 │
 └── components/
-    └── eventing/                  # Optional component for event-driven features
-        └── kustomization.yaml     # Adds the event and pubsub controllers
+    ├── eventing/                  # Event and PubSub capability plus its flag
+    └── permission/                # Permission capability plus its flag
 ```
 
-The three layers work together as follows:
+The four layers work together as follows:
 
 | Layer | Purpose |
 |---|---|
-| **Base** | Creates the `controlplane-system` namespace, bootstraps a private root CA, provisions the CA-backed issuer used for internal TLS, and distributes its public certificate through a shared trust bundle. |
-| **Overlay** | Composes the base with all individual controller configurations. The default overlay references each controller's config from GitHub at a pinned release tag. |
-| **Component** | An optional add-on that can be composed into any overlay. The eventing component adds the event and pubsub controllers. |
+| **Base** | Provides the shared namespace and trust infrastructure. |
+| **Bundle** | Composes the core Control Plane workloads without site configuration or global defaults. |
+| **Overlay** | Adds ready-to-install global defaults and environment choices. Use `install/overlays/default` for a direct production installation. |
+| **Component** | Adds an optional capability and all global feature flags that capability requires. |
 
 Each controller lives in its own directory in the repository (for example `secret-manager/`, `file-manager/`, `gateway/`) and carries a `config/default/` folder with its Kustomize manifests — including the deployment, RBAC rules, CRDs, network policies, and Prometheus metrics configuration.
 
 #### Creating a custom overlay
 
-To customise the deployment — for instance, to supply your own Secret Manager or File Manager configuration — create a new overlay in your own repository that builds on top of the default overlay:
+To customise the deployment, create an overlay in your own repository that builds on `install/bundle`. Do not build a downstream overlay on `install/overlays/default`: capability components must be able to merge their flags into the `controlplane-env` generator owned by your overlay.
+
+:::note
+The bundle-based configuration workflow requires Control Plane v0.22.0 or newer.
+:::
+
+This is the pattern used by the repository's render verification fixture:
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-resources:
-  - https://github.com/telekom/controlplane//install/overlays/default/?ref=v0.18.0
+namespace: controlplane-system
 
-# Add your patches, configMapGenerators, or components here
+resources:
+  - https://github.com/telekom/controlplane//install/bundle/?ref=v0.22.0
+
+components:
+  - https://github.com/telekom/controlplane//install/components/eventing/?ref=v0.22.0
+
+configMapGenerator:
+  - name: controlplane-env
+    envs:
+      - global-config.env
+  - name: rover-env
+    envs:
+      - rover-config.env
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: secret-manager-config
+    path: secret-manager-config.yaml
 ```
 
-Point your ArgoCD Application (or `kubectl apply -k`) at this custom overlay instead of the upstream default. The sections below show what to add for the Secret Manager and File Manager.
+`global-config.env` contains settings shared by workloads. `rover-config.env` contains only Rover overrides. Use unique final names such as `rover-env`, `admin-env`, or `rover-server-env`, because all operator ConfigMaps are created in the same namespace.
+
+Configuration is applied from lowest to highest precedence:
+
+```text
+application defaults < controlplane-env < <component>-env < explicit container env
+```
+
+Applications own shipped defaults. Operators create a uniquely named `<component>-env` ConfigMap in their outer overlay when they need component-specific values; do not use `behavior: merge` or `behavior: replace` for a generator nested in the remote component. Explicit container environment entries are reserved for fixed runtime wiring and values sourced from Kubernetes Secrets.
+
+Generated ConfigMaps retain Kustomize's content hash. A configuration change therefore updates the Pod template and triggers a rolling restart: global changes restart all consumers, while component changes restart that component. Applications read environment variables when they start, so new values take effect in the replacement Pods.
+
+Never place passwords, tokens, keys, or other confidential values in these ConfigMaps. Store them in Kubernetes Secrets and reference those Secrets explicitly from the workload.
+
+Structured configuration, such as `secret-manager-config`, remains separate from environment configuration. When the bundle is remote, patch the generated ConfigMap as shown above; this preserves hashing and reference rewriting. A local overlay may instead use `behavior: replace`, as `install/overlays/local` does.
+
+Point your ArgoCD Application (or `kubectl apply -k`) at this custom overlay. The sections below show example structured configuration for Secret Manager and File Manager.
 
 ### Reference: configuring the Secret Manager {#reference-configuring-secret-manager}
 
@@ -323,23 +345,27 @@ The Secret Manager provides a secure API for storing and retrieving secrets on b
 
 #### Supplying the configuration
 
-In your [custom overlay](#reference-kustomize-layout), add a `configMapGenerator` that replaces the empty default with your own configuration file:
+For a downstream overlay that consumes the remote bundle, patch the generated ConfigMap:
 
 ```yaml
-configMapGenerator:
-  - name: secret-manager-config
-    behavior: replace
-    files:
-      - config.yaml=secret-manager-config.yaml
-    options:
-      disableNameSuffixHash: true
+patches:
+  - target:
+      kind: ConfigMap
+      name: secret-manager-config
+    path: secret-manager-config.yaml
 ```
 
-Then create a `secret-manager-config.yaml` next to your overlay. The Secret Manager authenticates callers on an internal listener using in-cluster Kubernetes service account tokens. A minimal example using the Kubernetes backend:
+Then create the patch file next to your overlay. The Secret Manager authenticates callers on an internal listener using in-cluster Kubernetes service account tokens. A minimal patch using the Kubernetes backend is:
 
 ```yaml
-backend:
-  type: kubernetes
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secret-manager-config
+data:
+  config.yaml: |-
+    backend:
+      type: kubernetes
 ```
 
 With no `accessConfig`, any authenticated in-cluster service account is allowed. To restrict which service accounts may read or write secrets — recommended in production — add an `accessConfig` allow-list under the internal listener's `k8s` block:
@@ -387,19 +413,17 @@ The File Manager provides a storage API for files — primarily OpenAPI specific
 
 #### Supplying the configuration
 
-In your [custom overlay](#reference-kustomize-layout), add a `configMapGenerator` that replaces the empty default:
+For a downstream overlay that consumes the remote bundle, patch the generated ConfigMap:
 
 ```yaml
-configMapGenerator:
-  - name: file-manager-config
-    behavior: replace
-    files:
-      - config.yaml=file-manager-config.yaml
-    options:
-      disableNameSuffixHash: true
+patches:
+  - target:
+      kind: ConfigMap
+      name: file-manager-config
+    path: file-manager-config.yaml
 ```
 
-Then create a `file-manager-config.yaml`. The example below shows both backend options.
+Then create `file-manager-config.yaml` as a ConfigMap patch with the selected backend under `data.config.yaml`, following the same structure as the Secret Manager patch above. The examples below show the configuration file content for both backend options.
 
 <details>
 <summary>Amazon S3</summary>
@@ -443,7 +467,7 @@ The File Manager authenticates callers on its internal listener using in-cluster
 
 ### Reference: eventing component details {#reference-eventing-component-details}
 
-The eventing subsystem is an **optional feature** that enables event-driven communication between applications through publish/subscribe patterns. It is not included in the default overlay and must be explicitly enabled as described in [Optional: enable the eventing subsystem](#optional-enable-the-eventing-subsystem) above.
+The eventing subsystem is an **optional feature** that enables event-driven communication between applications through publish/subscribe patterns. It is not included in the default overlay and must be explicitly enabled as described in [Optional capabilities](#optional-capabilities) above.
 
 #### After enabling eventing
 
