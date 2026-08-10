@@ -5,6 +5,7 @@
 package util
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -292,6 +293,12 @@ func FindAllSubscribersForApiExposure(ctx context.Context, apiExp *apiv1.ApiExpo
 		subscribers = append(subscribers, sub)
 	}
 
+	// Cache List order is unstable; this feeds status, so an unsorted result
+	// rewrites the status every reconcile and re-triggers the watch.
+	slices.SortFunc(subscribers, func(a, b *apiv1.ApiSubscription) int {
+		return cmp.Or(strings.Compare(a.Namespace, b.Namespace), strings.Compare(a.Name, b.Name))
+	})
+
 	return subscribers, nil
 }
 
@@ -318,6 +325,12 @@ func FindAllZonesWithFeatureEnabled(ctx context.Context, featureName adminapi.Fe
 			zonesWithFeature = append(zonesWithFeature, zone)
 		}
 	}
+
+	// Cache List order is unstable; this feeds status, so an unsorted result
+	// rewrites the status every reconcile and re-triggers the watch.
+	slices.SortFunc(zonesWithFeature, func(a, b *adminapi.Zone) int {
+		return cmp.Or(strings.Compare(a.Namespace, b.Namespace), strings.Compare(a.Name, b.Name))
+	})
 
 	return zonesWithFeature, nil
 }
