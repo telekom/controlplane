@@ -1,0 +1,190 @@
+discovery-server/config/server/server.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 35-36,39
+  s_9d86f97d1fa0e9::t_e3e5f82f103fe0 34
+admin/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 65
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 60-64,66
+notification/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 65
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 60-64,66
+docs/docs/admin-journey/installation.md
+  s_d6dd713eb1649e::t_e9a3e7ee4e3d02 322,325
+  s_9934ce1be09f63::t_579c6869e63b76 104-105,284-287,297,300
+  s_9934ce1be09f63::t_3f2c2591f1fcbf 294-295,470
+  s_9934ce1be09f63::t_a8101bedc3cd4b 253,258,261-262,265-266,269,273-276,282,288,299,301-314,317-321,324,326-333,348,351-355,416,419-423
+  s_9934ce1be09f63::t_7a6a4ee4bc5b3f 358,361-368,426
+  s_9934ce1be09f63::t_d574658bec1f13 98,100,108
+  s_9934ce1be09f63::t_64c74daf605757 283
+docs/docs/developer-journey/local-development.md
+  s_d6dd713eb1649e::t_3924119ab690d0 90
+  s_9934ce1be09f63::t_a8101bedc3cd4b 49-50,54
+  s_1b18584c118086::t_9fb16cec25a021 91
+organization-server/config/server/server.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 35-36,39
+  s_9d86f97d1fa0e9::t_59010cabd37b68 34
+docs/docs/admin-journey/environments-and-zones.md
+  s_9934ce1be09f63::t_072a7462af6759 212
+secret-manager/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 53-54,57
+  s_9d86f97d1fa0e9::t_535e5b64e6a749 52
+docs/docs/admin-journey/controlplane-api.md
+  s_9934ce1be09f63::t_072a7462af6759 102-103,108-114,150,153-157,160
+  s_9934ce1be09f63::t_579c6869e63b76 105-107,118,120
+  s_9934ce1be09f63::t_e51370a70751bb 96
+identity/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 58-62,64,94
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 63
+install/components/permission/kustomization.yaml
+  s_293700c9c4ec33::t_cd0bf267330391 1-15
+install/overlays/local/README.md
+  s_9934ce1be09f63::t_a8101bedc3cd4b 20,30-31,34
+  s_d6dd713eb1649e::t_e9a3e7ee4e3d02 32-33
+  s_9934ce1be09f63::t_f9c0c70673f9b3 35
+agentic/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 39
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 34-38,40
+permission/README.md
+  s_d6dd713eb1649e::t_e9a3e7ee4e3d02 69-70
+  s_9934ce1be09f63::t_579c6869e63b76 64
+  s_9934ce1be09f63::t_a8101bedc3cd4b 39,60,63,67-68,71
+rover-server/config/server/server.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 35-36,39
+  s_9d86f97d1fa0e9::t_aaef07b3bf69b4 34
+projector/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 41-42,45
+  s_9d86f97d1fa0e9::t_d4312192a6f603 40
+install/bundle/kustomization.yaml
+  s_821428d3cf890d::t_c1c9d9c29dd2da 1-18
+event/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 61-65,67
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 66
+controlplane-api/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 63-64,67
+  s_9d86f97d1fa0e9::t_b6111ed6450624 62
+file-manager/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 53-54,57
+  s_9d86f97d1fa0e9::t_2af3c43790c97e 52
+common/README.md
+  s_9934ce1be09f63::t_3f2c2591f1fcbf 174-175,185
+  s_9934ce1be09f63::t_a8101bedc3cd4b 161,165-167,171,176-182,187,197-199
+  s_d6dd713eb1649e::t_e9a3e7ee4e3d02 159,162,168-169
+  s_d6dd713eb1649e::t_814b615cc6de1d 196
+  s_9e0b16aa6c97a7::t_badc8615fb0d44 170,186
+application/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 65
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 60-64,66
+install/components/eventing/kustomization.yaml
+  s_293700c9c4ec33::t_cd0bf267330391 20-25
+pubsub/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 66
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 61-65,67
+organization/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 61-65,67
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 66
+rover/config/default/kustomization.yaml
+  s_9d86f97d1fa0e9::t_1b8f67bb6ad1c8 39
+rover/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 63
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 58-62,64
+api/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 63
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 58-62,64
+install/overlays/default/kustomization.yaml
+  s_821428d3cf890d::t_c1c9d9c29dd2da 6,16,18-19,26-29
+  s_821428d3cf890d::t_39c570f7f0a603 12-14
+  s_821428d3cf890d::t_844f04ca9adbf6 30
+install/overlays/local/kustomization.yaml
+  s_821428d3cf890d::t_39c570f7f0a603 12-14
+  s_821428d3cf890d::t_c1c9d9c29dd2da 16,27-29
+  s_54cde3ddbbf446::t_f7d53946251143 60
+install/overlays/local/global-config.env
+  s_821428d3cf890d::t_c1c9d9c29dd2da 1-2
+approval/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 68
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 63-67,69
+gateway/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 58-62,64
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 63
+install/overlays/default/global-config.env
+  s_821428d3cf890d::t_c1c9d9c29dd2da 1-3
+permission/config/manager/manager.yaml
+  s_9d86f97d1fa0e9::t_66ef1b54c4c7cd 61-65,67
+  s_9d86f97d1fa0e9::t_662ff3346dee8a 66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d3891b76433027cae1231233d3ca98a20634833d",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_1b18584c118086": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0141ff304ffeTCc3DdvkK4TjhF",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_293700c9c4ec33": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_014887e00ffe5rcdIpuoLxdsQb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_54cde3ddbbf446": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0147f4377ffe9xEdulbP5HxrnJ",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_821428d3cf890d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_01497748affec5V55kmcKUPRyj",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9934ce1be09f63": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0146cfe4cffeHjxEY85dSWAj65",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9d86f97d1fa0e9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_014a964c6ffe7Be5eTyr8fZXHg",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9e0b16aa6c97a7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_014196783ffeH9WfXnbBAZpRtq",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_d6dd713eb1649e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_01420a3c8ffe6TM7s9L6QoYQd0",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
