@@ -575,6 +575,14 @@ func (r *selectionFilterResolver) Attributes(ctx context.Context, obj *model.Sel
 	return result, nil
 }
 
+// Failover is the resolver for the failover field.
+func (r *trafficResolver) Failover(ctx context.Context, obj *model.Traffic) (*gqlmodel.Failover, error) {
+	if obj.Failover == nil {
+		return nil, nil
+	}
+	return &gqlmodel.Failover{Zones: obj.Failover.Zones}, nil
+}
+
 // TokenURL is the resolver for the tokenUrl field.
 func (r *zoneResolver) TokenURL(ctx context.Context, obj *ent.Zone) (*string, error) {
 	if obj.IssuerURL == nil {
@@ -641,6 +649,9 @@ func (r *Resolver) ResponseFilter() ResponseFilterResolver { return &responseFil
 // SelectionFilter returns SelectionFilterResolver implementation.
 func (r *Resolver) SelectionFilter() SelectionFilterResolver { return &selectionFilterResolver{r} }
 
+// Traffic returns TrafficResolver implementation.
+func (r *Resolver) Traffic() TrafficResolver { return &trafficResolver{r} }
+
 type (
 	apiExposureInfoResolver          struct{ *Resolver }
 	apiSubscriptionInfoResolver      struct{ *Resolver }
@@ -656,4 +667,5 @@ type (
 	oAuth2ClientCredentialsResolver  struct{ *Resolver }
 	responseFilterResolver           struct{ *Resolver }
 	selectionFilterResolver          struct{ *Resolver }
+	trafficResolver                  struct{ *Resolver }
 )

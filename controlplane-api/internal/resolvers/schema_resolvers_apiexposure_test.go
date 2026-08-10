@@ -5,7 +5,11 @@
 package resolvers_test
 
 import (
+	"context"
+
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
@@ -293,6 +297,42 @@ var _ = Describe("ApiExposure.Traffic", func() {
 		Expect(fetched.Traffic.RateLimit).To(BeNil())
 		Expect(fetched.Traffic.Failover).NotTo(BeNil())
 		Expect(fetched.Traffic.Failover.Zones).To(ConsistOf("zone-a", "zone-b", "zone-c"))
+	})
+})
+
+var _ = Describe("Traffic.Failover resolver", func() {
+	var r *resolvers.Resolver
+
+	BeforeEach(func() {
+		client := testutil.NewTestClient(GinkgoT())
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
+	})
+
+	It("should return nil when failover is nil", func() {
+		traffic := &model.Traffic{RateLimit: &model.RateLimit{}}
+		result, err := r.Traffic().Failover(context.Background(), traffic)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(BeNil())
+	})
+
+	It("should return failover zones", func() {
+		traffic := &model.Traffic{
+			Failover: &model.Failover{Zones: []string{"eu-west", "eu-east"}},
+		}
+		result, err := r.Traffic().Failover(context.Background(), traffic)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).NotTo(BeNil())
+		Expect(result.Zones).To(ConsistOf("eu-west", "eu-east"))
+	})
+
+	It("should return empty zones slice when failover has no zones", func() {
+		traffic := &model.Traffic{
+			Failover: &model.Failover{},
+		}
+		result, err := r.Traffic().Failover(context.Background(), traffic)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).NotTo(BeNil())
+		Expect(result.Zones).To(BeEmpty())
 	})
 })
 
