@@ -6,6 +6,7 @@ package util
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 
@@ -225,6 +226,12 @@ func FindCrossZoneAgenticSubscriptionZones(ctx context.Context, basePath, exposu
 			zones = append(zones, sub.Spec.Zone)
 		}
 	}
+
+	// Cache List order is unstable; this feeds status, so an unsorted result
+	// rewrites the status every reconcile and re-triggers the watch.
+	slices.SortFunc(zones, func(a, b ctypes.ObjectRef) int {
+		return strings.Compare(a.String(), b.String())
+	})
 
 	return zones, hasLocalSubs, nil
 }
