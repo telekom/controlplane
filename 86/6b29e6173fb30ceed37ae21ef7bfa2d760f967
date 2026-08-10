@@ -1,0 +1,57 @@
+install/overlays/local/kustomization.yaml
+  s_2fca4f8d904219::t_b3db07b9b1f288 109-110,116,118-130
+  s_2fca4f8d904219::t_79e7091c673df2 33,111-115,117
+file-manager/README.md
+  s_2fca4f8d904219::t_e7a45876d8cedd 94-96,99-100,107
+  s_2fca4f8d904219::t_d833b131e36aae 85,87,90,93,104-106,108,111-112
+install/components/rustfs/rustfs.yaml
+  s_2fca4f8d904219::t_58986688e4f368 1,5-6,8-12,14-103,105,107-128,131-134
+  s_2fca4f8d904219::t_b3db07b9b1f288 104,106,129-130
+install/overlays/local/file-manager-config.yaml
+  s_2fca4f8d904219::t_79e7091c673df2 7-9
+hack/local-setup.sh
+  s_2fca4f8d904219::t_79e7091c673df2 438-440,442
+  s_2fca4f8d904219::t_e7a45876d8cedd 441
+install/components/rustfs/kustomization.yaml
+  s_2fca4f8d904219::t_58986688e4f368 1,5-13,15-24
+docs/scripts/download-logos.sh
+  s_2fca4f8d904219::t_aa31c1e65c1fbb 35
+docs/docs/admin-journey/installation.md
+  s_2fca4f8d904219::t_d833b131e36aae 386,422,427,431,434,438
+  s_dc0911f2db6692::t_e9d8cb5520d62d 439
+docs/docs/overview/components.md
+  s_2fca4f8d904219::t_d833b131e36aae 112
+install/overlays/local/README.md
+  s_2fca4f8d904219::t_e7a45876d8cedd 81-82
+  s_2fca4f8d904219::t_d833b131e36aae 10-11,74-80
+  s_2fca4f8d904219::t_754d8db7df901e 83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "866b29e6173fb30ceed37ae21ef7bfa2d760f967",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_2fca4f8d904219": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_015048992ffesz7dLMiFdSP2uK",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_dc0911f2db6692": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_014f9ac4affepXplZ017Qy1w7J",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
