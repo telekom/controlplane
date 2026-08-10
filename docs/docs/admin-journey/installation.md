@@ -383,7 +383,7 @@ The File Manager provides a storage API for files — primarily OpenAPI specific
 | Backend | Best for | Description |
 |---|---|---|
 | **Amazon S3** | Cloud-hosted production environments | Stores files in an S3 bucket. Authenticates using IAM role assumption via STS. |
-| **MinIO** | Self-hosted or on-premises setups | Stores files in a [MinIO](https://min.io/) instance, which provides an S3-compatible API that you can run inside your cluster. |
+| **RustFS** | Self-hosted or on-premises setups | Stores files in a [RustFS](https://rustfs.com/) instance, which provides an S3-compatible API that you can run inside your cluster. |
 
 #### Supplying the configuration
 
@@ -419,20 +419,23 @@ Replace the `bucket_name` and `role_arn` with your actual S3 bucket and IAM role
 </details>
 
 <details>
-<summary>MinIO (self-hosted)</summary>
+<summary>RustFS (self-hosted)</summary>
 
 ```yaml
 backend:
   type: buckets
-  endpoint: minio.minio.svc.cluster.local:9000
+  endpoint: rustfs.rustfs.svc.cluster.local:9000
   bucket_name: controlplane-files
   access_key: myAccessKey
   secret_key: mySecretKey
+  insecure_skip_tls: true
 ```
 
-Replace the `endpoint`, `access_key`, and `secret_key` with your MinIO instance details. The repository includes an example MinIO Helm values file under `file-manager/examples/minio/` that you can use as a starting point.
+Replace the `endpoint`, `access_key`, and `secret_key` with your RustFS instance details. `insecure_skip_tls` selects HTTP and is suitable only when RustFS is intentionally exposed without TLS on a trusted network.
 
 </details>
+
+The local overlay deploys RustFS, creates the `controlplane-files` bucket, and configures File Manager automatically. No external object storage configuration is needed for `./hack/local-setup.sh`.
 
 #### Security
 

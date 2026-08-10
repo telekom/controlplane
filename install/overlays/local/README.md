@@ -7,6 +7,8 @@ SPDX-License-Identifier: CC0-1.0
 # Local Installation
 
 This directory contains the Kubernetes manifests for installing the controlplane locally.
+It includes a disposable RustFS instance and creates the `controlplane-files`
+bucket used by File Manager automatically.
 
 ## Documentation
 
@@ -68,5 +70,15 @@ kubectl apply -k install/overlays/local/resources/admin
 kubectl apply -k install/overlays/local/resources/org
 kubectl apply -k install/overlays/local/resources/rover
 ```
+
+Open the RustFS console after installation:
+
+```bash
+kubectl port-forward -n controlplane-system svc/rustfs 9001:9001
+```
+
+Then browse to [http://localhost:9001](http://localhost:9001). The bundled
+login is `controlplane` / `controlplane-local-rustfs` and is for local
+development only.
 
 For detailed explanations, troubleshooting, and verification steps, please refer to the documentation site linked above.

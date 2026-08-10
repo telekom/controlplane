@@ -30,6 +30,7 @@ components:
   - ../../components/eventing
   - ../../components/database
   - ../../components/mailpit
+  - ../../components/rustfs
 
 configMapGenerator:
   - name: secret-manager-config
@@ -105,6 +106,28 @@ patches:
         value:
           - configMapRef:
               name: notification-smtp-config
+  # Give File Manager the local RustFS credentials under the names supported by
+  # its S3 client.
+  - target:
+      kind: Deployment
+      name: file-manager
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: rustfs-credentials
+              key: RUSTFS_ACCESS_KEY
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rustfs-credentials
+              key: RUSTFS_SECRET_KEY
 
 images:
   - name: ghcr.io/telekom/controlplane/approval

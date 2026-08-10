@@ -1,0 +1,24 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Kustomize Component that deploys an in-cluster RustFS object store.
+# This is intended for development and testing. Production environments should
+# configure File Manager to use managed or separately operated object storage.
+
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+namespace: controlplane-system
+
+resources:
+  - rustfs.yaml
+
+secretGenerator:
+  - name: rustfs-credentials
+    options:
+      disableNameSuffixHash: true
+    # WARNING: These credentials are for local development and testing only.
+    literals:
+      - RUSTFS_ACCESS_KEY=controlplane
+      - RUSTFS_SECRET_KEY=controlplane-local-rustfs
