@@ -48,10 +48,10 @@ func (r *SubscriberReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&subscriber.SubscriberHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&pubsubv1.Subscriber{}).
+		For(&pubsubv1.Subscriber{}, builder.WithPredicates(cc.Count("subscriber", cc.RoleFor))).
 		Watches(&pubsubv1.Publisher{},
 			handler.EnqueueRequestsFromMapFunc(r.MapPublisherToSubscriber),
-			builder.WithPredicates(),
+			builder.WithPredicates(cc.Count("subscriber", cc.RoleWatches)),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

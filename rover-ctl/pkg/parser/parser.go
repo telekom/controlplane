@@ -5,7 +5,6 @@
 package parser
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"iter"
@@ -129,17 +128,17 @@ func (p *ObjectParser) parseDirectory(dirPath string) error {
 func (p *ObjectParser) parseFile(filePath string) error {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
-	content, err := os.ReadFile(filePath)
+	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to read file "+filePath)
 	}
 
-	content, err = SubstitutePlaceholders(content)
+	content, err := SubstitutePlaceholders(string(fileContent))
 	if err != nil {
 		return errors.Wrap(err, "failed to substitute placeholders in "+filePath)
 	}
 
-	reader := bytes.NewReader(content)
+	reader := strings.NewReader(content)
 
 	switch ext {
 	case ".yaml", ".yml":

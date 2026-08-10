@@ -15,6 +15,16 @@ metadata:
   name: serving-cert  # this name should match the one appeared in kustomizeconfig.yaml
   namespace: system
 spec:
+  duration: 2160h
+  renewBeforePercentage: 33
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
   # SERVICE_NAME and SERVICE_NAMESPACE will be substituted by kustomize
   dnsNames:
   - SERVICE_NAME.SERVICE_NAMESPACE.svc

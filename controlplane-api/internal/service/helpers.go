@@ -77,3 +77,61 @@ func authorizeApprovalAction(ctx context.Context, deciderTeam string) error {
 	}
 	return fmt.Errorf("forbidden: insufficient permissions — only the decider team %q can decide on this approval", deciderTeam)
 }
+
+// authorizeCreateGroup checks that the viewer is allowed to create a group.
+// Allowed: Admin only.
+func authorizeCreateGroup(ctx context.Context) error {
+	v := viewer.FromContext(ctx)
+	if v == nil {
+		return fmt.Errorf("unauthorized: no viewer in context")
+	}
+	if v.Admin {
+		return nil
+	}
+	return fmt.Errorf("forbidden: only admins can create groups")
+}
+
+// authorizeUpdateGroup checks that the viewer is allowed to update a group.
+// Allowed: Admin, or Group viewer matching the target group.
+func authorizeUpdateGroup(ctx context.Context, targetGroup string) error {
+	v := viewer.FromContext(ctx)
+	if v == nil {
+		return fmt.Errorf("unauthorized: no viewer in context")
+	}
+	if v.Admin {
+		return nil
+	}
+	if v.Group != "" && v.Group == targetGroup {
+		return nil
+	}
+	return fmt.Errorf("forbidden: insufficient permissions to update group %q", targetGroup)
+}
+
+// authorizeDeleteGroup checks that the viewer is allowed to delete a group.
+// Allowed: Admin only.
+func authorizeDeleteGroup(ctx context.Context) error {
+	v := viewer.FromContext(ctx)
+	if v == nil {
+		return fmt.Errorf("unauthorized: no viewer in context")
+	}
+	if v.Admin {
+		return nil
+	}
+	return fmt.Errorf("forbidden: only admins can delete groups")
+}
+
+// authorizeDeleteTeam checks that the viewer is allowed to delete a team.
+// Allowed: Admin, or Group viewer matching the target group.
+func authorizeDeleteTeam(ctx context.Context, targetGroup string) error {
+	v := viewer.FromContext(ctx)
+	if v == nil {
+		return fmt.Errorf("unauthorized: no viewer in context")
+	}
+	if v.Admin {
+		return nil
+	}
+	if v.Group != "" && v.Group == targetGroup {
+		return nil
+	}
+	return fmt.Errorf("forbidden: insufficient permissions to delete team in group %q", targetGroup)
+}

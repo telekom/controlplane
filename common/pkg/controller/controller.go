@@ -6,7 +6,9 @@ package controller
 
 import (
 	"context"
+	"reflect"
 
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,13 +62,15 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 			logger.V(1).Info("Fetched object but it was not found")
 			return reconcile.Result{}, nil
 		}
-		return HandleError(ctx, err, object, c.Recorder), nil
+		return HandleError(ctx, err, object, c.Recorder)
 	}
+	original := object.DeepCopyObject()
 
 	if changed, setupErr := FirstSetup(ctx, c.Client, object); setupErr != nil {
-		return HandleError(ctx, setupErr, object, c.Recorder), nil
+		return HandleError(ctx, setupErr, object, c.Recorder)
 	} else if changed {
-		return reconcile.Result{}, nil
+		// FirstSetup may only change metadata/status (e.g., add a finalizer), which might not trigger a follow-up reconcile when using a GenerationChangedPredicate; explicitly requeue to continue reconciliation.
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	logger.V(1).Info("Fetched object")
@@ -78,7 +82,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		if object.SetCondition(condition.NewBlockedCondition("Environment label is missing")) {
 			StampObservedGeneration(object)
 			if updateErr := c.Client.Status().Update(ctx, object); updateErr != nil {
-				return HandleError(ctx, updateErr, object, c.Recorder), nil
+				return HandleError(ctx, updateErr, object, c.Recorder)
 			}
 		}
 		return reconcile.Result{}, nil
@@ -102,12 +106,11 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	err = c.Handler.CreateOrUpdate(ctx, object)
 	if err != nil {
 		EnsureNotReadyOnError(ctx, c.Client, object, err)
-		result := HandleError(ctx, err, object, c.Recorder)
-		StampObservedGeneration(object)
-		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
-			return HandleError(ctx, statusErr, object, c.Recorder), nil
+		result, retryErr := HandleError(ctx, err, object, c.Recorder)
+		if statusErr := c.updateStatusIfChanged(ctx, original, object); statusErr != nil {
+			return HandleError(ctx, statusErr, object, c.Recorder)
 		}
-		return result, nil
+		return result, retryErr
 	}
 
 	// Success
@@ -118,9 +121,8 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		c.Event(ctx, object, "Warning", "UnknownReady", "Resource has an unknown ready status")
 	}
 
-	StampObservedGeneration(object)
-	if err = c.Client.Status().Update(ctx, object); err != nil {
-		return HandleError(ctx, err, object, c.Recorder), nil
+	if err = c.updateStatusIfChanged(ctx, original, object); err != nil {
+		return HandleError(ctx, err, object, c.Recorder)
 	}
 
 	requeueAfter := config.RequeueWithJitter()
@@ -131,6 +133,41 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	return reconcile.Result{
 		RequeueAfter: requeueAfter,
 	}, nil
+}
+
+// updateStatusIfChanged persists the status only when it differs from the state
+// fetched at the start of the reconciliation; a converged resource would
+// otherwise pay a status write on every requeue for a no-op update.
+//
+// ObservedGeneration is stamped before the comparison so a spec change is
+// persisted even when the conditions are unchanged.
+func (c *ControllerImpl[T]) updateStatusIfChanged(ctx context.Context, original runtime.Object, object T) error {
+	StampObservedGeneration(object)
+
+	before, ok := statusValue(original)
+	after, hasStatus := statusValue(object)
+	if ok && hasStatus && apiequality.Semantic.DeepEqual(before, after) {
+		recordStatusUpdate(statusUpdateResultSkipped, object, c.Scheme)
+		return nil
+	}
+
+	if err := c.Client.Status().Update(ctx, object); err != nil {
+		recordStatusUpdate(statusUpdateResultError, object, c.Scheme)
+		return err
+	}
+
+	recordStatusUpdate(statusUpdateResultUpdated, object, c.Scheme)
+	return nil
+}
+
+// statusValue returns the object's Status field. Objects without a Status field
+// report false, so the caller falls back to writing rather than comparing.
+func statusValue(object any) (any, bool) {
+	field := reflect.ValueOf(object).Elem().FieldByName("Status")
+	if !field.IsValid() {
+		return nil, false
+	}
+	return field.Interface(), true
 }
 
 func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (reconcile.Result, error) {
@@ -145,17 +182,17 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 	err := c.Handler.Delete(ctx, object)
 	if err != nil {
 		EnsureNotReadyOnError(ctx, c.Client, object, err)
-		result := HandleError(ctx, err, object, c.Recorder)
+		result, retryErr := HandleError(ctx, err, object, c.Recorder)
 		StampObservedGeneration(object)
 		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
-			return HandleError(ctx, statusErr, object, c.Recorder), nil
+			return HandleError(ctx, statusErr, object, c.Recorder)
 		}
-		return result, nil
+		return result, retryErr
 	}
 
 	if controllerutil.RemoveFinalizer(object, config.FinalizerName) {
 		if updateErr := c.Client.Update(ctx, object); updateErr != nil {
-			return HandleError(ctx, updateErr, object, c.Recorder), nil
+			return HandleError(ctx, updateErr, object, c.Recorder)
 		}
 	}
 
@@ -211,22 +248,20 @@ func FirstSetup(ctx context.Context, c client.Client, object common_types.Object
 	return false, nil
 }
 
-func HandleError(ctx context.Context, err error, obj common_types.Object, recorder record.EventRecorder) reconcile.Result {
+func HandleError(ctx context.Context, err error, obj common_types.Object, recorder record.EventRecorder) (reconcile.Result, error) {
 	if apierrors.IsConflict(err) {
-		logger := log.FromContext(ctx).WithName("controller.error-handler")
-		logger.V(0).Info("Conflict occurred during operation", "error", err)
 		if recorder != nil {
 			recorder.Event(obj, "Warning", "Conflict", err.Error())
 		}
-		return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
+		return reconcile.Result{}, err
 	}
 
-	conditionsUpdated, result := ctrlerrors.HandleError(ctx, obj, err, recorder)
+	conditionsUpdated, result, retryErr := ctrlerrors.HandleError(ctx, obj, err, recorder)
 	if conditionsUpdated {
 		logger := log.FromContext(ctx).WithName("controller.error-handler")
 		logger.V(1).Info("Object conditions updated after error handling", "error", err)
 	}
-	return result
+	return result, retryErr
 }
 
 // EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil

@@ -144,7 +144,7 @@ var _ = Describe("Rover Mapper", func() {
 			input := &api.Rover{
 				Zone: "zone",
 				Authentication: api.Authentication{
-					ClientAuthMethod: api.BASIC,
+					ClientAuthMethod: api.AuthenticationClientAuthMethodBASIC,
 				},
 			}
 			output := &roverv1.Rover{}
@@ -161,7 +161,7 @@ var _ = Describe("Rover Mapper", func() {
 			input := &api.Rover{
 				Zone: "zone",
 				Authentication: api.Authentication{
-					ClientAuthMethod: api.POST,
+					ClientAuthMethod: api.AuthenticationClientAuthMethodPOST,
 				},
 			}
 			output := &roverv1.Rover{}
