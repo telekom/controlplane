@@ -95,6 +95,16 @@ on:
         required: false
         type: number
         default: 70
+      mirror_to_artifactory:
+        description: "Set to true to copy the built GHCR image to Artifactory after a successful build. Requires artifactory_image_repository to be set (or REGISTRY_CONTROLPLANE_REPO var configured) and the ARTIFACTORY_O28M_PUSH_USER/TOKEN secrets to be provided. Skipped automatically for fork PRs (no secret access). Defaults to true."
+        required: false
+        type: boolean
+        default: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      artifactory_image_repository:
+        description: "Full Artifactory image path to mirror to (registry host + repo path, no tag), e.g. artifactory.example.com/my-repo/controlplane/my-module. Defaults to '<vars.REGISTRY_HOST>/<vars.REGISTRY_CONTROLPLANE_REPO>/<name>' when left empty. Required (directly or via the default) when mirror_to_artifactory is true."
+        required: false
+        type: string
+        default: ""
 
     secrets:
       registry_username:
@@ -102,6 +112,12 @@ on:
         required: false
       registry_password:
         description: "Password/token for logging in to container_registry, when it is not ghcr.io. Also used by Trivy to pull the built image for scanning."
+        required: false
+      ARTIFACTORY_O28M_PUSH_USER:
+        description: "Username for logging in to Artifactory when mirror_to_artifactory is true."
+        required: false
+      ARTIFACTORY_O28M_PUSH_TOKEN:
+        description: "Password/token for logging in to Artifactory when mirror_to_artifactory is true."
         required: false
 
     outputs:
@@ -472,3 +488,66 @@ jobs:
           exit-code: "1"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+
+  mirror_to_artifactory:
+    name: "Mirror ${{ inputs.name }} to Artifactory"
+    # Runs only when explicitly requested and a GHCR image was successfully
+    # built. image_scan is listed as a need so we never mirror an image that
+    # failed its security gate, but its failure does not block the mirror
+    # (image_scan may be skipped when run_build_image is false).
+    if: |
+      inputs.mirror_to_artifactory &&
+      needs.build.result == 'success' &&
+      needs.image_scan.result != 'failure'
+    needs: [build, image_scan]
+    runs-on: ubuntu-latest
+    steps:
+      # skopeo is pre-installed on ubuntu-latest — no setup action required.
+
+      - name: Resolve effective Artifactory image repository
+        id: resolve_dst
+        env:
+          EXPLICIT_REPO: ${{ inputs.artifactory_image_repository }}
+          REGISTRY_HOST: ${{ vars.REGISTRY_HOST }}
+          REGISTRY_BASE: ${{ vars.REGISTRY_CONTROLPLANE_REPO }}
+          MODULE_NAME: ${{ inputs.name }}
+        run: |
+          if [ -n "${EXPLICIT_REPO}" ]; then
+            dst="${EXPLICIT_REPO}"
+          else
+            dst="${REGISTRY_HOST}/${REGISTRY_BASE}/${MODULE_NAME}"
+          fi
+          echo "dst=${dst}" >> "${GITHUB_OUTPUT}"
+
+      - name: Copy image to Artifactory
+        env:
+          SRC: ${{ needs.build.outputs.image_repository }}@${{ needs.build.outputs.image_digest }}
+          DST_REPO: ${{ steps.resolve_dst.outputs.dst }}
+          # Re-apply the same effective tags used during the build.
+          # image_tags may be empty (meaning the build used GITHUB_HEAD_REF_SLUG
+          # or 'latest'), so fall back to the same logic here.
+          IMAGE_TAGS: ${{ inputs.image_tags }}
+          GITHUB_HEAD_REF_SLUG: ${{ github.head_ref }}
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_USER: ${{ github.actor }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
+        run: |
+          if [ -z "${IMAGE_TAGS}" ]; then
+            effective_tags="${GITHUB_HEAD_REF_SLUG:-latest}"
+          else
+            effective_tags="${IMAGE_TAGS}"
+          fi
+
+          echo "Mirroring docker://${SRC} → docker://${DST_REPO} with tags: ${effective_tags}"
+
+          IFS=',' read -ra tags <<< "${effective_tags}"
+          for tag in "${tags[@]}"; do
+            tag="$(echo "${tag}" | tr -d '[:space:]')"
+            echo "  skopeo copy docker://${SRC} docker://${DST_REPO}:${tag}"
+            skopeo copy \
+              --src-creds "${GHCR_USER}:${GHCR_TOKEN}" \
+              --dest-creds "${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN}" \
+              "docker://${SRC}" \
+              "docker://${DST_REPO}:${tag}"
+          done
