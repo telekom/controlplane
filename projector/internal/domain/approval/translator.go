@@ -7,7 +7,6 @@ package approval
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
@@ -95,9 +94,9 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:           phase,
 		StatusMessage:         message,
-		State:                 mapState(string(obj.Spec.State)),
+		State:                 shared.MapApprovalState(string(obj.Spec.State)),
 		Action:                obj.Spec.Action,
-		Strategy:              mapStrategy(string(obj.Spec.Strategy)),
+		Strategy:              shared.MapApprovalStrategy(string(obj.Spec.Strategy)),
 		Requester:             mapRequester(obj.Spec.Requester),
 		Decider:               mapDecider(obj.Spec.Decider),
 		Decisions:             mapDecisions(obj.Spec.Decisions),
@@ -151,22 +150,6 @@ func (t *Translator) KeyFromDelete(req types.NamespacedName, lastKnown *approval
 		SubscriptionNamespace: "",
 		SubscriptionName:      "",
 	}, nil
-}
-
-// mapState converts a PascalCase CR state to the SCREAMING_SNAKE ent enum.
-func mapState(state string) string {
-	return strings.ToUpper(state)
-}
-
-// mapStrategy converts a PascalCase CR strategy to the SCREAMING_SNAKE ent
-// enum, handling the special FourEyes -> FOUR_EYES case.
-func mapStrategy(strategy string) string {
-	switch strategy {
-	case "FourEyes":
-		return "FOUR_EYES"
-	default:
-		return strings.ToUpper(strategy)
-	}
 }
 
 // mapRequester converts the CR Requester to the model RequesterInfo DTO.
