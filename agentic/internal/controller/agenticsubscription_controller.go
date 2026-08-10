@@ -61,28 +61,28 @@ func (r *AgenticSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error
 	r.Controller = cc.NewController(&agenticsubscription.AgenticSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&agenticv1.AgenticSubscription{}).
-		Owns(&gatewayv1.ConsumeRoute{}).
-		Owns(&approvalv1.ApprovalRequest{}).
+		For(&agenticv1.AgenticSubscription{}, builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleFor))).
+		Owns(&gatewayv1.ConsumeRoute{}, builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleOwns))).
+		Owns(&approvalv1.ApprovalRequest{}, builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleOwns))).
 		Watches(&agenticv1.AgenticExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticExposureToAgenticSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&approvalv1.Approval{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApprovalToAgenticSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToAgenticSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToAgenticSubscription),
-			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, cc.DeleteOnlyPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToAgenticSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

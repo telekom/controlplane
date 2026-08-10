@@ -65,30 +65,30 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apisubscription.ApiSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.ApiSubscription{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		Owns(&approvalapi.ApprovalRequest{}).
-		Owns(&approvalapi.Approval{}).
-		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Owns(&apiapi.RemoteApiSubscription{}).
+		For(&apiapi.ApiSubscription{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleFor, predicate.ResourceVersionChangedPredicate{}))).
+		Owns(&approvalapi.ApprovalRequest{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
+		Owns(&approvalapi.Approval{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
+		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns, predicate.GenerationChangedPredicate{}))).
+		Owns(&apiapi.RemoteApiSubscription{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&apiapi.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&applicationapi.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&gatewayapi.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiSubscription),
-			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, cc.DeleteOnlyPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

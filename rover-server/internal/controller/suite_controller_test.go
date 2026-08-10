@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -33,6 +34,7 @@ import (
 	"github.com/telekom/controlplane/rover-server/pkg/log"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 const (
@@ -41,9 +43,13 @@ const (
 
 var ctx context.Context
 var cancel context.CancelFunc
-var teamToken string
-var groupToken string
-var teamNoResources string
+var teamReadToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:read"})
+var teamToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:all"})
+var groupReadToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:read"})
+var groupToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:all"})
+var adminReadToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:admin:read"})
+var adminToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:admin:all"})
+var teamNoResources = securitymock.NewMockAccessToken("poc", "eni", "nohyper", []string{"tardis:team:all"})
 var app *fiber.App
 var mockFileManager *filefake.MockFileManager
 var stores *store.Stores
@@ -68,6 +74,10 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		stores.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
 		stores.EventSpecificationStore = mocks.NewEventSpecificationStoreMock(GinkgoT())
 		stores.ApiChangelogStore = mocks.NewApiChangelogStoreMock(GinkgoT())
+		mcpSpecificationMock := mocks.NewMockObjectStore[*roverv1.McpSpecification](GinkgoT())
+		mcpSpecificationMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&cstore.ListResponse[*roverv1.McpSpecification]{Items: []*roverv1.McpSpecification{}}, nil).Maybe()
+		stores.McpSpecificationStore = mcpSpecificationMock
 
 		eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 		eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
@@ -104,10 +114,6 @@ var _ = BeforeSuite(func() {
 
 	// TODO Add more tests with teamToken in apispecification, eventspecification, rover
 	// Can be done once the issue with the team token is fixed in common-server
-	teamToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:all"})
-	groupToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:all"})
-	teamNoResources = securitymock.NewMockAccessToken("poc", "eni", "nohyper", []string{"tardis:team:all"})
-
 	// Create a new Fiber app
 	app = cserver.NewApp()
 
@@ -120,6 +126,7 @@ var _ = BeforeSuite(func() {
 		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),
 		ApiChangelogs:       NewApiChangelogController(stores),
+		Resources:           NewResourcesController(stores),
 	}
 
 	// Install the mock-JWT security family on the app and register routes with
@@ -177,6 +184,18 @@ func ExpectStatusNotImplemented(response *http.Response, err error) {
 func ExpectStatusOk(response *http.Response, err error, matchers ...match.JSONMatcher) {
 	expectNoError(err)
 	expectResponseWithStatus(response, http.StatusOK, "application/json")
+	if response.Request.URL.Path == "/resources" && response.Request.URL.Query().Get("team") != "nohyper" {
+		oldPaths := []string{
+			"/rovers/rover-local-sub",
+			"/apispecifications/eni-distr-v1",
+			"/eventspecifications/tardis-horizon-demo-cetus-v1",
+			"/apiroadmaps/eni-test-api",
+			"/apichangelogs/eni-test-api",
+		}
+		for i, oldPath := range oldPaths {
+			matchers = append(matchers, match.Custom(fmt.Sprintf("items.%d.path", i), func(any) (any, error) { return oldPath, nil }))
+		}
+	}
 	expectResponseWithBody(response, matchers...)
 }
 

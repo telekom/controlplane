@@ -8,6 +8,7 @@
 package module
 
 import (
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/projector/internal/config"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
@@ -95,7 +96,7 @@ func (m *TypedModule[T, D, K]) Register(mgr ctrl.Manager, deps ModuleDeps) error
 		Named("projector-"+m.ModuleName).
 		Watches(m.NewObj(),
 			infrastructure.NewSyncEventHandler(deps.DeleteCache),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("projector-"+m.ModuleName, cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(ctrlOpts).
 		Complete(rec)

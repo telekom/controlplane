@@ -53,6 +53,7 @@ updates:
       - gateway/api
       - identity
       - identity/api
+      - organization-server
       - notification
       - notification/api
       - organization
