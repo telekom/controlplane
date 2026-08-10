@@ -8,20 +8,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NewMcpServerCondition creates a condition indicating whether the corresponding McpServer
-// exists and is active for this AgenticExposure.
-func NewMcpServerCondition(found bool) metav1.Condition {
+// NewServerCondition creates a condition indicating whether the corresponding server
+// (McpServer or AgentCard) exists and is active for this AgenticExposure.
+func NewServerCondition(found bool) metav1.Condition {
 	cond := metav1.Condition{
-		Type:               "McpServerExists",
+		Type:               "ServerExists",
 		Status:             metav1.ConditionFalse,
-		Reason:             "NoMcpServer",
-		Message:            "Corresponding McpServer does not exist or is not active",
+		Reason:             "ServerNotFound",
+		Message:            "Corresponding server (McpServer or AgentCard) does not exist or is not active",
 		LastTransitionTime: metav1.Now(),
 	}
 	if found {
 		cond.Status = metav1.ConditionTrue
-		cond.Reason = "McpServerExists"
-		cond.Message = "Corresponding McpServer exists and is active"
+		cond.Reason = "ServerExists"
+		cond.Message = "Corresponding server exists and is active"
 	}
 	return cond
 }

@@ -260,6 +260,9 @@ var _ = Describe("AgenticExposureHandler", func() {
 		It("should set Blocked when no active server found", func() {
 			mockListMcpServers([]agenticv1.McpServer{})
 			mockListAgentCards([]agenticv1.AgentCard{})
+			// ServerMustExist does additional case-conflict lookups when not found
+			mockListMcpServers([]agenticv1.McpServer{})
+			mockListAgentCards([]agenticv1.AgentCard{})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -274,6 +277,9 @@ var _ = Describe("AgenticExposureHandler", func() {
 		It("should set Blocked and clean up Route when server disappears after Route was created", func() {
 			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
 
+			mockListMcpServers([]agenticv1.McpServer{})
+			mockListAgentCards([]agenticv1.AgentCard{})
+			// ServerMustExist does additional case-conflict lookups when not found
 			mockListMcpServers([]agenticv1.McpServer{})
 			mockListAgentCards([]agenticv1.AgentCard{})
 

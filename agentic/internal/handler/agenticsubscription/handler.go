@@ -40,16 +40,24 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// 1. Validate server (McpServer or AgentCard) exists and is active
-	found, serverInfo, findErr := util.FindActiveServer(ctx, obj.Spec.BasePath)
+	serverInfo, caseConflict, findErr := util.ServerMustExist(ctx, obj.Spec.BasePath)
 	if findErr != nil {
 		return findErr
 	}
-	if !found {
-		obj.SetCondition(condition.NewNotReadyCondition("ServerNotFound",
-			"No active McpServer or AgentCard found for basePath "+obj.Spec.BasePath))
-		obj.SetCondition(condition.NewBlockedCondition(
-			"Server for " + obj.Spec.BasePath + " does not exist or is not active. " +
-				"AgenticSubscription will be automatically processed when the server is registered"))
+	if serverInfo == nil {
+		if caseConflict {
+			obj.SetCondition(condition.NewNotReadyCondition("CaseConflict",
+				"Server is registered but the basePath case does not match"))
+			obj.SetCondition(condition.NewBlockedCondition(
+				"Server for " + obj.Spec.BasePath + " exists but with a different case. " +
+					"Please resolve the conflict by changing the BasePath of either the server or the subscription"))
+		} else {
+			obj.SetCondition(condition.NewNotReadyCondition("ServerNotFound",
+				"No active McpServer or AgentCard found for basePath "+obj.Spec.BasePath))
+			obj.SetCondition(condition.NewBlockedCondition(
+				"Server for " + obj.Spec.BasePath + " does not exist or is not active. " +
+					"AgenticSubscription will be automatically processed when the server is registered"))
+		}
 		return nil
 	}
 

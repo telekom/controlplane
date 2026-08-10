@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:dupl // Single-resource controller scaffolds are intentionally kept parallel for clarity.
 package controller
 
 import (

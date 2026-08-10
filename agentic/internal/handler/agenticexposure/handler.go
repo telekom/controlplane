@@ -33,14 +33,19 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	logger := log.FromContext(ctx)
 
 	// 1. Validate server (McpServer or AgentCard) exists and is active
-	found, serverInfo, err := util.FindActiveServer(ctx, obj.Spec.BasePath)
+	serverInfo, caseConflict, err := util.ServerMustExist(ctx, obj.Spec.BasePath)
 	if err != nil {
 		return err
 	}
-	obj.SetCondition(NewMcpServerCondition(found))
-	if !found {
+	if serverInfo == nil {
+		obj.SetCondition(NewServerCondition(false))
+		if caseConflict {
+			// Case-conflict conditions already set by ServerMustExist
+			return handleServerNotFoundCleanup(ctx, obj)
+		}
 		return handleServerNotFound(ctx, obj)
 	}
+	obj.SetCondition(NewServerCondition(true))
 
 	// 1b. Validate exposure scopes against server's declared scopes
 	if !validateExposureScopes(ctx, serverInfo, obj) {
@@ -206,9 +211,38 @@ func checkCompetingExposures(ctx context.Context, obj *agenticv1.AgenticExposure
 	return false, nil
 }
 
-// handleMcpServerNotFound handles the case where no active McpServer was found.
-// It checks for case-only mismatches, cleans up stale routes, and sets blocking conditions.
+// handleServerNotFound handles the case where no active server was found.
+// It cleans up stale routes and sets blocking conditions.
 func handleServerNotFound(ctx context.Context, obj *agenticv1.AgenticExposure) error {
+	if err := cleanupServerRoutes(ctx, obj); err != nil {
+		return err
+	}
+
+	obj.SetCondition(condition.NewNotReadyCondition("ServerNotFound",
+		"No active McpServer or AgentCard found for basePath "+obj.Spec.BasePath))
+	obj.SetCondition(condition.NewBlockedCondition(
+		"Server for " + obj.Spec.BasePath + " does not exist or is not active. " +
+			"AgenticExposure will be automatically processed when the server is registered"))
+	return nil
+}
+
+// handleServerNotFoundCleanup handles the case where a case-conflict was detected.
+// ServerMustExist already reported the conflict via caseConflict=true; this sets conditions and cleans up routes.
+func handleServerNotFoundCleanup(ctx context.Context, obj *agenticv1.AgenticExposure) error {
+	if err := cleanupServerRoutes(ctx, obj); err != nil {
+		return err
+	}
+
+	obj.SetCondition(condition.NewNotReadyCondition("CaseConflict",
+		"Server is registered but the basePath case does not match"))
+	obj.SetCondition(condition.NewBlockedCondition(
+		"Server for " + obj.Spec.BasePath + " exists but with a different case. " +
+			"Please resolve the conflict by changing the BasePath of either the server or the exposure"))
+	return nil
+}
+
+// cleanupServerRoutes removes routes when the server is not found or has a case conflict.
+func cleanupServerRoutes(ctx context.Context, obj *agenticv1.AgenticExposure) error {
 	if obj.Status.Route != nil {
 		if cleanupErr := util.DeleteRouteIfExists(ctx, obj.Status.Route); cleanupErr != nil {
 			return errors.Wrap(cleanupErr, "failed to cleanup Route after server not found")
@@ -219,12 +253,6 @@ func handleServerNotFound(ctx context.Context, obj *agenticv1.AgenticExposure) e
 			return errors.Wrapf(cleanupErr, "failed to cleanup proxy Route after server not found")
 		}
 	}
-
-	obj.SetCondition(condition.NewNotReadyCondition("ServerNotFound",
-		"No active McpServer or AgentCard found for basePath "+obj.Spec.BasePath))
-	obj.SetCondition(condition.NewBlockedCondition(
-		"Server for " + obj.Spec.BasePath + " does not exist or is not active. " +
-			"AgenticExposure will be automatically processed when the server is registered"))
 	return nil
 }
 

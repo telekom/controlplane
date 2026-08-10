@@ -140,17 +140,16 @@ var _ = Describe("AgentCardHandler", func() {
 			Expect(obj.Status.Active).To(BeTrue())
 		})
 
-		It("should ignore AgentCards with different basePaths", func() {
+		It("should treat AgentCards with different basePaths as case conflicts", func() {
 			now := time.Now()
 			obj := newAgentCard("agent-1", "/agent/assistant/v1", "uid-1", now)
-			different := newAgentCard("agent-other", "/agent/other/v1", "uid-other", now.Add(-time.Hour))
-			different.Spec.BasePath = "/agent/other/v1"
+			caseConflict := newAgentCard("agent-other", "/Agent/Assistant/V1", "uid-other", now.Add(-time.Hour))
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.AgentCardList"), mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
 					*list.(*agenticv1.AgentCardList) = agenticv1.AgentCardList{
-						Items: []agenticv1.AgentCard{*different, *obj},
+						Items: []agenticv1.AgentCard{*caseConflict, *obj},
 					}
 				}).
 				Return(nil)
@@ -158,7 +157,10 @@ var _ = Describe("AgentCardHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Status.Active).To(BeTrue())
+			Expect(obj.Status.Active).To(BeFalse())
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).NotTo(BeNil())
+			Expect(readyCond.Message).To(ContainSubstring("case conflict"))
 		})
 	})
 

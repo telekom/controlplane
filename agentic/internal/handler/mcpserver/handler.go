@@ -38,18 +38,19 @@ func (h *McpServerHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Mc
 		return errors.Wrapf(err, "failed to list McpServers for basePath %q", obj.Spec.BasePath)
 	}
 
-	// Filter to exact basePath match
-	var candidates []agenticv1.McpServer
-	for i := range serverList.Items {
-		if serverList.Items[i].Spec.BasePath == obj.Spec.BasePath {
-			candidates = append(candidates, serverList.Items[i])
-		}
+	if len(serverList.Items) == 0 {
+		obj.Status.Active = false
+		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
+			"McpServer was not found among candidates for its basePath; check labels"))
+		obj.SetCondition(condition.NewBlockedCondition(
+			fmt.Sprintf("McpServer could not be matched to basePath %q candidates", obj.Spec.BasePath)))
+		logger.Info("McpServer not found among candidates, marking not ready")
+		return nil
 	}
 
-	// Determine active: oldest-wins semantics.
-	// Use SortStableFunc with namespace as tiebreaker for equal timestamps,
-	// ensuring deterministic ordering even in the (unlikely) same-millisecond case.
-	slices.SortStableFunc(candidates, func(a, b agenticv1.McpServer) int {
+	// Sort all candidates by creation timestamp (oldest-wins).
+	// Namespace as tiebreaker for equal timestamps ensures deterministic ordering.
+	slices.SortStableFunc(serverList.Items, func(a, b agenticv1.McpServer) int {
 		c := a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
 		if c == 0 {
 			return cmp.Compare(a.GetNamespace(), b.GetNamespace())
@@ -57,21 +58,33 @@ func (h *McpServerHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Mc
 		return c
 	})
 
-	if ctypes.Equals(&candidates[0], obj) {
-		// This server is the active one
+	activeServer := &serverList.Items[0]
+
+	if ctypes.Equals(activeServer, obj) {
 		obj.Status.Active = true
 		obj.SetCondition(condition.NewReadyCondition("McpServerActive", "McpServer is active"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("McpServer is processed"))
 		logger.Info("McpServer is processed")
 	} else {
-		// Another server already owns this basePath
 		obj.Status.Active = false
-		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotActive", "McpServer is not active"))
-		obj.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("McpServer is blocked, another McpServer with the same BasePath %q is active. "+
-				"It will be automatically processed, if the other McpServer will be deleted.", obj.Spec.BasePath),
-		))
-		logger.Info("McpServer is blocked, another McpServer with the same BasePath is already active.")
+
+		if obj.Spec.BasePath == activeServer.Spec.BasePath {
+			// Exact same basePath — another McpServer is older
+			obj.SetCondition(condition.NewNotReadyCondition("McpServerNotActive", "McpServer is not active"))
+			obj.SetCondition(condition.NewBlockedCondition(
+				fmt.Sprintf("McpServer is blocked, another McpServer with the same BasePath %q is active. "+
+					"It will be automatically processed, if the other McpServer will be deleted.", obj.Spec.BasePath),
+			))
+			logger.Info("McpServer is blocked, another McpServer with the same BasePath is already active.")
+		} else {
+			// Case conflict (e.g. /MyMcp vs /mymcp)
+			obj.SetCondition(condition.NewNotReadyCondition("McpServerNotActive", "McpServer is not active due to case conflict"))
+			obj.SetCondition(condition.NewBlockedCondition(
+				"McpServer is blocked, another McpServer with the same BasePath but different case is active. " +
+					"Please resolve the conflict by changing the BasePath of one of the McpServers.",
+			))
+			logger.Info("McpServer is blocked, another McpServer with the same BasePath but different case is already active.")
+		}
 	}
 
 	return nil
