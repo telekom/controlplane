@@ -368,6 +368,7 @@ jobs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
       repo_lower: ${{ steps.repo_lower.outputs.repo }}
       image_repository: ${{ steps.resolve_image_repository.outputs.image_repository }}
+      effective_tags: ${{ steps.build_image_ko_step.outputs.effective_tags }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -467,6 +468,7 @@ jobs:
           digest=$(echo "$output" | grep -o 'sha256:[a-f0-9]\{64\}')
           echo "digest=$digest" >> $GITHUB_OUTPUT
           echo "image_ref=${KO_DOCKER_REPO}@${digest}" >> $GITHUB_OUTPUT
+          echo "effective_tags=${effective_tags}" >> $GITHUB_OUTPUT
 
   image_scan:
     name: "Image Vulnerability Scan for ${{ inputs.name }}"
@@ -523,30 +525,17 @@ jobs:
         env:
           SRC: ${{ needs.build.outputs.image_repository }}@${{ needs.build.outputs.image_digest }}
           DST_REPO: ${{ steps.resolve_dst.outputs.dst }}
-          # Re-apply the same effective tags used during the build.
-          # image_tags may be empty (meaning the build used the slugified
-          # HEAD ref or 'latest'), so fall back to the same logic here.
-          # github.head_ref is the raw branch name (e.g. feat/my-feature);
-          # we slugify it (replace '/' and non-alphanumeric with '-') to
-          # match the tag produced by github-slug-action in the build job.
-          IMAGE_TAGS: ${{ inputs.image_tags }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          # Use the exact same tags that ko used during the build job,
+          # passed through as a job output to guarantee they match.
+          EFFECTIVE_TAGS: ${{ needs.build.outputs.effective_tags }}
           GHCR_TOKEN: ${{ github.token }}
           GHCR_USER: ${{ github.actor }}
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
         run: |
-          if [ -z "${IMAGE_TAGS}" ]; then
-            # Slugify: lowercase, replace runs of non-alphanumeric chars with '-', strip leading/trailing '-'
-            slug="$(echo "${GITHUB_HEAD_REF}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/-\+/-/g; s/^-//; s/-$//')"
-            effective_tags="${slug:-latest}"
-          else
-            effective_tags="${IMAGE_TAGS}"
-          fi
+          echo "Mirroring docker://${SRC} → docker://${DST_REPO} with tags: ${EFFECTIVE_TAGS}"
 
-          echo "Mirroring docker://${SRC} → docker://${DST_REPO} with tags: ${effective_tags}"
-
-          IFS=',' read -ra tags <<< "${effective_tags}"
+          IFS=',' read -ra tags <<< "${EFFECTIVE_TAGS}"
           for tag in "${tags[@]}"; do
             tag="$(echo "${tag}" | tr -d '[:space:]')"
             echo "  skopeo copy docker://${SRC} docker://${DST_REPO}:${tag}"
