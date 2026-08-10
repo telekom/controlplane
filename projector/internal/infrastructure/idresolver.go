@@ -21,6 +21,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	entgroup "github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -598,5 +601,89 @@ func (r *IDResolver) FindActiveEventTypeID(ctx context.Context, evtType string) 
 		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
 		r.cache.Set(et, lk, e.ID)
 		return e.ID, nil
+	})
+}
+
+// FindFileTypeID looks up the DB primary key for a FileType catalogue entry
+// by file type identifier.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindFileTypeID(ctx context.Context, ft string) (int, error) {
+	et, lk := cachekeys.FileTypeDef(ft)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("file_type %q", ft), func() (int, error) {
+		e, err := r.client.FileType.Query().
+			Where(
+				filetype.FileTypeEQ(ft),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("file_type %q: %w", ft, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find file_type %q: %w", ft, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, e.ID)
+		return e.ID, nil
+	})
+}
+
+// FindActiveFileExposureByFileType looks up the DB primary key for an active
+// FileExposure by file type alone. This is used by FileSubscription, where the
+// CR does not carry target owner app/team information.
+// Returns ErrEntityNotFound (wrapped) if no matching active row exists.
+func (r *IDResolver) FindActiveFileExposureByFileType(ctx context.Context, ft string) (int, error) {
+	et, lk := cachekeys.ActiveFileExposure(ft)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("active file_exposure %q", ft), func() (int, error) {
+		e, err := r.client.FileExposure.Query().
+			Where(
+				fileexposure.FileTypeEQ(ft),
+				fileexposure.ActiveEQ(true),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("active file_exposure %q: %w", ft, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find active file_exposure %q: %w", ft, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, e.ID)
+		return e.ID, nil
+	})
+}
+
+// FindFileSubscriptionByMeta looks up the DB primary key for a FileSubscription
+// by its Kubernetes metadata (namespace + name).
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindFileSubscriptionByMeta(ctx context.Context, namespace, name string) (int, error) {
+	et, lk := cachekeys.FileSubscriptionMeta(namespace, name)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("file_subscription %s/%s", namespace, name), func() (int, error) {
+		sub, err := r.client.FileSubscription.Query().
+			Where(
+				filesubscription.NamespaceEQ(namespace),
+				filesubscription.NameEQ(name),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("file_subscription %s/%s: %w", namespace, name, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find file_subscription %s/%s: %w", namespace, name, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, sub.ID)
+		return sub.ID, nil
 	})
 }
