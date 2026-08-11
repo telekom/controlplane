@@ -6,9 +6,12 @@ package apiexposure
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -104,8 +107,11 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		}
 		if obj.Spec.Traffic.Failover != nil {
 			traffic.Failover = &model.Failover{}
-			for i := range obj.Spec.Traffic.Failover.Zones {
-				traffic.Failover.Zones = append(traffic.Failover.Zones, obj.Spec.Traffic.Failover.Zones[i].Name)
+			zones := obj.Spec.Traffic.Failover.Zones
+			slices.SortFunc(zones,
+				func(a, b ctypes.ObjectRef) int { return strings.Compare(a.Name, b.Name) })
+			for i := range zones {
+				traffic.Failover.Zones = append(traffic.Failover.Zones, zones[i].Name)
 			}
 		}
 	}

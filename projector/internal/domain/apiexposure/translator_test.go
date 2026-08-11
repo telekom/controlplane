@@ -680,6 +680,32 @@ var _ = Describe("ApiExposure Translator", func() {
 			Expect(data.Traffic.RateLimit.SubscriberRateLimit.Overrides).To(BeEmpty())
 		})
 
+		It("should sort failover zones alphabetically by name", func() {
+			obj := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "failover-order",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: apiv1.ApiExposureSpec{
+					ApiBasePath: "/api/v1/failover-order",
+					Traffic: apiv1.Traffic{
+						Failover: &apiv1.ProviderFailover{
+							Zones: []ctypes.ObjectRef{
+								{Name: "zone-c", Namespace: "ns"},
+								{Name: "zone-a", Namespace: "ns"},
+								{Name: "zone-b", Namespace: "ns"},
+							},
+						},
+					},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Traffic.Failover.Zones).To(Equal([]string{"zone-a", "zone-b", "zone-c"}))
+		})
+
 		It("should produce nil Traffic when no RateLimit or Failover is set", func() {
 			obj := &apiv1.ApiExposure{
 				ObjectMeta: metav1.ObjectMeta{
