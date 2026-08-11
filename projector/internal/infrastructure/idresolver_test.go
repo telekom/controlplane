@@ -352,6 +352,64 @@ var _ = Describe("IDResolver", func() {
 			Expect(err.Error()).To(ContainSubstring("ns/missing-sub"))
 		})
 	})
+
+	// ── FindPermissionSetIDByApplicationOwner ───────────────────────────
+
+	Describe("FindPermissionSetIDByApplicationOwner", func() {
+		It("should return cached ID on cache hit", func() {
+			cache.Set("permissionset", "my-app:my-team", 101)
+			cache.Wait()
+
+			id, err := resolver.FindPermissionSetIDByApplicationOwner(ctx, "my-app", "my-team")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(id).To(Equal(101))
+		})
+
+		It("should fall back to DB on cache miss and cache the result", func() {
+			z, err := client.Zone.Create().
+				SetName("caas-ps").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			t, err := client.Team.Create().
+				SetName("team-ps").
+				SetEmail("ps@example.com").
+				SetNamespace("team-ps").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			app, err := client.Application.Create().
+				SetName("app-ps").
+				SetNamespace("team-ps").
+				SetOwnerTeamID(t.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			ps, err := client.PermissionSet.Create().
+				SetNamespace("team-ps").
+				SetOwnerApplicationID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			id, err := resolver.FindPermissionSetIDByApplicationOwner(ctx, "app-ps", "team-ps")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(id).To(Equal(ps.ID))
+
+			cache.Wait()
+			cachedID, found := cache.Get("permissionset", "app-ps:team-ps")
+			Expect(found).To(BeTrue())
+			Expect(cachedID).To(Equal(ps.ID))
+		})
+
+		It("should return ErrEntityNotFound when no permission set exists", func() {
+			_, err := resolver.FindPermissionSetIDByApplicationOwner(ctx, "nonexistent-app", "nonexistent-team")
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("nonexistent-app"))
+		})
+	})
 })
 
 // ── IDResolver Hardening (Phase 4) ─────────────────────────────────────────

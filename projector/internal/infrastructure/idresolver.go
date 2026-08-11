@@ -22,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	entgroup "github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
@@ -598,5 +599,29 @@ func (r *IDResolver) FindActiveEventTypeID(ctx context.Context, evtType string) 
 		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
 		r.cache.Set(et, lk, e.ID)
 		return e.ID, nil
+	})
+}
+
+// FindPermissionSetIDByApplicationOwner
+func (r *IDResolver) FindPermissionSetIDByApplicationOwner(ctx context.Context, appName, teamName string) (int, error) {
+	et, lk := cachekeys.PermissionSet(appName, teamName)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("permission_set %q %q", appName, teamName), func() (int, error) {
+		permissionSet, err := r.client.PermissionSet.Query().
+			Where(permissionset.HasOwnerApplicationWith(application.NameEQ(appName))).
+			Where(permissionset.HasOwnerApplicationWith(application.HasOwnerTeamWith(team.NameEQ(teamName)))).
+			First(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("permission_set appName %q teamName %q: %w", appName, teamName, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find permission_set appName %q teamName %q: %w", appName, teamName, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, permissionSet.ID)
+		return permissionSet.ID, nil
 	})
 }
