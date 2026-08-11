@@ -23,10 +23,6 @@ type APICategory struct {
 	Name string `json:"name"`
 }
 
-type Failover struct {
-	Zones []string `json:"zones,omitempty"`
-}
-
 type APIExposureFeature string
 
 const (

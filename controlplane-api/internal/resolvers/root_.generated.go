@@ -53,7 +53,6 @@ type ResolverRoot interface {
 	ResponseFilter() ResponseFilterResolver
 	SelectionFilter() SelectionFilterResolver
 	Team() TeamResolver
-	Traffic() TrafficResolver
 	Zone() ZoneResolver
 }
 

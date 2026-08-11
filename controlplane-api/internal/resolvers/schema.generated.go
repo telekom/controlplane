@@ -73,9 +73,6 @@ type ResponseFilterResolver interface {
 type SelectionFilterResolver interface {
 	Attributes(ctx context.Context, obj *model.SelectionFilter) (map[string]any, error)
 }
-type TrafficResolver interface {
-	Failover(ctx context.Context, obj *model.Traffic) (*model1.Failover, error)
-}
 
 // endregion ************************** generated!.gotpl **************************
 
@@ -1660,7 +1657,7 @@ func (ec *executionContext) fieldContext_ExternalIdentityProvider_client(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Failover_zones(ctx context.Context, field graphql.CollectedField, obj *model1.Failover) (ret graphql.Marshaler) {
+func (ec *executionContext) _Failover_zones(ctx context.Context, field graphql.CollectedField, obj *model.Failover) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2766,11 +2763,11 @@ func (ec *executionContext) _Traffic_failover(ctx context.Context, field graphql
 			return ec.fieldContext_Traffic_failover(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Traffic().Failover(ctx, obj)
+			return obj.Failover, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.Failover) graphql.Marshaler {
-			return ec.marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐFailover(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Failover) graphql.Marshaler {
+			return ec.marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFailover(ctx, selections, v)
 		},
 		true,
 		false,
@@ -2780,8 +2777,8 @@ func (ec *executionContext) fieldContext_Traffic_failover(_ context.Context, fie
 	fc = &graphql.FieldContext{
 		Object:     "Traffic",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_Failover(ctx, field)
 		},
@@ -4246,7 +4243,7 @@ func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel a
 
 var failoverImplementors = []string{"Failover"}
 
-func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet, obj *model1.Failover) graphql.Marshaler {
+func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet, obj *model.Failover) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, failoverImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5165,47 +5162,14 @@ func (ec *executionContext) _Traffic(ctx context.Context, sel ast.SelectionSet, 
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Traffic")
 		case "failover":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Traffic_failover(ctx, field, obj)
-				if res == graphql.RequiredNull {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._Traffic_failover(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
 			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "rateLimit":
 			out.Values[i] = ec._Traffic_rateLimit(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -5614,7 +5578,7 @@ func (ec *executionContext) marshalOExternalIdentityProvider2ᚖgithubᚗcomᚋt
 	return ec._ExternalIdentityProvider(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐFailover(ctx context.Context, sel ast.SelectionSet, v *model1.Failover) graphql.Marshaler {
+func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFailover(ctx context.Context, sel ast.SelectionSet, v *model.Failover) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
