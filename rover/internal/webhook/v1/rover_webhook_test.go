@@ -138,6 +138,17 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 
 		Context("ValidateCreateOrUpdate", func() {
+			It("should skip validation when the rover is being deleted", func() {
+				roverBeingDeleted := roverObj.DeepCopy()
+				roverBeingDeleted.Spec.Zone = "non-existent-zone"
+				now := metav1.Now()
+				roverBeingDeleted.DeletionTimestamp = &now
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverBeingDeleted)
+				Expect(warnings).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
+			})
+
 			It("should validate successfully with valid rover", func() {
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverObj)
 				Expect(warnings).To(BeNil())
