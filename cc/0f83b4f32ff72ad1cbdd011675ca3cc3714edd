@@ -1,0 +1,21 @@
+rover/internal/webhook/v1/rover_webhook_test.go
+  s_4734c9671ab43e::t_943c19525bc0e1 141-151
+rover/internal/webhook/v1/rover_webhook.go
+  s_4734c9671ab43e::t_6216afe7dfb285 99-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "cc0f83b4f32ff72ad1cbdd011675ca3cc3714edd",
+  "prompts": {},
+  "sessions": {
+    "s_4734c9671ab43e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00f0f52daffenbvQiAEzbbbv3k",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
