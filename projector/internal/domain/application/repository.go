@@ -79,26 +79,29 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 		return fmt.Errorf("find zone %q: %w", data.ZoneName, err)
 	}
 
-	permissionSetFound := true
-	_, err = r.deps.FindPermissionSetIDByApplicationOwner(ctx, data.Name, data.TeamName)
-	if err != nil {
-		if !errors.Is(err, infrastructure.ErrEntityNotFound) {
-			return fmt.Errorf("find permissionSet %q--%q: %w", data.Name, data.TeamName, err)
-		}
-		permissionSetFound = false
-	}
-
 	zoneObj, err := r.client.Zone.Get(ctx, zoneID)
 	if err != nil {
 		return fmt.Errorf("get zone %d: %w", zoneID, err)
 	}
 
-	var permissionsURL string
-	if permissionSetFound && zoneObj.PermissionsURL != nil && *zoneObj.PermissionsURL != "" && data.ClientID != nil {
-		permissionsURL = *zoneObj.PermissionsURL + "?" + url.Values{"application": {*data.ClientID}}.Encode()
-	} else {
-		permissionSetFound = false
+	zoneHasPermissionsURL := zoneObj.PermissionsURL != nil && *zoneObj.PermissionsURL != ""
+	permissionsURL := ""
+
+	if zoneHasPermissionsURL {
+		permissionSetFound := true
+		_, err = r.deps.FindPermissionSetIDByApplicationOwner(ctx, data.Name, data.TeamName)
+		if err != nil {
+			if !errors.Is(err, infrastructure.ErrEntityNotFound) {
+				return fmt.Errorf("find permissionSet %q--%q: %w", data.Name, data.TeamName, err)
+			}
+			permissionSetFound = false
+		}
+
+		if permissionSetFound && data.ClientID != nil {
+			permissionsURL = *zoneObj.PermissionsURL + "?" + url.Values{"application": {*data.ClientID}}.Encode()
+		}
 	}
+
 	create := r.client.Application.Create().
 		SetName(data.Name).
 		SetStatusPhase(application.StatusPhase(data.StatusPhase)).
@@ -133,7 +136,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 	if len(data.ExternalIds) > 0 {
 		create.SetExternalIds(data.ExternalIds)
 	}
-	if permissionSetFound {
+	if permissionsURL != "" {
 		create.SetPermissionsURL(permissionsURL)
 	}
 
@@ -181,7 +184,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 			} else {
 				u.ClearExternalIds()
 			}
-			if permissionSetFound {
+			if permissionsURL != "" {
 				u.SetPermissionsURL(permissionsURL)
 			} else {
 				u.ClearPermissionsURL()

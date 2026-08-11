@@ -344,6 +344,28 @@ var _ = Describe("Application Repository", func() {
 			Expect(app.PermissionsURL).To(BeNil())
 		})
 
+		It("should not set permissionsURL when clientID is nil", func() {
+			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			deps.permissionSetIds = map[string]int{"nil-client-app:platform--narvi": 42}
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "nil-client-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "ok",
+				Name:                "nil-client-app",
+				ClientID:            nil,
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("nil-client-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.PermissionsURL).To(BeNil())
+		})
+
 		It("should clear permissionsURL when permissionSet is removed on update", func() {
 			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
