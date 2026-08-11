@@ -8140,22 +8140,22 @@ type ZoneWhereInput struct {
 	IssuerURLEqualFold    *string  `json:"issuerURLEqualFold,omitempty"`
 	IssuerURLContainsFold *string  `json:"issuerURLContainsFold,omitempty"`
 
-	// "permission_url" field predicates.
-	PermissionURL             *string  `json:"permissionURL,omitempty"`
-	PermissionURLNEQ          *string  `json:"permissionURLNEQ,omitempty"`
-	PermissionURLIn           []string `json:"permissionURLIn,omitempty"`
-	PermissionURLNotIn        []string `json:"permissionURLNotIn,omitempty"`
-	PermissionURLGT           *string  `json:"permissionURLGT,omitempty"`
-	PermissionURLGTE          *string  `json:"permissionURLGTE,omitempty"`
-	PermissionURLLT           *string  `json:"permissionURLLT,omitempty"`
-	PermissionURLLTE          *string  `json:"permissionURLLTE,omitempty"`
-	PermissionURLContains     *string  `json:"permissionURLContains,omitempty"`
-	PermissionURLHasPrefix    *string  `json:"permissionURLHasPrefix,omitempty"`
-	PermissionURLHasSuffix    *string  `json:"permissionURLHasSuffix,omitempty"`
-	PermissionURLIsNil        bool     `json:"permissionURLIsNil,omitempty"`
-	PermissionURLNotNil       bool     `json:"permissionURLNotNil,omitempty"`
-	PermissionURLEqualFold    *string  `json:"permissionURLEqualFold,omitempty"`
-	PermissionURLContainsFold *string  `json:"permissionURLContainsFold,omitempty"`
+	// "permissions_url" field predicates.
+	PermissionsURL             *string  `json:"permissionsURL,omitempty"`
+	PermissionsURLNEQ          *string  `json:"permissionsURLNEQ,omitempty"`
+	PermissionsURLIn           []string `json:"permissionsURLIn,omitempty"`
+	PermissionsURLNotIn        []string `json:"permissionsURLNotIn,omitempty"`
+	PermissionsURLGT           *string  `json:"permissionsURLGT,omitempty"`
+	PermissionsURLGTE          *string  `json:"permissionsURLGTE,omitempty"`
+	PermissionsURLLT           *string  `json:"permissionsURLLT,omitempty"`
+	PermissionsURLLTE          *string  `json:"permissionsURLLTE,omitempty"`
+	PermissionsURLContains     *string  `json:"permissionsURLContains,omitempty"`
+	PermissionsURLHasPrefix    *string  `json:"permissionsURLHasPrefix,omitempty"`
+	PermissionsURLHasSuffix    *string  `json:"permissionsURLHasSuffix,omitempty"`
+	PermissionsURLIsNil        bool     `json:"permissionsURLIsNil,omitempty"`
+	PermissionsURLNotNil       bool     `json:"permissionsURLNotNil,omitempty"`
+	PermissionsURLEqualFold    *string  `json:"permissionsURLEqualFold,omitempty"`
+	PermissionsURLContainsFold *string  `json:"permissionsURLContainsFold,omitempty"`
 
 	// "visibility" field predicates.
 	Visibility      *zone.Visibility  `json:"visibility,omitempty"`
@@ -8437,50 +8437,50 @@ func (i *ZoneWhereInput) P() (predicate.Zone, error) {
 	if i.IssuerURLContainsFold != nil {
 		predicates = append(predicates, zone.IssuerURLContainsFold(*i.IssuerURLContainsFold))
 	}
-	if i.PermissionURL != nil {
-		predicates = append(predicates, zone.PermissionURLEQ(*i.PermissionURL))
+	if i.PermissionsURL != nil {
+		predicates = append(predicates, zone.PermissionsURLEQ(*i.PermissionsURL))
 	}
-	if i.PermissionURLNEQ != nil {
-		predicates = append(predicates, zone.PermissionURLNEQ(*i.PermissionURLNEQ))
+	if i.PermissionsURLNEQ != nil {
+		predicates = append(predicates, zone.PermissionsURLNEQ(*i.PermissionsURLNEQ))
 	}
-	if len(i.PermissionURLIn) > 0 {
-		predicates = append(predicates, zone.PermissionURLIn(i.PermissionURLIn...))
+	if len(i.PermissionsURLIn) > 0 {
+		predicates = append(predicates, zone.PermissionsURLIn(i.PermissionsURLIn...))
 	}
-	if len(i.PermissionURLNotIn) > 0 {
-		predicates = append(predicates, zone.PermissionURLNotIn(i.PermissionURLNotIn...))
+	if len(i.PermissionsURLNotIn) > 0 {
+		predicates = append(predicates, zone.PermissionsURLNotIn(i.PermissionsURLNotIn...))
 	}
-	if i.PermissionURLGT != nil {
-		predicates = append(predicates, zone.PermissionURLGT(*i.PermissionURLGT))
+	if i.PermissionsURLGT != nil {
+		predicates = append(predicates, zone.PermissionsURLGT(*i.PermissionsURLGT))
 	}
-	if i.PermissionURLGTE != nil {
-		predicates = append(predicates, zone.PermissionURLGTE(*i.PermissionURLGTE))
+	if i.PermissionsURLGTE != nil {
+		predicates = append(predicates, zone.PermissionsURLGTE(*i.PermissionsURLGTE))
 	}
-	if i.PermissionURLLT != nil {
-		predicates = append(predicates, zone.PermissionURLLT(*i.PermissionURLLT))
+	if i.PermissionsURLLT != nil {
+		predicates = append(predicates, zone.PermissionsURLLT(*i.PermissionsURLLT))
 	}
-	if i.PermissionURLLTE != nil {
-		predicates = append(predicates, zone.PermissionURLLTE(*i.PermissionURLLTE))
+	if i.PermissionsURLLTE != nil {
+		predicates = append(predicates, zone.PermissionsURLLTE(*i.PermissionsURLLTE))
 	}
-	if i.PermissionURLContains != nil {
-		predicates = append(predicates, zone.PermissionURLContains(*i.PermissionURLContains))
+	if i.PermissionsURLContains != nil {
+		predicates = append(predicates, zone.PermissionsURLContains(*i.PermissionsURLContains))
 	}
-	if i.PermissionURLHasPrefix != nil {
-		predicates = append(predicates, zone.PermissionURLHasPrefix(*i.PermissionURLHasPrefix))
+	if i.PermissionsURLHasPrefix != nil {
+		predicates = append(predicates, zone.PermissionsURLHasPrefix(*i.PermissionsURLHasPrefix))
 	}
-	if i.PermissionURLHasSuffix != nil {
-		predicates = append(predicates, zone.PermissionURLHasSuffix(*i.PermissionURLHasSuffix))
+	if i.PermissionsURLHasSuffix != nil {
+		predicates = append(predicates, zone.PermissionsURLHasSuffix(*i.PermissionsURLHasSuffix))
 	}
-	if i.PermissionURLIsNil {
-		predicates = append(predicates, zone.PermissionURLIsNil())
+	if i.PermissionsURLIsNil {
+		predicates = append(predicates, zone.PermissionsURLIsNil())
 	}
-	if i.PermissionURLNotNil {
-		predicates = append(predicates, zone.PermissionURLNotNil())
+	if i.PermissionsURLNotNil {
+		predicates = append(predicates, zone.PermissionsURLNotNil())
 	}
-	if i.PermissionURLEqualFold != nil {
-		predicates = append(predicates, zone.PermissionURLEqualFold(*i.PermissionURLEqualFold))
+	if i.PermissionsURLEqualFold != nil {
+		predicates = append(predicates, zone.PermissionsURLEqualFold(*i.PermissionsURLEqualFold))
 	}
-	if i.PermissionURLContainsFold != nil {
-		predicates = append(predicates, zone.PermissionURLContainsFold(*i.PermissionURLContainsFold))
+	if i.PermissionsURLContainsFold != nil {
+		predicates = append(predicates, zone.PermissionsURLContainsFold(*i.PermissionsURLContainsFold))
 	}
 	if i.Visibility != nil {
 		predicates = append(predicates, zone.VisibilityEQ(*i.Visibility))

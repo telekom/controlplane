@@ -58,8 +58,8 @@ func (r *Repository) Upsert(ctx context.Context, data *ZoneData) error {
 	if data.IssuerURL != nil {
 		create = create.SetIssuerURL(*data.IssuerURL)
 	}
-	if data.PermissionURL != nil {
-		create = create.SetPermissionURL(*data.PermissionURL)
+	if data.PermissionsURL != nil {
+		create = create.SetPermissionsURL(*data.PermissionsURL)
 	}
 
 	id, err := create.
@@ -77,10 +77,10 @@ func (r *Repository) Upsert(ctx context.Context, data *ZoneData) error {
 			} else {
 				u.ClearIssuerURL()
 			}
-			if data.PermissionURL != nil {
-				u.SetPermissionURL(*data.PermissionURL)
+			if data.PermissionsURL != nil {
+				u.SetPermissionsURL(*data.PermissionsURL)
 			} else {
-				u.ClearPermissionURL()
+				u.ClearPermissionsURL()
 			}
 		}).
 		ID(ctx)

@@ -155,40 +155,40 @@ var _ = Describe("Zone Repository", func() {
 
 		It("should create a zone with permission URL", func() {
 			data := &zone.ZoneData{
-				Meta:          shared.NewMetadata("admin", "zone-perm", nil),
-				Name:          "zone-perm",
-				GatewayURL:    strPtr("https://gw.example.com"),
-				PermissionURL: strPtr("https://permissions.example.com/api/v1"),
-				Visibility:    "WORLD",
+				Meta:           shared.NewMetadata("admin", "zone-perm", nil),
+				Name:           "zone-perm",
+				GatewayURL:     strPtr("https://gw.example.com"),
+				PermissionsURL: strPtr("https://permissions.example.com/api/v1"),
+				Visibility:     "WORLD",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			z, err := client.Zone.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(z.PermissionURL).NotTo(BeNil())
-			Expect(*z.PermissionURL).To(Equal("https://permissions.example.com/api/v1"))
+			Expect(z.PermissionsURL).NotTo(BeNil())
+			Expect(*z.PermissionsURL).To(Equal("https://permissions.example.com/api/v1"))
 		})
 
-		It("should clear PermissionURL when updated to nil", func() {
+		It("should clear PermissionsURL when updated to nil", func() {
 			data := &zone.ZoneData{
-				Meta:          shared.NewMetadata("admin", "zone-perm-clear", nil),
-				Name:          "zone-perm-clear",
-				PermissionURL: strPtr("https://permissions.example.com/api/v1"),
-				Visibility:    "ENTERPRISE",
+				Meta:           shared.NewMetadata("admin", "zone-perm-clear", nil),
+				Name:           "zone-perm-clear",
+				PermissionsURL: strPtr("https://permissions.example.com/api/v1"),
+				Visibility:     "ENTERPRISE",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			z, err := client.Zone.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(z.PermissionURL).NotTo(BeNil())
+			Expect(z.PermissionsURL).NotTo(BeNil())
 
 			// Update with nil permission URL.
-			data.PermissionURL = nil
+			data.PermissionsURL = nil
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			z, err = client.Zone.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(z.PermissionURL).To(BeNil())
+			Expect(z.PermissionsURL).To(BeNil())
 		})
 
 		It("should populate the edge cache after upsert", func() {

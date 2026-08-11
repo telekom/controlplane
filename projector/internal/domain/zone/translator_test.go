@@ -191,7 +191,7 @@ var _ = Describe("Zone Translator", func() {
 					Visibility: "WORLD",
 				},
 			),
-			Entry("permission URL is populated from Status.Links.PermissionsUrl",
+			Entry("permissions URL is populated from Status.Links.PermissionsUrl",
 				&adminv1.Zone{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "zone-g",
@@ -215,11 +215,11 @@ var _ = Describe("Zone Translator", func() {
 					},
 				},
 				&zone.ZoneData{
-					Meta:          shared.NewMetadata("admin", "zone-g", map[string]string{"cp.ei.telekom.de/environment": "production"}),
-					Name:          "zone-g",
-					GatewayURL:    strPtr("https://gateway.example.com"),
-					PermissionURL: strPtr("https://permissions.example.com/api/v1"),
-					Visibility:    "WORLD",
+					Meta:           shared.NewMetadata("admin", "zone-g", map[string]string{"cp.ei.telekom.de/environment": "production"}),
+					Name:           "zone-g",
+					GatewayURL:     strPtr("https://gateway.example.com"),
+					PermissionsURL: strPtr("https://permissions.example.com/api/v1"),
+					Visibility:     "WORLD",
 				},
 			),
 			Entry("empty permission URL is treated as nil",
@@ -243,11 +243,11 @@ var _ = Describe("Zone Translator", func() {
 					},
 				},
 				&zone.ZoneData{
-					Meta:          shared.NewMetadata("admin", "zone-h", nil),
-					Name:          "zone-h",
-					GatewayURL:    strPtr("https://gw.test"),
-					PermissionURL: nil,
-					Visibility:    "WORLD",
+					Meta:           shared.NewMetadata("admin", "zone-h", nil),
+					Name:           "zone-h",
+					GatewayURL:     strPtr("https://gw.test"),
+					PermissionsURL: nil,
+					Visibility:     "WORLD",
 				},
 			),
 		)

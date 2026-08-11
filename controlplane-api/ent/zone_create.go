@@ -73,16 +73,16 @@ func (_c *ZoneCreate) SetNillableIssuerURL(v *string) *ZoneCreate {
 	return _c
 }
 
-// SetPermissionURL sets the "permission_url" field.
-func (_c *ZoneCreate) SetPermissionURL(v string) *ZoneCreate {
-	_c.mutation.SetPermissionURL(v)
+// SetPermissionsURL sets the "permissions_url" field.
+func (_c *ZoneCreate) SetPermissionsURL(v string) *ZoneCreate {
+	_c.mutation.SetPermissionsURL(v)
 	return _c
 }
 
-// SetNillablePermissionURL sets the "permission_url" field if the given value is not nil.
-func (_c *ZoneCreate) SetNillablePermissionURL(v *string) *ZoneCreate {
+// SetNillablePermissionsURL sets the "permissions_url" field if the given value is not nil.
+func (_c *ZoneCreate) SetNillablePermissionsURL(v *string) *ZoneCreate {
 	if v != nil {
-		_c.SetPermissionURL(*v)
+		_c.SetPermissionsURL(*v)
 	}
 	return _c
 }
@@ -221,9 +221,9 @@ func (_c *ZoneCreate) createSpec() (*Zone, *sqlgraph.CreateSpec) {
 		_spec.SetField(zone.FieldIssuerURL, field.TypeString, value)
 		_node.IssuerURL = &value
 	}
-	if value, ok := _c.mutation.PermissionURL(); ok {
-		_spec.SetField(zone.FieldPermissionURL, field.TypeString, value)
-		_node.PermissionURL = &value
+	if value, ok := _c.mutation.PermissionsURL(); ok {
+		_spec.SetField(zone.FieldPermissionsURL, field.TypeString, value)
+		_node.PermissionsURL = &value
 	}
 	if value, ok := _c.mutation.Visibility(); ok {
 		_spec.SetField(zone.FieldVisibility, field.TypeEnum, value)
@@ -363,21 +363,21 @@ func (u *ZoneUpsert) ClearIssuerURL() *ZoneUpsert {
 	return u
 }
 
-// SetPermissionURL sets the "permission_url" field.
-func (u *ZoneUpsert) SetPermissionURL(v string) *ZoneUpsert {
-	u.Set(zone.FieldPermissionURL, v)
+// SetPermissionsURL sets the "permissions_url" field.
+func (u *ZoneUpsert) SetPermissionsURL(v string) *ZoneUpsert {
+	u.Set(zone.FieldPermissionsURL, v)
 	return u
 }
 
-// UpdatePermissionURL sets the "permission_url" field to the value that was provided on create.
-func (u *ZoneUpsert) UpdatePermissionURL() *ZoneUpsert {
-	u.SetExcluded(zone.FieldPermissionURL)
+// UpdatePermissionsURL sets the "permissions_url" field to the value that was provided on create.
+func (u *ZoneUpsert) UpdatePermissionsURL() *ZoneUpsert {
+	u.SetExcluded(zone.FieldPermissionsURL)
 	return u
 }
 
-// ClearPermissionURL clears the value of the "permission_url" field.
-func (u *ZoneUpsert) ClearPermissionURL() *ZoneUpsert {
-	u.SetNull(zone.FieldPermissionURL)
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (u *ZoneUpsert) ClearPermissionsURL() *ZoneUpsert {
+	u.SetNull(zone.FieldPermissionsURL)
 	return u
 }
 
@@ -510,24 +510,24 @@ func (u *ZoneUpsertOne) ClearIssuerURL() *ZoneUpsertOne {
 	})
 }
 
-// SetPermissionURL sets the "permission_url" field.
-func (u *ZoneUpsertOne) SetPermissionURL(v string) *ZoneUpsertOne {
+// SetPermissionsURL sets the "permissions_url" field.
+func (u *ZoneUpsertOne) SetPermissionsURL(v string) *ZoneUpsertOne {
 	return u.Update(func(s *ZoneUpsert) {
-		s.SetPermissionURL(v)
+		s.SetPermissionsURL(v)
 	})
 }
 
-// UpdatePermissionURL sets the "permission_url" field to the value that was provided on create.
-func (u *ZoneUpsertOne) UpdatePermissionURL() *ZoneUpsertOne {
+// UpdatePermissionsURL sets the "permissions_url" field to the value that was provided on create.
+func (u *ZoneUpsertOne) UpdatePermissionsURL() *ZoneUpsertOne {
 	return u.Update(func(s *ZoneUpsert) {
-		s.UpdatePermissionURL()
+		s.UpdatePermissionsURL()
 	})
 }
 
-// ClearPermissionURL clears the value of the "permission_url" field.
-func (u *ZoneUpsertOne) ClearPermissionURL() *ZoneUpsertOne {
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (u *ZoneUpsertOne) ClearPermissionsURL() *ZoneUpsertOne {
 	return u.Update(func(s *ZoneUpsert) {
-		s.ClearPermissionURL()
+		s.ClearPermissionsURL()
 	})
 }
 
@@ -826,24 +826,24 @@ func (u *ZoneUpsertBulk) ClearIssuerURL() *ZoneUpsertBulk {
 	})
 }
 
-// SetPermissionURL sets the "permission_url" field.
-func (u *ZoneUpsertBulk) SetPermissionURL(v string) *ZoneUpsertBulk {
+// SetPermissionsURL sets the "permissions_url" field.
+func (u *ZoneUpsertBulk) SetPermissionsURL(v string) *ZoneUpsertBulk {
 	return u.Update(func(s *ZoneUpsert) {
-		s.SetPermissionURL(v)
+		s.SetPermissionsURL(v)
 	})
 }
 
-// UpdatePermissionURL sets the "permission_url" field to the value that was provided on create.
-func (u *ZoneUpsertBulk) UpdatePermissionURL() *ZoneUpsertBulk {
+// UpdatePermissionsURL sets the "permissions_url" field to the value that was provided on create.
+func (u *ZoneUpsertBulk) UpdatePermissionsURL() *ZoneUpsertBulk {
 	return u.Update(func(s *ZoneUpsert) {
-		s.UpdatePermissionURL()
+		s.UpdatePermissionsURL()
 	})
 }
 
-// ClearPermissionURL clears the value of the "permission_url" field.
-func (u *ZoneUpsertBulk) ClearPermissionURL() *ZoneUpsertBulk {
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (u *ZoneUpsertBulk) ClearPermissionsURL() *ZoneUpsertBulk {
 	return u.Update(func(s *ZoneUpsert) {
-		s.ClearPermissionURL()
+		s.ClearPermissionsURL()
 	})
 }
 
