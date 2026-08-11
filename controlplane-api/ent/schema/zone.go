@@ -37,6 +37,9 @@ func (Zone) Fields() []ent.Field {
 		field.Text("issuer_url").
 			Optional().
 			Nillable(),
+		field.Text("permission_url").
+			Optional().
+			Nillable(),
 		field.Enum("visibility").
 			NamedValues(
 				"World", "WORLD",

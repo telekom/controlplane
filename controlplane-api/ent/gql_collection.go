@@ -2715,6 +2715,11 @@ func (_q *ZoneQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				selectedFields = append(selectedFields, zone.FieldIssuerURL)
 				fieldSeen[zone.FieldIssuerURL] = struct{}{}
 			}
+		case "permissionURL":
+			if _, ok := fieldSeen[zone.FieldPermissionURL]; !ok {
+				selectedFields = append(selectedFields, zone.FieldPermissionURL)
+				fieldSeen[zone.FieldPermissionURL] = struct{}{}
+			}
 		case "visibility":
 			if _, ok := fieldSeen[zone.FieldVisibility]; !ok {
 				selectedFields = append(selectedFields, zone.FieldVisibility)

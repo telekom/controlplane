@@ -58,6 +58,9 @@ func (r *Repository) Upsert(ctx context.Context, data *ZoneData) error {
 	if data.IssuerURL != nil {
 		create = create.SetIssuerURL(*data.IssuerURL)
 	}
+	if data.PermissionURL != nil {
+		create = create.SetPermissionURL(*data.PermissionURL)
+	}
 
 	id, err := create.
 		OnConflictColumns(zone.FieldName).
@@ -73,6 +76,11 @@ func (r *Repository) Upsert(ctx context.Context, data *ZoneData) error {
 				u.SetIssuerURL(*data.IssuerURL)
 			} else {
 				u.ClearIssuerURL()
+			}
+			if data.PermissionURL != nil {
+				u.SetPermissionURL(*data.PermissionURL)
+			} else {
+				u.ClearPermissionURL()
 			}
 		}).
 		ID(ctx)

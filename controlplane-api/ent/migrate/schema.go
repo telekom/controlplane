@@ -540,6 +540,7 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "issuer_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "permission_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "api_subscription_failover_zones", Type: field.TypeInt, Nullable: true},
 	}
@@ -551,7 +552,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "zones_api_subscriptions_failover_zones",
-				Columns:    []*schema.Column{ZonesColumns[6]},
+				Columns:    []*schema.Column{ZonesColumns[7]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

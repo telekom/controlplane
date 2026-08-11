@@ -191,6 +191,65 @@ var _ = Describe("Zone Translator", func() {
 					Visibility: "WORLD",
 				},
 			),
+			Entry("permission URL is populated from Status.Links.PermissionsUrl",
+				&adminv1.Zone{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "zone-g",
+						Namespace: "admin",
+						Labels: map[string]string{
+							"cp.ei.telekom.de/environment": "production",
+						},
+					},
+					Spec: adminv1.ZoneSpec{
+						Visibility: adminv1.ZoneVisibilityWorld,
+						Gateway: adminv1.GatewayConfig{
+							Presets: []adminv1.GatewayConfigPreset{
+								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}},
+							},
+						},
+					},
+					Status: adminv1.ZoneStatus{
+						Links: adminv1.Links{
+							PermissionsUrl: "https://permissions.example.com/api/v1",
+						},
+					},
+				},
+				&zone.ZoneData{
+					Meta:          shared.NewMetadata("admin", "zone-g", map[string]string{"cp.ei.telekom.de/environment": "production"}),
+					Name:          "zone-g",
+					GatewayURL:    strPtr("https://gateway.example.com"),
+					PermissionURL: strPtr("https://permissions.example.com/api/v1"),
+					Visibility:    "WORLD",
+				},
+			),
+			Entry("empty permission URL is treated as nil",
+				&adminv1.Zone{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "zone-h",
+						Namespace: "admin",
+					},
+					Spec: adminv1.ZoneSpec{
+						Visibility: adminv1.ZoneVisibilityWorld,
+						Gateway: adminv1.GatewayConfig{
+							Presets: []adminv1.GatewayConfigPreset{
+								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}},
+							},
+						},
+					},
+					Status: adminv1.ZoneStatus{
+						Links: adminv1.Links{
+							PermissionsUrl: "",
+						},
+					},
+				},
+				&zone.ZoneData{
+					Meta:          shared.NewMetadata("admin", "zone-h", nil),
+					Name:          "zone-h",
+					GatewayURL:    strPtr("https://gw.test"),
+					PermissionURL: nil,
+					Visibility:    "WORLD",
+				},
+			),
 		)
 	})
 

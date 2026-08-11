@@ -3741,6 +3741,7 @@ type Zone implements Node {
   name: String!
   gatewayURL: String
   issuerURL: String
+  permissionURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
 }
@@ -3840,6 +3841,24 @@ input ZoneWhereInput {
   issuerURLNotNil: Boolean
   issuerURLEqualFold: String
   issuerURLContainsFold: String
+  """
+  permission_url field predicates
+  """
+  permissionURL: String
+  permissionURLNEQ: String
+  permissionURLIn: [String!]
+  permissionURLNotIn: [String!]
+  permissionURLGT: String
+  permissionURLGTE: String
+  permissionURLLT: String
+  permissionURLLTE: String
+  permissionURLContains: String
+  permissionURLHasPrefix: String
+  permissionURLHasSuffix: String
+  permissionURLIsNil: Boolean
+  permissionURLNotNil: Boolean
+  permissionURLEqualFold: String
+  permissionURLContainsFold: String
   """
   visibility field predicates
   """
