@@ -208,6 +208,7 @@ type ComplexityRoot struct {
 		Namespace             func(childComplexity int) int
 		OwnerTeam             func(childComplexity int) int
 		PermissionSet         func(childComplexity int) int
+		PermissionsURL        func(childComplexity int) int
 		RotatedClientSecret   func(childComplexity int) int
 		RotatedExpiresAt      func(childComplexity int) int
 		SecretRotationMessage func(childComplexity int) int
@@ -748,15 +749,15 @@ type ComplexityRoot struct {
 	}
 
 	Zone struct {
-		Applications  func(childComplexity int) int
-		Environment   func(childComplexity int) int
-		GatewayURL    func(childComplexity int) int
-		ID            func(childComplexity int) int
-		IssuerURL     func(childComplexity int) int
-		Name          func(childComplexity int) int
-		PermissionURL func(childComplexity int) int
-		TokenURL      func(childComplexity int) int
-		Visibility    func(childComplexity int) int
+		Applications   func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		GatewayURL     func(childComplexity int) int
+		ID             func(childComplexity int) int
+		IssuerURL      func(childComplexity int) int
+		Name           func(childComplexity int) int
+		PermissionsURL func(childComplexity int) int
+		TokenURL       func(childComplexity int) int
+		Visibility     func(childComplexity int) int
 	}
 }
 
@@ -1411,6 +1412,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.PermissionSet(childComplexity), true
+	case "Application.permissionsURL":
+		if e.ComplexityRoot.Application.PermissionsURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.PermissionsURL(childComplexity), true
 	case "Application.rotatedClientSecret":
 		if e.ComplexityRoot.Application.RotatedClientSecret == nil {
 			break
@@ -3636,12 +3643,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.Name(childComplexity), true
-	case "Zone.permissionURL":
-		if e.ComplexityRoot.Zone.PermissionURL == nil {
+	case "Zone.permissionsURL":
+		if e.ComplexityRoot.Zone.PermissionsURL == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Zone.PermissionURL(childComplexity), true
+		return e.ComplexityRoot.Zone.PermissionsURL(childComplexity), true
 	case "Zone.tokenURL":
 		if e.ComplexityRoot.Zone.TokenURL == nil {
 			break
@@ -7511,7 +7518,7 @@ type Zone implements Node {
   name: String!
   gatewayURL: String
   issuerURL: String
-  permissionURL: String
+  permissionsURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
 }
@@ -7612,23 +7619,23 @@ input ZoneWhereInput {
   issuerURLEqualFold: String
   issuerURLContainsFold: String
   """
-  permission_url field predicates
+  permissions_url field predicates
   """
-  permissionURL: String
-  permissionURLNEQ: String
-  permissionURLIn: [String!]
-  permissionURLNotIn: [String!]
-  permissionURLGT: String
-  permissionURLGTE: String
-  permissionURLLT: String
-  permissionURLLTE: String
-  permissionURLContains: String
-  permissionURLHasPrefix: String
-  permissionURLHasSuffix: String
-  permissionURLIsNil: Boolean
-  permissionURLNotNil: Boolean
-  permissionURLEqualFold: String
-  permissionURLContainsFold: String
+  permissionsURL: String
+  permissionsURLNEQ: String
+  permissionsURLIn: [String!]
+  permissionsURLNotIn: [String!]
+  permissionsURLGT: String
+  permissionsURLGTE: String
+  permissionsURLLT: String
+  permissionsURLLTE: String
+  permissionsURLContains: String
+  permissionsURLHasPrefix: String
+  permissionsURLHasSuffix: String
+  permissionsURLIsNil: Boolean
+  permissionsURLNotNil: Boolean
+  permissionsURLEqualFold: String
+  permissionsURLContainsFold: String
   """
   visibility field predicates
   """
@@ -8121,6 +8128,8 @@ type EventExposureInfo {
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+  "PermissionsUrl for permission queries (dynamically built from gateway URL) with ?application=<clientId> appended when querying"
+  permissionsURL: String @goField(forceResolver: true)
 }
 
 extend type Zone {
@@ -8519,6 +8528,8 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_permissionSet(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_Application_ownerTeam(ctx, field)
+	case "permissionsURL":
+		return ec.fieldContext_Application_permissionsURL(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Application", field.Name)
 }
@@ -9523,8 +9534,8 @@ func (ec *executionContext) childFields_Zone(ctx context.Context, field graphql.
 		return ec.fieldContext_Zone_gatewayURL(ctx, field)
 	case "issuerURL":
 		return ec.fieldContext_Zone_issuerURL(ctx, field)
-	case "permissionURL":
-		return ec.fieldContext_Zone_permissionURL(ctx, field)
+	case "permissionsURL":
+		return ec.fieldContext_Zone_permissionsURL(ctx, field)
 	case "visibility":
 		return ec.fieldContext_Zone_visibility(ctx, field)
 	case "applications":

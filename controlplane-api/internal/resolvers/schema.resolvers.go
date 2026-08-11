@@ -11,6 +11,7 @@ package resolvers
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sort"
 
 	"github.com/go-logr/logr"
@@ -194,6 +195,21 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 	}
 
 	return mapTeamInfo(team, group), nil
+}
+
+// PermissionsURL is the resolver for the permissionsURL field.
+func (r *applicationResolver) PermissionsURL(ctx context.Context, obj *ent.Application) (*string, error) {
+	zone, err := obj.QueryZone().Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load zone for application %d: %w", obj.ID, err)
+	}
+
+	if zone.PermissionsURL == nil || obj.ClientID == nil || *zone.PermissionsURL == "" || *obj.ClientID == "" {
+		return nil, nil
+	}
+
+	url := *zone.PermissionsURL + "?" + url.Values{"application": {*obj.ClientID}}.Encode()
+	return &url, nil
 }
 
 // Subscription is the resolver for the subscription field.

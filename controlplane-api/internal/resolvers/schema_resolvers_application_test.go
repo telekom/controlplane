@@ -6,7 +6,10 @@ package resolvers_test
 
 import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
+	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -221,5 +224,88 @@ var _ = Describe("Application.IpRestrictions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(updated.IPRestrictions.Allow).To(BeEmpty())
 		Expect(updated.IPRestrictions.Deny).To(BeEmpty())
+	})
+})
+
+var _ = Describe("Application.PermissionsURL resolver", func() {
+	var (
+		client *ent.Client
+		r      *resolvers.Resolver
+		s      *testutil.SeedData
+	)
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
+		s = testutil.SeedStandard(client)
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should return nil when zone has no permissionsURL", func() {
+		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
+
+		result, err := r.Application().PermissionsURL(ctx, s.AppAlpha)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(BeNil())
+	})
+
+	It("should return nil when zone permissionsURL is empty", func() {
+		ctx := testutil.AllowContext()
+		empty := ""
+		_, err := client.Zone.UpdateOneID(s.ZoneEU.ID).SetPermissionsURL(empty).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		viewerCtx := viewer.NewContext(ctx, &viewer.Viewer{Teams: []string{"team-alpha"}})
+		result, err := r.Application().PermissionsURL(viewerCtx, s.AppAlpha)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(BeNil())
+	})
+
+	It("should return nil when application has no clientID", func() {
+		ctx := testutil.AllowContext()
+		_, err := client.Zone.UpdateOneID(s.ZoneEU.ID).SetPermissionsURL("https://perms.example.com").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		app, err := client.Application.Create().
+			SetNamespace("default").SetName("app-no-cid").
+			SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		viewerCtx := viewer.NewContext(ctx, &viewer.Viewer{Teams: []string{"team-alpha"}})
+		result, err := r.Application().PermissionsURL(viewerCtx, app)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(BeNil())
+	})
+
+	It("should build URL with encoded application query parameter", func() {
+		ctx := testutil.AllowContext()
+		_, err := client.Zone.UpdateOneID(s.ZoneEU.ID).SetPermissionsURL("https://perms.example.com").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		viewerCtx := viewer.NewContext(ctx, &viewer.Viewer{Teams: []string{"team-alpha"}})
+		result, err := r.Application().PermissionsURL(viewerCtx, s.AppAlpha)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).NotTo(BeNil())
+		Expect(*result).To(Equal("https://perms.example.com?application=client-alpha"))
+	})
+
+	It("should URL-encode special characters in clientID", func() {
+		ctx := testutil.AllowContext()
+		_, err := client.Zone.UpdateOneID(s.ZoneEU.ID).SetPermissionsURL("https://perms.example.com").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		app, err := client.Application.Create().
+			SetNamespace("default").SetName("app-special").SetClientID("client with spaces&more=yes").
+			SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		viewerCtx := viewer.NewContext(ctx, &viewer.Viewer{Teams: []string{"team-alpha"}})
+		result, err := r.Application().PermissionsURL(viewerCtx, app)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).NotTo(BeNil())
+		Expect(*result).To(Equal("https://perms.example.com?application=client+with+spaces%26more%3Dyes"))
 	})
 })

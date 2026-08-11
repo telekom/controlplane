@@ -279,6 +279,8 @@ type EventExposureInfo {
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+  "PermissionsUrl for permission queries (dynamically built from gateway URL) with ?application=<clientId> appended when querying"
+  permissionsURL: String @goField(forceResolver: true)
 }
 
 extend type Zone {
