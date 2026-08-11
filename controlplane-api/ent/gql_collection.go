@@ -1015,6 +1015,11 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, application.FieldIPRestrictions)
 				fieldSeen[application.FieldIPRestrictions] = struct{}{}
 			}
+		case "permissionsURL":
+			if _, ok := fieldSeen[application.FieldPermissionsURL]; !ok {
+				selectedFields = append(selectedFields, application.FieldPermissionsURL)
+				fieldSeen[application.FieldPermissionsURL] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:
@@ -2714,6 +2719,11 @@ func (_q *ZoneQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			if _, ok := fieldSeen[zone.FieldIssuerURL]; !ok {
 				selectedFields = append(selectedFields, zone.FieldIssuerURL)
 				fieldSeen[zone.FieldIssuerURL] = struct{}{}
+			}
+		case "permissionsURL":
+			if _, ok := fieldSeen[zone.FieldPermissionsURL]; !ok {
+				selectedFields = append(selectedFields, zone.FieldPermissionsURL)
+				fieldSeen[zone.FieldPermissionsURL] = struct{}{}
 			}
 		case "visibility":
 			if _, ok := fieldSeen[zone.FieldVisibility]; !ok {

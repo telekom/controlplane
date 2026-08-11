@@ -68,6 +68,11 @@ func (Application) Fields() []ent.Field {
 		field.JSON("ip_restrictions", model.IpRestrictions{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		// PermissionsUrl for permission queries (dynamically built from gateway URL) and append ?application=<clientId>
+		field.Text("permissions_url").
+			Optional().
+			Nillable().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }
 
