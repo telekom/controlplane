@@ -6,13 +6,19 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -26,6 +32,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+var _ = Describe("recordStatusUpdate", func() {
+	It("uses unknown when the object kind cannot be resolved", func() {
+		before := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "unknown"))
+
+		recordStatusUpdate(statusUpdateResultSkipped, &test.TestResource{}, runtime.NewScheme())
+
+		Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "unknown"))).To(Equal(before + 1))
+	})
+})
 
 var _ = Describe("StampObservedGeneration", func() {
 	It("should set ObservedGeneration on all conditions to the object's generation", func() {
@@ -138,7 +154,7 @@ var _ = Describe("Controller", func() {
 
 			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(res).To(Equal(reconcile.Result{}))
+			Expect(res).To(Equal(reconcile.Result{Requeue: true}))
 
 			Expect(k8sClient.Get(ctx, req.NamespacedName, obj)).To(Succeed())
 			Expect(controllerutil.ContainsFinalizer(obj, config.FinalizerName)).To(BeTrue())
@@ -155,6 +171,103 @@ var _ = Describe("Controller", func() {
 			Expect(k8sClient.Get(ctx, req.NamespacedName, &obj)).To(Succeed())
 			Expect(obj.GetConditions()).To(HaveLen(1))
 			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady).Status).To(Equal(metav1.ConditionUnknown))
+		})
+
+		It("should not update status when it is unchanged", func() {
+			var statusUpdates atomic.Int32
+			watchClient, err := client.NewWithWatch(cfg, client.Options{Scheme: scheme.Scheme})
+			Expect(err).ToNot(HaveOccurred())
+			interceptedClient := interceptor.NewClient(watchClient, interceptor.Funcs{
+				SubResourceUpdate: func(ctx context.Context, c client.Client, subResourceName string, obj client.Object, opts ...client.SubResourceUpdateOption) error {
+					if subResourceName == "status" {
+						statusUpdates.Add(1)
+					}
+					return c.SubResource(subResourceName).Update(ctx, obj, opts...)
+				},
+			})
+			controller := NewController(nopHandler, interceptedClient, &recorder)
+			obj := templ.DeepCopy()
+			obj.SetName("unchanged-status")
+			obj.SetNamespace(req.Namespace)
+			unchangedRequest := reconcile.Request{NamespacedName: client.ObjectKey{
+				Name:      obj.Name,
+				Namespace: obj.Namespace,
+			}}
+
+			Expect(interceptedClient.Create(ctx, obj)).To(Succeed())
+			_, err = controller.Reconcile(ctx, unchangedRequest, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+			_, err = controller.Reconcile(ctx, unchangedRequest, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+			_, err = controller.Reconcile(ctx, unchangedRequest, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(interceptedClient.Get(ctx, unchangedRequest.NamespacedName, obj)).To(Succeed())
+			statusUpdates.Store(0)
+			skippedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "testresource"))
+
+			_, err = controller.Reconcile(ctx, unchangedRequest, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(statusUpdates.Load()).To(BeZero())
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "testresource"))).To(Equal(skippedBefore + 1))
+		})
+
+		It("should still update status when only the generation changed", func() {
+			controller := NewController(nopHandler, k8sClient, &recorder)
+			obj := templ.DeepCopy()
+			obj.SetName("generation-bump")
+			obj.SetNamespace(req.Namespace)
+			bumpRequest := reconcile.Request{NamespacedName: client.ObjectKey{
+				Name:      obj.Name,
+				Namespace: obj.Namespace,
+			}}
+
+			Expect(k8sClient.Create(ctx, obj)).To(Succeed())
+			for range 3 {
+				_, err := controller.Reconcile(ctx, bumpRequest, &test.TestResource{})
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			Expect(k8sClient.Get(ctx, bumpRequest.NamespacedName, obj)).To(Succeed())
+			obj.Spec.Properties = &runtime.RawExtension{Raw: []byte(`{"changed":true}`)}
+			Expect(k8sClient.Update(ctx, obj)).To(Succeed())
+			updatedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated", "testresource"))
+
+			_, err := controller.Reconcile(ctx, bumpRequest, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated", "testresource"))).To(Equal(updatedBefore + 1))
+
+			Expect(k8sClient.Get(ctx, bumpRequest.NamespacedName, obj)).To(Succeed())
+			for _, c := range obj.GetConditions() {
+				Expect(c.ObservedGeneration).To(Equal(obj.GetGeneration()),
+					"conditions must not report a stale ObservedGeneration")
+			}
+		})
+
+		It("counts failed status updates as errors", func() {
+			statusErr := errors.New("status update failed")
+			watchClient, err := client.NewWithWatch(cfg, client.Options{Scheme: scheme.Scheme})
+			Expect(err).ToNot(HaveOccurred())
+			failingClient := interceptor.NewClient(watchClient, interceptor.Funcs{
+				SubResourceUpdate: func(context.Context, client.Client, string, client.Object, ...client.SubResourceUpdateOption) error {
+					return statusErr
+				},
+			})
+			controller := NewController(nopHandler, failingClient, &recorder).(*ControllerImpl[*test.TestResource])
+			original := &test.TestResource{}
+			Expect(k8sClient.Get(ctx, req.NamespacedName, original)).To(Succeed())
+			changed := original.DeepCopy()
+			changed.SetCondition(condition.NewBlockedCondition("changed"))
+			updatedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated", "testresource"))
+			skippedBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "testresource"))
+			errorBefore := testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("error", "testresource"))
+
+			err = controller.updateStatusIfChanged(ctx, original, changed)
+
+			Expect(err).To(MatchError(statusErr))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("updated", "testresource"))).To(Equal(updatedBefore))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "testresource"))).To(Equal(skippedBefore))
+			Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("error", "testresource"))).To(Equal(errorBefore + 1))
 		})
 
 		It("should handle generic errors", func() {

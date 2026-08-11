@@ -4,17 +4,28 @@
 
 package test
 
-import "k8s.io/apimachinery/pkg/runtime"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+)
 
 func (r *TestResource) DeepCopyObject() runtime.Object {
 	return r.DeepCopy()
 }
 
 func (r *TestResource) DeepCopy() *TestResource {
-	return &TestResource{
+	out := &TestResource{
 		TypeMeta:   r.TypeMeta,
 		ObjectMeta: *r.ObjectMeta.DeepCopy(),
+		Spec:       r.Spec,
 	}
+	if r.Spec.Properties != nil {
+		out.Spec.Properties = r.Spec.Properties.DeepCopy()
+	}
+	if r.Status.Conditions != nil {
+		out.Status.Conditions = append([]metav1.Condition{}, r.Status.Conditions...)
+	}
+	return out
 }
 
 func (r *TestResourceList) DeepCopyObject() runtime.Object {
