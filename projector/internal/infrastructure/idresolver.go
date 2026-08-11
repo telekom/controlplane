@@ -602,7 +602,11 @@ func (r *IDResolver) FindActiveEventTypeID(ctx context.Context, evtType string) 
 	})
 }
 
-// FindPermissionSetIDByApplicationOwner
+// FindPermissionSetIDByApplicationOwner looks up the DB primary key for a PermissionSet by
+// application name and team name. PermissionSets are owned by applications, and applications
+// are unique per team (composite unique index on name + owner_team), so both parameters are
+// required to identify the owning application.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
 func (r *IDResolver) FindPermissionSetIDByApplicationOwner(ctx context.Context, appName, teamName string) (int, error) {
 	et, lk := cachekeys.PermissionSet(appName, teamName)
 	fullKey := et + ":" + lk
