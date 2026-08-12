@@ -50,8 +50,7 @@ Backend services that are not Kubernetes operators:
 | `install/bundle/` | Core workloads without site configuration |
 | `install/overlays/default/` | Production overlay (pulls images from GitHub Container Registry) |
 | `install/overlays/local/` | Local development overlay (images at `latest`, eventing enabled) |
-| `install/components/eventing/` | Optional kustomize Component for event and pubsub controllers |
-| `install/components/permission/` | Optional kustomize Component for permission support |
+| `install/components/` | Optional composable capabilities and development services |
 
 ### Tools
 

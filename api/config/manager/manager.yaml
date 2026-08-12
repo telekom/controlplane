@@ -60,7 +60,7 @@ spec:
                 name: controlplane-env
                 optional: true
             - configMapRef:
-                name: api-operator-env
+                name: api-env
                 optional: true
           securityContext:
             allowPrivilegeEscalation: false

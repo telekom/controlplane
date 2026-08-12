@@ -95,9 +95,9 @@ ArgoCD will clone the repository at the specified tag, render the Kustomize over
 
 To upgrade to a new release, update the `targetRevision` in your ArgoCD Application to the new tag (for example `v0.19.0`). ArgoCD will detect the change and sync the updated manifests.
 
-## Optional capabilities
+## Optional capability components {#optional-capabilities}
 
-Eventing and Permission are not included in the default overlay. Add either capability to a [custom downstream overlay](#creating-a-custom-overlay) when needed:
+Eventing and Permission are not included in the default overlay. Add either component to a [custom downstream overlay](#creating-a-custom-overlay) when needed:
 
 ```yaml
 components:
@@ -105,7 +105,7 @@ components:
   - https://github.com/telekom/controlplane//install/components/permission/?ref=v0.22.0
 ```
 
-Each component is atomic: Eventing installs the Event and PubSub workloads and enables `FEATURE_PUBSUB_ENABLED`; Permission installs the Permission workload and enables `FEATURE_PERMISSION_ENABLED`. Do not add these flags to `global-config.env` yourself.
+Use the same `install/components/<name>` pattern for other installation components. Each capability component is atomic: Eventing installs the Event and PubSub workloads and enables `FEATURE_PUBSUB_ENABLED`; Permission installs the Permission workload and enables `FEATURE_PERMISSION_ENABLED`. Do not add these flags to `global-config.env` yourself.
 
 ## Alternative: deploy with kubectl {#deploy-with-kubectl}
 
@@ -262,8 +262,7 @@ install/
 │   └── local/                     # Ready-to-install local environment
 │
 └── components/
-    ├── eventing/                  # Event and PubSub capability plus its flag
-    └── permission/                # Permission capability plus its flag
+    └── <name>/                    # Optional composable capability or service
 ```
 
 The four layers work together as follows:

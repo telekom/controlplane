@@ -156,46 +156,7 @@ Environment variables provide a flexible way to configure operators in Kubernete
 The environment variables follow the naming convention defined in [./pkg/config/config.go](./pkg/config/config.go),
 mapping from internal configuration keys to uppercase environment variable names.
 
-Control Plane Kubernetes deployments use application defaults, two ConfigMap levels, and explicit container environment entries:
-
-```text
-application defaults < controlplane-env < <component>-env < explicit container env
-```
-
-- `controlplane-env` contains shared settings, primarily feature flags.
-- `<component>-env` contains operator overrides for one component.
-- Explicit container `env` entries have the highest precedence and are reserved for fixed runtime wiring and Secret references.
-
-Applications own their shipped defaults. Platform administrators create uniquely named component ConfigMaps explicitly; they do not merge or replace generators nested in component Kustomizations.
-
-For example, a downstream overlay can provide global settings and Rover overrides without patching a Deployment:
-
-```yaml
-namespace: controlplane-system
-
-configMapGenerator:
-  - name: controlplane-env
-    envs:
-      - global-config.env
-  - name: rover-env
-    envs:
-      - rover-config.env
-```
-
-Set the overlay namespace to the workload namespace, `controlplane-system` by default. This ensures the generated global and component ConfigMaps share the workload namespace so Kustomize can rewrite their hashed references.
-
-The `rover-config.env` file contains key-value pairs:
-```text
-REQUEUE_AFTER_ON_ERROR=1m
-REQUEUE_AFTER=30m
-JITTER_FACTOR=0.9
-MAX_BACKOFF=3m
-MAX_CONCURRENT_RECONCILES=3
-```
-
-Workloads already reference these ConfigMaps as optional sources. Application code owns shipped defaults; operators create only the final, component-prefixed override name such as `rover-env` or `admin-env`. These names must be unique because the workloads share a namespace. Do not merge or replace a nested component generator through a remote Kustomize resource.
-
-Kustomize adds content hashes to generated ConfigMap names and updates workload references. Changing configuration therefore triggers a rolling restart, where the process reads the new environment values at startup. Never store confidential values in these ConfigMaps; use Kubernetes Secrets instead.
+Applications own their shipped defaults. For Kubernetes configuration precedence, global and component ConfigMaps, Kustomize hashing, and Secret handling, see [Creating a custom overlay](https://telekom.github.io/controlplane/docs/admin-journey/installation#creating-a-custom-overlay).
 
 ## Getting Started
 
