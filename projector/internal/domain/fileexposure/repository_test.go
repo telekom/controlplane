@@ -6,7 +6,6 @@ package fileexposure_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
@@ -66,23 +65,6 @@ func (m *mockFileExposureDeps) FindFileTypeID(_ context.Context, fileType string
 	return 0, fmt.Errorf("file_type %q: %w", fileType, infrastructure.ErrEntityNotFound)
 }
 
-func skipIfSQLiteUnavailable() {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		Skip(fmt.Sprintf("sqlite3 is unavailable in this environment: %v", err))
-	}
-	defer func() {
-		_ = db.Close()
-	}()
-
-	if err := db.Ping(); err != nil {
-		Skip(fmt.Sprintf("sqlite3 is unavailable in this environment: %v", err))
-	}
-	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		Skip(fmt.Sprintf("sqlite3 is unavailable in this environment (likely CGO disabled): %v", err))
-	}
-}
-
 var _ = Describe("FileExposure Repository", func() {
 	var (
 		client     *ent.Client
@@ -96,7 +78,6 @@ var _ = Describe("FileExposure Repository", func() {
 	)
 
 	BeforeEach(func() {
-		skipIfSQLiteUnavailable()
 		ctx = privacy.DecisionContext(context.Background(), privacy.Allow)
 		var err error
 		cache, err = infrastructure.NewEdgeCache(100_000, 10<<20, 64)
