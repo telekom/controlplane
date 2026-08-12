@@ -17,7 +17,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
-	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
@@ -283,21 +282,6 @@ func (_u *TeamUpdate) AddApis(v ...*Api) *TeamUpdate {
 	return _u.AddAPIIDs(ids...)
 }
 
-// AddFileTypeIDs adds the "file_types" edge to the FileType entity by IDs.
-func (_u *TeamUpdate) AddFileTypeIDs(ids ...int) *TeamUpdate {
-	_u.mutation.AddFileTypeIDs(ids...)
-	return _u
-}
-
-// AddFileTypes adds the "file_types" edges to the FileType entity.
-func (_u *TeamUpdate) AddFileTypes(v ...*FileType) *TeamUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddFileTypeIDs(ids...)
-}
-
 // AddEventTypeIDs adds the "event_types" edge to the EventType entity by IDs.
 func (_u *TeamUpdate) AddEventTypeIDs(ids ...int) *TeamUpdate {
 	_u.mutation.AddEventTypeIDs(ids...)
@@ -385,27 +369,6 @@ func (_u *TeamUpdate) RemoveApis(v ...*Api) *TeamUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAPIIDs(ids...)
-}
-
-// ClearFileTypes clears all "file_types" edges to the FileType entity.
-func (_u *TeamUpdate) ClearFileTypes() *TeamUpdate {
-	_u.mutation.ClearFileTypes()
-	return _u
-}
-
-// RemoveFileTypeIDs removes the "file_types" edge to FileType entities by IDs.
-func (_u *TeamUpdate) RemoveFileTypeIDs(ids ...int) *TeamUpdate {
-	_u.mutation.RemoveFileTypeIDs(ids...)
-	return _u
-}
-
-// RemoveFileTypes removes "file_types" edges to FileType entities.
-func (_u *TeamUpdate) RemoveFileTypes(v ...*FileType) *TeamUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveFileTypeIDs(ids...)
 }
 
 // ClearEventTypes clears all "event_types" edges to the EventType entity.
@@ -728,51 +691,6 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.FileTypesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.FileTypesTable,
-			Columns: []string{team.FileTypesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(filetype.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedFileTypesIDs(); len(nodes) > 0 && !_u.mutation.FileTypesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.FileTypesTable,
-			Columns: []string{team.FileTypesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(filetype.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.FileTypesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.FileTypesTable,
-			Columns: []string{team.FileTypesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(filetype.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.EventTypesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1084,21 +1002,6 @@ func (_u *TeamUpdateOne) AddApis(v ...*Api) *TeamUpdateOne {
 	return _u.AddAPIIDs(ids...)
 }
 
-// AddFileTypeIDs adds the "file_types" edge to the FileType entity by IDs.
-func (_u *TeamUpdateOne) AddFileTypeIDs(ids ...int) *TeamUpdateOne {
-	_u.mutation.AddFileTypeIDs(ids...)
-	return _u
-}
-
-// AddFileTypes adds the "file_types" edges to the FileType entity.
-func (_u *TeamUpdateOne) AddFileTypes(v ...*FileType) *TeamUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddFileTypeIDs(ids...)
-}
-
 // AddEventTypeIDs adds the "event_types" edge to the EventType entity by IDs.
 func (_u *TeamUpdateOne) AddEventTypeIDs(ids ...int) *TeamUpdateOne {
 	_u.mutation.AddEventTypeIDs(ids...)
@@ -1186,27 +1089,6 @@ func (_u *TeamUpdateOne) RemoveApis(v ...*Api) *TeamUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAPIIDs(ids...)
-}
-
-// ClearFileTypes clears all "file_types" edges to the FileType entity.
-func (_u *TeamUpdateOne) ClearFileTypes() *TeamUpdateOne {
-	_u.mutation.ClearFileTypes()
-	return _u
-}
-
-// RemoveFileTypeIDs removes the "file_types" edge to FileType entities by IDs.
-func (_u *TeamUpdateOne) RemoveFileTypeIDs(ids ...int) *TeamUpdateOne {
-	_u.mutation.RemoveFileTypeIDs(ids...)
-	return _u
-}
-
-// RemoveFileTypes removes "file_types" edges to FileType entities.
-func (_u *TeamUpdateOne) RemoveFileTypes(v ...*FileType) *TeamUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveFileTypeIDs(ids...)
 }
 
 // ClearEventTypes clears all "event_types" edges to the EventType entity.
@@ -1552,51 +1434,6 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.FileTypesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.FileTypesTable,
-			Columns: []string{team.FileTypesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(filetype.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedFileTypesIDs(); len(nodes) > 0 && !_u.mutation.FileTypesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.FileTypesTable,
-			Columns: []string{team.FileTypesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(filetype.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.FileTypesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.FileTypesTable,
-			Columns: []string{team.FileTypesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(filetype.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

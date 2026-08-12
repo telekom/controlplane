@@ -53,8 +53,6 @@ const (
 	EdgeApplications = "applications"
 	// EdgeApis holds the string denoting the apis edge name in mutations.
 	EdgeApis = "apis"
-	// EdgeFileTypes holds the string denoting the file_types edge name in mutations.
-	EdgeFileTypes = "file_types"
 	// EdgeEventTypes holds the string denoting the event_types edge name in mutations.
 	EdgeEventTypes = "event_types"
 	// Table holds the table name of the team in the database.
@@ -87,13 +85,6 @@ const (
 	ApisInverseTable = "apis"
 	// ApisColumn is the table column denoting the apis relation/edge.
 	ApisColumn = "team_apis"
-	// FileTypesTable is the table that holds the file_types relation/edge.
-	FileTypesTable = "file_types"
-	// FileTypesInverseTable is the table name for the FileType entity.
-	// It exists in this package in order to avoid circular dependency with the "filetype" package.
-	FileTypesInverseTable = "file_types"
-	// FileTypesColumn is the table column denoting the file_types relation/edge.
-	FileTypesColumn = "team_file_types"
 	// EventTypesTable is the table that holds the event_types relation/edge.
 	EventTypesTable = "event_types"
 	// EventTypesInverseTable is the table name for the EventType entity.
@@ -331,20 +322,6 @@ func ByApis(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByFileTypesCount orders the results by file_types count.
-func ByFileTypesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newFileTypesStep(), opts...)
-	}
-}
-
-// ByFileTypes orders the results by file_types terms.
-func ByFileTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newFileTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByEventTypesCount orders the results by event_types count.
 func ByEventTypesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -384,13 +361,6 @@ func newApisStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ApisInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ApisTable, ApisColumn),
-	)
-}
-func newFileTypesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(FileTypesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, FileTypesTable, FileTypesColumn),
 	)
 }
 func newEventTypesStep() *sqlgraph.Step {

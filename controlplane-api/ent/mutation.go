@@ -15646,8 +15646,6 @@ type FileTypeMutation struct {
 	sftp_instance_name      *string
 	sftp_instance_namespace *string
 	clearedFields           map[string]struct{}
-	owner                   *int
-	clearedowner            bool
 	exposures               map[int]struct{}
 	removedexposures        map[int]struct{}
 	clearedexposures        bool
@@ -16231,45 +16229,6 @@ func (m *FileTypeMutation) ResetSftpInstanceNamespace() {
 	delete(m.clearedFields, filetype.FieldSftpInstanceNamespace)
 }
 
-// SetOwnerID sets the "owner" edge to the Team entity by id.
-func (m *FileTypeMutation) SetOwnerID(id int) {
-	m.owner = &id
-}
-
-// ClearOwner clears the "owner" edge to the Team entity.
-func (m *FileTypeMutation) ClearOwner() {
-	m.clearedowner = true
-}
-
-// OwnerCleared reports if the "owner" edge to the Team entity was cleared.
-func (m *FileTypeMutation) OwnerCleared() bool {
-	return m.clearedowner
-}
-
-// OwnerID returns the "owner" edge ID in the mutation.
-func (m *FileTypeMutation) OwnerID() (id int, exists bool) {
-	if m.owner != nil {
-		return *m.owner, true
-	}
-	return
-}
-
-// OwnerIDs returns the "owner" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// OwnerID instead. It exists only for internal usage by the builders.
-func (m *FileTypeMutation) OwnerIDs() (ids []int) {
-	if id := m.owner; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetOwner resets all changes to the "owner" edge.
-func (m *FileTypeMutation) ResetOwner() {
-	m.owner = nil
-	m.clearedowner = false
-}
-
 // AddExposureIDs adds the "exposures" edge to the FileExposure entity by ids.
 func (m *FileTypeMutation) AddExposureIDs(ids ...int) {
 	if m.exposures == nil {
@@ -16720,10 +16679,7 @@ func (m *FileTypeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *FileTypeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.owner != nil {
-		edges = append(edges, filetype.EdgeOwner)
-	}
+	edges := make([]string, 0, 2)
 	if m.exposures != nil {
 		edges = append(edges, filetype.EdgeExposures)
 	}
@@ -16737,10 +16693,6 @@ func (m *FileTypeMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *FileTypeMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case filetype.EdgeOwner:
-		if id := m.owner; id != nil {
-			return []ent.Value{*id}
-		}
 	case filetype.EdgeExposures:
 		ids := make([]ent.Value, 0, len(m.exposures))
 		for id := range m.exposures {
@@ -16759,7 +16711,7 @@ func (m *FileTypeMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *FileTypeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.removedexposures != nil {
 		edges = append(edges, filetype.EdgeExposures)
 	}
@@ -16791,10 +16743,7 @@ func (m *FileTypeMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *FileTypeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.clearedowner {
-		edges = append(edges, filetype.EdgeOwner)
-	}
+	edges := make([]string, 0, 2)
 	if m.clearedexposures {
 		edges = append(edges, filetype.EdgeExposures)
 	}
@@ -16808,8 +16757,6 @@ func (m *FileTypeMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *FileTypeMutation) EdgeCleared(name string) bool {
 	switch name {
-	case filetype.EdgeOwner:
-		return m.clearedowner
 	case filetype.EdgeExposures:
 		return m.clearedexposures
 	case filetype.EdgeSubscriptions:
@@ -16822,9 +16769,6 @@ func (m *FileTypeMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *FileTypeMutation) ClearEdge(name string) error {
 	switch name {
-	case filetype.EdgeOwner:
-		m.ClearOwner()
-		return nil
 	}
 	return fmt.Errorf("unknown FileType unique edge %s", name)
 }
@@ -16833,9 +16777,6 @@ func (m *FileTypeMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *FileTypeMutation) ResetEdge(name string) error {
 	switch name {
-	case filetype.EdgeOwner:
-		m.ResetOwner()
-		return nil
 	case filetype.EdgeExposures:
 		m.ResetExposures()
 		return nil
@@ -18869,9 +18810,6 @@ type TeamMutation struct {
 	apis                map[int]struct{}
 	removedapis         map[int]struct{}
 	clearedapis         bool
-	file_types          map[int]struct{}
-	removedfile_types   map[int]struct{}
-	clearedfile_types   bool
 	event_types         map[int]struct{}
 	removedevent_types  map[int]struct{}
 	clearedevent_types  bool
@@ -19689,60 +19627,6 @@ func (m *TeamMutation) ResetApis() {
 	m.removedapis = nil
 }
 
-// AddFileTypeIDs adds the "file_types" edge to the FileType entity by ids.
-func (m *TeamMutation) AddFileTypeIDs(ids ...int) {
-	if m.file_types == nil {
-		m.file_types = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.file_types[ids[i]] = struct{}{}
-	}
-}
-
-// ClearFileTypes clears the "file_types" edge to the FileType entity.
-func (m *TeamMutation) ClearFileTypes() {
-	m.clearedfile_types = true
-}
-
-// FileTypesCleared reports if the "file_types" edge to the FileType entity was cleared.
-func (m *TeamMutation) FileTypesCleared() bool {
-	return m.clearedfile_types
-}
-
-// RemoveFileTypeIDs removes the "file_types" edge to the FileType entity by IDs.
-func (m *TeamMutation) RemoveFileTypeIDs(ids ...int) {
-	if m.removedfile_types == nil {
-		m.removedfile_types = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.file_types, ids[i])
-		m.removedfile_types[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedFileTypes returns the removed IDs of the "file_types" edge to the FileType entity.
-func (m *TeamMutation) RemovedFileTypesIDs() (ids []int) {
-	for id := range m.removedfile_types {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// FileTypesIDs returns the "file_types" edge IDs in the mutation.
-func (m *TeamMutation) FileTypesIDs() (ids []int) {
-	for id := range m.file_types {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetFileTypes resets all changes to the "file_types" edge.
-func (m *TeamMutation) ResetFileTypes() {
-	m.file_types = nil
-	m.clearedfile_types = false
-	m.removedfile_types = nil
-}
-
 // AddEventTypeIDs adds the "event_types" edge to the EventType entity by ids.
 func (m *TeamMutation) AddEventTypeIDs(ids ...int) {
 	if m.event_types == nil {
@@ -20156,7 +20040,7 @@ func (m *TeamMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TeamMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.group != nil {
 		edges = append(edges, team.EdgeGroup)
 	}
@@ -20168,9 +20052,6 @@ func (m *TeamMutation) AddedEdges() []string {
 	}
 	if m.apis != nil {
 		edges = append(edges, team.EdgeApis)
-	}
-	if m.file_types != nil {
-		edges = append(edges, team.EdgeFileTypes)
 	}
 	if m.event_types != nil {
 		edges = append(edges, team.EdgeEventTypes)
@@ -20204,12 +20085,6 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeFileTypes:
-		ids := make([]ent.Value, 0, len(m.file_types))
-		for id := range m.file_types {
-			ids = append(ids, id)
-		}
-		return ids
 	case team.EdgeEventTypes:
 		ids := make([]ent.Value, 0, len(m.event_types))
 		for id := range m.event_types {
@@ -20222,7 +20097,7 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TeamMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.removedmembers != nil {
 		edges = append(edges, team.EdgeMembers)
 	}
@@ -20231,9 +20106,6 @@ func (m *TeamMutation) RemovedEdges() []string {
 	}
 	if m.removedapis != nil {
 		edges = append(edges, team.EdgeApis)
-	}
-	if m.removedfile_types != nil {
-		edges = append(edges, team.EdgeFileTypes)
 	}
 	if m.removedevent_types != nil {
 		edges = append(edges, team.EdgeEventTypes)
@@ -20263,12 +20135,6 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeFileTypes:
-		ids := make([]ent.Value, 0, len(m.removedfile_types))
-		for id := range m.removedfile_types {
-			ids = append(ids, id)
-		}
-		return ids
 	case team.EdgeEventTypes:
 		ids := make([]ent.Value, 0, len(m.removedevent_types))
 		for id := range m.removedevent_types {
@@ -20281,7 +20147,7 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TeamMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.clearedgroup {
 		edges = append(edges, team.EdgeGroup)
 	}
@@ -20293,9 +20159,6 @@ func (m *TeamMutation) ClearedEdges() []string {
 	}
 	if m.clearedapis {
 		edges = append(edges, team.EdgeApis)
-	}
-	if m.clearedfile_types {
-		edges = append(edges, team.EdgeFileTypes)
 	}
 	if m.clearedevent_types {
 		edges = append(edges, team.EdgeEventTypes)
@@ -20315,8 +20178,6 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 		return m.clearedapplications
 	case team.EdgeApis:
 		return m.clearedapis
-	case team.EdgeFileTypes:
-		return m.clearedfile_types
 	case team.EdgeEventTypes:
 		return m.clearedevent_types
 	}
@@ -20349,9 +20210,6 @@ func (m *TeamMutation) ResetEdge(name string) error {
 		return nil
 	case team.EdgeApis:
 		m.ResetApis()
-		return nil
-	case team.EdgeFileTypes:
-		m.ResetFileTypes()
 		return nil
 	case team.EdgeEventTypes:
 		m.ResetEventTypes()

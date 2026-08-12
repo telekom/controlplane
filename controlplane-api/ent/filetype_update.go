@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
-	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
 // FileTypeUpdate is the builder for updating FileType entities.
@@ -202,17 +201,6 @@ func (_u *FileTypeUpdate) ClearSftpInstanceNamespace() *FileTypeUpdate {
 	return _u
 }
 
-// SetOwnerID sets the "owner" edge to the Team entity by ID.
-func (_u *FileTypeUpdate) SetOwnerID(id int) *FileTypeUpdate {
-	_u.mutation.SetOwnerID(id)
-	return _u
-}
-
-// SetOwner sets the "owner" edge to the Team entity.
-func (_u *FileTypeUpdate) SetOwner(v *Team) *FileTypeUpdate {
-	return _u.SetOwnerID(v.ID)
-}
-
 // AddExposureIDs adds the "exposures" edge to the FileExposure entity by IDs.
 func (_u *FileTypeUpdate) AddExposureIDs(ids ...int) *FileTypeUpdate {
 	_u.mutation.AddExposureIDs(ids...)
@@ -246,12 +234,6 @@ func (_u *FileTypeUpdate) AddSubscriptions(v ...*FileSubscription) *FileTypeUpda
 // Mutation returns the FileTypeMutation object of the builder.
 func (_u *FileTypeUpdate) Mutation() *FileTypeMutation {
 	return _u.mutation
-}
-
-// ClearOwner clears the "owner" edge to the Team entity.
-func (_u *FileTypeUpdate) ClearOwner() *FileTypeUpdate {
-	_u.mutation.ClearOwner()
-	return _u
 }
 
 // ClearExposures clears all "exposures" edges to the FileExposure entity.
@@ -355,9 +337,6 @@ func (_u *FileTypeUpdate) check() error {
 			return &ValidationError{Name: "file_type", err: fmt.Errorf(`ent: validator failed for field "FileType.file_type": %w`, err)}
 		}
 	}
-	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "FileType.owner"`)
-	}
 	return nil
 }
 
@@ -420,35 +399,6 @@ func (_u *FileTypeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SftpInstanceNamespaceCleared() {
 		_spec.ClearField(filetype.FieldSftpInstanceNamespace, field.TypeString)
-	}
-	if _u.mutation.OwnerCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   filetype.OwnerTable,
-			Columns: []string{filetype.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.OwnerIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   filetype.OwnerTable,
-			Columns: []string{filetype.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.ExposuresCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -728,17 +678,6 @@ func (_u *FileTypeUpdateOne) ClearSftpInstanceNamespace() *FileTypeUpdateOne {
 	return _u
 }
 
-// SetOwnerID sets the "owner" edge to the Team entity by ID.
-func (_u *FileTypeUpdateOne) SetOwnerID(id int) *FileTypeUpdateOne {
-	_u.mutation.SetOwnerID(id)
-	return _u
-}
-
-// SetOwner sets the "owner" edge to the Team entity.
-func (_u *FileTypeUpdateOne) SetOwner(v *Team) *FileTypeUpdateOne {
-	return _u.SetOwnerID(v.ID)
-}
-
 // AddExposureIDs adds the "exposures" edge to the FileExposure entity by IDs.
 func (_u *FileTypeUpdateOne) AddExposureIDs(ids ...int) *FileTypeUpdateOne {
 	_u.mutation.AddExposureIDs(ids...)
@@ -772,12 +711,6 @@ func (_u *FileTypeUpdateOne) AddSubscriptions(v ...*FileSubscription) *FileTypeU
 // Mutation returns the FileTypeMutation object of the builder.
 func (_u *FileTypeUpdateOne) Mutation() *FileTypeMutation {
 	return _u.mutation
-}
-
-// ClearOwner clears the "owner" edge to the Team entity.
-func (_u *FileTypeUpdateOne) ClearOwner() *FileTypeUpdateOne {
-	_u.mutation.ClearOwner()
-	return _u
 }
 
 // ClearExposures clears all "exposures" edges to the FileExposure entity.
@@ -894,9 +827,6 @@ func (_u *FileTypeUpdateOne) check() error {
 			return &ValidationError{Name: "file_type", err: fmt.Errorf(`ent: validator failed for field "FileType.file_type": %w`, err)}
 		}
 	}
-	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "FileType.owner"`)
-	}
 	return nil
 }
 
@@ -976,35 +906,6 @@ func (_u *FileTypeUpdateOne) sqlSave(ctx context.Context) (_node *FileType, err 
 	}
 	if _u.mutation.SftpInstanceNamespaceCleared() {
 		_spec.ClearField(filetype.FieldSftpInstanceNamespace, field.TypeString)
-	}
-	if _u.mutation.OwnerCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   filetype.OwnerTable,
-			Columns: []string{filetype.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.OwnerIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   filetype.OwnerTable,
-			Columns: []string{filetype.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.ExposuresCleared() {
 		edge := &sqlgraph.EdgeSpec{

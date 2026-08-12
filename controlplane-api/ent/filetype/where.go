@@ -733,29 +733,6 @@ func SftpInstanceNamespaceContainsFold(v string) predicate.FileType {
 	return predicate.FileType(sql.FieldContainsFold(FieldSftpInstanceNamespace, v))
 }
 
-// HasOwner applies the HasEdge predicate on the "owner" edge.
-func HasOwner() predicate.FileType {
-	return predicate.FileType(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
-func HasOwnerWith(preds ...predicate.Team) predicate.FileType {
-	return predicate.FileType(func(s *sql.Selector) {
-		step := newOwnerStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasExposures applies the HasEdge predicate on the "exposures" edge.
 func HasExposures() predicate.FileType {
 	return predicate.FileType(func(s *sql.Selector) {

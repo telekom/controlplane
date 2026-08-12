@@ -403,27 +403,6 @@ func (_m *Team) Apis(
 	return _m.QueryApis().Paginate(ctx, after, first, before, last, opts...)
 }
 
-func (_m *Team) FileTypes(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *FileTypeOrder, where *FileTypeWhereInput,
-) (*FileTypeConnection, error) {
-	opts := []FileTypePaginateOption{
-		WithFileTypeOrder(orderBy),
-		WithFileTypeFilter(where.Filter),
-	}
-	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
-	if nodes, err := _m.NamedFileTypes(alias); err == nil || hasTotalCount {
-		pager, err := newFileTypePager(opts, last != nil)
-		if err != nil {
-			return nil, err
-		}
-		conn := &FileTypeConnection{Edges: []*FileTypeEdge{}, TotalCount: totalCount}
-		conn.build(nodes, pager, after, first, before, last)
-		return conn, nil
-	}
-	return _m.QueryFileTypes().Paginate(ctx, after, first, before, last, opts...)
-}
-
 func (_m *Team) EventTypes(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *EventTypeOrder, where *EventTypeWhereInput,
 ) (*EventTypeConnection, error) {
@@ -432,7 +411,7 @@ func (_m *Team) EventTypes(
 		WithEventTypeFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
 	if nodes, err := _m.NamedEventTypes(alias); err == nil || hasTotalCount {
 		pager, err := newEventTypePager(opts, last != nil)
 		if err != nil {
