@@ -27,7 +27,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/telekom/controlplane/agentic/api v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/file/api v0.0.0-00010101000000-000000000000
-	golang.org/x/crypto v0.53.0
+	golang.org/x/crypto v0.54.0
 	k8s.io/api v0.36.3
 	k8s.io/apimachinery v0.36.3
 	k8s.io/client-go v0.36.3
