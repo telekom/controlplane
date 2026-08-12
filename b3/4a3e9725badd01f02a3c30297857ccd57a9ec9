@@ -1,0 +1,31 @@
+docs/docs/admin-journey/installation.md
+  s_b5f1e505f5ca74::t_2d56333b2602a7 100,108,265
+  s_b5f1e505f5ca74::t_565869d644229a 98
+docs/docs/developer-journey/local-development.md
+  s_b5f1e505f5ca74::t_2d56333b2602a7 53
+api/config/manager/manager.yaml
+  s_b5f1e505f5ca74::t_2d56333b2602a7 63
+common/README.md
+  s_b5f1e505f5ca74::t_2d56333b2602a7 159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b34a3e9725badd01f02a3c30297857ccd57a9ec9",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_b5f1e505f5ca74": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00a8ab97fffesGcQGA1IopNdyS",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
