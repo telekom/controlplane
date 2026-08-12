@@ -6,7 +6,6 @@ package filetype_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
@@ -40,23 +39,6 @@ func (m *mockFileTypeDeps) FindTeamID(_ context.Context, name string) (int, erro
 	return 0, fmt.Errorf("team %q: %w", name, infrastructure.ErrEntityNotFound)
 }
 
-func skipIfSQLiteUnavailable() {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		Skip(fmt.Sprintf("sqlite3 is unavailable in this environment: %v", err))
-	}
-	defer func() {
-		_ = db.Close()
-	}()
-
-	if err := db.Ping(); err != nil {
-		Skip(fmt.Sprintf("sqlite3 is unavailable in this environment: %v", err))
-	}
-	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		Skip(fmt.Sprintf("sqlite3 is unavailable in this environment (likely CGO disabled): %v", err))
-	}
-}
-
 var _ = Describe("FileType Repository", func() {
 	var (
 		client *ent.Client
@@ -68,7 +50,6 @@ var _ = Describe("FileType Repository", func() {
 	)
 
 	BeforeEach(func() {
-		skipIfSQLiteUnavailable()
 		ctx = privacy.DecisionContext(context.Background(), privacy.Allow)
 		var err error
 		cache, err = infrastructure.NewEdgeCache(100_000, 10<<20, 64)
