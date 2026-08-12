@@ -39,10 +39,6 @@ const (
 	FieldVariant = "variant"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
-	// FieldSftpInstanceName holds the string denoting the sftp_instance_name field in the database.
-	FieldSftpInstanceName = "sftp_instance_name"
-	// FieldSftpInstanceNamespace holds the string denoting the sftp_instance_namespace field in the database.
-	FieldSftpInstanceNamespace = "sftp_instance_namespace"
 	// EdgeExposures holds the string denoting the exposures edge name in mutations.
 	EdgeExposures = "exposures"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
@@ -77,8 +73,6 @@ var Columns = []string{
 	FieldDescription,
 	FieldVariant,
 	FieldActive,
-	FieldSftpInstanceName,
-	FieldSftpInstanceNamespace,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -189,16 +183,6 @@ func ByVariant(opts ...sql.OrderTermOption) OrderOption {
 // ByActive orders the results by the active field.
 func ByActive(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActive, opts...).ToFunc()
-}
-
-// BySftpInstanceName orders the results by the sftp_instance_name field.
-func BySftpInstanceName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSftpInstanceName, opts...).ToFunc()
-}
-
-// BySftpInstanceNamespace orders the results by the sftp_instance_namespace field.
-func BySftpInstanceNamespace(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSftpInstanceNamespace, opts...).ToFunc()
 }
 
 // ByExposuresCount orders the results by exposures count.

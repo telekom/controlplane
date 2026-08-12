@@ -161,46 +161,6 @@ func (_u *FileTypeUpdate) SetNillableActive(v *bool) *FileTypeUpdate {
 	return _u
 }
 
-// SetSftpInstanceName sets the "sftp_instance_name" field.
-func (_u *FileTypeUpdate) SetSftpInstanceName(v string) *FileTypeUpdate {
-	_u.mutation.SetSftpInstanceName(v)
-	return _u
-}
-
-// SetNillableSftpInstanceName sets the "sftp_instance_name" field if the given value is not nil.
-func (_u *FileTypeUpdate) SetNillableSftpInstanceName(v *string) *FileTypeUpdate {
-	if v != nil {
-		_u.SetSftpInstanceName(*v)
-	}
-	return _u
-}
-
-// ClearSftpInstanceName clears the value of the "sftp_instance_name" field.
-func (_u *FileTypeUpdate) ClearSftpInstanceName() *FileTypeUpdate {
-	_u.mutation.ClearSftpInstanceName()
-	return _u
-}
-
-// SetSftpInstanceNamespace sets the "sftp_instance_namespace" field.
-func (_u *FileTypeUpdate) SetSftpInstanceNamespace(v string) *FileTypeUpdate {
-	_u.mutation.SetSftpInstanceNamespace(v)
-	return _u
-}
-
-// SetNillableSftpInstanceNamespace sets the "sftp_instance_namespace" field if the given value is not nil.
-func (_u *FileTypeUpdate) SetNillableSftpInstanceNamespace(v *string) *FileTypeUpdate {
-	if v != nil {
-		_u.SetSftpInstanceNamespace(*v)
-	}
-	return _u
-}
-
-// ClearSftpInstanceNamespace clears the value of the "sftp_instance_namespace" field.
-func (_u *FileTypeUpdate) ClearSftpInstanceNamespace() *FileTypeUpdate {
-	_u.mutation.ClearSftpInstanceNamespace()
-	return _u
-}
-
 // AddExposureIDs adds the "exposures" edge to the FileExposure entity by IDs.
 func (_u *FileTypeUpdate) AddExposureIDs(ids ...int) *FileTypeUpdate {
 	_u.mutation.AddExposureIDs(ids...)
@@ -387,18 +347,6 @@ func (_u *FileTypeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(filetype.FieldActive, field.TypeBool, value)
-	}
-	if value, ok := _u.mutation.SftpInstanceName(); ok {
-		_spec.SetField(filetype.FieldSftpInstanceName, field.TypeString, value)
-	}
-	if _u.mutation.SftpInstanceNameCleared() {
-		_spec.ClearField(filetype.FieldSftpInstanceName, field.TypeString)
-	}
-	if value, ok := _u.mutation.SftpInstanceNamespace(); ok {
-		_spec.SetField(filetype.FieldSftpInstanceNamespace, field.TypeString, value)
-	}
-	if _u.mutation.SftpInstanceNamespaceCleared() {
-		_spec.ClearField(filetype.FieldSftpInstanceNamespace, field.TypeString)
 	}
 	if _u.mutation.ExposuresCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -638,46 +586,6 @@ func (_u *FileTypeUpdateOne) SetNillableActive(v *bool) *FileTypeUpdateOne {
 	return _u
 }
 
-// SetSftpInstanceName sets the "sftp_instance_name" field.
-func (_u *FileTypeUpdateOne) SetSftpInstanceName(v string) *FileTypeUpdateOne {
-	_u.mutation.SetSftpInstanceName(v)
-	return _u
-}
-
-// SetNillableSftpInstanceName sets the "sftp_instance_name" field if the given value is not nil.
-func (_u *FileTypeUpdateOne) SetNillableSftpInstanceName(v *string) *FileTypeUpdateOne {
-	if v != nil {
-		_u.SetSftpInstanceName(*v)
-	}
-	return _u
-}
-
-// ClearSftpInstanceName clears the value of the "sftp_instance_name" field.
-func (_u *FileTypeUpdateOne) ClearSftpInstanceName() *FileTypeUpdateOne {
-	_u.mutation.ClearSftpInstanceName()
-	return _u
-}
-
-// SetSftpInstanceNamespace sets the "sftp_instance_namespace" field.
-func (_u *FileTypeUpdateOne) SetSftpInstanceNamespace(v string) *FileTypeUpdateOne {
-	_u.mutation.SetSftpInstanceNamespace(v)
-	return _u
-}
-
-// SetNillableSftpInstanceNamespace sets the "sftp_instance_namespace" field if the given value is not nil.
-func (_u *FileTypeUpdateOne) SetNillableSftpInstanceNamespace(v *string) *FileTypeUpdateOne {
-	if v != nil {
-		_u.SetSftpInstanceNamespace(*v)
-	}
-	return _u
-}
-
-// ClearSftpInstanceNamespace clears the value of the "sftp_instance_namespace" field.
-func (_u *FileTypeUpdateOne) ClearSftpInstanceNamespace() *FileTypeUpdateOne {
-	_u.mutation.ClearSftpInstanceNamespace()
-	return _u
-}
-
 // AddExposureIDs adds the "exposures" edge to the FileExposure entity by IDs.
 func (_u *FileTypeUpdateOne) AddExposureIDs(ids ...int) *FileTypeUpdateOne {
 	_u.mutation.AddExposureIDs(ids...)
@@ -894,18 +802,6 @@ func (_u *FileTypeUpdateOne) sqlSave(ctx context.Context) (_node *FileType, err 
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(filetype.FieldActive, field.TypeBool, value)
-	}
-	if value, ok := _u.mutation.SftpInstanceName(); ok {
-		_spec.SetField(filetype.FieldSftpInstanceName, field.TypeString, value)
-	}
-	if _u.mutation.SftpInstanceNameCleared() {
-		_spec.ClearField(filetype.FieldSftpInstanceName, field.TypeString)
-	}
-	if value, ok := _u.mutation.SftpInstanceNamespace(); ok {
-		_spec.SetField(filetype.FieldSftpInstanceNamespace, field.TypeString, value)
-	}
-	if _u.mutation.SftpInstanceNamespaceCleared() {
-		_spec.ClearField(filetype.FieldSftpInstanceNamespace, field.TypeString)
 	}
 	if _u.mutation.ExposuresCleared() {
 		edge := &sqlgraph.EdgeSpec{

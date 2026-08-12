@@ -57,12 +57,6 @@ func (r *Repository) Upsert(ctx context.Context, data *FileTypeData) error {
 	if data.Variant != nil {
 		create.SetVariant(*data.Variant)
 	}
-	if data.SFTPInstanceName != nil {
-		create.SetSftpInstanceName(*data.SFTPInstanceName)
-	}
-	if data.SFTPInstanceNamespace != nil {
-		create.SetSftpInstanceNamespace(*data.SFTPInstanceNamespace)
-	}
 
 	fileTypeID, upsertErr := create.
 		OnConflictColumns(entfiletype.FieldFileType).
@@ -76,16 +70,6 @@ func (r *Repository) Upsert(ctx context.Context, data *FileTypeData) error {
 				u.SetVariant(*data.Variant)
 			} else {
 				u.ClearVariant()
-			}
-			if data.SFTPInstanceName != nil {
-				u.SetSftpInstanceName(*data.SFTPInstanceName)
-			} else {
-				u.ClearSftpInstanceName()
-			}
-			if data.SFTPInstanceNamespace != nil {
-				u.SetSftpInstanceNamespace(*data.SFTPInstanceNamespace)
-			} else {
-				u.ClearSftpInstanceNamespace()
 			}
 		}).
 		ID(ctx)
