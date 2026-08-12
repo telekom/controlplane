@@ -29,24 +29,20 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileType) (*FileTy
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
 	active := obj.Status.FileExposureRef != nil
-
-	var sftpInstanceName *string
-	var sftpInstanceNamespace *string
+	var variant *string
 	if obj.Status.SFTPInstance != nil {
-		sftpInstanceName = &obj.Status.SFTPInstance.Name
-		sftpInstanceNamespace = &obj.Status.SFTPInstance.Namespace
+		sftp := "sftp"
+		variant = &sftp
 	}
 
 	return &FileTypeData{
-		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		StatusPhase:           phase,
-		StatusMessage:         message,
-		FileType:              obj.Name,
-		Description:           obj.Spec.Description,
-		Variant:               nil,
-		Active:                active,
-		SFTPInstanceName:      sftpInstanceName,
-		SFTPInstanceNamespace: sftpInstanceNamespace,
+		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		StatusPhase:   phase,
+		StatusMessage: message,
+		FileType:      obj.Name,
+		Description:   obj.Spec.Description,
+		Variant:       variant,
+		Active:        active,
 	}, nil
 }
 

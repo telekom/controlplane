@@ -7806,40 +7806,6 @@ type FileTypeWhereInput struct {
 	Active    *bool `json:"active,omitempty"`
 	ActiveNEQ *bool `json:"activeNEQ,omitempty"`
 
-	// "sftp_instance_name" field predicates.
-	SftpInstanceName             *string  `json:"sftpInstanceName,omitempty"`
-	SftpInstanceNameNEQ          *string  `json:"sftpInstanceNameNEQ,omitempty"`
-	SftpInstanceNameIn           []string `json:"sftpInstanceNameIn,omitempty"`
-	SftpInstanceNameNotIn        []string `json:"sftpInstanceNameNotIn,omitempty"`
-	SftpInstanceNameGT           *string  `json:"sftpInstanceNameGT,omitempty"`
-	SftpInstanceNameGTE          *string  `json:"sftpInstanceNameGTE,omitempty"`
-	SftpInstanceNameLT           *string  `json:"sftpInstanceNameLT,omitempty"`
-	SftpInstanceNameLTE          *string  `json:"sftpInstanceNameLTE,omitempty"`
-	SftpInstanceNameContains     *string  `json:"sftpInstanceNameContains,omitempty"`
-	SftpInstanceNameHasPrefix    *string  `json:"sftpInstanceNameHasPrefix,omitempty"`
-	SftpInstanceNameHasSuffix    *string  `json:"sftpInstanceNameHasSuffix,omitempty"`
-	SftpInstanceNameIsNil        bool     `json:"sftpInstanceNameIsNil,omitempty"`
-	SftpInstanceNameNotNil       bool     `json:"sftpInstanceNameNotNil,omitempty"`
-	SftpInstanceNameEqualFold    *string  `json:"sftpInstanceNameEqualFold,omitempty"`
-	SftpInstanceNameContainsFold *string  `json:"sftpInstanceNameContainsFold,omitempty"`
-
-	// "sftp_instance_namespace" field predicates.
-	SftpInstanceNamespace             *string  `json:"sftpInstanceNamespace,omitempty"`
-	SftpInstanceNamespaceNEQ          *string  `json:"sftpInstanceNamespaceNEQ,omitempty"`
-	SftpInstanceNamespaceIn           []string `json:"sftpInstanceNamespaceIn,omitempty"`
-	SftpInstanceNamespaceNotIn        []string `json:"sftpInstanceNamespaceNotIn,omitempty"`
-	SftpInstanceNamespaceGT           *string  `json:"sftpInstanceNamespaceGT,omitempty"`
-	SftpInstanceNamespaceGTE          *string  `json:"sftpInstanceNamespaceGTE,omitempty"`
-	SftpInstanceNamespaceLT           *string  `json:"sftpInstanceNamespaceLT,omitempty"`
-	SftpInstanceNamespaceLTE          *string  `json:"sftpInstanceNamespaceLTE,omitempty"`
-	SftpInstanceNamespaceContains     *string  `json:"sftpInstanceNamespaceContains,omitempty"`
-	SftpInstanceNamespaceHasPrefix    *string  `json:"sftpInstanceNamespaceHasPrefix,omitempty"`
-	SftpInstanceNamespaceHasSuffix    *string  `json:"sftpInstanceNamespaceHasSuffix,omitempty"`
-	SftpInstanceNamespaceIsNil        bool     `json:"sftpInstanceNamespaceIsNil,omitempty"`
-	SftpInstanceNamespaceNotNil       bool     `json:"sftpInstanceNamespaceNotNil,omitempty"`
-	SftpInstanceNamespaceEqualFold    *string  `json:"sftpInstanceNamespaceEqualFold,omitempty"`
-	SftpInstanceNamespaceContainsFold *string  `json:"sftpInstanceNamespaceContainsFold,omitempty"`
-
 	// "exposures" edge predicates.
 	HasExposures     *bool                     `json:"hasExposures,omitempty"`
 	HasExposuresWith []*FileExposureWhereInput `json:"hasExposuresWith,omitempty"`
@@ -8228,96 +8194,6 @@ func (i *FileTypeWhereInput) P() (predicate.FileType, error) {
 	}
 	if i.ActiveNEQ != nil {
 		predicates = append(predicates, filetype.ActiveNEQ(*i.ActiveNEQ))
-	}
-	if i.SftpInstanceName != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameEQ(*i.SftpInstanceName))
-	}
-	if i.SftpInstanceNameNEQ != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameNEQ(*i.SftpInstanceNameNEQ))
-	}
-	if len(i.SftpInstanceNameIn) > 0 {
-		predicates = append(predicates, filetype.SftpInstanceNameIn(i.SftpInstanceNameIn...))
-	}
-	if len(i.SftpInstanceNameNotIn) > 0 {
-		predicates = append(predicates, filetype.SftpInstanceNameNotIn(i.SftpInstanceNameNotIn...))
-	}
-	if i.SftpInstanceNameGT != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameGT(*i.SftpInstanceNameGT))
-	}
-	if i.SftpInstanceNameGTE != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameGTE(*i.SftpInstanceNameGTE))
-	}
-	if i.SftpInstanceNameLT != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameLT(*i.SftpInstanceNameLT))
-	}
-	if i.SftpInstanceNameLTE != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameLTE(*i.SftpInstanceNameLTE))
-	}
-	if i.SftpInstanceNameContains != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameContains(*i.SftpInstanceNameContains))
-	}
-	if i.SftpInstanceNameHasPrefix != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameHasPrefix(*i.SftpInstanceNameHasPrefix))
-	}
-	if i.SftpInstanceNameHasSuffix != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameHasSuffix(*i.SftpInstanceNameHasSuffix))
-	}
-	if i.SftpInstanceNameIsNil {
-		predicates = append(predicates, filetype.SftpInstanceNameIsNil())
-	}
-	if i.SftpInstanceNameNotNil {
-		predicates = append(predicates, filetype.SftpInstanceNameNotNil())
-	}
-	if i.SftpInstanceNameEqualFold != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameEqualFold(*i.SftpInstanceNameEqualFold))
-	}
-	if i.SftpInstanceNameContainsFold != nil {
-		predicates = append(predicates, filetype.SftpInstanceNameContainsFold(*i.SftpInstanceNameContainsFold))
-	}
-	if i.SftpInstanceNamespace != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceEQ(*i.SftpInstanceNamespace))
-	}
-	if i.SftpInstanceNamespaceNEQ != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceNEQ(*i.SftpInstanceNamespaceNEQ))
-	}
-	if len(i.SftpInstanceNamespaceIn) > 0 {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceIn(i.SftpInstanceNamespaceIn...))
-	}
-	if len(i.SftpInstanceNamespaceNotIn) > 0 {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceNotIn(i.SftpInstanceNamespaceNotIn...))
-	}
-	if i.SftpInstanceNamespaceGT != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceGT(*i.SftpInstanceNamespaceGT))
-	}
-	if i.SftpInstanceNamespaceGTE != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceGTE(*i.SftpInstanceNamespaceGTE))
-	}
-	if i.SftpInstanceNamespaceLT != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceLT(*i.SftpInstanceNamespaceLT))
-	}
-	if i.SftpInstanceNamespaceLTE != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceLTE(*i.SftpInstanceNamespaceLTE))
-	}
-	if i.SftpInstanceNamespaceContains != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceContains(*i.SftpInstanceNamespaceContains))
-	}
-	if i.SftpInstanceNamespaceHasPrefix != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceHasPrefix(*i.SftpInstanceNamespaceHasPrefix))
-	}
-	if i.SftpInstanceNamespaceHasSuffix != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceHasSuffix(*i.SftpInstanceNamespaceHasSuffix))
-	}
-	if i.SftpInstanceNamespaceIsNil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceIsNil())
-	}
-	if i.SftpInstanceNamespaceNotNil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceNotNil())
-	}
-	if i.SftpInstanceNamespaceEqualFold != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceEqualFold(*i.SftpInstanceNamespaceEqualFold))
-	}
-	if i.SftpInstanceNamespaceContainsFold != nil {
-		predicates = append(predicates, filetype.SftpInstanceNamespaceContainsFold(*i.SftpInstanceNamespaceContainsFold))
 	}
 
 	if i.HasExposures != nil {

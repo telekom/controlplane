@@ -40,12 +40,6 @@ func (FileType) Fields() []ent.Field {
 			Nillable(),
 		field.Bool("active").
 			Default(false),
-		field.Text("sftp_instance_name").
-			Optional().
-			Nillable(),
-		field.Text("sftp_instance_namespace").
-			Optional().
-			Nillable(),
 	}
 }
 

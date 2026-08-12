@@ -2543,16 +2543,6 @@ func (_q *FileTypeQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, filetype.FieldActive)
 				fieldSeen[filetype.FieldActive] = struct{}{}
 			}
-		case "sftpInstanceName":
-			if _, ok := fieldSeen[filetype.FieldSftpInstanceName]; !ok {
-				selectedFields = append(selectedFields, filetype.FieldSftpInstanceName)
-				fieldSeen[filetype.FieldSftpInstanceName] = struct{}{}
-			}
-		case "sftpInstanceNamespace":
-			if _, ok := fieldSeen[filetype.FieldSftpInstanceNamespace]; !ok {
-				selectedFields = append(selectedFields, filetype.FieldSftpInstanceNamespace)
-				fieldSeen[filetype.FieldSftpInstanceNamespace] = struct{}{}
-			}
 		case "id":
 		case "__typename":
 		default:

@@ -52,11 +52,8 @@ var _ = Describe("FileType Translator", func() {
 			Expect(data.StatusPhase).To(Equal("READY"))
 			Expect(data.StatusMessage).To(Equal("ok"))
 			Expect(data.Active).To(BeTrue())
-			Expect(data.SFTPInstanceName).NotTo(BeNil())
-			Expect(*data.SFTPInstanceName).To(Equal("sftp-a"))
-			Expect(data.SFTPInstanceNamespace).NotTo(BeNil())
-			Expect(*data.SFTPInstanceNamespace).To(Equal("ns-a"))
-			Expect(data.Variant).To(BeNil())
+			Expect(data.Variant).NotTo(BeNil())
+			Expect(*data.Variant).To(Equal("sftp"))
 		})
 
 		It("should set active=false when no exposure ref", func() {
@@ -68,8 +65,7 @@ var _ = Describe("FileType Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.Active).To(BeFalse())
-			Expect(data.SFTPInstanceName).To(BeNil())
-			Expect(data.SFTPInstanceNamespace).To(BeNil())
+			Expect(data.Variant).To(BeNil())
 			Expect(data.StatusPhase).To(Equal("UNKNOWN"))
 		})
 	})

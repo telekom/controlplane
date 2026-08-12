@@ -3213,8 +3213,6 @@ type FileType implements Node {
   description: String
   variant: String
   active: Boolean!
-  sftpInstanceName: String
-  sftpInstanceNamespace: String
 }
 """
 A connection to a list of items.
@@ -3416,42 +3414,6 @@ input FileTypeWhereInput {
   """
   active: Boolean
   activeNEQ: Boolean
-  """
-  sftp_instance_name field predicates
-  """
-  sftpInstanceName: String
-  sftpInstanceNameNEQ: String
-  sftpInstanceNameIn: [String!]
-  sftpInstanceNameNotIn: [String!]
-  sftpInstanceNameGT: String
-  sftpInstanceNameGTE: String
-  sftpInstanceNameLT: String
-  sftpInstanceNameLTE: String
-  sftpInstanceNameContains: String
-  sftpInstanceNameHasPrefix: String
-  sftpInstanceNameHasSuffix: String
-  sftpInstanceNameIsNil: Boolean
-  sftpInstanceNameNotNil: Boolean
-  sftpInstanceNameEqualFold: String
-  sftpInstanceNameContainsFold: String
-  """
-  sftp_instance_namespace field predicates
-  """
-  sftpInstanceNamespace: String
-  sftpInstanceNamespaceNEQ: String
-  sftpInstanceNamespaceIn: [String!]
-  sftpInstanceNamespaceNotIn: [String!]
-  sftpInstanceNamespaceGT: String
-  sftpInstanceNamespaceGTE: String
-  sftpInstanceNamespaceLT: String
-  sftpInstanceNamespaceLTE: String
-  sftpInstanceNamespaceContains: String
-  sftpInstanceNamespaceHasPrefix: String
-  sftpInstanceNamespaceHasSuffix: String
-  sftpInstanceNamespaceIsNil: Boolean
-  sftpInstanceNamespaceNotNil: Boolean
-  sftpInstanceNamespaceEqualFold: String
-  sftpInstanceNamespaceContainsFold: String
   """
   exposures edge predicates
   """
