@@ -62,8 +62,6 @@ type TeamEdges struct {
 	Applications []*Application `json:"applications,omitempty"`
 	// Apis holds the value of the apis edge.
 	Apis []*Api `json:"apis,omitempty"`
-	// FileTypes holds the value of the file_types edge.
-	FileTypes []*FileType `json:"file_types,omitempty"`
 	// EventTypes holds the value of the event_types edge.
 	EventTypes []*EventType `json:"event_types,omitempty"`
 	// McpServers holds the value of the mcp_servers edge.
@@ -72,14 +70,13 @@ type TeamEdges struct {
 	AgentCards []*AgentCard `json:"agent_cards,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [8]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [8]map[string]int
+	totalCount [7]map[string]int
 
 	namedMembers      map[string][]*Member
 	namedApplications map[string][]*Application
 	namedApis         map[string][]*Api
-	namedFileTypes    map[string][]*FileType
 	namedEventTypes   map[string][]*EventType
 	namedMcpServers   map[string][]*McpServer
 	namedAgentCards   map[string][]*AgentCard
@@ -123,19 +120,10 @@ func (e TeamEdges) ApisOrErr() ([]*Api, error) {
 	return nil, &NotLoadedError{edge: "apis"}
 }
 
-// FileTypesOrErr returns the FileTypes value or an error if the edge
-// was not loaded in eager-loading.
-func (e TeamEdges) FileTypesOrErr() ([]*FileType, error) {
-	if e.loadedTypes[4] {
-		return e.FileTypes, nil
-	}
-	return nil, &NotLoadedError{edge: "file_types"}
-}
-
 // EventTypesOrErr returns the EventTypes value or an error if the edge
 // was not loaded in eager-loading.
 func (e TeamEdges) EventTypesOrErr() ([]*EventType, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[4] {
 		return e.EventTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "event_types"}
@@ -144,7 +132,7 @@ func (e TeamEdges) EventTypesOrErr() ([]*EventType, error) {
 // McpServersOrErr returns the McpServers value or an error if the edge
 // was not loaded in eager-loading.
 func (e TeamEdges) McpServersOrErr() ([]*McpServer, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[5] {
 		return e.McpServers, nil
 	}
 	return nil, &NotLoadedError{edge: "mcp_servers"}
@@ -153,7 +141,7 @@ func (e TeamEdges) McpServersOrErr() ([]*McpServer, error) {
 // AgentCardsOrErr returns the AgentCards value or an error if the edge
 // was not loaded in eager-loading.
 func (e TeamEdges) AgentCardsOrErr() ([]*AgentCard, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[6] {
 		return e.AgentCards, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_cards"}
@@ -309,11 +297,6 @@ func (_m *Team) QueryApplications() *ApplicationQuery {
 // QueryApis queries the "apis" edge of the Team entity.
 func (_m *Team) QueryApis() *APIQuery {
 	return NewTeamClient(_m.config).QueryApis(_m)
-}
-
-// QueryFileTypes queries the "file_types" edge of the Team entity.
-func (_m *Team) QueryFileTypes() *FileTypeQuery {
-	return NewTeamClient(_m.config).QueryFileTypes(_m)
 }
 
 // QueryEventTypes queries the "event_types" edge of the Team entity.
@@ -474,30 +457,6 @@ func (_m *Team) appendNamedApis(name string, edges ...*Api) {
 		_m.Edges.namedApis[name] = []*Api{}
 	} else {
 		_m.Edges.namedApis[name] = append(_m.Edges.namedApis[name], edges...)
-	}
-}
-
-// NamedFileTypes returns the FileTypes named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *Team) NamedFileTypes(name string) ([]*FileType, error) {
-	if _m.Edges.namedFileTypes == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedFileTypes[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *Team) appendNamedFileTypes(name string, edges ...*FileType) {
-	if _m.Edges.namedFileTypes == nil {
-		_m.Edges.namedFileTypes = make(map[string][]*FileType)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedFileTypes[name] = []*FileType{}
-	} else {
-		_m.Edges.namedFileTypes[name] = append(_m.Edges.namedFileTypes[name], edges...)
 	}
 }
 

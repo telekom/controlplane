@@ -6,7 +6,6 @@ package filetype
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -26,7 +25,6 @@ const entityType = "filetype"
 type Repository struct {
 	client *ent.Client
 	cache  *infrastructure.EdgeCache
-	deps   FileTypeDeps
 }
 
 // compile-time interface check.
@@ -34,11 +32,10 @@ var _ runtime.Repository[FileTypeKey, *FileTypeData] = (*Repository)(nil)
 
 // NewRepository creates a FileType repository wired with the given ent client,
 // edge cache, and dependency resolver.
-func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps FileTypeDeps) *Repository {
+func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache) *Repository {
 	return &Repository{
 		client: client,
 		cache:  cache,
-		deps:   deps,
 	}
 }
 
@@ -49,22 +46,13 @@ func (r *Repository) Upsert(ctx context.Context, data *FileTypeData) error {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationUpsert).Observe(time.Since(start).Seconds())
 	}()
 
-	teamID, err := r.deps.FindTeamID(ctx, data.TeamName)
-	if err != nil {
-		if errors.Is(err, infrastructure.ErrEntityNotFound) {
-			return runtime.WrapDependencyMissing("team", data.TeamName)
-		}
-		return fmt.Errorf("find team %q: %w", data.TeamName, err)
-	}
-
 	create := r.client.FileType.Create().
 		SetFileType(data.FileType).
 		SetDescription(data.Description).
 		SetActive(data.Active).
 		SetStatusPhase(entfiletype.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
-		SetNamespace(data.Meta.Namespace).
-		SetOwnerID(teamID)
+		SetNamespace(data.Meta.Namespace)
 
 	if data.Variant != nil {
 		create.SetVariant(*data.Variant)
@@ -102,7 +90,7 @@ func (r *Repository) Upsert(ctx context.Context, data *FileTypeData) error {
 		}).
 		ID(ctx)
 	if upsertErr != nil {
-		return fmt.Errorf("upsert file_type %q (team %q): %w", data.FileType, data.TeamName, upsertErr)
+		return fmt.Errorf("upsert file_type %q: %w", data.FileType, upsertErr)
 	}
 
 	et, lk := cachekeys.FileTypeDef(data.FileType)

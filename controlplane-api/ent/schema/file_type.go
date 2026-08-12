@@ -51,11 +51,6 @@ func (FileType) Fields() []ent.Field {
 
 func (FileType) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("owner", Team.Type).
-			Ref("file_types").
-			Required().
-			Unique().
-			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.To("exposures", FileExposure.Type).
 			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.To("subscriptions", FileSubscription.Type).
@@ -72,6 +67,6 @@ func (FileType) Annotations() []schema.Annotation {
 
 func (FileType) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("file_type").Edges("owner").Unique(),
+		index.Fields("file_type").Unique(),
 	}
 }

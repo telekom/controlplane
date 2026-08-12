@@ -48,7 +48,6 @@ var _ = Describe("FileType Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.FileType).To(Equal("invoice"))
 			Expect(data.Description).To(Equal("Invoice files"))
-			Expect(data.TeamName).To(Equal("platform--narvi"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
 			Expect(data.StatusPhase).To(Equal("READY"))
 			Expect(data.StatusMessage).To(Equal("ok"))

@@ -43,21 +43,12 @@ const (
 	FieldSftpInstanceName = "sftp_instance_name"
 	// FieldSftpInstanceNamespace holds the string denoting the sftp_instance_namespace field in the database.
 	FieldSftpInstanceNamespace = "sftp_instance_namespace"
-	// EdgeOwner holds the string denoting the owner edge name in mutations.
-	EdgeOwner = "owner"
 	// EdgeExposures holds the string denoting the exposures edge name in mutations.
 	EdgeExposures = "exposures"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
 	// Table holds the table name of the filetype in the database.
 	Table = "file_types"
-	// OwnerTable is the table that holds the owner relation/edge.
-	OwnerTable = "file_types"
-	// OwnerInverseTable is the table name for the Team entity.
-	// It exists in this package in order to avoid circular dependency with the "team" package.
-	OwnerInverseTable = "teams"
-	// OwnerColumn is the table column denoting the owner relation/edge.
-	OwnerColumn = "team_file_types"
 	// ExposuresTable is the table that holds the exposures relation/edge.
 	ExposuresTable = "file_exposures"
 	// ExposuresInverseTable is the table name for the FileExposure entity.
@@ -90,21 +81,10 @@ var Columns = []string{
 	FieldSftpInstanceNamespace,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "file_types"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"team_file_types",
-}
-
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -221,13 +201,6 @@ func BySftpInstanceNamespace(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSftpInstanceNamespace, opts...).ToFunc()
 }
 
-// ByOwnerField orders the results by owner field.
-func ByOwnerField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newOwnerStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByExposuresCount orders the results by exposures count.
 func ByExposuresCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -254,13 +227,6 @@ func BySubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
-}
-func newOwnerStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(OwnerInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
-	)
 }
 func newExposuresStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
