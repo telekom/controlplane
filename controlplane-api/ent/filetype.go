@@ -38,10 +38,6 @@ type FileType struct {
 	Variant *string `json:"variant,omitempty"`
 	// Active holds the value of the "active" field.
 	Active bool `json:"active,omitempty"`
-	// SftpInstanceName holds the value of the "sftp_instance_name" field.
-	SftpInstanceName *string `json:"sftp_instance_name,omitempty"`
-	// SftpInstanceNamespace holds the value of the "sftp_instance_namespace" field.
-	SftpInstanceNamespace *string `json:"sftp_instance_namespace,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the FileTypeQuery when eager-loading is set.
 	Edges        FileTypeEdges `json:"edges"`
@@ -89,7 +85,7 @@ func (*FileType) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case filetype.FieldID:
 			values[i] = new(sql.NullInt64)
-		case filetype.FieldStatusPhase, filetype.FieldStatusMessage, filetype.FieldNamespace, filetype.FieldFileType, filetype.FieldDescription, filetype.FieldVariant, filetype.FieldSftpInstanceName, filetype.FieldSftpInstanceNamespace:
+		case filetype.FieldStatusPhase, filetype.FieldStatusMessage, filetype.FieldNamespace, filetype.FieldFileType, filetype.FieldDescription, filetype.FieldVariant:
 			values[i] = new(sql.NullString)
 		case filetype.FieldCreatedAt, filetype.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -171,20 +167,6 @@ func (_m *FileType) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Active = value.Bool
 			}
-		case filetype.FieldSftpInstanceName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field sftp_instance_name", values[i])
-			} else if value.Valid {
-				_m.SftpInstanceName = new(string)
-				*_m.SftpInstanceName = value.String
-			}
-		case filetype.FieldSftpInstanceNamespace:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field sftp_instance_namespace", values[i])
-			} else if value.Valid {
-				_m.SftpInstanceNamespace = new(string)
-				*_m.SftpInstanceNamespace = value.String
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -263,16 +245,6 @@ func (_m *FileType) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("active=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Active))
-	builder.WriteString(", ")
-	if v := _m.SftpInstanceName; v != nil {
-		builder.WriteString("sftp_instance_name=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := _m.SftpInstanceNamespace; v != nil {
-		builder.WriteString("sftp_instance_namespace=")
-		builder.WriteString(*v)
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

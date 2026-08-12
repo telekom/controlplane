@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package filetype implements the FileType catalogue resource module for the
-// projector. FileType is a Level 2 entity with a required FK dependency on Team.
+// projector.
 package filetype
 
 import "github.com/telekom/controlplane/projector/internal/domain/shared"
@@ -17,13 +17,11 @@ type FileTypeKey struct {
 
 // FileTypeData carries the transformed data for a FileType catalogue entity.
 type FileTypeData struct {
-	Meta                  shared.Metadata
-	StatusPhase           string // "READY", "PENDING", "ERROR", "UNKNOWN"
-	StatusMessage         string
-	FileType              string
-	Description           string
-	Variant               *string
-	Active                bool
-	SFTPInstanceName      *string
-	SFTPInstanceNamespace *string
+	Meta          shared.Metadata
+	StatusPhase   string // "READY", "PENDING", "ERROR", "UNKNOWN"
+	StatusMessage string
+	FileType      string
+	Description   string
+	Variant       *string
+	Active        bool // Active indicates whether the FileType is currently in use by any FileExposure.
 }

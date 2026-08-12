@@ -15631,30 +15631,28 @@ func (m *FileSubscriptionMutation) ResetEdge(name string) error {
 // FileTypeMutation represents an operation that mutates the FileType nodes in the graph.
 type FileTypeMutation struct {
 	config
-	op                      Op
-	typ                     string
-	id                      *int
-	created_at              *time.Time
-	last_modified_at        *time.Time
-	status_phase            *filetype.StatusPhase
-	status_message          *string
-	namespace               *string
-	file_type               *string
-	description             *string
-	variant                 *string
-	active                  *bool
-	sftp_instance_name      *string
-	sftp_instance_namespace *string
-	clearedFields           map[string]struct{}
-	exposures               map[int]struct{}
-	removedexposures        map[int]struct{}
-	clearedexposures        bool
-	subscriptions           map[int]struct{}
-	removedsubscriptions    map[int]struct{}
-	clearedsubscriptions    bool
-	done                    bool
-	oldValue                func(context.Context) (*FileType, error)
-	predicates              []predicate.FileType
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *filetype.StatusPhase
+	status_message       *string
+	namespace            *string
+	file_type            *string
+	description          *string
+	variant              *string
+	active               *bool
+	clearedFields        map[string]struct{}
+	exposures            map[int]struct{}
+	removedexposures     map[int]struct{}
+	clearedexposures     bool
+	subscriptions        map[int]struct{}
+	removedsubscriptions map[int]struct{}
+	clearedsubscriptions bool
+	done                 bool
+	oldValue             func(context.Context) (*FileType, error)
+	predicates           []predicate.FileType
 }
 
 var _ ent.Mutation = (*FileTypeMutation)(nil)
@@ -16131,104 +16129,6 @@ func (m *FileTypeMutation) ResetActive() {
 	m.active = nil
 }
 
-// SetSftpInstanceName sets the "sftp_instance_name" field.
-func (m *FileTypeMutation) SetSftpInstanceName(s string) {
-	m.sftp_instance_name = &s
-}
-
-// SftpInstanceName returns the value of the "sftp_instance_name" field in the mutation.
-func (m *FileTypeMutation) SftpInstanceName() (r string, exists bool) {
-	v := m.sftp_instance_name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSftpInstanceName returns the old "sftp_instance_name" field's value of the FileType entity.
-// If the FileType object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FileTypeMutation) OldSftpInstanceName(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSftpInstanceName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSftpInstanceName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSftpInstanceName: %w", err)
-	}
-	return oldValue.SftpInstanceName, nil
-}
-
-// ClearSftpInstanceName clears the value of the "sftp_instance_name" field.
-func (m *FileTypeMutation) ClearSftpInstanceName() {
-	m.sftp_instance_name = nil
-	m.clearedFields[filetype.FieldSftpInstanceName] = struct{}{}
-}
-
-// SftpInstanceNameCleared returns if the "sftp_instance_name" field was cleared in this mutation.
-func (m *FileTypeMutation) SftpInstanceNameCleared() bool {
-	_, ok := m.clearedFields[filetype.FieldSftpInstanceName]
-	return ok
-}
-
-// ResetSftpInstanceName resets all changes to the "sftp_instance_name" field.
-func (m *FileTypeMutation) ResetSftpInstanceName() {
-	m.sftp_instance_name = nil
-	delete(m.clearedFields, filetype.FieldSftpInstanceName)
-}
-
-// SetSftpInstanceNamespace sets the "sftp_instance_namespace" field.
-func (m *FileTypeMutation) SetSftpInstanceNamespace(s string) {
-	m.sftp_instance_namespace = &s
-}
-
-// SftpInstanceNamespace returns the value of the "sftp_instance_namespace" field in the mutation.
-func (m *FileTypeMutation) SftpInstanceNamespace() (r string, exists bool) {
-	v := m.sftp_instance_namespace
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSftpInstanceNamespace returns the old "sftp_instance_namespace" field's value of the FileType entity.
-// If the FileType object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FileTypeMutation) OldSftpInstanceNamespace(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSftpInstanceNamespace is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSftpInstanceNamespace requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSftpInstanceNamespace: %w", err)
-	}
-	return oldValue.SftpInstanceNamespace, nil
-}
-
-// ClearSftpInstanceNamespace clears the value of the "sftp_instance_namespace" field.
-func (m *FileTypeMutation) ClearSftpInstanceNamespace() {
-	m.sftp_instance_namespace = nil
-	m.clearedFields[filetype.FieldSftpInstanceNamespace] = struct{}{}
-}
-
-// SftpInstanceNamespaceCleared returns if the "sftp_instance_namespace" field was cleared in this mutation.
-func (m *FileTypeMutation) SftpInstanceNamespaceCleared() bool {
-	_, ok := m.clearedFields[filetype.FieldSftpInstanceNamespace]
-	return ok
-}
-
-// ResetSftpInstanceNamespace resets all changes to the "sftp_instance_namespace" field.
-func (m *FileTypeMutation) ResetSftpInstanceNamespace() {
-	m.sftp_instance_namespace = nil
-	delete(m.clearedFields, filetype.FieldSftpInstanceNamespace)
-}
-
 // AddExposureIDs adds the "exposures" edge to the FileExposure entity by ids.
 func (m *FileTypeMutation) AddExposureIDs(ids ...int) {
 	if m.exposures == nil {
@@ -16371,7 +16271,7 @@ func (m *FileTypeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FileTypeMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, filetype.FieldCreatedAt)
 	}
@@ -16399,12 +16299,6 @@ func (m *FileTypeMutation) Fields() []string {
 	if m.active != nil {
 		fields = append(fields, filetype.FieldActive)
 	}
-	if m.sftp_instance_name != nil {
-		fields = append(fields, filetype.FieldSftpInstanceName)
-	}
-	if m.sftp_instance_namespace != nil {
-		fields = append(fields, filetype.FieldSftpInstanceNamespace)
-	}
 	return fields
 }
 
@@ -16431,10 +16325,6 @@ func (m *FileTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.Variant()
 	case filetype.FieldActive:
 		return m.Active()
-	case filetype.FieldSftpInstanceName:
-		return m.SftpInstanceName()
-	case filetype.FieldSftpInstanceNamespace:
-		return m.SftpInstanceNamespace()
 	}
 	return nil, false
 }
@@ -16462,10 +16352,6 @@ func (m *FileTypeMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldVariant(ctx)
 	case filetype.FieldActive:
 		return m.OldActive(ctx)
-	case filetype.FieldSftpInstanceName:
-		return m.OldSftpInstanceName(ctx)
-	case filetype.FieldSftpInstanceNamespace:
-		return m.OldSftpInstanceNamespace(ctx)
 	}
 	return nil, fmt.Errorf("unknown FileType field %s", name)
 }
@@ -16538,20 +16424,6 @@ func (m *FileTypeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetActive(v)
 		return nil
-	case filetype.FieldSftpInstanceName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSftpInstanceName(v)
-		return nil
-	case filetype.FieldSftpInstanceNamespace:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSftpInstanceNamespace(v)
-		return nil
 	}
 	return fmt.Errorf("unknown FileType field %s", name)
 }
@@ -16594,12 +16466,6 @@ func (m *FileTypeMutation) ClearedFields() []string {
 	if m.FieldCleared(filetype.FieldVariant) {
 		fields = append(fields, filetype.FieldVariant)
 	}
-	if m.FieldCleared(filetype.FieldSftpInstanceName) {
-		fields = append(fields, filetype.FieldSftpInstanceName)
-	}
-	if m.FieldCleared(filetype.FieldSftpInstanceNamespace) {
-		fields = append(fields, filetype.FieldSftpInstanceNamespace)
-	}
 	return fields
 }
 
@@ -16625,12 +16491,6 @@ func (m *FileTypeMutation) ClearField(name string) error {
 		return nil
 	case filetype.FieldVariant:
 		m.ClearVariant()
-		return nil
-	case filetype.FieldSftpInstanceName:
-		m.ClearSftpInstanceName()
-		return nil
-	case filetype.FieldSftpInstanceNamespace:
-		m.ClearSftpInstanceNamespace()
 		return nil
 	}
 	return fmt.Errorf("unknown FileType nullable field %s", name)
@@ -16666,12 +16526,6 @@ func (m *FileTypeMutation) ResetField(name string) error {
 		return nil
 	case filetype.FieldActive:
 		m.ResetActive()
-		return nil
-	case filetype.FieldSftpInstanceName:
-		m.ResetSftpInstanceName()
-		return nil
-	case filetype.FieldSftpInstanceNamespace:
-		m.ResetSftpInstanceNamespace()
 		return nil
 	}
 	return fmt.Errorf("unknown FileType field %s", name)

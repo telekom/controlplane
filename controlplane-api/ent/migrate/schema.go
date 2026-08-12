@@ -570,8 +570,6 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "variant", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "active", Type: field.TypeBool, Default: false},
-		{Name: "sftp_instance_name", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "sftp_instance_namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 	}
 	// FileTypesTable holds the schema information for the "file_types" table.
 	FileTypesTable = &schema.Table{
