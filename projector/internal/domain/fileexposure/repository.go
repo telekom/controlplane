@@ -13,6 +13,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	entfileexposure "github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	entfilesubscription "github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
@@ -139,6 +140,24 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 
 	et, lk := cachekeys.FileExposure(data.TargetFileType, data.AppName, data.TeamName)
 	r.cache.Set(et, lk, exposureID)
+
+	// Back-link subscriptions that were projected before this exposure existed.
+	// FileSubscription resolves its optional target by active FileExposure + file type.
+	// If subscriptions were stored first, they can remain with NULL target until
+	// this exposure appears.
+	if data.Active {
+		if err := r.client.FileSubscription.Update().
+			Where(
+				entfilesubscription.FileTypeEQ(data.TargetFileType),
+				entfilesubscription.Not(entfilesubscription.HasTarget()),
+			).
+			SetTargetID(exposureID).
+			Exec(ctx); err != nil {
+			return fmt.Errorf("back-link subscriptions to file_exposure %q (app %q, team %q): %w",
+				data.TargetFileType, data.AppName, data.TeamName, err)
+		}
+	}
+
 	if data.Active {
 		aet, alk := cachekeys.ActiveFileExposure(data.TargetFileType)
 		r.cache.Set(aet, alk, exposureID)
