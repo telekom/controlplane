@@ -47,7 +47,6 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileType) (*FileTy
 		Active:                active,
 		SFTPInstanceName:      sftpInstanceName,
 		SFTPInstanceNamespace: sftpInstanceNamespace,
-		TeamName:              shared.TeamNameFromNamespace(obj.Namespace),
 	}, nil
 }
 
@@ -60,7 +59,7 @@ func (t *Translator) KeyFromObject(obj *filev1.FileType) FileTypeKey {
 
 // KeyFromDelete derives the identity key for a delete operation.
 // If lastKnown is available, it uses metadata-derived values.
-// Otherwise, it falls back to req.Name and namespace-derived team.
+// Otherwise, it falls back to req.Name.
 func (t *Translator) KeyFromDelete(req types.NamespacedName, lastKnown *filev1.FileType) (FileTypeKey, error) {
 	if lastKnown != nil {
 		return FileTypeKey{

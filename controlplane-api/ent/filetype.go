@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
-	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
 // FileType is the model entity for the FileType schema.
@@ -45,42 +44,28 @@ type FileType struct {
 	SftpInstanceNamespace *string `json:"sftp_instance_namespace,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the FileTypeQuery when eager-loading is set.
-	Edges           FileTypeEdges `json:"edges"`
-	team_file_types *int
-	selectValues    sql.SelectValues
+	Edges        FileTypeEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // FileTypeEdges holds the relations/edges for other nodes in the graph.
 type FileTypeEdges struct {
-	// Owner holds the value of the owner edge.
-	Owner *Team `json:"owner,omitempty"`
 	// Exposures holds the value of the exposures edge.
 	Exposures []*FileExposure `json:"exposures,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
 	Subscriptions []*FileSubscription `json:"subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 
 	namedExposures     map[string][]*FileExposure
 	namedSubscriptions map[string][]*FileSubscription
 }
 
-// OwnerOrErr returns the Owner value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e FileTypeEdges) OwnerOrErr() (*Team, error) {
-	if e.Owner != nil {
-		return e.Owner, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: team.Label}
-	}
-	return nil, &NotLoadedError{edge: "owner"}
-}
-
 // ExposuresOrErr returns the Exposures value or an error if the edge
 // was not loaded in eager-loading.
 func (e FileTypeEdges) ExposuresOrErr() ([]*FileExposure, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Exposures, nil
 	}
 	return nil, &NotLoadedError{edge: "exposures"}
@@ -89,7 +74,7 @@ func (e FileTypeEdges) ExposuresOrErr() ([]*FileExposure, error) {
 // SubscriptionsOrErr returns the Subscriptions value or an error if the edge
 // was not loaded in eager-loading.
 func (e FileTypeEdges) SubscriptionsOrErr() ([]*FileSubscription, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Subscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "subscriptions"}
@@ -108,8 +93,6 @@ func (*FileType) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case filetype.FieldCreatedAt, filetype.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
-		case filetype.ForeignKeys[0]: // team_file_types
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -202,13 +185,6 @@ func (_m *FileType) assignValues(columns []string, values []any) error {
 				_m.SftpInstanceNamespace = new(string)
 				*_m.SftpInstanceNamespace = value.String
 			}
-		case filetype.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field team_file_types", value)
-			} else if value.Valid {
-				_m.team_file_types = new(int)
-				*_m.team_file_types = int(value.Int64)
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -220,11 +196,6 @@ func (_m *FileType) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *FileType) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
-}
-
-// QueryOwner queries the "owner" edge of the FileType entity.
-func (_m *FileType) QueryOwner() *TeamQuery {
-	return NewFileTypeClient(_m.config).QueryOwner(_m)
 }
 
 // QueryExposures queries the "exposures" edge of the FileType entity.

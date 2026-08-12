@@ -19,7 +19,6 @@ var Module = &module.TypedModule[*filev1.FileType, *FileTypeData, FileTypeKey]{
 		return NewRepository(
 			deps.EntClient,
 			deps.EdgeCache,
-			deps.IDResolver,
 		)
 	},
 }

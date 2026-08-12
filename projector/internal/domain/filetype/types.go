@@ -26,5 +26,4 @@ type FileTypeData struct {
 	Active                bool
 	SFTPInstanceName      *string
 	SFTPInstanceNamespace *string
-	TeamName              string // resolved to owner Team FK
 }
