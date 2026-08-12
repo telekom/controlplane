@@ -113,6 +113,9 @@ spec:
           envFrom:
             - secretRef:
                 name: rustfs-credentials
+          env:
+            - name: HOME
+              value: /home/rc
           resources:
             limits:
               cpu: 100m
