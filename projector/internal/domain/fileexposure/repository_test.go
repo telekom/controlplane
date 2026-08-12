@@ -112,7 +112,6 @@ var _ = Describe("FileExposure Repository", func() {
 			SetFileType("invoice").
 			SetDescription("Invoice files").
 			SetNamespace("prod--platform--narvi").
-			SetOwnerID(team.ID).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		fileTypeID = ft.ID
