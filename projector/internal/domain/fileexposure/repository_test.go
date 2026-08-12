@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
 	entfileexposure "github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	entfilesubscription "github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -230,6 +231,70 @@ var _ = Describe("FileExposure Repository", func() {
 
 			_, activeFound := cache.Get("fileexposure_active", "invoice")
 			Expect(activeFound).To(BeTrue())
+		})
+
+		It("should back-link orphaned subscriptions when exposure is active", func() {
+			sub, err := client.FileSubscription.Create().
+				SetFileType("invoice").
+				SetZoneName("caas").
+				SetEnvironment("prod").
+				SetNamespace("prod--platform--narvi").
+				SetName("orphan-sub").
+				SetOwnerID(appID).
+				SetZoneID(zoneID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = sub.QueryTarget().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+
+			data := &fileexposure.FileExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "orphan-exp", nil),
+				StatusPhase:    "READY",
+				Visibility:     "WORLD",
+				Active:         true,
+				ZoneName:       "caas",
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "provider-app",
+				TeamName:       "platform--narvi",
+				TargetFileType: "invoice",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.FileType).To(Equal("invoice"))
+		})
+
+		It("should not back-link orphaned subscriptions when exposure is inactive", func() {
+			sub, err := client.FileSubscription.Create().
+				SetFileType("orders").
+				SetZoneName("caas").
+				SetEnvironment("prod").
+				SetNamespace("prod--platform--narvi").
+				SetName("inactive-sub").
+				SetOwnerID(appID).
+				SetZoneID(zoneID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data := &fileexposure.FileExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "inactive-exp", nil),
+				StatusPhase:    "READY",
+				Visibility:     "WORLD",
+				Active:         false,
+				ZoneName:       "caas",
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "provider-app",
+				TeamName:       "platform--narvi",
+				TargetFileType: "orders",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			_, err = sub.QueryTarget().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+			count, err := client.FileSubscription.Query().Where(entfilesubscription.FileTypeEQ("orders")).Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(1))
 		})
 	})
 
