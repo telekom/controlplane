@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -171,7 +171,7 @@ jobs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -257,7 +257,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
           persist-credentials: false
@@ -279,7 +279,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Run govulncheck
-        uses: golang/govulncheck-action@3fa7bd9cee2cfdf3499a8803b226e43de7b7cdb4 # unreleased, includes fix for golang/go#75908
+        uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # unreleased, includes fix for golang/go#75908
         with:
           go-package: ./...
           work-dir: ${{ inputs.module }}
@@ -294,7 +294,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # CodeQL requires full history
 
@@ -315,7 +315,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -336,7 +336,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
         with:
           category: "/language:go/${{ inputs.name }}"
 
@@ -354,7 +354,7 @@ jobs:
       image_repository: ${{ steps.resolve_image_repository.outputs.image_repository }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
