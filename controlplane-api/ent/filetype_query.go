@@ -20,7 +20,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
-	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
 // FileTypeQuery is the builder for querying FileType entities.
@@ -30,10 +29,8 @@ type FileTypeQuery struct {
 	order                  []filetype.OrderOption
 	inters                 []Interceptor
 	predicates             []predicate.FileType
-	withOwner              *TeamQuery
 	withExposures          *FileExposureQuery
 	withSubscriptions      *FileSubscriptionQuery
-	withFKs                bool
 	modifiers              []func(*sql.Selector)
 	loadTotal              []func(context.Context, []*FileType) error
 	withNamedExposures     map[string]*FileExposureQuery
@@ -72,28 +69,6 @@ func (_q *FileTypeQuery) Unique(unique bool) *FileTypeQuery {
 func (_q *FileTypeQuery) Order(o ...filetype.OrderOption) *FileTypeQuery {
 	_q.order = append(_q.order, o...)
 	return _q
-}
-
-// QueryOwner chains the current query on the "owner" edge.
-func (_q *FileTypeQuery) QueryOwner() *TeamQuery {
-	query := (&TeamClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(filetype.Table, filetype.FieldID, selector),
-			sqlgraph.To(team.Table, team.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, filetype.OwnerTable, filetype.OwnerColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryExposures chains the current query on the "exposures" edge.
@@ -332,24 +307,12 @@ func (_q *FileTypeQuery) Clone() *FileTypeQuery {
 		order:             append([]filetype.OrderOption{}, _q.order...),
 		inters:            append([]Interceptor{}, _q.inters...),
 		predicates:        append([]predicate.FileType{}, _q.predicates...),
-		withOwner:         _q.withOwner.Clone(),
 		withExposures:     _q.withExposures.Clone(),
 		withSubscriptions: _q.withSubscriptions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
-}
-
-// WithOwner tells the query-builder to eager-load the nodes that are connected to
-// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *FileTypeQuery) WithOwner(opts ...func(*TeamQuery)) *FileTypeQuery {
-	query := (&TeamClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withOwner = query
-	return _q
 }
 
 // WithExposures tells the query-builder to eager-load the nodes that are connected to
@@ -457,20 +420,12 @@ func (_q *FileTypeQuery) prepareQuery(ctx context.Context) error {
 func (_q *FileTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*FileType, error) {
 	var (
 		nodes       = []*FileType{}
-		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
-			_q.withOwner != nil,
+		loadedTypes = [2]bool{
 			_q.withExposures != nil,
 			_q.withSubscriptions != nil,
 		}
 	)
-	if _q.withOwner != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, filetype.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*FileType).scanValues(nil, columns)
 	}
@@ -491,12 +446,6 @@ func (_q *FileTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Fil
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
-	}
-	if query := _q.withOwner; query != nil {
-		if err := _q.loadOwner(ctx, query, nodes, nil,
-			func(n *FileType, e *Team) { n.Edges.Owner = e }); err != nil {
-			return nil, err
-		}
 	}
 	if query := _q.withExposures; query != nil {
 		if err := _q.loadExposures(ctx, query, nodes,
@@ -534,38 +483,6 @@ func (_q *FileTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Fil
 	return nodes, nil
 }
 
-func (_q *FileTypeQuery) loadOwner(ctx context.Context, query *TeamQuery, nodes []*FileType, init func(*FileType), assign func(*FileType, *Team)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*FileType)
-	for i := range nodes {
-		if nodes[i].team_file_types == nil {
-			continue
-		}
-		fk := *nodes[i].team_file_types
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(team.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "team_file_types" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (_q *FileTypeQuery) loadExposures(ctx context.Context, query *FileExposureQuery, nodes []*FileType, init func(*FileType), assign func(*FileType, *FileExposure)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*FileType)

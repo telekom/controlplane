@@ -1392,60 +1392,6 @@ func (ec *executionContext) field_Team_eventTypes_args(ctx context.Context, rawA
 	return args, nil
 }
 
-func (ec *executionContext) field_Team_fileTypes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after",
-		func(ctx context.Context, v any) (*entgql.Cursor[int], error) {
-			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["after"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first",
-		func(ctx context.Context, v any) (*int, error) {
-			return ec.unmarshalOInt2ᚖint(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before",
-		func(ctx context.Context, v any) (*entgql.Cursor[int], error) {
-			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["before"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last",
-		func(ctx context.Context, v any) (*int, error) {
-			return ec.unmarshalOInt2ᚖint(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["last"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy",
-		func(ctx context.Context, v any) (*ent.FileTypeOrder, error) {
-			return ec.unmarshalOFileTypeOrder2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐFileTypeOrder(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["orderBy"] = arg4
-	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where",
-		func(ctx context.Context, v any) (*ent.FileTypeWhereInput, error) {
-			return ec.unmarshalOFileTypeWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐFileTypeWhereInput(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["where"] = arg5
-	return args, nil
-}
-
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
@@ -10579,50 +10525,6 @@ func (ec *executionContext) fieldContext_Team_apis(ctx context.Context, field gr
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Team_apis_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Team_fileTypes(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Team_fileTypes(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return obj.FileTypes(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.FileTypeOrder), fc.Args["where"].(*ent.FileTypeWhereInput))
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *ent.FileTypeConnection) graphql.Marshaler {
-			return ec.marshalNFileTypeConnection2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐFileTypeConnection(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_Team_fileTypes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Team",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_FileTypeConnection(ctx, field)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Team_fileTypes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -22178,7 +22080,7 @@ func (ec *executionContext) unmarshalInputFileTypeWhereInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionIsNil", "descriptionNotNil", "descriptionEqualFold", "descriptionContainsFold", "variant", "variantNEQ", "variantIn", "variantNotIn", "variantGT", "variantGTE", "variantLT", "variantLTE", "variantContains", "variantHasPrefix", "variantHasSuffix", "variantIsNil", "variantNotNil", "variantEqualFold", "variantContainsFold", "active", "activeNEQ", "sftpInstanceName", "sftpInstanceNameNEQ", "sftpInstanceNameIn", "sftpInstanceNameNotIn", "sftpInstanceNameGT", "sftpInstanceNameGTE", "sftpInstanceNameLT", "sftpInstanceNameLTE", "sftpInstanceNameContains", "sftpInstanceNameHasPrefix", "sftpInstanceNameHasSuffix", "sftpInstanceNameIsNil", "sftpInstanceNameNotNil", "sftpInstanceNameEqualFold", "sftpInstanceNameContainsFold", "sftpInstanceNamespace", "sftpInstanceNamespaceNEQ", "sftpInstanceNamespaceIn", "sftpInstanceNamespaceNotIn", "sftpInstanceNamespaceGT", "sftpInstanceNamespaceGTE", "sftpInstanceNamespaceLT", "sftpInstanceNamespaceLTE", "sftpInstanceNamespaceContains", "sftpInstanceNamespaceHasPrefix", "sftpInstanceNamespaceHasSuffix", "sftpInstanceNamespaceIsNil", "sftpInstanceNamespaceNotNil", "sftpInstanceNamespaceEqualFold", "sftpInstanceNamespaceContainsFold", "hasOwner", "hasOwnerWith", "hasExposures", "hasExposuresWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionIsNil", "descriptionNotNil", "descriptionEqualFold", "descriptionContainsFold", "variant", "variantNEQ", "variantIn", "variantNotIn", "variantGT", "variantGTE", "variantLT", "variantLTE", "variantContains", "variantHasPrefix", "variantHasSuffix", "variantIsNil", "variantNotNil", "variantEqualFold", "variantContainsFold", "active", "activeNEQ", "sftpInstanceName", "sftpInstanceNameNEQ", "sftpInstanceNameIn", "sftpInstanceNameNotIn", "sftpInstanceNameGT", "sftpInstanceNameGTE", "sftpInstanceNameLT", "sftpInstanceNameLTE", "sftpInstanceNameContains", "sftpInstanceNameHasPrefix", "sftpInstanceNameHasSuffix", "sftpInstanceNameIsNil", "sftpInstanceNameNotNil", "sftpInstanceNameEqualFold", "sftpInstanceNameContainsFold", "sftpInstanceNamespace", "sftpInstanceNamespaceNEQ", "sftpInstanceNamespaceIn", "sftpInstanceNamespaceNotIn", "sftpInstanceNamespaceGT", "sftpInstanceNamespaceGTE", "sftpInstanceNamespaceLT", "sftpInstanceNamespaceLTE", "sftpInstanceNamespaceContains", "sftpInstanceNamespaceHasPrefix", "sftpInstanceNamespaceHasSuffix", "sftpInstanceNamespaceIsNil", "sftpInstanceNamespaceNotNil", "sftpInstanceNamespaceEqualFold", "sftpInstanceNamespaceContainsFold", "hasExposures", "hasExposuresWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -23137,20 +23039,6 @@ func (ec *executionContext) unmarshalInputFileTypeWhereInput(ctx context.Context
 				return it, err
 			}
 			it.SftpInstanceNamespaceContainsFold = data
-		case "hasOwner":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasOwner = data
-		case "hasOwnerWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwnerWith"))
-			data, err := ec.unmarshalOTeamWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasOwnerWith = data
 		case "hasExposures":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasExposures"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -24830,7 +24718,7 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "displayname", "displaynameNEQ", "displaynameIn", "displaynameNotIn", "displaynameGT", "displaynameGTE", "displaynameLT", "displaynameLTE", "displaynameContains", "displaynameHasPrefix", "displaynameHasSuffix", "displaynameIsNil", "displaynameNotNil", "displaynameEqualFold", "displaynameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionIsNil", "descriptionNotNil", "descriptionEqualFold", "descriptionContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "teamToken", "teamTokenNEQ", "teamTokenIn", "teamTokenNotIn", "teamTokenGT", "teamTokenGTE", "teamTokenLT", "teamTokenLTE", "teamTokenContains", "teamTokenHasPrefix", "teamTokenHasSuffix", "teamTokenIsNil", "teamTokenNotNil", "teamTokenEqualFold", "teamTokenContainsFold", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasApplications", "hasApplicationsWith", "hasApis", "hasApisWith", "hasFileTypes", "hasFileTypesWith", "hasEventTypes", "hasEventTypesWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "displayname", "displaynameNEQ", "displaynameIn", "displaynameNotIn", "displaynameGT", "displaynameGTE", "displaynameLT", "displaynameLTE", "displaynameContains", "displaynameHasPrefix", "displaynameHasSuffix", "displaynameIsNil", "displaynameNotNil", "displaynameEqualFold", "displaynameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionIsNil", "descriptionNotNil", "descriptionEqualFold", "descriptionContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "teamToken", "teamTokenNEQ", "teamTokenIn", "teamTokenNotIn", "teamTokenGT", "teamTokenGTE", "teamTokenLT", "teamTokenLTE", "teamTokenContains", "teamTokenHasPrefix", "teamTokenHasSuffix", "teamTokenIsNil", "teamTokenNotNil", "teamTokenEqualFold", "teamTokenContainsFold", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasApplications", "hasApplicationsWith", "hasApis", "hasApisWith", "hasEventTypes", "hasEventTypesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -25950,20 +25838,6 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasApisWith = data
-		case "hasFileTypes":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasFileTypes"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasFileTypes = data
-		case "hasFileTypesWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasFileTypesWith"))
-			data, err := ec.unmarshalOFileTypeWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐFileTypeWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasFileTypesWith = data
 		case "hasEventTypes":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasEventTypes"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -31749,44 +31623,6 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Team_apis(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "fileTypes":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Team_fileTypes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

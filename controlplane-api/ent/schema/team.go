@@ -65,8 +65,6 @@ func (Team) Edges() []ent.Edge {
 			Annotations(entgql.RelayConnection()),
 		edge.To("apis", Api.Type).
 			Annotations(entgql.RelayConnection()),
-		edge.To("file_types", FileType.Type).
-			Annotations(entgql.RelayConnection()),
 		edge.To("event_types", EventType.Type).
 			Annotations(entgql.RelayConnection()),
 	}

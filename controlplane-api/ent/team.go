@@ -62,20 +62,17 @@ type TeamEdges struct {
 	Applications []*Application `json:"applications,omitempty"`
 	// Apis holds the value of the apis edge.
 	Apis []*Api `json:"apis,omitempty"`
-	// FileTypes holds the value of the file_types edge.
-	FileTypes []*FileType `json:"file_types,omitempty"`
 	// EventTypes holds the value of the event_types edge.
 	EventTypes []*EventType `json:"event_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [6]map[string]int
+	totalCount [5]map[string]int
 
 	namedMembers      map[string][]*Member
 	namedApplications map[string][]*Application
 	namedApis         map[string][]*Api
-	namedFileTypes    map[string][]*FileType
 	namedEventTypes   map[string][]*EventType
 }
 
@@ -117,19 +114,10 @@ func (e TeamEdges) ApisOrErr() ([]*Api, error) {
 	return nil, &NotLoadedError{edge: "apis"}
 }
 
-// FileTypesOrErr returns the FileTypes value or an error if the edge
-// was not loaded in eager-loading.
-func (e TeamEdges) FileTypesOrErr() ([]*FileType, error) {
-	if e.loadedTypes[4] {
-		return e.FileTypes, nil
-	}
-	return nil, &NotLoadedError{edge: "file_types"}
-}
-
 // EventTypesOrErr returns the EventTypes value or an error if the edge
 // was not loaded in eager-loading.
 func (e TeamEdges) EventTypesOrErr() ([]*EventType, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[4] {
 		return e.EventTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "event_types"}
@@ -287,11 +275,6 @@ func (_m *Team) QueryApis() *APIQuery {
 	return NewTeamClient(_m.config).QueryApis(_m)
 }
 
-// QueryFileTypes queries the "file_types" edge of the Team entity.
-func (_m *Team) QueryFileTypes() *FileTypeQuery {
-	return NewTeamClient(_m.config).QueryFileTypes(_m)
-}
-
 // QueryEventTypes queries the "event_types" edge of the Team entity.
 func (_m *Team) QueryEventTypes() *EventTypeQuery {
 	return NewTeamClient(_m.config).QueryEventTypes(_m)
@@ -440,30 +423,6 @@ func (_m *Team) appendNamedApis(name string, edges ...*Api) {
 		_m.Edges.namedApis[name] = []*Api{}
 	} else {
 		_m.Edges.namedApis[name] = append(_m.Edges.namedApis[name], edges...)
-	}
-}
-
-// NamedFileTypes returns the FileTypes named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *Team) NamedFileTypes(name string) ([]*FileType, error) {
-	if _m.Edges.namedFileTypes == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedFileTypes[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *Team) appendNamedFileTypes(name string, edges ...*FileType) {
-	if _m.Edges.namedFileTypes == nil {
-		_m.Edges.namedFileTypes = make(map[string][]*FileType)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedFileTypes[name] = []*FileType{}
-	} else {
-		_m.Edges.namedFileTypes[name] = append(_m.Edges.namedFileTypes[name], edges...)
 	}
 }
 

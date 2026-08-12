@@ -3453,11 +3453,6 @@ input FileTypeWhereInput {
   sftpInstanceNamespaceEqualFold: String
   sftpInstanceNamespaceContainsFold: String
   """
-  owner edge predicates
-  """
-  hasOwner: Boolean
-  hasOwnerWith: [TeamWhereInput!]
-  """
   exposures edge predicates
   """
   hasExposures: Boolean
@@ -4421,37 +4416,6 @@ type Team implements Node {
     """
     where: ApiWhereInput
   ): ApiConnection!
-  fileTypes(
-    """
-    Returns the elements in the list that come after the specified cursor.
-    """
-    after: Cursor
-
-    """
-    Returns the first _n_ elements from the list.
-    """
-    first: Int
-
-    """
-    Returns the elements in the list that come before the specified cursor.
-    """
-    before: Cursor
-
-    """
-    Returns the last _n_ elements from the list.
-    """
-    last: Int
-
-    """
-    Ordering options for FileTypes returned from the connection.
-    """
-    orderBy: FileTypeOrder
-
-    """
-    Filtering options for FileTypes returned from the connection.
-    """
-    where: FileTypeWhereInput
-  ): FileTypeConnection!
   eventTypes(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -4766,11 +4730,6 @@ input TeamWhereInput {
   """
   hasApis: Boolean
   hasApisWith: [ApiWhereInput!]
-  """
-  file_types edge predicates
-  """
-  hasFileTypes: Boolean
-  hasFileTypesWith: [FileTypeWhereInput!]
   """
   event_types edge predicates
   """

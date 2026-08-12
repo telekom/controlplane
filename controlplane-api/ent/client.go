@@ -2630,22 +2630,6 @@ func (c *FileTypeClient) GetX(ctx context.Context, id int) *FileType {
 	return obj
 }
 
-// QueryOwner queries the owner edge of a FileType.
-func (c *FileTypeClient) QueryOwner(_m *FileType) *TeamQuery {
-	query := (&TeamClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(filetype.Table, filetype.FieldID, id),
-			sqlgraph.To(team.Table, team.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, filetype.OwnerTable, filetype.OwnerColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryExposures queries the exposures edge of a FileType.
 func (c *FileTypeClient) QueryExposures(_m *FileType) *FileExposureQuery {
 	query := (&FileExposureClient{config: c.config}).Query()
@@ -3319,22 +3303,6 @@ func (c *TeamClient) QueryApis(_m *Team) *APIQuery {
 			sqlgraph.From(team.Table, team.FieldID, id),
 			sqlgraph.To(api.Table, api.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, team.ApisTable, team.ApisColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryFileTypes queries the file_types edge of a Team.
-func (c *TeamClient) QueryFileTypes(_m *Team) *FileTypeQuery {
-	query := (&FileTypeClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(team.Table, team.FieldID, id),
-			sqlgraph.To(filetype.Table, filetype.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, team.FileTypesTable, team.FileTypesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

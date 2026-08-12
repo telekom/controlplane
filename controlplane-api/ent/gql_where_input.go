@@ -7840,10 +7840,6 @@ type FileTypeWhereInput struct {
 	SftpInstanceNamespaceEqualFold    *string  `json:"sftpInstanceNamespaceEqualFold,omitempty"`
 	SftpInstanceNamespaceContainsFold *string  `json:"sftpInstanceNamespaceContainsFold,omitempty"`
 
-	// "owner" edge predicates.
-	HasOwner     *bool             `json:"hasOwner,omitempty"`
-	HasOwnerWith []*TeamWhereInput `json:"hasOwnerWith,omitempty"`
-
 	// "exposures" edge predicates.
 	HasExposures     *bool                     `json:"hasExposures,omitempty"`
 	HasExposuresWith []*FileExposureWhereInput `json:"hasExposuresWith,omitempty"`
@@ -8324,24 +8320,6 @@ func (i *FileTypeWhereInput) P() (predicate.FileType, error) {
 		predicates = append(predicates, filetype.SftpInstanceNamespaceContainsFold(*i.SftpInstanceNamespaceContainsFold))
 	}
 
-	if i.HasOwner != nil {
-		p := filetype.HasOwner()
-		if !*i.HasOwner {
-			p = filetype.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasOwnerWith) > 0 {
-		with := make([]predicate.Team, 0, len(i.HasOwnerWith))
-		for _, w := range i.HasOwnerWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasOwnerWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, filetype.HasOwnerWith(with...))
-	}
 	if i.HasExposures != nil {
 		p := filetype.HasExposures()
 		if !*i.HasExposures {
@@ -9743,10 +9721,6 @@ type TeamWhereInput struct {
 	HasApis     *bool            `json:"hasApis,omitempty"`
 	HasApisWith []*ApiWhereInput `json:"hasApisWith,omitempty"`
 
-	// "file_types" edge predicates.
-	HasFileTypes     *bool                 `json:"hasFileTypes,omitempty"`
-	HasFileTypesWith []*FileTypeWhereInput `json:"hasFileTypesWith,omitempty"`
-
 	// "event_types" edge predicates.
 	HasEventTypes     *bool                  `json:"hasEventTypes,omitempty"`
 	HasEventTypesWith []*EventTypeWhereInput `json:"hasEventTypesWith,omitempty"`
@@ -10339,24 +10313,6 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, team.HasApisWith(with...))
-	}
-	if i.HasFileTypes != nil {
-		p := team.HasFileTypes()
-		if !*i.HasFileTypes {
-			p = team.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasFileTypesWith) > 0 {
-		with := make([]predicate.FileType, 0, len(i.HasFileTypesWith))
-		for _, w := range i.HasFileTypesWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasFileTypesWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, team.HasFileTypesWith(with...))
 	}
 	if i.HasEventTypes != nil {
 		p := team.HasEventTypes()

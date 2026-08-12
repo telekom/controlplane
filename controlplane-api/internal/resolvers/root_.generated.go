@@ -768,7 +768,6 @@ type ComplexityRoot struct {
 		Email          func(childComplexity int) int
 		Environment    func(childComplexity int) int
 		EventTypes     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
-		FileTypes      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) int
 		Group          func(childComplexity int) int
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
@@ -3823,17 +3822,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
-	case "Team.fileTypes":
-		if e.ComplexityRoot.Team.FileTypes == nil {
-			break
-		}
-
-		args, err := ec.field_Team_fileTypes_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Team.FileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileTypeOrder), args["where"].(*ent.FileTypeWhereInput)), true
 	case "Team.group":
 		if e.ComplexityRoot.Team.Group == nil {
 			break
@@ -7628,11 +7616,6 @@ input FileTypeWhereInput {
   sftpInstanceNamespaceEqualFold: String
   sftpInstanceNamespaceContainsFold: String
   """
-  owner edge predicates
-  """
-  hasOwner: Boolean
-  hasOwnerWith: [TeamWhereInput!]
-  """
   exposures edge predicates
   """
   hasExposures: Boolean
@@ -8596,37 +8579,6 @@ type Team implements Node {
     """
     where: ApiWhereInput
   ): ApiConnection!
-  fileTypes(
-    """
-    Returns the elements in the list that come after the specified cursor.
-    """
-    after: Cursor
-
-    """
-    Returns the first _n_ elements from the list.
-    """
-    first: Int
-
-    """
-    Returns the elements in the list that come before the specified cursor.
-    """
-    before: Cursor
-
-    """
-    Returns the last _n_ elements from the list.
-    """
-    last: Int
-
-    """
-    Ordering options for FileTypes returned from the connection.
-    """
-    orderBy: FileTypeOrder
-
-    """
-    Filtering options for FileTypes returned from the connection.
-    """
-    where: FileTypeWhereInput
-  ): FileTypeConnection!
   eventTypes(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -8941,11 +8893,6 @@ input TeamWhereInput {
   """
   hasApis: Boolean
   hasApisWith: [ApiWhereInput!]
-  """
-  file_types edge predicates
-  """
-  hasFileTypes: Boolean
-  hasFileTypesWith: [FileTypeWhereInput!]
   """
   event_types edge predicates
   """
@@ -10955,8 +10902,6 @@ func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.
 		return ec.fieldContext_Team_applications(ctx, field)
 	case "apis":
 		return ec.fieldContext_Team_apis(ctx, field)
-	case "fileTypes":
-		return ec.fieldContext_Team_fileTypes(ctx, field)
 	case "eventTypes":
 		return ec.fieldContext_Team_eventTypes(ctx, field)
 	}

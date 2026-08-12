@@ -17,7 +17,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
-	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
 // FileTypeCreate is the builder for creating a FileType entity.
@@ -166,17 +165,6 @@ func (_c *FileTypeCreate) SetNillableSftpInstanceNamespace(v *string) *FileTypeC
 	return _c
 }
 
-// SetOwnerID sets the "owner" edge to the Team entity by ID.
-func (_c *FileTypeCreate) SetOwnerID(id int) *FileTypeCreate {
-	_c.mutation.SetOwnerID(id)
-	return _c
-}
-
-// SetOwner sets the "owner" edge to the Team entity.
-func (_c *FileTypeCreate) SetOwner(v *Team) *FileTypeCreate {
-	return _c.SetOwnerID(v.ID)
-}
-
 // AddExposureIDs adds the "exposures" edge to the FileExposure entity by IDs.
 func (_c *FileTypeCreate) AddExposureIDs(ids ...int) *FileTypeCreate {
 	_c.mutation.AddExposureIDs(ids...)
@@ -297,9 +285,6 @@ func (_c *FileTypeCreate) check() error {
 	if _, ok := _c.mutation.Active(); !ok {
 		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "FileType.active"`)}
 	}
-	if len(_c.mutation.OwnerIDs()) == 0 {
-		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "FileType.owner"`)}
-	}
 	return nil
 }
 
@@ -370,23 +355,6 @@ func (_c *FileTypeCreate) createSpec() (*FileType, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SftpInstanceNamespace(); ok {
 		_spec.SetField(filetype.FieldSftpInstanceNamespace, field.TypeString, value)
 		_node.SftpInstanceNamespace = &value
-	}
-	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   filetype.OwnerTable,
-			Columns: []string{filetype.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.team_file_types = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.ExposuresIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

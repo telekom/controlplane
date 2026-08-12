@@ -572,26 +572,17 @@ var (
 		{Name: "active", Type: field.TypeBool, Default: false},
 		{Name: "sftp_instance_name", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "sftp_instance_namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "team_file_types", Type: field.TypeInt},
 	}
 	// FileTypesTable holds the schema information for the "file_types" table.
 	FileTypesTable = &schema.Table{
 		Name:       "file_types",
 		Columns:    FileTypesColumns,
 		PrimaryKey: []*schema.Column{FileTypesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "file_types_teams_file_types",
-				Columns:    []*schema.Column{FileTypesColumns[12]},
-				RefColumns: []*schema.Column{TeamsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "filetype_file_type_team_file_types",
+				Name:    "filetype_file_type",
 				Unique:  true,
-				Columns: []*schema.Column{FileTypesColumns[6], FileTypesColumns[12]},
+				Columns: []*schema.Column{FileTypesColumns[6]},
 			},
 		},
 	}
@@ -773,7 +764,6 @@ func init() {
 	FileSubscriptionsTable.ForeignKeys[1].RefTable = FileExposuresTable
 	FileSubscriptionsTable.ForeignKeys[2].RefTable = FileTypesTable
 	FileSubscriptionsTable.ForeignKeys[3].RefTable = ZonesTable
-	FileTypesTable.ForeignKeys[0].RefTable = TeamsTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	PermissionSetsTable.ForeignKeys[0].RefTable = ApplicationsTable
 	TeamsTable.ForeignKeys[0].RefTable = GroupsTable
