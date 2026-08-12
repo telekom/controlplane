@@ -137,34 +137,6 @@ func (_c *FileTypeCreate) SetNillableActive(v *bool) *FileTypeCreate {
 	return _c
 }
 
-// SetSftpInstanceName sets the "sftp_instance_name" field.
-func (_c *FileTypeCreate) SetSftpInstanceName(v string) *FileTypeCreate {
-	_c.mutation.SetSftpInstanceName(v)
-	return _c
-}
-
-// SetNillableSftpInstanceName sets the "sftp_instance_name" field if the given value is not nil.
-func (_c *FileTypeCreate) SetNillableSftpInstanceName(v *string) *FileTypeCreate {
-	if v != nil {
-		_c.SetSftpInstanceName(*v)
-	}
-	return _c
-}
-
-// SetSftpInstanceNamespace sets the "sftp_instance_namespace" field.
-func (_c *FileTypeCreate) SetSftpInstanceNamespace(v string) *FileTypeCreate {
-	_c.mutation.SetSftpInstanceNamespace(v)
-	return _c
-}
-
-// SetNillableSftpInstanceNamespace sets the "sftp_instance_namespace" field if the given value is not nil.
-func (_c *FileTypeCreate) SetNillableSftpInstanceNamespace(v *string) *FileTypeCreate {
-	if v != nil {
-		_c.SetSftpInstanceNamespace(*v)
-	}
-	return _c
-}
-
 // AddExposureIDs adds the "exposures" edge to the FileExposure entity by IDs.
 func (_c *FileTypeCreate) AddExposureIDs(ids ...int) *FileTypeCreate {
 	_c.mutation.AddExposureIDs(ids...)
@@ -347,14 +319,6 @@ func (_c *FileTypeCreate) createSpec() (*FileType, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Active(); ok {
 		_spec.SetField(filetype.FieldActive, field.TypeBool, value)
 		_node.Active = value
-	}
-	if value, ok := _c.mutation.SftpInstanceName(); ok {
-		_spec.SetField(filetype.FieldSftpInstanceName, field.TypeString, value)
-		_node.SftpInstanceName = &value
-	}
-	if value, ok := _c.mutation.SftpInstanceNamespace(); ok {
-		_spec.SetField(filetype.FieldSftpInstanceNamespace, field.TypeString, value)
-		_node.SftpInstanceNamespace = &value
 	}
 	if nodes := _c.mutation.ExposuresIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -560,42 +524,6 @@ func (u *FileTypeUpsert) UpdateActive() *FileTypeUpsert {
 	return u
 }
 
-// SetSftpInstanceName sets the "sftp_instance_name" field.
-func (u *FileTypeUpsert) SetSftpInstanceName(v string) *FileTypeUpsert {
-	u.Set(filetype.FieldSftpInstanceName, v)
-	return u
-}
-
-// UpdateSftpInstanceName sets the "sftp_instance_name" field to the value that was provided on create.
-func (u *FileTypeUpsert) UpdateSftpInstanceName() *FileTypeUpsert {
-	u.SetExcluded(filetype.FieldSftpInstanceName)
-	return u
-}
-
-// ClearSftpInstanceName clears the value of the "sftp_instance_name" field.
-func (u *FileTypeUpsert) ClearSftpInstanceName() *FileTypeUpsert {
-	u.SetNull(filetype.FieldSftpInstanceName)
-	return u
-}
-
-// SetSftpInstanceNamespace sets the "sftp_instance_namespace" field.
-func (u *FileTypeUpsert) SetSftpInstanceNamespace(v string) *FileTypeUpsert {
-	u.Set(filetype.FieldSftpInstanceNamespace, v)
-	return u
-}
-
-// UpdateSftpInstanceNamespace sets the "sftp_instance_namespace" field to the value that was provided on create.
-func (u *FileTypeUpsert) UpdateSftpInstanceNamespace() *FileTypeUpsert {
-	u.SetExcluded(filetype.FieldSftpInstanceNamespace)
-	return u
-}
-
-// ClearSftpInstanceNamespace clears the value of the "sftp_instance_namespace" field.
-func (u *FileTypeUpsert) ClearSftpInstanceNamespace() *FileTypeUpsert {
-	u.SetNull(filetype.FieldSftpInstanceNamespace)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -778,48 +706,6 @@ func (u *FileTypeUpsertOne) SetActive(v bool) *FileTypeUpsertOne {
 func (u *FileTypeUpsertOne) UpdateActive() *FileTypeUpsertOne {
 	return u.Update(func(s *FileTypeUpsert) {
 		s.UpdateActive()
-	})
-}
-
-// SetSftpInstanceName sets the "sftp_instance_name" field.
-func (u *FileTypeUpsertOne) SetSftpInstanceName(v string) *FileTypeUpsertOne {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.SetSftpInstanceName(v)
-	})
-}
-
-// UpdateSftpInstanceName sets the "sftp_instance_name" field to the value that was provided on create.
-func (u *FileTypeUpsertOne) UpdateSftpInstanceName() *FileTypeUpsertOne {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.UpdateSftpInstanceName()
-	})
-}
-
-// ClearSftpInstanceName clears the value of the "sftp_instance_name" field.
-func (u *FileTypeUpsertOne) ClearSftpInstanceName() *FileTypeUpsertOne {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.ClearSftpInstanceName()
-	})
-}
-
-// SetSftpInstanceNamespace sets the "sftp_instance_namespace" field.
-func (u *FileTypeUpsertOne) SetSftpInstanceNamespace(v string) *FileTypeUpsertOne {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.SetSftpInstanceNamespace(v)
-	})
-}
-
-// UpdateSftpInstanceNamespace sets the "sftp_instance_namespace" field to the value that was provided on create.
-func (u *FileTypeUpsertOne) UpdateSftpInstanceNamespace() *FileTypeUpsertOne {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.UpdateSftpInstanceNamespace()
-	})
-}
-
-// ClearSftpInstanceNamespace clears the value of the "sftp_instance_namespace" field.
-func (u *FileTypeUpsertOne) ClearSftpInstanceNamespace() *FileTypeUpsertOne {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.ClearSftpInstanceNamespace()
 	})
 }
 
@@ -1171,48 +1057,6 @@ func (u *FileTypeUpsertBulk) SetActive(v bool) *FileTypeUpsertBulk {
 func (u *FileTypeUpsertBulk) UpdateActive() *FileTypeUpsertBulk {
 	return u.Update(func(s *FileTypeUpsert) {
 		s.UpdateActive()
-	})
-}
-
-// SetSftpInstanceName sets the "sftp_instance_name" field.
-func (u *FileTypeUpsertBulk) SetSftpInstanceName(v string) *FileTypeUpsertBulk {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.SetSftpInstanceName(v)
-	})
-}
-
-// UpdateSftpInstanceName sets the "sftp_instance_name" field to the value that was provided on create.
-func (u *FileTypeUpsertBulk) UpdateSftpInstanceName() *FileTypeUpsertBulk {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.UpdateSftpInstanceName()
-	})
-}
-
-// ClearSftpInstanceName clears the value of the "sftp_instance_name" field.
-func (u *FileTypeUpsertBulk) ClearSftpInstanceName() *FileTypeUpsertBulk {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.ClearSftpInstanceName()
-	})
-}
-
-// SetSftpInstanceNamespace sets the "sftp_instance_namespace" field.
-func (u *FileTypeUpsertBulk) SetSftpInstanceNamespace(v string) *FileTypeUpsertBulk {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.SetSftpInstanceNamespace(v)
-	})
-}
-
-// UpdateSftpInstanceNamespace sets the "sftp_instance_namespace" field to the value that was provided on create.
-func (u *FileTypeUpsertBulk) UpdateSftpInstanceNamespace() *FileTypeUpsertBulk {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.UpdateSftpInstanceNamespace()
-	})
-}
-
-// ClearSftpInstanceNamespace clears the value of the "sftp_instance_namespace" field.
-func (u *FileTypeUpsertBulk) ClearSftpInstanceNamespace() *FileTypeUpsertBulk {
-	return u.Update(func(s *FileTypeUpsert) {
-		s.ClearSftpInstanceNamespace()
 	})
 }
 

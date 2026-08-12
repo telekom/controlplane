@@ -728,18 +728,16 @@ type ComplexityRoot struct {
 	}
 
 	FileType struct {
-		Active                func(childComplexity int) int
-		CreatedAt             func(childComplexity int) int
-		Description           func(childComplexity int) int
-		FileType              func(childComplexity int) int
-		ID                    func(childComplexity int) int
-		LastModifiedAt        func(childComplexity int) int
-		Namespace             func(childComplexity int) int
-		SftpInstanceName      func(childComplexity int) int
-		SftpInstanceNamespace func(childComplexity int) int
-		StatusMessage         func(childComplexity int) int
-		StatusPhase           func(childComplexity int) int
-		Variant               func(childComplexity int) int
+		Active         func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Description    func(childComplexity int) int
+		FileType       func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
+		Variant        func(childComplexity int) int
 	}
 
 	FileTypeConnection struct {
@@ -3808,18 +3806,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileType.Namespace(childComplexity), true
-	case "FileType.sftpInstanceName":
-		if e.ComplexityRoot.FileType.SftpInstanceName == nil {
-			break
-		}
-
-		return e.ComplexityRoot.FileType.SftpInstanceName(childComplexity), true
-	case "FileType.sftpInstanceNamespace":
-		if e.ComplexityRoot.FileType.SftpInstanceNamespace == nil {
-			break
-		}
-
-		return e.ComplexityRoot.FileType.SftpInstanceNamespace(childComplexity), true
 	case "FileType.statusMessage":
 		if e.ComplexityRoot.FileType.StatusMessage == nil {
 			break
@@ -9393,8 +9379,6 @@ type FileType implements Node {
   description: String
   variant: String
   active: Boolean!
-  sftpInstanceName: String
-  sftpInstanceNamespace: String
 }
 """
 A connection to a list of items.
@@ -9596,42 +9580,6 @@ input FileTypeWhereInput {
   """
   active: Boolean
   activeNEQ: Boolean
-  """
-  sftp_instance_name field predicates
-  """
-  sftpInstanceName: String
-  sftpInstanceNameNEQ: String
-  sftpInstanceNameIn: [String!]
-  sftpInstanceNameNotIn: [String!]
-  sftpInstanceNameGT: String
-  sftpInstanceNameGTE: String
-  sftpInstanceNameLT: String
-  sftpInstanceNameLTE: String
-  sftpInstanceNameContains: String
-  sftpInstanceNameHasPrefix: String
-  sftpInstanceNameHasSuffix: String
-  sftpInstanceNameIsNil: Boolean
-  sftpInstanceNameNotNil: Boolean
-  sftpInstanceNameEqualFold: String
-  sftpInstanceNameContainsFold: String
-  """
-  sftp_instance_namespace field predicates
-  """
-  sftpInstanceNamespace: String
-  sftpInstanceNamespaceNEQ: String
-  sftpInstanceNamespaceIn: [String!]
-  sftpInstanceNamespaceNotIn: [String!]
-  sftpInstanceNamespaceGT: String
-  sftpInstanceNamespaceGTE: String
-  sftpInstanceNamespaceLT: String
-  sftpInstanceNamespaceLTE: String
-  sftpInstanceNamespaceContains: String
-  sftpInstanceNamespaceHasPrefix: String
-  sftpInstanceNamespaceHasSuffix: String
-  sftpInstanceNamespaceIsNil: Boolean
-  sftpInstanceNamespaceNotNil: Boolean
-  sftpInstanceNamespaceEqualFold: String
-  sftpInstanceNamespaceContainsFold: String
   """
   exposures edge predicates
   """
@@ -13546,10 +13494,6 @@ func (ec *executionContext) childFields_FileType(ctx context.Context, field grap
 		return ec.fieldContext_FileType_variant(ctx, field)
 	case "active":
 		return ec.fieldContext_FileType_active(ctx, field)
-	case "sftpInstanceName":
-		return ec.fieldContext_FileType_sftpInstanceName(ctx, field)
-	case "sftpInstanceNamespace":
-		return ec.fieldContext_FileType_sftpInstanceNamespace(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type FileType", field.Name)
 }

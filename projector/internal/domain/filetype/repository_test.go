@@ -45,19 +45,15 @@ var _ = Describe("FileType Repository", func() {
 
 	Describe("Upsert", func() {
 		It("should create file type with optional fields", func() {
-			variant := "csv"
-			sftpName := "sftp-a"
-			sftpNs := "sftp-ns"
+			variant := "sftp"
 			data := &filetype.FileTypeData{
-				Meta:                  shared.NewMetadata("prod--platform--narvi", "invoice", nil),
-				StatusPhase:           "READY",
-				StatusMessage:         "ok",
-				FileType:              "invoice",
-				Description:           "Invoice files",
-				Variant:               &variant,
-				Active:                true,
-				SFTPInstanceName:      &sftpName,
-				SFTPInstanceNamespace: &sftpNs,
+				Meta:          shared.NewMetadata("prod--platform--narvi", "invoice", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "ok",
+				FileType:      "invoice",
+				Description:   "Invoice files",
+				Variant:       &variant,
+				Active:        true,
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -65,10 +61,8 @@ var _ = Describe("FileType Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ft.Description).To(Equal("Invoice files"))
 			Expect(ft.Variant).NotTo(BeNil())
-			Expect(*ft.Variant).To(Equal("csv"))
+			Expect(*ft.Variant).To(Equal("sftp"))
 			Expect(ft.Active).To(BeTrue())
-			Expect(ft.SftpInstanceName).NotTo(BeNil())
-			Expect(*ft.SftpInstanceName).To(Equal("sftp-a"))
 		})
 
 		It("should populate cache entries after upsert", func() {
