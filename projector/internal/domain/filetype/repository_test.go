@@ -93,7 +93,6 @@ var _ = Describe("FileType Repository", func() {
 			Expect(ft.Description).To(Equal("Invoice files"))
 			Expect(ft.Variant).NotTo(BeNil())
 			Expect(*ft.Variant).To(Equal("csv"))
-			Expect(ft.Active).NotTo(BeNil())
 			Expect(ft.Active).To(BeTrue())
 			Expect(ft.SftpInstanceName).NotTo(BeNil())
 			Expect(*ft.SftpInstanceName).To(Equal("sftp-a"))
