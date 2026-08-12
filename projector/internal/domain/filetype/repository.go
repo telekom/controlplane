@@ -65,7 +65,7 @@ func (r *Repository) Upsert(ctx context.Context, data *FileTypeData) error {
 	}
 
 	fileTypeID, upsertErr := create.
-		OnConflictColumns(entfiletype.FieldFileType, entfiletype.OwnerColumn).
+		OnConflictColumns(entfiletype.FieldFileType).
 		Update(func(u *ent.FileTypeUpsert) {
 			u.SetDescription(data.Description)
 			u.SetActive(data.Active)

@@ -107,7 +107,7 @@ var _ = Describe("FileSubscription Repository", func() {
 		Expect(err).NotTo(HaveOccurred())
 		appID = app.ID
 
-		ft, err := client.FileType.Create().SetFileType("invoice").SetDescription("Invoice files").SetNamespace("prod--platform--narvi").SetOwnerID(team.ID).Save(ctx)
+		ft, err := client.FileType.Create().SetFileType("invoice").SetDescription("Invoice files").SetNamespace("prod--platform--narvi").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		fileTypeID = ft.ID
 
