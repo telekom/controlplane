@@ -61,6 +61,7 @@ Standard controller flow: fetch -> first setup (finalizer, init conditions) -> v
 
 - Set conditions **before** the status update, not after.
 - Stamp `ObservedGeneration` on all conditions.
+- Sort collections derived from Kubernetes `List` results before storing them in specs or statuses; cached list order is not stable and can cause reconciliation loops.
 - Requeue with jitter — never fixed intervals.
 - Use the `Handler[T]` interface with `CreateOrUpdate` and `Delete` methods.
 

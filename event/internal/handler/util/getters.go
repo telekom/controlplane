@@ -5,8 +5,10 @@
 package util
 
 import (
+	"cmp"
 	"context"
 	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -216,6 +218,12 @@ func FindCrossZoneSSESubscriptionZones(ctx context.Context, eventType, exposureZ
 		}
 	}
 
+	// Cache List order is unstable; this feeds status, so an unsorted result
+	// rewrites the status every reconcile and re-triggers the watch.
+	slices.SortFunc(zones, func(a, b types.ObjectRef) int {
+		return strings.Compare(a.String(), b.String())
+	})
+
 	return zones, nil
 }
 
@@ -258,6 +266,11 @@ func FindEventExposures(ctx context.Context, eventType string) ([]eventv1.EventE
 			exposures = append(exposures, exposureList.Items[i])
 		}
 	}
+
+	// Cache List order is unstable; sort so exposure selection is deterministic.
+	slices.SortFunc(exposures, func(a, b eventv1.EventExposure) int {
+		return cmp.Or(strings.Compare(a.Namespace, b.Namespace), strings.Compare(a.Name, b.Name))
+	})
 
 	return exposures, nil
 }
@@ -327,6 +340,12 @@ func FindCrossZoneCallbackSubscriptions(ctx context.Context, eventType, exposure
 
 		subs = append(subs, *sub)
 	}
+
+	// Cache List order is unstable; this feeds status, so an unsorted result
+	// rewrites the status every reconcile and re-triggers the watch.
+	slices.SortFunc(subs, func(a, b eventv1.EventSubscription) int {
+		return cmp.Or(strings.Compare(a.Namespace, b.Namespace), strings.Compare(a.Name, b.Name))
+	})
 
 	return subs, nil
 }
