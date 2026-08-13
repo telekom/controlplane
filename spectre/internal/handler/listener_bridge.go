@@ -8,10 +8,11 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
@@ -131,8 +132,14 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 	return subscriber, nil
 }
 
-// cleanupGenericPublisherIfOrphaned checks if any other Listener CRs still exist.
-// If none remain, the shared generic Publisher is deleted.
+// cleanupGenericPublisherIfOrphaned deletes the shared generic Publisher once the
+// last Listener using it is gone.
+//
+// The Publisher is a single object per zone shared by every team, so the
+// ref-count must span all namespaces — counting only the deleted Listener's own
+// namespace would drop a Publisher that other teams are still using. The
+// Listener being deleted is excluded by UID rather than by name, because names
+// are only unique within a namespace.
 func (h *ListenerHandler) cleanupGenericPublisherIfOrphaned(
 	ctx context.Context,
 	listener *spectrev1.Listener,
@@ -140,26 +147,23 @@ func (h *ListenerHandler) cleanupGenericPublisherIfOrphaned(
 ) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// Check if other Listener CRs still exist in the same namespace as this one
 	listenerList := &spectrev1.ListenerList{}
-	err := c.List(ctx, listenerList, client.InNamespace(listener.Namespace))
-	if err != nil {
+	if err := c.List(ctx, listenerList); err != nil {
 		return errors.Wrap(err, "failed to list Listeners for publisher cleanup")
 	}
 
-	// Filter out the current listener being deleted
-	otherListeners := 0
 	for i := range listenerList.Items {
-		if listenerList.Items[i].Name != listener.Name {
-			otherListeners++
+		other := &listenerList.Items[i]
+		if other.UID == listener.UID {
+			continue
 		}
-	}
-
-	if otherListeners > 0 {
+		if controller.IsBeingDeleted(other) {
+			continue
+		}
+		// Another Listener still needs the shared Publisher.
 		return nil
 	}
 
-	// No other listeners remain — delete the shared generic Publisher
 	publisherName := util.MakePublisherName(util.GenericEventType)
 	publisher := &pubsubv1.Publisher{
 		ObjectMeta: metav1.ObjectMeta{
@@ -168,8 +172,7 @@ func (h *ListenerHandler) cleanupGenericPublisherIfOrphaned(
 		},
 	}
 
-	err = c.Delete(ctx, publisher)
-	if err != nil {
+	if err := c.Delete(ctx, publisher); err != nil && !apierrors.IsNotFound(err) {
 		return errors.Wrapf(err, "failed to delete orphaned generic Publisher %q", publisherName)
 	}
 

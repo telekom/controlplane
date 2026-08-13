@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
@@ -80,20 +82,84 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 	}
 
 	// Step 6: Set Ready condition.
+	// AllReady() only turns false once a child reports Ready=False. A child that
+	// was just created has no conditions at all, so check AnyChanged() first —
+	// otherwise the first reconcile reports Ready before anything is confirmed.
+	if c.AnyChanged() {
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
+			"At least one sub-resource has been created or updated"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady,
+			"At least one sub-resource has been created or updated"))
+		return nil
+	}
+
 	if !c.AllReady() {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
+			"One or more child resources are not yet ready"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady,
 			"One or more child resources are not yet ready"))
 		return nil
 	}
 
 	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"SpectreApplication has been provisioned"))
+	obj.SetCondition(condition.NewDoneProcessingCondition("SpectreApplication has been provisioned"))
 
 	return nil
 }
 
 func (h *SpectreApplicationHandler) Delete(ctx context.Context, obj *spectrev1.SpectreApplication) error {
-	// Child resources are cleaned up via owner references.
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	// The children live in the zone namespace while this SpectreApplication lives
+	// in the team namespace. Kubernetes ignores cross-namespace owner references,
+	// so nothing garbage collects them — delete them from the refs in status.
+	if ref := obj.Status.Subscriber; ref != nil {
+		sub := &pubsubv1.Subscriber{}
+		if err := deleteIfExists(ctx, c, ref, sub); err != nil {
+			return errors.Wrapf(err, "failed to delete Subscriber %q", ref.String())
+		}
+		logger.Info("Deleted Subscriber", "subscriber", ref.String())
+		obj.Status.Subscriber = nil
+	}
+
+	if ref := obj.Status.Publisher; ref != nil {
+		pub := &pubsubv1.Publisher{}
+		if err := deleteIfExists(ctx, c, ref, pub); err != nil {
+			return errors.Wrapf(err, "failed to delete Publisher %q", ref.String())
+		}
+		logger.Info("Deleted Publisher", "publisher", ref.String())
+		obj.Status.Publisher = nil
+	}
+
+	for _, ref := range []*ctypes.ObjectRef{obj.Status.ListenerRoute, obj.Status.ProxyRoute} {
+		if ref == nil {
+			continue
+		}
+		route := &gatewayv1.Route{}
+		if err := deleteIfExists(ctx, c, ref, route); err != nil {
+			return errors.Wrapf(err, "failed to delete Route %q", ref.String())
+		}
+		logger.Info("Deleted Route", "route", ref.String())
+	}
+	obj.Status.ListenerRoute = nil
+	obj.Status.ProxyRoute = nil
+
+	return nil
+}
+
+// deleteIfExists deletes the referenced object, tolerating an already-deleted one.
+func deleteIfExists(ctx context.Context, c cclient.JanitorClient, ref *ctypes.ObjectRef, into client.Object) error {
+	if err := c.Get(ctx, ref.K8s(), into); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if err := c.Delete(ctx, into); err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
 	return nil
 }
 
