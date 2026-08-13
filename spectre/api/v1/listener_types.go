@@ -5,9 +5,10 @@
 package v1
 
 import (
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 // ListenerSpec defines the desired state of Listener.
@@ -85,6 +86,7 @@ func (l *Listener) GetConditions() []metav1.Condition {
 	return l.Status.Conditions
 }
 
+//nolint:gocritic // hugeParam: kept as value to satisfy ctypes.Object interface
 func (l *Listener) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&l.Status.Conditions, condition)
 }

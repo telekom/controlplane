@@ -8,13 +8,14 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // approvalResult carries the outcome of the approval check.

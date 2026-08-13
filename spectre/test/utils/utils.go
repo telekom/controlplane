@@ -13,7 +13,7 @@ import (
 	"os/exec"
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2" // nolint:revive,staticcheck
+	. "github.com/onsi/ginkgo/v2" //nolint:staticcheck // dot import required by Ginkgo DSL
 )
 
 const (
@@ -25,21 +25,24 @@ const (
 )
 
 func warnError(err error) {
-	_, _ = fmt.Fprintf(GinkgoWriter, "warning: %v\n", err)
+	fmt.Fprintf(GinkgoWriter, "warning: %v\n", err) //nolint:errcheck // best-effort diagnostic output
 }
 
 // Run executes the provided command within this context
 func Run(cmd *exec.Cmd) (string, error) {
-	dir, _ := GetProjectDir()
+	dir, err := GetProjectDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get project dir: %w", err)
+	}
 	cmd.Dir = dir
 
-	if err := os.Chdir(cmd.Dir); err != nil {
-		_, _ = fmt.Fprintf(GinkgoWriter, "chdir dir: %q\n", err)
+	if chdirErr := os.Chdir(cmd.Dir); chdirErr != nil {
+		fmt.Fprintf(GinkgoWriter, "chdir dir: %q\n", chdirErr) //nolint:errcheck // best-effort diagnostic output
 	}
 
 	cmd.Env = append(os.Environ(), "GO111MODULE=on")
 	command := strings.Join(cmd.Args, " ")
-	_, _ = fmt.Fprintf(GinkgoWriter, "running: %q\n", command)
+	fmt.Fprintf(GinkgoWriter, "running: %q\n", command) //nolint:errcheck // best-effort diagnostic output
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output), fmt.Errorf("%q failed with error %q: %w", command, string(output), err)
@@ -51,7 +54,7 @@ func Run(cmd *exec.Cmd) (string, error) {
 // UninstallCertManager uninstalls the cert manager
 func UninstallCertManager() {
 	url := fmt.Sprintf(certmanagerURLTmpl, certmanagerVersion)
-	cmd := exec.Command("kubectl", "delete", "-f", url)
+	cmd := exec.Command("kubectl", "delete", "-f", url) //nolint:gosec // test utility with controlled args
 	if _, err := Run(cmd); err != nil {
 		warnError(err)
 	}
@@ -62,7 +65,7 @@ func UninstallCertManager() {
 		"cert-manager-controller",
 	}
 	for _, lease := range kubeSystemLeases {
-		cmd = exec.Command("kubectl", "delete", "lease", lease,
+		cmd = exec.Command("kubectl", "delete", "lease", lease, //nolint:gosec // test utility with controlled args
 			"-n", "kube-system", "--ignore-not-found", "--force", "--grace-period=0")
 		if _, err := Run(cmd); err != nil {
 			warnError(err)
@@ -73,7 +76,7 @@ func UninstallCertManager() {
 // InstallCertManager installs the cert manager bundle.
 func InstallCertManager() error {
 	url := fmt.Sprintf(certmanagerURLTmpl, certmanagerVersion)
-	cmd := exec.Command("kubectl", "apply", "-f", url)
+	cmd := exec.Command("kubectl", "apply", "-f", url) //nolint:gosec // test utility with controlled args
 	if _, err := Run(cmd); err != nil {
 		return err
 	}
@@ -133,7 +136,7 @@ func LoadImageToKindClusterWithName(name string) error {
 	if v, ok := os.LookupEnv("KIND"); ok {
 		kindBinary = v
 	}
-	cmd := exec.Command(kindBinary, kindOptions...)
+	cmd := exec.Command(kindBinary, kindOptions...) //nolint:gosec // test utility with controlled args
 	_, err := Run(cmd)
 	return err
 }
@@ -165,8 +168,7 @@ func GetProjectDir() (string, error) {
 // UncommentCode searches for target in the file and remove the comment prefix
 // of the target content. The target content may span multiple lines.
 func UncommentCode(filename, target, prefix string) error {
-	// false positive
-	// nolint:gosec
+	//nolint:gosec // filename is caller-controlled test fixture path
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("failed to read file %q: %w", filename, err)
@@ -205,9 +207,8 @@ func UncommentCode(filename, target, prefix string) error {
 		return fmt.Errorf("failed to write to output: %w", err)
 	}
 
-	// false positive
-	// nolint:gosec
-	if err = os.WriteFile(filename, out.Bytes(), 0644); err != nil {
+	//nolint:gosec // filename is caller-controlled test fixture path
+	if err = os.WriteFile(filename, out.Bytes(), 0o644); err != nil {
 		return fmt.Errorf("failed to write file %q: %w", filename, err)
 	}
 

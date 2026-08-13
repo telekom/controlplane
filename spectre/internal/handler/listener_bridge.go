@@ -81,7 +81,7 @@ func (h *ListenerHandler) ensureBridgeSubscribers(
 
 func (h *ListenerHandler) ensureBridgeSubscriber(
 	ctx context.Context,
-	listener *spectrev1.Listener,
+	_ *spectrev1.Listener,
 	publisher *pubsubv1.Publisher,
 	appId string,
 	callbackURL string,

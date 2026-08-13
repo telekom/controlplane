@@ -3,6 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:dupl // controller boilerplate is structurally identical by design
 package controller
 
 import (

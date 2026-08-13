@@ -5,9 +5,10 @@
 package v1
 
 import (
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 // SpectreApplicationSpec defines the desired state of SpectreApplication.
@@ -60,6 +61,7 @@ func (a *SpectreApplication) GetConditions() []metav1.Condition {
 	return a.Status.Conditions
 }
 
+//nolint:gocritic // hugeParam: kept as value to satisfy ctypes.Object interface
 func (a *SpectreApplication) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&a.Status.Conditions, condition)
 }

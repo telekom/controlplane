@@ -5,10 +5,10 @@
 package util_test
 
 import (
+	"github.com/telekom/controlplane/spectre/internal/handler/util"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"github.com/telekom/controlplane/spectre/internal/handler/util"
 )
 
 var _ = Describe("Naming helpers", func() {

@@ -18,7 +18,7 @@ import (
 )
 
 // ensurePublisher creates or updates the pubsub Publisher for this SpectreApplication.
-func (h *SpectreApplicationHandler) ensurePublisher(ctx context.Context, obj *spectrev1.SpectreApplication, eventStore *pubsubv1.EventStore, appId string) (*pubsubv1.Publisher, error) {
+func (h *SpectreApplicationHandler) ensurePublisher(ctx context.Context, _ *spectrev1.SpectreApplication, eventStore *pubsubv1.EventStore, appId string) (*pubsubv1.Publisher, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	eventType := util.BuildListenerEventType(appId)
