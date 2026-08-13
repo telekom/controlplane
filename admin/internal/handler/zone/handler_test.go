@@ -648,6 +648,58 @@ var _ = Describe("Zone Handler Steps", func() {
 	// ─────────────────────────────────────────────────────────────────────────
 
 	Describe("Full pipeline (CreateOrUpdate)", func() {
+		It("should wait for the identity sub-resources before creating dependent resources", func() {
+			handler := &ZoneHandler{}
+
+			// First pass: the identity resources are created but not provisioned yet
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+			Expect(zone.Status.IdentityProvider).NotTo(BeNil())
+			Expect(zone.Status.IdentityRealm).NotTo(BeNil())
+			Expect(zone.Status.InternalIdentityRealm).NotTo(BeNil())
+			Expect(zone.Status.GatewayAdminClient).To(BeNil())
+			Expect(zone.Status.Gateway).To(BeNil())
+			Expect(zone.Status.Links.Url).To(BeEmpty())
+
+			ready := meta.FindStatusCondition(zone.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+			Expect(ready.Reason).To(Equal(condition.ReasonSubResourceNotReady))
+			Expect(ready.Message).To(ContainSubstring(zone.Status.IdentityProvider.Name))
+
+			// No dependent resource must exist yet
+			clients := &identityapi.ClientList{}
+			Expect(k8sClient.List(ctx, clients, client.InNamespace(zone.Status.Namespace))).To(Succeed())
+			Expect(clients.Items).To(BeEmpty())
+
+			// Once they are provisioned the remaining steps run
+			markSubResourcesReady(zone)
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			Expect(zone.Status.GatewayAdminClient).NotTo(BeNil())
+			Expect(zone.Status.Gateway).NotTo(BeNil())
+		})
+
+		It("should not wait again once the zone has been provisioned", func() {
+			handler := &ZoneHandler{}
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			markSubResourcesReady(zone)
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+			// A realm degrading later must not stall the remaining steps
+			realm := &identityapi.Realm{}
+			Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+			realm.SetCondition(condition.NewNotReadyCondition("RealmUnavailable", "identity provider unreachable"))
+			Expect(k8sClient.Status().Update(ctx, realm)).To(Succeed())
+
+			zone.Spec.Gateway.Admin.Url = "https://changed.example.com/admin-api"
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+			gateway := &gatewayapi.Gateway{}
+			Expect(k8sClient.Get(ctx, zone.Status.Gateway.K8s(), gateway)).To(Succeed())
+			Expect(gateway.Spec.Admin.Url).To(Equal("https://changed.example.com/admin-api"))
+		})
+
 		It("should run all steps and produce NotReady on first pass, Ready on second", func() {
 			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{
 				Routes: []adminv1.ManagedRouteConfig{{
@@ -659,13 +711,20 @@ var _ = Describe("Zone Handler Steps", func() {
 			}
 			handler := &ZoneHandler{}
 
-			// First pass: all resources are new -> AnyChanged() is true -> NotReady
+			// First pass: the pipeline stops until the realms are provisioned
 			testCtx := newTestContext(zone)
 			err := handler.CreateOrUpdate(testCtx, zone)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			markSubResourcesReady(zone)
 
-			// Status refs are all populated even on first pass
+			// Second pass: all remaining resources are new -> AnyChanged() is true -> NotReady
+			testCtx = newTestContext(zone)
+			err = handler.CreateOrUpdate(testCtx, zone)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+			// Status refs are all populated
 			Expect(zone.Status.Namespace).To(Equal(strings.ToLower(fmt.Sprintf("%s--%s", testEnvironment, zone.Name))))
 			Expect(zone.Status.IdentityProvider).NotTo(BeNil())
 			Expect(zone.Status.IdentityRealm).NotTo(BeNil())
@@ -681,7 +740,7 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(zone.Status.Links.LmsIssuer).NotTo(BeEmpty())
 			Expect(zone.Status.Links.TeamIssuer).NotTo(BeEmpty())
 
-			// Second pass: nothing changed -> Ready
+			// Third pass: nothing changed -> Ready
 			testCtx2 := newTestContext(zone)
 			err = handler.CreateOrUpdate(testCtx2, zone)
 			Expect(err).NotTo(HaveOccurred())
@@ -692,21 +751,27 @@ var _ = Describe("Zone Handler Steps", func() {
 		It("should be idempotent across multiple invocations", func() {
 			handler := &ZoneHandler{}
 
-			// First run: resources created -> NotReady
+			// First run: realms created, pipeline waits -> NotReady
 			testCtx := newTestContext(zone)
 			Expect(handler.CreateOrUpdate(testCtx, zone)).To(Succeed())
 			Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-			firstNamespace := zone.Status.Namespace
+			markSubResourcesReady(zone)
 
-			// Second run: nothing changed -> Ready
+			// Second run: remaining resources created -> NotReady
 			testCtx2 := newTestContext(zone)
 			Expect(handler.CreateOrUpdate(testCtx2, zone)).To(Succeed())
+			Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			firstNamespace := zone.Status.Namespace
+
+			// Third run: nothing changed -> Ready
+			testCtx3 := newTestContext(zone)
+			Expect(handler.CreateOrUpdate(testCtx3, zone)).To(Succeed())
 			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			Expect(zone.Status.Namespace).To(Equal(firstNamespace))
 
-			// Third run: still nothing changed -> still Ready
-			testCtx3 := newTestContext(zone)
-			Expect(handler.CreateOrUpdate(testCtx3, zone)).To(Succeed())
+			// Fourth run: still nothing changed -> still Ready
+			testCtx4 := newTestContext(zone)
+			Expect(handler.CreateOrUpdate(testCtx4, zone)).To(Succeed())
 			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 
 			objects := []client.ObjectList{
@@ -729,6 +794,8 @@ var _ = Describe("Zone Handler Steps", func() {
 
 		It("should remain ready and emit an event when a sub-resource degrades", func() {
 			handler := &ZoneHandler{}
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			markSubResourcesReady(zone)
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
@@ -757,6 +824,8 @@ var _ = Describe("Zone Handler Steps", func() {
 		It("should remain ready when a spec change updates sub-resources", func() {
 			handler := &ZoneHandler{}
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			markSubResourcesReady(zone)
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 
 			zone.Spec.Gateway.Admin.Url = "https://changed.example.com/admin-api"
@@ -773,10 +842,15 @@ var _ = Describe("Zone Handler Steps", func() {
 			// First pass
 			testCtx := newTestContext(zone)
 			Expect(handler.CreateOrUpdate(testCtx, zone)).To(Succeed())
+			markSubResourcesReady(zone)
 
-			// Second pass -> Ready
+			// Second pass
 			testCtx2 := newTestContext(zone)
 			Expect(handler.CreateOrUpdate(testCtx2, zone)).To(Succeed())
+
+			// Third pass -> Ready
+			testCtx3 := newTestContext(zone)
+			Expect(handler.CreateOrUpdate(testCtx3, zone)).To(Succeed())
 			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 
 			// LMS issuer should not have /spacegate prefix

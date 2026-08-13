@@ -58,6 +58,8 @@ When creating the Zone resource in the Control Plane, you provide the connection
 
 A Zone becomes `Ready` only after its initial managed sub-resources are ready. After that first successful provisioning, readiness is latched: later child updates or failures do not make the Zone not ready, and changing the Zone spec does not reset the latch.
 
+During initial provisioning, the Admin operator creates the identity provider and identity realms first. It waits until all three report `Ready=True` before creating the clients, gateway resources, and routes that depend on them. While waiting, the Zone reports `Ready=False` with reason `SubResourceNotReady` and names the resource that is not ready. Once initial provisioning is complete, this check no longer blocks later updates.
+
 The Admin operator records a Warning event on the Zone for each managed sub-resource observed as not ready during reconciliation. Inspect these events to identify current child failures:
 
 ```bash

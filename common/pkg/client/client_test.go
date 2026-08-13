@@ -285,7 +285,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("should return failed when atleast one resource is failed", func() {
-			EnableFeature(scopedClient, CollectNotReadyObjects)
+			EnableFeature(scopedClient, CollectSubResources)
 			_, err := scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -297,13 +297,32 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(scopedClient.AllReady()).To(BeFalse())
+			Expect(SubResources(scopedClient)).To(ConsistOf(obj))
 			Expect(NotReadyObjects(scopedClient)).To(ConsistOf(obj))
 
 			scopedClient.Reset()
+			Expect(SubResources(scopedClient)).To(BeEmpty())
 			Expect(NotReadyObjects(scopedClient)).To(BeEmpty())
 		})
 
-		It("should not collect not ready resources by default", func() {
+		It("should collect sub-resources that are ready", func() {
+			EnableFeature(scopedClient, CollectSubResources)
+			_, err := scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
+			Expect(err).ToNot(HaveOccurred())
+
+			obj.SetCondition(condition.NewReadyCondition("ReadyTest", "test"))
+			Expect(k8sClient.Status().Update(ctx, obj)).To(Succeed())
+
+			scopedClient.Reset()
+			_, err = scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(scopedClient.AllReady()).To(BeTrue())
+			Expect(SubResources(scopedClient)).To(ConsistOf(obj))
+			Expect(NotReadyObjects(scopedClient)).To(BeEmpty())
+		})
+
+		It("should not collect sub-resources by default", func() {
 			_, err := scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -315,6 +334,7 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(scopedClient.AllReady()).To(BeFalse())
+			Expect(SubResources(scopedClient)).To(BeEmpty())
 			Expect(NotReadyObjects(scopedClient)).To(BeEmpty())
 		})
 

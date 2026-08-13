@@ -20,6 +20,12 @@ When a Zone is reconciled, the Admin operator bootstraps everything the zone nee
 
 A Zone remains not ready until its initial managed sub-resources are ready. Once initial provisioning succeeds, `Ready=True` is latched and represents successful provisioning rather than continuous aggregate child health. Later child degradation, child updates, and Zone spec changes do not clear it; the operator reports each child observed as not ready during reconciliation through a Warning event on the Zone. Reconciliation errors continue to use the normal controller error handling.
 
+### Provisioning order
+
+The Admin operator creates the identity provider and the two identity realms first. It waits until all three report `Ready=True` before creating the clients, gateway resources, and routes that depend on them. This prevents requests from reaching the identity provider before the realms are active.
+
+While it waits, the Zone reports `Ready=False` with reason `SubResourceNotReady` and names the resource that is not ready. Changes to that resource automatically trigger another reconciliation. Once the Zone has completed its initial provisioning, this readiness check no longer blocks later updates.
+
 ### Identity realms and the rover client
 
 Each zone gets two identity realms in its identity provider:

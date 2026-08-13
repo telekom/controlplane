@@ -22,8 +22,9 @@ import (
 type ClientFeature string
 
 const (
-	// CollectNotReadyObjects is a feature that enables the collection of not ready objects
-	CollectNotReadyObjects ClientFeature = "CollectNotReadyObjects"
+	// CollectSubResources is a feature that makes the client remember every
+	// object it created or updated, so callers can inspect their readiness.
+	CollectSubResources ClientFeature = "CollectSubResources"
 )
 
 type ScopedClient interface {
@@ -45,10 +46,10 @@ var _ ScopedClient = &scopedClientImpl{}
 type scopedClientImpl struct {
 	environment string
 	client.Client
-	changed         bool
-	ready           bool
-	features        map[ClientFeature]bool
-	notReadyObjects []types.Object
+	changed      bool
+	ready        bool
+	features     map[ClientFeature]bool
+	subResources []types.Object
 }
 
 func NewScopedClient(c client.Client, environment string) ScopedClient {
@@ -133,7 +134,7 @@ func (c *scopedClientImpl) List(ctx context.Context, list client.ObjectList, opt
 func (c *scopedClientImpl) Reset() {
 	c.changed = false
 	c.ready = true
-	c.notReadyObjects = nil
+	c.subResources = nil
 }
 
 func (c *scopedClientImpl) AnyChanged() bool {
@@ -158,29 +159,41 @@ func (c *scopedClientImpl) setChanged(res controllerutil.OperationResult) {
 // setReady will set the current client to not ready if the object is not ready
 // If any object is not ready, the client will be marked as not ready
 func (c *scopedClientImpl) setReady(obj client.Object) {
-	if obj == nil || (!c.ready && !c.features[CollectNotReadyObjects]) {
+	if obj == nil {
 		return
 	}
 
-	if cobj, ok := obj.(types.Object); ok {
-		if meta.IsStatusConditionFalse(cobj.GetConditions(), condition.ConditionTypeReady) {
-			c.ready = false
-			if c.features[CollectNotReadyObjects] {
-				c.notReadyObjects = append(c.notReadyObjects, cobj)
-			}
-		}
+	cobj, ok := obj.(types.Object)
+	if !ok {
+		return
+	}
+
+	if c.features[CollectSubResources] {
+		c.subResources = append(c.subResources, cobj)
+	}
+
+	if meta.IsStatusConditionFalse(cobj.GetConditions(), condition.ConditionTypeReady) {
+		c.ready = false
 	}
 }
 
-// NotReadyObjects returns the objects observed with Ready=False by the scoped client.
-func NotReadyObjects(c ScopedClient) []types.Object {
+// SubResources returns the objects created or updated by the scoped client.
+// It is only populated when the CollectSubResources feature is enabled.
+func SubResources(c ScopedClient) []types.Object {
 	switch c := c.(type) {
 	case *scopedClientImpl:
-		return slices.Clone(c.notReadyObjects)
+		return slices.Clone(c.subResources)
 	case *janitorClient:
-		return NotReadyObjects(c.ScopedClient)
+		return SubResources(c.ScopedClient)
 	}
 	return nil
+}
+
+// NotReadyObjects returns the sub-resources observed with Ready=False.
+func NotReadyObjects(c ScopedClient) []types.Object {
+	return slices.DeleteFunc(SubResources(c), func(obj types.Object) bool {
+		return !meta.IsStatusConditionFalse(obj.GetConditions(), condition.ConditionTypeReady)
+	})
 }
 
 // EnableFeature enables a feature for the given scoped client.
