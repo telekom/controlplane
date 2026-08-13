@@ -39,6 +39,7 @@ type ListenerReconciler struct {
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvalrequests;approvals,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
+// +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

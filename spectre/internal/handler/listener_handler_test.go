@@ -27,6 +27,7 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
@@ -56,6 +57,8 @@ const (
 	testApiBasePath    = "/api/v1/orders"
 	testCallbackURL    = "https://callback.gateway.example.com/callback"
 	testAppId          = "consumer-app"
+	testRealmName      = "test-realm"
+	testRealmIssuer    = "https://iris.example.com/auth/realms/test"
 )
 
 // --- Test fixtures ---
@@ -178,6 +181,10 @@ func makeListenerZone() *adminv1.Zone {
 				Name:      "gateway-aws",
 				Namespace: listenerZoneStatus,
 			},
+			IdentityRealm: &ctypes.ObjectRef{
+				Name:      testRealmName,
+				Namespace: listenerZoneNs,
+			},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -286,6 +293,23 @@ var _ = Describe("ListenerHandler", func() {
 			Get(ctx, k8stypes.NamespacedName{Name: listenerZoneName, Namespace: listenerZoneNs}, mock.AnythingOfType("*v1.Zone")).
 			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
 				*out.(*adminv1.Zone) = *makeListenerZone()
+			}).
+			Return(nil)
+	}
+
+	mockGetRealm := func() {
+		fakeClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: testRealmName, Namespace: listenerZoneNs}, mock.AnythingOfType("*v1.Realm")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				*out.(*identityv1.Realm) = identityv1.Realm{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      testRealmName,
+						Namespace: listenerZoneNs,
+					},
+					Status: identityv1.RealmStatus{
+						IssuerUrl: testRealmIssuer,
+					},
+				}
 			}).
 			Return(nil)
 	}
@@ -421,6 +445,7 @@ var _ = Describe("ListenerHandler", func() {
 		mockApprovalGranted()
 		mockCreateOrUpdatePublisher()
 		mockListRoutes()
+		mockGetRealm()
 		mockCreateOrUpdateRouteListener()
 		mockCreateOrUpdateSubscriber()
 		return listener
@@ -465,6 +490,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
 				mockListRoutes()
+				mockGetRealm()
 
 				// Capture RouteListener
 				var capturedRL *gatewayv1.RouteListener
@@ -515,6 +541,7 @@ var _ = Describe("ListenerHandler", func() {
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
 				mockListRoutes()
+				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
@@ -540,6 +567,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
 				mockListRoutes()
+				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 
 				// Capture both Subscribers
