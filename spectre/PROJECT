@@ -18,7 +18,6 @@ resources:
   kind: Listener
   path: github.com/telekom/controlplane/spectre/api/v1
   version: v1
-version: "3"
 - api:
     crdVersion: v1
     namespaced: true
@@ -28,3 +27,4 @@ version: "3"
   kind: SpectreApplication
   path: github.com/telekom/controlplane/spectre/api/v1
   version: v1
+version: "3"
