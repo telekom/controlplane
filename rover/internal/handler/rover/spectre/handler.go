@@ -44,7 +44,17 @@ func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1
 	}
 
 	rover.Status.SpectreListeners = make([]types.ObjectRef, 0, len(rover.Spec.Listeners))
+	// The Listener name is derived from consumer + apiBasePath/eventType only, so
+	// two entries yielding the same name would silently overwrite each other via
+	// CreateOrUpdate. Block instead of losing a declared listener.
+	seenNames := make(map[string]struct{}, len(rover.Spec.Listeners))
 	for _, rl := range rover.Spec.Listeners {
+		name := makeListenerName(rover.Name, rl)
+		if _, exists := seenNames[name]; exists {
+			return ctrlerrors.BlockedErrorf("duplicate listener for consumer %q: entries that differ only by provider are not supported", rl.Consumer)
+		}
+		seenNames[name] = struct{}{}
+
 		listener, err := ensureListener(ctx, c, rover, app, rl)
 		if err != nil {
 			return err
