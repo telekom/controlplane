@@ -63,12 +63,15 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+TEST_PACKAGES = ./internal/...
+COVER_PACKAGES = ./internal/...
+
 .PHONY: test
 test: manifests generate fmt vet setup-envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell "$(ENVTEST)" use $(ENVTEST_K8S_VERSION) --bin-dir "$(LOCALBIN)" -p path)" go test $$(go list ./... | grep -v /e2e | grep -v /controller) -timeout 5m -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell "$(ENVTEST)" use $(ENVTEST_K8S_VERSION) --bin-dir "$(LOCALBIN)" -p path)" go test $(TEST_PACKAGES) -timeout 10m -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES)
 
 .PHONY: test-integration
-test-integration: manifests generate fmt vet setup-envtest ## Run integration tests (envtest, requires more time).
+test-integration: manifests generate fmt vet setup-envtest ## Run only the envtest controller integration tests.
 	KUBEBUILDER_ASSETS="$(shell "$(ENVTEST)" use $(ENVTEST_K8S_VERSION) --bin-dir "$(LOCALBIN)" -p path)" go test ./internal/controller/... -timeout 20m -coverprofile cover-integration.out
 
 # TODO(user): To use a different vendor for e2e tests, modify the setup under 'tests/e2e'.
