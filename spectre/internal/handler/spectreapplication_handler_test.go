@@ -266,6 +266,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 		Context("with SSE delivery", func() {
 			It("should create Publisher with correct fields", func() {
 				obj := setupHappyPath("server_sent_event")
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -279,6 +280,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 			It("should create Subscriber referencing Publisher", func() {
 				obj := setupHappyPath("server_sent_event")
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -290,6 +292,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 			It("should create SSE Route when delivery is server_sent_event", func() {
 				obj := setupHappyPath("server_sent_event")
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -301,6 +304,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 			It("should set Ready condition when all children are ready", func() {
 				obj := setupHappyPath("server_sent_event")
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -314,6 +318,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 			It("should set NotReady when AllReady returns false", func() {
 				obj := setupHappyPath("server_sent_event")
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(false).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -329,6 +334,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 		Context("with callback delivery", func() {
 			It("should NOT create SSE Route when delivery is callback", func() {
 				obj := setupHappyPath("callback")
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -367,6 +373,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				mockCreateOrUpdateSubscriber()
 				mockCreateOrUpdateRoute()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -405,6 +412,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
 				mockCreateOrUpdateRoute()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -438,6 +446,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)
@@ -473,6 +482,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, obj)

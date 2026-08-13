@@ -30,6 +30,7 @@ import (
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
+	"github.com/telekom/controlplane/spectre/internal/handler/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -359,21 +360,23 @@ var _ = Describe("ListenerHandler", func() {
 			Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, ""))
 	}
 
+	// mockListRoutes stubs the gateway Route lookup. The Route is fetched by its
+	// derived name (util.MakeRouteName(apiBasePath)) rather than by matching
+	// Spec.Paths, because Spec.Paths holds preset-joined paths.
 	mockListRoutes := func() {
+		routeName := util.MakeRouteName(testApiBasePath)
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.RouteList"), mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*gatewayv1.RouteList) = gatewayv1.RouteList{
-					Items: []gatewayv1.Route{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      "route-orders",
-								Namespace: listenerZoneStatus,
-							},
-							Spec: gatewayv1.RouteSpec{
-								Paths: []string{testApiBasePath},
-							},
-						},
+			Get(ctx, k8stypes.NamespacedName{Name: routeName, Namespace: listenerZoneStatus},
+				mock.AnythingOfType("*v1.Route")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, obj client.Object, _ ...client.GetOption) {
+				*obj.(*gatewayv1.Route) = gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      routeName,
+						Namespace: listenerZoneStatus,
+					},
+					Spec: gatewayv1.RouteSpec{
+						// As stored by the gateway: preset basePath + apiBasePath.
+						Paths: []string{"/gateway" + testApiBasePath},
 					},
 				}
 			}).
@@ -474,6 +477,7 @@ var _ = Describe("ListenerHandler", func() {
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
 				mockCreateOrUpdateSubscriber()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, listener)
@@ -486,7 +490,7 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(capturedRL.Spec.Issue).To(Equal(testApiBasePath))
 				Expect(capturedRL.Spec.Zone.Name).To(Equal(listenerZoneName))
 				// Verify Route reference points to the resolved Route, not to RouteListener itself
-				Expect(capturedRL.Spec.Route.Name).To(Equal("route-orders"))
+				Expect(capturedRL.Spec.Route.Name).To(Equal(util.MakeRouteName(testApiBasePath)))
 				Expect(capturedRL.Spec.Route.Namespace).To(Equal(listenerZoneStatus))
 			})
 
@@ -513,6 +517,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockListRoutes()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, listener)
@@ -548,6 +553,7 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Times(2)
 
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, listener)
@@ -574,6 +580,7 @@ var _ = Describe("ListenerHandler", func() {
 
 			It("should set Ready condition when all children are ready", func() {
 				listener := setupFullHappyPath()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
 				err := h.CreateOrUpdate(ctx, listener)
@@ -585,8 +592,26 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 			})
 
+			It("should set NotReady when a sub-resource was just created or updated", func() {
+				// A freshly created child has no conditions yet, so AllReady() is
+				// still true. Ready must not be reported until the next pass
+				// confirms the children — otherwise the CR claims success before
+				// anything is provisioned.
+				listener := setupFullHappyPath()
+				fakeClient.EXPECT().AnyChanged().Return(true).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(readyCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
+			})
+
 			It("should set NotReady when AllReady returns false", func() {
 				listener := setupFullHappyPath()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(false).Once()
 
 				err := h.CreateOrUpdate(ctx, listener)
@@ -648,11 +673,25 @@ var _ = Describe("ListenerHandler", func() {
 
 				otherListener := newListener()
 				otherListener.Name = "other-listener"
+				// Distinct UID: the ref-count excludes the Listener being deleted
+				// by UID, since names are only unique within a namespace.
+				otherListener.UID = "listener-uid-002"
+				// Different team namespace: the generic Publisher is shared across
+				// ALL teams in a zone, so a Listener in another namespace must
+				// still keep it alive.
+				otherListener.Namespace = "other-team-ns"
 
-				// List Listeners — this one + another one
+				// List Listeners — this one + another one. The list must NOT be
+				// namespace-scoped: the Publisher is shared zone-wide, so scoping
+				// to the deleted Listener's namespace would miss other teams'
+				// Listeners and delete a Publisher still in use.
 				fakeClient.EXPECT().
 					List(ctx, mock.AnythingOfType("*v1.ListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					Run(func(_ context.Context, list client.ObjectList, opts ...client.ListOption) {
+						for _, opt := range opts {
+							Expect(opt).ToNot(BeAssignableToTypeOf(client.InNamespace("")),
+								"generic Publisher ref-count must span all namespaces")
+						}
 						*list.(*spectrev1.ListenerList) = spectrev1.ListenerList{
 							Items: []spectrev1.Listener{*listener, *otherListener},
 						}
