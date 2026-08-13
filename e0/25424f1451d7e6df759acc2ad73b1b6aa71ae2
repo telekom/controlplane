@@ -1,0 +1,49 @@
+admin/internal/handler/zone/routes.go
+  s_fdccb9e0986650::t_cda869f4fc0fbc 133
+admin/internal/handler/zone/handler.go
+  s_fdccb9e0986650::t_cda869f4fc0fbc 32,138
+admin/internal/handler/zone/handler_test.go
+  s_fdccb9e0986650::t_09cc3a7b5ac171 19,23
+  s_fdccb9e0986650::t_06c456f5588e43 711-727
+admin/internal/handler/zone/handlingContext.go
+  s_fdccb9e0986650::t_cda869f4fc0fbc 80
+admin/cmd/main.go
+  s_fdccb9e0986650::t_c63491a273ac67 13,15,17-18,28-30,144-151,159-168
+admin/internal/controller/zone_controller.go
+  s_fdccb9e0986650::t_cda869f4fc0fbc 29-36,80,83,86,89,92,95,98
+  s_fdccb9e0986650::t_94add2fb6875f9 25-26,37,78-79,81-82,84-85,87-88,90-91,93-94,96-97,106-113,116-117
+  s_fdccb9e0986650::t_ffca2797444539 114-115,118
+  s_fdccb9e0986650::t_94ceab5e29b333 119-120
+admin/internal/handler/zone/identity_routes.go
+  s_fdccb9e0986650::t_cda869f4fc0fbc 111
+admin/internal/controller/zone_controller_test.go
+  s_fdccb9e0986650::t_2f47624ebe33c7 19-20,197-198,224-235,246,251,253-260,262-264
+  s_fdccb9e0986650::t_09cc3a7b5ac171 13
+  s_fdccb9e0986650::t_225477d45ec18c 236-245,247-250,252
+  s_fdccb9e0986650::t_23e7417ac972a1 14
+  s_fdccb9e0986650::t_e17f178a9ae37e 34,199-208,210-212,222-223,265
+  s_fdccb9e0986650::t_ffca2797444539 168
+  s_fdccb9e0986650::t_94add2fb6875f9 261
+  s_fdccb9e0986650::t_06c456f5588e43 209,213-221
+  s_fdccb9e0986650::t_b88c0614c57632 266
+admin/internal/handler/zone/identity.go
+  s_fdccb9e0986650::t_cda869f4fc0fbc 40,130,173
+admin/internal/handler/zone/gateway.go
+  s_fdccb9e0986650::t_cda869f4fc0fbc 40,100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e025424f1451d7e6df759acc2ad73b1b6aa71ae2",
+  "prompts": {},
+  "sessions": {
+    "s_fdccb9e0986650": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0064733baffekJO7sOaPsou6CZ",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
