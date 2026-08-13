@@ -73,6 +73,18 @@ type SpectreApplicationList struct {
 	Items           []SpectreApplication `json:"items"`
 }
 
+var _ ctypes.ObjectList = &SpectreApplicationList{}
+
+// GetItems implements types.ObjectList. The janitor client requires this to
+// clean up owned SpectreApplications; without it CleanupAll aborts for every type.
+func (l *SpectreApplicationList) GetItems() []ctypes.Object {
+	items := make([]ctypes.Object, len(l.Items))
+	for i := range l.Items {
+		items[i] = &l.Items[i]
+	}
+	return items
+}
+
 func init() {
 	SchemeBuilder.Register(&SpectreApplication{}, &SpectreApplicationList{})
 }
