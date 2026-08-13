@@ -16,9 +16,11 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	identityapi "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -706,6 +708,23 @@ var _ = Describe("Zone Handler Steps", func() {
 			testCtx3 := newTestContext(zone)
 			Expect(handler.CreateOrUpdate(testCtx3, zone)).To(Succeed())
 			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+			objects := []client.ObjectList{
+				&corev1.NamespaceList{},
+				&identityapi.IdentityProviderList{},
+				&identityapi.RealmList{},
+				&identityapi.ClientList{},
+				&gatewayapi.GatewayList{},
+				&gatewayapi.ConsumerList{},
+				&gatewayapi.RouteList{},
+			}
+			for _, list := range objects {
+				Expect(k8sClient.List(ctx, list, client.MatchingLabels{
+					config.EnvironmentLabelKey: testEnvironment,
+					config.DomainLabelKey:      "admin",
+				})).To(Succeed())
+				Expect(meta.LenList(list)).To(BeNumerically(">", 0))
+			}
 		})
 
 		It("should remain ready and emit an event when a sub-resource degrades", func() {

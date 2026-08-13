@@ -37,6 +37,7 @@ func createGateway(ctx context.Context, hc *HandlingContext) error {
 		}
 		gateway.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		gateway.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		gateway.Labels[cconfig.DomainLabelKey] = domainName
 
 		adminUrl := hc.Zone.Spec.Gateway.Admin.Url
 
@@ -96,6 +97,7 @@ func createGatewayConsumer(ctx context.Context, hc *HandlingContext) error {
 		}
 		gatewayConsumer.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		gatewayConsumer.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		gatewayConsumer.Labels[cconfig.DomainLabelKey] = domainName
 
 		gatewayConsumer.Spec = gatewayapi.ConsumerSpec{
 			Gateway: *types.ObjectRefFromObject(hc.Gateway),

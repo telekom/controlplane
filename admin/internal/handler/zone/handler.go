@@ -29,6 +29,7 @@ import (
 
 const (
 	zoneLabelName = "zone"
+	domainName    = "admin"
 
 	// spacegatePathPrefix is the downstream path prefix added to all identity
 	// routes (issuer, certs, discovery) when a zone's visibility is World.
@@ -134,6 +135,7 @@ func reconcileAiGateway(ctx context.Context, hc *HandlingContext) error {
 		}
 		gateway.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		gateway.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		gateway.Labels[cconfig.DomainLabelKey] = domainName
 
 		clientId := naming.ForGatewayAdminClientId()
 		if hc.Zone.Spec.AiGateway.Admin.ClientId != nil {

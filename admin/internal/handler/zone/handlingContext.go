@@ -77,6 +77,7 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone) (*HandlingContex
 		}
 		namespace.Labels[cconfig.EnvironmentLabelKey] = environment.Name
 		namespace.Labels[cconfig.BuildLabelKey(zoneLabelName)] = obj.Name
+		namespace.Labels[cconfig.DomainLabelKey] = domainName
 		return nil
 	}
 	_, err = c.CreateOrUpdate(ctx, namespace, mutator)
