@@ -21,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
@@ -83,6 +84,13 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return err
 	}
 
+	// Reject event-only Listeners early — creating ApprovalRequests for a
+	// Listener that can never provision downstream resources wastes effort and
+	// leaves orphaned CRs.
+	if listener.Spec.ApiListener == nil {
+		return ctrlerrors.BlockedErrorf("Listener %q has no ApiListener configured (event-only listeners are not yet supported)", listener.Name)
+	}
+
 	// Step 6: Create the provider approval (gate).
 	listenerTeam := consumerApp.Spec.Team
 	listenerEmail := consumerApp.Spec.TeamEmail
@@ -111,9 +119,6 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	logger.Info("Ensured generic Publisher", "publisher", publisher.Name)
 
 	// Step 9: Create RouteListener.
-	if listener.Spec.ApiListener == nil {
-		return ctrlerrors.BlockedErrorf("Listener %q has no ApiListener configured", listener.Name)
-	}
 	apiBasePath := listener.Spec.ApiListener.ApiBasePath
 
 	routeListener, err := h.ensureRouteListener(ctx, listener, listeningZone, appId, consumerId, providerId, apiBasePath)
@@ -393,6 +398,14 @@ func (h *ListenerHandler) ensureRouteListener(
 		return nil, ctrlerrors.BlockedErrorf("no Route found with path %q in namespace %q", apiBasePath, zone.Status.Namespace)
 	}
 
+	// Resolve the zone-level gateway client credentials. The jumper requires a
+	// top-level gatewayClient with {id, issuer} derived from the zone's default
+	// identity realm — not the consumer application's clientId.
+	gwClientId, gwIssuer, err := h.resolveGatewayCredentials(ctx, zone)
+	if err != nil {
+		return nil, err
+	}
+
 	routeListenerName := util.MakeRouteListenerName(appId, apiBasePath, consumerId, providerId)
 	rl := &gatewayv1.RouteListener{
 		ObjectMeta: metav1.ObjectMeta{
@@ -412,9 +425,8 @@ func (h *ListenerHandler) ensureRouteListener(
 			ServiceOwner: providerId,
 			Issue:        apiBasePath,
 			GatewayClient: gatewayv1.GatewayClientConfig{
-				// TODO(O5): Resolve actual gateway client credentials from zone or EventConfig
-				ClientId: consumerId,
-				Issuer:   "https://iris.telekom.de",
+				ClientId: gwClientId,
+				Issuer:   gwIssuer,
 			},
 		}
 		return nil
@@ -426,4 +438,27 @@ func (h *ListenerHandler) ensureRouteListener(
 	}
 
 	return rl, nil
+}
+
+// resolveGatewayCredentials fetches the zone's default identity Realm and
+// returns the gateway client id (zone-level singleton "gateway") and the
+// realm's issuer URL. These are the values jumper needs to mint publisher tokens.
+func (h *ListenerHandler) resolveGatewayCredentials(ctx context.Context, zone *adminv1.Zone) (clientId, issuer string, err error) {
+	if zone.Status.IdentityRealm == nil {
+		return "", "", ctrlerrors.BlockedErrorf("zone %q has no IdentityRealm in status", zone.Name)
+	}
+
+	c := cclient.ClientFromContextOrDie(ctx)
+	realm := &identityv1.Realm{}
+	if err := c.Get(ctx, zone.Status.IdentityRealm.K8s(), realm); err != nil {
+		return "", "", errors.Wrapf(err, "failed to get identity Realm %q for zone %q", zone.Status.IdentityRealm.Name, zone.Name)
+	}
+
+	if realm.Status.IssuerUrl == "" {
+		return "", "", ctrlerrors.BlockedErrorf("identity Realm %q has no IssuerUrl in status", realm.Name)
+	}
+
+	// "gateway" is the zone-level singleton consumer name — every listener on a
+	// route resolves the same client, making this assignment idempotent.
+	return "gateway", realm.Status.IssuerUrl, nil
 }

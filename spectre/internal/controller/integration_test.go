@@ -23,6 +23,7 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
@@ -144,12 +145,35 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		}
 		Expect(k8sClient.Create(ctx, zone)).To(Succeed())
 
+		// Create the identity Realm (prerequisite for resolveGatewayCredentials).
+		By("Creating the identity Realm CR")
+		realm := &identityv1.Realm{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-realm",
+				Namespace: zoneNamespace,
+				Labels:    map[string]string{envLabelKey: envName},
+			},
+			Spec: identityv1.RealmSpec{
+				IdentityProvider: &ctypes.ObjectRef{Name: "idp", Namespace: zoneNamespace},
+			},
+		}
+		Expect(k8sClient.Create(ctx, realm)).To(Succeed())
+
+		realm.Status = identityv1.RealmStatus{
+			IssuerUrl: "https://iris.example.com/auth/realms/test",
+		}
+		Expect(k8sClient.Status().Update(ctx, realm)).To(Succeed())
+
 		// Set Zone status (simulates the admin controller).
 		zone.Status = adminv1.ZoneStatus{
 			Namespace: zoneStatusNs,
 			Gateway: &ctypes.ObjectRef{
 				Name:      "gateway-aws",
 				Namespace: zoneStatusNs,
+			},
+			IdentityRealm: &ctypes.ObjectRef{
+				Name:      "test-realm",
+				Namespace: zoneNamespace,
 			},
 			Conditions: readyConditions(),
 			Links: adminv1.Links{
