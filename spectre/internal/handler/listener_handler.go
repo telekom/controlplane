@@ -33,11 +33,11 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	logger := log.FromContext(ctx)
 
 	// Step 1: Resolve consumer and provider Applications.
-	consumerApp, err := h.resolveApplication(ctx, listener.Spec.Consumer)
+	consumerApp, err := h.resolveApplication(ctx, &listener.Spec.Consumer)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve consumer Application")
 	}
-	providerApp, err := h.resolveApplication(ctx, listener.Spec.Provider)
+	providerApp, err := h.resolveApplication(ctx, &listener.Spec.Provider)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve provider Application")
 	}
@@ -210,7 +210,7 @@ func (h *ListenerHandler) publisherNamespace(ctx context.Context, listener *spec
 		}
 	}
 
-	consumerApp, err := h.resolveApplication(ctx, listener.Spec.Consumer)
+	consumerApp, err := h.resolveApplication(ctx, &listener.Spec.Consumer)
 	if err != nil {
 		logger.V(1).Info("Could not resolve consumer Application during delete", "error", err)
 		return ""
@@ -270,11 +270,11 @@ func (h *ListenerHandler) deleteSubscriber(ctx context.Context, ref *ctypes.Obje
 }
 
 // resolveApplication fetches an Application by TypedObjectRef and ensures it is ready.
-func (h *ListenerHandler) resolveApplication(ctx context.Context, ref ctypes.TypedObjectRef) (*applicationv1.Application, error) {
+func (h *ListenerHandler) resolveApplication(ctx context.Context, ref *ctypes.TypedObjectRef) (*applicationv1.Application, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	app := &applicationv1.Application{}
-	err := c.Get(ctx, ref.ObjectRef.K8s(), app)
+	err := c.Get(ctx, ref.K8s(), app)
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("application %q not found: %v", ref.ObjectRef.String(), err)
 	}
@@ -346,7 +346,7 @@ func (h *ListenerHandler) findEventStore(ctx context.Context, zoneNamespace stri
 //
 // Returns (nil, nil) when no such Route exists; callers turn that into a
 // BlockedError so the Listener waits for the Route to be provisioned.
-func (h *ListenerHandler) findRouteByPath(ctx context.Context, namespace string, apiBasePath string) (*gatewayv1.Route, error) {
+func (h *ListenerHandler) findRouteByPath(ctx context.Context, namespace, apiBasePath string) (*gatewayv1.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	routeName := util.MakeRouteName(apiBasePath)
@@ -365,7 +365,7 @@ func (h *ListenerHandler) findRouteByPath(ctx context.Context, namespace string,
 // ensureRouteListener creates or updates the RouteListener CR for this Listener.
 func (h *ListenerHandler) ensureRouteListener(
 	ctx context.Context,
-	listener *spectrev1.Listener,
+	_ *spectrev1.Listener,
 	zone *adminv1.Zone,
 	appId string,
 	consumerId string,
