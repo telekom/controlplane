@@ -1,0 +1,54 @@
+admin/internal/handler/zone/handler_test.go
+  s_fdccb9e0986650::t_03e01794073d71 11,19-20,711-745
+  s_fdccb9e0986650::t_218bc628506ed0 746-748
+common/pkg/client/client.go
+  s_fdccb9e0986650::t_4a4bd89a9d2a84 48-49,51,136
+  s_fdccb9e0986650::t_e7807e944f4386 161
+  h_0f030e7424553c 9,22-28,50,60,168-170,174-192
+  s_d96830bfcd2742::t_91655199e2f17c 193-194
+admin/internal/handler/zone/suite_test.go
+  s_fdccb9e0986650::t_9be2061a63b96d 30,181
+admin/internal/handler/zone/handler.go
+  s_fdccb9e0986650::t_013d05dd2d2ec1 80
+  s_fdccb9e0986650::t_e7807e944f4386 50-52
+  s_fdccb9e0986650::t_2aa6e91b2122ea 9,11-12,14,25,79,81-95
+docs/docs/architecture/admin.mdx
+  s_fdccb9e0986650::t_e2506eb872b81f 21
+  s_fdccb9e0986650::t_75d46ac37a766e 19-20,22
+common/pkg/client/client_test.go
+  s_fdccb9e0986650::t_e7807e944f4386 288,303-317
+  s_fdccb9e0986650::t_013d05dd2d2ec1 300,318
+  s_fdccb9e0986650::t_7c1f0b46bd7717 301-302
+docs/docs/admin-journey/environments-and-zones.md
+  s_fdccb9e0986650::t_e2506eb872b81f 61
+  s_fdccb9e0986650::t_75d46ac37a766e 57-60,62-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f716e75c2f48904fead9dc0a6a2743d26948d20f",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_d96830bfcd2742": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0064defb4ffe6VlAs3c82q9cPX",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fdccb9e0986650": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0064733baffekJO7sOaPsou6CZ",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
