@@ -35,6 +35,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/migrate"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 
@@ -48,6 +49,9 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/eventexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
+	"github.com/telekom/controlplane/projector/internal/domain/fileexposure"
+	"github.com/telekom/controlplane/projector/internal/domain/filesubscription"
+	"github.com/telekom/controlplane/projector/internal/domain/filetype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
@@ -84,6 +88,11 @@ func registerSchemesAndModules(scheme *runtime.Scheme, baseModules []module.Modu
 	if cconfig.FeaturePubSub.IsEnabled() {
 		_ = eventv1.AddToScheme(scheme)
 		result = append(result, eventtype.Module, eventexposure.Module, eventsubscription.Module)
+	}
+
+	if cconfig.FeatureFileManager.IsEnabled() {
+		_ = filev1.AddToScheme(scheme)
+		result = append(result, filetype.Module, fileexposure.Module, filesubscription.Module)
 	}
 
 	if cconfig.FeaturePermission.IsEnabled() {

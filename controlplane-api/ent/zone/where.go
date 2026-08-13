@@ -409,6 +409,52 @@ func HasApplicationsWith(preds ...predicate.Application) predicate.Zone {
 	})
 }
 
+// HasFileExposures applies the HasEdge predicate on the "file_exposures" edge.
+func HasFileExposures() predicate.Zone {
+	return predicate.Zone(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FileExposuresTable, FileExposuresColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFileExposuresWith applies the HasEdge predicate on the "file_exposures" edge with a given conditions (other predicates).
+func HasFileExposuresWith(preds ...predicate.FileExposure) predicate.Zone {
+	return predicate.Zone(func(s *sql.Selector) {
+		step := newFileExposuresStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasFileSubscriptions applies the HasEdge predicate on the "file_subscriptions" edge.
+func HasFileSubscriptions() predicate.Zone {
+	return predicate.Zone(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FileSubscriptionsTable, FileSubscriptionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFileSubscriptionsWith applies the HasEdge predicate on the "file_subscriptions" edge with a given conditions (other predicates).
+func HasFileSubscriptionsWith(preds ...predicate.FileSubscription) predicate.Zone {
+	return predicate.Zone(func(s *sql.Selector) {
+		step := newFileSubscriptionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Zone) predicate.Zone {
 	return predicate.Zone(sql.AndPredicates(predicates...))

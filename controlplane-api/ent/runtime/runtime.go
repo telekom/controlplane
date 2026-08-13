@@ -18,6 +18,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
@@ -444,6 +447,140 @@ func init() {
 	eventtypeDescActive := eventtypeFields[4].Descriptor()
 	// eventtype.DefaultActive holds the default value on creation for the active field.
 	eventtype.DefaultActive = eventtypeDescActive.Default.(bool)
+	fileexposureMixin := schema.FileExposure{}.Mixin()
+	fileexposure.Policy = privacy.NewPolicies(fileexposureMixin[0], schema.FileExposure{})
+	fileexposure.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := fileexposure.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	fileexposureMixinFields1 := fileexposureMixin[1].Fields()
+	_ = fileexposureMixinFields1
+	fileexposureMixinFields4 := fileexposureMixin[4].Fields()
+	_ = fileexposureMixinFields4
+	fileexposureFields := schema.FileExposure{}.Fields()
+	_ = fileexposureFields
+	// fileexposureDescCreatedAt is the schema descriptor for created_at field.
+	fileexposureDescCreatedAt := fileexposureMixinFields1[0].Descriptor()
+	// fileexposure.DefaultCreatedAt holds the default value on creation for the created_at field.
+	fileexposure.DefaultCreatedAt = fileexposureDescCreatedAt.Default.(func() time.Time)
+	// fileexposureDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	fileexposureDescLastModifiedAt := fileexposureMixinFields1[1].Descriptor()
+	// fileexposure.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	fileexposure.DefaultLastModifiedAt = fileexposureDescLastModifiedAt.Default.(func() time.Time)
+	// fileexposure.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	fileexposure.UpdateDefaultLastModifiedAt = fileexposureDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// fileexposureDescNamespace is the schema descriptor for namespace field.
+	fileexposureDescNamespace := fileexposureMixinFields4[0].Descriptor()
+	// fileexposure.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	fileexposure.NamespaceValidator = fileexposureDescNamespace.Validators[0].(func(string) error)
+	// fileexposureDescFileType is the schema descriptor for file_type field.
+	fileexposureDescFileType := fileexposureFields[0].Descriptor()
+	// fileexposure.FileTypeValidator is a validator for the "file_type" field. It is called by the builders before save.
+	fileexposure.FileTypeValidator = fileexposureDescFileType.Validators[0].(func(string) error)
+	// fileexposureDescActive is the schema descriptor for active field.
+	fileexposureDescActive := fileexposureFields[3].Descriptor()
+	// fileexposure.DefaultActive holds the default value on creation for the active field.
+	fileexposure.DefaultActive = fileexposureDescActive.Default.(bool)
+	// fileexposureDescZoneName is the schema descriptor for zone_name field.
+	fileexposureDescZoneName := fileexposureFields[4].Descriptor()
+	// fileexposure.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
+	fileexposure.ZoneNameValidator = fileexposureDescZoneName.Validators[0].(func(string) error)
+	// fileexposureDescSftpPublicKeys is the schema descriptor for sftp_public_keys field.
+	fileexposureDescSftpPublicKeys := fileexposureFields[6].Descriptor()
+	// fileexposure.DefaultSftpPublicKeys holds the default value on creation for the sftp_public_keys field.
+	fileexposure.DefaultSftpPublicKeys = fileexposureDescSftpPublicKeys.Default.([]string)
+	// fileexposureDescApprovalConfig is the schema descriptor for approval_config field.
+	fileexposureDescApprovalConfig := fileexposureFields[7].Descriptor()
+	// fileexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
+	fileexposure.DefaultApprovalConfig = fileexposureDescApprovalConfig.Default.(model.ApprovalConfig)
+	filesubscriptionMixin := schema.FileSubscription{}.Mixin()
+	filesubscription.Policy = privacy.NewPolicies(filesubscriptionMixin[0], schema.FileSubscription{})
+	filesubscription.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := filesubscription.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	filesubscriptionMixinFields1 := filesubscriptionMixin[1].Fields()
+	_ = filesubscriptionMixinFields1
+	filesubscriptionMixinFields4 := filesubscriptionMixin[4].Fields()
+	_ = filesubscriptionMixinFields4
+	filesubscriptionFields := schema.FileSubscription{}.Fields()
+	_ = filesubscriptionFields
+	// filesubscriptionDescCreatedAt is the schema descriptor for created_at field.
+	filesubscriptionDescCreatedAt := filesubscriptionMixinFields1[0].Descriptor()
+	// filesubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
+	filesubscription.DefaultCreatedAt = filesubscriptionDescCreatedAt.Default.(func() time.Time)
+	// filesubscriptionDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	filesubscriptionDescLastModifiedAt := filesubscriptionMixinFields1[1].Descriptor()
+	// filesubscription.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	filesubscription.DefaultLastModifiedAt = filesubscriptionDescLastModifiedAt.Default.(func() time.Time)
+	// filesubscription.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	filesubscription.UpdateDefaultLastModifiedAt = filesubscriptionDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// filesubscriptionDescNamespace is the schema descriptor for namespace field.
+	filesubscriptionDescNamespace := filesubscriptionMixinFields4[0].Descriptor()
+	// filesubscription.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	filesubscription.NamespaceValidator = filesubscriptionDescNamespace.Validators[0].(func(string) error)
+	// filesubscriptionDescName is the schema descriptor for name field.
+	filesubscriptionDescName := filesubscriptionMixinFields4[1].Descriptor()
+	// filesubscription.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	filesubscription.NameValidator = filesubscriptionDescName.Validators[0].(func(string) error)
+	// filesubscriptionDescFileType is the schema descriptor for file_type field.
+	filesubscriptionDescFileType := filesubscriptionFields[0].Descriptor()
+	// filesubscription.FileTypeValidator is a validator for the "file_type" field. It is called by the builders before save.
+	filesubscription.FileTypeValidator = filesubscriptionDescFileType.Validators[0].(func(string) error)
+	// filesubscriptionDescZoneName is the schema descriptor for zone_name field.
+	filesubscriptionDescZoneName := filesubscriptionFields[1].Descriptor()
+	// filesubscription.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
+	filesubscription.ZoneNameValidator = filesubscriptionDescZoneName.Validators[0].(func(string) error)
+	// filesubscriptionDescSftpPublicKeys is the schema descriptor for sftp_public_keys field.
+	filesubscriptionDescSftpPublicKeys := filesubscriptionFields[3].Descriptor()
+	// filesubscription.DefaultSftpPublicKeys holds the default value on creation for the sftp_public_keys field.
+	filesubscription.DefaultSftpPublicKeys = filesubscriptionDescSftpPublicKeys.Default.([]string)
+	filetypeMixin := schema.FileType{}.Mixin()
+	filetype.Policy = privacy.NewPolicies(filetypeMixin[0], schema.FileType{})
+	filetype.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := filetype.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	filetypeMixinFields1 := filetypeMixin[1].Fields()
+	_ = filetypeMixinFields1
+	filetypeMixinFields3 := filetypeMixin[3].Fields()
+	_ = filetypeMixinFields3
+	filetypeFields := schema.FileType{}.Fields()
+	_ = filetypeFields
+	// filetypeDescCreatedAt is the schema descriptor for created_at field.
+	filetypeDescCreatedAt := filetypeMixinFields1[0].Descriptor()
+	// filetype.DefaultCreatedAt holds the default value on creation for the created_at field.
+	filetype.DefaultCreatedAt = filetypeDescCreatedAt.Default.(func() time.Time)
+	// filetypeDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	filetypeDescLastModifiedAt := filetypeMixinFields1[1].Descriptor()
+	// filetype.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	filetype.DefaultLastModifiedAt = filetypeDescLastModifiedAt.Default.(func() time.Time)
+	// filetype.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	filetype.UpdateDefaultLastModifiedAt = filetypeDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// filetypeDescNamespace is the schema descriptor for namespace field.
+	filetypeDescNamespace := filetypeMixinFields3[0].Descriptor()
+	// filetype.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	filetype.NamespaceValidator = filetypeDescNamespace.Validators[0].(func(string) error)
+	// filetypeDescFileType is the schema descriptor for file_type field.
+	filetypeDescFileType := filetypeFields[0].Descriptor()
+	// filetype.FileTypeValidator is a validator for the "file_type" field. It is called by the builders before save.
+	filetype.FileTypeValidator = filetypeDescFileType.Validators[0].(func(string) error)
+	// filetypeDescActive is the schema descriptor for active field.
+	filetypeDescActive := filetypeFields[3].Descriptor()
+	// filetype.DefaultActive holds the default value on creation for the active field.
+	filetype.DefaultActive = filetypeDescActive.Default.(bool)
 	groupMixin := schema.Group{}.Mixin()
 	group.Policy = privacy.NewPolicies(groupMixin[0], schema.Group{})
 	group.Hooks[0] = func(next ent.Mutator) ent.Mutator {

@@ -36,6 +36,15 @@ type EventSubscription func(*sql.Selector)
 // EventType is the predicate function for eventtype builders.
 type EventType func(*sql.Selector)
 
+// FileExposure is the predicate function for fileexposure builders.
+type FileExposure func(*sql.Selector)
+
+// FileSubscription is the predicate function for filesubscription builders.
+type FileSubscription func(*sql.Selector)
+
+// FileType is the predicate function for filetype builders.
+type FileType func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 

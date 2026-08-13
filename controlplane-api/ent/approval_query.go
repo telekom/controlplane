@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 )
 
@@ -29,6 +30,7 @@ type ApprovalQuery struct {
 	inters                []Interceptor
 	predicates            []predicate.Approval
 	withAPISubscription   *ApiSubscriptionQuery
+	withFileSubscription  *FileSubscriptionQuery
 	withEventSubscription *EventSubscriptionQuery
 	withFKs               bool
 	modifiers             []func(*sql.Selector)
@@ -84,6 +86,28 @@ func (_q *ApprovalQuery) QueryAPISubscription() *ApiSubscriptionQuery {
 			sqlgraph.From(approval.Table, approval.FieldID, selector),
 			sqlgraph.To(apisubscription.Table, apisubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, approval.APISubscriptionTable, approval.APISubscriptionColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFileSubscription chains the current query on the "file_subscription" edge.
+func (_q *ApprovalQuery) QueryFileSubscription() *FileSubscriptionQuery {
+	query := (&FileSubscriptionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approval.Table, approval.FieldID, selector),
+			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, approval.FileSubscriptionTable, approval.FileSubscriptionColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -306,6 +330,7 @@ func (_q *ApprovalQuery) Clone() *ApprovalQuery {
 		inters:                append([]Interceptor{}, _q.inters...),
 		predicates:            append([]predicate.Approval{}, _q.predicates...),
 		withAPISubscription:   _q.withAPISubscription.Clone(),
+		withFileSubscription:  _q.withFileSubscription.Clone(),
 		withEventSubscription: _q.withEventSubscription.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -321,6 +346,17 @@ func (_q *ApprovalQuery) WithAPISubscription(opts ...func(*ApiSubscriptionQuery)
 		opt(query)
 	}
 	_q.withAPISubscription = query
+	return _q
+}
+
+// WithFileSubscription tells the query-builder to eager-load the nodes that are connected to
+// the "file_subscription" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApprovalQuery) WithFileSubscription(opts ...func(*FileSubscriptionQuery)) *ApprovalQuery {
+	query := (&FileSubscriptionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withFileSubscription = query
 	return _q
 }
 
@@ -420,12 +456,13 @@ func (_q *ApprovalQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*App
 		nodes       = []*Approval{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withAPISubscription != nil,
+			_q.withFileSubscription != nil,
 			_q.withEventSubscription != nil,
 		}
 	)
-	if _q.withAPISubscription != nil || _q.withEventSubscription != nil {
+	if _q.withAPISubscription != nil || _q.withFileSubscription != nil || _q.withEventSubscription != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -455,6 +492,12 @@ func (_q *ApprovalQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*App
 	if query := _q.withAPISubscription; query != nil {
 		if err := _q.loadAPISubscription(ctx, query, nodes, nil,
 			func(n *Approval, e *ApiSubscription) { n.Edges.APISubscription = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withFileSubscription; query != nil {
+		if err := _q.loadFileSubscription(ctx, query, nodes, nil,
+			func(n *Approval, e *FileSubscription) { n.Edges.FileSubscription = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -497,6 +540,38 @@ func (_q *ApprovalQuery) loadAPISubscription(ctx context.Context, query *ApiSubs
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "api_subscription_approval" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *ApprovalQuery) loadFileSubscription(ctx context.Context, query *FileSubscriptionQuery, nodes []*Approval, init func(*Approval), assign func(*Approval, *FileSubscription)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Approval)
+	for i := range nodes {
+		if nodes[i].file_subscription_approval == nil {
+			continue
+		}
+		fk := *nodes[i].file_subscription_approval
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(filesubscription.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "file_subscription_approval" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

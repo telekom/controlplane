@@ -120,6 +120,42 @@ func (f EventTypeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EventTypeMutation", m)
 }
 
+// The FileExposureFunc type is an adapter to allow the use of ordinary
+// function as FileExposure mutator.
+type FileExposureFunc func(context.Context, *ent.FileExposureMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FileExposureFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FileExposureMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FileExposureMutation", m)
+}
+
+// The FileSubscriptionFunc type is an adapter to allow the use of ordinary
+// function as FileSubscription mutator.
+type FileSubscriptionFunc func(context.Context, *ent.FileSubscriptionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FileSubscriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FileSubscriptionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FileSubscriptionMutation", m)
+}
+
+// The FileTypeFunc type is an adapter to allow the use of ordinary
+// function as FileType mutator.
+type FileTypeFunc func(context.Context, *ent.FileTypeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FileTypeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FileTypeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FileTypeMutation", m)
+}
+
 // The GroupFunc type is an adapter to allow the use of ordinary
 // function as Group mutator.
 type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)

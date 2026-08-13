@@ -22,6 +22,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
@@ -747,6 +750,184 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				*wq = *query
 			})
 
+		case "exposedFileTypes":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&FileExposureClient{config: _q.config}).Query()
+			)
+			args := newFileExposurePaginateArgs(fieldArgs(ctx, new(FileExposureWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newFileExposurePager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Application) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"application_exposed_file_types"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(application.ExposedFileTypesColumn), ids...))
+						})
+						if err := query.GroupBy(application.ExposedFileTypesColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[3] == nil {
+								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[3][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.ExposedFileTypes)
+							if nodes[i].Edges.totalCount[3] == nil {
+								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[3][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, fileexposureImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(application.ExposedFileTypesColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedExposedFileTypes(alias, func(wq *FileExposureQuery) {
+				*wq = *query
+			})
+
+		case "subscribedFileTypes":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&FileSubscriptionClient{config: _q.config}).Query()
+			)
+			args := newFileSubscriptionPaginateArgs(fieldArgs(ctx, new(FileSubscriptionWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newFileSubscriptionPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Application) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"application_subscribed_file_types"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(application.SubscribedFileTypesColumn), ids...))
+						})
+						if err := query.GroupBy(application.SubscribedFileTypesColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[4] == nil {
+								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[4][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.SubscribedFileTypes)
+							if nodes[i].Edges.totalCount[4] == nil {
+								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[4][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, filesubscriptionImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(application.SubscribedFileTypesColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedSubscribedFileTypes(alias, func(wq *FileSubscriptionQuery) {
+				*wq = *query
+			})
+
 		case "exposedEvents":
 			var (
 				alias = field.Alias
@@ -790,10 +971,10 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[3] == nil {
-								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[3][alias] = n
+							nodes[i].Edges.totalCount[5][alias] = n
 						}
 						return nil
 					})
@@ -801,10 +982,10 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.ExposedEvents)
-							if nodes[i].Edges.totalCount[3] == nil {
-								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[3][alias] = n
+							nodes[i].Edges.totalCount[5][alias] = n
 						}
 						return nil
 					})
@@ -879,10 +1060,10 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[4] == nil {
-								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[4][alias] = n
+							nodes[i].Edges.totalCount[6][alias] = n
 						}
 						return nil
 					})
@@ -890,10 +1071,10 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.SubscribedEvents)
-							if nodes[i].Edges.totalCount[4] == nil {
-								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[4][alias] = n
+							nodes[i].Edges.totalCount[6][alias] = n
 						}
 						return nil
 					})
@@ -1914,6 +2095,518 @@ func newEventTypePaginateArgs(rv map[string]any) *eventtypePaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *FileExposureQuery) CollectFields(ctx context.Context, satisfies ...string) (*FileExposureQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *FileExposureQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(fileexposure.Columns))
+		selectedFields = []string{fileexposure.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApplicationClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, applicationImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+
+		case "fileTypeDef":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&FileTypeClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, filetypeImplementors)...); err != nil {
+				return err
+			}
+			_q.withFileTypeDef = query
+
+		case "zone":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ZoneClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, zoneImplementors)...); err != nil {
+				return err
+			}
+			_q.withZone = query
+		case "createdAt":
+			if _, ok := fieldSeen[fileexposure.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldCreatedAt)
+				fieldSeen[fileexposure.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[fileexposure.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldLastModifiedAt)
+				fieldSeen[fileexposure.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[fileexposure.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldStatusPhase)
+				fieldSeen[fileexposure.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[fileexposure.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldStatusMessage)
+				fieldSeen[fileexposure.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[fileexposure.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldEnvironment)
+				fieldSeen[fileexposure.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[fileexposure.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldNamespace)
+				fieldSeen[fileexposure.FieldNamespace] = struct{}{}
+			}
+		case "fileType":
+			if _, ok := fieldSeen[fileexposure.FieldFileType]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldFileType)
+				fieldSeen[fileexposure.FieldFileType] = struct{}{}
+			}
+		case "provider":
+			if _, ok := fieldSeen[fileexposure.FieldProvider]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldProvider)
+				fieldSeen[fileexposure.FieldProvider] = struct{}{}
+			}
+		case "visibility":
+			if _, ok := fieldSeen[fileexposure.FieldVisibility]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldVisibility)
+				fieldSeen[fileexposure.FieldVisibility] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[fileexposure.FieldActive]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldActive)
+				fieldSeen[fileexposure.FieldActive] = struct{}{}
+			}
+		case "zoneName":
+			if _, ok := fieldSeen[fileexposure.FieldZoneName]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldZoneName)
+				fieldSeen[fileexposure.FieldZoneName] = struct{}{}
+			}
+		case "zoneNamespace":
+			if _, ok := fieldSeen[fileexposure.FieldZoneNamespace]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldZoneNamespace)
+				fieldSeen[fileexposure.FieldZoneNamespace] = struct{}{}
+			}
+		case "sftpPublicKeys":
+			if _, ok := fieldSeen[fileexposure.FieldSftpPublicKeys]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldSftpPublicKeys)
+				fieldSeen[fileexposure.FieldSftpPublicKeys] = struct{}{}
+			}
+		case "approvalConfig":
+			if _, ok := fieldSeen[fileexposure.FieldApprovalConfig]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldApprovalConfig)
+				fieldSeen[fileexposure.FieldApprovalConfig] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type fileexposurePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []FileExposurePaginateOption
+}
+
+func newFileExposurePaginateArgs(rv map[string]any) *fileexposurePaginateArgs {
+	args := &fileexposurePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &FileExposureOrder{Field: &FileExposureOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithFileExposureOrder(order))
+			}
+		case *FileExposureOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithFileExposureOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*FileExposureWhereInput); ok {
+		args.opts = append(args.opts, WithFileExposureFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *FileSubscriptionQuery) CollectFields(ctx context.Context, satisfies ...string) (*FileSubscriptionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *FileSubscriptionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(filesubscription.Columns))
+		selectedFields = []string{filesubscription.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApplicationClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, applicationImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+
+		case "fileTypeDef":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&FileTypeClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, filetypeImplementors)...); err != nil {
+				return err
+			}
+			_q.withFileTypeDef = query
+
+		case "zone":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ZoneClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, zoneImplementors)...); err != nil {
+				return err
+			}
+			_q.withZone = query
+
+		case "approval":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, approvalImplementors)...); err != nil {
+				return err
+			}
+			_q.withApproval = query
+
+		case "approvalRequests":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalRequestClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, approvalrequestImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedApprovalRequests(alias, func(wq *ApprovalRequestQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[filesubscription.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldCreatedAt)
+				fieldSeen[filesubscription.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[filesubscription.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldLastModifiedAt)
+				fieldSeen[filesubscription.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[filesubscription.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldStatusPhase)
+				fieldSeen[filesubscription.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[filesubscription.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldStatusMessage)
+				fieldSeen[filesubscription.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[filesubscription.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldEnvironment)
+				fieldSeen[filesubscription.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[filesubscription.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldNamespace)
+				fieldSeen[filesubscription.FieldNamespace] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[filesubscription.FieldName]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldName)
+				fieldSeen[filesubscription.FieldName] = struct{}{}
+			}
+		case "fileType":
+			if _, ok := fieldSeen[filesubscription.FieldFileType]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldFileType)
+				fieldSeen[filesubscription.FieldFileType] = struct{}{}
+			}
+		case "zoneName":
+			if _, ok := fieldSeen[filesubscription.FieldZoneName]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldZoneName)
+				fieldSeen[filesubscription.FieldZoneName] = struct{}{}
+			}
+		case "zoneNamespace":
+			if _, ok := fieldSeen[filesubscription.FieldZoneNamespace]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldZoneNamespace)
+				fieldSeen[filesubscription.FieldZoneNamespace] = struct{}{}
+			}
+		case "sftpPublicKeys":
+			if _, ok := fieldSeen[filesubscription.FieldSftpPublicKeys]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldSftpPublicKeys)
+				fieldSeen[filesubscription.FieldSftpPublicKeys] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type filesubscriptionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []FileSubscriptionPaginateOption
+}
+
+func newFileSubscriptionPaginateArgs(rv map[string]any) *filesubscriptionPaginateArgs {
+	args := &filesubscriptionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &FileSubscriptionOrder{Field: &FileSubscriptionOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithFileSubscriptionOrder(order))
+			}
+		case *FileSubscriptionOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithFileSubscriptionOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*FileSubscriptionWhereInput); ok {
+		args.opts = append(args.opts, WithFileSubscriptionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *FileTypeQuery) CollectFields(ctx context.Context, satisfies ...string) (*FileTypeQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *FileTypeQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(filetype.Columns))
+		selectedFields = []string{filetype.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "createdAt":
+			if _, ok := fieldSeen[filetype.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldCreatedAt)
+				fieldSeen[filetype.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[filetype.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldLastModifiedAt)
+				fieldSeen[filetype.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[filetype.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldStatusPhase)
+				fieldSeen[filetype.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[filetype.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldStatusMessage)
+				fieldSeen[filetype.FieldStatusMessage] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[filetype.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldNamespace)
+				fieldSeen[filetype.FieldNamespace] = struct{}{}
+			}
+		case "fileType":
+			if _, ok := fieldSeen[filetype.FieldFileType]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldFileType)
+				fieldSeen[filetype.FieldFileType] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[filetype.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldDescription)
+				fieldSeen[filetype.FieldDescription] = struct{}{}
+			}
+		case "variant":
+			if _, ok := fieldSeen[filetype.FieldVariant]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldVariant)
+				fieldSeen[filetype.FieldVariant] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[filetype.FieldActive]; !ok {
+				selectedFields = append(selectedFields, filetype.FieldActive)
+				fieldSeen[filetype.FieldActive] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type filetypePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []FileTypePaginateOption
+}
+
+func newFileTypePaginateArgs(rv map[string]any) *filetypePaginateArgs {
+	args := &filetypePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &FileTypeOrder{Field: &FileTypeOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithFileTypeOrder(order))
+			}
+		case *FileTypeOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithFileTypeOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*FileTypeWhereInput); ok {
+		args.opts = append(args.opts, WithFileTypeFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *GroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -2693,6 +3386,32 @@ func (_q *ZoneQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedApplications(alias, func(wq *ApplicationQuery) {
+				*wq = *query
+			})
+
+		case "fileExposures":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&FileExposureClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, fileexposureImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedFileExposures(alias, func(wq *FileExposureQuery) {
+				*wq = *query
+			})
+
+		case "fileSubscriptions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&FileSubscriptionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, filesubscriptionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedFileSubscriptions(alias, func(wq *FileSubscriptionQuery) {
 				*wq = *query
 			})
 		case "environment":

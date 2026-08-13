@@ -184,6 +184,9 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
+	// Allow the manager to gracefully shut down before stopping the test environment.
+	// Without this sleep, kube-apiserver may not stop in time (flaky timeout).
+	time.Sleep(2 * time.Second)
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

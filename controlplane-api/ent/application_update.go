@@ -20,6 +20,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -358,6 +360,36 @@ func (_u *ApplicationUpdate) AddSubscribedApis(v ...*ApiSubscription) *Applicati
 	return _u.AddSubscribedAPIIDs(ids...)
 }
 
+// AddExposedFileTypeIDs adds the "exposed_file_types" edge to the FileExposure entity by IDs.
+func (_u *ApplicationUpdate) AddExposedFileTypeIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.AddExposedFileTypeIDs(ids...)
+	return _u
+}
+
+// AddExposedFileTypes adds the "exposed_file_types" edges to the FileExposure entity.
+func (_u *ApplicationUpdate) AddExposedFileTypes(v ...*FileExposure) *ApplicationUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddExposedFileTypeIDs(ids...)
+}
+
+// AddSubscribedFileTypeIDs adds the "subscribed_file_types" edge to the FileSubscription entity by IDs.
+func (_u *ApplicationUpdate) AddSubscribedFileTypeIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.AddSubscribedFileTypeIDs(ids...)
+	return _u
+}
+
+// AddSubscribedFileTypes adds the "subscribed_file_types" edges to the FileSubscription entity.
+func (_u *ApplicationUpdate) AddSubscribedFileTypes(v ...*FileSubscription) *ApplicationUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubscribedFileTypeIDs(ids...)
+}
+
 // AddExposedEventIDs adds the "exposed_events" edge to the EventExposure entity by IDs.
 func (_u *ApplicationUpdate) AddExposedEventIDs(ids ...int) *ApplicationUpdate {
 	_u.mutation.AddExposedEventIDs(ids...)
@@ -464,6 +496,48 @@ func (_u *ApplicationUpdate) RemoveSubscribedApis(v ...*ApiSubscription) *Applic
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscribedAPIIDs(ids...)
+}
+
+// ClearExposedFileTypes clears all "exposed_file_types" edges to the FileExposure entity.
+func (_u *ApplicationUpdate) ClearExposedFileTypes() *ApplicationUpdate {
+	_u.mutation.ClearExposedFileTypes()
+	return _u
+}
+
+// RemoveExposedFileTypeIDs removes the "exposed_file_types" edge to FileExposure entities by IDs.
+func (_u *ApplicationUpdate) RemoveExposedFileTypeIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.RemoveExposedFileTypeIDs(ids...)
+	return _u
+}
+
+// RemoveExposedFileTypes removes "exposed_file_types" edges to FileExposure entities.
+func (_u *ApplicationUpdate) RemoveExposedFileTypes(v ...*FileExposure) *ApplicationUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveExposedFileTypeIDs(ids...)
+}
+
+// ClearSubscribedFileTypes clears all "subscribed_file_types" edges to the FileSubscription entity.
+func (_u *ApplicationUpdate) ClearSubscribedFileTypes() *ApplicationUpdate {
+	_u.mutation.ClearSubscribedFileTypes()
+	return _u
+}
+
+// RemoveSubscribedFileTypeIDs removes the "subscribed_file_types" edge to FileSubscription entities by IDs.
+func (_u *ApplicationUpdate) RemoveSubscribedFileTypeIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.RemoveSubscribedFileTypeIDs(ids...)
+	return _u
+}
+
+// RemoveSubscribedFileTypes removes "subscribed_file_types" edges to FileSubscription entities.
+func (_u *ApplicationUpdate) RemoveSubscribedFileTypes(v ...*FileSubscription) *ApplicationUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubscribedFileTypeIDs(ids...)
 }
 
 // ClearExposedEvents clears all "exposed_events" edges to the EventExposure entity.
@@ -838,6 +912,96 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ExposedFileTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ExposedFileTypesTable,
+			Columns: []string{application.ExposedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(fileexposure.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedExposedFileTypesIDs(); len(nodes) > 0 && !_u.mutation.ExposedFileTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ExposedFileTypesTable,
+			Columns: []string{application.ExposedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(fileexposure.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ExposedFileTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ExposedFileTypesTable,
+			Columns: []string{application.ExposedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(fileexposure.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SubscribedFileTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.SubscribedFileTypesTable,
+			Columns: []string{application.SubscribedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubscribedFileTypesIDs(); len(nodes) > 0 && !_u.mutation.SubscribedFileTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.SubscribedFileTypesTable,
+			Columns: []string{application.SubscribedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubscribedFileTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.SubscribedFileTypesTable,
+			Columns: []string{application.SubscribedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1302,6 +1466,36 @@ func (_u *ApplicationUpdateOne) AddSubscribedApis(v ...*ApiSubscription) *Applic
 	return _u.AddSubscribedAPIIDs(ids...)
 }
 
+// AddExposedFileTypeIDs adds the "exposed_file_types" edge to the FileExposure entity by IDs.
+func (_u *ApplicationUpdateOne) AddExposedFileTypeIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.AddExposedFileTypeIDs(ids...)
+	return _u
+}
+
+// AddExposedFileTypes adds the "exposed_file_types" edges to the FileExposure entity.
+func (_u *ApplicationUpdateOne) AddExposedFileTypes(v ...*FileExposure) *ApplicationUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddExposedFileTypeIDs(ids...)
+}
+
+// AddSubscribedFileTypeIDs adds the "subscribed_file_types" edge to the FileSubscription entity by IDs.
+func (_u *ApplicationUpdateOne) AddSubscribedFileTypeIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.AddSubscribedFileTypeIDs(ids...)
+	return _u
+}
+
+// AddSubscribedFileTypes adds the "subscribed_file_types" edges to the FileSubscription entity.
+func (_u *ApplicationUpdateOne) AddSubscribedFileTypes(v ...*FileSubscription) *ApplicationUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubscribedFileTypeIDs(ids...)
+}
+
 // AddExposedEventIDs adds the "exposed_events" edge to the EventExposure entity by IDs.
 func (_u *ApplicationUpdateOne) AddExposedEventIDs(ids ...int) *ApplicationUpdateOne {
 	_u.mutation.AddExposedEventIDs(ids...)
@@ -1408,6 +1602,48 @@ func (_u *ApplicationUpdateOne) RemoveSubscribedApis(v ...*ApiSubscription) *App
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscribedAPIIDs(ids...)
+}
+
+// ClearExposedFileTypes clears all "exposed_file_types" edges to the FileExposure entity.
+func (_u *ApplicationUpdateOne) ClearExposedFileTypes() *ApplicationUpdateOne {
+	_u.mutation.ClearExposedFileTypes()
+	return _u
+}
+
+// RemoveExposedFileTypeIDs removes the "exposed_file_types" edge to FileExposure entities by IDs.
+func (_u *ApplicationUpdateOne) RemoveExposedFileTypeIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.RemoveExposedFileTypeIDs(ids...)
+	return _u
+}
+
+// RemoveExposedFileTypes removes "exposed_file_types" edges to FileExposure entities.
+func (_u *ApplicationUpdateOne) RemoveExposedFileTypes(v ...*FileExposure) *ApplicationUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveExposedFileTypeIDs(ids...)
+}
+
+// ClearSubscribedFileTypes clears all "subscribed_file_types" edges to the FileSubscription entity.
+func (_u *ApplicationUpdateOne) ClearSubscribedFileTypes() *ApplicationUpdateOne {
+	_u.mutation.ClearSubscribedFileTypes()
+	return _u
+}
+
+// RemoveSubscribedFileTypeIDs removes the "subscribed_file_types" edge to FileSubscription entities by IDs.
+func (_u *ApplicationUpdateOne) RemoveSubscribedFileTypeIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.RemoveSubscribedFileTypeIDs(ids...)
+	return _u
+}
+
+// RemoveSubscribedFileTypes removes "subscribed_file_types" edges to FileSubscription entities.
+func (_u *ApplicationUpdateOne) RemoveSubscribedFileTypes(v ...*FileSubscription) *ApplicationUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubscribedFileTypeIDs(ids...)
 }
 
 // ClearExposedEvents clears all "exposed_events" edges to the EventExposure entity.
@@ -1812,6 +2048,96 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ExposedFileTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ExposedFileTypesTable,
+			Columns: []string{application.ExposedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(fileexposure.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedExposedFileTypesIDs(); len(nodes) > 0 && !_u.mutation.ExposedFileTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ExposedFileTypesTable,
+			Columns: []string{application.ExposedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(fileexposure.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ExposedFileTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ExposedFileTypesTable,
+			Columns: []string{application.ExposedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(fileexposure.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SubscribedFileTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.SubscribedFileTypesTable,
+			Columns: []string{application.SubscribedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubscribedFileTypesIDs(); len(nodes) > 0 && !_u.mutation.SubscribedFileTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.SubscribedFileTypesTable,
+			Columns: []string{application.SubscribedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubscribedFileTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.SubscribedFileTypesTable,
+			Columns: []string{application.SubscribedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
