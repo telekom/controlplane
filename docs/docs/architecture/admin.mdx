@@ -16,6 +16,10 @@ This domain is typically managed by platform administrators, not application tea
 
 When a Zone is reconciled, the Admin operator bootstraps everything the zone needs to operate — so administrators no longer have to create these building blocks by hand. This includes the identity realms and the gateway admin client described below.
 
+### Readiness semantics
+
+A Zone remains not ready until its initial managed sub-resources are ready. Once initial provisioning succeeds, `Ready=True` is latched and represents successful provisioning rather than continuous aggregate child health. Later child degradation, child updates, and Zone spec changes do not clear it; the operator reports each child observed as not ready during reconciliation through a Warning event on the Zone. Reconciliation errors continue to use the normal controller error handling.
+
 ### Identity realms and the rover client
 
 Each zone gets two identity realms in its identity provider:

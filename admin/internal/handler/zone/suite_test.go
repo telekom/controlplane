@@ -27,6 +27,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -177,6 +178,7 @@ func newTestContext(zone *adminv1.Zone) context.Context {
 	janitor := cclient.NewJanitorClient(scopedClient)
 	testCtx := contextutil.WithEnv(ctx, envName)
 	testCtx = cclient.WithClient(testCtx, janitor)
+	testCtx = contextutil.WithRecorder(testCtx, &mock.EventRecorder{})
 	return testCtx
 }
 

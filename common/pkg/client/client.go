@@ -6,6 +6,7 @@ package client
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -16,6 +17,13 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+)
+
+type ClientFeature string
+
+const (
+	// CollectNotReadyObjects is a feature that enables the collection of not ready objects
+	CollectNotReadyObjects ClientFeature = "CollectNotReadyObjects"
 )
 
 type ScopedClient interface {
@@ -37,8 +45,10 @@ var _ ScopedClient = &scopedClientImpl{}
 type scopedClientImpl struct {
 	environment string
 	client.Client
-	changed bool
-	ready   bool
+	changed         bool
+	ready           bool
+	features        map[ClientFeature]bool
+	notReadyObjects []types.Object
 }
 
 func NewScopedClient(c client.Client, environment string) ScopedClient {
@@ -47,6 +57,7 @@ func NewScopedClient(c client.Client, environment string) ScopedClient {
 		environment: environment,
 		changed:     false,
 		ready:       true,
+		features:    make(map[ClientFeature]bool),
 	}
 }
 
@@ -122,6 +133,7 @@ func (c *scopedClientImpl) List(ctx context.Context, list client.ObjectList, opt
 func (c *scopedClientImpl) Reset() {
 	c.changed = false
 	c.ready = true
+	c.notReadyObjects = nil
 }
 
 func (c *scopedClientImpl) AnyChanged() bool {
@@ -146,13 +158,37 @@ func (c *scopedClientImpl) setChanged(res controllerutil.OperationResult) {
 // setReady will set the current client to not ready if the object is not ready
 // If any object is not ready, the client will be marked as not ready
 func (c *scopedClientImpl) setReady(obj client.Object) {
-	if !c.ready || obj == nil {
+	if obj == nil || (!c.ready && !c.features[CollectNotReadyObjects]) {
 		return
 	}
 
 	if cobj, ok := obj.(types.Object); ok {
 		if meta.IsStatusConditionFalse(cobj.GetConditions(), condition.ConditionTypeReady) {
 			c.ready = false
+			if c.features[CollectNotReadyObjects] {
+				c.notReadyObjects = append(c.notReadyObjects, cobj)
+			}
 		}
+	}
+}
+
+// NotReadyObjects returns the objects observed with Ready=False by the scoped client.
+func NotReadyObjects(c ScopedClient) []types.Object {
+	switch c := c.(type) {
+	case *scopedClientImpl:
+		return slices.Clone(c.notReadyObjects)
+	case *janitorClient:
+		return NotReadyObjects(c.ScopedClient)
+	}
+	return nil
+}
+
+// EnableFeature enables a feature for the given scoped client.
+func EnableFeature(c ScopedClient, feature ClientFeature) {
+	switch c := c.(type) {
+	case *scopedClientImpl:
+		c.features[feature] = true
+	case *janitorClient:
+		EnableFeature(c.ScopedClient, feature)
 	}
 }

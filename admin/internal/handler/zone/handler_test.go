@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,6 +16,8 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -702,6 +705,44 @@ var _ = Describe("Zone Handler Steps", func() {
 			// Third run: still nothing changed -> still Ready
 			testCtx3 := newTestContext(zone)
 			Expect(handler.CreateOrUpdate(testCtx3, zone)).To(Succeed())
+			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+		})
+
+		It("should remain ready and emit an event when a sub-resource degrades", func() {
+			handler := &ZoneHandler{}
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+			gateway := &gatewayapi.Gateway{}
+			Expect(k8sClient.Get(ctx, zone.Status.Gateway.K8s(), gateway)).To(Succeed())
+			gateway.SetCondition(condition.NewNotReadyCondition("GatewayUnavailable", "Gateway health check failed"))
+			Expect(k8sClient.Status().Update(ctx, gateway)).To(Succeed())
+
+			recorder := &mock.EventRecorder{}
+			testCtx := contextutil.WithRecorder(newTestContext(zone), recorder)
+			Expect(handler.CreateOrUpdate(testCtx, zone)).To(Succeed())
+
+			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			events := recorder.GetEvent(zone, corev1.EventTypeWarning)
+			Expect(events).To(HaveLen(1))
+			Expect(events[0].Reason).To(Equal(condition.ReasonSubResourceNotReady))
+			Expect(events[0].Message).To(And(
+				ContainSubstring("Gateway"),
+				ContainSubstring(gateway.Namespace+"/"+gateway.Name),
+				ContainSubstring("GatewayUnavailable"),
+				ContainSubstring("Gateway health check failed"),
+			))
+		})
+
+		It("should remain ready when a spec change updates sub-resources", func() {
+			handler := &ZoneHandler{}
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+			zone.Spec.Gateway.Admin.Url = "https://changed.example.com/admin-api"
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
 			Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		})
 

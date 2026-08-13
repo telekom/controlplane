@@ -285,6 +285,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("should return failed when atleast one resource is failed", func() {
+			EnableFeature(scopedClient, CollectNotReadyObjects)
 			_, err := scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -296,6 +297,25 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(scopedClient.AllReady()).To(BeFalse())
+			Expect(NotReadyObjects(scopedClient)).To(ConsistOf(obj))
+
+			scopedClient.Reset()
+			Expect(NotReadyObjects(scopedClient)).To(BeEmpty())
+		})
+
+		It("should not collect not ready resources by default", func() {
+			_, err := scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
+			Expect(err).ToNot(HaveOccurred())
+
+			obj.SetCondition(condition.NewNotReadyCondition("ReadyTest", "test"))
+			Expect(k8sClient.Status().Update(ctx, obj)).To(Succeed())
+
+			scopedClient.Reset()
+			_, err = scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(scopedClient.AllReady()).To(BeFalse())
+			Expect(NotReadyObjects(scopedClient)).To(BeEmpty())
 		})
 
 		It("should return changed when atleast one resource is changed", func() {

@@ -54,6 +54,16 @@ By default, the current platform setup uses:
 
 When creating the Zone resource in the Control Plane, you provide the connection details for exactly these zone-local instances (gateway + IDP). This keeps each zone self-contained and allows different zones to use separate runtime endpoints if needed.
 
+### Zone Readiness and Sub-Resource Events
+
+A Zone becomes `Ready` only after its initial managed sub-resources are ready. After that first successful provisioning, readiness is latched: later child updates or failures do not make the Zone not ready, and changing the Zone spec does not reset the latch.
+
+The Admin operator records a Warning event on the Zone for each managed sub-resource observed as not ready during reconciliation. Inspect these events to identify current child failures:
+
+```bash
+kubectl describe zone <name> -n <environment>
+```
+
 ### Creating a Zone
 
 A Zone references the gateway and identity provider to use, along with optional Redis configuration and visibility settings:

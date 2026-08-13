@@ -6,8 +6,12 @@ package zone
 
 import (
 	"context"
+	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
@@ -18,6 +22,7 @@ import (
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
@@ -42,6 +47,9 @@ var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
 type ZoneHandler struct{}
 
 func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	cclient.EnableFeature(c, cclient.CollectNotReadyObjects)
+
 	hc, err := newHandlingContext(ctx, obj)
 	if err != nil {
 		return err
@@ -68,7 +76,23 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		}
 	}
 
-	c := cclient.ClientFromContextOrDie(ctx)
+	recorder := contextutil.RecorderFromContextOrDie(ctx)
+	for _, child := range cclient.NotReadyObjects(c) {
+		gvk, err := apiutil.GVKForObject(child, c.Scheme())
+		if err != nil {
+			return fmt.Errorf("determining sub-resource kind: %w", err)
+		}
+		ready := meta.FindStatusCondition(child.GetConditions(), condition.ConditionTypeReady)
+		recorder.Eventf(obj, corev1.EventTypeWarning, condition.ReasonSubResourceNotReady,
+			"Sub-resource %s %s/%s is not ready: %s: %s",
+			gvk.Kind, child.GetNamespace(), child.GetName(), ready.Reason, ready.Message)
+	}
+
+	if meta.IsStatusConditionTrue(obj.GetConditions(), condition.ConditionTypeReady) {
+		obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Zone has been provisioned"))
+		obj.SetCondition(condition.NewDoneProcessingCondition("Zone has been provisioned"))
+		return nil
+	}
 
 	if c.AnyChanged() {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "At least one sub-resource has been created or updated"))
