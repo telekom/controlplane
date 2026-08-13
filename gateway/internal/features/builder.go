@@ -362,7 +362,7 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 // the higher the priority, the later the feature is applied
 // this is important because some features might depend on other features
 func sortFeatures(featureList []Feature) []Feature {
-	sort.Slice(featureList, func(i, j int) bool {
+	sort.SliceStable(featureList, func(i, j int) bool {
 		return featureList[i].Priority() < featureList[j].Priority()
 	})
 	return featureList

@@ -5,7 +5,11 @@
 package feature
 
 import (
+	"cmp"
 	"context"
+	"slices"
+
+	"github.com/pkg/errors"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -16,7 +20,7 @@ import (
 var _ features.Feature = &RouteListenerFeature{}
 
 var InstanceRouteListenerFeature = &RouteListenerFeature{
-	priority: InstanceLastMileSecurityFeature.Priority() + 2,
+	priority: InstanceLastMileSecurityFeature.Priority() + 3,
 }
 
 type RouteListenerFeature struct {
@@ -45,12 +49,38 @@ func (f *RouteListenerFeature) Apply(_ context.Context, builder features.Feature
 		jc.RouteListener = make(map[plugin.ConsumerId]plugin.RouteListenerEntry)
 	}
 
-	for _, rl := range builder.GetRouteListeners() {
-		jc.RouteListener[plugin.ConsumerId(rl.Spec.Consumer)] = plugin.RouteListenerEntry{
+	// jumper_config.routeListener is keyed by consumer only, so two RouteListeners
+	// for the same consumer on this route cannot both be represented. Sort by name so
+	// the outcome does not depend on the order the RouteListeners were listed.
+	routeListeners := slices.Clone(builder.GetRouteListeners())
+	slices.SortStableFunc(routeListeners, func(a, b *gatewayv1.RouteListener) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+
+	for _, rl := range routeListeners {
+		cid := plugin.ConsumerId(rl.Spec.Consumer)
+		if existing, ok := jc.RouteListener[cid]; ok {
+			return errors.Errorf("conflicting RouteListeners for consumer %q: issue %q vs %q (jumper supports one listener entry per consumer per route)",
+				cid, existing.Issue, rl.Spec.Issue)
+		}
+
+		jc.RouteListener[cid] = plugin.RouteListenerEntry{
 			Issue:        rl.Spec.Issue,
 			ServiceOwner: rl.Spec.ServiceOwner,
-			ClientId:     rl.Spec.GatewayClient.ClientId,
-			Issuer:       rl.Spec.GatewayClient.Issuer,
+		}
+
+		// jumper reads the publisher credentials from a single top-level
+		// gatewayClient. Every listener on a route resolves the same zone-level
+		// "gateway" Client, so writing it once per listener is idempotent — this
+		// mirrors the legacy gateway
+		// (KongCeClient.appendOrUpdateListenerForRequestTransformerPlugin).
+		//
+		// Secret is intentionally left unset: it must be resolved through
+		// secret-manager (secrets.Get) rather than carried literally in a CR spec,
+		// and RouteListenerSpec.GatewayClient does not hold a secret reference yet.
+		jc.GatewayClient = &plugin.GatewayClient{
+			Id:     rl.Spec.GatewayClient.ClientId,
+			Issuer: rl.Spec.GatewayClient.Issuer,
 		}
 	}
 

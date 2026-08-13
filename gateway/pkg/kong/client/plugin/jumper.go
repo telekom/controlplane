@@ -53,11 +53,23 @@ type LoadBalancingServer struct {
 	Weight   int32  `json:"weight,omitempty"`
 }
 
+// RouteListenerEntry mirrors jumper's RouteListener model
+// (jumper/model/config/RouteListener.java), which declares exactly these two
+// fields. Credentials do NOT belong here — see GatewayClient.
 type RouteListenerEntry struct {
 	Issue        string `json:"issue"`
 	ServiceOwner string `json:"serviceOwner"`
-	ClientId     string `json:"clientId,omitempty"`
-	Issuer       string `json:"issuer,omitempty"`
+}
+
+// GatewayClient carries the OAuth client the jumper uses to mint the publisher
+// token when republishing captured traffic. It mirrors jumper's GatewayClient
+// model (jumper/model/config/GatewayClient.java) and is a single TOP-LEVEL
+// object per route, matching the legacy gateway
+// (KongCeClient.appendOrUpdateListenerForRequestTransformerPlugin).
+type GatewayClient struct {
+	Id     string `json:"id,omitempty"`
+	Secret string `json:"secret,omitempty"`
+	Issuer string `json:"issuer,omitempty"`
 }
 
 type JumperConfig struct {
@@ -68,6 +80,9 @@ type JumperConfig struct {
 	// Mesh indicates whether the Jumper should operate in mesh mode.
 	Mesh          bool                              `json:"mesh,omitempty"`
 	RouteListener map[ConsumerId]RouteListenerEntry `json:"routeListener,omitempty"`
+	// GatewayClient is the publisher client for traffic capture. It is only set
+	// when at least one RouteListener applies to the route.
+	GatewayClient *GatewayClient `json:"gatewayClient,omitempty"`
 }
 
 func NewJumperConfig() *JumperConfig {
