@@ -106,7 +106,7 @@ func (r *Repository) Upsert(ctx context.Context, data *FileSubscriptionData) err
 		OnConflictColumns(entfilesubscription.FieldFileType, entfilesubscription.OwnerColumn).
 		Update(func(u *ent.FileSubscriptionUpsert) {
 			u.SetZoneName(data.ZoneName)
-			u.SetSftpPublicKeys(data.SFTPPublicKeys)
+			u.UpdateSftpPublicKeys()
 			u.SetStatusPhase(entfilesubscription.StatusPhase(data.StatusPhase))
 			u.SetStatusMessage(data.StatusMessage)
 			u.SetEnvironment(data.Meta.Environment)
