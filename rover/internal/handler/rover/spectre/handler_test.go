@@ -208,6 +208,43 @@ var _ = Describe("HandleListeners", func() {
 		Expect(owner.Status.SpectreListeners).To(HaveLen(2))
 	})
 
+	It("should block when two listeners differ only by provider", func() {
+		// The Listener name is derived from consumer + discriminator, so two
+		// entries that differ only by provider would collapse into a single CR
+		// and the second would silently overwrite the first. Surface it instead.
+		owner.Spec.Listeners = []roverv1.RoverListener{
+			{
+				Consumer:    "eni--team--consumer1",
+				Provider:    "eni--team--provider1",
+				ApiBasePath: "/api/v1",
+			},
+			{
+				Consumer:    "eni--team--consumer1",
+				Provider:    "eni--team--provider2",
+				ApiBasePath: "/api/v1",
+			},
+		}
+
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.SpectreApplication"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Maybe()
+
+		err := spectre.HandleListeners(ctx, fakeClient, owner)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("duplicate listener"))
+	})
+
 	It("should set callback delivery type when listenerSubscription specifies callback", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
