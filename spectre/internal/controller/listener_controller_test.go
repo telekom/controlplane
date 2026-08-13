@@ -67,6 +67,15 @@ var _ = Describe("Listener Controller", func() {
 								Namespace: resourceNamespace,
 							},
 						},
+						Application: ctypes.ObjectRef{
+							Name:      "sa-consumer-app",
+							Namespace: resourceNamespace,
+						},
+						// Required by the ListenerSpec XValidation rule: at least one
+						// of apiListener or eventListener must be set.
+						ApiListener: &spectrev1.ApiListener{
+							ApiBasePath: "/api/v1/orders",
+						},
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())

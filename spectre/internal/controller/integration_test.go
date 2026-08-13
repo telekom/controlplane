@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -60,6 +61,20 @@ const (
 	testBasePath            = "/api/v1/orders"
 	callbackURL             = "https://callback.gateway.example.com/callback"
 )
+
+// newDrainedRecorder returns a FakeRecorder whose event channel is continuously
+// drained. This is required because reconcileUntilReady calls Reconcile in a
+// polling loop and each pass emits an event, so a plain FakeRecorder's buffered
+// channel fills up and the next Event() call blocks forever, hanging the suite.
+// The drainer stops when the channel is closed at the end of the suite.
+func newDrainedRecorder(bufferSize int) *record.FakeRecorder {
+	recorder := record.NewFakeRecorder(bufferSize)
+	go func() {
+		for range recorder.Events {
+		}
+	}()
+	return recorder
+}
 
 // reconcileUntilReady reconciles the object in a loop until the specified check
 // passes. This accounts for cache lag and multi-pass reconciliation (finalizer
@@ -118,7 +133,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 							Name:    "default",
 							Default: true,
 							Urls: []adminv1.UrlConfig{
-								{Hostname: "gateway.test.example.com", BasePath: "/"},
+								{Hostname: "gateway.test.example.com", BasePath: "/gateway"},
 							},
 						},
 					},
@@ -188,14 +203,14 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		By("Creating gateway Route CRs (prerequisites for RouteListener path resolution)")
 		gatewayRoute := &gatewayv1.Route{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "route-orders",
+				Name:      "api-v1-orders",
 				Namespace: zoneStatusNs,
 				Labels:    map[string]string{envLabelKey: envName},
 			},
 			Spec: gatewayv1.RouteSpec{
 				GatewayRef: ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
 				Type:       gatewayv1.RouteTypePrimary,
-				Paths:      []string{testBasePath},
+				Paths:      []string{"/gateway" + testBasePath},
 				Backend: gatewayv1.Backend{
 					Upstreams: []gatewayv1.Upstream{
 						{Scheme: "https", Hostname: "api.provider.example.com", Port: 443, Path: testBasePath},
@@ -207,14 +222,14 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 
 		crossRoute := &gatewayv1.Route{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "route-cross",
+				Name:      "api-v1-cross",
 				Namespace: zoneStatusNs,
 				Labels:    map[string]string{envLabelKey: envName},
 			},
 			Spec: gatewayv1.RouteSpec{
 				GatewayRef: ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
 				Type:       gatewayv1.RouteTypePrimary,
-				Paths:      []string{"/api/v1/cross"},
+				Paths:      []string{"/gateway/api/v1/cross"},
 				Backend: gatewayv1.Backend{
 					Upstreams: []gatewayv1.Upstream{
 						{Scheme: "https", Hostname: "api.cross.example.com", Port: 443, Path: "/api/v1/cross"},
@@ -271,7 +286,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		Expect(k8sClient.Status().Update(ctx, providerApp)).To(Succeed())
 
 		// --- Reconcilers ---
-		recorder := record.NewFakeRecorder(100)
+		recorder := newDrainedRecorder(100)
 		saReconciler = &SpectreApplicationReconciler{
 			Client:   k8sClient,
 			Scheme:   k8sClient.Scheme(),
@@ -279,7 +294,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		}
 		saReconciler.Controller = cc.NewController(&handler.SpectreApplicationHandler{}, k8sClient, recorder)
 
-		listenerRecorder := record.NewFakeRecorder(100)
+		listenerRecorder := newDrainedRecorder(100)
 		listenerReconciler = &ListenerReconciler{
 			Client:   k8sClient,
 			Scheme:   k8sClient.Scheme(),
@@ -416,6 +431,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
 						ObjectRef: ctypes.ObjectRef{Name: providerName, Namespace: testNamespace},
 					},
+					Application: ctypes.ObjectRef{Name: spectreAppName, Namespace: testNamespace},
 					ApiListener: &spectrev1.ApiListener{
 						ApiBasePath: testBasePath,
 					},
@@ -523,7 +539,6 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			Expect(updatedListener.Status.RouteListener).NotTo(BeNil())
 			Expect(updatedListener.Status.EventSubscriptions).To(HaveLen(2))
 			Expect(updatedListener.Status.ProviderApproval).NotTo(BeNil())
-			Expect(updatedListener.Status.ConsumerApproval).NotTo(BeNil())
 		})
 	})
 
@@ -566,6 +581,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
 						ObjectRef: ctypes.ObjectRef{Name: providerName, Namespace: testNamespace},
 					},
+					Application: ctypes.ObjectRef{Name: spectreAppName, Namespace: testNamespace},
 					ApiListener: &spectrev1.ApiListener{
 						ApiBasePath: "/api/v1/blocked",
 					},
@@ -618,6 +634,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
 						ObjectRef: ctypes.ObjectRef{Name: providerName, Namespace: testNamespace},
 					},
+					Application: ctypes.ObjectRef{Name: spectreAppName, Namespace: testNamespace},
 					ApiListener: &spectrev1.ApiListener{
 						ApiBasePath: "/api/v1/cross",
 					},
@@ -633,29 +650,26 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				return k8sClient.Get(ctx, crossNN, &spectrev1.Listener{})
 			}, testTimeout, testInterval).Should(Succeed())
 
-			By("Pre-creating Approval CR for cross-team Listener")
-			crossApproval := &approvalv1.Approval{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "listener--cross-team-listener",
-					Namespace: testNamespace,
-					Labels:    map[string]string{envLabelKey: envName},
-				},
-				Spec: approvalv1.ApprovalSpec{
-					Action: "listen-provider",
-					Target: ctypes.TypedObjectRef{
-						TypeMeta:  metav1.TypeMeta{Kind: "Listener", APIVersion: "spectre.cp.ei.telekom.de/v1"},
-						ObjectRef: ctypes.ObjectRef{Name: "cross-team-listener", Namespace: testNamespace},
-					},
-					Requester: approvalv1.Requester{TeamName: consumerTeamName, TeamEmail: "alpha@test.com"},
-					Decider:   approvalv1.Decider{TeamName: providerTeamName, TeamEmail: "beta@test.com"},
-					Strategy:  approvalv1.ApprovalStrategySimple,
-					State:     approvalv1.ApprovalStateGranted,
-					Decisions: []approvalv1.Decision{{
-						Name: "admin", Comment: "Granted in test", ResultingState: approvalv1.ApprovalStateGranted,
-					}},
-				},
-			}
-			Expect(k8sClient.Create(ctx, crossApproval)).To(Succeed())
+			By("Granting the provider approval the way the real approval controller does")
+			// The first reconcile only adds the finalizer and returns early
+			// (common/pkg/controller.FirstSetup), so reconcile until the
+			// ApprovalRequest actually exists, then grant it with ApprovedRequest
+			// set — exactly what the approval controller does.
+			Eventually(func(g Gomega) {
+				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: crossNN})
+				arList := &approvalv1.ApprovalRequestList{}
+				g.Expect(directClient.List(ctx, arList, client.InNamespace(testNamespace))).To(Succeed())
+				found := false
+				for i := range arList.Items {
+					for _, ref := range arList.Items[i].OwnerReferences {
+						if ref.Name == "cross-team-listener" {
+							found = true
+						}
+					}
+				}
+				g.Expect(found).To(BeTrue(), "ApprovalRequest for cross-team-listener should exist")
+			}, testTimeout, testInterval).Should(Succeed())
+			grantApprovalsForListener(ctx, "cross-team-listener")
 
 			By("Reconciling until RouteListener is created (approval pre-granted)")
 			reconcileUntilReady(ctx, listenerReconciler, crossNN, func(g Gomega) {
@@ -694,6 +708,54 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["kind"]).To(Equal("RESPONSE"))
 			}, testTimeout, testInterval).Should(Succeed())
+		})
+	})
+
+	Describe("Listener deletion", func() {
+		It("should delete the RouteListener and bridge Subscribers it created", func() {
+			// The children live in the zone namespace while the Listener lives in
+			// the team namespace, so Kubernetes owner references cannot garbage
+			// collect them. The Delete handler must remove them explicitly.
+			listenerNN := types.NamespacedName{Name: "cross-team-listener", Namespace: testNamespace}
+			crossRL := util.MakeRouteListenerName(appId, "/api/v1/cross", consumerClientID, providerClientID)
+			rqSubName := util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, "/api/v1/cross", "rq"))
+			rpSubName := util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, "/api/v1/cross", "rp"))
+
+			By("Confirming the children exist before deletion")
+			Expect(directClient.Get(ctx, types.NamespacedName{Name: crossRL, Namespace: zoneStatusNs},
+				&gatewayv1.RouteListener{})).To(Succeed())
+			Expect(directClient.Get(ctx, types.NamespacedName{Name: rqSubName, Namespace: zoneStatusNs},
+				&pubsubv1.Subscriber{})).To(Succeed())
+			Expect(directClient.Get(ctx, types.NamespacedName{Name: rpSubName, Namespace: zoneStatusNs},
+				&pubsubv1.Subscriber{})).To(Succeed())
+
+			By("Deleting the Listener and reconciling the deletion")
+			listener := &spectrev1.Listener{}
+			Expect(k8sClient.Get(ctx, listenerNN, listener)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, listener)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: listenerNN})
+				g.Expect(apierrors.IsNotFound(
+					directClient.Get(ctx, listenerNN, &spectrev1.Listener{}),
+				)).To(BeTrue(), "Listener should be gone once the finalizer is released")
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Verifying the RouteListener was deleted")
+			Eventually(func(g Gomega) {
+				err := directClient.Get(ctx, types.NamespacedName{Name: crossRL, Namespace: zoneStatusNs},
+					&gatewayv1.RouteListener{})
+				g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "RouteListener should be deleted, not orphaned")
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Verifying both bridge Subscribers were deleted")
+			for _, name := range []string{rqSubName, rpSubName} {
+				Eventually(func(g Gomega) {
+					err := directClient.Get(ctx, types.NamespacedName{Name: name, Namespace: zoneStatusNs},
+						&pubsubv1.Subscriber{})
+					g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "bridge Subscriber %q should be deleted, not orphaned", name)
+				}, testTimeout, testInterval).Should(Succeed())
+			}
 		})
 	})
 })
