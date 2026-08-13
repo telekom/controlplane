@@ -15,7 +15,7 @@ func NewServerCondition(found bool) metav1.Condition {
 		Type:               "ServerExists",
 		Status:             metav1.ConditionFalse,
 		Reason:             "ServerNotFound",
-		Message:            "Corresponding server (McpServer or AgentCard) does not exist or is not active",
+		Message:            "Corresponding agentic server (McpServer, AgentCard) does not exist or is not active",
 		LastTransitionTime: metav1.Now(),
 	}
 	if found {
