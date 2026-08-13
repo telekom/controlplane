@@ -39,8 +39,8 @@ var _ = Describe("RouteListenerFeature", func() {
 	})
 
 	Describe("Priority()", func() {
-		It("returns LastMileSecurity priority + 2", func() {
-			Expect(f.Priority()).To(Equal(feature.InstanceLastMileSecurityFeature.Priority() + 2))
+		It("returns LastMileSecurity priority + 3", func() {
+			Expect(f.Priority()).To(Equal(feature.InstanceLastMileSecurityFeature.Priority() + 3))
 		})
 	})
 
@@ -122,6 +122,36 @@ var _ = Describe("RouteListenerFeature", func() {
 				Expect(entry.Issue).To(Equal("/api/v1/events"))
 				Expect(entry.ServiceOwner).To(Equal("provider-app"))
 			})
+
+			It("puts the publisher credentials in the top-level gatewayClient", func() {
+				rl := &gatewayv1.RouteListener{
+					ObjectMeta: metav1.ObjectMeta{Name: "rl-1", Namespace: "test-ns"},
+					Spec: gatewayv1.RouteListenerSpec{
+						Consumer:     "consumer-app",
+						ServiceOwner: "provider-app",
+						Issue:        "/api/v1/events",
+						GatewayClient: gatewayv1.GatewayClientConfig{
+							ClientId: "gateway",
+							Issuer:   "https://iris.example.com/auth/realms/test",
+						},
+					},
+				}
+
+				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRouteListeners().Return([]*gatewayv1.RouteListener{rl})
+				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return()
+
+				err := f.Apply(ctx, builder)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(jc.GatewayClient).ToNot(BeNil(), "jumper reads credentials from the top-level gatewayClient")
+				Expect(jc.GatewayClient.Id).To(Equal("gateway"))
+				Expect(jc.GatewayClient.Issuer).To(Equal("https://iris.example.com/auth/realms/test"))
+				// Deferred: the secret must be resolved via secret-manager rather
+				// than carried literally in a CR spec, so it is not populated yet.
+				Expect(jc.GatewayClient.Secret).To(BeEmpty())
+			})
 		})
 
 		Context("when there are multiple RouteListeners", func() {
@@ -165,8 +195,42 @@ var _ = Describe("RouteListenerFeature", func() {
 			})
 		})
 
+		Context("when two RouteListeners target the same consumer", func() {
+			It("returns an error naming the conflicting consumer instead of silently discarding one", func() {
+				rls := []*gatewayv1.RouteListener{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-b", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-b",
+							Issue:        "/api/v2/notifications",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-a", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-a",
+							Issue:        "/api/v1/events",
+						},
+					},
+				}
+
+				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRouteListeners().Return(rls)
+				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return().Maybe()
+
+				err := f.Apply(ctx, builder)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer-shared"))
+				Expect(err.Error()).To(ContainSubstring("/api/v1/events"))
+				Expect(err.Error()).To(ContainSubstring("/api/v2/notifications"))
+			})
+		})
+
 		Context("when RouteListener map is already initialized", func() {
-			It("does not overwrite existing entries from other consumers", func() {
+			It("keeps pre-existing entries for other consumers", func() {
 				rl := &gatewayv1.RouteListener{
 					ObjectMeta: metav1.ObjectMeta{Name: "rl-new", Namespace: "test-ns"},
 					Spec: gatewayv1.RouteListenerSpec{
