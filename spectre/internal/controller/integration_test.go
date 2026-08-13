@@ -592,12 +592,15 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			blockedNN := types.NamespacedName{Name: "blocked-listener", Namespace: testNamespace}
 
 			By("Reconciling — should not error but should not create downstream resources")
-			// First reconcile adds finalizer.
-			_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: blockedNN})
-			// Second reconcile hits the blocked path.
-			_, err := listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: blockedNN})
+			// The first reconcile only adds the finalizer via an Update and requeues,
+			// so the reconciler's cached client may still serve the pre-Update version
+			// on the next call and lose the status write with a conflict. Retry until
+			// the cache has caught up and the blocked path is reached cleanly.
 			// Blocked errors are handled internally by the controller (no returned error).
-			Expect(err).NotTo(HaveOccurred())
+			Eventually(func(g Gomega) {
+				_, err := listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: blockedNN})
+				g.Expect(err).NotTo(HaveOccurred())
+			}, testTimeout, testInterval).Should(Succeed())
 
 			By("Verifying no RouteListener was created for the blocked Listener")
 			rlList := &gatewayv1.RouteListenerList{}
