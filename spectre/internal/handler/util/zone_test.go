@@ -98,7 +98,6 @@ var _ = Describe("GetListeningZone", func() {
 	var (
 		ctx          context.Context
 		fakeClient   *fakeclient.MockJanitorClient
-		listenerZone *adminv1.Zone
 		providerZone *adminv1.Zone
 		consumerZone *adminv1.Zone
 	)
@@ -107,14 +106,13 @@ var _ = Describe("GetListeningZone", func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
-		listenerZone = makeZone("listener-zone")
 		providerZone = makeZone("provider-zone")
 		consumerZone = makeZone("consumer-zone")
 	})
 
-	It("should use listener zone when its EventStore supports provider zone (full mesh)", func() {
-		// Listener zone has an EventConfig with full mesh (supports all zones)
-		ec := makeReadyEventConfig("ec-listener", "listener-zone")
+	It("should use the consumer zone when its EventConfig supports the provider zone (full mesh)", func() {
+		// Consumer (= listener) zone has an EventConfig with full mesh, so it supports all zones.
+		ec := makeReadyEventConfig("ec-consumer", "consumer-zone")
 
 		fakeClient.EXPECT().
 			List(mock.Anything, mock.Anything, mock.Anything).
@@ -122,89 +120,32 @@ var _ = Describe("GetListeningZone", func() {
 			Return(nil).
 			Once()
 
-		result, err := util.GetListeningZone(ctx, listenerZone, providerZone, consumerZone)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(result.Name).To(Equal("listener-zone"))
-	})
-
-	It("should use listener zone when its EventStore supports consumer zone (partial mesh)", func() {
-		// Listener zone has EventConfig with partial mesh including consumer but not provider
-		ec := makeReadyEventConfig("ec-listener", "listener-zone", "consumer-zone")
-
-		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(sequentialListResponder([]eventv1.EventConfig{ec})).
-			Return(nil).
-			Once()
-
-		result, err := util.GetListeningZone(ctx, listenerZone, providerZone, consumerZone)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(result.Name).To(Equal("listener-zone"))
-	})
-
-	It("should fall back to provider zone when listener zone has no EventConfig", func() {
-		ecProvider := makeReadyEventConfig("ec-provider", "provider-zone")
-		responder := sequentialListResponder(
-			[]eventv1.EventConfig{},           // listener zone: no EventConfig
-			[]eventv1.EventConfig{ecProvider}, // provider zone: has EventConfig
-		)
-
-		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(responder).
-			Return(nil).
-			Times(2)
-
-		result, err := util.GetListeningZone(ctx, listenerZone, providerZone, consumerZone)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(result.Name).To(Equal("provider-zone"))
-	})
-
-	It("should fall back to consumer zone when neither listener nor provider has EventConfig", func() {
-		ecConsumer := makeReadyEventConfig("ec-consumer", "consumer-zone")
-		responder := sequentialListResponder(
-			[]eventv1.EventConfig{},           // listener zone: no EventConfig
-			[]eventv1.EventConfig{},           // provider zone: no EventConfig
-			[]eventv1.EventConfig{ecConsumer}, // consumer zone: has EventConfig
-		)
-
-		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(responder).
-			Return(nil).
-			Times(3)
-
-		result, err := util.GetListeningZone(ctx, listenerZone, providerZone, consumerZone)
+		result, err := util.GetListeningZone(ctx, providerZone, consumerZone)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result.Name).To(Equal("consumer-zone"))
 	})
 
-	It("should return BlockedError when no zone has an EventConfig", func() {
-		responder := sequentialListResponder(
-			[]eventv1.EventConfig{}, // listener zone: no EventConfig
-			[]eventv1.EventConfig{}, // provider zone: no EventConfig
-			[]eventv1.EventConfig{}, // consumer zone: no EventConfig
-		)
+	It("should use the consumer zone when its restricted mesh names the provider zone", func() {
+		ec := makeReadyEventConfig("ec-consumer", "consumer-zone", "provider-zone")
 
 		fakeClient.EXPECT().
 			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(responder).
+			Run(sequentialListResponder([]eventv1.EventConfig{ec})).
 			Return(nil).
-			Times(3)
+			Once()
 
-		result, err := util.GetListeningZone(ctx, listenerZone, providerZone, consumerZone)
-		Expect(err).To(HaveOccurred())
-		Expect(result).To(BeNil())
-		Expect(err).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("no zone has an EventStore"))
+		result, err := util.GetListeningZone(ctx, providerZone, consumerZone)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result.Name).To(Equal("consumer-zone"))
 	})
 
-	It("should fall back to provider when listener EventConfig does not support either zone (partial mesh)", func() {
-		// Listener zone has EventConfig but only supports "other-zone"
-		ecListener := makeReadyEventConfig("ec-listener", "listener-zone", "other-zone")
+	It("should fall back to the provider zone when the consumer mesh excludes the provider zone", func() {
+		// Restricted mesh that does NOT name the provider zone: the consumer zone cannot
+		// carry this subscription, so the provider zone must win.
+		ecConsumer := makeReadyEventConfig("ec-consumer", "consumer-zone", "other-zone")
 		ecProvider := makeReadyEventConfig("ec-provider", "provider-zone")
 		responder := sequentialListResponder(
-			[]eventv1.EventConfig{ecListener}, // listener zone: has EC but doesn't support provider/consumer
+			[]eventv1.EventConfig{ecConsumer}, // consumer zone: mesh excludes provider zone
 			[]eventv1.EventConfig{ecProvider}, // provider zone: has EventConfig
 		)
 
@@ -214,9 +155,46 @@ var _ = Describe("GetListeningZone", func() {
 			Return(nil).
 			Times(2)
 
-		result, err := util.GetListeningZone(ctx, listenerZone, providerZone, consumerZone)
+		result, err := util.GetListeningZone(ctx, providerZone, consumerZone)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result.Name).To(Equal("provider-zone"))
+	})
+
+	It("should fall back to the provider zone when the consumer zone has no EventConfig", func() {
+		ecProvider := makeReadyEventConfig("ec-provider", "provider-zone")
+		responder := sequentialListResponder(
+			[]eventv1.EventConfig{},           // consumer zone: no EventConfig
+			[]eventv1.EventConfig{ecProvider}, // provider zone: has EventConfig
+		)
+
+		fakeClient.EXPECT().
+			List(mock.Anything, mock.Anything, mock.Anything).
+			Run(responder).
+			Return(nil).
+			Times(2)
+
+		result, err := util.GetListeningZone(ctx, providerZone, consumerZone)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result.Name).To(Equal("provider-zone"))
+	})
+
+	It("should return BlockedError when no zone has an EventConfig", func() {
+		responder := sequentialListResponder(
+			[]eventv1.EventConfig{}, // consumer zone: no EventConfig
+			[]eventv1.EventConfig{}, // provider zone: no EventConfig
+		)
+
+		fakeClient.EXPECT().
+			List(mock.Anything, mock.Anything, mock.Anything).
+			Run(responder).
+			Return(nil).
+			Times(2)
+
+		result, err := util.GetListeningZone(ctx, providerZone, consumerZone)
+		Expect(err).To(HaveOccurred())
+		Expect(result).To(BeNil())
+		Expect(err).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("no zone has an EventStore"))
 	})
 })
 

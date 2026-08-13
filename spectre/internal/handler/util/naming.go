@@ -49,3 +49,10 @@ func BuildListenerEventType(applicationId string) string {
 func BuildBridgeCallbackURL(callbackRouteURL, appId string) string {
 	return callbackRouteURL + "?callback=http://localhost:8080/autoevent?listener=" + appId
 }
+
+// MakeRouteName derives the gateway Route CR name for an API base path. It
+// mirrors the api domain's own naming (api/internal/handler/util.MakeRouteName),
+// which is internal to that module and so cannot be imported here.
+func MakeRouteName(apiBasePath string) string {
+	return labelutil.NormalizeValue(apiBasePath)
+}
