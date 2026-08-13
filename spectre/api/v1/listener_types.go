@@ -59,10 +59,12 @@ type ListenerStatus struct {
 	RouteListener *ctypes.ObjectRef `json:"routeListener,omitempty"`
 	// +optional
 	EventSubscriptions []ctypes.ObjectRef `json:"eventSubscriptions,omitempty"`
+	// ProviderApproval references the Approval that gates this Listener. The
+	// provider owns the API whose traffic is captured, so its consent is the
+	// security control. Only one approval can be modelled per owner CR — see
+	// the note on ensureApprovals.
 	// +optional
 	ProviderApproval *ctypes.ObjectRef `json:"providerApproval,omitempty"`
-	// +optional
-	ConsumerApproval *ctypes.ObjectRef `json:"consumerApproval,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -94,6 +96,18 @@ type ListenerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Listener `json:"items"`
+}
+
+var _ ctypes.ObjectList = &ListenerList{}
+
+// GetItems implements types.ObjectList. The janitor client requires this to
+// clean up owned Listeners; without it CleanupAll aborts for every type.
+func (l *ListenerList) GetItems() []ctypes.Object {
+	items := make([]ctypes.Object, len(l.Items))
+	for i := range l.Items {
+		items[i] = &l.Items[i]
+	}
+	return items
 }
 
 func init() {

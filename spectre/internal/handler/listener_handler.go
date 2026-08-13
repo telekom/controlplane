@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -61,7 +62,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return errors.Wrap(err, "failed to resolve provider zone")
 	}
 
-	listeningZone, err := util.GetListeningZone(ctx, consumerZone, providerZone, consumerZone)
+	listeningZone, err := util.GetListeningZone(ctx, providerZone, consumerZone)
 	if err != nil {
 		return errors.Wrap(err, "failed to determine listening zone")
 	}
@@ -82,20 +83,18 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return err
 	}
 
-	// Step 6: Create approvals (gate).
+	// Step 6: Create the provider approval (gate).
 	listenerTeam := consumerApp.Spec.Team
 	listenerEmail := consumerApp.Spec.TeamEmail
 
 	approval, err := h.ensureApprovals(ctx, listener,
 		listenerTeam, listenerEmail,
-		providerApp.Spec.Team, providerApp.Spec.TeamEmail,
-		consumerApp.Spec.Team, consumerApp.Spec.TeamEmail)
+		providerApp.Spec.Team, providerApp.Spec.TeamEmail)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure approvals")
 	}
 
 	listener.Status.ProviderApproval = approval.providerApproval
-	listener.Status.ConsumerApproval = approval.consumerApproval
 
 	// Step 7: Gate — if NOT both granted, return early.
 	if !approval.granted {
@@ -134,14 +133,28 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	logger.Info("Ensured bridge Subscribers", "count", len(subRefs))
 
 	// Step 11: Set Ready condition.
+	// AllReady() only turns false once a child reports Ready=False. A child that
+	// was just created has no conditions at all, so check AnyChanged() first —
+	// otherwise the first reconcile reports Ready before anything is confirmed.
+	if c.AnyChanged() {
+		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
+			"At least one sub-resource has been created or updated"))
+		listener.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady,
+			"At least one sub-resource has been created or updated"))
+		return nil
+	}
+
 	if !c.AllReady() {
 		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
+			"One or more child resources are not yet ready"))
+		listener.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady,
 			"One or more child resources are not yet ready"))
 		return nil
 	}
 
 	listener.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"Listener has been provisioned"))
+	listener.SetCondition(condition.NewDoneProcessingCondition("Listener has been provisioned"))
 
 	return nil
 }
@@ -149,25 +162,110 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 func (h *ListenerHandler) Delete(ctx context.Context, listener *spectrev1.Listener) error {
 	logger := log.FromContext(ctx)
 
-	// Owner-referenced children (RouteListener, bridge Subscribers) cascade via K8s.
-	// The shared generic Publisher is NOT owner-referenced — we ref-count it.
-	consumerApp, err := h.resolveApplication(ctx, listener.Spec.Consumer)
-	if err != nil {
-		// If we cannot resolve the app (e.g., it was already deleted), try zone from status
-		logger.V(1).Info("Could not resolve consumer Application during delete, skipping Publisher cleanup", "error", err)
+	// The children live in the zone namespace while this Listener lives in the
+	// team namespace. Kubernetes ignores cross-namespace owner references, so
+	// nothing garbage collects them — they must be deleted explicitly from the
+	// refs recorded in status.
+	if err := h.deleteRouteListener(ctx, listener.Status.RouteListener); err != nil {
+		return err
+	}
+	listener.Status.RouteListener = nil
+
+	for i := range listener.Status.EventSubscriptions {
+		ref := &listener.Status.EventSubscriptions[i]
+		if err := h.deleteSubscriber(ctx, ref); err != nil {
+			return err
+		}
+	}
+	listener.Status.EventSubscriptions = nil
+
+	// The shared generic Publisher is intentionally not owned by any single
+	// Listener — it is ref-counted and removed once the last one goes away.
+	zoneNamespace := h.publisherNamespace(ctx, listener)
+	if zoneNamespace == "" {
+		logger.V(1).Info("Could not determine zone namespace, skipping generic Publisher cleanup")
 		return nil
 	}
 
-	consumerZone, err := h.resolveZone(ctx, consumerApp)
-	if err != nil {
-		logger.V(1).Info("Could not resolve zone during delete, skipping Publisher cleanup", "error", err)
-		return nil
-	}
-
-	if err := h.cleanupGenericPublisherIfOrphaned(ctx, listener, consumerZone.Status.Namespace); err != nil {
+	if err := h.cleanupGenericPublisherIfOrphaned(ctx, listener, zoneNamespace); err != nil {
 		return errors.Wrap(err, "failed to cleanup generic Publisher")
 	}
 
+	return nil
+}
+
+// publisherNamespace determines the zone namespace holding the shared generic
+// Publisher. It prefers the namespace of an already-recorded child ref, which
+// keeps cleanup working even after the referenced Applications are gone, and
+// falls back to resolving the consumer Application's zone.
+func (h *ListenerHandler) publisherNamespace(ctx context.Context, listener *spectrev1.Listener) string {
+	logger := log.FromContext(ctx)
+
+	if ref := listener.Status.RouteListener; ref != nil && ref.Namespace != "" {
+		return ref.Namespace
+	}
+	for i := range listener.Status.EventSubscriptions {
+		if ns := listener.Status.EventSubscriptions[i].Namespace; ns != "" {
+			return ns
+		}
+	}
+
+	consumerApp, err := h.resolveApplication(ctx, listener.Spec.Consumer)
+	if err != nil {
+		logger.V(1).Info("Could not resolve consumer Application during delete", "error", err)
+		return ""
+	}
+	consumerZone, err := h.resolveZone(ctx, consumerApp)
+	if err != nil {
+		logger.V(1).Info("Could not resolve zone during delete", "error", err)
+		return ""
+	}
+	return consumerZone.Status.Namespace
+}
+
+// deleteRouteListener removes the RouteListener referenced in status, tolerating
+// an already-deleted object.
+func (h *ListenerHandler) deleteRouteListener(ctx context.Context, ref *ctypes.ObjectRef) error {
+	if ref == nil {
+		return nil
+	}
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	rl := &gatewayv1.RouteListener{}
+	if err := c.Get(ctx, ref.K8s(), rl); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return errors.Wrapf(err, "failed to get RouteListener %q", ref.String())
+	}
+	if err := c.Delete(ctx, rl); err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrapf(err, "failed to delete RouteListener %q", ref.String())
+	}
+	logger.Info("Deleted RouteListener", "routeListener", ref.String())
+	return nil
+}
+
+// deleteSubscriber removes a bridge Subscriber referenced in status, tolerating
+// an already-deleted object.
+func (h *ListenerHandler) deleteSubscriber(ctx context.Context, ref *ctypes.ObjectRef) error {
+	if ref == nil {
+		return nil
+	}
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	sub := &pubsubv1.Subscriber{}
+	if err := c.Get(ctx, ref.K8s(), sub); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return errors.Wrapf(err, "failed to get Subscriber %q", ref.String())
+	}
+	if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrapf(err, "failed to delete Subscriber %q", ref.String())
+	}
+	logger.Info("Deleted bridge Subscriber", "subscriber", ref.String())
 	return nil
 }
 
@@ -237,27 +335,31 @@ func (h *ListenerHandler) findEventStore(ctx context.Context, zoneNamespace stri
 	return &eventStoreList.Items[0], nil
 }
 
-// findRouteByPath lists gateway Routes in the given namespace and returns the first one
-// whose Spec.Paths contains the apiBasePath. This is how we resolve which Route CR
-// the RouteListener should attach to.
+// findRouteByPath resolves the gateway Route that exposes the given apiBasePath.
+//
+// The Route is fetched by name rather than by matching Spec.Paths: the api domain
+// derives the Route name deterministically from the base path
+// (labelutil.NormalizeValue), whereas Spec.Paths holds the preset-joined paths
+// (path.Join(preset.BasePath, apiBasePath)). Matching the raw apiBasePath against
+// those only works in a zone whose gateway preset basePath is "/", and silently
+// finds nothing otherwise.
+//
+// Returns (nil, nil) when no such Route exists; callers turn that into a
+// BlockedError so the Listener waits for the Route to be provisioned.
 func (h *ListenerHandler) findRouteByPath(ctx context.Context, namespace string, apiBasePath string) (*gatewayv1.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	routeList := &gatewayv1.RouteList{}
-	err := c.List(ctx, routeList, client.InNamespace(namespace))
+	routeName := util.MakeRouteName(apiBasePath)
+	route := &gatewayv1.Route{}
+	err := c.Get(ctx, k8stypes.NamespacedName{Name: routeName, Namespace: namespace}, route)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list Routes in namespace %q", namespace)
-	}
-
-	for i := range routeList.Items {
-		for _, p := range routeList.Items[i].Spec.Paths {
-			if p == apiBasePath {
-				return &routeList.Items[i], nil
-			}
+		if apierrors.IsNotFound(err) {
+			return nil, nil
 		}
+		return nil, errors.Wrapf(err, "failed to get Route %q in namespace %q", routeName, namespace)
 	}
 
-	return nil, nil
+	return route, nil
 }
 
 // ensureRouteListener creates or updates the RouteListener CR for this Listener.
