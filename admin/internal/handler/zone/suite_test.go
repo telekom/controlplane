@@ -26,7 +26,10 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -172,6 +175,7 @@ func newTestContext(zone *adminv1.Zone) context.Context {
 	janitor := cclient.NewJanitorClient(scopedClient)
 	testCtx := contextutil.WithEnv(ctx, envName)
 	testCtx = cclient.WithClient(testCtx, janitor)
+	testCtx = contextutil.WithRecorder(testCtx, &mock.EventRecorder{})
 	return testCtx
 }
 
@@ -181,4 +185,24 @@ func newTestHandlingContext(testCtx context.Context, zone *adminv1.Zone) *Handli
 	hc, err := newHandlingContext(testCtx, zone, (&ZoneHandler{}).httpClient())
 	Expect(err).NotTo(HaveOccurred())
 	return hc
+}
+
+// markSubResourcesReady stands in for the identity operator: it marks the
+// resources the pipeline barrier waits for as provisioned.
+func markSubResourcesReady(zone *adminv1.Zone) {
+	GinkgoHelper()
+
+	idp := &identityv1.IdentityProvider{}
+	Expect(zone.Status.IdentityProvider).NotTo(BeNil())
+	Expect(k8sClient.Get(ctx, zone.Status.IdentityProvider.K8s(), idp)).To(Succeed())
+	idp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "IdentityProvider is ready"))
+	Expect(k8sClient.Status().Update(ctx, idp)).To(Succeed())
+
+	for _, ref := range []*types.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
+		Expect(ref).NotTo(BeNil())
+		realm := &identityv1.Realm{}
+		Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
+		realm.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Realm is ready"))
+		Expect(k8sClient.Status().Update(ctx, realm)).To(Succeed())
+	}
 }

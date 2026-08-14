@@ -121,6 +121,7 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 		}
 		route.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		route.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		route.Labels[cconfig.DomainLabelKey] = domainName
 		route.Labels[cconfig.OwnerUidLabelKey] = string(hc.Zone.GetUID())
 
 		upstreamUrl, err := url.Parse(routeConfig.Url)

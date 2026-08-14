@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,6 +18,8 @@ import (
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
 
@@ -48,6 +51,8 @@ var _ = Describe("Zone Handler", func() {
 		)
 
 		handler := &ZoneHandler{}
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(zone.Status.Gateways).To(HaveLen(2))
 		Expect(zone.Status.Presets).To(HaveLen(3))
@@ -93,19 +98,64 @@ var _ = Describe("Zone Handler", func() {
 		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com/base", Type: adminv1.ManagedRouteTypeProxy}}}
 		handler := &ZoneHandler{}
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		route := &gatewayapi.Route{}
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: zone.Status.Namespace, Name: naming.ForGateway(zone, "standard") + "--proxy"}, route)).To(Succeed())
 		Expect(route.Spec.GatewayRef.Name).To(Equal(naming.ForGateway(zone, "standard")))
 		Expect(route.Spec.Hostnames).To(Equal([]string{"test-stargate.de"}))
 	})
 
-	It("is ready on the second unchanged reconciliation", func() {
+	It("is ready after identity resources are ready and reconciliation is unchanged", func() {
 		handler := &ZoneHandler{}
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		Expect(zone.Status.Namespace).To(Equal(strings.ToLower(testEnvironment + "--" + zone.Name)))
+	})
+
+	It("waits for identity resources before creating gateways", func() {
+		handler := &ZoneHandler{}
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(zone.Status.IdentityProvider).NotTo(BeNil())
+		Expect(zone.Status.IdentityRealm).NotTo(BeNil())
+		Expect(zone.Status.InternalIdentityRealm).NotTo(BeNil())
+		Expect(zone.Status.Gateways).To(BeEmpty())
+
+		ready := meta.FindStatusCondition(zone.Status.Conditions, condition.ConditionTypeReady)
+		Expect(ready.Reason).To(Equal(condition.ReasonSubResourceNotReady))
+		Expect(ready.Message).To(ContainSubstring(zone.Status.IdentityProvider.Name))
+
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(zone.Status.Gateways).To(HaveLen(1))
+	})
+
+	It("keeps a provisioned zone ready and reports a degraded gateway", func() {
+		handler := &ZoneHandler{}
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+		gateway := &gatewayapi.Gateway{}
+		Expect(k8sClient.Get(ctx, zone.Status.Gateways[0].Gateway.K8s(), gateway)).To(Succeed())
+		gateway.SetCondition(condition.NewNotReadyCondition("GatewayUnavailable", "health check failed"))
+		Expect(k8sClient.Status().Update(ctx, gateway)).To(Succeed())
+
+		recorder := &mock.EventRecorder{}
+		testCtx := contextutil.WithRecorder(newTestContext(zone), recorder)
+		Expect(handler.CreateOrUpdate(testCtx, zone)).To(Succeed())
+		Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+		Expect(recorder.GetEvent(zone, corev1.EventTypeWarning)).To(ContainElement(SatisfyAll(
+			HaveField("Reason", condition.ReasonSubResourceNotReady),
+			HaveField("Message", And(ContainSubstring("Gateway"), ContainSubstring(gateway.Name), ContainSubstring("health check failed"))),
+		)))
 	})
 
 	It("returns a blocked error when a gateway admin secret is missing", func() {

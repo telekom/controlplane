@@ -107,6 +107,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 		}
 		route.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		route.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		route.Labels[cconfig.DomainLabelKey] = domainName
 		route.Labels[cconfig.OwnerUidLabelKey] = string(hc.Zone.GetUID())
 
 		// Construct the downstream path with optional spacegate prefix

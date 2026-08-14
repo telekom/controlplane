@@ -67,6 +67,7 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 		}
 		gateway.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		gateway.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		gateway.Labels[cconfig.DomainLabelKey] = domainName
 
 		hostname, err := issuerHostname(idp)
 		if err != nil {
@@ -123,6 +124,7 @@ func createGatewayConsumer(ctx context.Context, hc *HandlingContext, gatewayName
 		}
 		gatewayConsumer.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		gatewayConsumer.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		gatewayConsumer.Labels[cconfig.DomainLabelKey] = domainName
 
 		gatewayConsumer.Spec = gatewayapi.ConsumerSpec{
 			Gateway: *types.ObjectRefFromObject(gateway),

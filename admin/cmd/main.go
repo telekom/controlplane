@@ -10,8 +10,12 @@ import (
 	"flag"
 	"os"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -21,6 +25,9 @@ import (
 
 	"github.com/telekom/controlplane/admin/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/admin/internal/webhook/v1"
+	"github.com/telekom/controlplane/common/pkg/config"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 
@@ -134,6 +141,14 @@ func main() {
 		metricsServerOptions.KeyName = metricsCertKey
 	}
 
+	selector := labels.NewSelector()
+	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.In, []string{"admin"})
+	if err != nil {
+		setupLog.Error(err, "unable to create label requirement")
+		os.Exit(1)
+	}
+	selector = selector.Add(*requirement)
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
@@ -141,6 +156,16 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "58816de6.cp.ei.telekom.de",
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
+				&identityv1.IdentityProvider{}: {Label: selector},
+				&identityv1.Realm{}:            {Label: selector},
+				&identityv1.Client{}:           {Label: selector},
+				&gatewayv1.Gateway{}:           {Label: selector},
+				&gatewayv1.Consumer{}:          {Label: selector},
+				&gatewayv1.Route{}:             {Label: selector},
+			},
+		},
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

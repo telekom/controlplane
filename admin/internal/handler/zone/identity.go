@@ -43,6 +43,7 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 		}
 		identityProvider.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		identityProvider.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		identityProvider.Labels[cconfig.DomainLabelKey] = domainName
 
 		adminURL := ""
 		if idp.Admin.Url != nil {
@@ -139,6 +140,7 @@ func createGatewayAdminClient(ctx context.Context, hc *HandlingContext, gatewayC
 		}
 		adminClient.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		adminClient.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		adminClient.Labels[cconfig.DomainLabelKey] = domainName
 
 		adminClient.Spec = identityapi.ClientSpec{
 			Realm:        types.ObjectRefFromObject(hc.InternalIdentityRealm),
@@ -193,6 +195,7 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 		}
 		identityRealm.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		identityRealm.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		identityRealm.Labels[cconfig.DomainLabelKey] = domainName
 
 		identityRealm.Spec = identityapi.RealmSpec{
 			IdentityProvider: &types.ObjectRef{
