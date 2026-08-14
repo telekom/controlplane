@@ -163,27 +163,27 @@ var _ = Describe("Preset OIDC status", func() {
 
 		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
 		Expect(requests).To(Equal(1))
-		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("TokenUrl", "https://tokens.example.com/token")))
+		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("Links.TokenUrl", "https://tokens.example.com/token")))
 	})
 
 	It("reuses a safe status token URL only for the matching issuer", func() {
 		hc := newContext(&http.Client{Transport: failingRoundTripper{}})
 		hc.Zone.Status.Presets = []adminv1.PresetStatus{{
-			Name: "default", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default"}, TokenUrl: "https://tokens.example.com/token",
+			Name: "default", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default", TokenUrl: "https://tokens.example.com/token"},
 		}}
 
 		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
-		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("TokenUrl", "https://tokens.example.com/token")))
+		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("Links.TokenUrl", "https://tokens.example.com/token")))
 
 		hc = newContext(&http.Client{Transport: failingRoundTripper{}})
 		hc.Zone.Status.Presets = []adminv1.PresetStatus{{
-			Name: "default", Links: adminv1.Links{Issuer: "https://other.example.com/auth/realms/"}, TokenUrl: "https://tokens.example.com/token",
+			Name: "default", Links: adminv1.Links{Issuer: "https://other.example.com/auth/realms/", TokenUrl: "https://tokens.example.com/token"},
 		}}
 		Expect(populatePresetStatus(context.Background(), hc)).To(HaveOccurred())
 
 		hc = newContext(&http.Client{Transport: failingRoundTripper{}})
 		hc.Zone.Status.Presets = []adminv1.PresetStatus{{
-			Name: "removed", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default"}, TokenUrl: "https://tokens.example.com/token",
+			Name: "removed", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default", TokenUrl: "https://tokens.example.com/token"},
 		}}
 		Expect(populatePresetStatus(context.Background(), hc)).To(HaveOccurred())
 	})
@@ -191,7 +191,7 @@ var _ = Describe("Preset OIDC status", func() {
 	It("does not reuse an invalid status token URL", func() {
 		hc := newContext(&http.Client{Transport: failingRoundTripper{}})
 		hc.Zone.Status.Presets = []adminv1.PresetStatus{{
-			Name: "default", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default"}, TokenUrl: "https://tokens.example.com/token?secret=value",
+			Name: "default", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default", TokenUrl: "https://tokens.example.com/token?secret=value"},
 		}}
 
 		Expect(populatePresetStatus(context.Background(), hc)).To(HaveOccurred())

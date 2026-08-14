@@ -63,7 +63,7 @@ func newZone() *adminv1.Zone {
 		Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
 		Status: adminv1.ZoneStatus{
 			Namespace: "zone-ns",
-			Presets: []adminv1.PresetStatus{{Name: "default", TokenUrl: "https://identity.example.com/token", GatewayRef: &commontypes.ObjectRef{
+			Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{TokenUrl: "https://identity.example.com/token"}, GatewayRef: &commontypes.ObjectRef{
 				Name:      "test-gateway",
 				Namespace: "zone-ns",
 			}}},
@@ -200,8 +200,8 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 			Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
 		})
 		zone.Status.Presets = append(zone.Status.Presets, adminv1.PresetStatus{
-			Name:     "consumer-failover",
-			TokenUrl: "https://failover-identity.example.com/token",
+			Name:  "consumer-failover",
+			Links: adminv1.Links{TokenUrl: "https://failover-identity.example.com/token"},
 		})
 
 		mockClient := fake.NewMockJanitorClient(GinkgoT())
@@ -230,7 +230,7 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 	})
 
 	It("blocks when the selected preset token URL is empty", func() {
-		zone.Status.Presets[0].TokenUrl = ""
+		zone.Status.Presets[0].Links.TokenUrl = ""
 		mockClient := fake.NewMockJanitorClient(GinkgoT())
 		ctx = client.WithClient(ctx, mockClient)
 		mockClient.EXPECT().AddKnownTypeToState(mock.Anything).Maybe()

@@ -48,8 +48,8 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 			tokenURL = tokenURLs[issuer]
 			if previousIndex, found := previousStatuses[preset.Name]; found {
 				previous := &hc.Zone.Status.Presets[previousIndex]
-				if tokenURL == "" && previous.Links.Issuer == issuer && validateDiscoveredTokenURL(previous.TokenUrl) == nil {
-					tokenURL = previous.TokenUrl
+				if tokenURL == "" && previous.Links.Issuer == issuer && validateDiscoveredTokenURL(previous.Links.TokenUrl) == nil {
+					tokenURL = previous.Links.TokenUrl
 					tokenURLs[issuer] = tokenURL
 				}
 			}
@@ -61,8 +61,9 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 				tokenURLs[issuer] = tokenURL
 			}
 		}
+		links.TokenUrl = tokenURL
 		statuses = append(statuses, adminv1.PresetStatus{
-			Name: preset.Name, GatewayRef: gatewayStatus.Gateway, IdentityProviderRef: hc.Zone.Status.IdentityProvider, Links: links, TokenUrl: tokenURL,
+			Name: preset.Name, GatewayRef: gatewayStatus.Gateway, IdentityProviderRef: hc.Zone.Status.IdentityProvider, Links: links,
 		})
 	}
 	sort.Slice(statuses, func(i, j int) bool { return statuses[i].Name < statuses[j].Name })

@@ -71,7 +71,7 @@ var _ = Describe("Zone preset resolution", func() {
 		})
 		Expect(spec.FeaturesSupported(FeatureAiGateway, FeatureConsumerFailover)).To(BeFalse())
 		_, err := spec.SelectPreset(FeatureAiGateway, FeatureConsumerFailover)
-		Expect(err).To(MatchError(ContainSubstring("no preset")))
+		Expect(err).To(MatchError(ContainSubstring("enabled on different presets")))
 	})
 
 	It("rejects disabled and unknown zone features", func() {
@@ -85,7 +85,7 @@ var _ = Describe("Zone preset resolution", func() {
 		spec := zoneSpec()
 		spec.Presets[1].Features[0].Enabled = false
 		_, err := spec.SelectPreset(FeatureConsumerFailover)
-		Expect(err).To(MatchError(ContainSubstring("no preset")))
+		Expect(err).To(MatchError(ContainSubstring("not enabled on any preset")))
 	})
 
 	It("rejects selecting a preset without requested features", func() {

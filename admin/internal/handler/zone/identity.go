@@ -117,14 +117,14 @@ func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error
 
 func createGatewayAdminClient(ctx context.Context, hc *HandlingContext, gatewayConfig *adminv1.GatewayConfig) (*identityapi.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-	clientID := naming.ForGatewayAdminClientId(gatewayConfig.Name)
+	clientID := naming.ForGatewayAdminClientId()
 	if gatewayConfig.Admin.ClientId != nil {
 		clientID = *gatewayConfig.Admin.ClientId
 	}
 
 	adminClient := &identityapi.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      naming.ForGatewayAdminClientId(gatewayConfig.Name),
+			Name:      naming.ForGatewayAdminClient(hc.IdentityProvider.Name),
 			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
 		},
 	}

@@ -312,6 +312,8 @@ spec:
                     default:
                       type: boolean
                     features:
+                      description: Features is a list of features that are enabled
+                        or disabled for this preset.
                       items:
                         properties:
                           enabled:
@@ -327,16 +329,29 @@ spec:
                       - name
                       x-kubernetes-list-type: map
                     gatewayRef:
+                      description: |-
+                        GatewayRef is the name of the gateway to used for this preset.
+                        It must match one of the gateways defined in the zone spec.
                       type: string
                     identityProviderRef:
+                      description: |-
+                        IdentityProviderRef is the name of the identity provider to used for this preset.
+                        It must match one of the identity providers defined in the zone spec.
                       type: string
                     name:
+                      description: Name is the unique name of the preset within the
+                        zone.
                       pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                       type: string
                     tokenUrl:
+                      description: |-
+                        TokenUrl is the token endpoint for this zone preset
+                        By default it is derived from the identity provider's issuer URL, but can be overridden here if needed.
                       format: uri
                       type: string
                     urls:
+                      description: Urls is the list of URLs (hostnames + base paths)
+                        exposed by the gateway for this preset.
                       items:
                         description: UrlConfig defines the configuration for a single
                           URL (hostname + base path) exposed by the gateway for this
@@ -704,22 +719,22 @@ spec:
                       properties:
                         gatewayIssuer:
                           description: Issuer is the expected issuer of downstream
-                            tokens for this zone
+                            tokens for this zone preset
                           format: uri
                           type: string
                         gatewayLmsIssuer:
                           description: LmsIssuer is the issuer of the Last-Mile-Security
-                            tokens (upstream) for this zone
+                            tokens (upstream) for this zone preset
                           format: uri
                           type: string
                         gatewayUrl:
                           description: Url is the base URL of the default gateway
-                            of this zone
+                            of this zone preset
                           format: uri
                           type: string
                         internalIssuer:
                           description: InternalIssuer is the expected issuer of downstream
-                            tokens for internal services in this zone
+                            tokens for internal services in this zone preset
                           format: uri
                           type: string
                         permissionsUrl:
@@ -731,7 +746,12 @@ spec:
                           type: string
                         teamApiIssuer:
                           description: TeamIssuer is the expected issuer of downstream
-                            tokens for Team APIs in this zone
+                            tokens for Team APIs in this zone preset
+                          format: uri
+                          type: string
+                        tokenUrl:
+                          description: TokenUrl is the token endpoint for this zone
+                            preset
                           format: uri
                           type: string
                       required:
@@ -739,8 +759,6 @@ spec:
                       - gatewayUrl
                       type: object
                     name:
-                      type: string
-                    tokenUrl:
                       type: string
                   required:
                   - name
