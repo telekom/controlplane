@@ -93,9 +93,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Mirror release images to Artifactory
+        # skopeo is pre-installed on ubuntu-latest — no setup action required.
         # GoReleaser's kos pipe pushes all module images to GHCR with the
         # version tag, `latest`, and (for non-prereleases) `stable`.
-        # This step copies each image to Artifactory by digest so the exact
+        # This step copies each of those tags to Artifactory so the exact
         # same multi-arch manifest is available for internal deployments.
         # rover-ctl is excluded: its combined (bash/jq/yq) image is
         # assembled and pushed to Artifactory separately below.
