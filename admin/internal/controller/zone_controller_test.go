@@ -10,10 +10,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -27,7 +31,7 @@ func newZone(name string) *adminv1.Zone {
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: testNamespace,
+			Namespace: testEnvironment,
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 			},
@@ -155,6 +159,7 @@ var _ = Describe("Zone Controller", func() {
 
 			By("creating a zone in the decoupled environment")
 			zone := newZone("zone-decoupled")
+			zone.Namespace = decoupledEnvName
 			zone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
 			zone.Spec.ManagedRoutes = nil // simplify
 			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
@@ -181,6 +186,76 @@ var _ = Describe("Zone Controller", func() {
 				g.Expect(got.Status.Presets[0].Links.Issuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
 				g.Expect(got.Status.Presets[0].Links.LmsIssuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
 			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("When a managed sub-resource changes readiness", func() {
+		It("should map a labeled sub-resource directly to its Zone", func() {
+			zone := newZone("direct-map")
+			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
+			})
+
+			child := &identityv1.IdentityProvider{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
+				config.EnvironmentLabelKey:   testEnvironment,
+				config.BuildLabelKey("zone"): zone.Name,
+				config.DomainLabelKey:        "admin",
+			}}}
+			requests := (&ZoneReconciler{Client: k8sClient}).mapSubResourceToZone(ctx, child)
+			Expect(requests).To(Equal([]reconcile.Request{{NamespacedName: client.ObjectKeyFromObject(zone)}}))
+		})
+
+		It("should ignore a sub-resource from another domain", func() {
+			child := &gatewayv1.Route{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
+				config.EnvironmentLabelKey:   testEnvironment,
+				config.BuildLabelKey("zone"): "direct-map",
+				config.DomainLabelKey:        "event",
+			}}}
+			Expect(AdminDomainPredicate.Create(event.CreateEvent{Object: child})).To(BeFalse())
+		})
+
+		It("should reconcile the Zone for every managed custom-resource kind", func() {
+			zone := newZone("watched-children")
+			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)).To(Succeed())
+				g.Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+
+			children := []struct {
+				kind string
+				list types.ObjectList
+			}{
+				{"IdentityProvider", &identityv1.IdentityProviderList{}},
+				{"Realm", &identityv1.RealmList{}},
+				{"Client", &identityv1.ClientList{}},
+				{"Gateway", &gatewayv1.GatewayList{}},
+				{"Consumer", &gatewayv1.ConsumerList{}},
+				{"Route", &gatewayv1.RouteList{}},
+			}
+			for _, tc := range children {
+				By("degrading " + tc.kind)
+				Expect(k8sClient.List(ctx, tc.list, client.InNamespace(zone.Status.Namespace))).To(Succeed())
+				items := tc.list.GetItems()
+				Expect(items).NotTo(BeEmpty())
+				child := items[0]
+				child.SetCondition(condition.NewNotReadyCondition("SelfHealing", "waiting for self-healing"))
+				Expect(k8sClient.Status().Update(ctx, child)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					events := &corev1.EventList{}
+					g.Expect(k8sClient.List(ctx, events, client.InNamespace(zone.Namespace))).To(Succeed())
+					g.Expect(events.Items).To(ContainElement(SatisfyAll(
+						HaveField("Reason", condition.ReasonSubResourceNotReady),
+						HaveField("Message", And(ContainSubstring(tc.kind), ContainSubstring(child.GetName()))),
+					)))
+				}, timeout, interval).Should(Succeed())
+			}
 		})
 	})
 })
