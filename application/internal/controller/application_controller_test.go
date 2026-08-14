@@ -90,16 +90,16 @@ var _ = Describe("Application Controller", func() {
 			By("simulating Zone A status (normally set by admin controller)")
 			zoneA.Status = adminv1.ZoneStatus{
 				Namespace: testNamespace,
-				Presets: []adminv1.PresetStatus{{Name: "default", TokenUrl: "https://identity.example.com/token", GatewayRef: &ctypes.ObjectRef{
+				Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 					Name:      "test-gateway-a",
 					Namespace: testNamespace,
 				}, Links: adminv1.Links{
-					Url: "https://gateway.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms",
-				}}, {Name: "consumer-failover", TokenUrl: "https://failover-identity.example.com/token", GatewayRef: &ctypes.ObjectRef{
+					Url: "https://gateway.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms", TokenUrl: "https://identity.example.com/token",
+				}}, {Name: "consumer-failover", GatewayRef: &ctypes.ObjectRef{
 					Name:      "test-gateway-a",
 					Namespace: testNamespace,
 				}, Links: adminv1.Links{
-					Url: "https://gateway.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms",
+					Url: "https://gateway.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms", TokenUrl: "https://failover-identity.example.com/token",
 				}}},
 				IdentityRealm: &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace},
 			}
@@ -157,11 +157,11 @@ var _ = Describe("Application Controller", func() {
 			By("simulating Zone B status (normally set by admin controller)")
 			zoneB.Status = adminv1.ZoneStatus{
 				Namespace: testNamespace,
-				Presets: []adminv1.PresetStatus{{Name: "default", TokenUrl: "https://zone-b-identity.example.com/token", GatewayRef: &ctypes.ObjectRef{
+				Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 					Name:      "test-gateway-b",
 					Namespace: testNamespace,
 				}, Links: adminv1.Links{
-					Url: "https://gateway-b.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms",
+					Url: "https://gateway-b.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms", TokenUrl: "https://zone-b-identity.example.com/token",
 				}}},
 				IdentityRealm: &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace},
 			}
@@ -294,7 +294,7 @@ var _ = Describe("Application Controller", func() {
 		})
 
 		It("should block an application when the selected preset token URL is empty", func() {
-			zoneA.Status.Presets[0].TokenUrl = ""
+			zoneA.Status.Presets[0].Links.TokenUrl = ""
 			Expect(k8sClient.Status().Update(ctx, zoneA)).To(Succeed())
 
 			application = &applicationv1.Application{

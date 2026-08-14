@@ -64,7 +64,7 @@ var _ = Describe("Zone Handler", func() {
 		failover, err := zone.Status.GetPreset("consumer-failover")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(failover.Links.Url).To(Equal("https://failover.example.com/"))
-		Expect(failover.TokenUrl).To(Equal("https://tokens.example.com/failover"))
+		Expect(failover.Links.TokenUrl).To(Equal("https://tokens.example.com/failover"))
 		ai, err := zone.Status.GetPreset("ai")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ai.GatewayRef.Name).To(Equal(naming.ForGateway(zone, "ai")))
@@ -86,7 +86,9 @@ var _ = Describe("Zone Handler", func() {
 			HaveField("Name", naming.ForGatewayConsumer(zone, "standard")),
 			HaveField("Name", naming.ForGatewayConsumer(zone, "ai")),
 		))
-		Expect(clients.Items).To(HaveLen(2))
+		Expect(clients.Items).To(HaveLen(1))
+		Expect(clients.Items[0].Name).To(Equal(naming.ForGatewayAdminClient(naming.ForIdentityProvider(zone, "primary"))))
+		Expect(clients.Items[0].Spec.ClientSecret).To(Equal(secret))
 
 		zone.Spec.Presets = append(zone.Spec.Presets[:1], zone.Spec.Presets[2:]...)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -161,6 +163,7 @@ var _ = Describe("Zone Handler", func() {
 	It("returns a blocked error when a gateway admin secret is missing", func() {
 		zone.Spec.Gateways[0].Admin.ClientSecret = nil
 		hc := newTestHandlingContext(newTestContext(zone), zone)
+		hc.IdentityProvider = &identityapi.IdentityProvider{}
 		hc.InternalIdentityRealm = &identityapi.Realm{}
 
 		_, err := createGatewayAdminClient(newTestContext(zone), hc, &zone.Spec.Gateways[0])

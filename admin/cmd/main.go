@@ -158,12 +158,9 @@ func main() {
 		LeaderElectionID:       "58816de6.cp.ei.telekom.de",
 		Cache: cache.Options{
 			ByObject: map[client.Object]cache.ByObject{
-				&identityv1.IdentityProvider{}: {Label: selector},
-				&identityv1.Realm{}:            {Label: selector},
-				&identityv1.Client{}:           {Label: selector},
-				&gatewayv1.Gateway{}:           {Label: selector},
-				&gatewayv1.Consumer{}:          {Label: selector},
-				&gatewayv1.Route{}:             {Label: selector},
+				&identityv1.Client{}:  {Label: selector},
+				&gatewayv1.Consumer{}: {Label: selector},
+				&gatewayv1.Route{}:    {Label: selector},
 			},
 		},
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily

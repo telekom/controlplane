@@ -164,6 +164,7 @@ func reportNotReadySubResources(ctx context.Context, obj *adminv1.Zone) error {
 	}
 	return nil
 }
+
 func (h *ZoneHandler) Delete(ctx context.Context, obj *adminv1.Zone) error {
 	return nil
 }

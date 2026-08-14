@@ -60,10 +60,10 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	if err != nil {
 		return ctrlerrors.BlockedErrorf("zone %q does not contain status for preset %q", zone.Name, preset.Name)
 	}
-	if presetStatus.TokenUrl == "" {
+	if presetStatus.Links.TokenUrl == "" {
 		return ctrlerrors.BlockedErrorf("zone %q preset %q does not contain a token URL", zone.Name, preset.Name)
 	}
-	app.Status.TokenUrl = presetStatus.TokenUrl
+	app.Status.TokenUrl = presetStatus.Links.TokenUrl
 
 	primaryClient, err := h.ensureIdentityClients(ctx, zone, failoverZones, app)
 	if err != nil {

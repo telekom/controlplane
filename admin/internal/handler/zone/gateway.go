@@ -128,7 +128,7 @@ func createGatewayConsumer(ctx context.Context, hc *HandlingContext, gatewayName
 
 		gatewayConsumer.Spec = gatewayapi.ConsumerSpec{
 			Gateway: *types.ObjectRefFromObject(gateway),
-			Name:    naming.ForGatewayConsumer(hc.Zone, gatewayName),
+			Name:    naming.ForGatewayConsumerClientID(),
 		}
 		return nil
 	}

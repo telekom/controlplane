@@ -160,16 +160,30 @@ func (u UrlConfig) GetFullUrl() string {
 }
 
 type Preset struct {
+	// Name is the unique name of the preset within the zone.
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
-	Name                string `json:"name"`
-	Default             bool   `json:"default,omitempty"`
-	GatewayRef          string `json:"gatewayRef"`
+	Name string `json:"name"`
+	// +kubebuilder:validation:Optional
+	Default bool `json:"default,omitempty"`
+	// GatewayRef is the name of the gateway to used for this preset.
+	// It must match one of the gateways defined in the zone spec.
+	// +kubebuilder:validation:Required
+	GatewayRef string `json:"gatewayRef"`
+	// IdentityProviderRef is the name of the identity provider to used for this preset.
+	// It must match one of the identity providers defined in the zone spec.
+	// +kubebuilder:validation:Required
 	IdentityProviderRef string `json:"identityProviderRef"`
+	// TokenUrl is the token endpoint for this zone preset
+	// By default it is derived from the identity provider's issuer URL, but can be overridden here if needed.
 	// +kubebuilder:validation:Format=uri
+	// +kubebuilder:validation:Optional
 	TokenUrl string `json:"tokenUrl,omitempty"`
+	// Urls is the list of URLs (hostnames + base paths) exposed by the gateway for this preset.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=5
 	Urls []UrlConfig `json:"urls"`
+	// Features is a list of features that are enabled or disabled for this preset.
 	// +listType=map
 	// +listMapKey=name
 	Features []Feature `json:"features,omitempty"`
@@ -412,7 +426,17 @@ func (s *ZoneSpec) SelectPreset(features ...FeatureName) (*Preset, error) {
 		match = &s.Presets[i]
 	}
 	if match == nil {
-		return nil, fmt.Errorf("no preset matches features %v", presetFeatures)
+		missing := make([]FeatureName, 0, len(presetFeatures))
+		for _, feature := range presetFeatures {
+			if !slices.ContainsFunc(s.Presets, func(p Preset) bool { return supportsFeatures(p.Features, feature) }) {
+				missing = append(missing, feature)
+			}
+		}
+		if len(missing) == 0 {
+			// Every feature exists on some preset, just not all on the same one.
+			return nil, fmt.Errorf("no preset matches features %v: they are enabled on different presets, but only one preset can be used at a time", presetFeatures)
+		}
+		return nil, fmt.Errorf("no preset matches features %v: %v not enabled on any preset", presetFeatures, missing)
 	}
 	return match, nil
 }
@@ -423,21 +447,28 @@ func (s *ZoneSpec) FeaturesSupported(features ...FeatureName) bool {
 }
 
 type Links struct {
-	// Url is the base URL of the default gateway of this zone
+	// Url is the base URL of the default gateway of this zone preset
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"gatewayUrl"`
-	// Issuer is the expected issuer of downstream tokens for this zone
+	// Issuer is the expected issuer of downstream tokens for this zone preset
 	// +kubebuilder:validation:Format=uri
 	Issuer string `json:"gatewayIssuer"`
-	// TeamIssuer is the expected issuer of downstream tokens for Team APIs in this zone
+
+	// TokenUrl is the token endpoint for this zone preset
+	// +kubebuilder:validation:Format=uri
+	TokenUrl string `json:"tokenUrl,omitempty"`
+
+	// TeamIssuer is the expected issuer of downstream tokens for Team APIs in this zone preset
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	TeamIssuer string `json:"teamApiIssuer,omitempty"`
-	// LmsIssuer is the issuer of the Last-Mile-Security tokens (upstream) for this zone
+
+	// LmsIssuer is the issuer of the Last-Mile-Security tokens (upstream) for this zone preset
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	LmsIssuer string `json:"gatewayLmsIssuer"`
-	// InternalIssuer is the expected issuer of downstream tokens for internal services in this zone
+
+	// InternalIssuer is the expected issuer of downstream tokens for internal services in this zone preset
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	InternalIssuer string `json:"internalIssuer,omitempty"`
@@ -462,7 +493,6 @@ type PresetStatus struct {
 	GatewayRef          *types.ObjectRef `json:"gatewayRef,omitempty"`
 	IdentityProviderRef *types.ObjectRef `json:"identityProviderRef,omitempty"`
 	Links               Links            `json:"links,omitempty"`
-	TokenUrl            string           `json:"tokenUrl,omitempty"`
 }
 
 // ZoneStatus defines the observed state of Zone
