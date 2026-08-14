@@ -209,7 +209,7 @@ spec:
 ## Event Config
 
 :::info
-Before creating an `EventConfig`, make sure the eventing subsystem is enabled in your Control Plane installation. Follow the steps in [Installation](./installation.md#optional-enable-the-eventing-subsystem).
+Before creating an `EventConfig`, make sure the eventing subsystem is enabled in your Control Plane installation. Follow the steps in [Installation](./installation.md#optional-capabilities).
 :::
 
 After a zone is created, eventing is still not active for that zone by default. To enable the event feature, create an `EventConfig` resource for the zone.

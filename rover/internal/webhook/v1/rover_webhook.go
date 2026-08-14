@@ -97,6 +97,10 @@ func (r *RoverValidator) ValidateDelete(ctx context.Context, rover *roverv1.Rove
 }
 
 func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *roverv1.Rover) (admission.Warnings, error) {
+	if controller.IsBeingDeleted(rover) {
+		return nil, nil
+	}
+
 	log := roverlog.WithValues("name", rover.GetName(), "namespace", rover.GetNamespace())
 	ctx = logr.NewContext(ctx, log)
 

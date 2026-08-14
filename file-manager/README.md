@@ -82,26 +82,33 @@ backend:
   role_arn: arn:aws:iam::12345:role/my-sample-role
 ```
 
-### MinIO
+### RustFS
 
-This backend uses [MinIO](https://min.io/) to store files. MinIO is an open-source, self-hosted object storage solution that is compatible with the Amazon S3 API.
+This backend uses [RustFS](https://rustfs.com/) to store files. RustFS is an open-source, self-hosted object storage solution compatible with the Amazon S3 API.
 
 ```bash
-helm repo add minio https://charts.min.io/
+helm repo add rustfs https://charts.rustfs.com
 helm repo update
 
-kubectl create namespace minio
-helm install minio minio/minio -n minio 
+kubectl create namespace rustfs
+helm install rustfs rustfs/rustfs -n rustfs \
+  --set secret.rustfs.access_key=myAccessKey \
+  --set secret.rustfs.secret_key=mySecretKey
 ```
+
+Create the `controlplane-files` bucket before starting File Manager.
 
 ```yaml
 backend:
   type: buckets
-  endpoint: minio.minio.svc.cluster.local:9000
-  bucket_name: my-bucket
-  access_key: myAccessKey # Copy these from MinIO console
-  secret_key: mySecret
+  endpoint: rustfs.rustfs.svc.cluster.local:9000
+  bucket_name: controlplane-files
+  access_key: myAccessKey
+  secret_key: mySecretKey
+  insecure_skip_tls: true
 ```
+
+The local overlay under `install/overlays/local` deploys and configures RustFS automatically.
 
 ## Security
 
@@ -121,4 +128,3 @@ Please take a look at that [api/README.md](./api/README.md) for more information
 
 To integrate the following [Deployment and Namespaces Patches](./config/patches) into your custom operator deployment, so that the new operator can communicate with the FM.
 Otherwise, the communication to the FM will be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s.
-
