@@ -1,0 +1,20 @@
+docs/superpowers/specs/2026-08-14-shared-gateway-admin-client-design.md
+  s_36e92aac06a6ac::t_a3fada3478185b 119-122
+  s_36e92aac06a6ac::t_f1da1047aaf055 1-118,123-177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "fb03842fa72ce73217f43f3bad54d58f551fb804",
+  "prompts": {},
+  "sessions": {
+    "s_36e92aac06a6ac": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00435dfd8ffe2oy2wGmicnd2TL",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
