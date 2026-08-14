@@ -107,6 +107,9 @@ func (h *ListenerHandler) buildApproval(
 		TeamName:  requesterTeam,
 		TeamEmail: requesterEmail,
 	}
+	if err := requester.SetProperties(map[string]any{"action": action}); err != nil {
+		return nil, errors.Wrap(err, "failed to set requester properties")
+	}
 	decider := &approvalapi.Decider{
 		TeamName:  deciderTeam,
 		TeamEmail: deciderEmail,
