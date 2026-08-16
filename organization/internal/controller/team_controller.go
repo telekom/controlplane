@@ -59,15 +59,15 @@ func (r *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&teamhandler.TeamHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&organizationv1.Team{}).
+		For(&organizationv1.Team{}, builder.WithPredicates(cc.Count("team", cc.RoleFor))).
 		Owns(&identityv1.Client{},
-			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+			builder.WithPredicates(cc.Count("team", cc.RoleOwns, predicate.GenerationChangedPredicate{}))).
 		Watches(&notificationv1.NotificationChannel{},
 			handler.EnqueueRequestsFromMapFunc(r.mapNotificationChannelToTeam),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+			builder.WithPredicates(cc.Count("team", cc.RoleWatches, predicate.GenerationChangedPredicate{}))).
 		Watches(&organizationv1.Group{},
 			handler.EnqueueRequestsFromMapFunc(r.mapGroupToTeam),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+			builder.WithPredicates(cc.Count("team", cc.RoleWatches, predicate.GenerationChangedPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

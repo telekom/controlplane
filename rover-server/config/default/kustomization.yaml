@@ -26,17 +26,6 @@ resources:
   # [METRICS] Expose the controller manager metrics service.
   - metrics_service.yaml
 
-# Default configuration
-# Use your own kustomization file to override the default configuration.
-configMapGenerator:
-  - name: rover-server-env
-    options:
-      disableNameSuffixHash: true
-    literals:
-      - LISTENERS_EXTERNAL_JWT_TRUSTEDISSUERS=""
-      - LISTENERS_EXTERNAL_JWT_LMS_BASEPATH=""
-      - DATABASE_FILEPATH=""
-
 patches:
   # [SECRET_MANAGER] The following patch will add the secret manager to the deployment.
   - path: deployment_patch.yaml

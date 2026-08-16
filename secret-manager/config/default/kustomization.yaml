@@ -30,14 +30,8 @@ resources:
 # Use your own kustomization file to override the default configuration.
 configMapGenerator:
   - name: secret-manager-config
-    options:
-      disableNameSuffixHash: true
     literals:
       - config.yaml= # the server will use its default configuration if this is empty.
-  - name: secret-manager-env
-    options:
-      disableNameSuffixHash: true
-    literals: []
 
 patches:
   # This is only needed when using the cert-manager to issue certificates.

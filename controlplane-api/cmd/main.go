@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	cc "github.com/telekom/controlplane/common/pkg/client"
@@ -78,8 +79,18 @@ func main() {
 			os.Exit(1)
 		}
 		scopedClient := cc.NewScopedClient(k8sClient, cfg.Kubernetes.Environment)
+
+		var resourceChecker service.ResourceChecker
+		if cfg.RoverServer.BaseURL != "" {
+			token := accesstoken.NewAccessToken(cfg.RoverServer.TokenFilePath)
+			resourceChecker = service.NewRoverResourceChecker(cfg.RoverServer.BaseURL, cfg.Kubernetes.Environment, token, cfg.RoverServer.CaFilePath)
+		} else {
+			resourceChecker = service.NewNoopResourceChecker()
+		}
+
 		services = service.Services{
-			Team:        service.NewTeamK8sService(scopedClient),
+			Team:        service.NewTeamK8sService(scopedClient, resourceChecker),
+			Group:       service.NewGroupK8sService(scopedClient, service.NewEntTeamChecker(client)),
 			Application: service.NewApplicationK8sService(scopedClient),
 			Approval:    service.NewApprovalK8sService(scopedClient),
 		}
@@ -146,7 +157,11 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	log.Info("server started", "external", cfg.Listeners.External.Address, "internal", cfg.Listeners.Internal.Address, "tls", cfg.TLS != nil)
+	internalAddress := ""
+	if cfg.Listeners.Internal != nil {
+		internalAddress = cfg.Listeners.Internal.Address
+	}
+	log.Info("server started", "external", cfg.Listeners.External.Address, "internal", internalAddress, "tls", cfg.TLS != nil)
 
 	<-ctx.Done()
 	log.Info("shutting down server")

@@ -57,26 +57,26 @@ func (r *AgenticExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&agenticexposure.AgenticExposureHandler{Config: r.Config}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&agenticv1.AgenticExposure{}).
+		For(&agenticv1.AgenticExposure{}, builder.WithPredicates(cc.Count("agenticexposure", cc.RoleFor))).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToAgenticExposure),
-			builder.WithPredicates(LabelPredicate),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, LabelPredicate)),
 		).
 		Watches(&agenticv1.McpServer{},
 			handler.EnqueueRequestsFromMapFunc(r.MapMcpServerToAgenticExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&agenticv1.AgenticExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticExposureToAgenticExposure),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToAgenticExposure),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
 		Watches(&agenticv1.AgenticSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticSubscriptionToAgenticExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
