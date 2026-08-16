@@ -10,7 +10,15 @@ permissions:
   contents: read
 
 jobs:
+  rover-ctl-base-image:
+    name: Rover-CTL Base Image
+    # Runs unconditionally as a safety net, ensuring the base image is
+    # always fresh before a release.
+    uses: ./.github/workflows/rover-ctl-base-image.yaml
+    secrets: inherit
+
   release:
+    needs: rover-ctl-base-image
     runs-on: ubuntu-latest
     permissions:
       packages: write # to be able to publish packages
@@ -26,7 +34,7 @@ jobs:
           app-id: ${{ secrets.BOT_APP_ID }}
           private-key: ${{ secrets.BOT_PRIVATE_KEY }}
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
@@ -42,6 +50,27 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+      - name: Log in to GHCR
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to Artifactory
+        # Needed to push the final bash/jq/yq-bundled roverctl image (built
+        # below via docker buildx from rover-ctl/Dockerfile). It's not
+        # published to GHCR because it bundles GPL-3.0-or-later (bash,
+        # readline) and GPL-2.0-only (Alpine base) components inherited from
+        # the rover-ctl-base image built by the rover-ctl-base-image job
+        # above.
+        #
+        # vars.REGISTRY_HOST must match the registry host used below and in
+        # .github/workflows/rover-ctl-base-image.yaml.
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ vars.REGISTRY_HOST }}
+          username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
+          password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
@@ -63,3 +92,23 @@ jobs:
           args: release --release-notes /tmp/release-notes.md --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        if: steps.semantic_release.outputs.new_release_published == 'true'
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+      - name: Build and push final roverctl image (bash/jq/yq + binary)
+        # GoReleaser's `kos` pipe (run above) publishes the plain roverctl
+        # binary image to GHCR (no GPL content). This step layers that
+        # binary onto the Artifactory bash/jq/yq base image (built by the
+        # rover-ctl-base-image job above) and pushes the combined image to
+        # Artifactory - see rover-ctl/Dockerfile.
+        if: steps.semantic_release.outputs.new_release_published == 'true'
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: rover-ctl
+          push: true
+          build-args: |
+            ROVERCTL_IMAGE=ghcr.io/telekom/controlplane/rover-ctl:${{ steps.semantic_release.outputs.new_release_version }}
+            ROVERCTL_BASE_IMAGE=${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
+          tags: |
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}:${{ steps.semantic_release.outputs.new_release_version }}
+            ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}:latest

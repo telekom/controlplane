@@ -93,22 +93,31 @@ images:
   # highlight-end
 ```
 
-Alternatively, if you prefer to keep the upstream overlay untouched, create a custom overlay in your own repository that builds on top of it — the same pattern used for [eventing](./installation.md#optional-enable-the-eventing-subsystem) and [other customisations](./installation.md#reference-kustomize-layout):
+Alternatively, if you prefer to keep the upstream overlay untouched, create a custom overlay in your own repository that builds on the bundle — the same pattern used for [optional capabilities](./installation.md#optional-capabilities) and [other customisations](./installation.md#reference-kustomize-layout). This bundle-based workflow requires Control Plane v0.22.0 or newer.
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+namespace: controlplane-system
+
 resources:
-  - https://github.com/telekom/controlplane//install/overlays/default/?ref=v0.18.0
-  - https://github.com/telekom/controlplane//controlplane-api/config/default/?timeout=120&ref=v0.18.0
-  - https://github.com/telekom/controlplane//projector/config/default/?timeout=120&ref=v0.18.0
+  - https://github.com/telekom/controlplane//install/bundle/?ref=v0.22.0
+  - https://github.com/telekom/controlplane//controlplane-api/config/default/?timeout=120&ref=v0.22.0
+  - https://github.com/telekom/controlplane//projector/config/default/?timeout=120&ref=v0.22.0
+
+configMapGenerator:
+  - name: controlplane-env
+    literals:
+      - FEATURE_PUBSUB_ENABLED=false
+      - FEATURE_PERMISSION_ENABLED=false
+      - FEATURE_AI_GATEWAY_ENABLED=false
 
 images:
   - name: ghcr.io/telekom/controlplane/controlplane-api
-    newTag: v0.18.0
+    newTag: v0.22.0
   - name: ghcr.io/telekom/controlplane/projector
-    newTag: v0.18.0
+    newTag: v0.22.0
 ```
 
 ### Database
@@ -138,19 +147,17 @@ The `database` component uses hardcoded credentials and is intended for developm
 
 ### ControlPlane API configuration
 
-The ControlPlane API reads its configuration from a ConfigMap named `controlplane-api-config`. In your custom overlay, provide a replacement config:
+The ControlPlane API reads its configuration from a ConfigMap named `controlplane-api-config`. When the custom overlay consumes the remote bundle, patch that generated ConfigMap:
 
 ```yaml
-configMapGenerator:
-  - name: controlplane-api-config
-    behavior: replace
-    files:
-      - config.yaml=controlplane-api-config.yaml
-    options:
-      disableNameSuffixHash: true
+patches:
+  - target:
+      kind: ConfigMap
+      name: controlplane-api-config
+    path: controlplane-api-config.yaml
 ```
 
-Then create a `controlplane-api-config.yaml` next to your overlay.
+Then create `controlplane-api-config.yaml` next to your overlay as a ConfigMap patch, with the configuration under `data.config.yaml`. This preserves the generated name hash and rolling restart behavior.
 
 #### Security modes
 
@@ -238,6 +245,8 @@ To issue JWTs compatible with the ControlPlane API, configure Keycloak with the 
 | `scope` | Hardcoded claim | `scope` | `tardis:admin:all` |
 
 The `clientId` claim uses the format `<group>--<team>--<service>` and determines team-level access scoping. The `scope` claim controls the caller type (`tardis:team:all`, `tardis:group:all`, `tardis:admin:all`).
+
+Legacy `tardis:hub:*` scopes remain accepted at runtime as deprecated aliases for the corresponding `tardis:group:*` scopes.
 
 #### Example JWT payload
 

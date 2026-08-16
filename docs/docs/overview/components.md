@@ -109,7 +109,7 @@ Services provide HTTP APIs that complement the operator-based architecture.
 | **[ControlPlane API](../architecture/controlplane-api.mdx)** | A read-only GraphQL API for the Control Plane UI. Exposes teams, applications, API exposures, subscriptions, and approvals from a PostgreSQL database with team-level isolation. |
 | **[Projector](../architecture/controlplane-api.mdx)** | A read-only Kubernetes controller that watches custom resources and projects their state into the shared PostgreSQL database used by the ControlPlane API. |
 | **Secret Manager** | A RESTful API for securely storing and retrieving secrets. Replaces sensitive values in custom resources with placeholder references. Supports Kubernetes Secrets and Conjur backends. |
-| **File Manager** | A RESTful API for storing and retrieving files (primarily OpenAPI specifications). Supports Amazon S3 and MinIO backends. |
+| **File Manager** | A RESTful API for storing and retrieving files (primarily OpenAPI specifications). Supports Amazon S3 and RustFS backends. |
 
 ## CLI Tools
 

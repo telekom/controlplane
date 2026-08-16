@@ -5,17 +5,19 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: minio-console-ingress
-  namespace: minio
+  name: organization-server-ingress
+  namespace: system
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 spec:
   rules:
-  - host: "" # todo: add host here
+  - host: organization-server.example.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: minio-console
+            name: organization-server-service
             port:
-              number: 9001
+              number: 443

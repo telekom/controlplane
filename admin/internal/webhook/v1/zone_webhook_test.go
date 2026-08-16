@@ -304,6 +304,15 @@ var _ = Describe("Zone Webhook", func() {
 		})
 
 		Context("on CREATE", func() {
+			It("should skip Redis secret onboarding when Redis is omitted", func() {
+				obj := newValidZone()
+				obj.Spec.Redis = nil
+				obj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
+				obj.Spec.Gateway.Admin.ClientSecret = ptr("$<existing-gateway-ref>")
+
+				Expect(defaulter.Default(ctx, obj)).To(Succeed())
+			})
+
 			It("should onboard secrets and set secret refs when empty", func() {
 				obj := newValidZone()
 				obj.Spec.IdentityProvider.Admin.Password = ""

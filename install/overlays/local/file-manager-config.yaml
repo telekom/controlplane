@@ -4,11 +4,9 @@
 
 backend:
   type: buckets
-  endpoint: "s3.amazonaws.com"
-  sts_endpoint: "https://sts.amazonaws.com"
-  bucket_name: "my-s3-bucket" # Replace with your actual S3 bucket name
-  role_arn: "arn:aws:iam::123456789012:role/my-sample-role" # Replace with your actual IAM role ARN
-  token_path: "/var/run/secrets/file-manager/file-manager-token"
+  endpoint: rustfs:9000
+  bucket_name: controlplane-files
+  insecure_skip_tls: true
 
 # Auth: uses the default internal k8s listener (:8443, audience file-manager,
 # in-cluster issuer, empty accessConfig = any authenticated in-cluster SA).

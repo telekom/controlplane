@@ -23,7 +23,7 @@ resources:
   - ../manager
   - ../rbac
   - ../certmanager
-  - ../network-policy
+#  - ../network-policy
   - ../prometheus
   - ../ingress
 
@@ -31,17 +31,11 @@ resources:
 # Use your own kustomization file to override the default configuration.
 configMapGenerator:
   - name: controlplane-api-config
-    options:
-      disableNameSuffixHash: true
     literals:
       # An overlay MUST provide config.yaml with listeners.external.jwt.trustedIssuers
       # (or mode: mock for dev). The default jwt listener has no issuers and the
       # server fails closed at startup rather than running without auth.
       - config.yaml=
-  - name: controlplane-api-env
-    options:
-      disableNameSuffixHash: true
-    literals: []
 
 patches:
   # This is only needed when using the cert-manager to issue certificates.

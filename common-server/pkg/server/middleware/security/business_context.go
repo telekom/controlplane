@@ -244,7 +244,7 @@ func DetermineClientType(scopes []string, prefix string) (ClientType, error) {
 		switch parts[len(parts)-2] {
 		case string(ClientTypeTeam):
 			return ClientTypeTeam, nil
-		case string(ClientTypeGroup):
+		case string(ClientTypeGroup), "hub": // Deprecated alias for already-issued tokens.
 			return ClientTypeGroup, nil
 		case string(ClientTypeAdmin):
 			return ClientTypeAdmin, nil
