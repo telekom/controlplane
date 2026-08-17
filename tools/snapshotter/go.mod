@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/tools/snapshotter
 
-go 1.26.5
+go 1.26.6
 
 require github.com/telekom/controlplane/gateway v0.0.0
 

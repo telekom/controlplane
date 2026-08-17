@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/common
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/onsi/ginkgo/v2 v2.32.0
