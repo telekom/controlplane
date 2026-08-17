@@ -90,14 +90,23 @@ func generateNewToken(env string, teamObj *organisationv1.Team, zoneObj *adminv1
 		return "", "", errors.NewInternalError(fmt.Errorf("zoneObj is nil"))
 	}
 
+	preset, err := zoneObj.Spec.GetDefaultPreset()
+	if err != nil {
+		return "", "", errors.NewInternalError(err)
+	}
+	presetStatus, err := zoneObj.Status.GetPreset(preset.Name)
+	if err != nil {
+		return "", "", errors.NewInternalError(err)
+	}
+
 	teamToken, err := organisationv1.EncodeTeamToken(
 		organisationv1.TeamToken{
 			ClientId:     identity_client.MakeClientId(teamObj),
 			ClientSecret: clientSecret,
 			Environment:  env,
 			GeneratedAt:  time.Now().Unix(),
-			ServerUrl:    zoneObj.Status.Links.Url,
-			TokenUrl:     zoneObj.Status.Links.TeamIssuer + "/protocol/openid-connect/token",
+			ServerUrl:    presetStatus.Links.Url,
+			TokenUrl:     presetStatus.Links.TeamIssuer + "/protocol/openid-connect/token",
 		}, teamObj.Spec.Group, teamObj.Spec.Name)
 
 	return clientSecret, teamToken, err

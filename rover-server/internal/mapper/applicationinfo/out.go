@@ -135,17 +135,25 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 		appInfo.SecretInfo.CurrentExpiresAt = app.Status.CurrentExpiresAt.Time.UTC()
 	}
 
-	appInfo.IrisIssuerUrl = zone.Status.Links.Issuer
-	appInfo.StargateIssuerUrl = zone.Status.Links.LmsIssuer
+	preset, err := zone.Spec.GetDefaultPreset()
+	if err != nil {
+		return errors.Wrap(err, "failed to get default zone preset")
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default zone preset status")
+	}
+	appInfo.IrisIssuerUrl = presetStatus.Links.Issuer
+	appInfo.StargateIssuerUrl = presetStatus.Links.LmsIssuer
 	appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
-	appInfo.StargateUrl = zone.Status.Links.Url
+	appInfo.StargateUrl = preset.GetDefaultURL()
 
 	if rover.HasFailoverEnabledOnAnySubscription() {
 		appInfo.FailoverEnabled = true
 		// If failover is active for this Application, we need to overwrite the StargateUrl with the new failover URL
-		preset, err := zone.SelectGatewayPreset(adminv1.FeatureConsumerFailover)
+		preset, err := zone.Spec.SelectPreset(adminv1.FeatureConsumerFailover)
 		if err == nil {
-			appInfo.StargateUrl = preset.GetDefaultUrl()
+			appInfo.StargateUrl = preset.GetDefaultURL()
 		}
 	}
 
@@ -428,9 +436,17 @@ func FillChevronInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 	}
 
 	// Chevron URL from zone status links + application query param
-	if zone.Status.Links.PermissionsUrl != "" {
+	preset, err := zone.Spec.GetDefaultPreset()
+	if err != nil {
+		return errors.Wrap(err, "failed to get default zone preset")
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default zone preset status")
+	}
+	if presetStatus.Links.PermissionsUrl != "" {
 		// Parse base URL to properly handle existing query params
-		chevronURL, err := url.Parse(zone.Status.Links.PermissionsUrl)
+		chevronURL, err := url.Parse(presetStatus.Links.PermissionsUrl)
 		if err != nil {
 			return errors.Wrap(err, "failed to parse permissions URL")
 		}

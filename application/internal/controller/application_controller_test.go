@@ -8,6 +8,7 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,29 +50,36 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
-					Gateway: adminv1.GatewayConfig{
+					Gateways: []adminv1.GatewayConfig{{
+						Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
-						Presets: []adminv1.GatewayConfigPreset{
-							{
-								Name:    "default",
-								Default: true,
-								Urls: []adminv1.UrlConfig{
-									{
-										Hostname: "gateway.test.local",
-										BasePath: "/",
-									},
+					}}, Presets: []adminv1.Preset{
+						{
+							Name:       "default",
+							Default:    true,
+							GatewayRef: "default", IdentityProviderRef: "default",
+							Urls: []adminv1.UrlConfig{
+								{
+									Hostname: "gateway.test.local",
+									BasePath: "/",
 								},
 							},
 						},
+						{
+							Name: "consumer-failover", GatewayRef: "default", IdentityProviderRef: "default",
+							Urls:     []adminv1.UrlConfig{{Hostname: "gateway.test.local", BasePath: "/"}},
+							Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+						},
 					},
-					IdentityProvider: adminv1.IdentityProviderConfig{
-						Url: "http://idp.test.local:8080",
+					IdentityProviders: []adminv1.IdentityProviderConfig{{
+						Name:     "default",
+						TokenUrl: "http://idp.test.local:8080",
 						Admin: adminv1.IdentityProviderAdminConfig{
 							Url: ptr.To("http://idp-admin.test.local:8080"),
 						},
-					},
+					}},
 					Redis: &adminv1.RedisConfig{
 						Host: "redis://redis.test.local:6379",
 					},
@@ -82,16 +90,18 @@ var _ = Describe("Application Controller", func() {
 			By("simulating Zone A status (normally set by admin controller)")
 			zoneA.Status = adminv1.ZoneStatus{
 				Namespace: testNamespace,
-				Gateway: &ctypes.ObjectRef{
+				Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 					Name:      "test-gateway-a",
 					Namespace: testNamespace,
-				},
+				}, Links: adminv1.Links{
+					Url: "https://gateway.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms", TokenUrl: "https://identity.example.com/token",
+				}}, {Name: "consumer-failover", GatewayRef: &ctypes.ObjectRef{
+					Name:      "test-gateway-a",
+					Namespace: testNamespace,
+				}, Links: adminv1.Links{
+					Url: "https://gateway.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms", TokenUrl: "https://failover-identity.example.com/token",
+				}}},
 				IdentityRealm: &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace},
-				Links: adminv1.Links{
-					Url:       "https://gateway.test.local",
-					Issuer:    "https://idp.test.local/realms/test-env",
-					LmsIssuer: "https://idp.test.local/realms/test-env-lms",
-				},
 			}
 			zoneA.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 			Expect(k8sClient.Status().Update(ctx, zoneA)).To(Succeed())
@@ -107,29 +117,36 @@ var _ = Describe("Application Controller", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
-					Gateway: adminv1.GatewayConfig{
+					Gateways: []adminv1.GatewayConfig{{
+						Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
-						Presets: []adminv1.GatewayConfigPreset{
-							{
-								Name:    "default",
-								Default: true,
-								Urls: []adminv1.UrlConfig{
-									{
-										Hostname: "gateway-b.test.local",
-										BasePath: "/",
-									},
+					}}, Presets: []adminv1.Preset{
+						{
+							Name:       "default",
+							Default:    true,
+							GatewayRef: "default", IdentityProviderRef: "default",
+							Urls: []adminv1.UrlConfig{
+								{
+									Hostname: "gateway-b.test.local",
+									BasePath: "/",
 								},
 							},
 						},
+						{
+							Name: "consumer-failover", GatewayRef: "default", IdentityProviderRef: "default",
+							Urls:     []adminv1.UrlConfig{{Hostname: "gateway-b.test.local", BasePath: "/"}},
+							Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+						},
 					},
-					IdentityProvider: adminv1.IdentityProviderConfig{
-						Url: "http://idp.test.local:8080",
+					IdentityProviders: []adminv1.IdentityProviderConfig{{
+						Name:     "default",
+						TokenUrl: "http://idp.test.local:8080",
 						Admin: adminv1.IdentityProviderAdminConfig{
 							Url: ptr.To("http://idp-admin.test.local:8080"),
 						},
-					},
+					}},
 					Redis: &adminv1.RedisConfig{
 						Host: "redis://redis.test.local:6379",
 					},
@@ -140,18 +157,14 @@ var _ = Describe("Application Controller", func() {
 			By("simulating Zone B status (normally set by admin controller)")
 			zoneB.Status = adminv1.ZoneStatus{
 				Namespace: testNamespace,
-				Gateway: &ctypes.ObjectRef{
+				Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 					Name:      "test-gateway-b",
 					Namespace: testNamespace,
-				},
+				}, Links: adminv1.Links{
+					Url: "https://gateway-b.test.local", Issuer: "https://idp.test.local/realms/test-env", LmsIssuer: "https://idp.test.local/realms/test-env-lms", TokenUrl: "https://zone-b-identity.example.com/token",
+				}}},
 				IdentityRealm: &ctypes.ObjectRef{Name: testEnvironment, Namespace: testNamespace},
-				Links: adminv1.Links{
-					Url:       "https://gateway-b.test.local",
-					Issuer:    "https://idp.test.local/realms/test-env",
-					LmsIssuer: "https://idp.test.local/realms/test-env-lms",
-				},
 			}
-			zoneB.EnableFeature(adminv1.FeatureConsumerFailover)
 			zoneB.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 			Expect(k8sClient.Status().Update(ctx, zoneB)).To(Succeed())
 		})
@@ -201,6 +214,7 @@ var _ = Describe("Application Controller", func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(application.Status.ClientId).To(Equal(expectedClientId))
 				g.Expect(application.Status.ClientSecret).To(Equal("c6283fd0-77f2-452c-8437-4882cffde8e1"))
+				g.Expect(application.Status.TokenUrl).To(Equal("https://identity.example.com/token"))
 
 				g.Expect(application.Status.Clients).To(HaveLen(1))
 				g.Expect(application.Status.Consumers).To(HaveLen(1))
@@ -256,6 +270,7 @@ var _ = Describe("Application Controller", func() {
 
 				g.Expect(application.Status.ClientId).To(Equal(expectedClientId))
 				g.Expect(application.Status.ClientSecret).To(Equal("c6283fd0-77f2-452c-8437-4882cffde8e1"))
+				g.Expect(application.Status.TokenUrl).To(Equal("https://failover-identity.example.com/token"))
 
 				g.Expect(application.Status.Clients).To(HaveLen(2))
 				g.Expect(application.Status.Consumers).To(HaveLen(2))
@@ -275,6 +290,36 @@ var _ = Describe("Application Controller", func() {
 
 				By("Checking if the failover Gateway-Consumer is created")
 				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName, testNamespace)
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should block an application when the selected preset token URL is empty", func() {
+			zoneA.Status.Presets[0].Links.TokenUrl = ""
+			Expect(k8sClient.Status().Update(ctx, zoneA)).To(Succeed())
+
+			application = &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-application-empty-token-url",
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: applicationv1.ApplicationSpec{
+					Team:      "test-my-team",
+					TeamEmail: "team@example.com",
+					Secret:    "test-secret",
+					Zone:      *ctypes.ObjectRefFromObject(zoneA),
+				},
+			}
+			Expect(k8sClient.Create(ctx, application)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(application), application)).To(Succeed())
+				processing := meta.FindStatusCondition(application.Status.Conditions, condition.ConditionTypeProcessing)
+				g.Expect(processing).NotTo(BeNil())
+				g.Expect(processing.Status).To(Equal(metav1.ConditionFalse))
+				g.Expect(processing.Reason).To(Equal(condition.ReasonBlocked))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

@@ -49,6 +49,21 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	if err != nil {
 		return err
 	}
+	preset, err := zone.Spec.GetDefaultPreset()
+	if app.Spec.Failover.Enabled {
+		preset, err = zone.Spec.SelectPreset(admin.FeatureConsumerFailover)
+	}
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("zone %q does not contain the selected preset: %s", zone.Name, err.Error())
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("zone %q does not contain status for preset %q", zone.Name, preset.Name)
+	}
+	if presetStatus.Links.TokenUrl == "" {
+		return ctrlerrors.BlockedErrorf("zone %q preset %q does not contain a token URL", zone.Name, preset.Name)
+	}
+	app.Status.TokenUrl = presetStatus.Links.TokenUrl
 
 	primaryClient, err := h.ensureIdentityClients(ctx, zone, failoverZones, app)
 	if err != nil {
@@ -114,7 +129,7 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 			if types.Equals(zone, &zoneList.Items[i]) {
 				continue
 			}
-			if zoneList.Items[i].IsFeatureEnabled(admin.FeatureConsumerFailover) {
+			if zoneList.Items[i].Spec.FeaturesSupported(admin.FeatureConsumerFailover) {
 				failoverZones = append(failoverZones, &zoneList.Items[i])
 			}
 		}
@@ -238,7 +253,12 @@ func handleSecretExpiringNotifications(ctx context.Context, app *application.App
 
 	// Schedule next reconciliation for the next reminder event so we
 	// wake up in time rather than waiting for the default requeue interval.
-	rotCfg := zone.Spec.IdentityProvider.SecretRotation
+	identityProvider, err := zone.Spec.GetIdentityProvider()
+	if err != nil {
+		log.Error(err, "Cannot schedule secret-rotation notification")
+		return
+	}
+	rotCfg := identityProvider.SecretRotation
 	if rotCfg != nil && rotCfg.Enabled && len(rotCfg.NotificationThresholds) > 0 {
 		now := time.Now()
 		deadline := app.Status.CurrentExpiresAt.Time
@@ -367,10 +387,15 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
 
-	if zone.Status.Gateway == nil {
+	preset, err := zone.Spec.GetDefaultPreset()
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("zone %q does not contain a default preset", zone.Name)
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil || presetStatus.GatewayRef == nil {
 		return ctrlerrors.BlockedErrorf("zone %q does not contain a Gateway", zone.Name)
 	}
-	gatewayRef := *zone.Status.Gateway
+	gatewayRef := *presetStatus.GatewayRef
 
 	consumer := &gateway.Consumer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -390,9 +415,8 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 			consumer.Labels[config.BuildLabelKey("failover")] = "true"
 		}
 
-		err := ctrl.SetControllerReference(owner, consumer, c.Scheme())
-		if err != nil {
-			return errors.Wrapf(err, "failed to set controller reference for gateway consumer %s", resourceName)
+		if refErr := ctrl.SetControllerReference(owner, consumer, c.Scheme()); refErr != nil {
+			return errors.Wrapf(refErr, "failed to set controller reference for gateway consumer %s", resourceName)
 		}
 		consumer.Spec = gateway.ConsumerSpec{
 			Gateway: gatewayRef,
@@ -411,7 +435,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, consumer, mutator)
+	_, err = c.CreateOrUpdate(ctx, consumer, mutator)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create or update Gateway Consumer %s", resourceName)
 	}

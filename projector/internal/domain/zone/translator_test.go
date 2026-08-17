@@ -53,11 +53,7 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}}},
 					},
 				},
 				&zone.ZoneData{
@@ -78,7 +74,7 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityEnterprise,
-						Gateway:    adminv1.GatewayConfig{},
+						Presets:    nil,
 					},
 				},
 				&zone.ZoneData{
@@ -95,11 +91,7 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}}},
 					},
 				},
 				&zone.ZoneData{
@@ -117,11 +109,7 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityEnterprise,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "non-default", Default: false, Urls: []adminv1.UrlConfig{{Hostname: "unused.test"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "non-default", Default: false, Urls: []adminv1.UrlConfig{{Hostname: "unused.test"}}}},
 					},
 				},
 				&zone.ZoneData{
@@ -143,17 +131,11 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}}},
 					},
-					Status: adminv1.ZoneStatus{
-						Links: adminv1.Links{
-							Issuer: "https://keycloak.example.com/auth/realms/production",
-						},
-					},
+					Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
+						Issuer: "https://keycloak.example.com/auth/realms/production",
+					}}}},
 				},
 				&zone.ZoneData{
 					Meta:       shared.NewMetadata("admin", "zone-e", map[string]string{"cp.ei.telekom.de/environment": "production"}),
@@ -171,17 +153,9 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}}},
 					},
-					Status: adminv1.ZoneStatus{
-						Links: adminv1.Links{
-							Issuer: "",
-						},
-					},
+					Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
 				},
 				&zone.ZoneData{
 					Meta:       shared.NewMetadata("admin", "zone-f", nil),

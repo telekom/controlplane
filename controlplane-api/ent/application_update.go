@@ -174,6 +174,26 @@ func (_u *ApplicationUpdate) ClearClientSecret() *ApplicationUpdate {
 	return _u
 }
 
+// SetTokenURL sets the "token_url" field.
+func (_u *ApplicationUpdate) SetTokenURL(v string) *ApplicationUpdate {
+	_u.mutation.SetTokenURL(v)
+	return _u
+}
+
+// SetNillableTokenURL sets the "token_url" field if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillableTokenURL(v *string) *ApplicationUpdate {
+	if v != nil {
+		_u.SetTokenURL(*v)
+	}
+	return _u
+}
+
+// ClearTokenURL clears the value of the "token_url" field.
+func (_u *ApplicationUpdate) ClearTokenURL() *ApplicationUpdate {
+	_u.mutation.ClearTokenURL()
+	return _u
+}
+
 // SetRotatedClientSecret sets the "rotated_client_secret" field.
 func (_u *ApplicationUpdate) SetRotatedClientSecret(v string) *ApplicationUpdate {
 	_u.mutation.SetRotatedClientSecret(v)
@@ -583,6 +603,11 @@ func (_u *ApplicationUpdate) check() error {
 			return &ValidationError{Name: "client_secret", err: fmt.Errorf(`ent: validator failed for field "Application.client_secret": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.TokenURL(); ok {
+		if err := application.TokenURLValidator(v); err != nil {
+			return &ValidationError{Name: "token_url", err: fmt.Errorf(`ent: validator failed for field "Application.token_url": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.RotatedClientSecret(); ok {
 		if err := application.RotatedClientSecretValidator(v); err != nil {
 			return &ValidationError{Name: "rotated_client_secret", err: fmt.Errorf(`ent: validator failed for field "Application.rotated_client_secret": %w`, err)}
@@ -652,6 +677,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.ClientSecretCleared() {
 		_spec.ClearField(application.FieldClientSecret, field.TypeString)
+	}
+	if value, ok := _u.mutation.TokenURL(); ok {
+		_spec.SetField(application.FieldTokenURL, field.TypeString, value)
+	}
+	if _u.mutation.TokenURLCleared() {
+		_spec.ClearField(application.FieldTokenURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.RotatedClientSecret(); ok {
 		_spec.SetField(application.FieldRotatedClientSecret, field.TypeString, value)
@@ -1118,6 +1149,26 @@ func (_u *ApplicationUpdateOne) ClearClientSecret() *ApplicationUpdateOne {
 	return _u
 }
 
+// SetTokenURL sets the "token_url" field.
+func (_u *ApplicationUpdateOne) SetTokenURL(v string) *ApplicationUpdateOne {
+	_u.mutation.SetTokenURL(v)
+	return _u
+}
+
+// SetNillableTokenURL sets the "token_url" field if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillableTokenURL(v *string) *ApplicationUpdateOne {
+	if v != nil {
+		_u.SetTokenURL(*v)
+	}
+	return _u
+}
+
+// ClearTokenURL clears the value of the "token_url" field.
+func (_u *ApplicationUpdateOne) ClearTokenURL() *ApplicationUpdateOne {
+	_u.mutation.ClearTokenURL()
+	return _u
+}
+
 // SetRotatedClientSecret sets the "rotated_client_secret" field.
 func (_u *ApplicationUpdateOne) SetRotatedClientSecret(v string) *ApplicationUpdateOne {
 	_u.mutation.SetRotatedClientSecret(v)
@@ -1540,6 +1591,11 @@ func (_u *ApplicationUpdateOne) check() error {
 			return &ValidationError{Name: "client_secret", err: fmt.Errorf(`ent: validator failed for field "Application.client_secret": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.TokenURL(); ok {
+		if err := application.TokenURLValidator(v); err != nil {
+			return &ValidationError{Name: "token_url", err: fmt.Errorf(`ent: validator failed for field "Application.token_url": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.RotatedClientSecret(); ok {
 		if err := application.RotatedClientSecretValidator(v); err != nil {
 			return &ValidationError{Name: "rotated_client_secret", err: fmt.Errorf(`ent: validator failed for field "Application.rotated_client_secret": %w`, err)}
@@ -1626,6 +1682,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	}
 	if _u.mutation.ClientSecretCleared() {
 		_spec.ClearField(application.FieldClientSecret, field.TypeString)
+	}
+	if value, ok := _u.mutation.TokenURL(); ok {
+		_spec.SetField(application.FieldTokenURL, field.TypeString, value)
+	}
+	if _u.mutation.TokenURLCleared() {
+		_spec.ClearField(application.FieldTokenURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.RotatedClientSecret(); ok {
 		_spec.SetField(application.FieldRotatedClientSecret, field.TypeString, value)

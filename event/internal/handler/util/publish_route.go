@@ -46,6 +46,10 @@ func CreatePublishRoute(
 	if err != nil {
 		return nil, err
 	}
+	gatewayRef, err := gatewayRef(zone)
+	if err != nil {
+		return nil, err
+	}
 
 	upstream, err := parseUpstream(eventConfig.Spec.Local.PublishEventUrl)
 	if err != nil {
@@ -71,7 +75,7 @@ func CreatePublishRoute(
 			config.BuildLabelKey("type"): "publish",
 		}
 		route.Spec = gatewayv1.RouteSpec{
-			GatewayRef: *zone.Status.Gateway,
+			GatewayRef: *gatewayRef,
 			Type:       gatewayv1.RouteTypePrimary,
 			Backend:    gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{upstream}},
 			Hostnames:  hostnames,
@@ -105,8 +109,12 @@ func CreatePublishProxyRoute(
 	if err != nil {
 		return nil, err
 	}
+	sourceGatewayRef, err := gatewayRef(sourceZone)
+	if err != nil {
+		return nil, err
+	}
 
-	targetPreset, err := targetZone.Spec.Gateway.GetDefaultPreset()
+	targetPreset, err := targetZone.Spec.GetDefaultPreset()
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
 	}
@@ -136,7 +144,7 @@ func CreatePublishProxyRoute(
 			config.BuildLabelKey("type"): "publish-proxy",
 		}
 		route.Spec = gatewayv1.RouteSpec{
-			GatewayRef: *sourceZone.Status.Gateway,
+			GatewayRef: *sourceGatewayRef,
 			Type:       gatewayv1.RouteTypeProxy,
 			Backend:    gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{upstream}},
 			Hostnames:  hostnames,
