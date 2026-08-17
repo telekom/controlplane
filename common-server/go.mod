@@ -11,7 +11,7 @@ require github.com/telekom/controlplane/secret-manager v0.0.0
 require (
 	github.com/MicahParks/keyfunc/v2 v2.1.0
 	github.com/bytedance/sonic v1.15.2
-	github.com/dgraph-io/badger/v4 v4.9.5
+	github.com/dgraph-io/badger/v4 v4.9.6
 	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
