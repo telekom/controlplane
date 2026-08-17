@@ -7,7 +7,7 @@ module github.com/telekom/controlplane/api/api
 go 1.26.5
 
 require (
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/telekom/controlplane/common v0.0.0
 	k8s.io/apimachinery v0.36.3

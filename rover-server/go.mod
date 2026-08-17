@@ -36,7 +36,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/oapi-codegen/fiber-middleware v1.1.0
 	github.com/oapi-codegen/runtime v1.6.0
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/pb33f/libopenapi v0.38.7
 	github.com/pkg/errors v0.9.1
