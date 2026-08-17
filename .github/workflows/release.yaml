@@ -92,6 +92,50 @@ jobs:
           args: release --release-notes /tmp/release-notes.md --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Mirror release images to Artifactory
+        # skopeo is pre-installed on ubuntu-latest — no setup action required.
+        # GoReleaser's kos pipe pushes all module images to GHCR with the
+        # version tag, `latest`, and (for non-prereleases) `stable`.
+        # This step copies each of those tags to Artifactory so the exact
+        # same multi-arch manifest is available for internal deployments.
+        # rover-ctl is excluded: its combined (bash/jq/yq) image is
+        # assembled and pushed to Artifactory separately below.
+        if: steps.semantic_release.outputs.new_release_published == 'true'
+        env:
+          VERSION: ${{ steps.semantic_release.outputs.new_release_version }}
+          REGISTRY_HOST: ${{ vars.REGISTRY_HOST }}
+          REGISTRY_CONTROLPLANE_REPO: ${{ vars.REGISTRY_CONTROLPLANE_REPO }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
+        run: |
+          modules=(
+            admin agentic api application approval common-server
+            controlplane-api discovery-server event file-manager gateway
+            identity notification organization organization-server permission
+            projector pubsub rover rover-server secret-manager
+          )
+
+          # Goreleaser always pushes `latest` and `v<version>`.
+          # `stable` is only pushed for non-prereleases (no `-` in version).
+          tags=("latest" "v${VERSION}")
+          if [[ "${VERSION}" != *-* ]]; then
+            tags+=("stable")
+          fi
+
+          for module in "${modules[@]}"; do
+            src="ghcr.io/telekom/controlplane/${module}"
+            dst="${REGISTRY_HOST}/${REGISTRY_CONTROLPLANE_REPO}/${module}"
+            for tag in "${tags[@]}"; do
+              echo "Mirroring ${src}:${tag} → ${dst}:${tag}"
+              skopeo copy --all \
+                --src-creds  "${GHCR_USER}:${GHCR_TOKEN}" \
+                --dest-creds "${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN}" \
+                "docker://${src}:${tag}" \
+                "docker://${dst}:${tag}"
+            done
+          done
       - name: Set up Docker Buildx
         if: steps.semantic_release.outputs.new_release_published == 'true'
         uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
