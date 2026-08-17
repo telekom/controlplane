@@ -155,11 +155,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 			var err error
 			var team *organizationv1.Team
 			var group *organizationv1.Group
-			const teamName = "team-alpha"
-			const groupName = "group-alpha"
-			const expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
+			var teamName string
+			var groupName string
+			var expectedTeamNamespaceName string
 
 			BeforeAll(func() {
+				teamName = randName("team-alpha")
+				groupName = randName("group-alpha")
+				expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
 				By("Initializing the Team & Group")
 				team = NewTeam(teamName, groupName, []organizationv1.Member{{Email: testMail, Name: "member"}})
 				group = NewGroupForTeam(team)
@@ -627,11 +630,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 			var err error
 			var team *organizationv1.Team
 			var group *organizationv1.Group
-			const teamName = "team-alpha"
-			const groupName = "group-alpha"
-			const expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
+			var teamName string
+			var groupName string
+			var expectedTeamNamespaceName string
 
 			BeforeAll(func() {
+				teamName = randName("team-alpha")
+				groupName = randName("group-alpha")
+				expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
 				By("Initializing the Team & Group")
 				team = NewTeam(teamName, groupName, []organizationv1.Member{{Email: testMail, Name: "member"}})
 				group = NewGroupForTeam(team)
