@@ -156,43 +156,7 @@ Environment variables provide a flexible way to configure operators in Kubernete
 The environment variables follow the naming convention defined in [./pkg/config/config.go](./pkg/config/config.go),
 mapping from internal configuration keys to uppercase environment variable names.
 
-For Kubernetes deployments, you can use Kustomize's configMapGenerator to provide environment variables to the operators:
-
-```yaml
-configMapGenerator:
-  - name: admin-env-config
-    namespace: admin-system
-    behavior: create
-    options:
-      disableNameSuffixHash: true
-    envs:
-      - config/admin.cnf
-```
-
-And then mount these environment variables in your deployment:
-
-```yaml
-patches:
-  - target:
-      kind: Deployment
-      name: admin-controller-manager
-      namespace: admin-system
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/envFrom
-        value:
-          - configMapRef:
-              name: admin-env-config
-```
-
-The `admin.cnf` file should contain the environment variables in key-value pairs:
-```text
-REQUEUE_AFTER_ON_ERROR=1m
-REQUEUE_AFTER=30m
-JITTER_FACTOR=0.9
-MAX_BACKOFF=3m
-MAX_CONCURRENT_RECONCILES=3
-```
+Applications own their shipped defaults. For Kubernetes configuration precedence, global and component ConfigMaps, Kustomize hashing, and Secret handling, see [Creating a custom overlay](https://telekom.github.io/controlplane/docs/admin-journey/installation#creating-a-custom-overlay).
 
 ## Getting Started
 
@@ -260,4 +224,3 @@ The `controller` argument must be the primary Kind lowercased ("route", not
 
 Query `result="passed"` for the traffic that actually drives reconciles, and the
 `filtered` share to see how much noise a watch's predicates are absorbing.
-

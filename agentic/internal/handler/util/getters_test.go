@@ -256,16 +256,16 @@ var _ = Describe("FindActiveMcpServer", func() {
 		Expect(found).To(BeFalse())
 	})
 
-	It("should return found=false and the conflicting server when a case-only mismatch exists", func() {
+	It("should return found=false when a case-only mismatch exists (case conflicts handled at CR handler level)", func() {
 		// Server is registered as /Mcp/Weather/V1 but caller asks for /mcp/weather/v1
+		// Case-conflict detection is now in the McpServer handler and ServerMustExist, not FindActiveMcpServer
 		conflict := makeReadyMcpServer("/Mcp/Weather/V1")
 		mockList([]agenticv1.McpServer{conflict})
 
 		found, server, err := util.FindActiveMcpServer(ctx, "/mcp/weather/v1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
-		Expect(server).ToNot(BeNil())
-		Expect(server.Spec.BasePath).To(Equal("/Mcp/Weather/V1"))
+		Expect(server).To(BeNil())
 	})
 
 	It("should not treat case-only mismatches as a conflict when the server is inactive", func() {
@@ -574,3 +574,215 @@ var _ = Describe("FindCrossZoneAgenticSubscriptionZones", func() {
 		Expect(hasLocalSubs).To(BeFalse())
 	})
 })
+
+// ---------- FindActiveServer ----------
+
+var _ = Describe("FindActiveServer", func() {
+	var (
+		ctx        context.Context
+		fakeClient *fakeclient.MockJanitorClient
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		ctx = cclient.WithClient(ctx, fakeClient)
+	})
+
+	mockListMcpServers := func(items []agenticv1.McpServer) {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{Items: items}
+			}).
+			Return(nil).Once()
+	}
+
+	mockListAgentCards := func(items []agenticv1.AgentCard) {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.AgentCardList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*agenticv1.AgentCardList) = agenticv1.AgentCardList{Items: items}
+			}).
+			Return(nil).Once()
+	}
+
+	It("should find an active McpServer", func() {
+		server := makeReadyMcpServer("/mcp/weather/v1")
+		mockListMcpServers([]agenticv1.McpServer{server})
+
+		found, info, err := util.FindActiveServer(ctx, "/mcp/weather/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeTrue())
+		Expect(info).ToNot(BeNil())
+		Expect(info.BasePath).To(Equal("/mcp/weather/v1"))
+	})
+
+	It("should fall back to AgentCard when no McpServer found", func() {
+		mockListMcpServers([]agenticv1.McpServer{})
+
+		card := agenticv1.AgentCard{
+			ObjectMeta: metav1.ObjectMeta{Name: "ac1", Namespace: "default"},
+			Spec:       agenticv1.AgentCardSpec{BasePath: "/agent/assistant/v1", Oauth2Scopes: []string{"read"}},
+			Status:     agenticv1.AgentCardStatus{Active: true},
+		}
+		setReadyCondition(&card)
+		mockListAgentCards([]agenticv1.AgentCard{card})
+
+		found, info, err := util.FindActiveServer(ctx, "/agent/assistant/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeTrue())
+		Expect(info.BasePath).To(Equal("/agent/assistant/v1"))
+		Expect(info.Oauth2Scopes).To(Equal([]string{"read"}))
+	})
+
+	It("should return false when neither McpServer nor AgentCard found", func() {
+		mockListMcpServers([]agenticv1.McpServer{})
+		mockListAgentCards([]agenticv1.AgentCard{})
+
+		found, info, err := util.FindActiveServer(ctx, "/nonexistent/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeFalse())
+		Expect(info).To(BeNil())
+	})
+
+	It("should prefer McpServer over AgentCard when both exist", func() {
+		server := makeReadyMcpServer("/shared/path/v1")
+		mockListMcpServers([]agenticv1.McpServer{server})
+
+		found, info, err := util.FindActiveServer(ctx, "/shared/path/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeTrue())
+		Expect(info.BasePath).To(Equal("/shared/path/v1"))
+		// AgentCard List should not even be called since McpServer was found
+	})
+})
+
+// ---------- ServerMustExist ----------
+
+var _ = Describe("ServerMustExist", func() {
+	var (
+		ctx        context.Context
+		fakeClient *fakeclient.MockJanitorClient
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		ctx = cclient.WithClient(ctx, fakeClient)
+	})
+
+	mockListMcpServers := func(items []agenticv1.McpServer) {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{Items: items}
+			}).
+			Return(nil).Once()
+	}
+
+	mockListAgentCards := func(items []agenticv1.AgentCard) {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.AgentCardList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*agenticv1.AgentCardList) = agenticv1.AgentCardList{Items: items}
+			}).
+			Return(nil).Once()
+	}
+
+	It("should return ServerInfo when exact-match server found", func() {
+		server := makeReadyMcpServer("/mcp/weather/v1")
+		mockListMcpServers([]agenticv1.McpServer{server})
+
+		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(caseConflict).To(BeFalse())
+		Expect(info).ToNot(BeNil())
+		Expect(info.BasePath).To(Equal("/mcp/weather/v1"))
+	})
+
+	It("should detect case conflict on McpServer", func() {
+		conflicting := agenticv1.McpServer{
+			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
+			Spec:       agenticv1.McpServerSpec{BasePath: "/Mcp/Weather/V1"},
+			Status:     agenticv1.McpServerStatus{Active: true},
+		}
+		setReadyCondition(&conflicting)
+
+		// FindActiveServer: no exact match
+		mockListMcpServers([]agenticv1.McpServer{})
+		mockListAgentCards([]agenticv1.AgentCard{})
+		// ServerMustExist case-conflict check
+		mockListMcpServers([]agenticv1.McpServer{conflicting})
+
+		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info).To(BeNil())
+		Expect(caseConflict).To(BeTrue())
+	})
+
+	It("should detect case conflict on AgentCard", func() {
+		conflicting := agenticv1.AgentCard{
+			ObjectMeta: metav1.ObjectMeta{Name: "ac1", Namespace: "default"},
+			Spec:       agenticv1.AgentCardSpec{BasePath: "/Agent/Assistant/V1"},
+			Status:     agenticv1.AgentCardStatus{Active: true},
+		}
+		setReadyCondition(&conflicting)
+
+		// FindActiveServer: no exact match
+		mockListMcpServers([]agenticv1.McpServer{})
+		mockListAgentCards([]agenticv1.AgentCard{})
+		// ServerMustExist case-conflict check: McpServers empty, then AgentCards has conflict
+		mockListMcpServers([]agenticv1.McpServer{})
+		mockListAgentCards([]agenticv1.AgentCard{conflicting})
+
+		info, caseConflict, err := util.ServerMustExist(ctx, "/agent/assistant/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info).To(BeNil())
+		Expect(caseConflict).To(BeTrue())
+	})
+
+	It("should return no conflict when truly not found", func() {
+		// FindActiveServer: no match
+		mockListMcpServers([]agenticv1.McpServer{})
+		mockListAgentCards([]agenticv1.AgentCard{})
+		// ServerMustExist case-conflict check: both empty
+		mockListMcpServers([]agenticv1.McpServer{})
+		mockListAgentCards([]agenticv1.AgentCard{})
+
+		info, caseConflict, err := util.ServerMustExist(ctx, "/nonexistent/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info).To(BeNil())
+		Expect(caseConflict).To(BeFalse())
+	})
+
+	It("should not report inactive servers as case conflicts", func() {
+		inactive := agenticv1.McpServer{
+			ObjectMeta: metav1.ObjectMeta{Name: "s1", Namespace: "default"},
+			Spec:       agenticv1.McpServerSpec{BasePath: "/Mcp/Weather/V1"},
+			Status:     agenticv1.McpServerStatus{Active: false},
+		}
+
+		// FindActiveServer: no match
+		mockListMcpServers([]agenticv1.McpServer{})
+		mockListAgentCards([]agenticv1.AgentCard{})
+		// ServerMustExist case-conflict check: inactive server present but not active
+		mockListMcpServers([]agenticv1.McpServer{inactive})
+		mockListAgentCards([]agenticv1.AgentCard{})
+
+		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info).To(BeNil())
+		Expect(caseConflict).To(BeFalse())
+	})
+})
+
+// setReadyCondition is a test helper to set a Ready=True condition on a conditioned object.
+func setReadyCondition(obj interface{ SetCondition(metav1.Condition) bool }) {
+	obj.SetCondition(metav1.Condition{
+		Type:               "Ready",
+		Status:             metav1.ConditionTrue,
+		Reason:             "Ready",
+		LastTransitionTime: metav1.Now(),
+	})
+}

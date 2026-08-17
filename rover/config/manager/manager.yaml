@@ -55,9 +55,13 @@ spec:
         - args:
             - --leader-elect
             - --health-probe-bind-address=:8081
-          env:
-            - name: CLIENT_TIMEOUT
-              value: 10s
+          envFrom:
+            - configMapRef:
+                name: controlplane-env
+                optional: true
+            - configMapRef:
+                name: rover-env
+                optional: true
           image: ghcr.io/telekom/controlplane/rover:stable
           name: manager
           securityContext:
