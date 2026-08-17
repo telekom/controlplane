@@ -9,76 +9,71 @@ updates:
     directory: /
     schedule:
       interval: "monthly"
+  - package-ecosystem: "npm"
+    directory: /docs
+    schedule:
+      interval: "monthly"
+    groups:
+      minor-patch:
+        group-by: dependency-name
+        update-types:
+          - patch
+          - minor
+      major:
+        group-by: dependency-name
+        update-types:
+          - major
   - package-ecosystem: "gomod"
     schedule:
       interval: "monthly"
     directories:
       - admin
       - admin/api
+      - agentic
+      - agentic/api
       - api
       - api/api
       - application
       - application/api
       - approval
       - approval/api
-      - cpapi/api
-    groups:
-      minor-patch:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: "gomod"
-    schedule:
-      interval: "monthly"
-    directories:
       - common
       - common-server
       - controlplane-api
+      - cpapi/api
       - discovery-server
       - event
       - event/api
       - file-manager
-      - projector
-      - secret-manager
-    groups:
-      minor-patch:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: "gomod"
-    schedule:
-      interval: "monthly"
-    directories:
       - gateway
       - gateway/api
       - identity
       - identity/api
-      - organization-server
       - notification
       - notification/api
       - organization
+      - organization-server
       - organization/api
       - permission
       - permission/api
-    groups:
-      minor-patch:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: "gomod"
-    schedule:
-      interval: "monthly"
-    directories:
+      - projector
       - pubsub
       - pubsub/api
       - rover
-      - rover/api
       - rover-ctl
       - rover-server
+      - rover/api
+      - secret-manager
+      - tools/e2e-tester
       - tools/route-tester
       - tools/snapshotter
     groups:
       minor-patch:
+        group-by: dependency-name
         update-types:
           - patch
           - minor
+      major:
+        group-by: dependency-name
+        update-types:
+          - major
