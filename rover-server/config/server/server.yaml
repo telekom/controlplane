@@ -32,7 +32,11 @@ spec:
           env: []
           envFrom:
             - configMapRef:
+                name: controlplane-env
+                optional: true
+            - configMapRef:
                 name: rover-server-env
+                optional: true
           image: ghcr.io/telekom/controlplane/rover-server:stable
           name: server
           ports:

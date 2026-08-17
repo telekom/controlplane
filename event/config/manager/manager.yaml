@@ -58,6 +58,13 @@ spec:
           - --health-probe-bind-address=:8081
         image: ghcr.io/telekom/controlplane/event:stable
         name: manager
+        envFrom:
+          - configMapRef:
+              name: controlplane-env
+              optional: true
+          - configMapRef:
+              name: event-env
+              optional: true
         ports: []
         securityContext:
           readOnlyRootFilesystem: true

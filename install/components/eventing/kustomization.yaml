@@ -17,3 +17,9 @@ kind: Component
 resources:
   - ../../../event/config/default
   - ../../../pubsub/config/default
+
+configMapGenerator:
+  - name: controlplane-env
+    behavior: merge
+    literals:
+      - FEATURE_PUBSUB_ENABLED=true

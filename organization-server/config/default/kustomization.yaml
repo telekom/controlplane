@@ -26,17 +26,6 @@ resources:
   # [METRICS] Expose the controller manager metrics service.
   - metrics_service.yaml
 
-# Default configuration
-# Use your own kustomization file to override the default configuration.
-configMapGenerator:
-  - name: organization-server-env
-    options:
-      disableNameSuffixHash: true
-    literals:
-      - LISTENERS_EXTERNAL_JWT_TRUSTEDISSUERS=""
-      - CPAPI_ENDPOINT=""
-      - ROVER_ENDPOINT=""
-
 patches:
   - path: deployment_patch.yaml
     target:

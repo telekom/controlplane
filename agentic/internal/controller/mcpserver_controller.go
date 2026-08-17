@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:dupl // parallel structure with agentcard_controller.go; operates on different types
 package controller
 
 import (
