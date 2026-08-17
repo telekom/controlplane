@@ -11,7 +11,7 @@ import "context"
 //
 //   - Both Team and Zone are required dependencies if either is missing, the upsert fails with ErrDependencyMissing.
 //   - If no PermissionSet is found, the application is stored regardless.
-//     If a PermissionSet is found, the PermissionsURL will be calucated and stored
+//     If a PermissionSet is found, the PermissionsURL will be calculated and stored
 //
 // Satisfied by *infrastructure.IDResolver at wiring time.
 type ApplicationDeps interface {

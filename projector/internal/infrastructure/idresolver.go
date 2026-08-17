@@ -612,9 +612,11 @@ func (r *IDResolver) FindPermissionSetIDByApplicationOwner(ctx context.Context, 
 	fullKey := et + ":" + lk
 	return r.resolve(ctx, et, lk, fmt.Sprintf("permission_set %q %q", appName, teamName), func() (int, error) {
 		permissionSet, err := r.client.PermissionSet.Query().
-			Where(permissionset.HasOwnerApplicationWith(application.NameEQ(appName))).
-			Where(permissionset.HasOwnerApplicationWith(application.HasOwnerTeamWith(team.NameEQ(teamName)))).
-			First(ctx)
+			Where(permissionset.HasOwnerApplicationWith(
+				application.NameEQ(appName),
+				application.HasOwnerTeamWith(team.NameEQ(teamName)),
+			)).
+			Only(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				r.setNegCache(fullKey)

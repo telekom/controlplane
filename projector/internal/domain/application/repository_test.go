@@ -34,7 +34,7 @@ type mockAppDeps struct {
 	permissionSetIds map[string]int
 	teamErr          error // if non-nil, FindTeamID always returns this error
 	zoneErr          error // if non-nil, FindZoneID always returns this error
-	permissionSetErr error // if non-nil, FindPermissionSetIDByApplicationOwnerID always returns this error
+	permissionSetErr error // if non-nil, FindPermissionSetIDByApplicationOwner always returns this error
 }
 
 func (m *mockAppDeps) FindTeamID(_ context.Context, name string) (int, error) {
