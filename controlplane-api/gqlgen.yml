@@ -208,7 +208,11 @@ models:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.SubscriberRateLimitDefaults
   RateLimitOverrides:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitOverrides  # EventScope Types
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitOverrides 
+  Failover:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Failover 
+  # EventScope Types
   EventScope:
     model:
      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventScope

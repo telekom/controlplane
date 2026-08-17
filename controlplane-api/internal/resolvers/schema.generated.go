@@ -1657,6 +1657,29 @@ func (ec *executionContext) fieldContext_ExternalIdentityProvider_client(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Failover_zones(ctx context.Context, field graphql.CollectedField, obj *model.Failover) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Failover_zones(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Zones, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Failover_zones(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Failover", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _IpRestrictions_Allow(ctx context.Context, field graphql.CollectedField, obj *model.IpRestrictions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2729,6 +2752,38 @@ func (ec *executionContext) _TeamInfo_description(ctx context.Context, field gra
 }
 func (ec *executionContext) fieldContext_TeamInfo_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Traffic_failover(ctx context.Context, field graphql.CollectedField, obj *model.Traffic) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Traffic_failover(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Failover, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Failover) graphql.Marshaler {
+			return ec.marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFailover(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Traffic_failover(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Traffic",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Failover(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Traffic_rateLimit(ctx context.Context, field graphql.CollectedField, obj *model.Traffic) (ret graphql.Marshaler) {
@@ -4186,6 +4241,44 @@ func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel a
 	return out
 }
 
+var failoverImplementors = []string{"Failover"}
+
+func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet, obj *model.Failover) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, failoverImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Failover")
+		case "zones":
+			out.Values[i] = ec._Failover_zones(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var ipRestrictionsImplementors = []string{"IpRestrictions"}
 
 func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.SelectionSet, obj *model.IpRestrictions) graphql.Marshaler {
@@ -5068,6 +5161,11 @@ func (ec *executionContext) _Traffic(ctx context.Context, sel ast.SelectionSet, 
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Traffic")
+		case "failover":
+			out.Values[i] = ec._Traffic_failover(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "rateLimit":
 			out.Values[i] = ec._Traffic_rateLimit(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
@@ -5478,6 +5576,13 @@ func (ec *executionContext) marshalOExternalIdentityProvider2ᚖgithubᚗcomᚋt
 		return graphql.Null
 	}
 	return ec._ExternalIdentityProvider(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFailover(ctx context.Context, sel ast.SelectionSet, v *model.Failover) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Failover(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx context.Context, sel ast.SelectionSet, v model.IpRestrictions) graphql.Marshaler {
