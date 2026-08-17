@@ -12,7 +12,7 @@ require (
 	github.com/gkampitakis/go-diff v1.3.2
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/goccy/go-yaml v1.19.2
-	github.com/gofiber/fiber/v2 v2.52.14
+	github.com/gofiber/fiber/v2 v2.52.15
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0

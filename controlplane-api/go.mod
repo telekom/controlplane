@@ -21,7 +21,7 @@ require (
 	github.com/99designs/gqlgen v0.17.94
 	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
-	github.com/gofiber/fiber/v2 v2.52.14
+	github.com/gofiber/fiber/v2 v2.52.15
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mattn/go-sqlite3 v1.14.49
