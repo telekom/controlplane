@@ -292,7 +292,7 @@ var _ = Describe("ApiExposure.Traffic", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Traffic.RateLimit).To(BeNil())
 		Expect(fetched.Traffic.Failover).NotTo(BeNil())
-		Expect(fetched.Traffic.Failover.Zones).To(ConsistOf("zone-a", "zone-b", "zone-c"))
+		Expect(fetched.Traffic.Failover.Zones).To(Equal([]string{"zone-a", "zone-b", "zone-c"}))
 	})
 })
 
