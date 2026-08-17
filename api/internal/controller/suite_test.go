@@ -182,6 +182,48 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	By("cleaning up all test resources before shutdown")
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cleanupCancel()
+
+	// Delete in dependency order: subscriptions → exposures → apis → categories
+	for _, obj := range []client.Object{
+		&apiv1.ApiSubscription{},
+		&apiv1.RemoteApiSubscription{},
+		&apiv1.ApiExposure{},
+		&apiv1.Api{},
+		&apiv1.ApiCategory{},
+	} {
+		_ = k8sClient.DeleteAllOf(cleanupCtx, obj, client.InNamespace(testNamespace))
+	}
+	// Also clean up resources in the "default" namespace
+	for _, obj := range []client.Object{
+		&apiv1.ApiSubscription{},
+		&apiv1.RemoteApiSubscription{},
+		&apiv1.ApiExposure{},
+		&apiv1.Api{},
+		&apiv1.ApiCategory{},
+	} {
+		_ = k8sClient.DeleteAllOf(cleanupCtx, obj, client.InNamespace("default"))
+	}
+
+	By("waiting for resources to be fully deleted")
+	Eventually(func() int {
+		total := 0
+		for _, ns := range []string{testNamespace, "default"} {
+			subs := &apiv1.ApiSubscriptionList{}
+			_ = k8sClient.List(cleanupCtx, subs, client.InNamespace(ns))
+			total += len(subs.Items)
+			exps := &apiv1.ApiExposureList{}
+			_ = k8sClient.List(cleanupCtx, exps, client.InNamespace(ns))
+			total += len(exps.Items)
+			apis := &apiv1.ApiList{}
+			_ = k8sClient.List(cleanupCtx, apis, client.InNamespace(ns))
+			total += len(apis.Items)
+		}
+		return total
+	}, 20*time.Second, 200*time.Millisecond).Should(Equal(0))
+
 	By("tearing down the test environment")
 	cancel()
 	err := testEnv.Stop()
