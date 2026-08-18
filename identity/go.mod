@@ -25,10 +25,10 @@ tool github.com/vektra/mockery/v2
 require (
 	github.com/go-logr/logr v1.4.4
 	github.com/oapi-codegen/runtime v1.6.0
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
 	golang.org/x/oauth2 v0.36.0

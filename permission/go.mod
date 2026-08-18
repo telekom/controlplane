@@ -7,7 +7,7 @@ module github.com/telekom/controlplane/permission
 go 1.26.6
 
 require (
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/pkg/errors v0.9.1
 	github.com/telekom/controlplane/admin/api v0.0.0
