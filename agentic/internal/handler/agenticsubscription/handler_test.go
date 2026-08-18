@@ -223,6 +223,15 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Return(err).Once()
 	}
 
+	mockListAgentCards := func(items []agenticv1.AgentCard) {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.AgentCardList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*agenticv1.AgentCardList) = agenticv1.AgentCardList{Items: items}
+			}).
+			Return(nil).Once()
+	}
+
 	mockListAgenticExposures := func(items []agenticv1.AgenticExposure) {
 		fakeClient.EXPECT().
 			List(ctx, mock.AnythingOfType("*v1.AgenticExposureList"), mock.Anything).
@@ -358,8 +367,12 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Expect(err.Error()).To(ContainSubstring("failed to list McpServers"))
 		})
 
-		It("should set Blocked when no active McpServer found", func() {
+		It("should set Blocked when no active server found", func() {
 			mockListMcpServers([]agenticv1.McpServer{})
+			mockListAgentCards([]agenticv1.AgentCard{})
+			// ServerMustExist does additional case-conflict lookups when not found
+			mockListMcpServers([]agenticv1.McpServer{})
+			mockListAgentCards([]agenticv1.AgentCard{})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -368,7 +381,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("McpServerNotFound"))
+			Expect(readyCond.Reason).To(Equal("ServerNotFound"))
 		})
 
 		It("should set Blocked when no active AgenticExposure found", func() {
@@ -520,6 +533,44 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to create ConsumeRoute"))
+		})
+
+		It("should use AGENT display type in approval reason for AGENT variant", func() {
+			agentExposure := makeReadyAgenticExposure("/mcp/weather/v1", "test-zone")
+			agentExposure.Spec.Variant = agenticv1.AgenticVariantAgent
+
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			zone := makeReadyZoneWithAiGateway("test-zone")
+			requestorApp := makeReadyApplication("requestor-app", "requestor-team", "req@example.com", "req-client-id")
+			providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
+
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{agentExposure})
+			mockGetZone(subscriberZoneKey, zone)
+			mockGetApplication(requestorAppKey, requestorApp)
+			mockGetApplication(providerAppKey, providerApp)
+			mockScheme()
+
+			var capturedRequest approvalv1.ApprovalRequest
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedRequest = *obj.(*approvalv1.ApprovalRequest)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+
+			fakeClient.EXPECT().
+				Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(0, nil).Once()
+
+			fakeClient.EXPECT().
+				Get(ctx, mock.Anything, mock.AnythingOfType("*v1.Approval")).
+				Return(apierrors.NewNotFound(schema.GroupResource{}, "")).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(capturedRequest.Spec.Requester.Reason).To(ContainSubstring("AGENT subscription"))
 		})
 	})
 

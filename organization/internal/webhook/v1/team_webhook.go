@@ -13,6 +13,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	commoncontroller "github.com/telekom/controlplane/common/pkg/controller"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/webhook/v1/mutator"
 	"github.com/telekom/controlplane/organization/internal/webhook/v1/validator"
@@ -47,6 +48,10 @@ type TeamCustomDefaulter struct {
 }
 
 func (t TeamCustomDefaulter) Default(ctx context.Context, teamObj *organizationv1.Team) error {
+	if commoncontroller.IsBeingDeleted(teamObj) {
+		return nil
+	}
+
 	ctx, log := setupLog(ctx, teamObj)
 	log.Info("defaulting team")
 

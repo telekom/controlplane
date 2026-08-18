@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -172,4 +173,8 @@ func ExpectObjConditionToBeReady(g Gomega, obj types.Object) {
 	readyCondition := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 
 	testutil.ExpectConditionToMatch(g, readyCondition, condition.ReasonProvisioned, true)
+}
+
+func randName(prefix string) string {
+	return fmt.Sprintf("%s-%05d", prefix, rand.IntN(99999))
 }

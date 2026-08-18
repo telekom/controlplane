@@ -1,3 +1,18 @@
+# [0.23.0](https://github.com/telekom/controlplane/compare/v0.22.1...v0.23.0) (2026-08-17)
+
+
+### Bug Fixes
+
+* **admin:** npe when redis is not configured ([#566](https://github.com/telekom/controlplane/issues/566)) ([c3a7f5f](https://github.com/telekom/controlplane/commit/c3a7f5ffc9e4044401285679ccb78ea4c06c2c23))
+* **api:** should reduce flakyness of tests ([9a4a059](https://github.com/telekom/controlplane/commit/9a4a05927f0b10519d46f03f83c101e01b69cebf))
+* **org:** should reduce flakyness of tests ([#542](https://github.com/telekom/controlplane/issues/542)) ([6c8a8ed](https://github.com/telekom/controlplane/commit/6c8a8ed1825f4e823783191e1a8922df46ae02ce))
+* **rover:** ignored webhook-validation for deletion ([#565](https://github.com/telekom/controlplane/issues/565)) ([8200c55](https://github.com/telekom/controlplane/commit/8200c5586767e6a9b7447b26c7f091c60143eed7))
+
+
+### Features
+
+* **install:** improved config-management; added rustfs ([32896b8](https://github.com/telekom/controlplane/commit/32896b8ffd2bfc93c57cd9a374164bb0a1775fb9))
+
 ## [0.22.1](https://github.com/telekom/controlplane/compare/v0.22.0...v0.22.1) (2026-08-10)
 
 

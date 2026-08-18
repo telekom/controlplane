@@ -119,7 +119,7 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 	}
 
 	// Redis password
-	needsRedisPassword := !secretsapi.IsRef(zone.Spec.Redis.Password)
+	needsRedisPassword := zone.Spec.Redis != nil && !secretsapi.IsRef(zone.Spec.Redis.Password)
 	if needsRedisPassword {
 		secretValue, err := secretValueOrGenerate(zone.Spec.Redis.Password)
 		if err != nil {
@@ -199,10 +199,12 @@ func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) e
 			zone.Spec.IdentityProvider.Admin.Password,
 			oldZone.Spec.IdentityProvider.Admin.Password,
 		)
-		zone.Spec.Redis.Password = resolveSecretForUpdate(
-			zone.Spec.Redis.Password,
-			oldZone.Spec.Redis.Password,
-		)
+		if zone.Spec.Redis != nil && oldZone.Spec.Redis != nil {
+			zone.Spec.Redis.Password = resolveSecretForUpdate(
+				zone.Spec.Redis.Password,
+				oldZone.Spec.Redis.Password,
+			)
+		}
 		zone.Spec.Gateway.Admin.ClientSecret = resolveOptionalSecretForUpdate(
 			zone.Spec.Gateway.Admin.ClientSecret,
 			oldZone.Spec.Gateway.Admin.ClientSecret,
@@ -235,7 +237,8 @@ func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) e
 	}
 
 	// Generate Redis password if empty or rotate
-	if zone.Spec.Redis.Password == "" || zone.Spec.Redis.Password == secretsapi.KeywordRotate {
+	if zone.Spec.Redis != nil &&
+		(zone.Spec.Redis.Password == "" || zone.Spec.Redis.Password == secretsapi.KeywordRotate) {
 		secret, err := secretsapi.GenerateSecret()
 		if err != nil {
 			return errors.Wrap(err, "failed to generate Redis password")
