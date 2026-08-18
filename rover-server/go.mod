@@ -40,7 +40,7 @@ require (
 	github.com/onsi/gomega v1.42.1
 	github.com/pb33f/libopenapi v0.38.7
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	github.com/telekom/controlplane/agentic/api v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/file-manager v0.0.0-00010101000000-000000000000
