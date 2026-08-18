@@ -28,6 +28,14 @@ var Opts = []Option{
 			return ParseMcpSpecification(obj)
 		}
 
+		_, hasSkills := obj.GetContent()["skills"]
+		_, hasCapabilities := obj.GetContent()["capabilities"]
+		if hasBasePath && (hasSkills || hasCapabilities) {
+			obj.SetProperty("kind", "AgentSpecification")
+			obj.SetProperty("apiVersion", "tcp.ei.telekom.de/v1")
+			return ParseAgentSpecification(obj)
+		}
+
 		obj.SetProperty("name", obj.GetName())
 		obj.SetProperty("kind", obj.GetKind())
 		obj.SetProperty("apiVersion", obj.GetApiVersion())

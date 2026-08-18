@@ -52,6 +52,8 @@ type Stores struct {
 	AgenticSubscriptionStore store.ObjectStore[*agenticv1.AgenticSubscription]
 	McpSpecificationStore    store.ObjectStore[*roverv1.McpSpecification]
 	McpServerStore           store.ObjectStore[*agenticv1.McpServer]
+	AgentSpecificationStore  store.ObjectStore[*roverv1.AgentSpecification]
+	AgentCardStore           store.ObjectStore[*agenticv1.AgentCard]
 
 	ApiChangelogStore store.ObjectStore[*roverv1.ApiChangelog]
 }
@@ -115,11 +117,15 @@ func NewStores(ctx context.Context, cfg *rest.Config, db inmemory.DatabaseOpts, 
 		s.AgenticSubscriptionStore = NewOrDie[*agenticv1.AgenticSubscription](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpsubscriptions"), agenticv1.GroupVersion.WithKind("McpSubscription"), db, informer)
 		s.McpSpecificationStore = NewOrDie[*roverv1.McpSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("mcpspecifications"), roverv1.GroupVersion.WithKind("McpSpecification"), db, informer)
 		s.McpServerStore = NewOrDie[*agenticv1.McpServer](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpservers"), agenticv1.GroupVersion.WithKind("McpServer"), db, informer)
+		s.AgentSpecificationStore = NewOrDie[*roverv1.AgentSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("agentspecifications"), roverv1.GroupVersion.WithKind("AgentSpecification"), db, informer)
+		s.AgentCardStore = NewOrDie[*agenticv1.AgentCard](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("agentcards"), agenticv1.GroupVersion.WithKind("AgentCard"), db, informer)
 	} else {
 		s.AgenticExposureStore = noop.NewStore[*agenticv1.AgenticExposure](agenticv1.GroupVersion.WithResource("agenticexposures"), agenticv1.GroupVersion.WithKind("AgenticExposure"))
 		s.AgenticSubscriptionStore = noop.NewStore[*agenticv1.AgenticSubscription](agenticv1.GroupVersion.WithResource("agenticsubscriptions"), agenticv1.GroupVersion.WithKind("AgenticSubscription"))
 		s.McpSpecificationStore = noop.NewStore[*roverv1.McpSpecification](roverv1.GroupVersion.WithResource("mcpspecifications"), roverv1.GroupVersion.WithKind("McpSpecification"))
 		s.McpServerStore = noop.NewStore[*agenticv1.McpServer](agenticv1.GroupVersion.WithResource("mcpservers"), agenticv1.GroupVersion.WithKind("McpServer"))
+		s.AgentSpecificationStore = noop.NewStore[*roverv1.AgentSpecification](roverv1.GroupVersion.WithResource("agentspecifications"), roverv1.GroupVersion.WithKind("AgentSpecification"))
+		s.AgentCardStore = noop.NewStore[*agenticv1.AgentCard](agenticv1.GroupVersion.WithResource("agentcards"), agenticv1.GroupVersion.WithKind("AgentCard"))
 	}
 
 	s.ZoneStore = NewOrDie[*adminv1.Zone](ctx, dynamicClient, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"), db, informer)

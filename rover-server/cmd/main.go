@@ -61,6 +61,7 @@ func main() {
 		EventSpecifications: controller.NewEventSpecificationController(stores),
 		ApiChangelogs:       controller.NewApiChangelogController(stores),
 		McpSpecifications:   controller.NewMcpSpecificationController(stores),
+		AgentSpecifications: controller.NewAgentSpecificationController(stores),
 		Resources:           controller.NewResourcesController(stores),
 	}
 

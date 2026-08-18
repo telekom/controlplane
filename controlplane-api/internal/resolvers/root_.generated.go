@@ -500,6 +500,10 @@ type ComplexityRoot struct {
 		TokenRequest  func(childComplexity int) int
 	}
 
+	Failover struct {
+		Zones func(childComplexity int) int
+	}
+
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
@@ -727,6 +731,7 @@ type ComplexityRoot struct {
 	}
 
 	Traffic struct {
+		Failover  func(childComplexity int) int
 		RateLimit func(childComplexity int) int
 	}
 
@@ -2566,6 +2571,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ExternalIdentityProvider.TokenRequest(childComplexity), true
 
+	case "Failover.zones":
+		if e.ComplexityRoot.Failover.Zones == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Failover.Zones(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -3541,6 +3553,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TeamInfo.Name(childComplexity), true
 
+	case "Traffic.failover":
+		if e.ComplexityRoot.Traffic.Failover == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Traffic.Failover(childComplexity), true
 	case "Traffic.rateLimit":
 		if e.ComplexityRoot.Traffic.RateLimit == nil {
 			break
@@ -8048,7 +8066,12 @@ type RateLimit {
   subscriberRateLimit: SubscriberRateLimits
 }
 
+type Failover {
+  zones: [String!]
+}
+
 type Traffic {
+  failover: Failover
   rateLimit: RateLimit
 }
 
@@ -9059,6 +9082,14 @@ func (ec *executionContext) childFields_ExternalIdentityProvider(ctx context.Con
 	return nil, fmt.Errorf("no field named %q was found under type ExternalIdentityProvider", field.Name)
 }
 
+func (ec *executionContext) childFields_Failover(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "zones":
+		return ec.fieldContext_Failover_zones(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Failover", field.Name)
+}
+
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -9445,6 +9476,8 @@ func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field grap
 
 func (ec *executionContext) childFields_Traffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
+	case "failover":
+		return ec.fieldContext_Traffic_failover(ctx, field)
 	case "rateLimit":
 		return ec.fieldContext_Traffic_rateLimit(ctx, field)
 	}
