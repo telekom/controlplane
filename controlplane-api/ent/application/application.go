@@ -53,6 +53,8 @@ const (
 	FieldExternalIds = "external_ids"
 	// FieldIPRestrictions holds the string denoting the ip_restrictions field in the database.
 	FieldIPRestrictions = "ip_restrictions"
+	// FieldPermissionsURL holds the string denoting the permissions_url field in the database.
+	FieldPermissionsURL = "permissions_url"
 	// EdgeZone holds the string denoting the zone edge name in mutations.
 	EdgeZone = "zone"
 	// EdgeOwnerTeam holds the string denoting the owner_team edge name in mutations.
@@ -139,6 +141,7 @@ var Columns = []string{
 	FieldSecretRotationMessage,
 	FieldExternalIds,
 	FieldIPRestrictions,
+	FieldPermissionsURL,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "applications"
@@ -319,6 +322,11 @@ func BySecretRotationPhase(opts ...sql.OrderTermOption) OrderOption {
 // BySecretRotationMessage orders the results by the secret_rotation_message field.
 func BySecretRotationMessage(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSecretRotationMessage, opts...).ToFunc()
+}
+
+// ByPermissionsURL orders the results by the permissions_url field.
+func ByPermissionsURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPermissionsURL, opts...).ToFunc()
 }
 
 // ByZoneField orders the results by zone field.

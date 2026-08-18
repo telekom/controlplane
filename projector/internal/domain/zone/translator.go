@@ -43,12 +43,19 @@ func (t *Translator) Translate(_ context.Context, obj *adminv1.Zone) (*ZoneData,
 		issuerURL = &u
 	}
 
+	var permissionsURL *string
+	if obj.Status.Links.PermissionsUrl != "" {
+		u := obj.Status.Links.PermissionsUrl
+		permissionsURL = &u
+	}
+
 	return &ZoneData{
-		Meta:       shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		Name:       obj.Name,
-		GatewayURL: gatewayURL,
-		IssuerURL:  issuerURL,
-		Visibility: strings.ToUpper(string(obj.Spec.Visibility)),
+		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		Name:           obj.Name,
+		GatewayURL:     gatewayURL,
+		IssuerURL:      issuerURL,
+		PermissionsURL: permissionsURL,
+		Visibility:     strings.ToUpper(string(obj.Spec.Visibility)),
 	}, nil
 }
 

@@ -29,10 +29,12 @@ import (
 
 // mockAppDeps implements application.ApplicationDeps for testing.
 type mockAppDeps struct {
-	teamIDs map[string]int
-	zoneIDs map[string]int
-	teamErr error // if non-nil, FindTeamID always returns this error
-	zoneErr error // if non-nil, FindZoneID always returns this error
+	teamIDs          map[string]int
+	zoneIDs          map[string]int
+	permissionSetIds map[string]int
+	teamErr          error // if non-nil, FindTeamID always returns this error
+	zoneErr          error // if non-nil, FindZoneID always returns this error
+	permissionSetErr error // if non-nil, FindPermissionSetIDByApplicationOwner always returns this error
 }
 
 func (m *mockAppDeps) FindTeamID(_ context.Context, name string) (int, error) {
@@ -53,6 +55,16 @@ func (m *mockAppDeps) FindZoneID(_ context.Context, name string) (int, error) {
 		return id, nil
 	}
 	return 0, fmt.Errorf("zone %q: %w", name, infrastructure.ErrEntityNotFound)
+}
+
+func (m *mockAppDeps) FindPermissionSetIDByApplicationOwner(_ context.Context, appName, teamName string) (int, error) {
+	if m.permissionSetErr != nil {
+		return 0, m.permissionSetErr
+	}
+	if id, ok := m.permissionSetIds[appName+":"+teamName]; ok {
+		return id, nil
+	}
+	return 0, fmt.Errorf("permissionSet %s: %w", appName+":"+teamName, infrastructure.ErrEntityNotFound)
 }
 
 var _ = Describe("Application Repository", func() {
@@ -267,6 +279,121 @@ var _ = Describe("Application Repository", func() {
 			Expect(*app.StatusMessage).To(Equal("v2"))
 			Expect(app.ClientID).ToNot(BeNil())
 			Expect(*app.ClientID).To(Equal("client-456"))
+		})
+
+		It("should set permissionsURL when permissionSet exists and zone has permissionsURL", func() {
+			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			deps.permissionSetIds = map[string]int{"perm-app:platform--narvi": 42}
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "perm-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "ok",
+				Name:                "perm-app",
+				ClientID:            strPtr("client-perm"),
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("perm-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.PermissionsURL).NotTo(BeNil())
+			Expect(*app.PermissionsURL).To(Equal("https://perms.example.com?application=client-perm"))
+		})
+
+		It("should not set permissionsURL when permissionSet is missing", func() {
+			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "no-perm-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "ok",
+				Name:                "no-perm-app",
+				ClientID:            strPtr("client-no-perm"),
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("no-perm-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.PermissionsURL).To(BeNil())
+		})
+
+		It("should not set permissionsURL when zone has no permissionsURL", func() {
+			deps.permissionSetIds = map[string]int{"no-zone-url-app:platform--narvi": 42}
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "no-zone-url-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "ok",
+				Name:                "no-zone-url-app",
+				ClientID:            strPtr("client-x"),
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("no-zone-url-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.PermissionsURL).To(BeNil())
+		})
+
+		It("should not set permissionsURL when clientID is nil", func() {
+			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			deps.permissionSetIds = map[string]int{"nil-client-app:platform--narvi": 42}
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "nil-client-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "ok",
+				Name:                "nil-client-app",
+				ClientID:            nil,
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("nil-client-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.PermissionsURL).To(BeNil())
+		})
+
+		It("should clear permissionsURL when permissionSet is removed on update", func() {
+			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			deps.permissionSetIds = map[string]int{"flip-app:platform--narvi": 42}
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "flip-app", nil),
+				StatusPhase:         "READY",
+				StatusMessage:       "ok",
+				Name:                "flip-app",
+				ClientID:            strPtr("client-flip"),
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("flip-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.PermissionsURL).NotTo(BeNil())
+
+			// Remove permissionSet and re-upsert — permissionsURL should be cleared.
+			deps.permissionSetIds = map[string]int{}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err = client.Application.Query().Where(entapp.NameEQ("flip-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.PermissionsURL).To(BeNil())
 		})
 
 		It("should populate the edge cache after upsert", func() {
