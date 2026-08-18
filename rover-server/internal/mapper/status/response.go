@@ -190,3 +190,38 @@ func MapMcpSpecificationResponse(ctx context.Context, mcpSpec *v1.McpSpecificati
 		Errors:          result.Problems,
 	}, nil
 }
+
+// MapAgentSpecificationResponse maps the status of an AgentSpecification resource to a ResourceStatusResponse.
+func MapAgentSpecificationResponse(ctx context.Context, agentSpec *v1.AgentSpecification, stores *store.Stores) (api.ResourceStatusResponse, error) {
+	if agentSpec == nil {
+		return api.ResourceStatusResponse{}, errors.New("input agentSpec is nil")
+	}
+	status := MapStatus(agentSpec.GetConditions(), agentSpec.GetGeneration())
+
+	result, err := GetAllAgentSpecificationProblems(ctx, agentSpec, stores)
+	if err != nil {
+		return api.ResourceStatusResponse{}, err
+	}
+
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
+	}
+
+	processing := meta.FindStatusCondition(agentSpec.GetConditions(), condition.ConditionTypeProcessing)
+	var processedAtTime time.Time
+	if processing != nil {
+		processedAtTime = processing.LastTransitionTime.Time.UTC()
+	}
+
+	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
+	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
+
+	return api.ResourceStatusResponse{
+		CreatedAt:       agentSpec.GetCreationTimestamp().Time.UTC(),
+		ProcessedAt:     processedAtTime,
+		State:           status.State,
+		ProcessingState: status.ProcessingState,
+		OverallStatus:   finalOverall,
+		Errors:          result.Problems,
+	}, nil
+}

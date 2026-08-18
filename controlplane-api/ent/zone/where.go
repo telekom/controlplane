@@ -76,6 +76,11 @@ func IssuerURL(v string) predicate.Zone {
 	return predicate.Zone(sql.FieldEQ(FieldIssuerURL, v))
 }
 
+// PermissionsURL applies equality check predicate on the "permissions_url" field. It's identical to PermissionsURLEQ.
+func PermissionsURL(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldEQ(FieldPermissionsURL, v))
+}
+
 // EnvironmentEQ applies the EQ predicate on the "environment" field.
 func EnvironmentEQ(v string) predicate.Zone {
 	return predicate.Zone(sql.FieldEQ(FieldEnvironment, v))
@@ -364,6 +369,81 @@ func IssuerURLEqualFold(v string) predicate.Zone {
 // IssuerURLContainsFold applies the ContainsFold predicate on the "issuer_url" field.
 func IssuerURLContainsFold(v string) predicate.Zone {
 	return predicate.Zone(sql.FieldContainsFold(FieldIssuerURL, v))
+}
+
+// PermissionsURLEQ applies the EQ predicate on the "permissions_url" field.
+func PermissionsURLEQ(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldEQ(FieldPermissionsURL, v))
+}
+
+// PermissionsURLNEQ applies the NEQ predicate on the "permissions_url" field.
+func PermissionsURLNEQ(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldNEQ(FieldPermissionsURL, v))
+}
+
+// PermissionsURLIn applies the In predicate on the "permissions_url" field.
+func PermissionsURLIn(vs ...string) predicate.Zone {
+	return predicate.Zone(sql.FieldIn(FieldPermissionsURL, vs...))
+}
+
+// PermissionsURLNotIn applies the NotIn predicate on the "permissions_url" field.
+func PermissionsURLNotIn(vs ...string) predicate.Zone {
+	return predicate.Zone(sql.FieldNotIn(FieldPermissionsURL, vs...))
+}
+
+// PermissionsURLGT applies the GT predicate on the "permissions_url" field.
+func PermissionsURLGT(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldGT(FieldPermissionsURL, v))
+}
+
+// PermissionsURLGTE applies the GTE predicate on the "permissions_url" field.
+func PermissionsURLGTE(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldGTE(FieldPermissionsURL, v))
+}
+
+// PermissionsURLLT applies the LT predicate on the "permissions_url" field.
+func PermissionsURLLT(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldLT(FieldPermissionsURL, v))
+}
+
+// PermissionsURLLTE applies the LTE predicate on the "permissions_url" field.
+func PermissionsURLLTE(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldLTE(FieldPermissionsURL, v))
+}
+
+// PermissionsURLContains applies the Contains predicate on the "permissions_url" field.
+func PermissionsURLContains(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldContains(FieldPermissionsURL, v))
+}
+
+// PermissionsURLHasPrefix applies the HasPrefix predicate on the "permissions_url" field.
+func PermissionsURLHasPrefix(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldHasPrefix(FieldPermissionsURL, v))
+}
+
+// PermissionsURLHasSuffix applies the HasSuffix predicate on the "permissions_url" field.
+func PermissionsURLHasSuffix(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldHasSuffix(FieldPermissionsURL, v))
+}
+
+// PermissionsURLIsNil applies the IsNil predicate on the "permissions_url" field.
+func PermissionsURLIsNil() predicate.Zone {
+	return predicate.Zone(sql.FieldIsNull(FieldPermissionsURL))
+}
+
+// PermissionsURLNotNil applies the NotNil predicate on the "permissions_url" field.
+func PermissionsURLNotNil() predicate.Zone {
+	return predicate.Zone(sql.FieldNotNull(FieldPermissionsURL))
+}
+
+// PermissionsURLEqualFold applies the EqualFold predicate on the "permissions_url" field.
+func PermissionsURLEqualFold(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldEqualFold(FieldPermissionsURL, v))
+}
+
+// PermissionsURLContainsFold applies the ContainsFold predicate on the "permissions_url" field.
+func PermissionsURLContainsFold(v string) predicate.Zone {
+	return predicate.Zone(sql.FieldContainsFold(FieldPermissionsURL, v))
 }
 
 // VisibilityEQ applies the EQ predicate on the "visibility" field.

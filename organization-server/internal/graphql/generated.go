@@ -8127,6 +8127,22 @@ type ZoneWhereInput struct {
 	IssuerURLNotNil       *bool    `json:"issuerURLNotNil"`
 	IssuerURLEqualFold    *string  `json:"issuerURLEqualFold"`
 	IssuerURLContainsFold *string  `json:"issuerURLContainsFold"`
+	// permissions_url field predicates
+	PermissionsURL             *string  `json:"permissionsURL"`
+	PermissionsURLNEQ          *string  `json:"permissionsURLNEQ"`
+	PermissionsURLIn           []string `json:"permissionsURLIn"`
+	PermissionsURLNotIn        []string `json:"permissionsURLNotIn"`
+	PermissionsURLGT           *string  `json:"permissionsURLGT"`
+	PermissionsURLGTE          *string  `json:"permissionsURLGTE"`
+	PermissionsURLLT           *string  `json:"permissionsURLLT"`
+	PermissionsURLLTE          *string  `json:"permissionsURLLTE"`
+	PermissionsURLContains     *string  `json:"permissionsURLContains"`
+	PermissionsURLHasPrefix    *string  `json:"permissionsURLHasPrefix"`
+	PermissionsURLHasSuffix    *string  `json:"permissionsURLHasSuffix"`
+	PermissionsURLIsNil        *bool    `json:"permissionsURLIsNil"`
+	PermissionsURLNotNil       *bool    `json:"permissionsURLNotNil"`
+	PermissionsURLEqualFold    *string  `json:"permissionsURLEqualFold"`
+	PermissionsURLContainsFold *string  `json:"permissionsURLContainsFold"`
 	// visibility field predicates
 	Visibility      *ZoneVisibility  `json:"visibility"`
 	VisibilityNEQ   *ZoneVisibility  `json:"visibilityNEQ"`
@@ -8343,6 +8359,51 @@ func (v *ZoneWhereInput) GetIssuerURLEqualFold() *string { return v.IssuerURLEqu
 
 // GetIssuerURLContainsFold returns ZoneWhereInput.IssuerURLContainsFold, and is useful for accessing the field via an interface.
 func (v *ZoneWhereInput) GetIssuerURLContainsFold() *string { return v.IssuerURLContainsFold }
+
+// GetPermissionsURL returns ZoneWhereInput.PermissionsURL, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURL() *string { return v.PermissionsURL }
+
+// GetPermissionsURLNEQ returns ZoneWhereInput.PermissionsURLNEQ, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLNEQ() *string { return v.PermissionsURLNEQ }
+
+// GetPermissionsURLIn returns ZoneWhereInput.PermissionsURLIn, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLIn() []string { return v.PermissionsURLIn }
+
+// GetPermissionsURLNotIn returns ZoneWhereInput.PermissionsURLNotIn, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLNotIn() []string { return v.PermissionsURLNotIn }
+
+// GetPermissionsURLGT returns ZoneWhereInput.PermissionsURLGT, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLGT() *string { return v.PermissionsURLGT }
+
+// GetPermissionsURLGTE returns ZoneWhereInput.PermissionsURLGTE, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLGTE() *string { return v.PermissionsURLGTE }
+
+// GetPermissionsURLLT returns ZoneWhereInput.PermissionsURLLT, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLLT() *string { return v.PermissionsURLLT }
+
+// GetPermissionsURLLTE returns ZoneWhereInput.PermissionsURLLTE, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLLTE() *string { return v.PermissionsURLLTE }
+
+// GetPermissionsURLContains returns ZoneWhereInput.PermissionsURLContains, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLContains() *string { return v.PermissionsURLContains }
+
+// GetPermissionsURLHasPrefix returns ZoneWhereInput.PermissionsURLHasPrefix, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLHasPrefix() *string { return v.PermissionsURLHasPrefix }
+
+// GetPermissionsURLHasSuffix returns ZoneWhereInput.PermissionsURLHasSuffix, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLHasSuffix() *string { return v.PermissionsURLHasSuffix }
+
+// GetPermissionsURLIsNil returns ZoneWhereInput.PermissionsURLIsNil, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLIsNil() *bool { return v.PermissionsURLIsNil }
+
+// GetPermissionsURLNotNil returns ZoneWhereInput.PermissionsURLNotNil, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLNotNil() *bool { return v.PermissionsURLNotNil }
+
+// GetPermissionsURLEqualFold returns ZoneWhereInput.PermissionsURLEqualFold, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLEqualFold() *string { return v.PermissionsURLEqualFold }
+
+// GetPermissionsURLContainsFold returns ZoneWhereInput.PermissionsURLContainsFold, and is useful for accessing the field via an interface.
+func (v *ZoneWhereInput) GetPermissionsURLContainsFold() *string { return v.PermissionsURLContainsFold }
 
 // GetVisibility returns ZoneWhereInput.Visibility, and is useful for accessing the field via an interface.
 func (v *ZoneWhereInput) GetVisibility() *ZoneVisibility { return v.Visibility }

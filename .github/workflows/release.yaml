@@ -151,7 +151,7 @@ jobs:
           context: rover-ctl
           push: true
           build-args: |
-            ROVERCTL_IMAGE=ghcr.io/telekom/controlplane/rover-ctl:${{ steps.semantic_release.outputs.new_release_version }}
+            ROVERCTL_IMAGE=ghcr.io/telekom/controlplane/rover-ctl:v${{ steps.semantic_release.outputs.new_release_version }}
             ROVERCTL_BASE_IMAGE=${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
           tags: |
             ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}:${{ steps.semantic_release.outputs.new_release_version }}

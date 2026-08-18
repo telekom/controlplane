@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -78,6 +79,29 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 		return fmt.Errorf("find zone %q: %w", data.ZoneName, err)
 	}
 
+	zoneObj, err := r.client.Zone.Get(ctx, zoneID)
+	if err != nil {
+		return fmt.Errorf("get zone %d: %w", zoneID, err)
+	}
+
+	zoneHasPermissionsURL := zoneObj.PermissionsURL != nil && *zoneObj.PermissionsURL != ""
+	permissionsURL := ""
+
+	if zoneHasPermissionsURL {
+		permissionSetFound := true
+		_, err = r.deps.FindPermissionSetIDByApplicationOwner(ctx, data.Name, data.TeamName)
+		if err != nil {
+			if !errors.Is(err, infrastructure.ErrEntityNotFound) {
+				return fmt.Errorf("find permissionSet %q--%q: %w", data.Name, data.TeamName, err)
+			}
+			permissionSetFound = false
+		}
+
+		if permissionSetFound && data.ClientID != nil {
+			permissionsURL = *zoneObj.PermissionsURL + "?" + url.Values{"application": {*data.ClientID}}.Encode()
+		}
+	}
+
 	create := r.client.Application.Create().
 		SetName(data.Name).
 		SetStatusPhase(application.StatusPhase(data.StatusPhase)).
@@ -111,6 +135,9 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 	}
 	if len(data.ExternalIds) > 0 {
 		create.SetExternalIds(data.ExternalIds)
+	}
+	if permissionsURL != "" {
+		create.SetPermissionsURL(permissionsURL)
 	}
 
 	appID, upsertErr := create.
@@ -156,6 +183,11 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 				u.UpdateExternalIds()
 			} else {
 				u.ClearExternalIds()
+			}
+			if permissionsURL != "" {
+				u.SetPermissionsURL(permissionsURL)
+			} else {
+				u.ClearPermissionsURL()
 			}
 		}).
 		ID(ctx)
