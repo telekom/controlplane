@@ -44,6 +44,9 @@ tidy-all: ## Run go mod tidy on all modules.
 	@for mod in $(MODULES); do \
 		echo "=== $$mod: go mod tidy ===" && \
 		cd $$mod && go mod tidy && cd $(CURDIR) || exit 1; \
+		if [ -f "$$mod/api/go.mod" ]; then \
+			cd $$mod/api && go mod tidy && cd $(CURDIR) || exit 1; \
+		fi; \
 	done
 
 .PHONY: lint-all
