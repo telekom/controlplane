@@ -48,6 +48,12 @@ var _ = Describe("Group Controller", Ordered, func() {
 			By("Tearing down the Group")
 			err := k8sClient.DeleteAllOf(ctx, &organizationv1.Group{}, client.InNamespace(testEnvironment))
 			Expect(err).NotTo(HaveOccurred())
+			By("Waiting for all groups to be fully deleted")
+			Eventually(func(g Gomega) {
+				groupList := &organizationv1.GroupList{}
+				g.Expect(k8sClient.List(ctx, groupList, client.InNamespace(testEnvironment))).To(Succeed())
+				g.Expect(groupList.Items).To(BeEmpty())
+			}, timeout, interval).Should(Succeed())
 		})
 
 		It("should be ready", func() {

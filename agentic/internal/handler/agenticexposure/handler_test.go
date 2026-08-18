@@ -54,7 +54,7 @@ func newAgenticExposure(name, basePath string) *agenticv1.AgenticExposure {
 	}
 }
 
-func makeReadyMcpServer(basePath string) agenticv1.McpServer {
+func makeReadyMcpServer(basePath string) agenticv1.McpServer { //nolint:unparam // test helper kept parameterized for clarity
 	s := agenticv1.McpServer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mcp-server-1",
@@ -171,6 +171,15 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Return(err).Once()
 	}
 
+	mockListAgentCards := func(items []agenticv1.AgentCard) {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.AgentCardList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*agenticv1.AgentCardList) = agenticv1.AgentCardList{Items: items}
+			}).
+			Return(nil).Once()
+	}
+
 	mockListAgenticExposures := func(items []agenticv1.AgenticExposure) {
 		fakeClient.EXPECT().
 			List(ctx, mock.AnythingOfType("*v1.AgenticExposureList"), mock.Anything).
@@ -248,8 +257,12 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err.Error()).To(ContainSubstring("failed to list McpServers"))
 		})
 
-		It("should set Blocked when no active McpServer found", func() {
+		It("should set Blocked when no active server found", func() {
 			mockListMcpServers([]agenticv1.McpServer{})
+			mockListAgentCards([]agenticv1.AgentCard{})
+			// ServerMustExist does additional case-conflict lookups when not found
+			mockListMcpServers([]agenticv1.McpServer{})
+			mockListAgentCards([]agenticv1.AgentCard{})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -258,16 +271,18 @@ var _ = Describe("AgenticExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("McpServerNotFound"))
+			Expect(readyCond.Reason).To(Equal("ServerNotFound"))
 		})
 
-		It("should set Blocked and clean up Route when McpServer disappears after Route was created", func() {
-			// Simulate an exposure that already had a Route provisioned
+		It("should set Blocked and clean up Route when server disappears after Route was created", func() {
 			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
 
 			mockListMcpServers([]agenticv1.McpServer{})
+			mockListAgentCards([]agenticv1.AgentCard{})
+			// ServerMustExist does additional case-conflict lookups when not found
+			mockListMcpServers([]agenticv1.McpServer{})
+			mockListAgentCards([]agenticv1.AgentCard{})
 
-			// Expect the stale Route to be deleted (NotFound is fine — already gone)
 			fakeClient.EXPECT().
 				Delete(ctx, mock.AnythingOfType("*v1.Route")).
 				Return(apierrors.NewNotFound(schema.GroupResource{Resource: "routes"}, "ai-gateway--mcp-weather-v1")).Once()
@@ -277,24 +292,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
-			Expect(readyCond.Reason).To(Equal("McpServerNotFound"))
-		})
-
-		It("should set Blocked with case-conflict reason when McpServer exists under different case", func() {
-			// Server registered as /Mcp/Weather/V1 but exposure uses /mcp/weather/v1
-			conflictingServer := makeReadyMcpServer("/Mcp/Weather/V1")
-			mockListMcpServers([]agenticv1.McpServer{conflictingServer})
-
-			err := h.CreateOrUpdate(ctx, obj)
-
-			Expect(err).ToNot(HaveOccurred())
-
-			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
-			Expect(readyCond).ToNot(BeNil())
-			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("McpServerCaseConflict"))
-			Expect(readyCond.Message).To(ContainSubstring("/mcp/weather/v1"))
-			Expect(readyCond.Message).To(ContainSubstring("/Mcp/Weather/V1"))
+			Expect(readyCond.Reason).To(Equal("ServerNotFound"))
 		})
 
 		It("should return error when FindAgenticExposures fails", func() {
@@ -649,6 +647,38 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.subscriber.example.com"))
 			// No local subs → the provider zone's own IDP issuer is NOT added
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).NotTo(ContainElement("https://issuer.provider.example.com"))
+		})
+
+		It("should create Route for AGENT variant without triggering Telecontext logic", func() {
+			obj.Spec.Variant = agenticv1.AgenticVariantAgent
+
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			zone := makeReadyZoneWithAiGateway()
+
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
+			mockGetZone(zone)
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
+
+			var capturedRoute gatewayv1.Route
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedRoute = *obj.(*gatewayv1.Route)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.Active).To(BeTrue())
+			Expect(obj.Status.Route).ToNot(BeNil())
+			// Route should have no DefaultConsumers (no Telecontext consumer)
+			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(BeEmpty())
 		})
 	}) // end Describe("CreateOrUpdate")
 

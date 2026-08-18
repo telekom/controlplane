@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -823,6 +824,162 @@ var _ = Describe("MapRoverStatus additional paths", func() {
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("state info error"))
+	})
+})
+
+var _ = Describe("MapMcpSpecificationStatus", func() {
+	It("returns Complete/Done when conditions are complete and no sub-resource is stale", func() {
+		mcpSpec := &v1.McpSpecification{
+			ObjectMeta: metav1.ObjectMeta{Name: "mcp-ok", Namespace: "ns", UID: "uid-ms1", Generation: 2},
+			Status: v1.McpSpecificationStatus{
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, ObservedGeneration: 2},
+				},
+			},
+		}
+		s := &store.Stores{}
+
+		status, err := MapMcpSpecificationStatus(ctx, mcpSpec, s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.State).To(Equal(api.Complete))
+		Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+	})
+
+	It("returns Processing when complete but McpServer sub-resource is stale", func() {
+		mcpSpec := &v1.McpSpecification{
+			ObjectMeta: metav1.ObjectMeta{Name: "mcp-stale", Namespace: "ns", UID: "uid-ms2", Generation: 2},
+			Status: v1.McpSpecificationStatus{
+				McpServer: types.ObjectRef{Name: "mcp-server-1", Namespace: "ns"},
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, ObservedGeneration: 2},
+				},
+			},
+		}
+
+		mcpMock := new(MockObjectStore[*agenticv1.McpServer])
+		staleMcp := &agenticv1.McpServer{
+			ObjectMeta: metav1.ObjectMeta{Name: "mcp-server-1", Namespace: "ns", Generation: 5},
+			Status: agenticv1.McpServerStatus{
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+				},
+			},
+		}
+		mcpMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*agenticv1.McpServer]{Items: []*agenticv1.McpServer{staleMcp}}, nil)
+
+		s := &store.Stores{McpServerStore: mcpMock}
+
+		status, err := MapMcpSpecificationStatus(ctx, mcpSpec, s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.State).To(Equal(api.Complete))
+		Expect(status.ProcessingState).To(Equal(api.ProcessingStateProcessing))
+	})
+
+	It("returns error when sub-resource check fails", func() {
+		mcpSpec := &v1.McpSpecification{
+			ObjectMeta: metav1.ObjectMeta{Name: "mcp-err", Namespace: "ns", UID: "uid-ms3", Generation: 2},
+			Status: v1.McpSpecificationStatus{
+				McpServer: types.ObjectRef{Name: "mcp-server-1", Namespace: "ns"},
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, ObservedGeneration: 2},
+				},
+			},
+		}
+
+		mcpMock := new(MockObjectStore[*agenticv1.McpServer])
+		mcpMock.On("List", mock.Anything, mock.Anything).Return(
+			(*commonStore.ListResponse[*agenticv1.McpServer])(nil), fmt.Errorf("store unavailable"))
+
+		s := &store.Stores{McpServerStore: mcpMock}
+
+		_, err := MapMcpSpecificationStatus(ctx, mcpSpec, s)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("store unavailable"))
+	})
+})
+
+var _ = Describe("MapAgentSpecificationStatus", func() {
+	It("returns Complete/Done when conditions are complete and no sub-resource is stale", func() {
+		agentSpec := &v1.AgentSpecification{
+			ObjectMeta: metav1.ObjectMeta{Name: "agent-ok", Namespace: "ns", UID: "uid-ag1", Generation: 2},
+			Status: v1.AgentSpecificationStatus{
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, ObservedGeneration: 2},
+				},
+			},
+		}
+		s := &store.Stores{}
+
+		status, err := MapAgentSpecificationStatus(ctx, agentSpec, s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.State).To(Equal(api.Complete))
+		Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+	})
+
+	It("returns Processing when complete but AgentCard sub-resource is stale", func() {
+		agentSpec := &v1.AgentSpecification{
+			ObjectMeta: metav1.ObjectMeta{Name: "agent-stale", Namespace: "ns", UID: "uid-ag2", Generation: 2},
+			Status: v1.AgentSpecificationStatus{
+				AgentCard: types.ObjectRef{Name: "agent-card-1", Namespace: "ns"},
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, ObservedGeneration: 2},
+				},
+			},
+		}
+
+		agentMock := new(MockObjectStore[*agenticv1.AgentCard])
+		staleCard := &agenticv1.AgentCard{
+			ObjectMeta: metav1.ObjectMeta{Name: "agent-card-1", Namespace: "ns", Generation: 5},
+			Status: agenticv1.AgentCardStatus{
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+				},
+			},
+		}
+		agentMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*agenticv1.AgentCard]{Items: []*agenticv1.AgentCard{staleCard}}, nil)
+
+		s := &store.Stores{AgentCardStore: agentMock}
+
+		status, err := MapAgentSpecificationStatus(ctx, agentSpec, s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.State).To(Equal(api.Complete))
+		Expect(status.ProcessingState).To(Equal(api.ProcessingStateProcessing))
+	})
+
+	It("returns error when sub-resource check fails", func() {
+		agentSpec := &v1.AgentSpecification{
+			ObjectMeta: metav1.ObjectMeta{Name: "agent-err", Namespace: "ns", UID: "uid-ag3", Generation: 2},
+			Status: v1.AgentSpecificationStatus{
+				AgentCard: types.ObjectRef{Name: "agent-card-1", Namespace: "ns"},
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, ObservedGeneration: 2},
+				},
+			},
+		}
+
+		agentMock := new(MockObjectStore[*agenticv1.AgentCard])
+		agentMock.On("List", mock.Anything, mock.Anything).Return(
+			(*commonStore.ListResponse[*agenticv1.AgentCard])(nil), fmt.Errorf("connection refused"))
+
+		s := &store.Stores{AgentCardStore: agentMock}
+
+		_, err := MapAgentSpecificationStatus(ctx, agentSpec, s)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("connection refused"))
 	})
 })
 
