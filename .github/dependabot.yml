@@ -15,12 +15,10 @@ updates:
       interval: "monthly"
     groups:
       minor-patch:
-        group-by: dependency-name
         update-types:
           - patch
           - minor
       major:
-        group-by: dependency-name
         update-types:
           - major
   - package-ecosystem: "gomod"
