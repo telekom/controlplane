@@ -9,6 +9,14 @@ updates:
     directory: /
     schedule:
       interval: "monthly"
+    groups:
+      minor-patch:
+        update-types:
+          - patch
+          - minor
+      major:
+        update-types:
+          - major
   - package-ecosystem: "npm"
     directory: /docs
     schedule:

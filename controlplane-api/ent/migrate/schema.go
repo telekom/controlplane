@@ -165,6 +165,7 @@ var (
 		{Name: "secret_rotation_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "external_ids", Type: field.TypeJSON, Nullable: true},
 		{Name: "ip_restrictions", Type: field.TypeJSON, Nullable: true},
+		{Name: "permissions_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "team_applications", Type: field.TypeInt},
 		{Name: "zone_applications", Type: field.TypeInt},
 	}
@@ -176,13 +177,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "applications_teams_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[17]},
+				Columns:    []*schema.Column{ApplicationsColumns[18]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "applications_zones_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[18]},
+				Columns:    []*schema.Column{ApplicationsColumns[19]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -191,7 +192,7 @@ var (
 			{
 				Name:    "application_name_team_applications",
 				Unique:  true,
-				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[17]},
+				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[18]},
 			},
 		},
 	}
@@ -540,6 +541,7 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "issuer_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "permissions_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "api_subscription_failover_zones", Type: field.TypeInt, Nullable: true},
 	}
@@ -551,7 +553,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "zones_api_subscriptions_failover_zones",
-				Columns:    []*schema.Column{ZonesColumns[6]},
+				Columns:    []*schema.Column{ZonesColumns[7]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

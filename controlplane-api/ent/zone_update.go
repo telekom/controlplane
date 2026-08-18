@@ -105,6 +105,26 @@ func (_u *ZoneUpdate) ClearIssuerURL() *ZoneUpdate {
 	return _u
 }
 
+// SetPermissionsURL sets the "permissions_url" field.
+func (_u *ZoneUpdate) SetPermissionsURL(v string) *ZoneUpdate {
+	_u.mutation.SetPermissionsURL(v)
+	return _u
+}
+
+// SetNillablePermissionsURL sets the "permissions_url" field if the given value is not nil.
+func (_u *ZoneUpdate) SetNillablePermissionsURL(v *string) *ZoneUpdate {
+	if v != nil {
+		_u.SetPermissionsURL(*v)
+	}
+	return _u
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (_u *ZoneUpdate) ClearPermissionsURL() *ZoneUpdate {
+	_u.mutation.ClearPermissionsURL()
+	return _u
+}
+
 // SetVisibility sets the "visibility" field.
 func (_u *ZoneUpdate) SetVisibility(v zone.Visibility) *ZoneUpdate {
 	_u.mutation.SetVisibility(v)
@@ -234,6 +254,12 @@ func (_u *ZoneUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.IssuerURLCleared() {
 		_spec.ClearField(zone.FieldIssuerURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.PermissionsURL(); ok {
+		_spec.SetField(zone.FieldPermissionsURL, field.TypeString, value)
+	}
+	if _u.mutation.PermissionsURLCleared() {
+		_spec.ClearField(zone.FieldPermissionsURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.Visibility(); ok {
 		_spec.SetField(zone.FieldVisibility, field.TypeEnum, value)
@@ -374,6 +400,26 @@ func (_u *ZoneUpdateOne) SetNillableIssuerURL(v *string) *ZoneUpdateOne {
 // ClearIssuerURL clears the value of the "issuer_url" field.
 func (_u *ZoneUpdateOne) ClearIssuerURL() *ZoneUpdateOne {
 	_u.mutation.ClearIssuerURL()
+	return _u
+}
+
+// SetPermissionsURL sets the "permissions_url" field.
+func (_u *ZoneUpdateOne) SetPermissionsURL(v string) *ZoneUpdateOne {
+	_u.mutation.SetPermissionsURL(v)
+	return _u
+}
+
+// SetNillablePermissionsURL sets the "permissions_url" field if the given value is not nil.
+func (_u *ZoneUpdateOne) SetNillablePermissionsURL(v *string) *ZoneUpdateOne {
+	if v != nil {
+		_u.SetPermissionsURL(*v)
+	}
+	return _u
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (_u *ZoneUpdateOne) ClearPermissionsURL() *ZoneUpdateOne {
+	_u.mutation.ClearPermissionsURL()
 	return _u
 }
 
@@ -536,6 +582,12 @@ func (_u *ZoneUpdateOne) sqlSave(ctx context.Context) (_node *Zone, err error) {
 	}
 	if _u.mutation.IssuerURLCleared() {
 		_spec.ClearField(zone.FieldIssuerURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.PermissionsURL(); ok {
+		_spec.SetField(zone.FieldPermissionsURL, field.TypeString, value)
+	}
+	if _u.mutation.PermissionsURLCleared() {
+		_spec.ClearField(zone.FieldPermissionsURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.Visibility(); ok {
 		_spec.SetField(zone.FieldVisibility, field.TypeEnum, value)

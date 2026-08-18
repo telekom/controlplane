@@ -791,6 +791,7 @@ type Application implements Node {
   secretRotationMessage: String
   externalIds: [ExternalId!]
   ipRestrictions: IpRestrictions
+  permissionsURL: String
   zone: Zone!
   exposedApis(
     """
@@ -3741,6 +3742,7 @@ type Zone implements Node {
   name: String!
   gatewayURL: String
   issuerURL: String
+  permissionsURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
 }
@@ -3840,6 +3842,24 @@ input ZoneWhereInput {
   issuerURLNotNil: Boolean
   issuerURLEqualFold: String
   issuerURLContainsFold: String
+  """
+  permissions_url field predicates
+  """
+  permissionsURL: String
+  permissionsURLNEQ: String
+  permissionsURLIn: [String!]
+  permissionsURLNotIn: [String!]
+  permissionsURLGT: String
+  permissionsURLGTE: String
+  permissionsURLLT: String
+  permissionsURLLTE: String
+  permissionsURLContains: String
+  permissionsURLHasPrefix: String
+  permissionsURLHasSuffix: String
+  permissionsURLIsNil: Boolean
+  permissionsURLNotNil: Boolean
+  permissionsURLEqualFold: String
+  permissionsURLContainsFold: String
   """
   visibility field predicates
   """

@@ -57,6 +57,8 @@ type Application struct {
 	ExternalIds []model.ExternalId `json:"external_ids,omitempty"`
 	// IPRestrictions holds the value of the "ip_restrictions" field.
 	IPRestrictions model.IpRestrictions `json:"ip_restrictions,omitempty"`
+	// PermissionsURL holds the value of the "permissions_url" field.
+	PermissionsURL *string `json:"permissions_url,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApplicationQuery when eager-loading is set.
 	Edges             ApplicationEdges `json:"edges"`
@@ -171,7 +173,7 @@ func (*Application) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case application.FieldID:
 			values[i] = new(sql.NullInt64)
-		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldEnvironment, application.FieldNamespace, application.FieldName, application.FieldClientID, application.FieldClientSecret, application.FieldRotatedClientSecret, application.FieldSecretRotationPhase, application.FieldSecretRotationMessage:
+		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldEnvironment, application.FieldNamespace, application.FieldName, application.FieldClientID, application.FieldClientSecret, application.FieldRotatedClientSecret, application.FieldSecretRotationPhase, application.FieldSecretRotationMessage, application.FieldPermissionsURL:
 			values[i] = new(sql.NullString)
 		case application.FieldCreatedAt, application.FieldLastModifiedAt, application.FieldRotatedExpiresAt, application.FieldCurrentExpiresAt:
 			values[i] = new(sql.NullTime)
@@ -308,6 +310,13 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.IPRestrictions); err != nil {
 					return fmt.Errorf("unmarshal field ip_restrictions: %w", err)
 				}
+			}
+		case application.FieldPermissionsURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field permissions_url", values[i])
+			} else if value.Valid {
+				_m.PermissionsURL = new(string)
+				*_m.PermissionsURL = value.String
 			}
 		case application.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -459,6 +468,11 @@ func (_m *Application) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("ip_restrictions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IPRestrictions))
+	builder.WriteString(", ")
+	if v := _m.PermissionsURL; v != nil {
+		builder.WriteString("permissions_url=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

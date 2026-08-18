@@ -27,6 +27,8 @@ type Zone struct {
 	GatewayURL *string `json:"gateway_url,omitempty"`
 	// IssuerURL holds the value of the "issuer_url" field.
 	IssuerURL *string `json:"issuer_url,omitempty"`
+	// PermissionsURL holds the value of the "permissions_url" field.
+	PermissionsURL *string `json:"permissions_url,omitempty"`
 	// Visibility holds the value of the "visibility" field.
 	Visibility zone.Visibility `json:"visibility,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -65,7 +67,7 @@ func (*Zone) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case zone.FieldID:
 			values[i] = new(sql.NullInt64)
-		case zone.FieldEnvironment, zone.FieldName, zone.FieldGatewayURL, zone.FieldIssuerURL, zone.FieldVisibility:
+		case zone.FieldEnvironment, zone.FieldName, zone.FieldGatewayURL, zone.FieldIssuerURL, zone.FieldPermissionsURL, zone.FieldVisibility:
 			values[i] = new(sql.NullString)
 		case zone.ForeignKeys[0]: // api_subscription_failover_zones
 			values[i] = new(sql.NullInt64)
@@ -116,6 +118,13 @@ func (_m *Zone) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.IssuerURL = new(string)
 				*_m.IssuerURL = value.String
+			}
+		case zone.FieldPermissionsURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field permissions_url", values[i])
+			} else if value.Valid {
+				_m.PermissionsURL = new(string)
+				*_m.PermissionsURL = value.String
 			}
 		case zone.FieldVisibility:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -186,6 +195,11 @@ func (_m *Zone) String() string {
 	builder.WriteString(", ")
 	if v := _m.IssuerURL; v != nil {
 		builder.WriteString("issuer_url=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PermissionsURL; v != nil {
+		builder.WriteString("permissions_url=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
