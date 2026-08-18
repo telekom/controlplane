@@ -405,7 +405,7 @@ jobs:
         # internal Artifactory) needs an explicit login using the
         # registry_username/registry_password secrets.
         if: ${{ inputs.container_registry != 'ghcr.io' }}
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ inputs.container_registry }}
           username: ${{ secrets.registry_username }}
