@@ -232,7 +232,12 @@ type RateLimit {
   subscriberRateLimit: SubscriberRateLimits
 }
 
+type Failover {
+  zones: [String!]
+}
+
 type Traffic {
+  failover: Failover
   rateLimit: RateLimit
 }
 

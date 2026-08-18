@@ -130,6 +130,11 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, valErr.BuildError()
 	}
 
+	// Validate AI Gateway: feature must be enabled on this zone if agentic exposures or subscriptions are present
+	if err := r.validateAiGatewaySupport(valErr, rover, zone); err != nil {
+		return nil, err
+	}
+
 	if err := r.validatePermissions(valErr, rover); err != nil {
 		return nil, err
 	}
@@ -182,6 +187,30 @@ func (r *RoverValidator) validatePermissions(valErr *cerrors.ValidationError, ro
 		field.NewPath("spec").Child("zone"),
 		rover.Spec.Zone,
 		fmt.Sprintf("zone '%s' does not support permissions", rover.Spec.Zone),
+	)
+	return valErr.BuildError()
+}
+
+func (r *RoverValidator) validateAiGatewaySupport(valErr *cerrors.ValidationError, rover *roverv1.Rover, zone *adminv1.Zone) error {
+	if zone.IsFeatureEnabled(adminv1.FeatureAiGateway) {
+		return nil
+	}
+
+	hasAgenticExposure := slices.ContainsFunc(rover.Spec.Exposures, func(exp roverv1.Exposure) bool {
+		return exp.Type() == roverv1.TypeAgentic
+	})
+	hasAgenticSubscription := slices.ContainsFunc(rover.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
+		return sub.Type() == roverv1.TypeAgentic
+	})
+
+	if !hasAgenticExposure && !hasAgenticSubscription {
+		return nil
+	}
+
+	valErr.AddInvalidError(
+		field.NewPath("spec").Child("zone"),
+		rover.Spec.Zone,
+		fmt.Sprintf("zone %q does not support the AI Gateway feature. Agentic exposures and subscriptions require the AI Gateway feature to be enabled on the zone", rover.Spec.Zone),
 	)
 	return valErr.BuildError()
 }
