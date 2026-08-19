@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -99,8 +100,11 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	} else {
 		targetExposureID = &id
 
-		// Find Exposure to get applicable rate limit config
-		exposure, findErr := r.client.ApiExposure.Get(ctx, *targetExposureID)
+		// Read only the traffic column to derive subscriber rate limits.
+		exposure, findErr := r.client.ApiExposure.Query().
+			Where(apiexposure.IDEQ(*targetExposureID)).
+			Select(apiexposure.FieldTraffic).
+			Only(ctx)
 		if findErr != nil {
 			return fmt.Errorf("get target api_exposure for subscription (id %d,basePath %q): %w",
 				*targetExposureID, data.TargetBasePath, findErr)

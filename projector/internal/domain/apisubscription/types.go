@@ -35,12 +35,10 @@ type APISubscriptionData struct {
 	BasePath       string
 	M2MAuthMethod  string // "NONE", "OAUTH2_CLIENT", "BASIC_AUTH", "SCOPES_ONLY"
 	Security       *model.ApiSubscriptionSecurity
-	RateLimit      *model.RateLimitConfig // If the exposure as any rate limit configurate (subscriber spefic or general)
-	OwnerAppName   string                 // resolved to owner Application FK (required)
-	OwnerTeamName  string                 // used to resolve owner Application FK
-	TargetBasePath string                 // used to resolve optional target ApiExposure FK
-	TargetAppName  string                 // always "" from CR (not known to subscriber)
-	TargetTeamName string                 // always "" from CR (not known to subscriber)
-	GatewayUrl     string                 // gateway url from subscription
-
+	OwnerAppName   string // resolved to owner Application FK (required)
+	OwnerTeamName  string // used to resolve owner Application FK
+	TargetBasePath string // used to resolve optional target ApiExposure FK
+	TargetAppName  string // always "" from CR (not known to subscriber)
+	TargetTeamName string // always "" from CR (not known to subscriber)
+	GatewayUrl     string // gateway url from subscription
 }
