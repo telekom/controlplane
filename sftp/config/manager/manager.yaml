@@ -21,6 +21,7 @@ spec:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
+        app.kubernetes.io/name: sftp
         control-plane: controller-manager
     spec:
       securityContext:
