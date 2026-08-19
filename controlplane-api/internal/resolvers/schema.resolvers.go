@@ -153,7 +153,10 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 	if ent.IsNotLoaded(err) {
 		exposure, err = obj.QueryTarget().Only(sysCtx)
 	}
-	if err != nil {
+
+	if ent.IsNotFound(err) {
+		return nil, err
+	} else if err != nil {
 		return nil, fmt.Errorf("loading target for api subscription %d: %w", obj.ID, err)
 	}
 
@@ -161,28 +164,22 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 }
 
 // Traffic is the resolver for the traffic field.
-// Computes the subscriber's effective rate limits on read from the target
-// exposure's rate-limit config. Returns nil when the target is not yet exposed
-// or no subscriber rate limit applies.
+// Derives the subscriber's effective rate limits from the target exposure's
+// reduced info (see Target). Returns nil when the target is not yet exposed or
+// no rate limit applies to this subscriber.
 func (r *apiSubscriptionResolver) Traffic(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiSubscriptionTraffic, error) {
-	// SystemContext: The target exposure belongs to another tenant; privacy rules
-	// would block this traversal. A subscriber is entitled to see its own limits.
-	sysCtx := viewer.SystemContext(ctx)
-
-	exposure, err := obj.Edges.TargetOrErr()
-	if ent.IsNotLoaded(err) {
-		exposure, err = obj.QueryTarget().Only(sysCtx)
+	info, err := r.Target(ctx, obj)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
 	}
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("loading target for api subscription %d: %w", obj.ID, err)
+
+	if ent.IsNotFound(err) || info == nil || info.Traffic == nil {
+		return nil, nil
 	}
 
 	app, err := obj.Edges.OwnerOrErr()
 	if ent.IsNotLoaded(err) {
-		app, err = obj.QueryOwner().Only(sysCtx)
+		app, err = obj.QueryOwner().Only(viewer.SystemContext(ctx))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("loading owner for api subscription %d: %w", obj.ID, err)
@@ -192,7 +189,7 @@ func (r *apiSubscriptionResolver) Traffic(ctx context.Context, obj *ent.ApiSubsc
 	if app.ClientID != nil {
 		clientID = *app.ClientID
 	}
-	return resolveSubscriptionTraffic(exposure.Traffic.RateLimit, clientID), nil
+	return resolveSubscriptionTraffic(info.Traffic.RateLimit, clientID), nil
 }
 
 // StatusPhase is the resolver for the statusPhase field.
