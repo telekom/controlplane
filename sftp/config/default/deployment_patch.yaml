@@ -16,7 +16,7 @@ spec:
         - name: secretmgr-token
           mountPath: /var/run/secrets/secretmgr
           readOnly: true
-        - name: trust-bundle
+        - name: controlplane-trust-bundle
           mountPath: /var/run/secrets/trust-bundle
           readOnly: true
       volumes:
@@ -27,6 +27,6 @@ spec:
               path: token
               expirationSeconds: 600
               audience: secret-manager
-      - name: trust-bundle
+      - name: controlplane-trust-bundle
         configMap:
-          name: secret-manager-trust-bundle
+          name: controlplane-trust-bundle
