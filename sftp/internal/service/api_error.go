@@ -36,6 +36,7 @@ func handleAPIError(operation string, statusCode int, body []byte, apiErr *ApiEr
 	errMessage := fmt.Sprintf("SFTP Tardis API returned %d while trying to %s: %s", statusCode, operation, message)
 	switch {
 	case statusCode == http.StatusBadRequest:
+		// bad request represent error on client side, so we return a blocked error to avoid retrying
 		return ctrlerrors.BlockedErrorf("%s", errMessage)
 	case statusCode == http.StatusNotFound:
 		return fmt.Errorf("%w: %s", ErrNotFound, errMessage)
