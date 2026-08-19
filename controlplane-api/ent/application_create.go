@@ -233,6 +233,20 @@ func (_c *ApplicationCreate) SetNillableIPRestrictions(v *model.IpRestrictions) 
 	return _c
 }
 
+// SetPermissionsURL sets the "permissions_url" field.
+func (_c *ApplicationCreate) SetPermissionsURL(v string) *ApplicationCreate {
+	_c.mutation.SetPermissionsURL(v)
+	return _c
+}
+
+// SetNillablePermissionsURL sets the "permissions_url" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillablePermissionsURL(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetPermissionsURL(*v)
+	}
+	return _c
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by ID.
 func (_c *ApplicationCreate) SetZoneID(id int) *ApplicationCreate {
 	_c.mutation.SetZoneID(id)
@@ -540,6 +554,10 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.IPRestrictions(); ok {
 		_spec.SetField(application.FieldIPRestrictions, field.TypeJSON, value)
 		_node.IPRestrictions = value
+	}
+	if value, ok := _c.mutation.PermissionsURL(); ok {
+		_spec.SetField(application.FieldPermissionsURL, field.TypeString, value)
+		_node.PermissionsURL = &value
 	}
 	if nodes := _c.mutation.ZoneIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -953,6 +971,24 @@ func (u *ApplicationUpsert) ClearIPRestrictions() *ApplicationUpsert {
 	return u
 }
 
+// SetPermissionsURL sets the "permissions_url" field.
+func (u *ApplicationUpsert) SetPermissionsURL(v string) *ApplicationUpsert {
+	u.Set(application.FieldPermissionsURL, v)
+	return u
+}
+
+// UpdatePermissionsURL sets the "permissions_url" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdatePermissionsURL() *ApplicationUpsert {
+	u.SetExcluded(application.FieldPermissionsURL)
+	return u
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (u *ApplicationUpsert) ClearPermissionsURL() *ApplicationUpsert {
+	u.SetNull(application.FieldPermissionsURL)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1282,6 +1318,27 @@ func (u *ApplicationUpsertOne) UpdateIPRestrictions() *ApplicationUpsertOne {
 func (u *ApplicationUpsertOne) ClearIPRestrictions() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearIPRestrictions()
+	})
+}
+
+// SetPermissionsURL sets the "permissions_url" field.
+func (u *ApplicationUpsertOne) SetPermissionsURL(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetPermissionsURL(v)
+	})
+}
+
+// UpdatePermissionsURL sets the "permissions_url" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdatePermissionsURL() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdatePermissionsURL()
+	})
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (u *ApplicationUpsertOne) ClearPermissionsURL() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearPermissionsURL()
 	})
 }
 
@@ -1780,6 +1837,27 @@ func (u *ApplicationUpsertBulk) UpdateIPRestrictions() *ApplicationUpsertBulk {
 func (u *ApplicationUpsertBulk) ClearIPRestrictions() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearIPRestrictions()
+	})
+}
+
+// SetPermissionsURL sets the "permissions_url" field.
+func (u *ApplicationUpsertBulk) SetPermissionsURL(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetPermissionsURL(v)
+	})
+}
+
+// UpdatePermissionsURL sets the "permissions_url" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdatePermissionsURL() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdatePermissionsURL()
+	})
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (u *ApplicationUpsertBulk) ClearPermissionsURL() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearPermissionsURL()
 	})
 }
 

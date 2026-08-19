@@ -208,6 +208,7 @@ type ComplexityRoot struct {
 		Namespace             func(childComplexity int) int
 		OwnerTeam             func(childComplexity int) int
 		PermissionSet         func(childComplexity int) int
+		PermissionsURL        func(childComplexity int) int
 		RotatedClientSecret   func(childComplexity int) int
 		RotatedExpiresAt      func(childComplexity int) int
 		SecretRotationMessage func(childComplexity int) int
@@ -500,6 +501,10 @@ type ComplexityRoot struct {
 		TokenRequest  func(childComplexity int) int
 	}
 
+	Failover struct {
+		Zones func(childComplexity int) int
+	}
+
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
@@ -727,6 +732,7 @@ type ComplexityRoot struct {
 	}
 
 	Traffic struct {
+		Failover  func(childComplexity int) int
 		RateLimit func(childComplexity int) int
 	}
 
@@ -748,14 +754,15 @@ type ComplexityRoot struct {
 	}
 
 	Zone struct {
-		Applications func(childComplexity int) int
-		Environment  func(childComplexity int) int
-		GatewayURL   func(childComplexity int) int
-		ID           func(childComplexity int) int
-		IssuerURL    func(childComplexity int) int
-		Name         func(childComplexity int) int
-		TokenURL     func(childComplexity int) int
-		Visibility   func(childComplexity int) int
+		Applications   func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		GatewayURL     func(childComplexity int) int
+		ID             func(childComplexity int) int
+		IssuerURL      func(childComplexity int) int
+		Name           func(childComplexity int) int
+		PermissionsURL func(childComplexity int) int
+		TokenURL       func(childComplexity int) int
+		Visibility     func(childComplexity int) int
 	}
 }
 
@@ -1410,6 +1417,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.PermissionSet(childComplexity), true
+	case "Application.permissionsURL":
+		if e.ComplexityRoot.Application.PermissionsURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.PermissionsURL(childComplexity), true
 	case "Application.rotatedClientSecret":
 		if e.ComplexityRoot.Application.RotatedClientSecret == nil {
 			break
@@ -2566,6 +2579,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ExternalIdentityProvider.TokenRequest(childComplexity), true
 
+	case "Failover.zones":
+		if e.ComplexityRoot.Failover.Zones == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Failover.Zones(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -3541,6 +3561,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TeamInfo.Name(childComplexity), true
 
+	case "Traffic.failover":
+		if e.ComplexityRoot.Traffic.Failover == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Traffic.Failover(childComplexity), true
 	case "Traffic.rateLimit":
 		if e.ComplexityRoot.Traffic.RateLimit == nil {
 			break
@@ -3635,6 +3661,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.Name(childComplexity), true
+	case "Zone.permissionsURL":
+		if e.ComplexityRoot.Zone.PermissionsURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.PermissionsURL(childComplexity), true
 	case "Zone.tokenURL":
 		if e.ComplexityRoot.Zone.TokenURL == nil {
 			break
@@ -4554,6 +4586,7 @@ type Application implements Node {
   secretRotationMessage: String
   externalIds: [ExternalId!]
   ipRestrictions: IpRestrictions
+  permissionsURL: String
   zone: Zone!
   exposedApis(
     """
@@ -7504,6 +7537,7 @@ type Zone implements Node {
   name: String!
   gatewayURL: String
   issuerURL: String
+  permissionsURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
 }
@@ -7603,6 +7637,24 @@ input ZoneWhereInput {
   issuerURLNotNil: Boolean
   issuerURLEqualFold: String
   issuerURLContainsFold: String
+  """
+  permissions_url field predicates
+  """
+  permissionsURL: String
+  permissionsURLNEQ: String
+  permissionsURLIn: [String!]
+  permissionsURLNotIn: [String!]
+  permissionsURLGT: String
+  permissionsURLGTE: String
+  permissionsURLLT: String
+  permissionsURLLTE: String
+  permissionsURLContains: String
+  permissionsURLHasPrefix: String
+  permissionsURLHasSuffix: String
+  permissionsURLIsNil: Boolean
+  permissionsURLNotNil: Boolean
+  permissionsURLEqualFold: String
+  permissionsURLContainsFold: String
   """
   visibility field predicates
   """
@@ -8048,7 +8100,12 @@ type RateLimit {
   subscriberRateLimit: SubscriberRateLimits
 }
 
+type Failover {
+  zones: [String!]
+}
+
 type Traffic {
+  failover: Failover
   rateLimit: RateLimit
 }
 
@@ -8479,6 +8536,8 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_externalIds(ctx, field)
 	case "ipRestrictions":
 		return ec.fieldContext_Application_ipRestrictions(ctx, field)
+	case "permissionsURL":
+		return ec.fieldContext_Application_permissionsURL(ctx, field)
 	case "zone":
 		return ec.fieldContext_Application_zone(ctx, field)
 	case "exposedApis":
@@ -9059,6 +9118,14 @@ func (ec *executionContext) childFields_ExternalIdentityProvider(ctx context.Con
 	return nil, fmt.Errorf("no field named %q was found under type ExternalIdentityProvider", field.Name)
 }
 
+func (ec *executionContext) childFields_Failover(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "zones":
+		return ec.fieldContext_Failover_zones(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Failover", field.Name)
+}
+
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -9445,6 +9512,8 @@ func (ec *executionContext) childFields_TeamInfo(ctx context.Context, field grap
 
 func (ec *executionContext) childFields_Traffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
+	case "failover":
+		return ec.fieldContext_Traffic_failover(ctx, field)
 	case "rateLimit":
 		return ec.fieldContext_Traffic_rateLimit(ctx, field)
 	}
@@ -9497,6 +9566,8 @@ func (ec *executionContext) childFields_Zone(ctx context.Context, field graphql.
 		return ec.fieldContext_Zone_gatewayURL(ctx, field)
 	case "issuerURL":
 		return ec.fieldContext_Zone_issuerURL(ctx, field)
+	case "permissionsURL":
+		return ec.fieldContext_Zone_permissionsURL(ctx, field)
 	case "visibility":
 		return ec.fieldContext_Zone_visibility(ctx, field)
 	case "applications":

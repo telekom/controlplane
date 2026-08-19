@@ -241,11 +241,11 @@ jobs:
       - name: Inject slug vars
         uses: rlespinasse/github-slug-action@e6f261660910b273384c5c42b17a0217881b217a # v5.6.0
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       - name: Log in to GHCR
         # Needed so buildx can pull the ROVERCTL_IMAGE builder-stage image
         # pushed by the rover-ctl job above, regardless of its visibility.
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -255,7 +255,7 @@ jobs:
         # vars.REGISTRY_ROVERCTL_BASE_REPO, and vars.ROVERCTL_BASE_IMAGE_TAG
         # repository variables, plus the ARTIFACTORY_O28M_PUSH_USER/TOKEN
         # secrets referenced below.
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ vars.REGISTRY_HOST }}
           username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
@@ -269,7 +269,7 @@ jobs:
         # (vars.REGISTRY_ROVERCTL_BASE_REPO) than this combined image
         # (vars.REGISTRY_ROVERCTL_REPO) - they are unrelated paths, not a
         # shared prefix with a suffix appended.
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: rover-ctl
           push: true

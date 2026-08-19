@@ -7,6 +7,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -188,4 +189,8 @@ func ExpectObjConditionToBeReady(g Gomega, obj types.Object) {
 	readyCondition := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 	g.Expect(readyCondition).NotTo(BeNil())
 	g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
+}
+
+func randName(prefix string) string {
+	return fmt.Sprintf("%s-%05d", prefix, rand.IntN(99999))
 }

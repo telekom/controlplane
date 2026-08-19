@@ -295,6 +295,24 @@ func MapMcpSpecificationStatus(ctx context.Context, mcpSpec *v1.McpSpecification
 	return status, nil
 }
 
+// MapAgentSpecificationStatus maps the status of an AgentSpecification resource to an api.Status.
+func MapAgentSpecificationStatus(ctx context.Context, agentSpec *v1.AgentSpecification, stores *store.Stores) (api.Status, error) {
+	status := MapStatus(agentSpec.GetConditions(), agentSpec.GetGeneration())
+
+	result, err := GetAllAgentSpecificationProblems(ctx, agentSpec, stores)
+	if err != nil {
+		return status, err
+	}
+
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
+	}
+
+	status.Errors = append(status.Errors, mapProblemsToStateInfos(result.Problems)...)
+
+	return status, nil
+}
+
 // GetOverallStatus computes the OverallStatus from a set of Kubernetes conditions.
 // Note: staleness detection is not performed here because the object's generation
 // is not available. Callers that need staleness detection should use MapStatus directly.

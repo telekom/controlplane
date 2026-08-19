@@ -4045,6 +4045,7 @@ type ApplicationMutation struct {
 	external_ids             *[]model.ExternalId
 	appendexternal_ids       []model.ExternalId
 	ip_restrictions          *model.IpRestrictions
+	permissions_url          *string
 	clearedFields            map[string]struct{}
 	zone                     *int
 	clearedzone              bool
@@ -4902,6 +4903,55 @@ func (m *ApplicationMutation) ResetIPRestrictions() {
 	delete(m.clearedFields, application.FieldIPRestrictions)
 }
 
+// SetPermissionsURL sets the "permissions_url" field.
+func (m *ApplicationMutation) SetPermissionsURL(s string) {
+	m.permissions_url = &s
+}
+
+// PermissionsURL returns the value of the "permissions_url" field in the mutation.
+func (m *ApplicationMutation) PermissionsURL() (r string, exists bool) {
+	v := m.permissions_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPermissionsURL returns the old "permissions_url" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldPermissionsURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPermissionsURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPermissionsURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPermissionsURL: %w", err)
+	}
+	return oldValue.PermissionsURL, nil
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (m *ApplicationMutation) ClearPermissionsURL() {
+	m.permissions_url = nil
+	m.clearedFields[application.FieldPermissionsURL] = struct{}{}
+}
+
+// PermissionsURLCleared returns if the "permissions_url" field was cleared in this mutation.
+func (m *ApplicationMutation) PermissionsURLCleared() bool {
+	_, ok := m.clearedFields[application.FieldPermissionsURL]
+	return ok
+}
+
+// ResetPermissionsURL resets all changes to the "permissions_url" field.
+func (m *ApplicationMutation) ResetPermissionsURL() {
+	m.permissions_url = nil
+	delete(m.clearedFields, application.FieldPermissionsURL)
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by id.
 func (m *ApplicationMutation) SetZoneID(id int) {
 	m.zone = &id
@@ -5269,7 +5319,7 @@ func (m *ApplicationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApplicationMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.created_at != nil {
 		fields = append(fields, application.FieldCreatedAt)
 	}
@@ -5318,6 +5368,9 @@ func (m *ApplicationMutation) Fields() []string {
 	if m.ip_restrictions != nil {
 		fields = append(fields, application.FieldIPRestrictions)
 	}
+	if m.permissions_url != nil {
+		fields = append(fields, application.FieldPermissionsURL)
+	}
 	return fields
 }
 
@@ -5358,6 +5411,8 @@ func (m *ApplicationMutation) Field(name string) (ent.Value, bool) {
 		return m.ExternalIds()
 	case application.FieldIPRestrictions:
 		return m.IPRestrictions()
+	case application.FieldPermissionsURL:
+		return m.PermissionsURL()
 	}
 	return nil, false
 }
@@ -5399,6 +5454,8 @@ func (m *ApplicationMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldExternalIds(ctx)
 	case application.FieldIPRestrictions:
 		return m.OldIPRestrictions(ctx)
+	case application.FieldPermissionsURL:
+		return m.OldPermissionsURL(ctx)
 	}
 	return nil, fmt.Errorf("unknown Application field %s", name)
 }
@@ -5520,6 +5577,13 @@ func (m *ApplicationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIPRestrictions(v)
 		return nil
+	case application.FieldPermissionsURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPermissionsURL(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Application field %s", name)
 }
@@ -5583,6 +5647,9 @@ func (m *ApplicationMutation) ClearedFields() []string {
 	if m.FieldCleared(application.FieldIPRestrictions) {
 		fields = append(fields, application.FieldIPRestrictions)
 	}
+	if m.FieldCleared(application.FieldPermissionsURL) {
+		fields = append(fields, application.FieldPermissionsURL)
+	}
 	return fields
 }
 
@@ -5629,6 +5696,9 @@ func (m *ApplicationMutation) ClearField(name string) error {
 		return nil
 	case application.FieldIPRestrictions:
 		m.ClearIPRestrictions()
+		return nil
+	case application.FieldPermissionsURL:
+		m.ClearPermissionsURL()
 		return nil
 	}
 	return fmt.Errorf("unknown Application nullable field %s", name)
@@ -5685,6 +5755,9 @@ func (m *ApplicationMutation) ResetField(name string) error {
 		return nil
 	case application.FieldIPRestrictions:
 		m.ResetIPRestrictions()
+		return nil
+	case application.FieldPermissionsURL:
+		m.ResetPermissionsURL()
 		return nil
 	}
 	return fmt.Errorf("unknown Application field %s", name)
@@ -15999,6 +16072,7 @@ type ZoneMutation struct {
 	name                *string
 	gateway_url         *string
 	issuer_url          *string
+	permissions_url     *string
 	visibility          *zone.Visibility
 	clearedFields       map[string]struct{}
 	applications        map[int]struct{}
@@ -16290,6 +16364,55 @@ func (m *ZoneMutation) ResetIssuerURL() {
 	delete(m.clearedFields, zone.FieldIssuerURL)
 }
 
+// SetPermissionsURL sets the "permissions_url" field.
+func (m *ZoneMutation) SetPermissionsURL(s string) {
+	m.permissions_url = &s
+}
+
+// PermissionsURL returns the value of the "permissions_url" field in the mutation.
+func (m *ZoneMutation) PermissionsURL() (r string, exists bool) {
+	v := m.permissions_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPermissionsURL returns the old "permissions_url" field's value of the Zone entity.
+// If the Zone object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ZoneMutation) OldPermissionsURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPermissionsURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPermissionsURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPermissionsURL: %w", err)
+	}
+	return oldValue.PermissionsURL, nil
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (m *ZoneMutation) ClearPermissionsURL() {
+	m.permissions_url = nil
+	m.clearedFields[zone.FieldPermissionsURL] = struct{}{}
+}
+
+// PermissionsURLCleared returns if the "permissions_url" field was cleared in this mutation.
+func (m *ZoneMutation) PermissionsURLCleared() bool {
+	_, ok := m.clearedFields[zone.FieldPermissionsURL]
+	return ok
+}
+
+// ResetPermissionsURL resets all changes to the "permissions_url" field.
+func (m *ZoneMutation) ResetPermissionsURL() {
+	m.permissions_url = nil
+	delete(m.clearedFields, zone.FieldPermissionsURL)
+}
+
 // SetVisibility sets the "visibility" field.
 func (m *ZoneMutation) SetVisibility(z zone.Visibility) {
 	m.visibility = &z
@@ -16414,7 +16537,7 @@ func (m *ZoneMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ZoneMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.environment != nil {
 		fields = append(fields, zone.FieldEnvironment)
 	}
@@ -16426,6 +16549,9 @@ func (m *ZoneMutation) Fields() []string {
 	}
 	if m.issuer_url != nil {
 		fields = append(fields, zone.FieldIssuerURL)
+	}
+	if m.permissions_url != nil {
+		fields = append(fields, zone.FieldPermissionsURL)
 	}
 	if m.visibility != nil {
 		fields = append(fields, zone.FieldVisibility)
@@ -16446,6 +16572,8 @@ func (m *ZoneMutation) Field(name string) (ent.Value, bool) {
 		return m.GatewayURL()
 	case zone.FieldIssuerURL:
 		return m.IssuerURL()
+	case zone.FieldPermissionsURL:
+		return m.PermissionsURL()
 	case zone.FieldVisibility:
 		return m.Visibility()
 	}
@@ -16465,6 +16593,8 @@ func (m *ZoneMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldGatewayURL(ctx)
 	case zone.FieldIssuerURL:
 		return m.OldIssuerURL(ctx)
+	case zone.FieldPermissionsURL:
+		return m.OldPermissionsURL(ctx)
 	case zone.FieldVisibility:
 		return m.OldVisibility(ctx)
 	}
@@ -16503,6 +16633,13 @@ func (m *ZoneMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetIssuerURL(v)
+		return nil
+	case zone.FieldPermissionsURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPermissionsURL(v)
 		return nil
 	case zone.FieldVisibility:
 		v, ok := value.(zone.Visibility)
@@ -16550,6 +16687,9 @@ func (m *ZoneMutation) ClearedFields() []string {
 	if m.FieldCleared(zone.FieldIssuerURL) {
 		fields = append(fields, zone.FieldIssuerURL)
 	}
+	if m.FieldCleared(zone.FieldPermissionsURL) {
+		fields = append(fields, zone.FieldPermissionsURL)
+	}
 	return fields
 }
 
@@ -16573,6 +16713,9 @@ func (m *ZoneMutation) ClearField(name string) error {
 	case zone.FieldIssuerURL:
 		m.ClearIssuerURL()
 		return nil
+	case zone.FieldPermissionsURL:
+		m.ClearPermissionsURL()
+		return nil
 	}
 	return fmt.Errorf("unknown Zone nullable field %s", name)
 }
@@ -16592,6 +16735,9 @@ func (m *ZoneMutation) ResetField(name string) error {
 		return nil
 	case zone.FieldIssuerURL:
 		m.ResetIssuerURL()
+		return nil
+	case zone.FieldPermissionsURL:
+		m.ResetPermissionsURL()
 		return nil
 	case zone.FieldVisibility:
 		m.ResetVisibility()

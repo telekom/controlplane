@@ -306,6 +306,26 @@ func (_u *ApplicationUpdate) ClearIPRestrictions() *ApplicationUpdate {
 	return _u
 }
 
+// SetPermissionsURL sets the "permissions_url" field.
+func (_u *ApplicationUpdate) SetPermissionsURL(v string) *ApplicationUpdate {
+	_u.mutation.SetPermissionsURL(v)
+	return _u
+}
+
+// SetNillablePermissionsURL sets the "permissions_url" field if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillablePermissionsURL(v *string) *ApplicationUpdate {
+	if v != nil {
+		_u.SetPermissionsURL(*v)
+	}
+	return _u
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (_u *ApplicationUpdate) ClearPermissionsURL() *ApplicationUpdate {
+	_u.mutation.ClearPermissionsURL()
+	return _u
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by ID.
 func (_u *ApplicationUpdate) SetZoneID(id int) *ApplicationUpdate {
 	_u.mutation.SetZoneID(id)
@@ -696,6 +716,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.IPRestrictionsCleared() {
 		_spec.ClearField(application.FieldIPRestrictions, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.PermissionsURL(); ok {
+		_spec.SetField(application.FieldPermissionsURL, field.TypeString, value)
+	}
+	if _u.mutation.PermissionsURLCleared() {
+		_spec.ClearField(application.FieldPermissionsURL, field.TypeString)
 	}
 	if _u.mutation.ZoneCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1250,6 +1276,26 @@ func (_u *ApplicationUpdateOne) ClearIPRestrictions() *ApplicationUpdateOne {
 	return _u
 }
 
+// SetPermissionsURL sets the "permissions_url" field.
+func (_u *ApplicationUpdateOne) SetPermissionsURL(v string) *ApplicationUpdateOne {
+	_u.mutation.SetPermissionsURL(v)
+	return _u
+}
+
+// SetNillablePermissionsURL sets the "permissions_url" field if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillablePermissionsURL(v *string) *ApplicationUpdateOne {
+	if v != nil {
+		_u.SetPermissionsURL(*v)
+	}
+	return _u
+}
+
+// ClearPermissionsURL clears the value of the "permissions_url" field.
+func (_u *ApplicationUpdateOne) ClearPermissionsURL() *ApplicationUpdateOne {
+	_u.mutation.ClearPermissionsURL()
+	return _u
+}
+
 // SetZoneID sets the "zone" edge to the Zone entity by ID.
 func (_u *ApplicationUpdateOne) SetZoneID(id int) *ApplicationUpdateOne {
 	_u.mutation.SetZoneID(id)
@@ -1670,6 +1716,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	}
 	if _u.mutation.IPRestrictionsCleared() {
 		_spec.ClearField(application.FieldIPRestrictions, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.PermissionsURL(); ok {
+		_spec.SetField(application.FieldPermissionsURL, field.TypeString, value)
+	}
+	if _u.mutation.PermissionsURLCleared() {
+		_spec.ClearField(application.FieldPermissionsURL, field.TypeString)
 	}
 	if _u.mutation.ZoneCleared() {
 		edge := &sqlgraph.EdgeSpec{

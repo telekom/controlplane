@@ -127,6 +127,19 @@ func GetAllMcpSpecificationProblems(ctx context.Context, agenticSpec *v1.McpSpec
 	return runCheckers(ctx, agenticSpec, checkers)
 }
 
+// GetAllAgentSpecificationProblems retrieves all problems across all AgentSpecification sub-resource types.
+func GetAllAgentSpecificationProblems(ctx context.Context, agentSpec *v1.AgentSpecification, stores *roverStore.Stores) (ProblemsResult, error) {
+	if agentSpec.Status.AgentCard.IsEmpty() {
+		return ProblemsResult{}, nil
+	}
+
+	checkers := []SubResourceChecker{
+		NewSubResourceChecker(stores.AgentCardStore),
+	}
+
+	return runCheckers(ctx, agentSpec, checkers)
+}
+
 // --- Internal helpers ---
 
 // runCheckers runs a list of SubResourceCheckers against the given owner and

@@ -256,6 +256,12 @@ func setupOptionalControllers(mgr ctrl.Manager) error {
 		}).SetupWithManager(mgr); err != nil {
 			return fmt.Errorf("create McpSpecification controller: %w", err)
 		}
+		if err := (&controller.AgentSpecificationReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			return fmt.Errorf("create AgentSpecification controller: %w", err)
+		}
 	}
 
 	return nil

@@ -160,11 +160,14 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			var err error
 			var team *organizationv1.Team
 			var group *organizationv1.Group
-			const teamName = "team-alpha"
-			const groupName = "group-alpha"
-			const expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
+			var teamName string
+			var groupName string
+			var expectedTeamNamespaceName string
 
 			BeforeAll(func() {
+				teamName = randName("tm")
+				groupName = randName("gr")
+				expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
 				By("Initializing the Team & Group")
 				team = NewTeam(teamName, groupName, []organizationv1.Member{{Email: "mail@example.com", Name: "member"}})
 				group = NewGroupForTeam(team)
@@ -183,6 +186,11 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Expect(err).NotTo(HaveOccurred())
 				err = k8sClient.Delete(ctx, group)
 				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for team to be fully deleted")
+				Eventually(func() bool {
+					return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team))
+				}, timeout, interval).Should(BeTrue())
 
 				// Identity client deletion is handled by K8s garbage collection via owner reference.
 				// EnvTest does not run the GC controller, so we skip the deletion assertion here.
@@ -240,7 +248,11 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					RunAndReturn(runAndReturnForUpsertTeam())
 
-				Expect(k8sClient.Update(ctx, team)).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).NotTo(HaveOccurred())
+					team.Spec.Secret = "rotate"
+					g.Expect(k8sClient.Update(ctx, team)).NotTo(HaveOccurred())
+				}, timeout, interval).Should(Succeed())
 
 				Eventually(func(g Gomega) {
 					By("Getting the latest version of team object")
@@ -326,7 +338,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 						organizationv1.Member{Email: "mail2@example.com", Name: "member2"},
 					))
 					g.Expect(team.Spec.Category).To(Equal(organizationv1.TeamCategoryCustomer))
-					g.Expect(team.Spec.Secret).To(HavePrefix("$<testgroup-alpha--team-alphasecret-"))
+					g.Expect(team.Spec.Secret).To(HavePrefix("$<test" + groupName + "--" + teamName + "secret-"))
 					g.Expect(team.Spec.Secret).To(HaveSuffix(">"))
 					By("Checking the team identity client is back to desired state")
 					g.Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
@@ -354,9 +366,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 			AfterEach(func() {
 				By("Tearing down the Teams & Groups")
-				secretManagerMock.EXPECT().
-					DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
-					Return(nil)
 				err = k8sClient.DeleteAllOf(ctx, team)
 				if !errors.IsNotFound(err) {
 					Expect(err).NotTo(HaveOccurred())
