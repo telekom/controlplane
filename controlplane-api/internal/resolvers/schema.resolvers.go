@@ -153,11 +153,43 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 	if ent.IsNotLoaded(err) {
 		exposure, err = obj.QueryTarget().Only(sysCtx)
 	}
-	if err != nil {
+
+	if ent.IsNotFound(err) {
+		return nil, err
+	} else if err != nil {
 		return nil, fmt.Errorf("loading target for api subscription %d: %w", obj.ID, err)
 	}
 
 	return loadApiExposureInfo(sysCtx, exposure)
+}
+
+// Traffic is the resolver for the traffic field.
+// Derives the subscriber's effective rate limits from the target exposure's
+// reduced info (see Target). Returns nil when the target is not yet exposed or
+// no rate limit applies to this subscriber.
+func (r *apiSubscriptionResolver) Traffic(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiSubscriptionTraffic, error) {
+	info, err := r.Target(ctx, obj)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	if ent.IsNotFound(err) || info == nil || info.Traffic == nil {
+		return nil, nil
+	}
+
+	app, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		app, err = obj.QueryOwner().Only(viewer.SystemContext(ctx))
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading owner for api subscription %d: %w", obj.ID, err)
+	}
+
+	clientID := ""
+	if app.ClientID != nil {
+		clientID = *app.ClientID
+	}
+	return resolveSubscriptionTraffic(info.Traffic.RateLimit, clientID), nil
 }
 
 // StatusPhase is the resolver for the statusPhase field.

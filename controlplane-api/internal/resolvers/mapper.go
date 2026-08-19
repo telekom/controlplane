@@ -156,3 +156,43 @@ func loadEventExposureInfo(ctx context.Context, exposure *ent.EventExposure) (*m
 	}
 	return mapEventExposureInfo(exposure, app, team, group), nil
 }
+
+// resolveSubscriptionTraffic derives the rate limits relevant to a subscription
+// from the target exposure's rate-limit config: the provider limits, plus the
+// subscriber limits matching the consumer application's client ID (a per-
+// subscriber override — mirroring the gateway's GetOverriddenSubscriberRateLimit
+// — otherwise the default). Returns nil when neither applies.
+func resolveSubscriptionTraffic(rl *model.RateLimit, clientID string) *model.ApiSubscriptionTraffic {
+	if rl == nil {
+		return nil
+	}
+
+	var providerLimits *model.Limits
+	if rl.Provider != nil {
+		providerLimits = &rl.Provider.Limits
+	}
+
+	var subscriberLimits *model.Limits
+	if rl.SubscriberRateLimit != nil {
+		srl := rl.SubscriberRateLimit
+		if srl.Default != nil {
+			subscriberLimits = &srl.Default.Limits
+		}
+		if clientID != "" {
+			for i := range srl.Overrides {
+				if srl.Overrides[i].Subscriber == clientID {
+					subscriberLimits = &srl.Overrides[i].Limits
+					break
+				}
+			}
+		}
+	}
+
+	if providerLimits == nil && subscriberLimits == nil {
+		return nil
+	}
+	return &model.ApiSubscriptionTraffic{
+		ProviderLimits:   providerLimits,
+		SubscriberLimits: subscriberLimits,
+	}
+}

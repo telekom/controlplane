@@ -168,6 +168,14 @@ type Traffic struct {
 	RateLimit *RateLimit `json:"rateLimit,omitempty"` // optional/nillable
 }
 
+// ApiSubscriptionTraffic exposes the rate limits relevant to a subscription:
+// the exposure's provider limits and the subscriber limits matching this
+// subscription's client ID (override, default, or none).
+type ApiSubscriptionTraffic struct {
+	ProviderLimits   *Limits `json:"providerLimits,omitempty"`   // optional/nillable
+	SubscriberLimits *Limits `json:"subscriberLimits,omitempty"` // optional/nillable
+}
+
 // RateLimit defines the exporure based rate limiting
 type RateLimit struct {
 	Provider            *RateLimitConfig      `json:"provider,omitempty"`            // optional
