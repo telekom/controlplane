@@ -11,11 +11,9 @@ import (
 	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
-	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/metrics"
@@ -90,7 +88,6 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	// Target exposure is optional — subscription may exist before the target
 	// API is exposed. If not found, store with NULL target FK.
 	var targetExposureID *int
-	var traffic *model.ApiSubscriptionTraffic
 	if id, findErr := r.deps.FindAPIExposureByBasePath(ctx, data.TargetBasePath); findErr != nil {
 		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
 			return fmt.Errorf("find target api_exposure for subscription (basePath %q): %w",
@@ -99,17 +96,6 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		// Not found — leave targetExposureID as nil.
 	} else {
 		targetExposureID = &id
-
-		// Read only the traffic column to derive subscriber rate limits.
-		exposure, findErr := r.client.ApiExposure.Query().
-			Where(apiexposure.IDEQ(*targetExposureID)).
-			Select(apiexposure.FieldTraffic).
-			Only(ctx)
-		if findErr != nil {
-			return fmt.Errorf("get target api_exposure for subscription (id %d,basePath %q): %w",
-				*targetExposureID, data.TargetBasePath, findErr)
-		}
-		traffic = resolveSubscriptionTraffic(exposure.Traffic.RateLimit, data)
 	}
 
 	create := r.client.ApiSubscription.Create().
@@ -123,8 +109,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		SetStatusMessage(data.StatusMessage).
 		SetOwnerID(ownerAppID).
 		SetNillableTargetID(targetExposureID).
-		SetGatewayURL(data.GatewayUrl).
-		SetTraffic(traffic)
+		SetGatewayURL(data.GatewayUrl)
 
 	subscriptionID, upsertErr := create.
 		OnConflictColumns(apisubscription.FieldBasePath, apisubscription.OwnerColumn).
@@ -162,31 +147,6 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	et, lk := cachekeys.APISubscriptionMeta(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, subscriptionID)
 	return nil
-}
-
-// resolveSubscriptionTraffic derives the traffic limits for a subscriber from
-// the exposure's rate limit config. Returns nil if no subscriber rate limits
-// are configured. A matching per-subscriber override takes precedence over the
-// default limits.
-func resolveSubscriptionTraffic(rl *model.RateLimit, data *APISubscriptionData) *model.ApiSubscriptionTraffic {
-	if rl == nil || rl.SubscriberRateLimit == nil {
-		return nil
-	}
-	srl := rl.SubscriberRateLimit
-	var limits *model.Limits
-	if srl.Default != nil {
-		limits = &srl.Default.Limits
-	}
-	for i := range srl.Overrides {
-		if srl.Overrides[i].Subscriber == data.OwnerTeamName+"--"+data.OwnerAppName {
-			limits = &srl.Overrides[i].Limits
-			break
-		}
-	}
-	if limits == nil {
-		return nil
-	}
-	return &model.ApiSubscriptionTraffic{Limits: limits}
 }
 
 // Delete removes an ApiSubscription entity from the database by owner

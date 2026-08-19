@@ -50,9 +50,6 @@ func (ApiSubscription) Fields() []ent.Field {
 		field.JSON("security", &model.ApiSubscriptionSecurity{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
-		field.JSON("traffic", &model.ApiSubscriptionTraffic{}).
-			Optional().
-			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }
 

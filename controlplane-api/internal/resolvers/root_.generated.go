@@ -194,7 +194,8 @@ type ComplexityRoot struct {
 	}
 
 	ApiSubscriptionTraffic struct {
-		Limits func(childComplexity int) int
+		ProviderLimits   func(childComplexity int) int
+		SubscriberLimits func(childComplexity int) int
 	}
 
 	Application struct {
@@ -1328,12 +1329,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscriptionSecurity.M2M(childComplexity), true
 
-	case "ApiSubscriptionTraffic.limits":
-		if e.ComplexityRoot.ApiSubscriptionTraffic.Limits == nil {
+	case "ApiSubscriptionTraffic.providerLimits":
+		if e.ComplexityRoot.ApiSubscriptionTraffic.ProviderLimits == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ApiSubscriptionTraffic.Limits(childComplexity), true
+		return e.ComplexityRoot.ApiSubscriptionTraffic.ProviderLimits(childComplexity), true
+	case "ApiSubscriptionTraffic.subscriberLimits":
+		if e.ComplexityRoot.ApiSubscriptionTraffic.SubscriberLimits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionTraffic.SubscriberLimits(childComplexity), true
 
 	case "Application.clientID":
 		if e.ComplexityRoot.Application.ClientID == nil {
@@ -4155,7 +4162,6 @@ type ApiSubscription implements Node {
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
   security: ApiSubscriptionSecurity
-  traffic: ApiSubscriptionTraffic
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
@@ -8129,7 +8135,8 @@ type Traffic {
 }
 
 type ApiSubscriptionTraffic {
-  limits: Limits
+  providerLimits: Limits
+  subscriberLimits: Limits
 }
 
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
@@ -8185,6 +8192,8 @@ extend type Zone {
 extend type ApiSubscription {
   "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
   target: ApiExposureInfo @goField(forceResolver: true)
+  "Effective per-subscriber rate limits, derived on read from the target exposure's rate-limit config. Null when no subscriber rate limit applies."
+  traffic: ApiSubscriptionTraffic @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
@@ -8461,8 +8470,6 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
 	case "security":
 		return ec.fieldContext_ApiSubscription_security(ctx, field)
-	case "traffic":
-		return ec.fieldContext_ApiSubscription_traffic(ctx, field)
 	case "owner":
 		return ec.fieldContext_ApiSubscription_owner(ctx, field)
 	case "failoverZones":
@@ -8473,6 +8480,8 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_approvalRequests(ctx, field)
 	case "target":
 		return ec.fieldContext_ApiSubscription_target(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiSubscription_traffic(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscription", field.Name)
 }
@@ -8527,8 +8536,10 @@ func (ec *executionContext) childFields_ApiSubscriptionSecurity(ctx context.Cont
 
 func (ec *executionContext) childFields_ApiSubscriptionTraffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
-	case "limits":
-		return ec.fieldContext_ApiSubscriptionTraffic_limits(ctx, field)
+	case "providerLimits":
+		return ec.fieldContext_ApiSubscriptionTraffic_providerLimits(ctx, field)
+	case "subscriberLimits":
+		return ec.fieldContext_ApiSubscriptionTraffic_subscriberLimits(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionTraffic", field.Name)
 }

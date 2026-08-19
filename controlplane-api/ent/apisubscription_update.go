@@ -191,18 +191,6 @@ func (_u *ApiSubscriptionUpdate) ClearSecurity() *ApiSubscriptionUpdate {
 	return _u
 }
 
-// SetTraffic sets the "traffic" field.
-func (_u *ApiSubscriptionUpdate) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpdate {
-	_u.mutation.SetTraffic(v)
-	return _u
-}
-
-// ClearTraffic clears the value of the "traffic" field.
-func (_u *ApiSubscriptionUpdate) ClearTraffic() *ApiSubscriptionUpdate {
-	_u.mutation.ClearTraffic()
-	return _u
-}
-
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_u *ApiSubscriptionUpdate) SetOwnerID(id int) *ApiSubscriptionUpdate {
 	_u.mutation.SetOwnerID(id)
@@ -478,12 +466,6 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if _u.mutation.SecurityCleared() {
 		_spec.ClearField(apisubscription.FieldSecurity, field.TypeJSON)
-	}
-	if value, ok := _u.mutation.Traffic(); ok {
-		_spec.SetField(apisubscription.FieldTraffic, field.TypeJSON, value)
-	}
-	if _u.mutation.TrafficCleared() {
-		_spec.ClearField(apisubscription.FieldTraffic, field.TypeJSON)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -836,18 +818,6 @@ func (_u *ApiSubscriptionUpdateOne) ClearSecurity() *ApiSubscriptionUpdateOne {
 	return _u
 }
 
-// SetTraffic sets the "traffic" field.
-func (_u *ApiSubscriptionUpdateOne) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpdateOne {
-	_u.mutation.SetTraffic(v)
-	return _u
-}
-
-// ClearTraffic clears the value of the "traffic" field.
-func (_u *ApiSubscriptionUpdateOne) ClearTraffic() *ApiSubscriptionUpdateOne {
-	_u.mutation.ClearTraffic()
-	return _u
-}
-
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_u *ApiSubscriptionUpdateOne) SetOwnerID(id int) *ApiSubscriptionUpdateOne {
 	_u.mutation.SetOwnerID(id)
@@ -1153,12 +1123,6 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	}
 	if _u.mutation.SecurityCleared() {
 		_spec.ClearField(apisubscription.FieldSecurity, field.TypeJSON)
-	}
-	if value, ok := _u.mutation.Traffic(); ok {
-		_spec.SetField(apisubscription.FieldTraffic, field.TypeJSON, value)
-	}
-	if _u.mutation.TrafficCleared() {
-		_spec.ClearField(apisubscription.FieldTraffic, field.TypeJSON)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

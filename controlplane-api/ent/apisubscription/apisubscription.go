@@ -43,8 +43,6 @@ const (
 	FieldGatewayURL = "gateway_url"
 	// FieldSecurity holds the string denoting the security field in the database.
 	FieldSecurity = "security"
-	// FieldTraffic holds the string denoting the traffic field in the database.
-	FieldTraffic = "traffic"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeTarget holds the string denoting the target edge name in mutations.
@@ -108,7 +106,6 @@ var Columns = []string{
 	FieldM2mAuthMethod,
 	FieldGatewayURL,
 	FieldSecurity,
-	FieldTraffic,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "api_subscriptions"

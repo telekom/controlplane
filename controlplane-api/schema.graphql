@@ -242,7 +242,8 @@ type Traffic {
 }
 
 type ApiSubscriptionTraffic {
-  limits: Limits
+  providerLimits: Limits
+  subscriberLimits: Limits
 }
 
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
@@ -298,6 +299,8 @@ extend type Zone {
 extend type ApiSubscription {
   "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
   target: ApiExposureInfo @goField(forceResolver: true)
+  "Effective per-subscriber rate limits, derived on read from the target exposure's rate-limit config. Null when no subscriber rate limit applies."
+  traffic: ApiSubscriptionTraffic @goField(forceResolver: true)
 }
 
 extend type ApiExposure {

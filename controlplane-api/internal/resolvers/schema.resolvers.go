@@ -160,6 +160,41 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 	return loadApiExposureInfo(sysCtx, exposure)
 }
 
+// Traffic is the resolver for the traffic field.
+// Computes the subscriber's effective rate limits on read from the target
+// exposure's rate-limit config. Returns nil when the target is not yet exposed
+// or no subscriber rate limit applies.
+func (r *apiSubscriptionResolver) Traffic(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiSubscriptionTraffic, error) {
+	// SystemContext: The target exposure belongs to another tenant; privacy rules
+	// would block this traversal. A subscriber is entitled to see its own limits.
+	sysCtx := viewer.SystemContext(ctx)
+
+	exposure, err := obj.Edges.TargetOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryTarget().Only(sysCtx)
+	}
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading target for api subscription %d: %w", obj.ID, err)
+	}
+
+	app, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		app, err = obj.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading owner for api subscription %d: %w", obj.ID, err)
+	}
+
+	clientID := ""
+	if app.ClientID != nil {
+		clientID = *app.ClientID
+	}
+	return resolveSubscriptionTraffic(exposure.Traffic.RateLimit, clientID), nil
+}
+
 // StatusPhase is the resolver for the statusPhase field.
 func (r *apiSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error) {
 	if obj.StatusPhase == nil {
