@@ -85,7 +85,12 @@ var _ = Describe("InstanceHandler", func() {
 		Expect(createdModel.Description).NotTo(BeNil())
 		Expect(*createdModel.Description).To(Equal("Team transfer user"))
 		Expect(createdModel.HorizonNotificationEvents).NotTo(BeNil())
-		Expect(*createdModel.HorizonNotificationEvents).To(BeEmpty())
+		Expect(*createdModel.HorizonNotificationEvents).To(Equal([]service.RoverSftpUserModelHorizonNotificationEvents{
+			service.Delete,
+			service.Download,
+			service.Upload,
+			service.Rename,
+		}))
 	})
 
 	It("skips service user provisioning when the Ready condition observed generation is current", func() {
