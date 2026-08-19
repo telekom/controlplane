@@ -212,6 +212,26 @@ var _ = Describe("UserHandler", func() {
 
 		Expect(handler.Delete(ctx, user)).To(Succeed())
 	})
+
+	It("does not fail delete when SFTP user does not exist in external service", func() {
+		instance := testInstanceWithReadyStatus()
+		user := testUser()
+		handler, ctx, mockService, mockClient := newTestHandler()
+
+		mockClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: userHandlerTestInstance, Namespace: userHandlerTestNamespace}, &sftpv1.Instance{}).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				*out.(*sftpv1.Instance) = *instance
+			}).
+			Return(nil).
+			Once()
+
+		mockService.EXPECT().UpdatePublicKeysForSFTPUser(mock.Anything, instance.Name, user.Namespace+"/"+user.Name, service.ClientPublicKeyMap{
+			"items": []service.RoverPublicKeyModel{},
+		}).Return(service.ErrNotFound).Once()
+
+		Expect(handler.Delete(ctx, user)).To(Succeed())
+	})
 })
 
 func newTestHandler() (*UserHandler, context.Context, *sftpmocks.MockService, *fake.MockJanitorClient) {

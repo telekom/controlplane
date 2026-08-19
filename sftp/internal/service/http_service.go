@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 )
 
 // HTTPService implements Service using the generated SFTP Tardis OpenAPI client.
@@ -58,7 +56,7 @@ func newClientWithResponses(cfg Config) (ClientWithResponsesInterface, error) {
 func (s *HTTPService) CreateOrUpdateSFTPUser(ctx context.Context, user RoverSftpUserModel) error {
 	res, err := s.client.CreateOrUpdateSftpUserWithResponse(ctx, user)
 	if err != nil {
-		return ctrlerrors.RetryableErrorf("SFTP Tardis API request failed: %s", err.Error())
+		return fmt.Errorf("SFTP Tardis API request failed: %w", err)
 	}
 
 	switch res.StatusCode() {
@@ -74,7 +72,7 @@ func (s *HTTPService) UpdatePublicKeysForSFTPUser(ctx context.Context, sftpUserN
 		ClientId: clientID,
 	}, keys)
 	if err != nil {
-		return ctrlerrors.RetryableErrorf("SFTP Tardis API request failed: %s", err.Error())
+		return fmt.Errorf("SFTP Tardis API request failed: %w", err)
 	}
 
 	switch res.StatusCode() {
@@ -88,7 +86,7 @@ func (s *HTTPService) UpdatePublicKeysForSFTPUser(ctx context.Context, sftpUserN
 func (s *HTTPService) DeleteSFTPUser(ctx context.Context, sftpUserName string) error {
 	res, err := s.client.DeleteSftpUserWithResponse(ctx, sftpUserName)
 	if err != nil {
-		return ctrlerrors.RetryableErrorf("SFTP Tardis API request failed: %s", err.Error())
+		return fmt.Errorf("SFTP Tardis API request failed: %w", err)
 	}
 
 	switch res.StatusCode() {
