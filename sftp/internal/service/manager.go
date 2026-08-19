@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 )
@@ -44,7 +43,7 @@ func (f *HTTPServiceFactory) ServiceFor(ctx context.Context, sftpServiceConfig c
 	cached, ok := f.services[cacheKey]
 	f.mu.RUnlock()
 	if !ok {
-		return nil, ctrlerrors.RetryableErrorf("SFTP client for SFTPServiceConfig %q is not initialized", cacheKey)
+		return nil, fmt.Errorf("SFTP client for SFTPServiceConfig %q is not initialized", cacheKey)
 	}
 
 	return cached.service, nil
