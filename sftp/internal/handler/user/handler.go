@@ -6,6 +6,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -58,7 +59,7 @@ func (h *UserHandler) CreateOrUpdate(ctx context.Context, obj *sftpv1.User) erro
 	log := logf.FromContext(ctx)
 	conditionReady := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 	if conditionReady != nil && conditionReady.ObservedGeneration == obj.Generation && conditionReady.Status == v1.ConditionTrue {
-		log.Info("User spec didn't change, skipping updating of SSH Public keys in external service")
+		log.V(1).Info("User spec didn't change, skipping updating of SSH Public keys in external service")
 		return nil
 	}
 
@@ -110,7 +111,7 @@ func (h *UserHandler) Delete(ctx context.Context, obj *sftpv1.User) error {
 	clientID := userClientID(obj)
 
 	err = sftpService.UpdatePublicKeysForSFTPUser(ctx, instance.Name, clientID, getRoverPublicKeys(nil, instance.Name, clientID))
-	if err != nil {
+	if err != nil && !errors.Is(err, service.ErrNotFound) {
 		return fmt.Errorf("removing public keys for User %q on SFTP user %q: %w", obj.Name, instance.Name, err)
 	}
 
