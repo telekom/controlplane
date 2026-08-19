@@ -166,6 +166,7 @@ type ComplexityRoot struct {
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
 		Target           func(childComplexity int) int
+		Traffic          func(childComplexity int) int
 	}
 
 	ApiSubscriptionConnection struct {
@@ -190,6 +191,10 @@ type ComplexityRoot struct {
 
 	ApiSubscriptionSecurity struct {
 		M2M func(childComplexity int) int
+	}
+
+	ApiSubscriptionTraffic struct {
+		Limits func(childComplexity int) int
 	}
 
 	Application struct {
@@ -1240,6 +1245,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Target(childComplexity), true
+	case "ApiSubscription.traffic":
+		if e.ComplexityRoot.ApiSubscription.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.Traffic(childComplexity), true
 
 	case "ApiSubscriptionConnection.edges":
 		if e.ComplexityRoot.ApiSubscriptionConnection.Edges == nil {
@@ -1316,6 +1327,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionSecurity.M2M(childComplexity), true
+
+	case "ApiSubscriptionTraffic.limits":
+		if e.ComplexityRoot.ApiSubscriptionTraffic.Limits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionTraffic.Limits(childComplexity), true
 
 	case "Application.clientID":
 		if e.ComplexityRoot.Application.ClientID == nil {
@@ -4137,6 +4155,7 @@ type ApiSubscription implements Node {
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
   security: ApiSubscriptionSecurity
+  traffic: ApiSubscriptionTraffic
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
@@ -8109,6 +8128,10 @@ type Traffic {
   rateLimit: RateLimit
 }
 
+type ApiSubscriptionTraffic {
+  limits: Limits
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
 type ApiSubscriptionInfo {
   id: ID!
@@ -8438,6 +8461,8 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
 	case "security":
 		return ec.fieldContext_ApiSubscription_security(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiSubscription_traffic(ctx, field)
 	case "owner":
 		return ec.fieldContext_ApiSubscription_owner(ctx, field)
 	case "failoverZones":
@@ -8498,6 +8523,14 @@ func (ec *executionContext) childFields_ApiSubscriptionSecurity(ctx context.Cont
 		return ec.fieldContext_ApiSubscriptionSecurity_m2m(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionSecurity", field.Name)
+}
+
+func (ec *executionContext) childFields_ApiSubscriptionTraffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "limits":
+		return ec.fieldContext_ApiSubscriptionTraffic_limits(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionTraffic", field.Name)
 }
 
 func (ec *executionContext) childFields_Application(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

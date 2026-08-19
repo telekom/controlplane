@@ -573,6 +573,38 @@ func (ec *executionContext) fieldContext_ApiSubscriptionSecurity_m2m(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiSubscriptionTraffic_limits(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscriptionTraffic_limits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Limits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Limits) graphql.Marshaler {
+			return ec.marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscriptionTraffic_limits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscriptionTraffic",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Limits(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApprovalConfig_strategy(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3262,6 +3294,44 @@ func (ec *executionContext) _ApiSubscriptionSecurity(ctx context.Context, sel as
 	return out
 }
 
+var apiSubscriptionTrafficImplementors = []string{"ApiSubscriptionTraffic"}
+
+func (ec *executionContext) _ApiSubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, obj *model.ApiSubscriptionTraffic) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionTrafficImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ApiSubscriptionTraffic")
+		case "limits":
+			out.Values[i] = ec._ApiSubscriptionTraffic_limits(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var approvalConfigImplementors = []string{"ApprovalConfig"}
 
 func (ec *executionContext) _ApprovalConfig(ctx context.Context, sel ast.SelectionSet, obj *model.ApprovalConfig) graphql.Marshaler {
@@ -5495,6 +5565,13 @@ func (ec *executionContext) marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋte
 	return ec._ApiSubscriptionSecurity(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOApiSubscriptionTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionTraffic) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ApiSubscriptionTraffic(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -5587,6 +5664,13 @@ func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrol
 
 func (ec *executionContext) marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx context.Context, sel ast.SelectionSet, v model.IpRestrictions) graphql.Marshaler {
 	return ec._IpRestrictions(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v *model.Limits) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Limits(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model.Machine2MachineAuthentication) graphql.Marshaler {

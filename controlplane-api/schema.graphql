@@ -241,6 +241,10 @@ type Traffic {
   rateLimit: RateLimit
 }
 
+type ApiSubscriptionTraffic {
+  limits: Limits
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
 type ApiSubscriptionInfo {
   id: ID!
