@@ -242,7 +242,8 @@ type Traffic {
 }
 
 type ApiSubscriptionTraffic {
-  limits: Limits
+  providerLimits: Limits
+  subscriberLimits: Limits
 }
 
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."

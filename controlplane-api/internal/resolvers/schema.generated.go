@@ -573,16 +573,16 @@ func (ec *executionContext) fieldContext_ApiSubscriptionSecurity_m2m(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiSubscriptionTraffic_limits(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiSubscriptionTraffic_providerLimits(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionTraffic_limits(ctx, field)
+			return ec.fieldContext_ApiSubscriptionTraffic_providerLimits(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.Limits, nil
+			return obj.ProviderLimits, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.Limits) graphql.Marshaler {
@@ -592,7 +592,39 @@ func (ec *executionContext) _ApiSubscriptionTraffic_limits(ctx context.Context, 
 		false,
 	)
 }
-func (ec *executionContext) fieldContext_ApiSubscriptionTraffic_limits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApiSubscriptionTraffic_providerLimits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscriptionTraffic",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Limits(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiSubscriptionTraffic_subscriberLimits(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscriptionTraffic_subscriberLimits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SubscriberLimits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Limits) graphql.Marshaler {
+			return ec.marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscriptionTraffic_subscriberLimits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApiSubscriptionTraffic",
 		Field:      field,
@@ -3306,8 +3338,13 @@ func (ec *executionContext) _ApiSubscriptionTraffic(ctx context.Context, sel ast
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ApiSubscriptionTraffic")
-		case "limits":
-			out.Values[i] = ec._ApiSubscriptionTraffic_limits(ctx, field, obj)
+		case "providerLimits":
+			out.Values[i] = ec._ApiSubscriptionTraffic_providerLimits(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "subscriberLimits":
+			out.Values[i] = ec._ApiSubscriptionTraffic_subscriberLimits(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}

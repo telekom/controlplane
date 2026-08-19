@@ -194,7 +194,8 @@ type ComplexityRoot struct {
 	}
 
 	ApiSubscriptionTraffic struct {
-		Limits func(childComplexity int) int
+		ProviderLimits   func(childComplexity int) int
+		SubscriberLimits func(childComplexity int) int
 	}
 
 	Application struct {
@@ -1328,12 +1329,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscriptionSecurity.M2M(childComplexity), true
 
-	case "ApiSubscriptionTraffic.limits":
-		if e.ComplexityRoot.ApiSubscriptionTraffic.Limits == nil {
+	case "ApiSubscriptionTraffic.providerLimits":
+		if e.ComplexityRoot.ApiSubscriptionTraffic.ProviderLimits == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ApiSubscriptionTraffic.Limits(childComplexity), true
+		return e.ComplexityRoot.ApiSubscriptionTraffic.ProviderLimits(childComplexity), true
+	case "ApiSubscriptionTraffic.subscriberLimits":
+		if e.ComplexityRoot.ApiSubscriptionTraffic.SubscriberLimits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionTraffic.SubscriberLimits(childComplexity), true
 
 	case "Application.clientID":
 		if e.ComplexityRoot.Application.ClientID == nil {
@@ -8129,7 +8136,8 @@ type Traffic {
 }
 
 type ApiSubscriptionTraffic {
-  limits: Limits
+  providerLimits: Limits
+  subscriberLimits: Limits
 }
 
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
@@ -8527,8 +8535,10 @@ func (ec *executionContext) childFields_ApiSubscriptionSecurity(ctx context.Cont
 
 func (ec *executionContext) childFields_ApiSubscriptionTraffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
-	case "limits":
-		return ec.fieldContext_ApiSubscriptionTraffic_limits(ctx, field)
+	case "providerLimits":
+		return ec.fieldContext_ApiSubscriptionTraffic_providerLimits(ctx, field)
+	case "subscriberLimits":
+		return ec.fieldContext_ApiSubscriptionTraffic_subscriberLimits(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionTraffic", field.Name)
 }

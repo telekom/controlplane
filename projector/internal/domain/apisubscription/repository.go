@@ -169,24 +169,33 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 // are configured. A matching per-subscriber override takes precedence over the
 // default limits.
 func resolveSubscriptionTraffic(rl *model.RateLimit, data *APISubscriptionData) *model.ApiSubscriptionTraffic {
-	if rl == nil || rl.SubscriberRateLimit == nil {
+	if rl == nil {
 		return nil
 	}
-	srl := rl.SubscriberRateLimit
-	var limits *model.Limits
-	if srl.Default != nil {
-		limits = &srl.Default.Limits
-	}
-	for i := range srl.Overrides {
-		if srl.Overrides[i].Subscriber == data.OwnerTeamName+"--"+data.OwnerAppName {
-			limits = &srl.Overrides[i].Limits
-			break
+
+	var subLimits *model.Limits
+	if rl.SubscriberRateLimit != nil {
+		if rl.SubscriberRateLimit.Default != nil {
+			subLimits = &rl.SubscriberRateLimit.Default.Limits
+		}
+		subscriber := data.OwnerTeamName + "--" + data.OwnerAppName
+		for i := range rl.SubscriberRateLimit.Overrides {
+			if rl.SubscriberRateLimit.Overrides[i].Subscriber == subscriber {
+				subLimits = &rl.SubscriberRateLimit.Overrides[i].Limits
+				break
+			}
 		}
 	}
-	if limits == nil {
+
+	var providerLimits *model.Limits
+	if rl.Provider != nil {
+		providerLimits = &rl.Provider.Limits
+	}
+
+	if subLimits == nil && providerLimits == nil {
 		return nil
 	}
-	return &model.ApiSubscriptionTraffic{Limits: limits}
+	return &model.ApiSubscriptionTraffic{SubscriberLimits: subLimits, ProviderLimits: providerLimits}
 }
 
 // Delete removes an ApiSubscription entity from the database by owner
