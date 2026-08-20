@@ -13,7 +13,7 @@ name: Dependabot Tidy
 # A commit pushed with a plain GITHUB_TOKEN does NOT re-trigger other workflow
 # runs (GitHub blocks it to prevent recursion). To make CI re-run after the
 # tidy commit, this workflow uses a GitHub App token (APP_ID + APP_PRIVATE_KEY
-# secrets) when available. Without those secrets the push is still made but CI
+# variable & secret) when configured. Without them the push is still made but CI
 # must be re-triggered manually (or via "Re-run workflows").
 on:
   pull_request_target:
@@ -45,10 +45,10 @@ jobs:
       # when new commits are pushed to the PR branch.
       - name: Generate GitHub App token
         id: app_token
-        if: ${{ secrets.APP_ID != '' && secrets.APP_PRIVATE_KEY != '' }}
+        if: ${{ vars.APP_ID != '' }}
         uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
         with:
-          app-id: ${{ secrets.APP_ID }}
+          app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Resolve PR head SHA
