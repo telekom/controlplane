@@ -424,6 +424,212 @@ var _ = Describe("ApiSubscription Repository", func() {
 		})
 	})
 
+	Describe("Upsert rate limit traffic", func() {
+		// setExposureTraffic overwrites the seeded target exposure's traffic config.
+		setExposureTraffic := func(traffic model.Traffic) {
+			Expect(client.ApiExposure.UpdateOneID(exposureID).
+				SetTraffic(traffic).
+				Exec(ctx)).To(Succeed())
+		}
+
+		querySubTraffic := func() *model.ApiSubscriptionTraffic {
+			sub, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			return sub.Traffic
+		}
+
+		It("should leave traffic nil when the exposure has no rate limit config", func() {
+			// Seeded exposure has empty Traffic (RateLimit nil).
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+			Expect(querySubTraffic()).To(BeNil())
+		})
+
+		It("should apply provider limits when only provider rate limits are configured", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 50},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.SubscriberLimits).To(BeNil())
+			Expect(traffic.ProviderLimits).NotTo(BeNil())
+			Expect(*traffic.ProviderLimits).To(Equal(model.Limits{Second: 50}))
+		})
+
+		It("should apply the default subscriber limits when no override matches", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.ProviderLimits).To(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10, Minute: 100, Hour: 1000}))
+		})
+
+		It("should prefer a matching subscriber override over the default", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+						},
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "other-subscription", Limits: model.Limits{Second: 1}},
+							{Subscriber: "platform--narvi--consumer-app", Limits: model.Limits{Second: 5, Minute: 50, Hour: 500}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.ProviderLimits).To(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 5, Minute: 50, Hour: 500}))
+		})
+
+		It("should apply the default when overrides exist but none match the subscriber", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+						},
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "other-team--other-app", Limits: model.Limits{Second: 1}},
+							{Subscriber: "another-team--another-app", Limits: model.Limits{Second: 2}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.ProviderLimits).To(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10, Minute: 100, Hour: 1000}))
+		})
+
+		It("should apply an override even when no default is configured", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "platform--narvi--consumer-app", Limits: model.Limits{Second: 7}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.ProviderLimits).To(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 7}))
+		})
+
+		It("should apply both subscriber and provider limits when both are configured", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 50, Minute: 500, Hour: 5000},
+					},
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10, Minute: 100, Hour: 1000}))
+			Expect(traffic.ProviderLimits).NotTo(BeNil())
+			Expect(*traffic.ProviderLimits).To(Equal(model.Limits{Second: 50, Minute: 500, Hour: 5000}))
+		})
+
+		It("should apply provider limits alongside a matching subscriber override", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 50},
+					},
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10},
+						},
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "platform--narvi--consumer-app", Limits: model.Limits{Second: 5}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 5}))
+			Expect(traffic.ProviderLimits).NotTo(BeNil())
+			Expect(*traffic.ProviderLimits).To(Equal(model.Limits{Second: 50}))
+		})
+
+		It("should leave traffic nil when only a non-matching override exists", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "other-subscription", Limits: model.Limits{Second: 3}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+			Expect(querySubTraffic()).To(BeNil())
+		})
+
+		It("should leave traffic nil when the target exposure is missing", func() {
+			missingDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+				exposureIDs: map[string]int{}, // no exposure resolved
+			}
+			repo = apisubscription.NewRepository(client, cache, missingDeps)
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+			Expect(querySubTraffic()).To(BeNil())
+		})
+	})
+
 	Describe("Delete", func() {
 		It("should delete an existing subscription and clean meta cache entry", func() {
 			data := baseData()
