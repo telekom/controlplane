@@ -1951,6 +1951,52 @@ func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientKey(_ con
 	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _OwnerApplicationInfo_applicationId(ctx context.Context, field graphql.CollectedField, obj *model.OwnerApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OwnerApplicationInfo_applicationId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ApplicationID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OwnerApplicationInfo_applicationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OwnerApplicationInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _OwnerApplicationInfo_ictoNumber(ctx context.Context, field graphql.CollectedField, obj *model.OwnerApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OwnerApplicationInfo_ictoNumber(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.IctoNumber, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OwnerApplicationInfo_ictoNumber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OwnerApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Permission_role(ctx context.Context, field graphql.CollectedField, obj *model.Permission) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4532,6 +4578,49 @@ func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel as
 	return out
 }
 
+var ownerApplicationInfoImplementors = []string{"OwnerApplicationInfo"}
+
+func (ec *executionContext) _OwnerApplicationInfo(ctx context.Context, sel ast.SelectionSet, obj *model.OwnerApplicationInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, ownerApplicationInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OwnerApplicationInfo")
+		case "applicationId":
+			out.Values[i] = ec._OwnerApplicationInfo_applicationId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ictoNumber":
+			out.Values[i] = ec._OwnerApplicationInfo_ictoNumber(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var permissionImplementors = []string{"Permission"}
 
 func (ec *executionContext) _Permission(ctx context.Context, sel ast.SelectionSet, obj *model.Permission) graphql.Marshaler {
@@ -5619,6 +5708,13 @@ func (ec *executionContext) marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋte
 		return graphql.Null
 	}
 	return ec._OAuth2ClientCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOOwnerApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOwnerApplicationInfo(ctx context.Context, sel ast.SelectionSet, v *model.OwnerApplicationInfo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._OwnerApplicationInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOPermission2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐPermission(ctx context.Context, sel ast.SelectionSet, v model.Permission) graphql.Marshaler {

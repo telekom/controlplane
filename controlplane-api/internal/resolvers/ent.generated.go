@@ -41,6 +41,7 @@ type ApiResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.Api) (*string, error)
 	ActiveExposure(ctx context.Context, obj *ent.Api) (*model.ApiExposureInfo, error)
 	Owner(ctx context.Context, obj *ent.Api) (*model.TeamInfo, error)
+	OwnerApplication(ctx context.Context, obj *ent.Api) (*model.OwnerApplicationInfo, error)
 }
 type ApiExposureResolver interface {
 	Features(ctx context.Context, obj *ent.ApiExposure) ([]model1.APIExposureFeature, error)
@@ -73,6 +74,7 @@ type EventTypeResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.EventType) (*string, error)
 	ActiveExposure(ctx context.Context, obj *ent.EventType) (*model.EventExposureInfo, error)
 	Owner(ctx context.Context, obj *ent.EventType) (*model.TeamInfo, error)
+	OwnerApplication(ctx context.Context, obj *ent.EventType) (*model.OwnerApplicationInfo, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -1493,6 +1495,38 @@ func (ec *executionContext) fieldContext_Api_owner(_ context.Context, field grap
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Api_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *ent.Api) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Api_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Api().OwnerApplication(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.OwnerApplicationInfo) graphql.Marshaler {
+			return ec.marshalOOwnerApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOwnerApplicationInfo(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Api_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Api",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_OwnerApplicationInfo(ctx, field)
 		},
 	}
 	return fc, nil
@@ -6454,6 +6488,38 @@ func (ec *executionContext) fieldContext_EventType_owner(_ context.Context, fiel
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventType_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *ent.EventType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventType_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.EventType().OwnerApplication(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.OwnerApplicationInfo) graphql.Marshaler {
+			return ec.marshalOOwnerApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOwnerApplicationInfo(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventType_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventType",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_OwnerApplicationInfo(ctx, field)
 		},
 	}
 	return fc, nil
@@ -21486,6 +21552,44 @@ func (ec *executionContext) _Api(ctx context.Context, sel ast.SelectionSet, obj 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "ownerApplication":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Api_ownerApplication(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -24209,6 +24313,44 @@ func (ec *executionContext) _EventType(ctx context.Context, sel ast.SelectionSet
 				}()
 				res = ec._EventType_owner(ctx, field, obj)
 				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "ownerApplication":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._EventType_ownerApplication(ctx, field, obj)
+				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res

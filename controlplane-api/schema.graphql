@@ -19,6 +19,11 @@ type TeamInfo {
   description: String
 }
 
+type OwnerApplicationInfo {
+  applicationId: ID!
+  ictoNumber: String
+}
+
 type Upstream {
   url: String!
   weight: Int!
@@ -335,6 +340,8 @@ extend type Api {
   activeExposure: ApiExposureInfo @goField(forceResolver: true)
   "The team that owns this API."
   owner: TeamInfo! @goField(forceResolver: true)
+  "Owning application (reduced view) used for UI link resolution."
+  ownerApplication: OwnerApplicationInfo @goField(forceResolver: true)
 }
 
 extend type EventType {
@@ -344,6 +351,8 @@ extend type EventType {
   activeExposure: EventExposureInfo @goField(forceResolver: true)
   "The team that owns this event type."
   owner: TeamInfo! @goField(forceResolver: true)
+  "Owning application (reduced view) used for UI link resolution."
+  ownerApplication: OwnerApplicationInfo @goField(forceResolver: true)
 }
 
 extend type Query {
@@ -359,4 +368,3 @@ type ApiCategory {
   "The category identifier/name."
   name: String!
 }
-

@@ -76,6 +76,7 @@ type ComplexityRoot struct {
 		Namespace        func(childComplexity int) int
 		Oauth2Scopes     func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		OwnerApplication func(childComplexity int) int
 		SpecificationURL func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
@@ -471,6 +472,7 @@ type ComplexityRoot struct {
 		LastModifiedAt   func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		OwnerApplication func(childComplexity int) int
 		SpecificationURL func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
@@ -565,6 +567,11 @@ type ComplexityRoot struct {
 		ClientId     func(childComplexity int) int
 		ClientKey    func(childComplexity int) int
 		ClientSecret func(childComplexity int) int
+	}
+
+	OwnerApplicationInfo struct {
+		ApplicationID func(childComplexity int) int
+		IctoNumber    func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -853,6 +860,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Api.Owner(childComplexity), true
+	case "Api.ownerApplication":
+		if e.ComplexityRoot.Api.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.OwnerApplication(childComplexity), true
 	case "Api.specificationUrl":
 		if e.ComplexityRoot.Api.SpecificationURL == nil {
 			break
@@ -2478,6 +2491,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventType.Owner(childComplexity), true
+	case "EventType.ownerApplication":
+		if e.ComplexityRoot.EventType.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventType.OwnerApplication(childComplexity), true
 	case "EventType.specificationUrl":
 		if e.ComplexityRoot.EventType.SpecificationURL == nil {
 			break
@@ -2881,6 +2900,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.OAuth2ClientCredentials.ClientSecret(childComplexity), true
+
+	case "OwnerApplicationInfo.applicationId":
+		if e.ComplexityRoot.OwnerApplicationInfo.ApplicationID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OwnerApplicationInfo.ApplicationID(childComplexity), true
+	case "OwnerApplicationInfo.ictoNumber":
+		if e.ComplexityRoot.OwnerApplicationInfo.IctoNumber == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OwnerApplicationInfo.IctoNumber(childComplexity), true
 
 	case "PageInfo.endCursor":
 		if e.ComplexityRoot.PageInfo.EndCursor == nil {
@@ -7887,6 +7919,11 @@ type TeamInfo {
   description: String
 }
 
+type OwnerApplicationInfo {
+  applicationId: ID!
+  ictoNumber: String
+}
+
 type Upstream {
   url: String!
   weight: Int!
@@ -8203,6 +8240,8 @@ extend type Api {
   activeExposure: ApiExposureInfo @goField(forceResolver: true)
   "The team that owns this API."
   owner: TeamInfo! @goField(forceResolver: true)
+  "Owning application (reduced view) used for UI link resolution."
+  ownerApplication: OwnerApplicationInfo @goField(forceResolver: true)
 }
 
 extend type EventType {
@@ -8212,6 +8251,8 @@ extend type EventType {
   activeExposure: EventExposureInfo @goField(forceResolver: true)
   "The team that owns this event type."
   owner: TeamInfo! @goField(forceResolver: true)
+  "Owning application (reduced view) used for UI link resolution."
+  ownerApplication: OwnerApplicationInfo @goField(forceResolver: true)
 }
 
 extend type Query {
@@ -8227,7 +8268,6 @@ type ApiCategory {
   "The category identifier/name."
   name: String!
 }
-
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -8278,6 +8318,8 @@ func (ec *executionContext) childFields_Api(ctx context.Context, field graphql.C
 		return ec.fieldContext_Api_activeExposure(ctx, field)
 	case "owner":
 		return ec.fieldContext_Api_owner(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_Api_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Api", field.Name)
 }
@@ -9066,6 +9108,8 @@ func (ec *executionContext) childFields_EventType(ctx context.Context, field gra
 		return ec.fieldContext_EventType_activeExposure(ctx, field)
 	case "owner":
 		return ec.fieldContext_EventType_owner(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_EventType_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventType", field.Name)
 }
@@ -9218,6 +9262,16 @@ func (ec *executionContext) childFields_OAuth2ClientCredentials(ctx context.Cont
 		return ec.fieldContext_OAuth2ClientCredentials_clientKey(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type OAuth2ClientCredentials", field.Name)
+}
+
+func (ec *executionContext) childFields_OwnerApplicationInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "applicationId":
+		return ec.fieldContext_OwnerApplicationInfo_applicationId(ctx, field)
+	case "ictoNumber":
+		return ec.fieldContext_OwnerApplicationInfo_ictoNumber(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type OwnerApplicationInfo", field.Name)
 }
 
 func (ec *executionContext) childFields_PageInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
