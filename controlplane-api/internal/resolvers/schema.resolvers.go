@@ -104,7 +104,7 @@ func (r *apiResolver) OwnerApplication(ctx context.Context, obj *ent.Api) (*mode
 	exposure, err := obj.QueryExposures().
 		Where(apiexposure.Active(true)).
 		WithOwner().
-		First(sysCtx)
+		Only(sysCtx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
@@ -528,7 +528,7 @@ func (r *eventTypeResolver) OwnerApplication(ctx context.Context, obj *ent.Event
 	exposure, err := obj.QueryExposures().
 		Where(eventexposure.Active(true)).
 		WithOwner().
-		First(sysCtx)
+		Only(sysCtx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
