@@ -95,6 +95,34 @@ func (r *apiResolver) Owner(ctx context.Context, obj *ent.Api) (*model.TeamInfo,
 	return mapTeamInfo(team, group), nil
 }
 
+// OwnerApplication is the resolver for the ownerApplication field.
+func (r *apiResolver) OwnerApplication(ctx context.Context, obj *ent.Api) (*model.OwnerApplicationInfo, error) {
+	// SystemContext: The owning application may belong to another tenant than the
+	// querying viewer. We return a reduced owner application type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+
+	exposure, err := obj.QueryExposures().
+		Where(apiexposure.Active(true)).
+		WithOwner().
+		First(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading active exposure for api %d: %w", obj.ID, err)
+	}
+
+	ownerApp, err := exposure.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		ownerApp, err = exposure.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading owner application for api %d: %w", obj.ID, err)
+	}
+
+	return mapOwnerApplicationInfo(ownerApp), nil
+}
+
 // Subscriptions is the resolver for the subscriptions field.
 // Returns reduced ApiSubscriptionInfo types for cross-tenant safety.
 func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExposure) ([]*model.ApiSubscriptionInfo, error) {
@@ -489,6 +517,34 @@ func (r *eventTypeResolver) Owner(ctx context.Context, obj *ent.EventType) (*mod
 	}
 
 	return mapTeamInfo(team, group), nil
+}
+
+// OwnerApplication is the resolver for the ownerApplication field.
+func (r *eventTypeResolver) OwnerApplication(ctx context.Context, obj *ent.EventType) (*model.OwnerApplicationInfo, error) {
+	// SystemContext: The owning application may belong to another tenant than the
+	// querying viewer. We return a reduced owner application type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+
+	exposure, err := obj.QueryExposures().
+		Where(eventexposure.Active(true)).
+		WithOwner().
+		First(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading active exposure for event type %d: %w", obj.ID, err)
+	}
+
+	ownerApp, err := exposure.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		ownerApp, err = exposure.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading owner application for event type %d: %w", obj.ID, err)
+	}
+
+	return mapOwnerApplicationInfo(ownerApp), nil
 }
 
 // Schema is the resolver for the Schema field.
