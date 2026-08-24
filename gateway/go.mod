@@ -34,7 +34,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/oauth2 v0.36.0
-	k8s.io/api v0.36.3
+	k8s.io/api v0.36.4
 	k8s.io/apimachinery v0.36.4
 	k8s.io/client-go v0.36.3
 	sigs.k8s.io/controller-runtime v0.24.1
