@@ -4,12 +4,28 @@
 
 name: Dependabot Tidy
 
+# pull_request_target runs in the context of the BASE branch, which gives the
+# workflow a privileged GITHUB_TOKEN (contents: write) even for Dependabot PRs.
+# We guard the job strictly to dependabot[bot] and always check out the PR
+# head by its immutable SHA (not a mutable branch ref) to prevent privilege
+# escalation from arbitrary PRs.
+#
+# A commit pushed with a plain GITHUB_TOKEN does NOT re-trigger other workflow
+# runs (GitHub blocks it to prevent recursion). To make CI re-run after the
+# tidy commit, this workflow uses a GitHub App token (APP_ID + APP_PRIVATE_KEY
+# variable & secret) when configured. Without them the push is still made but CI
+# must be re-triggered manually (or via "Re-run workflows").
 on:
-  pull_request:
+  pull_request_target:
     paths:
       - '**/go.mod'
       - '**/go.sum'
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to run go mod tidy on (required for workflow_dispatch)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -22,32 +38,72 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    
+
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Generate a GitHub App token when the App secrets are configured.
+      # The App token, unlike GITHUB_TOKEN, triggers downstream CI workflows
+      # when new commits are pushed to the PR branch.
+      - name: Generate GitHub App token
+        id: app_token
+        if: ${{ vars.APP_ID != '' }}
+        continue-on-error: true
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
         with:
-          ref: ${{ github.head_ref }}
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Resolve PR head SHA
+        id: pr_info
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            let pr;
+            if (context.eventName === 'workflow_dispatch') {
+              const prNumber = parseInt('${{ inputs.pr_number }}');
+              const { data } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+              pr = data;
+            } else {
+              pr = context.payload.pull_request;
+            }
+            core.setOutput('head_sha', pr.head.sha);
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('pr_number', pr.number);
+
+      - name: Checkout PR branch at exact head SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Use the App token for checkout so the subsequent push is
+          # attributed to the App and triggers downstream CI. Fall back to
+          # GITHUB_TOKEN when the App is not configured.
+          token: ${{ steps.app_token.outputs.token || secrets.GITHUB_TOKEN }}
+          ref: ${{ steps.pr_info.outputs.head_sha }}
           fetch-depth: 0
-      
+
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           check-latest: true
-      
+
       - name: Run go mod tidy on all modules
         run: |
           echo "Identified modules:"
           MODULES=$(find . -name 'go.mod' -exec dirname {} \; | sort)
           echo "$MODULES"
-          echo "\nRunning go mod tidy on all modules..."
+          echo ""
+          echo "Running go mod tidy on all modules..."
           echo "$MODULES" | while read -r module_dir; do
             if [ -n "$module_dir" ]; then
               echo "Processing: $module_dir"
               (cd "$module_dir" && go mod tidy)
             fi
           done
-      
+
       - name: Check for changes
         id: check_changes
         run: |
@@ -59,16 +115,19 @@ jobs:
             echo "changes=false" >> $GITHUB_OUTPUT
             echo "No changes detected after running go mod tidy"
           fi
-      
+
       - name: Commit and push changes
         if: steps.check_changes.outputs.changes == 'true'
+        env:
+          HEAD_REF: ${{ steps.pr_info.outputs.head_ref }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "chore: run go mod tidy for modules updated by dependabot"
-          git push
-      
+          # The detached HEAD after checking out by SHA needs an explicit push target.
+          git push origin HEAD:"$HEAD_REF"
+
       - name: Add comment to PR
         if: steps.check_changes.outputs.changes == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -76,8 +135,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ steps.pr_info.outputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ `go mod tidy` has been run for all Go modules and changes have been committed to this PR.'
+              body: 'go mod tidy has been run for all Go modules and changes have been committed to this PR.'
             })
