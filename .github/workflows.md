@@ -216,7 +216,7 @@ Builds and publishes the rover-ctl base image (containing bash/jq/yq) to the int
    - Custom version tag (configured via `vars.ROVERCTL_BASE_IMAGE_TAG`)
 
 **Important Notes:**
-- Publishes to **internal Artifactory registry** (not GHCR) due to GPL-licensed components
+- Publishes to **internal Artifactory registry** (not GHCR)
 - Requires repository variables and secrets:
   - `vars.REGISTRY_HOST` - Artifactory registry host
   - `vars.REGISTRY_ROVERCTL_BASE_REPO` - Repository path in Artifactory
@@ -260,7 +260,7 @@ Builds and publishes the rover-ctl base image (containing bash/jq/yq) to the int
    - Modules: admin, agentic, api, application, approval, common-server, controlplane-api, discovery-server, event, file-manager, gateway, identity, notification, organization, organization-server, permission, projector, pubsub, rover, rover-server, secret-manager
 9. Build and push final rover-ctl image (if new release published)
    - Layers rover-ctl binary (from GHCR) onto bash/jq/yq base image (from Artifactory)
-   - Combines GPL-licensed base with roverctl binary
+   - Combines base with roverctl binary
    - Publishes to internal Artifactory registry
 
 **Permissions:** Packages (write), contents (write), issues (write), pull-requests (write), id-token (write)
