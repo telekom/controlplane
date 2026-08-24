@@ -86,7 +86,7 @@ Manages automated dependency updates across the monorepo with ecosystem-specific
 **Go modules** (monthly, 2 groups per directory)
 - **Minor & Patch** - Grouped by dependency name for non-breaking changes
 - **Major** - Grouped by dependency name for breaking changes
-- Covers 40+ module directories including admin, agentic, api, application, approval, common, common-server, controlplane-api, discovery-server, event, file-manager, gateway, identity, notification, organization, organization-server, permission, projector, pubsub, rover, rover-ctl, rover-server, secret-manager, and tools
+- Covers 40+ module directories (including nested `*/api` modules and `tools/*`); see `.github/dependabot.yml` for the authoritative list.
 
 **Grouping Strategy:**
 - Reduces PR noise by combining minor/patch updates
