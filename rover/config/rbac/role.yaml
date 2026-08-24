@@ -25,6 +25,7 @@ rules:
 - apiGroups:
   - agentic.cp.ei.telekom.de
   resources:
+  - agentcards
   - agenticexposures
   - agenticsubscriptions
   - mcpservers
@@ -129,6 +130,7 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - agentspecifications
   - apichangelogs
   - apispecifications
   - eventspecifications
@@ -147,6 +149,7 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - agentspecifications/finalizers
   - apichangelogs/finalizers
   - apispecifications/finalizers
   - eventspecifications/finalizers
@@ -159,6 +162,7 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - agentspecifications/status
   - apichangelogs/status
   - apispecifications/status
   - eventspecifications/status

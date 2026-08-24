@@ -9,76 +9,93 @@ updates:
     directory: /
     schedule:
       interval: "monthly"
+    groups:
+      # GitHub's official actions are versioned independently but used heavily
+      # across all workflows — group them together for one focused PR.
+      actions:
+        patterns:
+          - "actions/*"
+      # Docker's build/login/setup actions share a release cycle.
+      docker:
+        patterns:
+          - "docker/*"
+      # CodeQL actions must always stay on the same version across init/analyze.
+      codeql:
+        patterns:
+          - "github/codeql-action*"
+      # All remaining third-party actions in one PR.
+      third-party:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "actions/*"
+          - "docker/*"
+          - "github/codeql-action*"
+
+  - package-ecosystem: "npm"
+    directory: /docs
+    schedule:
+      interval: "monthly"
+    groups:
+      minor-patch:
+        update-types:
+          - patch
+          - minor
+      major:
+        update-types:
+          - major
+
   - package-ecosystem: "gomod"
     schedule:
       interval: "monthly"
     directories:
       - admin
       - admin/api
+      - agentic
+      - agentic/api
       - api
       - api/api
       - application
       - application/api
       - approval
       - approval/api
-      - cpapi/api
-    groups:
-      minor-patch:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: "gomod"
-    schedule:
-      interval: "monthly"
-    directories:
       - common
       - common-server
       - controlplane-api
+      - cpapi/api
       - discovery-server
       - event
       - event/api
       - file-manager
-      - projector
-      - secret-manager
-    groups:
-      minor-patch:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: "gomod"
-    schedule:
-      interval: "monthly"
-    directories:
       - gateway
       - gateway/api
       - identity
       - identity/api
-      - organization-server
       - notification
       - notification/api
       - organization
+      - organization-server
       - organization/api
       - permission
       - permission/api
-    groups:
-      minor-patch:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: "gomod"
-    schedule:
-      interval: "monthly"
-    directories:
+      - projector
       - pubsub
       - pubsub/api
       - rover
-      - rover/api
       - rover-ctl
       - rover-server
+      - rover/api
+      - secret-manager
+      - tools/e2e-tester
       - tools/route-tester
       - tools/snapshotter
     groups:
       minor-patch:
+        group-by: dependency-name
         update-types:
           - patch
           - minor
+      major:
+        group-by: dependency-name
+        update-types:
+          - major

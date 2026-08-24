@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from "fs";
 import { resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
-import yaml from "js-yaml";
+import { load } from "js-yaml";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -163,7 +163,7 @@ for (const domain of DOMAINS) {
 
   for (const file of crdFiles) {
     const raw = readFileSync(join(crdDir, file), "utf-8");
-    const doc = yaml.load(raw);
+    const doc = load(raw);
 
     const spec = doc.spec;
     const version = spec.versions[0]; // we only use the first (and usually only) version

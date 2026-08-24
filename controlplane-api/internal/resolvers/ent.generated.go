@@ -3278,6 +3278,29 @@ func (ec *executionContext) fieldContext_Application_ipRestrictions(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Application_permissionsURL(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Application_permissionsURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PermissionsURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Application_permissionsURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Application", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Application_zone(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8804,6 +8827,29 @@ func (ec *executionContext) _Zone_issuerURL(ctx context.Context, field graphql.C
 	)
 }
 func (ec *executionContext) fieldContext_Zone_issuerURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Zone", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Zone_permissionsURL(ctx context.Context, field graphql.CollectedField, obj *ent.Zone) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Zone_permissionsURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PermissionsURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Zone_permissionsURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Zone", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -20521,7 +20567,7 @@ func (ec *executionContext) unmarshalInputZoneWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "gatewayURL", "gatewayURLNEQ", "gatewayURLIn", "gatewayURLNotIn", "gatewayURLGT", "gatewayURLGTE", "gatewayURLLT", "gatewayURLLTE", "gatewayURLContains", "gatewayURLHasPrefix", "gatewayURLHasSuffix", "gatewayURLIsNil", "gatewayURLNotNil", "gatewayURLEqualFold", "gatewayURLContainsFold", "issuerURL", "issuerURLNEQ", "issuerURLIn", "issuerURLNotIn", "issuerURLGT", "issuerURLGTE", "issuerURLLT", "issuerURLLTE", "issuerURLContains", "issuerURLHasPrefix", "issuerURLHasSuffix", "issuerURLIsNil", "issuerURLNotNil", "issuerURLEqualFold", "issuerURLContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "hasApplications", "hasApplicationsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "gatewayURL", "gatewayURLNEQ", "gatewayURLIn", "gatewayURLNotIn", "gatewayURLGT", "gatewayURLGTE", "gatewayURLLT", "gatewayURLLTE", "gatewayURLContains", "gatewayURLHasPrefix", "gatewayURLHasSuffix", "gatewayURLIsNil", "gatewayURLNotNil", "gatewayURLEqualFold", "gatewayURLContainsFold", "issuerURL", "issuerURLNEQ", "issuerURLIn", "issuerURLNotIn", "issuerURLGT", "issuerURLGTE", "issuerURLLT", "issuerURLLTE", "issuerURLContains", "issuerURLHasPrefix", "issuerURLHasSuffix", "issuerURLIsNil", "issuerURLNotNil", "issuerURLEqualFold", "issuerURLContainsFold", "permissionsURL", "permissionsURLNEQ", "permissionsURLIn", "permissionsURLNotIn", "permissionsURLGT", "permissionsURLGTE", "permissionsURLLT", "permissionsURLLTE", "permissionsURLContains", "permissionsURLHasPrefix", "permissionsURLHasSuffix", "permissionsURLIsNil", "permissionsURLNotNil", "permissionsURLEqualFold", "permissionsURLContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "hasApplications", "hasApplicationsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -21011,6 +21057,111 @@ func (ec *executionContext) unmarshalInputZoneWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.IssuerURLContainsFold = data
+		case "permissionsURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURL = data
+		case "permissionsURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLNEQ = data
+		case "permissionsURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLIn = data
+		case "permissionsURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLNotIn = data
+		case "permissionsURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLGT = data
+		case "permissionsURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLGTE = data
+		case "permissionsURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLLT = data
+		case "permissionsURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLLTE = data
+		case "permissionsURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLContains = data
+		case "permissionsURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLHasPrefix = data
+		case "permissionsURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLHasSuffix = data
+		case "permissionsURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLIsNil = data
+		case "permissionsURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLNotNil = data
+		case "permissionsURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLEqualFold = data
+		case "permissionsURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissionsURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PermissionsURLContainsFold = data
 		case "visibility":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visibility"))
 			data, err := ec.unmarshalOZoneVisibility2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋzoneᚐVisibility(ctx, v)
@@ -22332,6 +22483,11 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 		case "ipRestrictions":
 			out.Values[i] = ec._Application_ipRestrictions(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "permissionsURL":
+			out.Values[i] = ec._Application_permissionsURL(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -25454,6 +25610,11 @@ func (ec *executionContext) _Zone(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "issuerURL":
 			out.Values[i] = ec._Zone_issuerURL(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "permissionsURL":
+			out.Values[i] = ec._Zone_permissionsURL(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
