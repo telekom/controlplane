@@ -157,6 +157,9 @@ jobs:
         with:
           version: v2.11
           working-directory: ${{ inputs.module }}
+          # `config verify` downloads the JSON schema from golangci-lint.run on every run,
+          # which frequently times out and fails the job.
+          verify: false
           args: --timeout 5m --issues-exit-code=${{ inputs.lint_fail_on_issues && '1' || '0' }} --config ${{ github.workspace }}/.golangci.yml
 
   tests:
