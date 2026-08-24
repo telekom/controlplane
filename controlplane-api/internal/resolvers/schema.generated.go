@@ -1951,6 +1951,52 @@ func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientKey(_ con
 	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _OwnerApplicationExternalId_id(ctx context.Context, field graphql.CollectedField, obj *model.OwnerApplicationExternalID) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OwnerApplicationExternalId_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OwnerApplicationExternalId_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OwnerApplicationExternalId", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OwnerApplicationExternalId_scheme(ctx context.Context, field graphql.CollectedField, obj *model.OwnerApplicationExternalID) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OwnerApplicationExternalId_scheme(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Scheme, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OwnerApplicationExternalId_scheme(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OwnerApplicationExternalId", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _OwnerApplicationInfo_applicationId(ctx context.Context, field graphql.CollectedField, obj *model.OwnerApplicationInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1974,27 +2020,36 @@ func (ec *executionContext) fieldContext_OwnerApplicationInfo_applicationId(_ co
 	return graphql.NewScalarFieldContext("OwnerApplicationInfo", field, false, false, errors.New("field of type ID does not have child fields"))
 }
 
-func (ec *executionContext) _OwnerApplicationInfo_ictoNumber(ctx context.Context, field graphql.CollectedField, obj *model.OwnerApplicationInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _OwnerApplicationInfo_externalIds(ctx context.Context, field graphql.CollectedField, obj *model.OwnerApplicationInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_OwnerApplicationInfo_ictoNumber(ctx, field)
+			return ec.fieldContext_OwnerApplicationInfo_externalIds(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.IctoNumber, nil
+			return obj.ExternalIDs, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v []model.OwnerApplicationExternalID) graphql.Marshaler {
+			return ec.marshalNOwnerApplicationExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOwnerApplicationExternalIDᚄ(ctx, selections, v)
 		},
 		true,
-		false,
+		true,
 	)
 }
-func (ec *executionContext) fieldContext_OwnerApplicationInfo_ictoNumber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("OwnerApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
+func (ec *executionContext) fieldContext_OwnerApplicationInfo_externalIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OwnerApplicationInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_OwnerApplicationExternalId(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Permission_role(ctx context.Context, field graphql.CollectedField, obj *model.Permission) (ret graphql.Marshaler) {
@@ -4578,6 +4633,49 @@ func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel as
 	return out
 }
 
+var ownerApplicationExternalIdImplementors = []string{"OwnerApplicationExternalId"}
+
+func (ec *executionContext) _OwnerApplicationExternalId(ctx context.Context, sel ast.SelectionSet, obj *model.OwnerApplicationExternalID) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, ownerApplicationExternalIdImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OwnerApplicationExternalId")
+		case "id":
+			out.Values[i] = ec._OwnerApplicationExternalId_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "scheme":
+			out.Values[i] = ec._OwnerApplicationExternalId_scheme(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var ownerApplicationInfoImplementors = []string{"OwnerApplicationInfo"}
 
 func (ec *executionContext) _OwnerApplicationInfo(ctx context.Context, sel ast.SelectionSet, obj *model.OwnerApplicationInfo) graphql.Marshaler {
@@ -4595,9 +4693,9 @@ func (ec *executionContext) _OwnerApplicationInfo(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "ictoNumber":
-			out.Values[i] = ec._OwnerApplicationInfo_ictoNumber(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
+		case "externalIds":
+			out.Values[i] = ec._OwnerApplicationInfo_externalIds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
 		default:
@@ -5502,6 +5600,26 @@ func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolp
 
 func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model.Limits) graphql.Marshaler {
 	return ec._Limits(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOwnerApplicationExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOwnerApplicationExternalID(ctx context.Context, sel ast.SelectionSet, v model.OwnerApplicationExternalID) graphql.Marshaler {
+	return ec._OwnerApplicationExternalId(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOwnerApplicationExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOwnerApplicationExternalIDᚄ(ctx context.Context, sel ast.SelectionSet, v []model.OwnerApplicationExternalID) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNOwnerApplicationExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOwnerApplicationExternalID(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, v any) (model1.PayloadType, error) {

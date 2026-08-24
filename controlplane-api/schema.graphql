@@ -21,7 +21,12 @@ type TeamInfo {
 
 type OwnerApplicationInfo {
   applicationId: ID!
-  ictoNumber: String
+  externalIds: [OwnerApplicationExternalId!]!
+}
+
+type OwnerApplicationExternalId {
+  id: String!
+  scheme: String!
 }
 
 type Upstream {

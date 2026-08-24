@@ -108,6 +108,9 @@ models:
   OwnerApplicationInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.OwnerApplicationInfo
+  OwnerApplicationExternalId:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.OwnerApplicationExternalID
   Upstream:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.Upstream

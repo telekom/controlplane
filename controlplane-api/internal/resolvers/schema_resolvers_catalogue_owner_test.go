@@ -30,7 +30,7 @@ var _ = Describe("Catalogue owner application resolvers", func() {
 		client.Close()
 	})
 
-	It("resolves Api.ownerApplication with applicationId and ictoNumber", func() {
+	It("resolves Api.ownerApplication with applicationId and external IDs", func() {
 		ctx := testutil.AllowContext()
 
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
@@ -67,11 +67,10 @@ var _ = Describe("Catalogue owner application resolvers", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ownerApp).NotTo(BeNil())
 		Expect(ownerApp.ApplicationID).To(Equal(app.ID))
-		Expect(ownerApp.IctoNumber).NotTo(BeNil())
-		Expect(*ownerApp.IctoNumber).To(Equal("ICTO-12345"))
+		Expect(ownerApp.ExternalIDs).To(ConsistOf(model.OwnerApplicationExternalID{ID: "ICTO-12345", Scheme: "ICTO"}))
 	})
 
-	It("resolves EventType.ownerApplication with applicationId and ictoNumber", func() {
+	It("resolves EventType.ownerApplication with applicationId and external IDs", func() {
 		ctx := testutil.AllowContext()
 
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
@@ -108,11 +107,10 @@ var _ = Describe("Catalogue owner application resolvers", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ownerApp).NotTo(BeNil())
 		Expect(ownerApp.ApplicationID).To(Equal(app.ID))
-		Expect(ownerApp.IctoNumber).NotTo(BeNil())
-		Expect(*ownerApp.IctoNumber).To(Equal("123456"))
+		Expect(ownerApp.ExternalIDs).To(ConsistOf(model.OwnerApplicationExternalID{ID: "123456", Scheme: "icto"}))
 	})
 
-	It("returns nil ictoNumber when no icto external ID exists", func() {
+	It("returns all external IDs regardless of scheme", func() {
 		ctx := testutil.AllowContext()
 
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
@@ -149,6 +147,44 @@ var _ = Describe("Catalogue owner application resolvers", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ownerApp).NotTo(BeNil())
 		Expect(ownerApp.ApplicationID).To(Equal(app.ID))
-		Expect(ownerApp.IctoNumber).To(BeNil())
+		Expect(ownerApp.ExternalIDs).To(ConsistOf(model.OwnerApplicationExternalID{ID: "A-42", Scheme: "sap"}))
+	})
+
+	It("returns an empty external ID list when none are configured", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().
+			SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetNamespace("default").
+			SetName("app-alpha").
+			SetClientID("client-alpha").
+			SetOwnerTeam(team).
+			SetZone(zone).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		eventType, err := client.EventType.Create().
+			SetNamespace("default").
+			SetEventType("order.created").
+			SetVersion("v1").
+			SetOwner(team).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		_, err = client.EventExposure.Create().
+			SetNamespace("default").
+			SetEventType("order.created").
+			SetOwner(app).
+			SetEventTypeDef(eventType).
+			SetActive(true).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		ownerApp, err := r.EventType().OwnerApplication(ctx, eventType)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ownerApp).NotTo(BeNil())
+		Expect(ownerApp.ExternalIDs).To(BeEmpty())
 	})
 })

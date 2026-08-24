@@ -569,9 +569,14 @@ type ComplexityRoot struct {
 		ClientSecret func(childComplexity int) int
 	}
 
+	OwnerApplicationExternalId struct {
+		ID     func(childComplexity int) int
+		Scheme func(childComplexity int) int
+	}
+
 	OwnerApplicationInfo struct {
 		ApplicationID func(childComplexity int) int
-		IctoNumber    func(childComplexity int) int
+		ExternalIDs   func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -2901,18 +2906,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.OAuth2ClientCredentials.ClientSecret(childComplexity), true
 
+	case "OwnerApplicationExternalId.id":
+		if e.ComplexityRoot.OwnerApplicationExternalId.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OwnerApplicationExternalId.ID(childComplexity), true
+	case "OwnerApplicationExternalId.scheme":
+		if e.ComplexityRoot.OwnerApplicationExternalId.Scheme == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OwnerApplicationExternalId.Scheme(childComplexity), true
+
 	case "OwnerApplicationInfo.applicationId":
 		if e.ComplexityRoot.OwnerApplicationInfo.ApplicationID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.OwnerApplicationInfo.ApplicationID(childComplexity), true
-	case "OwnerApplicationInfo.ictoNumber":
-		if e.ComplexityRoot.OwnerApplicationInfo.IctoNumber == nil {
+	case "OwnerApplicationInfo.externalIds":
+		if e.ComplexityRoot.OwnerApplicationInfo.ExternalIDs == nil {
 			break
 		}
 
-		return e.ComplexityRoot.OwnerApplicationInfo.IctoNumber(childComplexity), true
+		return e.ComplexityRoot.OwnerApplicationInfo.ExternalIDs(childComplexity), true
 
 	case "PageInfo.endCursor":
 		if e.ComplexityRoot.PageInfo.EndCursor == nil {
@@ -7921,7 +7939,12 @@ type TeamInfo {
 
 type OwnerApplicationInfo {
   applicationId: ID!
-  ictoNumber: String
+  externalIds: [OwnerApplicationExternalId!]!
+}
+
+type OwnerApplicationExternalId {
+  id: String!
+  scheme: String!
 }
 
 type Upstream {
@@ -9264,12 +9287,22 @@ func (ec *executionContext) childFields_OAuth2ClientCredentials(ctx context.Cont
 	return nil, fmt.Errorf("no field named %q was found under type OAuth2ClientCredentials", field.Name)
 }
 
+func (ec *executionContext) childFields_OwnerApplicationExternalId(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_OwnerApplicationExternalId_id(ctx, field)
+	case "scheme":
+		return ec.fieldContext_OwnerApplicationExternalId_scheme(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type OwnerApplicationExternalId", field.Name)
+}
+
 func (ec *executionContext) childFields_OwnerApplicationInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "applicationId":
 		return ec.fieldContext_OwnerApplicationInfo_applicationId(ctx, field)
-	case "ictoNumber":
-		return ec.fieldContext_OwnerApplicationInfo_ictoNumber(ctx, field)
+	case "externalIds":
+		return ec.fieldContext_OwnerApplicationInfo_externalIds(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type OwnerApplicationInfo", field.Name)
 }

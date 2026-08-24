@@ -7,7 +7,6 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -99,20 +98,18 @@ func mapEventExposureInfo(exposure *ent.EventExposure, app *ent.Application, tea
 }
 
 func mapOwnerApplicationInfo(app *ent.Application) *model.OwnerApplicationInfo {
-	return &model.OwnerApplicationInfo{
-		ApplicationID: app.ID,
-		IctoNumber:    resolveIctoNumber(app.ExternalIds),
-	}
-}
-
-func resolveIctoNumber(externalIDs []model.ExternalId) *string {
-	for _, externalID := range externalIDs {
-		if strings.EqualFold(externalID.Scheme, "icto") {
-			ictoNumber := externalID.Id
-			return &ictoNumber
+	externalIDs := make([]model.OwnerApplicationExternalID, len(app.ExternalIds))
+	for i, externalID := range app.ExternalIds {
+		externalIDs[i] = model.OwnerApplicationExternalID{
+			ID:     externalID.Id,
+			Scheme: externalID.Scheme,
 		}
 	}
-	return nil
+
+	return &model.OwnerApplicationInfo{
+		ApplicationID: app.ID,
+		ExternalIDs:   externalIDs,
+	}
 }
 
 // loadOwnerChain traverses subscription → owner application → team → group.
