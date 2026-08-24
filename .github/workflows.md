@@ -316,7 +316,7 @@ Performs OpenSSF supply-chain security scoring and analysis on the repository.
 
 **Sequence:**
 1. Checkout code (without credentials)
-2. Run OSSF Scorecard analysis
+2. Run OpenSSF Scorecard analysis
    - Analyze repository security posture
    - Check branch protection settings
    - Verify maintenance status
