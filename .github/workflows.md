@@ -107,7 +107,7 @@ Ensures all Go modules remain tidy after dependency updates by running `go mod t
 - Checks out PR head by immutable SHA to prevent privilege escalation
 - Guards execution strictly to `dependabot[bot]` user
 - Uses GitHub App token when configured to re-trigger downstream CI workflows
-- Falls back to standard GITHUB_TOKEN when App token unavailable
+- Falls back to standard `GITHUB_TOKEN` when App token unavailable (note: pushes won't automatically re-trigger downstream workflows)
 
 **Sequence:**
 1. **Token Setup**
