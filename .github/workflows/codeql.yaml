@@ -1,0 +1,74 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Repo-level CodeQL analysis, replacing the previous per-module CodeQL jobs
+# in reusable-go-ci.yaml (one per each of the 20+ Go modules). Since all
+# modules share largely the same dependency graph, running CodeQL init +
+# analyze once for the whole repository - tracing a build of every module
+# within a single database - gives equivalent coverage for a fraction of
+# the cost (one CodeQL init/analyze pair instead of 20+).
+#
+# Not run on every pull request: CodeQL is a deep, relatively slow security
+# scan best suited to catching issues before/after merge rather than
+# gating every PR push. See .github/workflows.md for the full CI strategy.
+
+name: CodeQL Analysis
+
+on:
+  push:
+    branches:
+      - "main"
+  schedule:
+    - cron: '30 2 * * 1'  # Weekly, Monday 2:30 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL Analysis (repo-wide)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # CodeQL requires full history
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "common/go.mod"
+          cache: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          languages: go
+          build-mode: manual # Set to manual as we provide a build step below
+
+      - name: Build all modules for CodeQL
+        shell: bash
+        run: |
+          # Trace a build of every configured module into the single
+          # CodeQL database initialized above.
+          modules=$(yq -o=json '.modules[].path' .github/ci/modules.yaml | jq -r .)
+          while IFS= read -r module; do
+            [ -z "$module" ] && continue
+            echo "Building $module for CodeQL..."
+            (cd "$module" && go build ./...)
+          done <<<"$modules"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          category: "/language:go"

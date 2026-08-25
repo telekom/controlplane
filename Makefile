@@ -57,6 +57,23 @@ lint-all: ## Lint all modules.
 		fi; \
 	done
 
+##@ CI scope
+
+.PHONY: ci-graph
+ci-graph: ## Regenerate the module dependency graph (.github/ci/module-graph.json).
+	.github/scripts/gen-module-graph.sh > .github/ci/module-graph.json
+
+.PHONY: ci-graph-check
+ci-graph-check: ## Verify the committed module dependency graph is up to date.
+	@tmp=$$(mktemp) && \
+	.github/scripts/gen-module-graph.sh > "$$tmp" && \
+	if ! diff -u .github/ci/module-graph.json "$$tmp"; then \
+		rm -f "$$tmp"; \
+		echo "ERROR: .github/ci/module-graph.json is stale; run 'make ci-graph' and commit the result." >&2; \
+		exit 1; \
+	fi; \
+	rm -f "$$tmp"
+
 ##@ General
 
 .PHONY: help
