@@ -71,20 +71,75 @@ This workflow provides standardized CI operations for Go modules with configurab
 ### 2. Dependency Management
 
 #### **Dependabot Configuration** (`dependabot.yml`)
-Automated dependency updates for:
-- GitHub Actions (monthly)
-- Go modules across all module directories (monthly)
-- Groups minor and patch updates together
+Manages automated dependency updates across the monorepo with ecosystem-specific grouping strategies.
+
+**GitHub Actions** (monthly, multiple groups)
+- **Actions group** - GitHub's official actions (actions/*)
+- **Docker group** - Docker build/login/setup actions (docker/*)
+- **CodeQL group** - CodeQL actions (github/codeql-action*) - kept aligned across init/analyze
+- **Third-party group** - All remaining third-party actions
+
+**npm** (monthly, 2 groups)
+- **Minor & Patch** - Grouped dependency updates for non-breaking changes
+- **Major** - Separate group for breaking changes
+
+**Go modules** (monthly, 2 groups per directory)
+- **Minor & Patch** - Grouped by dependency name for non-breaking changes
+- **Major** - Grouped by dependency name for breaking changes
+- Covers 40+ module directories (including nested `*/api` modules and `tools/*`); see `.github/dependabot.yml` for the authoritative list.
+
+**Grouping Strategy:**
+- Reduces PR noise by combining minor/patch updates
+- Isolates major version bumps for separate review
+- Docker and CodeQL actions kept in sync to prevent compatibility issues
+- Official GitHub actions reviewed together for consistency
+
+---
 
 #### **Dependabot Tidy Workflow** (`dependabot-tidy.yaml`)
-**Triggers:** Pull requests with go.mod/go.sum changes, manual dispatch
+**Triggers:** Pull requests with go.mod/go.sum changes, manual dispatch (with PR number input)
 **Conditions:** Only runs for Dependabot PRs or manual triggers
 
+Ensures all Go modules remain tidy after dependency updates by running `go mod tidy` automatically.
+
+**Security Model:**
+- Uses `pull_request_target` to run in base branch context (safe for Dependabot PRs)
+- Checks out PR head by immutable SHA to prevent privilege escalation
+- Guards execution strictly to `dependabot[bot]` user
+- Uses GitHub App token when configured to re-trigger downstream CI workflows
+- Falls back to standard `GITHUB_TOKEN` when App token unavailable (note: pushes won't automatically re-trigger downstream workflows)
+
 **Sequence:**
-1. Identify all modules with go.mod files
-2. Run `go mod tidy` on each module
-3. Commit and push changes if detected
-4. Add comment to PR confirming completion
+1. **Token Setup**
+   - Generate GitHub App token (if `vars.APP_ID` configured)
+   - Enables downstream CI re-runs after tidy commit
+   
+2. **PR Resolution**
+   - Resolve PR head SHA and ref from webhook or workflow dispatch input
+   - Support both automatic (webhook) and manual (workflow_dispatch) triggers
+   
+3. **Checkout**
+   - Checkout PR branch at exact immutable head SHA
+   - Uses App token (preferred) or GITHUB_TOKEN for attribution
+   
+4. **Go Setup & Tidy**
+   - Setup Go with stable version (check-latest: true)
+   - Auto-discover all modules with go.mod files
+   - Run `go mod tidy` on each module sequentially
+   
+5. **Change Detection & Commit**
+   - Check for changes after tidy
+   - Commit with descriptive message if changes detected
+   - Push to PR branch with explicit target (required for detached HEAD)
+   
+6. **PR Comment**
+   - Add comment confirming tidy completion (if changes made)
+
+**Key Features:**
+- **Automatic module discovery** - Finds all go.mod files dynamically
+- **Immutable SHA checkout** - Prevents privilege escalation via ref hijacking
+- **GitHub App integration** - Triggers downstream CI when properly configured
+- **Graceful fallback** - Works with standard GITHUB_TOKEN if App not configured
 
 ---
 
@@ -140,28 +195,80 @@ Entry point for manual Helm chart publishing, delegates to the reusable helm-rel
 
 ---
 
-### 5. Release Management
+### 5. Build & Image Management
+
+#### **Rover-CTL Base Image Workflow** (`rover-ctl-base-image.yaml`)
+**Triggers:** Reusable workflow (called by ci.yaml and release.yaml), manual dispatch
+
+Builds and publishes the rover-ctl base image (containing bash/jq/yq) to the internal Artifactory Docker registry.
+
+**Invocation:**
+- **From CI Workflow** - Triggered only when `rover-ctl/Dockerfile.base` changes
+- **From Release Workflow** - Runs unconditionally before every release
+- **Manual** - Via workflow_dispatch for ad-hoc security patch rebuilds
+
+**Sequence:**
+1. Checkout code
+2. Setup Docker Buildx
+3. Authenticate to Artifactory registry
+4. Build and push base image with tags:
+   - `latest`
+   - Custom version tag (configured via `vars.ROVERCTL_BASE_IMAGE_TAG`)
+
+**Important Notes:**
+- Publishes to **internal Artifactory registry** (not GHCR)
+- Requires repository variables and secrets:
+  - `vars.REGISTRY_HOST` - Artifactory registry host
+  - `vars.REGISTRY_ROVERCTL_BASE_REPO` - Repository path in Artifactory
+  - `vars.ROVERCTL_BASE_IMAGE_TAG` - Base image tag (e.g., bash-jq-yq-v1)
+  - `secrets.ARTIFACTORY_O28M_PUSH_USER` - Push credentials
+  - `secrets.ARTIFACTORY_O28M_PUSH_TOKEN` - Push credentials
+- Keep registry values synchronized with:
+  - `.goreleaser.yaml` - `base_image` value in rover-ctl entry
+  - `ci.yaml` - `base_image` input parameter
+
+---
+
+### 6. Release Management
 
 #### **Release Workflow** (`release.yaml`)
 **Triggers:** Manual dispatch only
 
 **Sequence:**
-1. Generate GitHub App token for authentication
-2. Setup Go and caching
-3. Install tools (cosign, syft, goreleaser)
-4. Run Semantic Release
+1. Build and push rover-ctl base image (via `rover-ctl-base-image` job)
+2. Generate GitHub App token for authentication
+3. Setup Go and caching
+4. Install tools (cosign, syft, goreleaser)
+5. Login to GHCR and Artifactory registries
+6. Run Semantic Release
    - Analyzes commits
    - Determines version bump
    - Generates changelog
    - **Executes versioning scripts** (see Unified Versioning below)
    - Creates GitHub release
-5. Run GoReleaser (if new release published)
+7. Run GoReleaser (if new release published)
    - Build binaries for multiple platforms
+   - Build container images using Ko
    - Sign artifacts with cosign
    - Generate SBOM with syft
    - Publish to GitHub release
+8. **Mirror release images to Artifactory** (if new release published)
+   - Uses skopeo to copy all module images from GHCR to internal Artifactory registry
+   - Mirrors version tag (v*), `latest`, and `stable` (for non-prerelease versions)
+   - Copies exact multi-arch manifests for internal deployments
+   - Covers all modules except rover-ctl (handled separately below)
+   - Modules: admin, agentic, api, application, approval, common-server, controlplane-api, discovery-server, event, file-manager, gateway, identity, notification, organization, organization-server, permission, projector, pubsub, rover, rover-server, secret-manager
+9. Build and push final rover-ctl image (if new release published)
+   - Layers rover-ctl binary (from GHCR) onto bash/jq/yq base image (from Artifactory)
+   - Combines base with roverctl binary
+   - Publishes to internal Artifactory registry
 
 **Permissions:** Packages (write), contents (write), issues (write), pull-requests (write), id-token (write)
+
+**Key Features:**
+- **Dual registry distribution** - GHCR for open-source binaries, Artifactory for GPL-bundled images
+- **Image mirroring** - Synchronizes multi-arch manifests across registries for consistent deployments
+- **Automated versioning** - Unified version across all components and Helm charts
 
 ---
 
@@ -200,7 +307,37 @@ These scripts are executed automatically during the release process via `.releas
 
 ---
 
-### 6. Security & Compliance
+### 7. Security & Compliance
+
+#### **Scorecard Supply-Chain Security Workflow** (`scorecard.yml`)
+**Triggers:** Branch protection rule changes, scheduled weekly (Monday 1:42 AM UTC), push to main
+
+Performs OpenSSF supply-chain security scoring and analysis on the repository.
+
+**Sequence:**
+1. Checkout code (without credentials)
+2. Run OpenSSF Scorecard analysis
+   - Analyze repository security posture
+   - Check branch protection settings
+   - Verify maintenance status
+   - Generate SARIF report
+3. Upload results as artifact (retention: 5 days)
+4. Upload SARIF results to GitHub Code Scanning dashboard
+
+**Permissions:** security-events (write), id-token (write)
+
+**Benefits:**
+- Continuous monitoring of supply-chain security health
+- Automatic detection of branch protection issues
+- Verification of repository maintenance status
+- Compliance with OpenSSF best practices
+- Public repository badge eligibility
+
+**Configuration:**
+- Results published to OpenSSF REST API (public repos)
+- Optional: Fine-grained PAT token (`secrets.SCORECARD_TOKEN`) for enhanced checks
+
+---
 
 #### **ORT Scanning Workflow** (`ort.yaml`)
 **Triggers:** Manual dispatch
@@ -220,6 +357,8 @@ These scripts are executed automatically during the release process via `.releas
 
 Performs comprehensive open-source license and vulnerability scanning.
 
+---
+
 #### **REUSE Compliance Workflow** (`reuse-compliance.yml`)
 **Triggers:** Push and pull requests
 
@@ -237,15 +376,17 @@ Ensures all files have proper SPDX license headers.
 ```
 PR Created/Updated
 ├─ REUSE Compliance Check
-├─ CI Workflow
-│  ├─ Prepare (detect changes)
-│  └─ Module CI Jobs (parallel)
-│     ├─ Static Checks
-│     ├─ Tests & Coverage
-│     ├─ Vulnerability Scan
-│     ├─ CodeQL Analysis
-│     ├─ Build Image
-│     └─ Image Scan
+├─ Scorecard Analysis (on main only, skip for PRs)
+└─ CI Workflow
+   ├─ Prepare (detect changes)
+   └─ Module CI Jobs (parallel)
+      ├─ Static Checks
+      ├─ Tests & Coverage
+      ├─ Vulnerability Scan
+      ├─ CodeQL Analysis
+      ├─ Build Image
+      ├─ Image Scan
+      └─ Rover-CTL Base Image (if rover-ctl/Dockerfile.base changed)
 ├─ Docs Build (if docs changed)
 └─ Dependabot Tidy (if dependabot PR)
 ```
@@ -254,24 +395,39 @@ PR Created/Updated
 ```
 Push to Main
 ├─ REUSE Compliance Check
+├─ Scorecard Analysis
 ├─ CI Workflow (all modules)
+│  └─ Rover-CTL Base Image (if rover-ctl/Dockerfile.base changed)
 └─ Docs Deploy (if docs changed)
 ```
 
 ### Release Flow
 ```
 Manual Trigger: Release Workflow
+├─ Rover-CTL Base Image (unconditionally)
 ├─ Semantic Release (analyze commits)
 ├─ Generate Changelog
 ├─ Create GitHub Release
-└─ GoReleaser (build & sign artifacts)
+├─ GoReleaser (build & sign artifacts)
+│  └─ Push images to GHCR
+├─ Mirror release images to Artifactory
+│  └─ Copy multi-arch manifests (v*, latest, stable)
+└─ Build & push final rover-ctl image
+   └─ Layer binary + base image → Artifactory
 ```
 
 ### Version Tag Flow
 ```
 Push Tag (v*)
+├─ REUSE Compliance Check
 ├─ CI Workflow (all modules)
 └─ Helm Release (for modules with charts)
+```
+
+### Scheduled Security Checks
+```
+Weekly Schedule (Monday 1:42 AM UTC)
+└─ Scorecard Analysis
 ```
 
 ---
@@ -287,8 +443,10 @@ Push Tag (v*)
 - **golangci-lint** - Go linter aggregator
 - **ORT** - OSS Review Toolkit for license compliance
 - **REUSE** - License compliance tool
+- **OSSF Scorecard** - Supply-chain security assessment
 - **Helm** - Kubernetes package manager
 - **Docusaurus** - Documentation site generator
+- **Docker Buildx** - Multi-platform container builder
 
 ---
 
