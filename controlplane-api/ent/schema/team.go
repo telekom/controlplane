@@ -67,6 +67,10 @@ func (Team) Edges() []ent.Edge {
 			Annotations(entgql.RelayConnection()),
 		edge.To("event_types", EventType.Type).
 			Annotations(entgql.RelayConnection()),
+		edge.To("mcp_servers", McpServer.Type).
+			Annotations(entgql.Skip(entgql.SkipType)),
+		edge.To("agent_cards", AgentCard.Type).
+			Annotations(entgql.Skip(entgql.SkipType)),
 	}
 }
 

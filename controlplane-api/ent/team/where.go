@@ -923,6 +923,52 @@ func HasEventTypesWith(preds ...predicate.EventType) predicate.Team {
 	})
 }
 
+// HasMcpServers applies the HasEdge predicate on the "mcp_servers" edge.
+func HasMcpServers() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, McpServersTable, McpServersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMcpServersWith applies the HasEdge predicate on the "mcp_servers" edge with a given conditions (other predicates).
+func HasMcpServersWith(preds ...predicate.McpServer) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := newMcpServersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAgentCards applies the HasEdge predicate on the "agent_cards" edge.
+func HasAgentCards() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AgentCardsTable, AgentCardsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAgentCardsWith applies the HasEdge predicate on the "agent_cards" edge with a given conditions (other predicates).
+func HasAgentCardsWith(preds ...predicate.AgentCard) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := newAgentCardsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Team) predicate.Team {
 	return predicate.Team(sql.AndPredicates(predicates...))

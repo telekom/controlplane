@@ -64,9 +64,13 @@ type TeamEdges struct {
 	Apis []*Api `json:"apis,omitempty"`
 	// EventTypes holds the value of the event_types edge.
 	EventTypes []*EventType `json:"event_types,omitempty"`
+	// McpServers holds the value of the mcp_servers edge.
+	McpServers []*McpServer `json:"mcp_servers,omitempty"`
+	// AgentCards holds the value of the agent_cards edge.
+	AgentCards []*AgentCard `json:"agent_cards,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
 	totalCount [5]map[string]int
 
@@ -74,6 +78,8 @@ type TeamEdges struct {
 	namedApplications map[string][]*Application
 	namedApis         map[string][]*Api
 	namedEventTypes   map[string][]*EventType
+	namedMcpServers   map[string][]*McpServer
+	namedAgentCards   map[string][]*AgentCard
 }
 
 // GroupOrErr returns the Group value or an error if the edge
@@ -121,6 +127,24 @@ func (e TeamEdges) EventTypesOrErr() ([]*EventType, error) {
 		return e.EventTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "event_types"}
+}
+
+// McpServersOrErr returns the McpServers value or an error if the edge
+// was not loaded in eager-loading.
+func (e TeamEdges) McpServersOrErr() ([]*McpServer, error) {
+	if e.loadedTypes[5] {
+		return e.McpServers, nil
+	}
+	return nil, &NotLoadedError{edge: "mcp_servers"}
+}
+
+// AgentCardsOrErr returns the AgentCards value or an error if the edge
+// was not loaded in eager-loading.
+func (e TeamEdges) AgentCardsOrErr() ([]*AgentCard, error) {
+	if e.loadedTypes[6] {
+		return e.AgentCards, nil
+	}
+	return nil, &NotLoadedError{edge: "agent_cards"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -278,6 +302,16 @@ func (_m *Team) QueryApis() *APIQuery {
 // QueryEventTypes queries the "event_types" edge of the Team entity.
 func (_m *Team) QueryEventTypes() *EventTypeQuery {
 	return NewTeamClient(_m.config).QueryEventTypes(_m)
+}
+
+// QueryMcpServers queries the "mcp_servers" edge of the Team entity.
+func (_m *Team) QueryMcpServers() *McpServerQuery {
+	return NewTeamClient(_m.config).QueryMcpServers(_m)
+}
+
+// QueryAgentCards queries the "agent_cards" edge of the Team entity.
+func (_m *Team) QueryAgentCards() *AgentCardQuery {
+	return NewTeamClient(_m.config).QueryAgentCards(_m)
 }
 
 // Update returns a builder for updating this Team.
@@ -447,6 +481,54 @@ func (_m *Team) appendNamedEventTypes(name string, edges ...*EventType) {
 		_m.Edges.namedEventTypes[name] = []*EventType{}
 	} else {
 		_m.Edges.namedEventTypes[name] = append(_m.Edges.namedEventTypes[name], edges...)
+	}
+}
+
+// NamedMcpServers returns the McpServers named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Team) NamedMcpServers(name string) ([]*McpServer, error) {
+	if _m.Edges.namedMcpServers == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedMcpServers[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Team) appendNamedMcpServers(name string, edges ...*McpServer) {
+	if _m.Edges.namedMcpServers == nil {
+		_m.Edges.namedMcpServers = make(map[string][]*McpServer)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedMcpServers[name] = []*McpServer{}
+	} else {
+		_m.Edges.namedMcpServers[name] = append(_m.Edges.namedMcpServers[name], edges...)
+	}
+}
+
+// NamedAgentCards returns the AgentCards named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Team) NamedAgentCards(name string) ([]*AgentCard, error) {
+	if _m.Edges.namedAgentCards == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAgentCards[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Team) appendNamedAgentCards(name string, edges ...*AgentCard) {
+	if _m.Edges.namedAgentCards == nil {
+		_m.Edges.namedAgentCards = make(map[string][]*AgentCard)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAgentCards[name] = []*AgentCard{}
+	} else {
+		_m.Edges.namedAgentCards[name] = append(_m.Edges.namedAgentCards[name], edges...)
 	}
 }
 

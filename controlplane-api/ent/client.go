@@ -18,6 +18,9 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -28,6 +31,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -39,6 +43,12 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// AgentCard is the client for interacting with the AgentCard builders.
+	AgentCard *AgentCardClient
+	// AgenticExposure is the client for interacting with the AgenticExposure builders.
+	AgenticExposure *AgenticExposureClient
+	// AgenticSubscription is the client for interacting with the AgenticSubscription builders.
+	AgenticSubscription *AgenticSubscriptionClient
 	// Api is the client for interacting with the Api builders.
 	Api *APIClient
 	// ApiExposure is the client for interacting with the ApiExposure builders.
@@ -59,6 +69,8 @@ type Client struct {
 	EventType *EventTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// McpServer is the client for interacting with the McpServer builders.
+	McpServer *McpServerClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
 	// PermissionSet is the client for interacting with the PermissionSet builders.
@@ -80,6 +92,9 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.AgentCard = NewAgentCardClient(c.config)
+	c.AgenticExposure = NewAgenticExposureClient(c.config)
+	c.AgenticSubscription = NewAgenticSubscriptionClient(c.config)
 	c.Api = NewAPIClient(c.config)
 	c.ApiExposure = NewApiExposureClient(c.config)
 	c.ApiSubscription = NewApiSubscriptionClient(c.config)
@@ -90,6 +105,7 @@ func (c *Client) init() {
 	c.EventSubscription = NewEventSubscriptionClient(c.config)
 	c.EventType = NewEventTypeClient(c.config)
 	c.Group = NewGroupClient(c.config)
+	c.McpServer = NewMcpServerClient(c.config)
 	c.Member = NewMemberClient(c.config)
 	c.PermissionSet = NewPermissionSetClient(c.config)
 	c.Team = NewTeamClient(c.config)
@@ -184,22 +200,26 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:               ctx,
-		config:            cfg,
-		Api:               NewAPIClient(cfg),
-		ApiExposure:       NewApiExposureClient(cfg),
-		ApiSubscription:   NewApiSubscriptionClient(cfg),
-		Application:       NewApplicationClient(cfg),
-		Approval:          NewApprovalClient(cfg),
-		ApprovalRequest:   NewApprovalRequestClient(cfg),
-		EventExposure:     NewEventExposureClient(cfg),
-		EventSubscription: NewEventSubscriptionClient(cfg),
-		EventType:         NewEventTypeClient(cfg),
-		Group:             NewGroupClient(cfg),
-		Member:            NewMemberClient(cfg),
-		PermissionSet:     NewPermissionSetClient(cfg),
-		Team:              NewTeamClient(cfg),
-		Zone:              NewZoneClient(cfg),
+		ctx:                 ctx,
+		config:              cfg,
+		AgentCard:           NewAgentCardClient(cfg),
+		AgenticExposure:     NewAgenticExposureClient(cfg),
+		AgenticSubscription: NewAgenticSubscriptionClient(cfg),
+		Api:                 NewAPIClient(cfg),
+		ApiExposure:         NewApiExposureClient(cfg),
+		ApiSubscription:     NewApiSubscriptionClient(cfg),
+		Application:         NewApplicationClient(cfg),
+		Approval:            NewApprovalClient(cfg),
+		ApprovalRequest:     NewApprovalRequestClient(cfg),
+		EventExposure:       NewEventExposureClient(cfg),
+		EventSubscription:   NewEventSubscriptionClient(cfg),
+		EventType:           NewEventTypeClient(cfg),
+		Group:               NewGroupClient(cfg),
+		McpServer:           NewMcpServerClient(cfg),
+		Member:              NewMemberClient(cfg),
+		PermissionSet:       NewPermissionSetClient(cfg),
+		Team:                NewTeamClient(cfg),
+		Zone:                NewZoneClient(cfg),
 	}, nil
 }
 
@@ -217,29 +237,33 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:               ctx,
-		config:            cfg,
-		Api:               NewAPIClient(cfg),
-		ApiExposure:       NewApiExposureClient(cfg),
-		ApiSubscription:   NewApiSubscriptionClient(cfg),
-		Application:       NewApplicationClient(cfg),
-		Approval:          NewApprovalClient(cfg),
-		ApprovalRequest:   NewApprovalRequestClient(cfg),
-		EventExposure:     NewEventExposureClient(cfg),
-		EventSubscription: NewEventSubscriptionClient(cfg),
-		EventType:         NewEventTypeClient(cfg),
-		Group:             NewGroupClient(cfg),
-		Member:            NewMemberClient(cfg),
-		PermissionSet:     NewPermissionSetClient(cfg),
-		Team:              NewTeamClient(cfg),
-		Zone:              NewZoneClient(cfg),
+		ctx:                 ctx,
+		config:              cfg,
+		AgentCard:           NewAgentCardClient(cfg),
+		AgenticExposure:     NewAgenticExposureClient(cfg),
+		AgenticSubscription: NewAgenticSubscriptionClient(cfg),
+		Api:                 NewAPIClient(cfg),
+		ApiExposure:         NewApiExposureClient(cfg),
+		ApiSubscription:     NewApiSubscriptionClient(cfg),
+		Application:         NewApplicationClient(cfg),
+		Approval:            NewApprovalClient(cfg),
+		ApprovalRequest:     NewApprovalRequestClient(cfg),
+		EventExposure:       NewEventExposureClient(cfg),
+		EventSubscription:   NewEventSubscriptionClient(cfg),
+		EventType:           NewEventTypeClient(cfg),
+		Group:               NewGroupClient(cfg),
+		McpServer:           NewMcpServerClient(cfg),
+		Member:              NewMemberClient(cfg),
+		PermissionSet:       NewPermissionSetClient(cfg),
+		Team:                NewTeamClient(cfg),
+		Zone:                NewZoneClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Api.
+//		AgentCard.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -262,8 +286,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Api, c.ApiExposure, c.ApiSubscription, c.Application, c.Approval,
-		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType, c.Group,
+		c.AgentCard, c.AgenticExposure, c.AgenticSubscription, c.Api, c.ApiExposure,
+		c.ApiSubscription, c.Application, c.Approval, c.ApprovalRequest,
+		c.EventExposure, c.EventSubscription, c.EventType, c.Group, c.McpServer,
 		c.Member, c.PermissionSet, c.Team, c.Zone,
 	} {
 		n.Use(hooks...)
@@ -274,8 +299,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Api, c.ApiExposure, c.ApiSubscription, c.Application, c.Approval,
-		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType, c.Group,
+		c.AgentCard, c.AgenticExposure, c.AgenticSubscription, c.Api, c.ApiExposure,
+		c.ApiSubscription, c.Application, c.Approval, c.ApprovalRequest,
+		c.EventExposure, c.EventSubscription, c.EventType, c.Group, c.McpServer,
 		c.Member, c.PermissionSet, c.Team, c.Zone,
 	} {
 		n.Intercept(interceptors...)
@@ -285,6 +311,12 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *AgentCardMutation:
+		return c.AgentCard.mutate(ctx, m)
+	case *AgenticExposureMutation:
+		return c.AgenticExposure.mutate(ctx, m)
+	case *AgenticSubscriptionMutation:
+		return c.AgenticSubscription.mutate(ctx, m)
 	case *APIMutation:
 		return c.Api.mutate(ctx, m)
 	case *ApiExposureMutation:
@@ -305,6 +337,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.EventType.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
+	case *McpServerMutation:
+		return c.McpServer.mutate(ctx, m)
 	case *MemberMutation:
 		return c.Member.mutate(ctx, m)
 	case *PermissionSetMutation:
@@ -315,6 +349,568 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Zone.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// AgentCardClient is a client for the AgentCard schema.
+type AgentCardClient struct {
+	config
+}
+
+// NewAgentCardClient returns a client for the AgentCard from the given config.
+func NewAgentCardClient(c config) *AgentCardClient {
+	return &AgentCardClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `agentcard.Hooks(f(g(h())))`.
+func (c *AgentCardClient) Use(hooks ...Hook) {
+	c.hooks.AgentCard = append(c.hooks.AgentCard, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `agentcard.Intercept(f(g(h())))`.
+func (c *AgentCardClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AgentCard = append(c.inters.AgentCard, interceptors...)
+}
+
+// Create returns a builder for creating a AgentCard entity.
+func (c *AgentCardClient) Create() *AgentCardCreate {
+	mutation := newAgentCardMutation(c.config, OpCreate)
+	return &AgentCardCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AgentCard entities.
+func (c *AgentCardClient) CreateBulk(builders ...*AgentCardCreate) *AgentCardCreateBulk {
+	return &AgentCardCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AgentCardClient) MapCreateBulk(slice any, setFunc func(*AgentCardCreate, int)) *AgentCardCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AgentCardCreateBulk{err: fmt.Errorf("calling to AgentCardClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AgentCardCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AgentCardCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AgentCard.
+func (c *AgentCardClient) Update() *AgentCardUpdate {
+	mutation := newAgentCardMutation(c.config, OpUpdate)
+	return &AgentCardUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AgentCardClient) UpdateOne(_m *AgentCard) *AgentCardUpdateOne {
+	mutation := newAgentCardMutation(c.config, OpUpdateOne, withAgentCard(_m))
+	return &AgentCardUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AgentCardClient) UpdateOneID(id int) *AgentCardUpdateOne {
+	mutation := newAgentCardMutation(c.config, OpUpdateOne, withAgentCardID(id))
+	return &AgentCardUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AgentCard.
+func (c *AgentCardClient) Delete() *AgentCardDelete {
+	mutation := newAgentCardMutation(c.config, OpDelete)
+	return &AgentCardDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AgentCardClient) DeleteOne(_m *AgentCard) *AgentCardDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AgentCardClient) DeleteOneID(id int) *AgentCardDeleteOne {
+	builder := c.Delete().Where(agentcard.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AgentCardDeleteOne{builder}
+}
+
+// Query returns a query builder for AgentCard.
+func (c *AgentCardClient) Query() *AgentCardQuery {
+	return &AgentCardQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAgentCard},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AgentCard entity by its id.
+func (c *AgentCardClient) Get(ctx context.Context, id int) (*AgentCard, error) {
+	return c.Query().Where(agentcard.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AgentCardClient) GetX(ctx context.Context, id int) *AgentCard {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a AgentCard.
+func (c *AgentCardClient) QueryOwner(_m *AgentCard) *TeamQuery {
+	query := (&TeamClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agentcard.Table, agentcard.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, agentcard.OwnerTable, agentcard.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExposures queries the exposures edge of a AgentCard.
+func (c *AgentCardClient) QueryExposures(_m *AgentCard) *AgenticExposureQuery {
+	query := (&AgenticExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agentcard.Table, agentcard.FieldID, id),
+			sqlgraph.To(agenticexposure.Table, agenticexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, agentcard.ExposuresTable, agentcard.ExposuresColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AgentCardClient) Hooks() []Hook {
+	hooks := c.hooks.AgentCard
+	return append(hooks[:len(hooks):len(hooks)], agentcard.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *AgentCardClient) Interceptors() []Interceptor {
+	return c.inters.AgentCard
+}
+
+func (c *AgentCardClient) mutate(ctx context.Context, m *AgentCardMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AgentCardCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AgentCardUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AgentCardUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AgentCardDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AgentCard mutation op: %q", m.Op())
+	}
+}
+
+// AgenticExposureClient is a client for the AgenticExposure schema.
+type AgenticExposureClient struct {
+	config
+}
+
+// NewAgenticExposureClient returns a client for the AgenticExposure from the given config.
+func NewAgenticExposureClient(c config) *AgenticExposureClient {
+	return &AgenticExposureClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `agenticexposure.Hooks(f(g(h())))`.
+func (c *AgenticExposureClient) Use(hooks ...Hook) {
+	c.hooks.AgenticExposure = append(c.hooks.AgenticExposure, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `agenticexposure.Intercept(f(g(h())))`.
+func (c *AgenticExposureClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AgenticExposure = append(c.inters.AgenticExposure, interceptors...)
+}
+
+// Create returns a builder for creating a AgenticExposure entity.
+func (c *AgenticExposureClient) Create() *AgenticExposureCreate {
+	mutation := newAgenticExposureMutation(c.config, OpCreate)
+	return &AgenticExposureCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AgenticExposure entities.
+func (c *AgenticExposureClient) CreateBulk(builders ...*AgenticExposureCreate) *AgenticExposureCreateBulk {
+	return &AgenticExposureCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AgenticExposureClient) MapCreateBulk(slice any, setFunc func(*AgenticExposureCreate, int)) *AgenticExposureCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AgenticExposureCreateBulk{err: fmt.Errorf("calling to AgenticExposureClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AgenticExposureCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AgenticExposureCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AgenticExposure.
+func (c *AgenticExposureClient) Update() *AgenticExposureUpdate {
+	mutation := newAgenticExposureMutation(c.config, OpUpdate)
+	return &AgenticExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AgenticExposureClient) UpdateOne(_m *AgenticExposure) *AgenticExposureUpdateOne {
+	mutation := newAgenticExposureMutation(c.config, OpUpdateOne, withAgenticExposure(_m))
+	return &AgenticExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AgenticExposureClient) UpdateOneID(id int) *AgenticExposureUpdateOne {
+	mutation := newAgenticExposureMutation(c.config, OpUpdateOne, withAgenticExposureID(id))
+	return &AgenticExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AgenticExposure.
+func (c *AgenticExposureClient) Delete() *AgenticExposureDelete {
+	mutation := newAgenticExposureMutation(c.config, OpDelete)
+	return &AgenticExposureDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AgenticExposureClient) DeleteOne(_m *AgenticExposure) *AgenticExposureDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AgenticExposureClient) DeleteOneID(id int) *AgenticExposureDeleteOne {
+	builder := c.Delete().Where(agenticexposure.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AgenticExposureDeleteOne{builder}
+}
+
+// Query returns a query builder for AgenticExposure.
+func (c *AgenticExposureClient) Query() *AgenticExposureQuery {
+	return &AgenticExposureQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAgenticExposure},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AgenticExposure entity by its id.
+func (c *AgenticExposureClient) Get(ctx context.Context, id int) (*AgenticExposure, error) {
+	return c.Query().Where(agenticexposure.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AgenticExposureClient) GetX(ctx context.Context, id int) *AgenticExposure {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a AgenticExposure.
+func (c *AgenticExposureClient) QueryOwner(_m *AgenticExposure) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agenticexposure.Table, agenticexposure.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, agenticexposure.OwnerTable, agenticexposure.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMcpServer queries the mcp_server edge of a AgenticExposure.
+func (c *AgenticExposureClient) QueryMcpServer(_m *AgenticExposure) *McpServerQuery {
+	query := (&McpServerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agenticexposure.Table, agenticexposure.FieldID, id),
+			sqlgraph.To(mcpserver.Table, mcpserver.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, agenticexposure.McpServerTable, agenticexposure.McpServerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAgentCard queries the agent_card edge of a AgenticExposure.
+func (c *AgenticExposureClient) QueryAgentCard(_m *AgenticExposure) *AgentCardQuery {
+	query := (&AgentCardClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agenticexposure.Table, agenticexposure.FieldID, id),
+			sqlgraph.To(agentcard.Table, agentcard.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, agenticexposure.AgentCardTable, agenticexposure.AgentCardColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscriptions queries the subscriptions edge of a AgenticExposure.
+func (c *AgenticExposureClient) QuerySubscriptions(_m *AgenticExposure) *AgenticSubscriptionQuery {
+	query := (&AgenticSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agenticexposure.Table, agenticexposure.FieldID, id),
+			sqlgraph.To(agenticsubscription.Table, agenticsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, agenticexposure.SubscriptionsTable, agenticexposure.SubscriptionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AgenticExposureClient) Hooks() []Hook {
+	hooks := c.hooks.AgenticExposure
+	return append(hooks[:len(hooks):len(hooks)], agenticexposure.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *AgenticExposureClient) Interceptors() []Interceptor {
+	return c.inters.AgenticExposure
+}
+
+func (c *AgenticExposureClient) mutate(ctx context.Context, m *AgenticExposureMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AgenticExposureCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AgenticExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AgenticExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AgenticExposureDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AgenticExposure mutation op: %q", m.Op())
+	}
+}
+
+// AgenticSubscriptionClient is a client for the AgenticSubscription schema.
+type AgenticSubscriptionClient struct {
+	config
+}
+
+// NewAgenticSubscriptionClient returns a client for the AgenticSubscription from the given config.
+func NewAgenticSubscriptionClient(c config) *AgenticSubscriptionClient {
+	return &AgenticSubscriptionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `agenticsubscription.Hooks(f(g(h())))`.
+func (c *AgenticSubscriptionClient) Use(hooks ...Hook) {
+	c.hooks.AgenticSubscription = append(c.hooks.AgenticSubscription, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `agenticsubscription.Intercept(f(g(h())))`.
+func (c *AgenticSubscriptionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AgenticSubscription = append(c.inters.AgenticSubscription, interceptors...)
+}
+
+// Create returns a builder for creating a AgenticSubscription entity.
+func (c *AgenticSubscriptionClient) Create() *AgenticSubscriptionCreate {
+	mutation := newAgenticSubscriptionMutation(c.config, OpCreate)
+	return &AgenticSubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AgenticSubscription entities.
+func (c *AgenticSubscriptionClient) CreateBulk(builders ...*AgenticSubscriptionCreate) *AgenticSubscriptionCreateBulk {
+	return &AgenticSubscriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AgenticSubscriptionClient) MapCreateBulk(slice any, setFunc func(*AgenticSubscriptionCreate, int)) *AgenticSubscriptionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AgenticSubscriptionCreateBulk{err: fmt.Errorf("calling to AgenticSubscriptionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AgenticSubscriptionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AgenticSubscriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AgenticSubscription.
+func (c *AgenticSubscriptionClient) Update() *AgenticSubscriptionUpdate {
+	mutation := newAgenticSubscriptionMutation(c.config, OpUpdate)
+	return &AgenticSubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AgenticSubscriptionClient) UpdateOne(_m *AgenticSubscription) *AgenticSubscriptionUpdateOne {
+	mutation := newAgenticSubscriptionMutation(c.config, OpUpdateOne, withAgenticSubscription(_m))
+	return &AgenticSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AgenticSubscriptionClient) UpdateOneID(id int) *AgenticSubscriptionUpdateOne {
+	mutation := newAgenticSubscriptionMutation(c.config, OpUpdateOne, withAgenticSubscriptionID(id))
+	return &AgenticSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AgenticSubscription.
+func (c *AgenticSubscriptionClient) Delete() *AgenticSubscriptionDelete {
+	mutation := newAgenticSubscriptionMutation(c.config, OpDelete)
+	return &AgenticSubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AgenticSubscriptionClient) DeleteOne(_m *AgenticSubscription) *AgenticSubscriptionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AgenticSubscriptionClient) DeleteOneID(id int) *AgenticSubscriptionDeleteOne {
+	builder := c.Delete().Where(agenticsubscription.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AgenticSubscriptionDeleteOne{builder}
+}
+
+// Query returns a query builder for AgenticSubscription.
+func (c *AgenticSubscriptionClient) Query() *AgenticSubscriptionQuery {
+	return &AgenticSubscriptionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAgenticSubscription},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AgenticSubscription entity by its id.
+func (c *AgenticSubscriptionClient) Get(ctx context.Context, id int) (*AgenticSubscription, error) {
+	return c.Query().Where(agenticsubscription.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AgenticSubscriptionClient) GetX(ctx context.Context, id int) *AgenticSubscription {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a AgenticSubscription.
+func (c *AgenticSubscriptionClient) QueryOwner(_m *AgenticSubscription) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agenticsubscription.Table, agenticsubscription.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, agenticsubscription.OwnerTable, agenticsubscription.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTarget queries the target edge of a AgenticSubscription.
+func (c *AgenticSubscriptionClient) QueryTarget(_m *AgenticSubscription) *AgenticExposureQuery {
+	query := (&AgenticExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agenticsubscription.Table, agenticsubscription.FieldID, id),
+			sqlgraph.To(agenticexposure.Table, agenticexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, agenticsubscription.TargetTable, agenticsubscription.TargetColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApproval queries the approval edge of a AgenticSubscription.
+func (c *AgenticSubscriptionClient) QueryApproval(_m *AgenticSubscription) *ApprovalQuery {
+	query := (&ApprovalClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agenticsubscription.Table, agenticsubscription.FieldID, id),
+			sqlgraph.To(approval.Table, approval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, agenticsubscription.ApprovalTable, agenticsubscription.ApprovalColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApprovalRequests queries the approval_requests edge of a AgenticSubscription.
+func (c *AgenticSubscriptionClient) QueryApprovalRequests(_m *AgenticSubscription) *ApprovalRequestQuery {
+	query := (&ApprovalRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agenticsubscription.Table, agenticsubscription.FieldID, id),
+			sqlgraph.To(approvalrequest.Table, approvalrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, agenticsubscription.ApprovalRequestsTable, agenticsubscription.ApprovalRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AgenticSubscriptionClient) Hooks() []Hook {
+	hooks := c.hooks.AgenticSubscription
+	return append(hooks[:len(hooks):len(hooks)], agenticsubscription.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *AgenticSubscriptionClient) Interceptors() []Interceptor {
+	return c.inters.AgenticSubscription
+}
+
+func (c *AgenticSubscriptionClient) mutate(ctx context.Context, m *AgenticSubscriptionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AgenticSubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AgenticSubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AgenticSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AgenticSubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AgenticSubscription mutation op: %q", m.Op())
 	}
 }
 
@@ -1084,6 +1680,38 @@ func (c *ApplicationClient) QuerySubscribedEvents(_m *Application) *EventSubscri
 	return query
 }
 
+// QueryAgenticExposures queries the agentic_exposures edge of a Application.
+func (c *ApplicationClient) QueryAgenticExposures(_m *Application) *AgenticExposureQuery {
+	query := (&AgenticExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(agenticexposure.Table, agenticexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.AgenticExposuresTable, application.AgenticExposuresColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAgenticSubscriptions queries the agentic_subscriptions edge of a Application.
+func (c *ApplicationClient) QueryAgenticSubscriptions(_m *Application) *AgenticSubscriptionQuery {
+	query := (&AgenticSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(agenticsubscription.Table, agenticsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.AgenticSubscriptionsTable, application.AgenticSubscriptionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryPermissionSet queries the permission_set edge of a Application.
 func (c *ApplicationClient) QueryPermissionSet(_m *Application) *PermissionSetQuery {
 	query := (&PermissionSetClient{config: c.config}).Query()
@@ -1266,6 +1894,22 @@ func (c *ApprovalClient) QueryEventSubscription(_m *Approval) *EventSubscription
 	return query
 }
 
+// QueryAgenticSubscription queries the agentic_subscription edge of a Approval.
+func (c *ApprovalClient) QueryAgenticSubscription(_m *Approval) *AgenticSubscriptionQuery {
+	query := (&AgenticSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approval.Table, approval.FieldID, id),
+			sqlgraph.To(agenticsubscription.Table, agenticsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, approval.AgenticSubscriptionTable, approval.AgenticSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ApprovalClient) Hooks() []Hook {
 	hooks := c.hooks.Approval
@@ -1425,6 +2069,22 @@ func (c *ApprovalRequestClient) QueryEventSubscription(_m *ApprovalRequest) *Eve
 			sqlgraph.From(approvalrequest.Table, approvalrequest.FieldID, id),
 			sqlgraph.To(eventsubscription.Table, eventsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, approvalrequest.EventSubscriptionTable, approvalrequest.EventSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAgenticSubscription queries the agentic_subscription edge of a ApprovalRequest.
+func (c *ApprovalRequestClient) QueryAgenticSubscription(_m *ApprovalRequest) *AgenticSubscriptionQuery {
+	query := (&AgenticSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approvalrequest.Table, approvalrequest.FieldID, id),
+			sqlgraph.To(agenticsubscription.Table, agenticsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, approvalrequest.AgenticSubscriptionTable, approvalrequest.AgenticSubscriptionColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2154,6 +2814,172 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 	}
 }
 
+// McpServerClient is a client for the McpServer schema.
+type McpServerClient struct {
+	config
+}
+
+// NewMcpServerClient returns a client for the McpServer from the given config.
+func NewMcpServerClient(c config) *McpServerClient {
+	return &McpServerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `mcpserver.Hooks(f(g(h())))`.
+func (c *McpServerClient) Use(hooks ...Hook) {
+	c.hooks.McpServer = append(c.hooks.McpServer, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `mcpserver.Intercept(f(g(h())))`.
+func (c *McpServerClient) Intercept(interceptors ...Interceptor) {
+	c.inters.McpServer = append(c.inters.McpServer, interceptors...)
+}
+
+// Create returns a builder for creating a McpServer entity.
+func (c *McpServerClient) Create() *McpServerCreate {
+	mutation := newMcpServerMutation(c.config, OpCreate)
+	return &McpServerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of McpServer entities.
+func (c *McpServerClient) CreateBulk(builders ...*McpServerCreate) *McpServerCreateBulk {
+	return &McpServerCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *McpServerClient) MapCreateBulk(slice any, setFunc func(*McpServerCreate, int)) *McpServerCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &McpServerCreateBulk{err: fmt.Errorf("calling to McpServerClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*McpServerCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &McpServerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for McpServer.
+func (c *McpServerClient) Update() *McpServerUpdate {
+	mutation := newMcpServerMutation(c.config, OpUpdate)
+	return &McpServerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *McpServerClient) UpdateOne(_m *McpServer) *McpServerUpdateOne {
+	mutation := newMcpServerMutation(c.config, OpUpdateOne, withMcpServer(_m))
+	return &McpServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *McpServerClient) UpdateOneID(id int) *McpServerUpdateOne {
+	mutation := newMcpServerMutation(c.config, OpUpdateOne, withMcpServerID(id))
+	return &McpServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for McpServer.
+func (c *McpServerClient) Delete() *McpServerDelete {
+	mutation := newMcpServerMutation(c.config, OpDelete)
+	return &McpServerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *McpServerClient) DeleteOne(_m *McpServer) *McpServerDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *McpServerClient) DeleteOneID(id int) *McpServerDeleteOne {
+	builder := c.Delete().Where(mcpserver.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &McpServerDeleteOne{builder}
+}
+
+// Query returns a query builder for McpServer.
+func (c *McpServerClient) Query() *McpServerQuery {
+	return &McpServerQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMcpServer},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a McpServer entity by its id.
+func (c *McpServerClient) Get(ctx context.Context, id int) (*McpServer, error) {
+	return c.Query().Where(mcpserver.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *McpServerClient) GetX(ctx context.Context, id int) *McpServer {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a McpServer.
+func (c *McpServerClient) QueryOwner(_m *McpServer) *TeamQuery {
+	query := (&TeamClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mcpserver.Table, mcpserver.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mcpserver.OwnerTable, mcpserver.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExposures queries the exposures edge of a McpServer.
+func (c *McpServerClient) QueryExposures(_m *McpServer) *AgenticExposureQuery {
+	query := (&AgenticExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mcpserver.Table, mcpserver.FieldID, id),
+			sqlgraph.To(agenticexposure.Table, agenticexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, mcpserver.ExposuresTable, mcpserver.ExposuresColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *McpServerClient) Hooks() []Hook {
+	hooks := c.hooks.McpServer
+	return append(hooks[:len(hooks):len(hooks)], mcpserver.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *McpServerClient) Interceptors() []Interceptor {
+	return c.inters.McpServer
+}
+
+func (c *McpServerClient) mutate(ctx context.Context, m *McpServerMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&McpServerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&McpServerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&McpServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&McpServerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown McpServer mutation op: %q", m.Op())
+	}
+}
+
 // MemberClient is a client for the Member schema.
 type MemberClient struct {
 	config
@@ -2642,6 +3468,38 @@ func (c *TeamClient) QueryEventTypes(_m *Team) *EventTypeQuery {
 	return query
 }
 
+// QueryMcpServers queries the mcp_servers edge of a Team.
+func (c *TeamClient) QueryMcpServers(_m *Team) *McpServerQuery {
+	query := (&McpServerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(mcpserver.Table, mcpserver.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.McpServersTable, team.McpServersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAgentCards queries the agent_cards edge of a Team.
+func (c *TeamClient) QueryAgentCards(_m *Team) *AgentCardQuery {
+	query := (&AgentCardClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(agentcard.Table, agentcard.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.AgentCardsTable, team.AgentCardsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *TeamClient) Hooks() []Hook {
 	hooks := c.hooks.Team
@@ -2821,13 +3679,15 @@ func (c *ZoneClient) mutate(ctx context.Context, m *ZoneMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Api, ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		EventExposure, EventSubscription, EventType, Group, Member, PermissionSet,
-		Team, Zone []ent.Hook
+		AgentCard, AgenticExposure, AgenticSubscription, Api, ApiExposure,
+		ApiSubscription, Application, Approval, ApprovalRequest, EventExposure,
+		EventSubscription, EventType, Group, McpServer, Member, PermissionSet, Team,
+		Zone []ent.Hook
 	}
 	inters struct {
-		Api, ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		EventExposure, EventSubscription, EventType, Group, Member, PermissionSet,
-		Team, Zone []ent.Interceptor
+		AgentCard, AgenticExposure, AgenticSubscription, Api, ApiExposure,
+		ApiSubscription, Application, Approval, ApprovalRequest, EventExposure,
+		EventSubscription, EventType, Group, McpServer, Member, PermissionSet, Team,
+		Zone []ent.Interceptor
 	}
 )

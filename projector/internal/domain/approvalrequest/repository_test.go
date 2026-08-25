@@ -32,11 +32,13 @@ import (
 // mockApprovalRequestDeps implements approvalrequest.ApprovalRequestDeps for
 // testing.
 type mockApprovalRequestDeps struct {
-	subIDs      map[string]int // key: "namespace:name"
-	subErr      error          // if non-nil, FindAPISubscriptionByMeta always returns this error
-	eventSubIDs map[string]int // key: "namespace:name"
-	eventSubErr error          // if non-nil, FindEventSubscriptionByMeta always returns this error
-	evicted     []string       // tracks eviction calls as "namespace:name"
+	subIDs        map[string]int // key: "namespace:name"
+	subErr        error          // if non-nil, FindAPISubscriptionByMeta always returns this error
+	eventSubIDs   map[string]int // key: "namespace:name"
+	eventSubErr   error          // if non-nil, FindEventSubscriptionByMeta always returns this error
+	agenticSubIDs map[string]int // key: "namespace:name"
+	agenticSubErr error          // if non-nil, FindAgenticSubscriptionByMeta always returns this error
+	evicted       []string       // tracks eviction calls as "namespace:name"
 }
 
 func (m *mockApprovalRequestDeps) FindAPISubscriptionByMeta(_ context.Context, namespace, name string) (int, error) {
@@ -61,11 +63,26 @@ func (m *mockApprovalRequestDeps) FindEventSubscriptionByMeta(_ context.Context,
 	return 0, fmt.Errorf("event_subscription %s/%s: %w", namespace, name, infrastructure.ErrEntityNotFound)
 }
 
+func (m *mockApprovalRequestDeps) FindAgenticSubscriptionByMeta(_ context.Context, namespace, name string) (int, error) {
+	if m.agenticSubErr != nil {
+		return 0, m.agenticSubErr
+	}
+	key := namespace + ":" + name
+	if id, ok := m.agenticSubIDs[key]; ok {
+		return id, nil
+	}
+	return 0, fmt.Errorf("agentic_subscription %s/%s: %w", namespace, name, infrastructure.ErrEntityNotFound)
+}
+
 func (m *mockApprovalRequestDeps) EvictAPISubscription(namespace, name string) {
 	m.evicted = append(m.evicted, namespace+":"+name)
 }
 
 func (m *mockApprovalRequestDeps) EvictEventSubscription(namespace, name string) {
+	m.evicted = append(m.evicted, namespace+":"+name)
+}
+
+func (m *mockApprovalRequestDeps) EvictAgenticSubscription(namespace, name string) {
 	m.evicted = append(m.evicted, namespace+":"+name)
 }
 
@@ -248,6 +265,51 @@ var _ = Describe("ApprovalRequest Repository", func() {
 			Expect(ar.Edges.EventSubscription.ID).To(Equal(eventSub.ID))
 		})
 
+		It("should create a new approval request with agentic subscription FK", func() {
+			// Seed an AgenticSubscription.
+			z, err := client.Zone.Query().Where(zone.NameEQ("caas")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			t, err := client.Team.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			agenticConsumerApp, err := client.Application.Create().
+				SetName("agentic-consumer").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(t.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			agenticSub, err := client.AgenticSubscription.Create().
+				SetBasePath("/agentic/v1/my-agent").
+				SetNamespace("platform--narvi").
+				SetName("my-agentic-sub").
+				SetOwnerID(agenticConsumerApp.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			deps.agenticSubIDs = map[string]int{"prod--platform--narvi:my-agentic-sub": agenticSub.ID}
+
+			data := baseData()
+			data.Meta.Name = "agenticsubscription--my-agentic-sub--abc123"
+			data.TargetKind = "AgenticSubscription"
+			data.SubscriptionNamespace = "prod--platform--narvi"
+			data.SubscriptionName = "my-agentic-sub"
+
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Verify the approval request was created with agentic subscription FK.
+			ar, err := client.ApprovalRequest.Query().
+				Where(
+					entapprovalrequest.NamespaceEQ("prod--platform--narvi"),
+					entapprovalrequest.NameEQ("agenticsubscription--my-agentic-sub--abc123"),
+				).
+				WithAgenticSubscription().
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ar.Edges.AgenticSubscription).NotTo(BeNil())
+			Expect(ar.Edges.AgenticSubscription.ID).To(Equal(agenticSub.ID))
+		})
+
 		It("should return ErrDependencyMissing when subscription is not cached", func() {
 			missingDeps := &mockApprovalRequestDeps{
 				subIDs:      map[string]int{}, // empty -- no subscription found
@@ -265,6 +327,15 @@ var _ = Describe("ApprovalRequest Repository", func() {
 			data := baseData()
 			data.TargetKind = "EventSubscription"
 			data.SubscriptionName = "missing-event-sub"
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
+		})
+
+		It("should return ErrDependencyMissing when agentic subscription is not cached", func() {
+			data := baseData()
+			data.TargetKind = "AgenticSubscription"
+			data.SubscriptionName = "missing-agentic-sub"
 			err := repo.Upsert(ctx, data)
 			Expect(err).To(HaveOccurred())
 			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())

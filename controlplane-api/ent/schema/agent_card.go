@@ -1,0 +1,81 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package schema
+
+import (
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
+
+	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
+)
+
+// AgentCard holds the schema definition for a registered A2A agent in the catalogue.
+//
+// NOTE: GraphQL exposure is intentionally not yet enabled (see Annotations()) —
+// this entity is only used by the projector's write path for now. GraphQL
+// query fields/types will be added in a follow-up change.
+type AgentCard struct {
+	ent.Schema
+}
+
+func (AgentCard) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		schemamixin.PrivacyMixin{},
+		schemamixin.TimestampsMixin{},
+		schemamixin.StatusMixin{},
+		schemamixin.NamespaceMixin{},
+	}
+}
+
+func (AgentCard) Fields() []ent.Field {
+	return []ent.Field{
+		field.Text("base_path").
+			NotEmpty(),
+		field.Text("version").
+			NotEmpty(),
+		field.Text("name").
+			NotEmpty(),
+		field.Text("description").
+			Optional(),
+		field.Text("specification").
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipType)),
+		field.Text("category").
+			Optional(),
+		field.JSON("oauth2_scopes", []string{}).
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.Bool("active").
+			Default(false),
+	}
+}
+
+func (AgentCard) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("owner", Team.Type).
+			Ref("agent_cards").
+			Required().
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType)),
+		edge.To("exposures", AgenticExposure.Type).
+			Annotations(entgql.Skip(entgql.SkipType)),
+	}
+}
+
+func (AgentCard) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.Skip(entgql.SkipAll),
+	}
+}
+
+func (AgentCard) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("base_path").Edges("owner").Unique(),
+	}
+}

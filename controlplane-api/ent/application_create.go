@@ -14,6 +14,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -327,6 +329,36 @@ func (_c *ApplicationCreate) AddSubscribedEvents(v ...*EventSubscription) *Appli
 		ids[i] = v[i].ID
 	}
 	return _c.AddSubscribedEventIDs(ids...)
+}
+
+// AddAgenticExposureIDs adds the "agentic_exposures" edge to the AgenticExposure entity by IDs.
+func (_c *ApplicationCreate) AddAgenticExposureIDs(ids ...int) *ApplicationCreate {
+	_c.mutation.AddAgenticExposureIDs(ids...)
+	return _c
+}
+
+// AddAgenticExposures adds the "agentic_exposures" edges to the AgenticExposure entity.
+func (_c *ApplicationCreate) AddAgenticExposures(v ...*AgenticExposure) *ApplicationCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgenticExposureIDs(ids...)
+}
+
+// AddAgenticSubscriptionIDs adds the "agentic_subscriptions" edge to the AgenticSubscription entity by IDs.
+func (_c *ApplicationCreate) AddAgenticSubscriptionIDs(ids ...int) *ApplicationCreate {
+	_c.mutation.AddAgenticSubscriptionIDs(ids...)
+	return _c
+}
+
+// AddAgenticSubscriptions adds the "agentic_subscriptions" edges to the AgenticSubscription entity.
+func (_c *ApplicationCreate) AddAgenticSubscriptions(v ...*AgenticSubscription) *ApplicationCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgenticSubscriptionIDs(ids...)
 }
 
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
@@ -650,6 +682,38 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgenticExposuresIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.AgenticExposuresTable,
+			Columns: []string{application.AgenticExposuresColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticexposure.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgenticSubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.AgenticSubscriptionsTable,
+			Columns: []string{application.AgenticSubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

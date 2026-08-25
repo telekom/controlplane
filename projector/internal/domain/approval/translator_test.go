@@ -68,7 +68,7 @@ var _ = Describe("Approval Translator", func() {
 			}
 			skip, reason := t.ShouldSkip(obj)
 			Expect(skip).To(BeTrue())
-			Expect(reason).To(ContainSubstring("ApiSubscription or EventSubscription"))
+			Expect(reason).To(ContainSubstring("ApiSubscription, EventSubscription, or AgenticSubscription"))
 		})
 
 		It("should not skip a valid Approval CR targeting ApiSubscription", func() {
