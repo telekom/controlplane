@@ -118,6 +118,11 @@ jobs:
 
   check-module-graph:
     name: Check Module Dependency Graph
+    needs: determine-scope
+    # Skipped on tag pushes (mode=none): those intentionally run no module
+    # CI at all (see determine-scope above), so an unrelated graph drift
+    # shouldn't fail an otherwise no-op tag CI run.
+    if: ${{ needs.determine-scope.outputs.mode != 'none' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -361,8 +366,11 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           fail=false
-          for r in "${{ needs.determine-scope.result }}" "${{ needs.check-module-graph.result }}"; do
-            [ "$r" = "success" ] || fail=true
+          [ "${{ needs.determine-scope.result }}" = "success" ] || fail=true
+          # check-module-graph is legitimately "skipped" on tag pushes
+          # (mode=none), which intentionally run no module CI at all.
+          for r in "${{ needs.check-module-graph.result }}"; do
+            [ "$r" = "success" ] || [ "$r" = "skipped" ] || fail=true
           done
           # build/package are legitimately "skipped" whenever their computed
           # matrix is empty (e.g. a docs-only PR touches no Go module).

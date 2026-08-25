@@ -76,7 +76,8 @@ while IFS=$'\t' read -r name path; do
       if [ -n "$dep_name" ] && [ "$dep_name" != "$name" ]; then
         deps+=("$dep_name")
       fi
-    done < <(grep -oP "$GO_MODULE_PREFIX/\S+\s*=>\s*\K\.\.?/\S+" "$gomod" || true)
+    done < <(grep -E "^[[:space:]]*(replace[[:space:]]+)?${GO_MODULE_PREFIX}/[^[:space:]]+[[:space:]]*=>[[:space:]]*\.\.?/" "$gomod" |
+      sed -E 's#.*=>[[:space:]]*(\.\.?/[^[:space:]]+).*#\1#' || true)
   fi
 
   # Deduplicate and sort dependency names for a stable, diffable output.

@@ -60,12 +60,15 @@ jobs:
         shell: bash
         run: |
           # Trace a build of every configured module into the single
-          # CodeQL database initialized above.
+          # CodeQL database initialized above. Uses each module's own
+          # `make build` target (not `go build` directly) so CodeQL sees
+          # the same build inputs (generated code, manifests, build flags)
+          # as the rest of CI/release - see AGENTS.md.
           modules=$(yq -o=json '.modules[].path' .github/ci/modules.yaml | jq -r .)
           while IFS= read -r module; do
             [ -z "$module" ] && continue
             echo "Building $module for CodeQL..."
-            (cd "$module" && go build ./...)
+            (cd "$module" && make build)
           done <<<"$modules"
 
       - name: Perform CodeQL Analysis
