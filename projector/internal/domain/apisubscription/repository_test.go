@@ -92,6 +92,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 		app, err := client.Application.Create().
 			SetName("consumer-app").
 			SetNamespace("platform--narvi").
+			SetClientID("platform--narvi--consumer-app").
 			SetOwnerTeamID(t.ID).
 			SetZoneID(z.ID).
 			Save(ctx)

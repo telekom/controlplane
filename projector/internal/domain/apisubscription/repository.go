@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/metrics"
@@ -109,7 +110,19 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 			return fmt.Errorf("get target api_exposure for subscription (id %d,basePath %q): %w",
 				*targetExposureID, data.TargetBasePath, findErr)
 		}
-		traffic = resolveSubscriptionTraffic(exposure.Traffic.RateLimit, data)
+
+		// Subscriber overrides are keyed by the owner's client id (what the
+		// gateway enforces). Only resolve it when overrides actually exist.
+		rl := exposure.Traffic.RateLimit
+		if len(shared.SubscriberOverrideIDs(rl)) == 0 {
+			traffic = shared.DefaultSubscriptionTraffic(rl)
+		} else {
+			clientID, clientErr := r.ownerClientID(ctx, ownerAppID)
+			if clientErr != nil {
+				return fmt.Errorf("get owner client id for subscription (app %q): %w", data.OwnerAppName, clientErr)
+			}
+			traffic = shared.DeriveSubscriptionTraffic(rl, clientID)
+		}
 	}
 
 	create := r.client.ApiSubscription.Create().
@@ -164,38 +177,22 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	return nil
 }
 
-// resolveSubscriptionTraffic derives the traffic limits for a subscriber from
-// the exposure's rate limit config. Returns nil if no subscriber rate limits
-// are configured. A matching per-subscriber override takes precedence over the
-// default limits.
-func resolveSubscriptionTraffic(rl *model.RateLimit, data *APISubscriptionData) *model.ApiSubscriptionTraffic {
-	if rl == nil {
-		return nil
+// ownerClientID returns the stored client id of the owner Application, or an
+// empty string when it has not been assigned yet (client ids are populated
+// asynchronously). The client id is the identifier subscriber rate-limit
+// overrides are keyed by.
+func (r *Repository) ownerClientID(ctx context.Context, appID int) (string, error) {
+	app, err := r.client.Application.Query().
+		Where(application.IDEQ(appID)).
+		Select(application.FieldClientID).
+		Only(ctx)
+	if err != nil {
+		return "", err
 	}
-
-	var subLimits *model.Limits
-	if rl.SubscriberRateLimit != nil {
-		if rl.SubscriberRateLimit.Default != nil {
-			subLimits = &rl.SubscriberRateLimit.Default.Limits
-		}
-		subscriber := data.OwnerTeamName + "--" + data.OwnerAppName
-		for i := range rl.SubscriberRateLimit.Overrides {
-			if rl.SubscriberRateLimit.Overrides[i].Subscriber == subscriber {
-				subLimits = &rl.SubscriberRateLimit.Overrides[i].Limits
-				break
-			}
-		}
+	if app.ClientID == nil {
+		return "", nil
 	}
-
-	var providerLimits *model.Limits
-	if rl.Provider != nil {
-		providerLimits = &rl.Provider.Limits
-	}
-
-	if subLimits == nil && providerLimits == nil {
-		return nil
-	}
-	return &model.ApiSubscriptionTraffic{SubscriberLimits: subLimits, ProviderLimits: providerLimits}
+	return *app.ClientID, nil
 }
 
 // Delete removes an ApiSubscription entity from the database by owner

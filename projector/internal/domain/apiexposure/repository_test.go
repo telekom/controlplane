@@ -62,6 +62,8 @@ var _ = Describe("ApiExposure Repository", func() {
 		repo   *apiexposure.Repository
 		ctx    context.Context
 		appID  int
+		teamID int
+		zoneID int
 	)
 
 	BeforeEach(func() {
@@ -93,6 +95,8 @@ var _ = Describe("ApiExposure Repository", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		appID = app.ID
+		teamID = t.ID
+		zoneID = z.ID
 
 		deps = &mockExposureDeps{
 			appIDs: map[string]int{"my-app:platform--narvi": appID},
@@ -522,6 +526,181 @@ var _ = Describe("ApiExposure Repository", func() {
 			id, found := cache.Get("apiexposure", "/api/v1/cached:my-app:platform--narvi")
 			Expect(found).To(BeTrue())
 			Expect(id).To(BeNumerically(">", 0))
+		})
+	})
+
+	Describe("Upsert rate limit propagation", func() {
+		const rlBasePath = "/api/v1/ratelimited"
+
+		// exposureData builds an active exposure owned by the seeded my-app
+		// carrying the given rate limit (nil = no rate limit).
+		exposureData := func(rl *model.RateLimit) *apiexposure.APIExposureData {
+			var traffic *model.Traffic
+			if rl != nil {
+				traffic = &model.Traffic{RateLimit: rl}
+			}
+			return &apiexposure.APIExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "rl-exp", nil),
+				StatusPhase:    "READY",
+				StatusMessage:  "ok",
+				BasePath:       rlBasePath,
+				Visibility:     "WORLD",
+				Active:         true,
+				Features:       []string{},
+				Upstreams:      []model.Upstream{{URL: "https://backend.example.com", Weight: 100}},
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+				Traffic:        traffic,
+			}
+		}
+
+		exposureID := func() int {
+			id, err := client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ(rlBasePath)).
+				OnlyID(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			return id
+		}
+
+		createConsumer := func(name, clientID string) int {
+			app, err := client.Application.Create().
+				SetName(name).
+				SetNamespace("platform--narvi").
+				SetClientID(clientID).
+				SetOwnerTeamID(teamID).
+				SetZoneID(zoneID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			return app.ID
+		}
+
+		createTargetingSub := func(name string, ownerID, targetID int) int {
+			sub, err := client.ApiSubscription.Create().
+				SetBasePath(rlBasePath).
+				SetEnvironment("prod").
+				SetNamespace("prod--platform--narvi").
+				SetName(name).
+				SetOwnerID(ownerID).
+				SetTargetID(targetID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			return sub.ID
+		}
+
+		createOrphanSub := func(name string, ownerID int) int {
+			sub, err := client.ApiSubscription.Create().
+				SetBasePath(rlBasePath).
+				SetEnvironment("prod").
+				SetNamespace("prod--platform--narvi").
+				SetName(name).
+				SetOwnerID(ownerID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			return sub.ID
+		}
+
+		subTraffic := func(subID int) *model.ApiSubscriptionTraffic {
+			sub, err := client.ApiSubscription.Get(ctx, subID)
+			Expect(err).NotTo(HaveOccurred())
+			return sub.Traffic
+		}
+
+		It("writes provider limits to a targeting subscription when the exposure gains a rate limit", func() {
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			consumerID := createConsumer("consumer-1", "platform--narvi--consumer-1")
+			subID := createTargetingSub("sub-1", consumerID, exposureID())
+
+			rl := &model.RateLimit{Provider: &model.RateLimitConfig{Limits: model.Limits{Second: 50}}}
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+
+			traffic := subTraffic(subID)
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.SubscriberLimits).To(BeNil())
+			Expect(*traffic.ProviderLimits).To(Equal(model.Limits{Second: 50}))
+		})
+
+		It("applies a matching subscriber override by client id and the default to everyone else", func() {
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			eid := exposureID()
+			aID := createConsumer("consumer-a", "platform--narvi--consumer-a")
+			bID := createConsumer("consumer-b", "platform--narvi--consumer-b")
+			subA := createTargetingSub("sub-a", aID, eid)
+			subB := createTargetingSub("sub-b", bID, eid)
+
+			rl := &model.RateLimit{
+				SubscriberRateLimit: &model.SubscriberRateLimits{
+					Default: &model.SubscriberRateLimitDefaults{Limits: model.Limits{Second: 10}},
+					Overrides: []model.RateLimitOverrides{
+						{Subscriber: "platform--narvi--consumer-a", Limits: model.Limits{Second: 5}},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+
+			Expect(*subTraffic(subA).SubscriberLimits).To(Equal(model.Limits{Second: 5}))
+			Expect(*subTraffic(subB).SubscriberLimits).To(Equal(model.Limits{Second: 10}))
+		})
+
+		It("clears subscription traffic when the exposure's rate limit is removed", func() {
+			consumerID := createConsumer("consumer-x", "platform--narvi--consumer-x")
+			orphan := createOrphanSub("sub-x", consumerID)
+
+			// Adoption + propagation populates the orphan.
+			rl := &model.RateLimit{Provider: &model.RateLimitConfig{Limits: model.Limits{Second: 50}}}
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+			Expect(subTraffic(orphan)).NotTo(BeNil())
+
+			// Removing the rate limit clears the denormalized traffic.
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			Expect(subTraffic(orphan)).To(BeNil())
+		})
+
+		It("populates a freshly adopted orphan even when the rate limit is unchanged", func() {
+			rl := &model.RateLimit{Provider: &model.RateLimitConfig{Limits: model.Limits{Second: 50}}}
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+
+			consumerID := createConsumer("consumer-late", "platform--narvi--consumer-late")
+			orphan := createOrphanSub("sub-late", consumerID)
+
+			// Same rate limit — only the back-link (newlyLinked > 0) must trigger propagation.
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+
+			traffic := subTraffic(orphan)
+			Expect(traffic).NotTo(BeNil())
+			Expect(*traffic.ProviderLimits).To(Equal(model.Limits{Second: 50}))
+		})
+
+		It("does not rewrite subscriptions when the rate limit is unchanged", func() {
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			consumerID := createConsumer("consumer-g", "platform--narvi--consumer-g")
+			subID := createTargetingSub("sub-g", consumerID, exposureID())
+
+			rl := &model.RateLimit{Provider: &model.RateLimitConfig{Limits: model.Limits{Second: 50}}}
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+
+			// Stamp a sentinel the guard must preserve if propagation is skipped.
+			sentinel := &model.ApiSubscriptionTraffic{ProviderLimits: &model.Limits{Second: 999}}
+			Expect(client.ApiSubscription.UpdateOneID(subID).SetTraffic(sentinel).Exec(ctx)).To(Succeed())
+
+			// Re-upsert with the identical rate limit — the change guard must skip propagation.
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+			Expect(*subTraffic(subID).ProviderLimits).To(Equal(model.Limits{Second: 999}))
+		})
+
+		It("skips propagation when the exposure is inactive", func() {
+			// Active exposure first so the subscription can target it.
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			consumerID := createConsumer("consumer-inactive", "platform--narvi--consumer-inactive")
+			subID := createTargetingSub("sub-inactive", consumerID, exposureID())
+
+			// The base_path match only identifies the active exposure's
+			// subscribers, so an inactive exposure must not touch them.
+			data := exposureData(&model.RateLimit{Provider: &model.RateLimitConfig{Limits: model.Limits{Second: 50}}})
+			data.Active = false
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			Expect(subTraffic(subID)).To(BeNil())
 		})
 	})
 
