@@ -100,28 +100,8 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		// Not found — leave targetExposureID as nil.
 	} else {
 		targetExposureID = &id
-
-		// Read only the traffic column to derive subscriber rate limits.
-		exposure, findErr := r.client.ApiExposure.Query().
-			Where(apiexposure.IDEQ(*targetExposureID)).
-			Select(apiexposure.FieldTraffic).
-			Only(ctx)
-		if findErr != nil {
-			return fmt.Errorf("get target api_exposure for subscription (id %d,basePath %q): %w",
-				*targetExposureID, data.TargetBasePath, findErr)
-		}
-
-		// Subscriber overrides are keyed by the owner's client id (what the
-		// gateway enforces). Only resolve it when overrides actually exist.
-		rl := exposure.Traffic.RateLimit
-		if len(shared.SubscriberOverrideIDs(rl)) == 0 {
-			traffic = shared.DefaultSubscriptionTraffic(rl)
-		} else {
-			clientID, clientErr := r.ownerClientID(ctx, ownerAppID)
-			if clientErr != nil {
-				return fmt.Errorf("get owner client id for subscription (app %q): %w", data.OwnerAppName, clientErr)
-			}
-			traffic = shared.DeriveSubscriptionTraffic(rl, clientID)
+		if traffic, err = r.resolveSubscriberTraffic(ctx, id, ownerAppID, data); err != nil {
+			return err
 		}
 	}
 
@@ -175,6 +155,33 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	et, lk := cachekeys.APISubscriptionMeta(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, subscriptionID)
 	return nil
+}
+
+// resolveSubscriberTraffic reads the target exposure's rate-limit config and
+// derives the denormalized traffic for this subscriber. Overrides are keyed by
+// the owner's client id (what the gateway enforces), so it is resolved only
+// when overrides actually exist.
+func (r *Repository) resolveSubscriberTraffic(ctx context.Context, exposureID, ownerAppID int, data *APISubscriptionData) (*model.ApiSubscriptionTraffic, error) {
+	// Read only the traffic column to derive subscriber rate limits.
+	exposure, err := r.client.ApiExposure.Query().
+		Where(apiexposure.IDEQ(exposureID)).
+		Select(apiexposure.FieldTraffic).
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get target api_exposure for subscription (id %d,basePath %q): %w",
+			exposureID, data.TargetBasePath, err)
+	}
+
+	rl := exposure.Traffic.RateLimit
+	if len(shared.SubscriberOverrideIDs(rl)) == 0 {
+		return shared.DefaultSubscriptionTraffic(rl), nil
+	}
+
+	clientID, err := r.ownerClientID(ctx, ownerAppID)
+	if err != nil {
+		return nil, fmt.Errorf("get owner client id for subscription (app %q): %w", data.OwnerAppName, err)
+	}
+	return shared.DeriveSubscriptionTraffic(rl, clientID), nil
 }
 
 // ownerClientID returns the stored client id of the owner Application, or an

@@ -331,7 +331,6 @@ var _ = Describe("ApiExposure Repository", func() {
 
 			// Failover
 			Expect(exp.Traffic.Failover.Zones).To(Equal([]string{"zoneA", "zoneB"}))
-
 		})
 
 		It("should return ErrDependencyMissing when application is missing", func() {
