@@ -702,6 +702,138 @@ var _ = Describe("ApiExposure Repository", func() {
 
 			Expect(subTraffic(subID)).To(BeNil())
 		})
+
+		// Client ids are assigned asynchronously; during that window an override
+		// keyed by the id can't match, so the subscriber falls back to the default.
+		// Acceptable: the subscription only reaches Ready once the app has a client
+		// id, and that Ready transition re-projects it with the correct override.
+		It("leaves an unresolved-client-id subscriber on the default limits", func() {
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			eid := exposureID()
+			// Consumer whose client id has not been assigned yet (nil).
+			app, err := client.Application.Create().
+				SetName("consumer-noid").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(teamID).
+				SetZoneID(zoneID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			subID := createTargetingSub("sub-noid", app.ID, eid)
+
+			rl := &model.RateLimit{
+				SubscriberRateLimit: &model.SubscriberRateLimits{
+					Default: &model.SubscriberRateLimitDefaults{Limits: model.Limits{Second: 10}},
+					Overrides: []model.RateLimitOverrides{
+						{Subscriber: "platform--narvi--consumer-noid", Limits: model.Limits{Second: 5}},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+
+			// A NULL client id cannot match the override → default applies.
+			Expect(*subTraffic(subID).SubscriberLimits).To(Equal(model.Limits{Second: 10}))
+		})
+
+		It("reverts an overridden subscriber to the default when its override is removed", func() {
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			aID := createConsumer("consumer-rev", "platform--narvi--consumer-rev")
+			subA := createTargetingSub("sub-rev", aID, exposureID())
+
+			withOverride := &model.RateLimit{
+				SubscriberRateLimit: &model.SubscriberRateLimits{
+					Default: &model.SubscriberRateLimitDefaults{Limits: model.Limits{Second: 10}},
+					Overrides: []model.RateLimitOverrides{
+						{Subscriber: "platform--narvi--consumer-rev", Limits: model.Limits{Second: 5}},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, exposureData(withOverride))).To(Succeed())
+			Expect(*subTraffic(subA).SubscriberLimits).To(Equal(model.Limits{Second: 5}))
+
+			// Override removed — the subscriber must fall back to the default.
+			defaultOnly := &model.RateLimit{
+				SubscriberRateLimit: &model.SubscriberRateLimits{
+					Default: &model.SubscriberRateLimitDefaults{Limits: model.Limits{Second: 10}},
+				},
+			}
+			Expect(repo.Upsert(ctx, exposureData(defaultOnly))).To(Succeed())
+			Expect(*subTraffic(subA).SubscriberLimits).To(Equal(model.Limits{Second: 10}))
+		})
+
+		It("applies multiple overrides, each to its own subscriber", func() {
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			eid := exposureID()
+			aID := createConsumer("consumer-ma", "platform--narvi--consumer-ma")
+			bID := createConsumer("consumer-mb", "platform--narvi--consumer-mb")
+			cID := createConsumer("consumer-mc", "platform--narvi--consumer-mc")
+			subA := createTargetingSub("sub-ma", aID, eid)
+			subB := createTargetingSub("sub-mb", bID, eid)
+			subC := createTargetingSub("sub-mc", cID, eid)
+
+			rl := &model.RateLimit{
+				SubscriberRateLimit: &model.SubscriberRateLimits{
+					Default: &model.SubscriberRateLimitDefaults{Limits: model.Limits{Second: 10}},
+					Overrides: []model.RateLimitOverrides{
+						{Subscriber: "platform--narvi--consumer-ma", Limits: model.Limits{Second: 5}},
+						{Subscriber: "platform--narvi--consumer-mb", Limits: model.Limits{Second: 7}},
+					},
+				},
+			}
+			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
+
+			Expect(*subTraffic(subA).SubscriberLimits).To(Equal(model.Limits{Second: 5}))
+			Expect(*subTraffic(subB).SubscriberLimits).To(Equal(model.Limits{Second: 7}))
+			Expect(*subTraffic(subC).SubscriberLimits).To(Equal(model.Limits{Second: 10}))
+		})
+
+		It("re-propagates when an override's value changes", func() {
+			Expect(repo.Upsert(ctx, exposureData(nil))).To(Succeed())
+			aID := createConsumer("consumer-chg", "platform--narvi--consumer-chg")
+			subA := createTargetingSub("sub-chg", aID, exposureID())
+
+			override := func(sec int) *model.RateLimit {
+				return &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "platform--narvi--consumer-chg", Limits: model.Limits{Second: sec}},
+						},
+					},
+				}
+			}
+			Expect(repo.Upsert(ctx, exposureData(override(5)))).To(Succeed())
+			Expect(*subTraffic(subA).SubscriberLimits).To(Equal(model.Limits{Second: 5}))
+
+			Expect(repo.Upsert(ctx, exposureData(override(8)))).To(Succeed())
+			Expect(*subTraffic(subA).SubscriberLimits).To(Equal(model.Limits{Second: 8}))
+		})
+
+		It("skips propagation when a complex rate limit is re-applied unchanged", func() {
+			complexRL := &model.RateLimit{
+				Provider: &model.RateLimitConfig{
+					Limits:  model.Limits{Second: 50, Minute: 500, Hour: 5000},
+					Options: model.RateLimitOptions{HideClientHeaders: true, FaultTolerant: true},
+				},
+				SubscriberRateLimit: &model.SubscriberRateLimits{
+					Default: &model.SubscriberRateLimitDefaults{Limits: model.Limits{Second: 10, Minute: 100}},
+					Overrides: []model.RateLimitOverrides{
+						{Subscriber: "platform--narvi--consumer-cx1", Limits: model.Limits{Second: 5}},
+						{Subscriber: "platform--narvi--consumer-cx2", Limits: model.Limits{Second: 7}},
+					},
+				},
+			}
+			// ── First Upsert ── stores complexRL in the DB. sub-cx does not exist
+			Expect(repo.Upsert(ctx, exposureData(complexRL))).To(Succeed())
+			consumerID := createConsumer("consumer-cx", "platform--narvi--consumer-cx")
+			subID := createTargetingSub("sub-cx", consumerID, exposureID())
+
+			// Sentinel the guard must preserve if it correctly detects "unchanged".
+			sentinel := &model.ApiSubscriptionTraffic{ProviderLimits: &model.Limits{Second: 999}}
+			Expect(client.ApiSubscription.UpdateOneID(subID).SetTraffic(sentinel).Exec(ctx)).To(Succeed())
+
+			// ── Second Upsert ── re-applies the identical complexRL.
+			Expect(repo.Upsert(ctx, exposureData(complexRL))).To(Succeed())
+			Expect(*subTraffic(subID).ProviderLimits).To(Equal(model.Limits{Second: 999}))
+		})
 	})
 
 	Describe("Delete", func() {

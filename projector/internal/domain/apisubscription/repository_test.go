@@ -629,6 +629,33 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
 			Expect(querySubTraffic()).To(BeNil())
 		})
+
+		// Client ids are assigned asynchronously; during that window an override
+		// keyed by the id can't match, so the subscriber falls back to the default.
+		// Acceptable: the subscription only reaches Ready once the app has a client
+		// id, and that Ready transition re-projects it with the correct override.
+		It("should apply the default when the owner client id is unresolved despite a matching override", func() {
+			// Clear the owner's client id to simulate the async-assignment window.
+			Expect(client.Application.UpdateOneID(appID).ClearClientID().Exec(ctx)).To(Succeed())
+
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{Limits: model.Limits{Second: 10}},
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "platform--narvi--consumer-app", Limits: model.Limits{Second: 5}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			// An unresolved (nil) client id cannot match the override → default applies.
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10}))
+		})
 	})
 
 	Describe("Delete", func() {
