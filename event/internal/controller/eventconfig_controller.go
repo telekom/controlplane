@@ -62,6 +62,7 @@ func (r *EventConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&eventv1.EventConfig{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleFor))).
 		Owns(&pubsubv1.EventStore{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns))).
 		Owns(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
+		Owns(&gatewayv1.Consumer{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
 		Owns(&identityv1.Client{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventConfig),

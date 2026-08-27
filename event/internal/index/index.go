@@ -70,4 +70,13 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		ctrl.Log.Error(err, "unable to create field-indexer")
 		os.Exit(1)
 	}
+
+	// The callback Consumer is an owned child, so CleanupAll lists it by
+	// controller-owner. Without this index every reconcile fails at cleanup with
+	// "Index with name field:.metadata.controller does not exist".
+	err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.Consumer{})
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create field-indexer")
+		os.Exit(1)
+	}
 }
