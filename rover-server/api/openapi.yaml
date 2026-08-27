@@ -2260,12 +2260,19 @@ components:
       required:
         - type
         - fileType
+        - approval
         - publicKeys
       properties:
         type:
           type: string
         fileType:
           type: string
+        approval:
+          $ref: '#/components/schemas/ApprovalStrategy'
+        trustedTeams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrustedTeam'
         variant:
           type: string
           enum:

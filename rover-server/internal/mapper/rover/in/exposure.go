@@ -82,7 +82,11 @@ func mapFileExposure(in api.FileExposure) *roverv1.FileExposure {
 		FileType:   in.FileType,
 		Visibility: toRoverVisibility(in.Visibility),
 		PublicKeys: mapPublicKeys(in.PublicKeys),
+		Approval: roverv1.Approval{
+			Strategy: toRoverApprovalStrategy(in.Approval),
+		},
 	}
+	mapFileTrustedTeams(in, out)
 
 	return out
 }
@@ -263,6 +267,24 @@ func mapTrustedTeams(in api.ApiExposure, out *roverv1.ApiExposure) {
 		parts := strings.Split(team.Team, "--")
 		if len(parts) != 2 {
 			continue // invalid team format, skip
+		}
+		out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
+			Group: parts[0],
+			Team:  parts[1],
+		}
+	}
+}
+
+func mapFileTrustedTeams(in api.FileExposure, out *roverv1.FileExposure) {
+	if in.TrustedTeams == nil {
+		return
+	}
+
+	out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
+	for i, team := range in.TrustedTeams {
+		parts := strings.Split(team.Team, "--")
+		if len(parts) != 2 {
+			continue
 		}
 		out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
 			Group: parts[0],
