@@ -144,6 +144,27 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticExposureData) erro
 			data.BasePath, data.AppName, data.TeamName, upsertErr)
 	}
 
+	// Explicitly update the catalogue FKs. Like the edge-based subscription FK
+	// in the Approval repository, McpServer/AgentCard are edges, not fields, so
+	// they are not included in UpdateNewValues() ON CONFLICT SET clauses. On
+	// the initial INSERT the FK is set correctly via the edge spec, but on
+	// subsequent upserts the old value would be preserved without this —
+	// leaving a stale/mutually-inconsistent FK across variant changes, active
+	// state transitions, or catalogue entry replacement.
+	update := r.client.AgenticExposure.UpdateOneID(exposureID)
+	switch {
+	case mcpServerID != nil:
+		update = update.SetMcpServerID(*mcpServerID).ClearAgentCard()
+	case agentCardID != nil:
+		update = update.SetAgentCardID(*agentCardID).ClearMcpServer()
+	default:
+		update = update.ClearMcpServer().ClearAgentCard()
+	}
+	if err := update.Exec(ctx); err != nil {
+		return fmt.Errorf("update catalogue FK for agentic_exposure %d (%q, app %q, team %q): %w",
+			exposureID, data.BasePath, data.AppName, data.TeamName, err)
+	}
+
 	et, lk := cachekeys.AgenticExposure(data.BasePath, data.AppName, data.TeamName)
 	r.cache.Set(et, lk, exposureID)
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package schema
+package schema //nolint:dupl // structurally mirrors AgentCard by design (sibling catalogue entity); ent's one-schema-per-entity convention makes further extraction impractical.
 
 import (
 	"entgo.io/contrib/entgql"

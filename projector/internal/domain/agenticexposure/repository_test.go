@@ -313,6 +313,115 @@ var _ = Describe("AgenticExposure Repository", func() {
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
+		It("should clear the McpServer FK when a variant changes from MCP to AGENT", func() {
+			mcp, err := client.McpServer.Create().
+				SetBasePath("/mcp/v1/switch").
+				SetNamespace("platform--narvi").
+				SetVersion("1.0.0").
+				SetName("tools-server").
+				SetActive(true).
+				SetOwnerID(mustCreateTeam(ctx, client, "mcp-owner-3")).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			card, err := client.AgentCard.Create().
+				SetBasePath("/mcp/v1/switch").
+				SetNamespace("platform--narvi").
+				SetVersion("1.0.0").
+				SetName("card-agent").
+				SetActive(true).
+				SetOwnerID(mustCreateTeam(ctx, client, "agent-owner-3")).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			deps.mcpServerIDs = map[string]int{"/mcp/v1/switch": mcp.ID}
+			deps.agentCardIDs = map[string]int{"/mcp/v1/switch": card.ID}
+
+			data := &agenticexposure.AgenticExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "exp-switch", nil),
+				StatusPhase:    "READY",
+				BasePath:       "/mcp/v1/switch",
+				Visibility:     "WORLD",
+				Variant:        "MCP",
+				Active:         true,
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.AgenticExposure.Query().
+				Where(entagenticexposure.BasePathEQ("/mcp/v1/switch")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			linkedMcp, err := exp.QueryMcpServer().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(linkedMcp.ID).To(Equal(mcp.ID))
+
+			// Now switch the variant to AGENT — the McpServer FK must be
+			// cleared and replaced with the AgentCard FK, not left dangling.
+			data.Variant = "AGENT"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.AgenticExposure.Query().
+				Where(entagenticexposure.BasePathEQ("/mcp/v1/switch")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			linkedCard, err := exp.QueryAgentCard().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(linkedCard.ID).To(Equal(card.ID))
+
+			_, err = exp.QueryMcpServer().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+		})
+
+		It("should clear the catalogue FK when an active exposure becomes inactive", func() {
+			mcp, err := client.McpServer.Create().
+				SetBasePath("/mcp/v1/deactivate").
+				SetNamespace("platform--narvi").
+				SetVersion("1.0.0").
+				SetName("tools-server").
+				SetActive(true).
+				SetOwnerID(mustCreateTeam(ctx, client, "mcp-owner-4")).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.mcpServerIDs = map[string]int{"/mcp/v1/deactivate": mcp.ID}
+
+			data := &agenticexposure.AgenticExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "exp-deactivate", nil),
+				StatusPhase:    "READY",
+				BasePath:       "/mcp/v1/deactivate",
+				Visibility:     "WORLD",
+				Variant:        "MCP",
+				Active:         true,
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.AgenticExposure.Query().
+				Where(entagenticexposure.BasePathEQ("/mcp/v1/deactivate")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = exp.QueryMcpServer().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Now the exposure becomes inactive — the stale McpServer FK
+			// must be cleared, not left pointing at a now-irrelevant entry.
+			data.Active = false
+			data.StatusPhase = "UNKNOWN"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.AgenticExposure.Query().
+				Where(entagenticexposure.BasePathEQ("/mcp/v1/deactivate")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = exp.QueryMcpServer().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+		})
+
 		It("should back-link orphaned subscriptions projected before the exposure", func() {
 			// Subscription created first, before its target exposure exists →
 			// stored with a NULL target FK (the create-order race).
