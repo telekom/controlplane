@@ -8,3 +8,4 @@
 package tools
 
 //go:generate go run github.com/vektra/mockery/v2 --config=mockery.client.yaml
+// CI scenario test: touch common module only (see PR description).
