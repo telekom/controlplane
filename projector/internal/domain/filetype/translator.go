@@ -31,8 +31,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileType) (*FileTy
 	active := obj.Status.FileExposureRef != nil
 	var variant *string
 	if obj.Status.SFTPInstance != nil {
-		sftp := "sftp"
-		variant = &sftp
+		variant = &SFTPVariant
 	}
 
 	return &FileTypeData{
