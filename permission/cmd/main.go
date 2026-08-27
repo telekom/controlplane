@@ -148,4 +148,5 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+	// CI scenario test: touch gateway and permission in one PR (see PR description).
 }
