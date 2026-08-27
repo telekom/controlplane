@@ -31,3 +31,5 @@ The Control Plane serves two primary audiences:
 - [Admin Journey](../admin-journey/installation.md) — Install and configure the Control Plane
 - [User Journey](../user-journey/onboarding.md) — Start using the platform as an application team
 - [Architecture](../architecture/overview.md) — Understand the system design
+
+<!-- CI scenario test: docs-only change, no module should build/package (see PR description). -->
