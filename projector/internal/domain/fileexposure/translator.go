@@ -35,10 +35,7 @@ func (t *Translator) ShouldSkip(obj *filev1.FileExposure) (bool, string) {
 func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*FileExposureData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
-	ownerAppName := obj.Spec.Provider
-	if ownerAppName == "" {
-		ownerAppName = obj.Labels[applicationLabelKey]
-	}
+	ownerAppName := obj.Labels[applicationLabelKey]
 
 	var provider *string
 	if obj.Spec.Provider != "" {
@@ -91,13 +88,9 @@ func isActiveExposure(obj *filev1.FileExposure) bool {
 
 // KeyFromObject derives the composite identity key from a live FileExposure CR.
 func (t *Translator) KeyFromObject(obj *filev1.FileExposure) FileExposureKey {
-	ownerAppName := obj.Spec.Provider
-	if ownerAppName == "" {
-		ownerAppName = obj.Labels[applicationLabelKey]
-	}
 	return FileExposureKey{
 		FileType: obj.Spec.FileType,
-		AppName:  ownerAppName,
+		AppName:  obj.Labels[applicationLabelKey],
 		TeamName: shared.TeamNameFromNamespace(obj.Namespace),
 	}
 }
@@ -105,13 +98,9 @@ func (t *Translator) KeyFromObject(obj *filev1.FileExposure) FileExposureKey {
 // KeyFromDelete derives the identity key for a delete operation.
 func (t *Translator) KeyFromDelete(req types.NamespacedName, lastKnown *filev1.FileExposure) (FileExposureKey, error) {
 	if lastKnown != nil {
-		ownerAppName := lastKnown.Spec.Provider
-		if ownerAppName == "" {
-			ownerAppName = lastKnown.Labels[applicationLabelKey]
-		}
 		return FileExposureKey{
 			FileType: lastKnown.Spec.FileType,
-			AppName:  ownerAppName,
+			AppName:  lastKnown.Labels[applicationLabelKey],
 			TeamName: shared.TeamNameFromNamespace(lastKnown.Namespace),
 		}, nil
 	}

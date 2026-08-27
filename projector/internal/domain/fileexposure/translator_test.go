@@ -29,7 +29,7 @@ var _ = Describe("FileExposure Translator", func() {
 	})
 
 	Describe("Translate", func() {
-		It("should map provider, zone, approval, sftp keys and status", func() {
+		It("should map provider, zone, approval, sftp keys and status without using provider as the owner app", func() {
 			obj := &filev1.FileExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "exp-a",
@@ -40,7 +40,7 @@ var _ = Describe("FileExposure Translator", func() {
 					},
 				},
 				Spec: filev1.FileExposureSpec{
-					Provider: "provider-app",
+					Provider: "sftp",
 					FileType: "invoice",
 					Zone: &commontypes.ObjectRef{
 						Name:      "caas",
@@ -60,8 +60,8 @@ var _ = Describe("FileExposure Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.TargetFileType).To(Equal("invoice"))
 			Expect(data.Provider).NotTo(BeNil())
-			Expect(*data.Provider).To(Equal("provider-app"))
-			Expect(data.AppName).To(Equal("provider-app"))
+			Expect(*data.Provider).To(Equal("sftp"))
+			Expect(data.AppName).To(Equal("label-app"))
 			Expect(data.TeamName).To(Equal("platform--narvi"))
 			Expect(data.Visibility).To(Equal("ENTERPRISE"))
 			Expect(data.StatusPhase).To(Equal("READY"))

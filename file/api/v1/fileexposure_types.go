@@ -13,7 +13,7 @@ import (
 
 // FileExposureSpec defines a provider-side file exposure.
 type FileExposureSpec struct {
-	// Provider optionally identifies the providing application.
+	// Provider identifies the file exposure provider type, for example "sftp".
 	// +kubebuilder:validation:Optional
 	Provider string `json:"provider,omitempty"`
 
