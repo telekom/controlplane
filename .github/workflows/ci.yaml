@@ -177,18 +177,31 @@ jobs:
         shell: bash
         env:
           PACKAGE_MODULES_JSON: ${{ needs.determine-scope.outputs.package_modules }}
+          BUILD_MODULES_JSON: ${{ needs.determine-scope.outputs.build_modules }}
         run: |
           succeeded="[]"
           if [ -d build-status ]; then
-            for d in build-status/build-status-*/; do
-              [ -d "$d" ] || continue
-              name="$(basename "$d")"
-              name="${name#build-status-}"
-              val="$(cat "${d}status.txt" 2>/dev/null || echo false)"
+            # actions/download-artifact flattens the per-artifact subdirectory
+            # structure whenever exactly one artifact matches the pattern
+            # (regardless of merge-multiple), so a single in-scope module's
+            # marker ends up at build-status/status.txt directly instead of
+            # build-status/build-status-<name>/status.txt. Since we already
+            # know every expected module name from determine-scope's output,
+            # check both possible locations per module rather than trying to
+            # discover names from the (possibly flattened) directory layout.
+            names="$(jq -r '.[].name' <<<"$BUILD_MODULES_JSON")"
+            while IFS= read -r name; do
+              [ -z "$name" ] && continue
+              val=false
+              if [ -f "build-status/build-status-${name}/status.txt" ]; then
+                val="$(cat "build-status/build-status-${name}/status.txt")"
+              elif [ -f "build-status/status.txt" ]; then
+                val="$(cat "build-status/status.txt")"
+              fi
               if [ "$val" = "true" ]; then
                 succeeded="$(jq -c --arg n "$name" '. + [$n]' <<<"$succeeded")"
               fi
-            done
+            done <<<"$names"
           fi
 
           # Only modules that both (a) are in scope for packaging and (b)
