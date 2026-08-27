@@ -47,6 +47,8 @@ type ApiSubscription struct {
 	GatewayURL *string `json:"gateway_url,omitempty"`
 	// Security holds the value of the "security" field.
 	Security *model.ApiSubscriptionSecurity `json:"security,omitempty"`
+	// Traffic holds the value of the "traffic" field.
+	Traffic *model.ApiSubscriptionTraffic `json:"traffic,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApiSubscriptionQuery when eager-loading is set.
 	Edges                       ApiSubscriptionEdges `json:"edges"`
@@ -133,7 +135,7 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apisubscription.FieldSecurity:
+		case apisubscription.FieldSecurity, apisubscription.FieldTraffic:
 			values[i] = new([]byte)
 		case apisubscription.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -236,6 +238,14 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &_m.Security); err != nil {
 					return fmt.Errorf("unmarshal field security: %w", err)
+				}
+			}
+		case apisubscription.FieldTraffic:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field traffic", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Traffic); err != nil {
+					return fmt.Errorf("unmarshal field traffic: %w", err)
 				}
 			}
 		case apisubscription.ForeignKeys[0]:
@@ -353,6 +363,9 @@ func (_m *ApiSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("security=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Security))
+	builder.WriteString(", ")
+	builder.WriteString("traffic=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Traffic))
 	builder.WriteByte(')')
 	return builder.String()
 }
