@@ -34,4 +34,5 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		cmd.ErrorHandler(err, viper.GetBool("debug"))
 	}
+	// CI scenario test: touch rover-ctl only (see PR description).
 }
