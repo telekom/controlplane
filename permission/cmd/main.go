@@ -148,4 +148,5 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+	// CI scenario test: unrelated module in same PR as gateway's deliberate test failure (see PR description).
 }
