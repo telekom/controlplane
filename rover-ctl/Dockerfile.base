@@ -44,3 +44,5 @@ RUN addgroup -g 65532 nonroot \
 
 # ko appends the roverctl binary on top of this image; no ENTRYPOINT/CMD is
 # set here so ko can configure it based on the built Go binary.
+
+# CI scenario test: trivial base image change (see PR description).
