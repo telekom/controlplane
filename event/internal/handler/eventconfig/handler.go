@@ -22,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 )
@@ -77,6 +78,15 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 	}
 	obj.Status.MeshClient = eventv1.NewObservedObjectRef(meshClient)
 	logger.V(1).Info("identity MeshClient created/updated", "client", meshClient.Name)
+
+	// The callback Route allows util.CallbackClientName in its ACL, and the
+	// gateway's JWT plugin matches the token's client against a gateway
+	// Consumer with consumer_match_ignore_not_found disabled. The identity
+	// Client above only mints the token, so without a matching Consumer every
+	// callback is rejected before the ACL is evaluated.
+	if consumerErr := h.createCallbackConsumer(ctx, obj, myZone); consumerErr != nil {
+		return consumerErr
+	}
 
 	// --- EventStore ---
 
@@ -235,6 +245,47 @@ func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj
 	}
 
 	return identityClient, nil
+}
+
+// createCallbackConsumer creates or updates the gateway Consumer that the
+// callback Route's ACL allows. An identity Client only mints the token; the
+// gateway resolves that token's client to a Consumer, so both are required for
+// callback delivery to be authorised.
+func (h *EventConfigHandler) createCallbackConsumer(ctx context.Context, obj *eventv1.EventConfig, zone *adminv1.Zone) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	if zone.Status.Gateway == nil {
+		return ctrlerrors.BlockedErrorf("Zone %q does not have a gateway yet", zone.Name)
+	}
+
+	consumer := &gatewayapi.Consumer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      util.CallbackClientName,
+			Namespace: obj.Namespace,
+		},
+	}
+
+	mutator := func() error {
+		if err := controllerutil.SetControllerReference(obj, consumer, c.Scheme()); err != nil {
+			return errors.Wrap(err, "failed to set controller reference")
+		}
+
+		consumer.Labels = map[string]string{
+			config.DomainLabelKey: "event",
+		}
+
+		consumer.Spec = gatewayapi.ConsumerSpec{
+			Gateway: *zone.Status.Gateway,
+			Name:    util.CallbackClientName,
+		}
+		return nil
+	}
+
+	if _, err := c.CreateOrUpdate(ctx, consumer, mutator); err != nil {
+		return errors.Wrapf(err, "failed to create or update gateway Consumer %s", util.CallbackClientName)
+	}
+
+	return nil
 }
 
 // createIdentityClient is a utility function to create or update an identityv1.Client resource for a given EventConfig and ClientConfig.
