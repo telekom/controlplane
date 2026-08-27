@@ -37,11 +37,22 @@ func mapSubscription(in *roverv1.Subscription, out *api.Subscription) error {
 		if err := out.FromAiSubscription(aiSub); err != nil {
 			return errors.Wrap(err, "failed to map ai subscription")
 		}
+	} else if in.File != nil {
+		if err := out.FromFileSubscription(mapFileSubscription(in.File)); err != nil {
+			return errors.Wrap(err, "failed to map file subscription")
+		}
 	} else {
 		return errors.Errorf("unknown subscription type: %s", in.Type())
 	}
 
 	return nil
+}
+
+func mapFileSubscription(in *roverv1.FileSubscription) api.FileSubscription {
+	return api.FileSubscription{
+		FileType:   in.FileType,
+		PublicKeys: mapPublicKeys(in.PublicKeys),
+	}
 }
 
 func mapEventSubscription(in *roverv1.EventSubscription) api.EventSubscription {
