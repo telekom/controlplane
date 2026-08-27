@@ -113,15 +113,20 @@ for only invoking it once the corresponding build succeeded.
 ---
 
 #### **CodeQL Analysis** (`codeql.yaml`)
-**Triggers:** Push to main, weekly schedule (Monday 2:30 AM UTC), manual dispatch
+**Triggers:** Push to main, pull requests targeting main (skipped while draft), weekly schedule (Monday 2:30 AM UTC), manual dispatch
 
 Runs CodeQL **once for the whole repository** (tracing a build of every
 configured module into a single database), replacing what used to be a
 separate CodeQL init/analyze pair per module. Since all modules share
 largely the same dependency graph, this gives equivalent coverage for a
-fraction of the cost, and is deliberately **not** run on every pull
-request - it's a deeper, slower scan suited to gating merges/schedule
-rather than every PR push.
+fraction of the cost. It also runs on pull requests targeting `main` so
+findings gate the merge instead of only surfacing on the post-merge push
+or up to a week later on the weekly schedule - still a single repo-wide
+init/analyze pair per run, not per module, to keep the pre-merge cost
+bounded. Draft PRs are skipped entirely (the job's `if` condition checks
+`github.event.pull_request.draft`) - CodeQL starts running once a PR is
+marked "ready for review", and again on every subsequent push (each new
+push cancels the prior in-progress run via the concurrency group).
 
 ### 2. Dependency Management
 
@@ -432,6 +437,7 @@ Ensures all files have proper SPDX license headers.
 PR Created/Updated
 ├─ REUSE Compliance Check
 ├─ Scorecard Analysis (on main only, skip for PRs)
+├─ CodeQL Analysis (repo-wide, single database, skipped while draft)
 └─ CI Workflow (mode=optimized)
    ├─ Determine CI Scope (changed modules + their dependents)
    ├─ Check Module Dependency Graph

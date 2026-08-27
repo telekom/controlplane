@@ -9,9 +9,11 @@
 # within a single database - gives equivalent coverage for a fraction of
 # the cost (one CodeQL init/analyze pair instead of 20+).
 #
-# Not run on every pull request: CodeQL is a deep, relatively slow security
-# scan best suited to catching issues before/after merge rather than
-# gating every PR push. See .github/workflows.md for the full CI strategy.
+# Also runs on pull requests targeting main, so findings gate the merge
+# instead of only surfacing afterwards (push to main) or up to a week
+# later (weekly schedule). It's still a single repo-wide init/analyze
+# pair per run - not per module - to keep the pre-merge cost bounded.
+# See .github/workflows.md for the full CI strategy.
 
 name: CodeQL Analysis
 
@@ -19,6 +21,10 @@ on:
   push:
     branches:
       - "main"
+  pull_request:
+    branches:
+      - "main"
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: '30 2 * * 1'  # Weekly, Monday 2:30 AM UTC
   workflow_dispatch:
@@ -34,6 +40,9 @@ jobs:
   analyze:
     name: CodeQL Analysis (repo-wide)
     runs-on: ubuntu-latest
+    # Skip while the PR is still a draft - CodeQL only runs once the
+    # author marks it ready for review (or on push/schedule/dispatch).
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     permissions:
       contents: read
       security-events: write
