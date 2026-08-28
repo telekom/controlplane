@@ -42,11 +42,6 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 		provider = &obj.Spec.Provider
 	}
 
-	var zone string
-	if obj.Spec.Zone != nil {
-		zone = obj.Spec.Zone.Name
-	}
-
 	publicKeys := []string{}
 	if obj.Spec.SFTP != nil {
 		for i := range obj.Spec.SFTP.PublicKeys {
@@ -61,7 +56,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 		Provider:       provider,
 		Visibility:     strings.ToUpper(string(obj.Spec.Visibility)),
 		Active:         isActiveExposure(obj),
-		Zone:           zone,
+		Zone:           obj.Spec.Zone.Name,
 		SFTPPublicKeys: publicKeys,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     shared.MapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
