@@ -613,7 +613,6 @@ var (
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "zone_name", Type: field.TypeString, Size: 2147483647},
-		{Name: "zone_namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "sftp_public_keys", Type: field.TypeJSON},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "application_exposed_file_types", Type: field.TypeInt},
@@ -628,19 +627,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "file_exposures_applications_exposed_file_types",
-				Columns:    []*schema.Column{FileExposuresColumns[15]},
+				Columns:    []*schema.Column{FileExposuresColumns[14]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "file_exposures_file_types_exposures",
-				Columns:    []*schema.Column{FileExposuresColumns[16]},
+				Columns:    []*schema.Column{FileExposuresColumns[15]},
 				RefColumns: []*schema.Column{FileTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "file_exposures_zones_file_exposures",
-				Columns:    []*schema.Column{FileExposuresColumns[17]},
+				Columns:    []*schema.Column{FileExposuresColumns[16]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -649,7 +648,7 @@ var (
 			{
 				Name:    "fileexposure_file_type_application_exposed_file_types",
 				Unique:  true,
-				Columns: []*schema.Column{FileExposuresColumns[7], FileExposuresColumns[15]},
+				Columns: []*schema.Column{FileExposuresColumns[7], FileExposuresColumns[14]},
 			},
 		},
 	}
@@ -665,7 +664,6 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "file_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "zone_name", Type: field.TypeString, Size: 2147483647},
-		{Name: "zone_namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "sftp_public_keys", Type: field.TypeJSON},
 		{Name: "application_subscribed_file_types", Type: field.TypeInt},
 		{Name: "file_subscription_target", Type: field.TypeInt, Nullable: true},
@@ -680,25 +678,25 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "file_subscriptions_applications_subscribed_file_types",
-				Columns:    []*schema.Column{FileSubscriptionsColumns[12]},
+				Columns:    []*schema.Column{FileSubscriptionsColumns[11]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "file_subscriptions_file_exposures_target",
-				Columns:    []*schema.Column{FileSubscriptionsColumns[13]},
+				Columns:    []*schema.Column{FileSubscriptionsColumns[12]},
 				RefColumns: []*schema.Column{FileExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "file_subscriptions_file_types_subscriptions",
-				Columns:    []*schema.Column{FileSubscriptionsColumns[14]},
+				Columns:    []*schema.Column{FileSubscriptionsColumns[13]},
 				RefColumns: []*schema.Column{FileTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "file_subscriptions_zones_file_subscriptions",
-				Columns:    []*schema.Column{FileSubscriptionsColumns[15]},
+				Columns:    []*schema.Column{FileSubscriptionsColumns[14]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -712,7 +710,7 @@ var (
 			{
 				Name:    "filesubscription_file_type_application_subscribed_file_types",
 				Unique:  true,
-				Columns: []*schema.Column{FileSubscriptionsColumns[8], FileSubscriptionsColumns[12]},
+				Columns: []*schema.Column{FileSubscriptionsColumns[8], FileSubscriptionsColumns[11]},
 			},
 		},
 	}

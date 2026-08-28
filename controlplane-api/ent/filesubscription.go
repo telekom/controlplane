@@ -44,8 +44,6 @@ type FileSubscription struct {
 	FileType string `json:"file_type,omitempty"`
 	// ZoneName holds the value of the "zone_name" field.
 	ZoneName string `json:"zone_name,omitempty"`
-	// ZoneNamespace holds the value of the "zone_namespace" field.
-	ZoneNamespace *string `json:"zone_namespace,omitempty"`
 	// SftpPublicKeys holds the value of the "sftp_public_keys" field.
 	SftpPublicKeys []string `json:"sftp_public_keys,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -154,7 +152,7 @@ func (*FileSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case filesubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case filesubscription.FieldStatusPhase, filesubscription.FieldStatusMessage, filesubscription.FieldEnvironment, filesubscription.FieldNamespace, filesubscription.FieldName, filesubscription.FieldFileType, filesubscription.FieldZoneName, filesubscription.FieldZoneNamespace:
+		case filesubscription.FieldStatusPhase, filesubscription.FieldStatusMessage, filesubscription.FieldEnvironment, filesubscription.FieldNamespace, filesubscription.FieldName, filesubscription.FieldFileType, filesubscription.FieldZoneName:
 			values[i] = new(sql.NullString)
 		case filesubscription.FieldCreatedAt, filesubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -243,13 +241,6 @@ func (_m *FileSubscription) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field zone_name", values[i])
 			} else if value.Valid {
 				_m.ZoneName = value.String
-			}
-		case filesubscription.FieldZoneNamespace:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field zone_namespace", values[i])
-			} else if value.Valid {
-				_m.ZoneNamespace = new(string)
-				*_m.ZoneNamespace = value.String
 			}
 		case filesubscription.FieldSftpPublicKeys:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -385,11 +376,6 @@ func (_m *FileSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("zone_name=")
 	builder.WriteString(_m.ZoneName)
-	builder.WriteString(", ")
-	if v := _m.ZoneNamespace; v != nil {
-		builder.WriteString("zone_namespace=")
-		builder.WriteString(*v)
-	}
 	builder.WriteString(", ")
 	builder.WriteString("sftp_public_keys=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SftpPublicKeys))

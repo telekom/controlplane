@@ -49,7 +49,7 @@ func (FileExposure) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Default(false),
-		field.Text("zone").
+		field.Text("zone_name").
 			NotEmpty(),
 		field.JSON("sftp_public_keys", []string{}).
 			Default([]string{}).

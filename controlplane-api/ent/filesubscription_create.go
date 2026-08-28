@@ -125,20 +125,6 @@ func (_c *FileSubscriptionCreate) SetZoneName(v string) *FileSubscriptionCreate 
 	return _c
 }
 
-// SetZoneNamespace sets the "zone_namespace" field.
-func (_c *FileSubscriptionCreate) SetZoneNamespace(v string) *FileSubscriptionCreate {
-	_c.mutation.SetZoneNamespace(v)
-	return _c
-}
-
-// SetNillableZoneNamespace sets the "zone_namespace" field if the given value is not nil.
-func (_c *FileSubscriptionCreate) SetNillableZoneNamespace(v *string) *FileSubscriptionCreate {
-	if v != nil {
-		_c.SetZoneNamespace(*v)
-	}
-	return _c
-}
-
 // SetSftpPublicKeys sets the "sftp_public_keys" field.
 func (_c *FileSubscriptionCreate) SetSftpPublicKeys(v []string) *FileSubscriptionCreate {
 	_c.mutation.SetSftpPublicKeys(v)
@@ -414,10 +400,6 @@ func (_c *FileSubscriptionCreate) createSpec() (*FileSubscription, *sqlgraph.Cre
 		_spec.SetField(filesubscription.FieldZoneName, field.TypeString, value)
 		_node.ZoneName = value
 	}
-	if value, ok := _c.mutation.ZoneNamespace(); ok {
-		_spec.SetField(filesubscription.FieldZoneNamespace, field.TypeString, value)
-		_node.ZoneNamespace = &value
-	}
 	if value, ok := _c.mutation.SftpPublicKeys(); ok {
 		_spec.SetField(filesubscription.FieldSftpPublicKeys, field.TypeJSON, value)
 		_node.SftpPublicKeys = value
@@ -688,24 +670,6 @@ func (u *FileSubscriptionUpsert) UpdateZoneName() *FileSubscriptionUpsert {
 	return u
 }
 
-// SetZoneNamespace sets the "zone_namespace" field.
-func (u *FileSubscriptionUpsert) SetZoneNamespace(v string) *FileSubscriptionUpsert {
-	u.Set(filesubscription.FieldZoneNamespace, v)
-	return u
-}
-
-// UpdateZoneNamespace sets the "zone_namespace" field to the value that was provided on create.
-func (u *FileSubscriptionUpsert) UpdateZoneNamespace() *FileSubscriptionUpsert {
-	u.SetExcluded(filesubscription.FieldZoneNamespace)
-	return u
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (u *FileSubscriptionUpsert) ClearZoneNamespace() *FileSubscriptionUpsert {
-	u.SetNull(filesubscription.FieldZoneNamespace)
-	return u
-}
-
 // SetSftpPublicKeys sets the "sftp_public_keys" field.
 func (u *FileSubscriptionUpsert) SetSftpPublicKeys(v []string) *FileSubscriptionUpsert {
 	u.Set(filesubscription.FieldSftpPublicKeys, v)
@@ -893,27 +857,6 @@ func (u *FileSubscriptionUpsertOne) SetZoneName(v string) *FileSubscriptionUpser
 func (u *FileSubscriptionUpsertOne) UpdateZoneName() *FileSubscriptionUpsertOne {
 	return u.Update(func(s *FileSubscriptionUpsert) {
 		s.UpdateZoneName()
-	})
-}
-
-// SetZoneNamespace sets the "zone_namespace" field.
-func (u *FileSubscriptionUpsertOne) SetZoneNamespace(v string) *FileSubscriptionUpsertOne {
-	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.SetZoneNamespace(v)
-	})
-}
-
-// UpdateZoneNamespace sets the "zone_namespace" field to the value that was provided on create.
-func (u *FileSubscriptionUpsertOne) UpdateZoneNamespace() *FileSubscriptionUpsertOne {
-	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.UpdateZoneNamespace()
-	})
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (u *FileSubscriptionUpsertOne) ClearZoneNamespace() *FileSubscriptionUpsertOne {
-	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.ClearZoneNamespace()
 	})
 }
 
@@ -1272,27 +1215,6 @@ func (u *FileSubscriptionUpsertBulk) SetZoneName(v string) *FileSubscriptionUpse
 func (u *FileSubscriptionUpsertBulk) UpdateZoneName() *FileSubscriptionUpsertBulk {
 	return u.Update(func(s *FileSubscriptionUpsert) {
 		s.UpdateZoneName()
-	})
-}
-
-// SetZoneNamespace sets the "zone_namespace" field.
-func (u *FileSubscriptionUpsertBulk) SetZoneNamespace(v string) *FileSubscriptionUpsertBulk {
-	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.SetZoneNamespace(v)
-	})
-}
-
-// UpdateZoneNamespace sets the "zone_namespace" field to the value that was provided on create.
-func (u *FileSubscriptionUpsertBulk) UpdateZoneNamespace() *FileSubscriptionUpsertBulk {
-	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.UpdateZoneNamespace()
-	})
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (u *FileSubscriptionUpsertBulk) ClearZoneNamespace() *FileSubscriptionUpsertBulk {
-	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.ClearZoneNamespace()
 	})
 }
 

@@ -35,7 +35,7 @@ func (FileSubscription) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("file_type").
 			NotEmpty(),
-		field.Text("zone").
+		field.Text("zone_name").
 			NotEmpty(),
 		field.JSON("sftp_public_keys", []string{}).
 			Default([]string{}).

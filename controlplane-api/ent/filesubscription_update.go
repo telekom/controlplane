@@ -160,26 +160,6 @@ func (_u *FileSubscriptionUpdate) SetNillableZoneName(v *string) *FileSubscripti
 	return _u
 }
 
-// SetZoneNamespace sets the "zone_namespace" field.
-func (_u *FileSubscriptionUpdate) SetZoneNamespace(v string) *FileSubscriptionUpdate {
-	_u.mutation.SetZoneNamespace(v)
-	return _u
-}
-
-// SetNillableZoneNamespace sets the "zone_namespace" field if the given value is not nil.
-func (_u *FileSubscriptionUpdate) SetNillableZoneNamespace(v *string) *FileSubscriptionUpdate {
-	if v != nil {
-		_u.SetZoneNamespace(*v)
-	}
-	return _u
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (_u *FileSubscriptionUpdate) ClearZoneNamespace() *FileSubscriptionUpdate {
-	_u.mutation.ClearZoneNamespace()
-	return _u
-}
-
 // SetSftpPublicKeys sets the "sftp_public_keys" field.
 func (_u *FileSubscriptionUpdate) SetSftpPublicKeys(v []string) *FileSubscriptionUpdate {
 	_u.mutation.SetSftpPublicKeys(v)
@@ -464,12 +444,6 @@ func (_u *FileSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.ZoneName(); ok {
 		_spec.SetField(filesubscription.FieldZoneName, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.ZoneNamespace(); ok {
-		_spec.SetField(filesubscription.FieldZoneNamespace, field.TypeString, value)
-	}
-	if _u.mutation.ZoneNamespaceCleared() {
-		_spec.ClearField(filesubscription.FieldZoneNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.SftpPublicKeys(); ok {
 		_spec.SetField(filesubscription.FieldSftpPublicKeys, field.TypeJSON, value)
@@ -811,26 +785,6 @@ func (_u *FileSubscriptionUpdateOne) SetNillableZoneName(v *string) *FileSubscri
 	return _u
 }
 
-// SetZoneNamespace sets the "zone_namespace" field.
-func (_u *FileSubscriptionUpdateOne) SetZoneNamespace(v string) *FileSubscriptionUpdateOne {
-	_u.mutation.SetZoneNamespace(v)
-	return _u
-}
-
-// SetNillableZoneNamespace sets the "zone_namespace" field if the given value is not nil.
-func (_u *FileSubscriptionUpdateOne) SetNillableZoneNamespace(v *string) *FileSubscriptionUpdateOne {
-	if v != nil {
-		_u.SetZoneNamespace(*v)
-	}
-	return _u
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (_u *FileSubscriptionUpdateOne) ClearZoneNamespace() *FileSubscriptionUpdateOne {
-	_u.mutation.ClearZoneNamespace()
-	return _u
-}
-
 // SetSftpPublicKeys sets the "sftp_public_keys" field.
 func (_u *FileSubscriptionUpdateOne) SetSftpPublicKeys(v []string) *FileSubscriptionUpdateOne {
 	_u.mutation.SetSftpPublicKeys(v)
@@ -1145,12 +1099,6 @@ func (_u *FileSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *FileSu
 	}
 	if value, ok := _u.mutation.ZoneName(); ok {
 		_spec.SetField(filesubscription.FieldZoneName, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.ZoneNamespace(); ok {
-		_spec.SetField(filesubscription.FieldZoneNamespace, field.TypeString, value)
-	}
-	if _u.mutation.ZoneNamespaceCleared() {
-		_spec.ClearField(filesubscription.FieldZoneNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.SftpPublicKeys(); ok {
 		_spec.SetField(filesubscription.FieldSftpPublicKeys, field.TypeJSON, value)

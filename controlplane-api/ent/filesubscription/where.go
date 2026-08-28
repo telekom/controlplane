@@ -98,11 +98,6 @@ func ZoneName(v string) predicate.FileSubscription {
 	return predicate.FileSubscription(sql.FieldEQ(FieldZoneName, v))
 }
 
-// ZoneNamespace applies equality check predicate on the "zone_namespace" field. It's identical to ZoneNamespaceEQ.
-func ZoneNamespace(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldEQ(FieldZoneNamespace, v))
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.FileSubscription {
 	return predicate.FileSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -621,81 +616,6 @@ func ZoneNameEqualFold(v string) predicate.FileSubscription {
 // ZoneNameContainsFold applies the ContainsFold predicate on the "zone_name" field.
 func ZoneNameContainsFold(v string) predicate.FileSubscription {
 	return predicate.FileSubscription(sql.FieldContainsFold(FieldZoneName, v))
-}
-
-// ZoneNamespaceEQ applies the EQ predicate on the "zone_namespace" field.
-func ZoneNamespaceEQ(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldEQ(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceNEQ applies the NEQ predicate on the "zone_namespace" field.
-func ZoneNamespaceNEQ(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldNEQ(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceIn applies the In predicate on the "zone_namespace" field.
-func ZoneNamespaceIn(vs ...string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldIn(FieldZoneNamespace, vs...))
-}
-
-// ZoneNamespaceNotIn applies the NotIn predicate on the "zone_namespace" field.
-func ZoneNamespaceNotIn(vs ...string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldNotIn(FieldZoneNamespace, vs...))
-}
-
-// ZoneNamespaceGT applies the GT predicate on the "zone_namespace" field.
-func ZoneNamespaceGT(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldGT(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceGTE applies the GTE predicate on the "zone_namespace" field.
-func ZoneNamespaceGTE(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldGTE(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceLT applies the LT predicate on the "zone_namespace" field.
-func ZoneNamespaceLT(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldLT(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceLTE applies the LTE predicate on the "zone_namespace" field.
-func ZoneNamespaceLTE(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldLTE(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceContains applies the Contains predicate on the "zone_namespace" field.
-func ZoneNamespaceContains(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldContains(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceHasPrefix applies the HasPrefix predicate on the "zone_namespace" field.
-func ZoneNamespaceHasPrefix(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldHasPrefix(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceHasSuffix applies the HasSuffix predicate on the "zone_namespace" field.
-func ZoneNamespaceHasSuffix(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldHasSuffix(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceIsNil applies the IsNil predicate on the "zone_namespace" field.
-func ZoneNamespaceIsNil() predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldIsNull(FieldZoneNamespace))
-}
-
-// ZoneNamespaceNotNil applies the NotNil predicate on the "zone_namespace" field.
-func ZoneNamespaceNotNil() predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldNotNull(FieldZoneNamespace))
-}
-
-// ZoneNamespaceEqualFold applies the EqualFold predicate on the "zone_namespace" field.
-func ZoneNamespaceEqualFold(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldEqualFold(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceContainsFold applies the ContainsFold predicate on the "zone_namespace" field.
-func ZoneNamespaceContainsFold(v string) predicate.FileSubscription {
-	return predicate.FileSubscription(sql.FieldContainsFold(FieldZoneNamespace, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

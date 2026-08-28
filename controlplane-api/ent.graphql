@@ -3492,7 +3492,6 @@ type FileExposure implements Node {
   visibility: FileExposureVisibility!
   active: Boolean
   zoneName: String!
-  zoneNamespace: String
   sftpPublicKeys: [String!]!
   approvalConfig: ApprovalConfig!
   owner: Application!
@@ -3733,24 +3732,6 @@ input FileExposureWhereInput {
   zoneNameEqualFold: String
   zoneNameContainsFold: String
   """
-  zone_namespace field predicates
-  """
-  zoneNamespace: String
-  zoneNamespaceNEQ: String
-  zoneNamespaceIn: [String!]
-  zoneNamespaceNotIn: [String!]
-  zoneNamespaceGT: String
-  zoneNamespaceGTE: String
-  zoneNamespaceLT: String
-  zoneNamespaceLTE: String
-  zoneNamespaceContains: String
-  zoneNamespaceHasPrefix: String
-  zoneNamespaceHasSuffix: String
-  zoneNamespaceIsNil: Boolean
-  zoneNamespaceNotNil: Boolean
-  zoneNamespaceEqualFold: String
-  zoneNamespaceContainsFold: String
-  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -3782,7 +3763,6 @@ type FileSubscription implements Node {
   name: String!
   fileType: String!
   zoneName: String!
-  zoneNamespace: String
   sftpPublicKeys: [String!]!
   owner: Application!
   fileTypeDef: FileType
@@ -3999,24 +3979,6 @@ input FileSubscriptionWhereInput {
   zoneNameHasSuffix: String
   zoneNameEqualFold: String
   zoneNameContainsFold: String
-  """
-  zone_namespace field predicates
-  """
-  zoneNamespace: String
-  zoneNamespaceNEQ: String
-  zoneNamespaceIn: [String!]
-  zoneNamespaceNotIn: [String!]
-  zoneNamespaceGT: String
-  zoneNamespaceGTE: String
-  zoneNamespaceLT: String
-  zoneNamespaceLTE: String
-  zoneNamespaceContains: String
-  zoneNamespaceHasPrefix: String
-  zoneNamespaceHasSuffix: String
-  zoneNamespaceIsNil: Boolean
-  zoneNamespaceNotNil: Boolean
-  zoneNamespaceEqualFold: String
-  zoneNamespaceContainsFold: String
   """
   owner edge predicates
   """

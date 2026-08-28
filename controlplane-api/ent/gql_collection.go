@@ -2900,11 +2900,6 @@ func (_q *FileExposureQuery) collectField(ctx context.Context, oneNode bool, opC
 				selectedFields = append(selectedFields, fileexposure.FieldZoneName)
 				fieldSeen[fileexposure.FieldZoneName] = struct{}{}
 			}
-		case "zoneNamespace":
-			if _, ok := fieldSeen[fileexposure.FieldZoneNamespace]; !ok {
-				selectedFields = append(selectedFields, fileexposure.FieldZoneNamespace)
-				fieldSeen[fileexposure.FieldZoneNamespace] = struct{}{}
-			}
 		case "sftpPublicKeys":
 			if _, ok := fieldSeen[fileexposure.FieldSftpPublicKeys]; !ok {
 				selectedFields = append(selectedFields, fileexposure.FieldSftpPublicKeys)
@@ -3100,11 +3095,6 @@ func (_q *FileSubscriptionQuery) collectField(ctx context.Context, oneNode bool,
 			if _, ok := fieldSeen[filesubscription.FieldZoneName]; !ok {
 				selectedFields = append(selectedFields, filesubscription.FieldZoneName)
 				fieldSeen[filesubscription.FieldZoneName] = struct{}{}
-			}
-		case "zoneNamespace":
-			if _, ok := fieldSeen[filesubscription.FieldZoneNamespace]; !ok {
-				selectedFields = append(selectedFields, filesubscription.FieldZoneNamespace)
-				fieldSeen[filesubscription.FieldZoneNamespace] = struct{}{}
 			}
 		case "sftpPublicKeys":
 			if _, ok := fieldSeen[filesubscription.FieldSftpPublicKeys]; !ok {

@@ -160,20 +160,6 @@ func (_c *FileExposureCreate) SetZoneName(v string) *FileExposureCreate {
 	return _c
 }
 
-// SetZoneNamespace sets the "zone_namespace" field.
-func (_c *FileExposureCreate) SetZoneNamespace(v string) *FileExposureCreate {
-	_c.mutation.SetZoneNamespace(v)
-	return _c
-}
-
-// SetNillableZoneNamespace sets the "zone_namespace" field if the given value is not nil.
-func (_c *FileExposureCreate) SetNillableZoneNamespace(v *string) *FileExposureCreate {
-	if v != nil {
-		_c.SetZoneNamespace(*v)
-	}
-	return _c
-}
-
 // SetSftpPublicKeys sets the "sftp_public_keys" field.
 func (_c *FileExposureCreate) SetSftpPublicKeys(v []string) *FileExposureCreate {
 	_c.mutation.SetSftpPublicKeys(v)
@@ -447,10 +433,6 @@ func (_c *FileExposureCreate) createSpec() (*FileExposure, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.ZoneName(); ok {
 		_spec.SetField(fileexposure.FieldZoneName, field.TypeString, value)
 		_node.ZoneName = value
-	}
-	if value, ok := _c.mutation.ZoneNamespace(); ok {
-		_spec.SetField(fileexposure.FieldZoneNamespace, field.TypeString, value)
-		_node.ZoneNamespace = &value
 	}
 	if value, ok := _c.mutation.SftpPublicKeys(); ok {
 		_spec.SetField(fileexposure.FieldSftpPublicKeys, field.TypeJSON, value)
@@ -729,24 +711,6 @@ func (u *FileExposureUpsert) UpdateZoneName() *FileExposureUpsert {
 	return u
 }
 
-// SetZoneNamespace sets the "zone_namespace" field.
-func (u *FileExposureUpsert) SetZoneNamespace(v string) *FileExposureUpsert {
-	u.Set(fileexposure.FieldZoneNamespace, v)
-	return u
-}
-
-// UpdateZoneNamespace sets the "zone_namespace" field to the value that was provided on create.
-func (u *FileExposureUpsert) UpdateZoneNamespace() *FileExposureUpsert {
-	u.SetExcluded(fileexposure.FieldZoneNamespace)
-	return u
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (u *FileExposureUpsert) ClearZoneNamespace() *FileExposureUpsert {
-	u.SetNull(fileexposure.FieldZoneNamespace)
-	return u
-}
-
 // SetSftpPublicKeys sets the "sftp_public_keys" field.
 func (u *FileExposureUpsert) SetSftpPublicKeys(v []string) *FileExposureUpsert {
 	u.Set(fileexposure.FieldSftpPublicKeys, v)
@@ -988,27 +952,6 @@ func (u *FileExposureUpsertOne) SetZoneName(v string) *FileExposureUpsertOne {
 func (u *FileExposureUpsertOne) UpdateZoneName() *FileExposureUpsertOne {
 	return u.Update(func(s *FileExposureUpsert) {
 		s.UpdateZoneName()
-	})
-}
-
-// SetZoneNamespace sets the "zone_namespace" field.
-func (u *FileExposureUpsertOne) SetZoneNamespace(v string) *FileExposureUpsertOne {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.SetZoneNamespace(v)
-	})
-}
-
-// UpdateZoneNamespace sets the "zone_namespace" field to the value that was provided on create.
-func (u *FileExposureUpsertOne) UpdateZoneNamespace() *FileExposureUpsertOne {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.UpdateZoneNamespace()
-	})
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (u *FileExposureUpsertOne) ClearZoneNamespace() *FileExposureUpsertOne {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.ClearZoneNamespace()
 	})
 }
 
@@ -1423,27 +1366,6 @@ func (u *FileExposureUpsertBulk) SetZoneName(v string) *FileExposureUpsertBulk {
 func (u *FileExposureUpsertBulk) UpdateZoneName() *FileExposureUpsertBulk {
 	return u.Update(func(s *FileExposureUpsert) {
 		s.UpdateZoneName()
-	})
-}
-
-// SetZoneNamespace sets the "zone_namespace" field.
-func (u *FileExposureUpsertBulk) SetZoneNamespace(v string) *FileExposureUpsertBulk {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.SetZoneNamespace(v)
-	})
-}
-
-// UpdateZoneNamespace sets the "zone_namespace" field to the value that was provided on create.
-func (u *FileExposureUpsertBulk) UpdateZoneNamespace() *FileExposureUpsertBulk {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.UpdateZoneNamespace()
-	})
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (u *FileExposureUpsertBulk) ClearZoneNamespace() *FileExposureUpsertBulk {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.ClearZoneNamespace()
 	})
 }
 

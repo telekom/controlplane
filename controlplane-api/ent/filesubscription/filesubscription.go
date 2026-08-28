@@ -39,8 +39,6 @@ const (
 	FieldFileType = "file_type"
 	// FieldZoneName holds the string denoting the zone_name field in the database.
 	FieldZoneName = "zone_name"
-	// FieldZoneNamespace holds the string denoting the zone_namespace field in the database.
-	FieldZoneNamespace = "zone_namespace"
 	// FieldSftpPublicKeys holds the string denoting the sftp_public_keys field in the database.
 	FieldSftpPublicKeys = "sftp_public_keys"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -113,7 +111,6 @@ var Columns = []string{
 	FieldName,
 	FieldFileType,
 	FieldZoneName,
-	FieldZoneNamespace,
 	FieldSftpPublicKeys,
 }
 
@@ -243,11 +240,6 @@ func ByFileType(opts ...sql.OrderTermOption) OrderOption {
 // ByZoneName orders the results by the zone_name field.
 func ByZoneName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldZoneName, opts...).ToFunc()
-}
-
-// ByZoneNamespace orders the results by the zone_namespace field.
-func ByZoneNamespace(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldZoneNamespace, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.
