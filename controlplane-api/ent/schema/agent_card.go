@@ -16,10 +16,6 @@ import (
 )
 
 // AgentCard holds the schema definition for a registered A2A agent in the catalogue.
-//
-// NOTE: GraphQL exposure is intentionally not yet enabled (see Annotations()) —
-// this entity is only used by the projector's write path for now. GraphQL
-// query fields/types will be added in a follow-up change.
 type AgentCard struct {
 	ent.Schema
 }
@@ -70,7 +66,8 @@ func (AgentCard) Edges() []ent.Edge {
 
 func (AgentCard) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entgql.Skip(entgql.SkipAll),
+		entgql.QueryField(),
+		entgql.RelayConnection(),
 	}
 }
 

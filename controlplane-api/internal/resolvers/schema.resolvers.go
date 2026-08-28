@@ -15,6 +15,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -25,6 +27,148 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
+
+// SpecificationURL is the resolver for the specificationUrl field.
+func (r *agentCardResolver) SpecificationURL(ctx context.Context, obj *ent.AgentCard) (*string, error) {
+	return r.buildSpecificationURL(obj.Specification)
+}
+
+// ActiveExposure is the resolver for the activeExposure field.
+// Returns the active exposure for this agent card, or nil if none is active.
+func (r *agentCardResolver) ActiveExposure(ctx context.Context, obj *ent.AgentCard) (*model.AgenticExposureInfo, error) {
+	// SystemContext: The exposure may belong to another tenant; privacy rules would
+	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	exp, err := obj.QueryExposures().
+		Where(agenticexposure.Active(true)).
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		Only(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading active exposure for agent card %d: %w", obj.ID, err)
+	}
+
+	app := exp.Edges.Owner
+	team := app.Edges.OwnerTeam
+	group, groupErr := team.Edges.GroupOrErr()
+	if groupErr != nil {
+		if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+			return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+		}
+		group = nil
+	}
+	return mapAgenticExposureInfo(exp, app, team, group), nil
+}
+
+// Owner is the resolver for the owner field.
+func (r *agentCardResolver) Owner(ctx context.Context, obj *ent.AgentCard) (*model.TeamInfo, error) {
+	// SystemContext: The owning team may belong to a different tenant than the
+	// querying viewer. We return a reduced TeamInfo type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	log := logr.FromContextOrDiscard(ctx)
+
+	team, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		team, err = obj.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		log.Info("Failed to resolve owner team for agent card",
+			"agentCardID", obj.ID, "namespace", obj.Namespace, "basePath", obj.BasePath, "error", err)
+		return nil, fmt.Errorf("resolving owner team for agent card %d: %w", obj.ID, err)
+	}
+
+	group, err := team.Edges.GroupOrErr()
+	if ent.IsNotLoaded(err) {
+		group, err = team.QueryGroup().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
+	}
+	if ent.IsNotFound(err) {
+		group = nil
+	}
+
+	return mapTeamInfo(team, group), nil
+}
+
+// Subscriptions is the resolver for the subscriptions field.
+// Returns reduced AgenticSubscriptionInfo types for cross-tenant safety.
+func (r *agenticExposureResolver) Subscriptions(ctx context.Context, obj *ent.AgenticExposure) ([]*model.AgenticSubscriptionInfo, error) {
+	// SystemContext: Subscriptions belong to other tenants; privacy rules would
+	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	subs, err := obj.QuerySubscriptions().
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		All(sysCtx)
+	if err != nil {
+		return nil, fmt.Errorf("loading subscriptions for agentic exposure %d: %w", obj.ID, err)
+	}
+
+	result := make([]*model.AgenticSubscriptionInfo, len(subs))
+	for i, sub := range subs {
+		app := sub.Edges.Owner
+		team := app.Edges.OwnerTeam
+		group, groupErr := team.Edges.GroupOrErr()
+		if groupErr != nil {
+			if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+				return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+			}
+			group = nil
+		}
+		result[i] = mapAgenticSubscriptionInfo(sub, app, team, group)
+	}
+	return result, nil
+}
+
+// Visibility is the resolver for the visibility field.
+func (r *agenticExposureInfoResolver) Visibility(ctx context.Context, obj *model.AgenticExposureInfo) (agenticexposure.Visibility, error) {
+	return agenticexposure.Visibility(obj.Visibility), nil
+}
+
+// Variant is the resolver for the variant field.
+func (r *agenticExposureInfoResolver) Variant(ctx context.Context, obj *model.AgenticExposureInfo) (agenticexposure.Variant, error) {
+	return agenticexposure.Variant(obj.Variant), nil
+}
+
+// Target is the resolver for the target field.
+// Returns reduced AgenticExposureInfo type for cross-tenant safety.
+func (r *agenticSubscriptionResolver) Target(ctx context.Context, obj *ent.AgenticSubscription) (*model.AgenticExposureInfo, error) {
+	// SystemContext: The target exposure belongs to another tenant; privacy rules
+	// would block this traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+
+	exposure, err := obj.Edges.TargetOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryTarget().Only(sysCtx)
+	}
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading target for agentic subscription %d: %w", obj.ID, err)
+	}
+
+	return loadAgenticExposureInfo(sysCtx, exposure)
+}
+
+// StatusPhase is the resolver for the statusPhase field.
+func (r *agenticSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *model.AgenticSubscriptionInfo) (*agenticsubscription.StatusPhase, error) {
+	if obj.StatusPhase == nil {
+		return nil, nil
+	}
+	s := agenticsubscription.StatusPhase(*obj.StatusPhase)
+	return &s, nil
+}
 
 // SpecificationURL is the resolver for the specificationUrl field.
 func (r *apiResolver) SpecificationURL(ctx context.Context, obj *ent.Api) (*string, error) {
@@ -228,6 +372,18 @@ func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) 
 		return loadEventSubscriptionInfo(sysCtx, eventSub)
 	}
 
+	// Fall back to agentic subscription.
+	agenticSub, err := obj.Edges.AgenticSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		agenticSub, err = obj.QueryAgenticSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading agentic subscription for approval %d: %w", obj.ID, err)
+	}
+	if agenticSub != nil {
+		return loadAgenticSubscriptionInfo(sysCtx, agenticSub)
+	}
+
 	return nil, fmt.Errorf("approval %d has no related subscription", obj.ID)
 }
 
@@ -268,6 +424,18 @@ func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.App
 		return loadEventSubscriptionInfo(sysCtx, eventSub)
 	}
 
+	// Fall back to agentic subscription.
+	agenticSub, err := obj.Edges.AgenticSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		agenticSub, err = obj.QueryAgenticSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading agentic subscription for approval request %d: %w", obj.ID, err)
+	}
+	if agenticSub != nil {
+		return loadAgenticSubscriptionInfo(sysCtx, agenticSub)
+	}
+
 	return nil, fmt.Errorf("approval request %d has no related subscription", obj.ID)
 }
 
@@ -299,19 +467,38 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 	if ent.IsNotLoaded(err) {
 		eventSub, err = obj.QueryEventSubscription().Only(ctx)
 	}
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
+	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading event subscription for approval request %d: %w", obj.ID, err)
 	}
+	if eventSub != nil {
+		appr, err := eventSub.QueryApproval().Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("loading approval for event subscription %d: %w", eventSub.ID, err)
+		}
+		return appr, nil
+	}
 
-	appr, err := eventSub.QueryApproval().Only(ctx)
+	// Fall back to agentic subscription path.
+	agenticSub, err := obj.Edges.AgenticSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		agenticSub, err = obj.QueryAgenticSubscription().Only(ctx)
+	}
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("loading approval for event subscription %d: %w", eventSub.ID, err)
+		return nil, fmt.Errorf("loading agentic subscription for approval request %d: %w", obj.ID, err)
+	}
+
+	appr, err := agenticSub.QueryApproval().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading approval for agentic subscription %d: %w", agenticSub.ID, err)
 	}
 	return appr, nil
 }
@@ -508,6 +695,75 @@ func (r *externalIdentityProviderResolver) TokenRequest(ctx context.Context, obj
 	return &m, nil
 }
 
+// SpecificationURL is the resolver for the specificationUrl field.
+func (r *mcpServerResolver) SpecificationURL(ctx context.Context, obj *ent.McpServer) (*string, error) {
+	return r.buildSpecificationURL(obj.Specification)
+}
+
+// ActiveExposure is the resolver for the activeExposure field.
+// Returns the active exposure for this MCP server, or nil if none is active.
+func (r *mcpServerResolver) ActiveExposure(ctx context.Context, obj *ent.McpServer) (*model.AgenticExposureInfo, error) {
+	// SystemContext: The exposure may belong to another tenant; privacy rules would
+	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	exp, err := obj.QueryExposures().
+		Where(agenticexposure.Active(true)).
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		Only(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading active exposure for mcp server %d: %w", obj.ID, err)
+	}
+
+	app := exp.Edges.Owner
+	team := app.Edges.OwnerTeam
+	group, groupErr := team.Edges.GroupOrErr()
+	if groupErr != nil {
+		if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+			return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+		}
+		group = nil
+	}
+	return mapAgenticExposureInfo(exp, app, team, group), nil
+}
+
+// Owner is the resolver for the owner field.
+func (r *mcpServerResolver) Owner(ctx context.Context, obj *ent.McpServer) (*model.TeamInfo, error) {
+	// SystemContext: The owning team may belong to a different tenant than the
+	// querying viewer. We return a reduced TeamInfo type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	log := logr.FromContextOrDiscard(ctx)
+
+	team, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		team, err = obj.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		log.Info("Failed to resolve owner team for mcp server",
+			"mcpServerID", obj.ID, "namespace", obj.Namespace, "basePath", obj.BasePath, "error", err)
+		return nil, fmt.Errorf("resolving owner team for mcp server %d: %w", obj.ID, err)
+	}
+
+	group, err := team.Edges.GroupOrErr()
+	if ent.IsNotLoaded(err) {
+		group, err = team.QueryGroup().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
+	}
+	if ent.IsNotFound(err) {
+		group = nil
+	}
+
+	return mapTeamInfo(team, group), nil
+}
+
 // ClientSecret is the resolver for the clientSecret field.
 func (r *oAuth2ClientCredentialsResolver) ClientSecret(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error) {
 	return r.secrets.Resolve(ctx, obj.ClientSecret, "clientSecret")
@@ -585,6 +841,16 @@ func (r *zoneResolver) TokenURL(ctx context.Context, obj *ent.Zone) (*string, er
 	return &tokenURL, nil
 }
 
+// AgenticExposureInfo returns AgenticExposureInfoResolver implementation.
+func (r *Resolver) AgenticExposureInfo() AgenticExposureInfoResolver {
+	return &agenticExposureInfoResolver{r}
+}
+
+// AgenticSubscriptionInfo returns AgenticSubscriptionInfoResolver implementation.
+func (r *Resolver) AgenticSubscriptionInfo() AgenticSubscriptionInfoResolver {
+	return &agenticSubscriptionInfoResolver{r}
+}
+
 // ApiExposureInfo returns ApiExposureInfoResolver implementation.
 func (r *Resolver) ApiExposureInfo() ApiExposureInfoResolver { return &apiExposureInfoResolver{r} }
 
@@ -642,6 +908,8 @@ func (r *Resolver) ResponseFilter() ResponseFilterResolver { return &responseFil
 func (r *Resolver) SelectionFilter() SelectionFilterResolver { return &selectionFilterResolver{r} }
 
 type (
+	agenticExposureInfoResolver      struct{ *Resolver }
+	agenticSubscriptionInfoResolver  struct{ *Resolver }
 	apiExposureInfoResolver          struct{ *Resolver }
 	apiSubscriptionInfoResolver      struct{ *Resolver }
 	approvalConfigResolver           struct{ *Resolver }

@@ -16,10 +16,6 @@ import (
 )
 
 // McpServer holds the schema definition for a registered MCP server in the catalogue.
-//
-// NOTE: GraphQL exposure is intentionally not yet enabled (see Annotations()) —
-// this entity is only used by the projector's write path for now. GraphQL
-// query fields/types will be added in a follow-up change.
 type McpServer struct {
 	ent.Schema
 }
@@ -70,7 +66,8 @@ func (McpServer) Edges() []ent.Edge {
 
 func (McpServer) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entgql.Skip(entgql.SkipAll),
+		entgql.QueryField(),
+		entgql.RelayConnection(),
 	}
 }
 

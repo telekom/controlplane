@@ -102,8 +102,10 @@ The `AGENTIC_TELECONTEXT_APPLICATION_ID` value is injected at operator startup v
 - **Gateway domain** — The Agentic operator creates `Route` (primary, proxy) and `ConsumeRoute` resources on the AI Gateway.
 - **Admin domain** — Zones provide the AI Gateway reference, preset URLs, and identity issuers used to wire up routes and mesh trust.
 - **Approval domain** — Subscriptions trigger approval workflows before `ConsumeRoute` is created.
+- **Projector / ControlPlane API** — The Projector syncs `McpServer`, `AgentCard`, `AgenticExposure` (from `McpExposure`), and `AgenticSubscription` (from `McpSubscription`) into PostgreSQL, making the agentic catalogue and subscription state queryable via GraphQL. See [ControlPlane API & Projector](./controlplane-api.mdx).
 
 ## Related Pages
 
 - [Rover Domain Architecture](./rover.mdx)
 - [Gateway Domain Architecture](./gateway.mdx)
+- [ControlPlane API & Projector](./controlplane-api.mdx)
