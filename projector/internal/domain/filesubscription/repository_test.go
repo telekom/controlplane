@@ -187,7 +187,7 @@ var _ = Describe("FileSubscription Repository", func() {
 		})
 
 		It("should return dependency missing when application is missing", func() {
-			err := repo.Upsert(ctx, &filesubscription.FileSubscriptionData{Meta: shared.NewMetadata("prod--platform--narvi", "sub-c", nil), ZoneName: "caas", OwnerAppName: "missing", OwnerTeamName: "platform--narvi", TargetFileType: "invoice"})
+			err := repo.Upsert(ctx, &filesubscription.FileSubscriptionData{Meta: shared.NewMetadata("prod--platform--narvi", "sub-c", nil), Zone: "caas", OwnerAppName: "missing", OwnerTeamName: "platform--narvi", TargetFileType: "invoice"})
 			Expect(err).To(HaveOccurred())
 			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
 		})
@@ -204,7 +204,7 @@ var _ = Describe("FileSubscription Repository", func() {
 			data := &filesubscription.FileSubscriptionData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-cache", nil),
 				StatusPhase:    "READY",
-				ZoneName:       "caas",
+				Zone:           "caas",
 				OwnerAppName:   "consumer-app",
 				OwnerTeamName:  "platform--narvi",
 				TargetFileType: "invoice",
@@ -223,7 +223,7 @@ var _ = Describe("FileSubscription Repository", func() {
 			data := &filesubscription.FileSubscriptionData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-del", nil),
 				StatusPhase:    "READY",
-				ZoneName:       "caas",
+				Zone:           "caas",
 				OwnerAppName:   "consumer-app",
 				OwnerTeamName:  "platform--narvi",
 				TargetFileType: "invoice",
