@@ -12865,7 +12865,6 @@ type FileExposureMutation struct {
 	visibility             *fileexposure.Visibility
 	active                 *bool
 	zone_name              *string
-	zone_namespace         *string
 	sftp_public_keys       *[]string
 	appendsftp_public_keys []string
 	approval_config        *model.ApprovalConfig
@@ -13443,55 +13442,6 @@ func (m *FileExposureMutation) ResetZoneName() {
 	m.zone_name = nil
 }
 
-// SetZoneNamespace sets the "zone_namespace" field.
-func (m *FileExposureMutation) SetZoneNamespace(s string) {
-	m.zone_namespace = &s
-}
-
-// ZoneNamespace returns the value of the "zone_namespace" field in the mutation.
-func (m *FileExposureMutation) ZoneNamespace() (r string, exists bool) {
-	v := m.zone_namespace
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldZoneNamespace returns the old "zone_namespace" field's value of the FileExposure entity.
-// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FileExposureMutation) OldZoneNamespace(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldZoneNamespace is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldZoneNamespace requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldZoneNamespace: %w", err)
-	}
-	return oldValue.ZoneNamespace, nil
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (m *FileExposureMutation) ClearZoneNamespace() {
-	m.zone_namespace = nil
-	m.clearedFields[fileexposure.FieldZoneNamespace] = struct{}{}
-}
-
-// ZoneNamespaceCleared returns if the "zone_namespace" field was cleared in this mutation.
-func (m *FileExposureMutation) ZoneNamespaceCleared() bool {
-	_, ok := m.clearedFields[fileexposure.FieldZoneNamespace]
-	return ok
-}
-
-// ResetZoneNamespace resets all changes to the "zone_namespace" field.
-func (m *FileExposureMutation) ResetZoneNamespace() {
-	m.zone_namespace = nil
-	delete(m.clearedFields, fileexposure.FieldZoneNamespace)
-}
-
 // SetSftpPublicKeys sets the "sftp_public_keys" field.
 func (m *FileExposureMutation) SetSftpPublicKeys(s []string) {
 	m.sftp_public_keys = &s
@@ -13784,7 +13734,7 @@ func (m *FileExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FileExposureMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, fileexposure.FieldCreatedAt)
 	}
@@ -13817,9 +13767,6 @@ func (m *FileExposureMutation) Fields() []string {
 	}
 	if m.zone_name != nil {
 		fields = append(fields, fileexposure.FieldZoneName)
-	}
-	if m.zone_namespace != nil {
-		fields = append(fields, fileexposure.FieldZoneNamespace)
 	}
 	if m.sftp_public_keys != nil {
 		fields = append(fields, fileexposure.FieldSftpPublicKeys)
@@ -13857,8 +13804,6 @@ func (m *FileExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Active()
 	case fileexposure.FieldZoneName:
 		return m.ZoneName()
-	case fileexposure.FieldZoneNamespace:
-		return m.ZoneNamespace()
 	case fileexposure.FieldSftpPublicKeys:
 		return m.SftpPublicKeys()
 	case fileexposure.FieldApprovalConfig:
@@ -13894,8 +13839,6 @@ func (m *FileExposureMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldActive(ctx)
 	case fileexposure.FieldZoneName:
 		return m.OldZoneName(ctx)
-	case fileexposure.FieldZoneNamespace:
-		return m.OldZoneNamespace(ctx)
 	case fileexposure.FieldSftpPublicKeys:
 		return m.OldSftpPublicKeys(ctx)
 	case fileexposure.FieldApprovalConfig:
@@ -13986,13 +13929,6 @@ func (m *FileExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetZoneName(v)
 		return nil
-	case fileexposure.FieldZoneNamespace:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetZoneNamespace(v)
-		return nil
 	case fileexposure.FieldSftpPublicKeys:
 		v, ok := value.([]string)
 		if !ok {
@@ -14052,9 +13988,6 @@ func (m *FileExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(fileexposure.FieldActive) {
 		fields = append(fields, fileexposure.FieldActive)
 	}
-	if m.FieldCleared(fileexposure.FieldZoneNamespace) {
-		fields = append(fields, fileexposure.FieldZoneNamespace)
-	}
 	return fields
 }
 
@@ -14083,9 +14016,6 @@ func (m *FileExposureMutation) ClearField(name string) error {
 		return nil
 	case fileexposure.FieldActive:
 		m.ClearActive()
-		return nil
-	case fileexposure.FieldZoneNamespace:
-		m.ClearZoneNamespace()
 		return nil
 	}
 	return fmt.Errorf("unknown FileExposure nullable field %s", name)
@@ -14127,9 +14057,6 @@ func (m *FileExposureMutation) ResetField(name string) error {
 		return nil
 	case fileexposure.FieldZoneName:
 		m.ResetZoneName()
-		return nil
-	case fileexposure.FieldZoneNamespace:
-		m.ResetZoneNamespace()
 		return nil
 	case fileexposure.FieldSftpPublicKeys:
 		m.ResetSftpPublicKeys()
@@ -14294,7 +14221,6 @@ type FileSubscriptionMutation struct {
 	name                     *string
 	file_type                *string
 	zone_name                *string
-	zone_namespace           *string
 	sftp_public_keys         *[]string
 	appendsftp_public_keys   []string
 	clearedFields            map[string]struct{}
@@ -14777,55 +14703,6 @@ func (m *FileSubscriptionMutation) ResetZoneName() {
 	m.zone_name = nil
 }
 
-// SetZoneNamespace sets the "zone_namespace" field.
-func (m *FileSubscriptionMutation) SetZoneNamespace(s string) {
-	m.zone_namespace = &s
-}
-
-// ZoneNamespace returns the value of the "zone_namespace" field in the mutation.
-func (m *FileSubscriptionMutation) ZoneNamespace() (r string, exists bool) {
-	v := m.zone_namespace
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldZoneNamespace returns the old "zone_namespace" field's value of the FileSubscription entity.
-// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FileSubscriptionMutation) OldZoneNamespace(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldZoneNamespace is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldZoneNamespace requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldZoneNamespace: %w", err)
-	}
-	return oldValue.ZoneNamespace, nil
-}
-
-// ClearZoneNamespace clears the value of the "zone_namespace" field.
-func (m *FileSubscriptionMutation) ClearZoneNamespace() {
-	m.zone_namespace = nil
-	m.clearedFields[filesubscription.FieldZoneNamespace] = struct{}{}
-}
-
-// ZoneNamespaceCleared returns if the "zone_namespace" field was cleared in this mutation.
-func (m *FileSubscriptionMutation) ZoneNamespaceCleared() bool {
-	_, ok := m.clearedFields[filesubscription.FieldZoneNamespace]
-	return ok
-}
-
-// ResetZoneNamespace resets all changes to the "zone_namespace" field.
-func (m *FileSubscriptionMutation) ResetZoneNamespace() {
-	m.zone_namespace = nil
-	delete(m.clearedFields, filesubscription.FieldZoneNamespace)
-}
-
 // SetSftpPublicKeys sets the "sftp_public_keys" field.
 func (m *FileSubscriptionMutation) SetSftpPublicKeys(s []string) {
 	m.sftp_public_keys = &s
@@ -15160,7 +15037,7 @@ func (m *FileSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FileSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, filesubscription.FieldCreatedAt)
 	}
@@ -15187,9 +15064,6 @@ func (m *FileSubscriptionMutation) Fields() []string {
 	}
 	if m.zone_name != nil {
 		fields = append(fields, filesubscription.FieldZoneName)
-	}
-	if m.zone_namespace != nil {
-		fields = append(fields, filesubscription.FieldZoneNamespace)
 	}
 	if m.sftp_public_keys != nil {
 		fields = append(fields, filesubscription.FieldSftpPublicKeys)
@@ -15220,8 +15094,6 @@ func (m *FileSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.FileType()
 	case filesubscription.FieldZoneName:
 		return m.ZoneName()
-	case filesubscription.FieldZoneNamespace:
-		return m.ZoneNamespace()
 	case filesubscription.FieldSftpPublicKeys:
 		return m.SftpPublicKeys()
 	}
@@ -15251,8 +15123,6 @@ func (m *FileSubscriptionMutation) OldField(ctx context.Context, name string) (e
 		return m.OldFileType(ctx)
 	case filesubscription.FieldZoneName:
 		return m.OldZoneName(ctx)
-	case filesubscription.FieldZoneNamespace:
-		return m.OldZoneNamespace(ctx)
 	case filesubscription.FieldSftpPublicKeys:
 		return m.OldSftpPublicKeys(ctx)
 	}
@@ -15327,13 +15197,6 @@ func (m *FileSubscriptionMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetZoneName(v)
 		return nil
-	case filesubscription.FieldZoneNamespace:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetZoneNamespace(v)
-		return nil
 	case filesubscription.FieldSftpPublicKeys:
 		v, ok := value.([]string)
 		if !ok {
@@ -15380,9 +15243,6 @@ func (m *FileSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(filesubscription.FieldEnvironment) {
 		fields = append(fields, filesubscription.FieldEnvironment)
 	}
-	if m.FieldCleared(filesubscription.FieldZoneNamespace) {
-		fields = append(fields, filesubscription.FieldZoneNamespace)
-	}
 	return fields
 }
 
@@ -15405,9 +15265,6 @@ func (m *FileSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case filesubscription.FieldEnvironment:
 		m.ClearEnvironment()
-		return nil
-	case filesubscription.FieldZoneNamespace:
-		m.ClearZoneNamespace()
 		return nil
 	}
 	return fmt.Errorf("unknown FileSubscription nullable field %s", name)
@@ -15443,9 +15300,6 @@ func (m *FileSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case filesubscription.FieldZoneName:
 		m.ResetZoneName()
-		return nil
-	case filesubscription.FieldZoneNamespace:
-		m.ResetZoneNamespace()
 		return nil
 	case filesubscription.FieldSftpPublicKeys:
 		m.ResetSftpPublicKeys()

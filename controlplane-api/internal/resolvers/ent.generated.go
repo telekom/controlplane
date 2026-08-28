@@ -7203,29 +7203,6 @@ func (ec *executionContext) fieldContext_FileExposure_zoneName(_ context.Context
 	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _FileExposure_zoneNamespace(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_FileExposure_zoneNamespace(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ZoneNamespace, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_FileExposure_zoneNamespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
 func (ec *executionContext) _FileExposure_sftpPublicKeys(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7746,29 +7723,6 @@ func (ec *executionContext) _FileSubscription_zoneName(ctx context.Context, fiel
 	)
 }
 func (ec *executionContext) fieldContext_FileSubscription_zoneName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("FileSubscription", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _FileSubscription_zoneNamespace(ctx context.Context, field graphql.CollectedField, obj *ent.FileSubscription) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_FileSubscription_zoneNamespace(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ZoneNamespace, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_FileSubscription_zoneNamespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("FileSubscription", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -19876,7 +19830,7 @@ func (ec *executionContext) unmarshalInputFileExposureWhereInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "zoneNamespace", "zoneNamespaceNEQ", "zoneNamespaceIn", "zoneNamespaceNotIn", "zoneNamespaceGT", "zoneNamespaceGTE", "zoneNamespaceLT", "zoneNamespaceLTE", "zoneNamespaceContains", "zoneNamespaceHasPrefix", "zoneNamespaceHasSuffix", "zoneNamespaceIsNil", "zoneNamespaceNotNil", "zoneNamespaceEqualFold", "zoneNamespaceContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasZone", "hasZoneWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasZone", "hasZoneWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -20758,111 +20712,6 @@ func (ec *executionContext) unmarshalInputFileExposureWhereInput(ctx context.Con
 				return it, err
 			}
 			it.ZoneNameContainsFold = data
-		case "zoneNamespace":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespace"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespace = data
-		case "zoneNamespaceNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceNEQ = data
-		case "zoneNamespaceIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceIn = data
-		case "zoneNamespaceNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceNotIn = data
-		case "zoneNamespaceGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceGT = data
-		case "zoneNamespaceGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceGTE = data
-		case "zoneNamespaceLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceLT = data
-		case "zoneNamespaceLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceLTE = data
-		case "zoneNamespaceContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceContains = data
-		case "zoneNamespaceHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceHasPrefix = data
-		case "zoneNamespaceHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceHasSuffix = data
-		case "zoneNamespaceIsNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceIsNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceIsNil = data
-		case "zoneNamespaceNotNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceNotNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceNotNil = data
-		case "zoneNamespaceEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceEqualFold = data
-		case "zoneNamespaceContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -20976,7 +20825,7 @@ func (ec *executionContext) unmarshalInputFileSubscriptionWhereInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "zoneNamespace", "zoneNamespaceNEQ", "zoneNamespaceIn", "zoneNamespaceNotIn", "zoneNamespaceGT", "zoneNamespaceGTE", "zoneNamespaceLT", "zoneNamespaceLTE", "zoneNamespaceContains", "zoneNamespaceHasPrefix", "zoneNamespaceHasSuffix", "zoneNamespaceIsNil", "zoneNamespaceNotNil", "zoneNamespaceEqualFold", "zoneNamespaceContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasTarget", "hasTargetWith", "hasZone", "hasZoneWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasTarget", "hasTargetWith", "hasZone", "hasZoneWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -21788,111 +21637,6 @@ func (ec *executionContext) unmarshalInputFileSubscriptionWhereInput(ctx context
 				return it, err
 			}
 			it.ZoneNameContainsFold = data
-		case "zoneNamespace":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespace"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespace = data
-		case "zoneNamespaceNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceNEQ = data
-		case "zoneNamespaceIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceIn = data
-		case "zoneNamespaceNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceNotIn = data
-		case "zoneNamespaceGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceGT = data
-		case "zoneNamespaceGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceGTE = data
-		case "zoneNamespaceLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceLT = data
-		case "zoneNamespaceLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceLTE = data
-		case "zoneNamespaceContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceContains = data
-		case "zoneNamespaceHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceHasPrefix = data
-		case "zoneNamespaceHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceHasSuffix = data
-		case "zoneNamespaceIsNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceIsNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceIsNil = data
-		case "zoneNamespaceNotNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceNotNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceNotNil = data
-		case "zoneNamespaceEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceEqualFold = data
-		case "zoneNamespaceContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoneNamespaceContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ZoneNamespaceContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -29474,11 +29218,6 @@ func (ec *executionContext) _FileExposure(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "zoneNamespace":
-			out.Values[i] = ec._FileExposure_zoneNamespace(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "sftpPublicKeys":
 			out.Values[i] = ec._FileExposure_sftpPublicKeys(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -29775,11 +29514,6 @@ func (ec *executionContext) _FileSubscription(ctx context.Context, sel ast.Selec
 		case "zoneName":
 			out.Values[i] = ec._FileSubscription_zoneName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "zoneNamespace":
-			out.Values[i] = ec._FileSubscription_zoneNamespace(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "sftpPublicKeys":

@@ -6325,23 +6325,6 @@ type FileExposureWhereInput struct {
 	ZoneNameEqualFold    *string  `json:"zoneNameEqualFold,omitempty"`
 	ZoneNameContainsFold *string  `json:"zoneNameContainsFold,omitempty"`
 
-	// "zone_namespace" field predicates.
-	ZoneNamespace             *string  `json:"zoneNamespace,omitempty"`
-	ZoneNamespaceNEQ          *string  `json:"zoneNamespaceNEQ,omitempty"`
-	ZoneNamespaceIn           []string `json:"zoneNamespaceIn,omitempty"`
-	ZoneNamespaceNotIn        []string `json:"zoneNamespaceNotIn,omitempty"`
-	ZoneNamespaceGT           *string  `json:"zoneNamespaceGT,omitempty"`
-	ZoneNamespaceGTE          *string  `json:"zoneNamespaceGTE,omitempty"`
-	ZoneNamespaceLT           *string  `json:"zoneNamespaceLT,omitempty"`
-	ZoneNamespaceLTE          *string  `json:"zoneNamespaceLTE,omitempty"`
-	ZoneNamespaceContains     *string  `json:"zoneNamespaceContains,omitempty"`
-	ZoneNamespaceHasPrefix    *string  `json:"zoneNamespaceHasPrefix,omitempty"`
-	ZoneNamespaceHasSuffix    *string  `json:"zoneNamespaceHasSuffix,omitempty"`
-	ZoneNamespaceIsNil        bool     `json:"zoneNamespaceIsNil,omitempty"`
-	ZoneNamespaceNotNil       bool     `json:"zoneNamespaceNotNil,omitempty"`
-	ZoneNamespaceEqualFold    *string  `json:"zoneNamespaceEqualFold,omitempty"`
-	ZoneNamespaceContainsFold *string  `json:"zoneNamespaceContainsFold,omitempty"`
-
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -6796,51 +6779,6 @@ func (i *FileExposureWhereInput) P() (predicate.FileExposure, error) {
 	if i.ZoneNameContainsFold != nil {
 		predicates = append(predicates, fileexposure.ZoneNameContainsFold(*i.ZoneNameContainsFold))
 	}
-	if i.ZoneNamespace != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceEQ(*i.ZoneNamespace))
-	}
-	if i.ZoneNamespaceNEQ != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceNEQ(*i.ZoneNamespaceNEQ))
-	}
-	if len(i.ZoneNamespaceIn) > 0 {
-		predicates = append(predicates, fileexposure.ZoneNamespaceIn(i.ZoneNamespaceIn...))
-	}
-	if len(i.ZoneNamespaceNotIn) > 0 {
-		predicates = append(predicates, fileexposure.ZoneNamespaceNotIn(i.ZoneNamespaceNotIn...))
-	}
-	if i.ZoneNamespaceGT != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceGT(*i.ZoneNamespaceGT))
-	}
-	if i.ZoneNamespaceGTE != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceGTE(*i.ZoneNamespaceGTE))
-	}
-	if i.ZoneNamespaceLT != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceLT(*i.ZoneNamespaceLT))
-	}
-	if i.ZoneNamespaceLTE != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceLTE(*i.ZoneNamespaceLTE))
-	}
-	if i.ZoneNamespaceContains != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceContains(*i.ZoneNamespaceContains))
-	}
-	if i.ZoneNamespaceHasPrefix != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceHasPrefix(*i.ZoneNamespaceHasPrefix))
-	}
-	if i.ZoneNamespaceHasSuffix != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceHasSuffix(*i.ZoneNamespaceHasSuffix))
-	}
-	if i.ZoneNamespaceIsNil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceIsNil())
-	}
-	if i.ZoneNamespaceNotNil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceNotNil())
-	}
-	if i.ZoneNamespaceEqualFold != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceEqualFold(*i.ZoneNamespaceEqualFold))
-	}
-	if i.ZoneNamespaceContainsFold != nil {
-		predicates = append(predicates, fileexposure.ZoneNamespaceContainsFold(*i.ZoneNamespaceContainsFold))
-	}
 
 	if i.HasOwner != nil {
 		p := fileexposure.HasOwner()
@@ -7062,23 +7000,6 @@ type FileSubscriptionWhereInput struct {
 	ZoneNameHasSuffix    *string  `json:"zoneNameHasSuffix,omitempty"`
 	ZoneNameEqualFold    *string  `json:"zoneNameEqualFold,omitempty"`
 	ZoneNameContainsFold *string  `json:"zoneNameContainsFold,omitempty"`
-
-	// "zone_namespace" field predicates.
-	ZoneNamespace             *string  `json:"zoneNamespace,omitempty"`
-	ZoneNamespaceNEQ          *string  `json:"zoneNamespaceNEQ,omitempty"`
-	ZoneNamespaceIn           []string `json:"zoneNamespaceIn,omitempty"`
-	ZoneNamespaceNotIn        []string `json:"zoneNamespaceNotIn,omitempty"`
-	ZoneNamespaceGT           *string  `json:"zoneNamespaceGT,omitempty"`
-	ZoneNamespaceGTE          *string  `json:"zoneNamespaceGTE,omitempty"`
-	ZoneNamespaceLT           *string  `json:"zoneNamespaceLT,omitempty"`
-	ZoneNamespaceLTE          *string  `json:"zoneNamespaceLTE,omitempty"`
-	ZoneNamespaceContains     *string  `json:"zoneNamespaceContains,omitempty"`
-	ZoneNamespaceHasPrefix    *string  `json:"zoneNamespaceHasPrefix,omitempty"`
-	ZoneNamespaceHasSuffix    *string  `json:"zoneNamespaceHasSuffix,omitempty"`
-	ZoneNamespaceIsNil        bool     `json:"zoneNamespaceIsNil,omitempty"`
-	ZoneNamespaceNotNil       bool     `json:"zoneNamespaceNotNil,omitempty"`
-	ZoneNamespaceEqualFold    *string  `json:"zoneNamespaceEqualFold,omitempty"`
-	ZoneNamespaceContainsFold *string  `json:"zoneNamespaceContainsFold,omitempty"`
 
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
@@ -7511,51 +7432,6 @@ func (i *FileSubscriptionWhereInput) P() (predicate.FileSubscription, error) {
 	}
 	if i.ZoneNameContainsFold != nil {
 		predicates = append(predicates, filesubscription.ZoneNameContainsFold(*i.ZoneNameContainsFold))
-	}
-	if i.ZoneNamespace != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceEQ(*i.ZoneNamespace))
-	}
-	if i.ZoneNamespaceNEQ != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceNEQ(*i.ZoneNamespaceNEQ))
-	}
-	if len(i.ZoneNamespaceIn) > 0 {
-		predicates = append(predicates, filesubscription.ZoneNamespaceIn(i.ZoneNamespaceIn...))
-	}
-	if len(i.ZoneNamespaceNotIn) > 0 {
-		predicates = append(predicates, filesubscription.ZoneNamespaceNotIn(i.ZoneNamespaceNotIn...))
-	}
-	if i.ZoneNamespaceGT != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceGT(*i.ZoneNamespaceGT))
-	}
-	if i.ZoneNamespaceGTE != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceGTE(*i.ZoneNamespaceGTE))
-	}
-	if i.ZoneNamespaceLT != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceLT(*i.ZoneNamespaceLT))
-	}
-	if i.ZoneNamespaceLTE != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceLTE(*i.ZoneNamespaceLTE))
-	}
-	if i.ZoneNamespaceContains != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceContains(*i.ZoneNamespaceContains))
-	}
-	if i.ZoneNamespaceHasPrefix != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceHasPrefix(*i.ZoneNamespaceHasPrefix))
-	}
-	if i.ZoneNamespaceHasSuffix != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceHasSuffix(*i.ZoneNamespaceHasSuffix))
-	}
-	if i.ZoneNamespaceIsNil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceIsNil())
-	}
-	if i.ZoneNamespaceNotNil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceNotNil())
-	}
-	if i.ZoneNamespaceEqualFold != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceEqualFold(*i.ZoneNamespaceEqualFold))
-	}
-	if i.ZoneNamespaceContainsFold != nil {
-		predicates = append(predicates, filesubscription.ZoneNamespaceContainsFold(*i.ZoneNamespaceContainsFold))
 	}
 
 	if i.HasOwner != nil {

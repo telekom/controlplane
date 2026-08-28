@@ -504,7 +504,6 @@ type ComplexityRoot struct {
 		Visibility     func(childComplexity int) int
 		Zone           func(childComplexity int) int
 		ZoneName       func(childComplexity int) int
-		ZoneNamespace  func(childComplexity int) int
 	}
 
 	FileExposureConnection struct {
@@ -535,7 +534,6 @@ type ComplexityRoot struct {
 		StatusPhase      func(childComplexity int) int
 		Zone             func(childComplexity int) int
 		ZoneName         func(childComplexity int) int
-		ZoneNamespace    func(childComplexity int) int
 	}
 
 	FileSubscriptionConnection struct {
@@ -2712,12 +2710,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileExposure.ZoneName(childComplexity), true
-	case "FileExposure.zoneNamespace":
-		if e.ComplexityRoot.FileExposure.ZoneNamespace == nil {
-			break
-		}
-
-		return e.ComplexityRoot.FileExposure.ZoneNamespace(childComplexity), true
 
 	case "FileExposureConnection.edges":
 		if e.ComplexityRoot.FileExposureConnection.Edges == nil {
@@ -2847,12 +2839,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileSubscription.ZoneName(childComplexity), true
-	case "FileSubscription.zoneNamespace":
-		if e.ComplexityRoot.FileSubscription.ZoneNamespace == nil {
-			break
-		}
-
-		return e.ComplexityRoot.FileSubscription.ZoneNamespace(childComplexity), true
 
 	case "FileSubscriptionConnection.edges":
 		if e.ComplexityRoot.FileSubscriptionConnection.Edges == nil {
@@ -6795,7 +6781,6 @@ type FileExposure implements Node {
   visibility: FileExposureVisibility!
   active: Boolean
   zoneName: String!
-  zoneNamespace: String
   sftpPublicKeys: [String!]!
   approvalConfig: ApprovalConfig!
   owner: Application!
@@ -7036,24 +7021,6 @@ input FileExposureWhereInput {
   zoneNameEqualFold: String
   zoneNameContainsFold: String
   """
-  zone_namespace field predicates
-  """
-  zoneNamespace: String
-  zoneNamespaceNEQ: String
-  zoneNamespaceIn: [String!]
-  zoneNamespaceNotIn: [String!]
-  zoneNamespaceGT: String
-  zoneNamespaceGTE: String
-  zoneNamespaceLT: String
-  zoneNamespaceLTE: String
-  zoneNamespaceContains: String
-  zoneNamespaceHasPrefix: String
-  zoneNamespaceHasSuffix: String
-  zoneNamespaceIsNil: Boolean
-  zoneNamespaceNotNil: Boolean
-  zoneNamespaceEqualFold: String
-  zoneNamespaceContainsFold: String
-  """
   owner edge predicates
   """
   hasOwner: Boolean
@@ -7085,7 +7052,6 @@ type FileSubscription implements Node {
   name: String!
   fileType: String!
   zoneName: String!
-  zoneNamespace: String
   sftpPublicKeys: [String!]!
   owner: Application!
   fileTypeDef: FileType
@@ -7302,24 +7268,6 @@ input FileSubscriptionWhereInput {
   zoneNameHasSuffix: String
   zoneNameEqualFold: String
   zoneNameContainsFold: String
-  """
-  zone_namespace field predicates
-  """
-  zoneNamespace: String
-  zoneNamespaceNEQ: String
-  zoneNamespaceIn: [String!]
-  zoneNamespaceNotIn: [String!]
-  zoneNamespaceGT: String
-  zoneNamespaceGTE: String
-  zoneNamespaceLT: String
-  zoneNamespaceLTE: String
-  zoneNamespaceContains: String
-  zoneNamespaceHasPrefix: String
-  zoneNamespaceHasSuffix: String
-  zoneNamespaceIsNil: Boolean
-  zoneNamespaceNotNil: Boolean
-  zoneNamespaceEqualFold: String
-  zoneNamespaceContainsFold: String
   """
   owner edge predicates
   """
@@ -10360,8 +10308,6 @@ func (ec *executionContext) childFields_FileExposure(ctx context.Context, field 
 		return ec.fieldContext_FileExposure_active(ctx, field)
 	case "zoneName":
 		return ec.fieldContext_FileExposure_zoneName(ctx, field)
-	case "zoneNamespace":
-		return ec.fieldContext_FileExposure_zoneNamespace(ctx, field)
 	case "sftpPublicKeys":
 		return ec.fieldContext_FileExposure_sftpPublicKeys(ctx, field)
 	case "approvalConfig":
@@ -10420,8 +10366,6 @@ func (ec *executionContext) childFields_FileSubscription(ctx context.Context, fi
 		return ec.fieldContext_FileSubscription_fileType(ctx, field)
 	case "zoneName":
 		return ec.fieldContext_FileSubscription_zoneName(ctx, field)
-	case "zoneNamespace":
-		return ec.fieldContext_FileSubscription_zoneNamespace(ctx, field)
 	case "sftpPublicKeys":
 		return ec.fieldContext_FileSubscription_sftpPublicKeys(ctx, field)
 	case "owner":

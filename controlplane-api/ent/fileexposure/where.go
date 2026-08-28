@@ -103,11 +103,6 @@ func ZoneName(v string) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldEQ(FieldZoneName, v))
 }
 
-// ZoneNamespace applies equality check predicate on the "zone_namespace" field. It's identical to ZoneNamespaceEQ.
-func ZoneNamespace(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldEQ(FieldZoneNamespace, v))
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldEQ(FieldCreatedAt, v))
@@ -676,81 +671,6 @@ func ZoneNameEqualFold(v string) predicate.FileExposure {
 // ZoneNameContainsFold applies the ContainsFold predicate on the "zone_name" field.
 func ZoneNameContainsFold(v string) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldContainsFold(FieldZoneName, v))
-}
-
-// ZoneNamespaceEQ applies the EQ predicate on the "zone_namespace" field.
-func ZoneNamespaceEQ(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldEQ(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceNEQ applies the NEQ predicate on the "zone_namespace" field.
-func ZoneNamespaceNEQ(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldNEQ(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceIn applies the In predicate on the "zone_namespace" field.
-func ZoneNamespaceIn(vs ...string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldIn(FieldZoneNamespace, vs...))
-}
-
-// ZoneNamespaceNotIn applies the NotIn predicate on the "zone_namespace" field.
-func ZoneNamespaceNotIn(vs ...string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldNotIn(FieldZoneNamespace, vs...))
-}
-
-// ZoneNamespaceGT applies the GT predicate on the "zone_namespace" field.
-func ZoneNamespaceGT(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldGT(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceGTE applies the GTE predicate on the "zone_namespace" field.
-func ZoneNamespaceGTE(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldGTE(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceLT applies the LT predicate on the "zone_namespace" field.
-func ZoneNamespaceLT(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldLT(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceLTE applies the LTE predicate on the "zone_namespace" field.
-func ZoneNamespaceLTE(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldLTE(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceContains applies the Contains predicate on the "zone_namespace" field.
-func ZoneNamespaceContains(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldContains(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceHasPrefix applies the HasPrefix predicate on the "zone_namespace" field.
-func ZoneNamespaceHasPrefix(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldHasPrefix(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceHasSuffix applies the HasSuffix predicate on the "zone_namespace" field.
-func ZoneNamespaceHasSuffix(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldHasSuffix(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceIsNil applies the IsNil predicate on the "zone_namespace" field.
-func ZoneNamespaceIsNil() predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldIsNull(FieldZoneNamespace))
-}
-
-// ZoneNamespaceNotNil applies the NotNil predicate on the "zone_namespace" field.
-func ZoneNamespaceNotNil() predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldNotNull(FieldZoneNamespace))
-}
-
-// ZoneNamespaceEqualFold applies the EqualFold predicate on the "zone_namespace" field.
-func ZoneNamespaceEqualFold(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldEqualFold(FieldZoneNamespace, v))
-}
-
-// ZoneNamespaceContainsFold applies the ContainsFold predicate on the "zone_namespace" field.
-func ZoneNamespaceContainsFold(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldContainsFold(FieldZoneNamespace, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.
