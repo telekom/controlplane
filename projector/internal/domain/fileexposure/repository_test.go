@@ -132,7 +132,6 @@ var _ = Describe("FileExposure Repository", func() {
 	Describe("Upsert", func() {
 		It("should create file exposure and set optional file type edge", func() {
 			provider := "provider-app"
-			zoneNamespace := "zone-ns"
 			data := &fileexposure.FileExposureData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "exp-a", nil),
 				StatusPhase:    "READY",
@@ -140,8 +139,7 @@ var _ = Describe("FileExposure Repository", func() {
 				Provider:       &provider,
 				Visibility:     "ENTERPRISE",
 				Active:         true,
-				ZoneName:       "caas",
-				ZoneNamespace:  &zoneNamespace,
+				Zone:           "caas",
 				SFTPPublicKeys: []string{"ssh-rsa AAA"},
 				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO", TrustedTeams: []string{"team-a"}},
 				AppName:        "provider-app",
@@ -156,8 +154,6 @@ var _ = Describe("FileExposure Repository", func() {
 			Expect(exp.Active).NotTo(BeNil())
 			Expect(*exp.Active).To(BeTrue())
 			Expect(exp.ZoneName).To(Equal("caas"))
-			Expect(exp.ZoneNamespace).NotTo(BeNil())
-			Expect(*exp.ZoneNamespace).To(Equal("zone-ns"))
 			Expect(exp.SftpPublicKeys).To(Equal([]string{"ssh-rsa AAA"}))
 			Expect(exp.ApprovalConfig.Strategy).To(Equal("AUTO"))
 
@@ -179,7 +175,7 @@ var _ = Describe("FileExposure Repository", func() {
 				Meta:           shared.NewMetadata("prod--platform--narvi", "exp-b", nil),
 				StatusPhase:    "READY",
 				Visibility:     "WORLD",
-				ZoneName:       "caas",
+				Zone:           "caas",
 				ApprovalConfig: model.ApprovalConfig{Strategy: "SIMPLE"},
 				AppName:        "provider-app",
 				TeamName:       "platform--narvi",
@@ -195,7 +191,7 @@ var _ = Describe("FileExposure Repository", func() {
 		})
 
 		It("should return dependency missing when application is missing", func() {
-			data := &fileexposure.FileExposureData{Meta: shared.NewMetadata("prod--platform--narvi", "exp-c", nil), ZoneName: "caas", AppName: "missing", TeamName: "platform--narvi", TargetFileType: "invoice"}
+			data := &fileexposure.FileExposureData{Meta: shared.NewMetadata("prod--platform--narvi", "exp-c", nil), Zone: "caas", AppName: "missing", TeamName: "platform--narvi", TargetFileType: "invoice"}
 			err := repo.Upsert(ctx, data)
 			Expect(err).To(HaveOccurred())
 			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
@@ -204,7 +200,7 @@ var _ = Describe("FileExposure Repository", func() {
 		It("should propagate non-not-found application errors", func() {
 			dbErr := errors.New("db down")
 			failRepo := fileexposure.NewRepository(client, cache, &mockFileExposureDeps{appErr: dbErr})
-			err := failRepo.Upsert(ctx, &fileexposure.FileExposureData{Meta: shared.NewMetadata("prod--platform--narvi", "exp-d", nil), ZoneName: "caas", AppName: "provider-app", TeamName: "platform--narvi", TargetFileType: "invoice"})
+			err := failRepo.Upsert(ctx, &fileexposure.FileExposureData{Meta: shared.NewMetadata("prod--platform--narvi", "exp-d", nil), Zone: "caas", AppName: "provider-app", TeamName: "platform--narvi", TargetFileType: "invoice"})
 			Expect(err).To(HaveOccurred())
 			Expect(errors.Is(err, dbErr)).To(BeTrue())
 		})
@@ -215,7 +211,7 @@ var _ = Describe("FileExposure Repository", func() {
 				StatusPhase:    "READY",
 				Visibility:     "ZONE",
 				Active:         true,
-				ZoneName:       "caas",
+				Zone:           "caas",
 				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
 				AppName:        "provider-app",
 				TeamName:       "platform--narvi",
@@ -251,7 +247,7 @@ var _ = Describe("FileExposure Repository", func() {
 				StatusPhase:    "READY",
 				Visibility:     "WORLD",
 				Active:         true,
-				ZoneName:       "caas",
+				Zone:           "caas",
 				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
 				AppName:        "provider-app",
 				TeamName:       "platform--narvi",
@@ -281,7 +277,7 @@ var _ = Describe("FileExposure Repository", func() {
 				StatusPhase:    "READY",
 				Visibility:     "WORLD",
 				Active:         false,
-				ZoneName:       "caas",
+				Zone:           "caas",
 				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
 				AppName:        "provider-app",
 				TeamName:       "platform--narvi",
@@ -304,7 +300,7 @@ var _ = Describe("FileExposure Repository", func() {
 				StatusPhase:    "READY",
 				Visibility:     "ZONE",
 				Active:         true,
-				ZoneName:       "caas",
+				Zone:           "caas",
 				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
 				AppName:        "provider-app",
 				TeamName:       "platform--narvi",

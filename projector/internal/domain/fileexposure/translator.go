@@ -42,13 +42,9 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 		provider = &obj.Spec.Provider
 	}
 
-	var zoneName string
-	var zoneNamespace *string
+	var zone string
 	if obj.Spec.Zone != nil {
-		zoneName = obj.Spec.Zone.Name
-		if obj.Spec.Zone.Namespace != "" {
-			zoneNamespace = &obj.Spec.Zone.Namespace
-		}
+		zone = obj.Spec.Zone.Name
 	}
 
 	publicKeys := []string{}
@@ -65,8 +61,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 		Provider:       provider,
 		Visibility:     strings.ToUpper(string(obj.Spec.Visibility)),
 		Active:         isActiveExposure(obj),
-		ZoneName:       zoneName,
-		ZoneNamespace:  zoneNamespace,
+		Zone:           zone,
 		SFTPPublicKeys: publicKeys,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     shared.MapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
