@@ -25,8 +25,7 @@ type FileSubscriptionData struct {
 	Meta           shared.Metadata
 	StatusPhase    string // "READY", "PENDING", "ERROR", "UNKNOWN"
 	StatusMessage  string
-	ZoneName       string
-	ZoneNamespace  *string
+	Zone           string
 	SFTPPublicKeys []string
 	OwnerAppName   string // resolved to owner Application FK (required)
 	OwnerTeamName  string // used to resolve owner Application FK

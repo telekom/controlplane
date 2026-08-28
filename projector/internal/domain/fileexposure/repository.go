@@ -59,12 +59,12 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 		return fmt.Errorf("find application %q (team %q): %w", data.AppName, data.TeamName, err)
 	}
 
-	zoneID, err := r.deps.FindZoneID(ctx, data.ZoneName)
+	zoneID, err := r.deps.FindZoneID(ctx, data.Zone)
 	if err != nil {
 		if errors.Is(err, infrastructure.ErrEntityNotFound) {
-			return runtime.WrapDependencyMissing("zone", data.ZoneName)
+			return runtime.WrapDependencyMissing("zone", data.Zone)
 		}
-		return fmt.Errorf("find zone %q: %w", data.ZoneName, err)
+		return fmt.Errorf("find zone %q: %w", data.Zone, err)
 	}
 
 	var fileTypeDefID *int
@@ -81,7 +81,7 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 		SetFileType(data.TargetFileType).
 		SetVisibility(entfileexposure.Visibility(data.Visibility)).
 		SetActive(data.Active).
-		SetZoneName(data.ZoneName).
+		SetZoneName(data.Zone).
 		SetSftpPublicKeys(data.SFTPPublicKeys).
 		SetApprovalConfig(data.ApprovalConfig).
 		SetStatusPhase(entfileexposure.StatusPhase(data.StatusPhase)).
@@ -95,16 +95,13 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 	if data.Provider != nil {
 		create.SetProvider(*data.Provider)
 	}
-	if data.ZoneNamespace != nil {
-		create.SetZoneNamespace(*data.ZoneNamespace)
-	}
 
 	exposureID, upsertErr := create.
 		OnConflictColumns(entfileexposure.FieldFileType, entfileexposure.OwnerColumn).
 		Update(func(u *ent.FileExposureUpsert) {
 			u.SetVisibility(entfileexposure.Visibility(data.Visibility))
 			u.SetActive(data.Active)
-			u.SetZoneName(data.ZoneName)
+			u.SetZoneName(data.Zone)
 			u.UpdateSftpPublicKeys()
 			u.UpdateApprovalConfig()
 			u.SetStatusPhase(entfileexposure.StatusPhase(data.StatusPhase))
@@ -115,11 +112,6 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 				u.SetProvider(*data.Provider)
 			} else {
 				u.ClearProvider()
-			}
-			if data.ZoneNamespace != nil {
-				u.SetZoneNamespace(*data.ZoneNamespace)
-			} else {
-				u.ClearZoneNamespace()
 			}
 		}).
 		ID(ctx)

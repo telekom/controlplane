@@ -32,13 +32,9 @@ func (t *Translator) ShouldSkip(obj *filev1.FileSubscription) (bool, string) {
 func (t *Translator) Translate(_ context.Context, obj *filev1.FileSubscription) (*FileSubscriptionData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
-	var zoneName string
-	var zoneNamespace *string
+	var zone string
 	if obj.Spec.Zone != nil {
-		zoneName = obj.Spec.Zone.Name
-		if obj.Spec.Zone.Namespace != "" {
-			zoneNamespace = &obj.Spec.Zone.Namespace
-		}
+		zone = obj.Spec.Zone.Name
 	}
 
 	publicKeys := []string{}
@@ -52,8 +48,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileSubscription) 
 		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:    phase,
 		StatusMessage:  message,
-		ZoneName:       zoneName,
-		ZoneNamespace:  zoneNamespace,
+		Zone:           zone,
 		SFTPPublicKeys: publicKeys,
 		OwnerAppName:   obj.Labels[applicationLabelKey],
 		OwnerTeamName:  shared.TeamNameFromNamespace(obj.Namespace),

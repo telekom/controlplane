@@ -58,12 +58,12 @@ func (r *Repository) Upsert(ctx context.Context, data *FileSubscriptionData) err
 		return fmt.Errorf("find application %q (team %q): %w", data.OwnerAppName, data.OwnerTeamName, err)
 	}
 
-	zoneID, err := r.deps.FindZoneID(ctx, data.ZoneName)
+	zoneID, err := r.deps.FindZoneID(ctx, data.Zone)
 	if err != nil {
 		if errors.Is(err, infrastructure.ErrEntityNotFound) {
-			return runtime.WrapDependencyMissing("zone", data.ZoneName)
+			return runtime.WrapDependencyMissing("zone", data.Zone)
 		}
-		return fmt.Errorf("find zone %q: %w", data.ZoneName, err)
+		return fmt.Errorf("find zone %q: %w", data.Zone, err)
 	}
 
 	var fileTypeDefID *int
@@ -86,7 +86,7 @@ func (r *Repository) Upsert(ctx context.Context, data *FileSubscriptionData) err
 
 	create := r.client.FileSubscription.Create().
 		SetFileType(data.TargetFileType).
-		SetZoneName(data.ZoneName).
+		SetZoneName(data.Zone).
 		SetSftpPublicKeys(data.SFTPPublicKeys).
 		SetStatusPhase(entfilesubscription.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
@@ -98,25 +98,16 @@ func (r *Repository) Upsert(ctx context.Context, data *FileSubscriptionData) err
 		SetNillableFileTypeDefID(fileTypeDefID).
 		SetNillableTargetID(targetExposureID)
 
-	if data.ZoneNamespace != nil {
-		create.SetZoneNamespace(*data.ZoneNamespace)
-	}
-
 	subscriptionID, upsertErr := create.
 		OnConflictColumns(entfilesubscription.FieldFileType, entfilesubscription.OwnerColumn).
 		Update(func(u *ent.FileSubscriptionUpsert) {
-			u.SetZoneName(data.ZoneName)
+			u.SetZoneName(data.Zone)
 			u.UpdateSftpPublicKeys()
 			u.SetStatusPhase(entfilesubscription.StatusPhase(data.StatusPhase))
 			u.SetStatusMessage(data.StatusMessage)
 			u.SetEnvironment(data.Meta.Environment)
 			u.SetNamespace(data.Meta.Namespace)
 			u.SetName(data.Meta.Name)
-			if data.ZoneNamespace != nil {
-				u.SetZoneNamespace(*data.ZoneNamespace)
-			} else {
-				u.ClearZoneNamespace()
-			}
 		}).
 		ID(ctx)
 	if upsertErr != nil {
