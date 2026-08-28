@@ -131,13 +131,11 @@ var _ = Describe("FileSubscription Repository", func() {
 
 	Describe("Upsert", func() {
 		It("should create subscription and link optional edges", func() {
-			zoneNamespace := "zone-ns"
 			data := &filesubscription.FileSubscriptionData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-a", nil),
 				StatusPhase:    "READY",
 				StatusMessage:  "ok",
-				ZoneName:       "caas",
-				ZoneNamespace:  &zoneNamespace,
+				Zone:           "caas",
 				SFTPPublicKeys: []string{"ssh-rsa AAA"},
 				OwnerAppName:   "consumer-app",
 				OwnerTeamName:  "platform--narvi",
@@ -148,8 +146,6 @@ var _ = Describe("FileSubscription Repository", func() {
 			sub, err := client.FileSubscription.Query().Where(entfilesubscription.FileTypeEQ("invoice")).Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.ZoneName).To(Equal("caas"))
-			Expect(sub.ZoneNamespace).NotTo(BeNil())
-			Expect(*sub.ZoneNamespace).To(Equal("zone-ns"))
 			Expect(sub.SftpPublicKeys).To(Equal([]string{"ssh-rsa AAA"}))
 
 			owner, err := sub.QueryOwner().Only(ctx)
@@ -173,7 +169,7 @@ var _ = Describe("FileSubscription Repository", func() {
 			data := &filesubscription.FileSubscriptionData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-b", nil),
 				StatusPhase:    "READY",
-				ZoneName:       "caas",
+				Zone:           "caas",
 				OwnerAppName:   "consumer-app",
 				OwnerTeamName:  "platform--narvi",
 				TargetFileType: "unknown",
@@ -199,7 +195,7 @@ var _ = Describe("FileSubscription Repository", func() {
 		It("should propagate non-not-found app resolver errors", func() {
 			dbErr := errors.New("resolver unavailable")
 			failRepo := filesubscription.NewRepository(client, cache, &mockFileSubscriptionDeps{appErr: dbErr})
-			err := failRepo.Upsert(ctx, &filesubscription.FileSubscriptionData{Meta: shared.NewMetadata("prod--platform--narvi", "sub-d", nil), ZoneName: "caas", OwnerAppName: "consumer-app", OwnerTeamName: "platform--narvi", TargetFileType: "invoice"})
+			err := failRepo.Upsert(ctx, &filesubscription.FileSubscriptionData{Meta: shared.NewMetadata("prod--platform--narvi", "sub-d", nil), Zone: "caas", OwnerAppName: "consumer-app", OwnerTeamName: "platform--narvi", TargetFileType: "invoice"})
 			Expect(err).To(HaveOccurred())
 			Expect(errors.Is(err, dbErr)).To(BeTrue())
 		})
