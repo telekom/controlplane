@@ -217,6 +217,7 @@ var (
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
 		{Name: "api_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "event_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "file_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ApprovalsTable holds the schema information for the "approvals" table.
 	ApprovalsTable = &schema.Table{
@@ -234,6 +235,12 @@ var (
 				Symbol:     "approvals_event_subscriptions_approval",
 				Columns:    []*schema.Column{ApprovalsColumns[19]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "approvals_file_subscriptions_approval",
+				Columns:    []*schema.Column{ApprovalsColumns[20]},
+				RefColumns: []*schema.Column{FileSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -266,6 +273,7 @@ var (
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED"}, Default: "PENDING"},
 		{Name: "api_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
 		{Name: "event_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
+		{Name: "file_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
 	}
 	// ApprovalRequestsTable holds the schema information for the "approval_requests" table.
 	ApprovalRequestsTable = &schema.Table{
@@ -283,6 +291,12 @@ var (
 				Symbol:     "approval_requests_event_subscriptions_approval_requests",
 				Columns:    []*schema.Column{ApprovalRequestsColumns[18]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "approval_requests_file_subscriptions_approval_requests",
+				Columns:    []*schema.Column{ApprovalRequestsColumns[19]},
+				RefColumns: []*schema.Column{FileSubscriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -427,6 +441,147 @@ var (
 			},
 		},
 	}
+	// FileExposuresColumns holds the columns for the "file_exposures" table.
+	FileExposuresColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "file_type", Type: field.TypeString, Size: 2147483647},
+		{Name: "provider", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
+		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
+		{Name: "zone_name", Type: field.TypeString, Size: 2147483647},
+		{Name: "sftp_public_keys", Type: field.TypeJSON},
+		{Name: "approval_config", Type: field.TypeJSON},
+		{Name: "application_exposed_file_types", Type: field.TypeInt},
+		{Name: "file_type_exposures", Type: field.TypeInt, Nullable: true},
+		{Name: "zone_file_exposures", Type: field.TypeInt},
+	}
+	// FileExposuresTable holds the schema information for the "file_exposures" table.
+	FileExposuresTable = &schema.Table{
+		Name:       "file_exposures",
+		Columns:    FileExposuresColumns,
+		PrimaryKey: []*schema.Column{FileExposuresColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "file_exposures_applications_exposed_file_types",
+				Columns:    []*schema.Column{FileExposuresColumns[14]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "file_exposures_file_types_exposures",
+				Columns:    []*schema.Column{FileExposuresColumns[15]},
+				RefColumns: []*schema.Column{FileTypesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "file_exposures_zones_file_exposures",
+				Columns:    []*schema.Column{FileExposuresColumns[16]},
+				RefColumns: []*schema.Column{ZonesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "fileexposure_file_type_application_exposed_file_types",
+				Unique:  true,
+				Columns: []*schema.Column{FileExposuresColumns[7], FileExposuresColumns[14]},
+			},
+		},
+	}
+	// FileSubscriptionsColumns holds the columns for the "file_subscriptions" table.
+	FileSubscriptionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "file_type", Type: field.TypeString, Size: 2147483647},
+		{Name: "zone_name", Type: field.TypeString, Size: 2147483647},
+		{Name: "sftp_public_keys", Type: field.TypeJSON},
+		{Name: "application_subscribed_file_types", Type: field.TypeInt},
+		{Name: "file_subscription_target", Type: field.TypeInt, Nullable: true},
+		{Name: "file_type_subscriptions", Type: field.TypeInt, Nullable: true},
+		{Name: "zone_file_subscriptions", Type: field.TypeInt},
+	}
+	// FileSubscriptionsTable holds the schema information for the "file_subscriptions" table.
+	FileSubscriptionsTable = &schema.Table{
+		Name:       "file_subscriptions",
+		Columns:    FileSubscriptionsColumns,
+		PrimaryKey: []*schema.Column{FileSubscriptionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "file_subscriptions_applications_subscribed_file_types",
+				Columns:    []*schema.Column{FileSubscriptionsColumns[11]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "file_subscriptions_file_exposures_target",
+				Columns:    []*schema.Column{FileSubscriptionsColumns[12]},
+				RefColumns: []*schema.Column{FileExposuresColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "file_subscriptions_file_types_subscriptions",
+				Columns:    []*schema.Column{FileSubscriptionsColumns[13]},
+				RefColumns: []*schema.Column{FileTypesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "file_subscriptions_zones_file_subscriptions",
+				Columns:    []*schema.Column{FileSubscriptionsColumns[14]},
+				RefColumns: []*schema.Column{ZonesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "filesubscription_namespace_name",
+				Unique:  true,
+				Columns: []*schema.Column{FileSubscriptionsColumns[6], FileSubscriptionsColumns[7]},
+			},
+			{
+				Name:    "filesubscription_file_type_application_subscribed_file_types",
+				Unique:  true,
+				Columns: []*schema.Column{FileSubscriptionsColumns[8], FileSubscriptionsColumns[11]},
+			},
+		},
+	}
+	// FileTypesColumns holds the columns for the "file_types" table.
+	FileTypesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "file_type", Type: field.TypeString, Size: 2147483647},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "variant", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "active", Type: field.TypeBool, Default: false},
+	}
+	// FileTypesTable holds the schema information for the "file_types" table.
+	FileTypesTable = &schema.Table{
+		Name:       "file_types",
+		Columns:    FileTypesColumns,
+		PrimaryKey: []*schema.Column{FileTypesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "filetype_file_type",
+				Unique:  true,
+				Columns: []*schema.Column{FileTypesColumns[6]},
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -568,6 +723,9 @@ var (
 		EventExposuresTable,
 		EventSubscriptionsTable,
 		EventTypesTable,
+		FileExposuresTable,
+		FileSubscriptionsTable,
+		FileTypesTable,
 		GroupsTable,
 		MembersTable,
 		PermissionSetsTable,
@@ -586,13 +744,22 @@ func init() {
 	ApplicationsTable.ForeignKeys[1].RefTable = ZonesTable
 	ApprovalsTable.ForeignKeys[0].RefTable = APISubscriptionsTable
 	ApprovalsTable.ForeignKeys[1].RefTable = EventSubscriptionsTable
+	ApprovalsTable.ForeignKeys[2].RefTable = FileSubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[0].RefTable = APISubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[1].RefTable = EventSubscriptionsTable
+	ApprovalRequestsTable.ForeignKeys[2].RefTable = FileSubscriptionsTable
 	EventExposuresTable.ForeignKeys[0].RefTable = ApplicationsTable
 	EventExposuresTable.ForeignKeys[1].RefTable = EventTypesTable
 	EventSubscriptionsTable.ForeignKeys[0].RefTable = ApplicationsTable
 	EventSubscriptionsTable.ForeignKeys[1].RefTable = EventExposuresTable
 	EventTypesTable.ForeignKeys[0].RefTable = TeamsTable
+	FileExposuresTable.ForeignKeys[0].RefTable = ApplicationsTable
+	FileExposuresTable.ForeignKeys[1].RefTable = FileTypesTable
+	FileExposuresTable.ForeignKeys[2].RefTable = ZonesTable
+	FileSubscriptionsTable.ForeignKeys[0].RefTable = ApplicationsTable
+	FileSubscriptionsTable.ForeignKeys[1].RefTable = FileExposuresTable
+	FileSubscriptionsTable.ForeignKeys[2].RefTable = FileTypesTable
+	FileSubscriptionsTable.ForeignKeys[3].RefTable = ZonesTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	PermissionSetsTable.ForeignKeys[0].RefTable = ApplicationsTable
 	TeamsTable.ForeignKeys[0].RefTable = GroupsTable

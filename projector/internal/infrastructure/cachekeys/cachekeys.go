@@ -114,6 +114,38 @@ func ActiveEventType(eventType string) (entityType, lookupKey string) {
 	return "eventtype_active", eventType
 }
 
+// FileTypeDef returns the cache key components for a FileType catalogue
+// entity. File type identifiers are uniform across the environment, so the
+// type string alone is sufficient.
+func FileTypeDef(fileType string) (entityType, lookupKey string) {
+	return "filetype", fileType
+}
+
+// ActiveFileType returns the cache key components for the cluster-wide active
+// FileType for a given type identifier. Only one FileType is considered active
+// at a time per type string, so the team is not part of the key.
+func ActiveFileType(fileType string) (entityType, lookupKey string) {
+	return "filetype_active", fileType
+}
+
+// FileExposure returns the cache key components for a FileExposure entity
+// identified by file type, application name, and team name.
+func FileExposure(fileType, appName, teamName string) (entityType, lookupKey string) {
+	return "fileexposure", fileType + ":" + appName + ":" + teamName
+}
+
+// ActiveFileExposure returns the cache key components for an active
+// FileExposure looked up by file type alone.
+func ActiveFileExposure(fileType string) (entityType, lookupKey string) {
+	return "fileexposure_active", fileType
+}
+
+// FileSubscriptionMeta returns the cache key components for a FileSubscription
+// entity looked up by its Kubernetes metadata (namespace + name).
+func FileSubscriptionMeta(namespace, name string) (entityType, lookupKey string) {
+	return "filesubscription", "meta:" + namespace + ":" + name
+}
+
 // PermissionSet returns the cache key components for a PermissionSet entity
 // identified by its owning application name and team name. PermissionSet is
 // 1:1 with Application, so the pair uniquely identifies it.

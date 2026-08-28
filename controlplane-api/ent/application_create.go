@@ -19,6 +19,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -283,6 +285,36 @@ func (_c *ApplicationCreate) AddSubscribedApis(v ...*ApiSubscription) *Applicati
 		ids[i] = v[i].ID
 	}
 	return _c.AddSubscribedAPIIDs(ids...)
+}
+
+// AddExposedFileTypeIDs adds the "exposed_file_types" edge to the FileExposure entity by IDs.
+func (_c *ApplicationCreate) AddExposedFileTypeIDs(ids ...int) *ApplicationCreate {
+	_c.mutation.AddExposedFileTypeIDs(ids...)
+	return _c
+}
+
+// AddExposedFileTypes adds the "exposed_file_types" edges to the FileExposure entity.
+func (_c *ApplicationCreate) AddExposedFileTypes(v ...*FileExposure) *ApplicationCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddExposedFileTypeIDs(ids...)
+}
+
+// AddSubscribedFileTypeIDs adds the "subscribed_file_types" edge to the FileSubscription entity by IDs.
+func (_c *ApplicationCreate) AddSubscribedFileTypeIDs(ids ...int) *ApplicationCreate {
+	_c.mutation.AddSubscribedFileTypeIDs(ids...)
+	return _c
+}
+
+// AddSubscribedFileTypes adds the "subscribed_file_types" edges to the FileSubscription entity.
+func (_c *ApplicationCreate) AddSubscribedFileTypes(v ...*FileSubscription) *ApplicationCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSubscribedFileTypeIDs(ids...)
 }
 
 // AddExposedEventIDs adds the "exposed_events" edge to the EventExposure entity by IDs.
@@ -600,6 +632,38 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ExposedFileTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ExposedFileTypesTable,
+			Columns: []string{application.ExposedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(fileexposure.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SubscribedFileTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.SubscribedFileTypesTable,
+			Columns: []string{application.SubscribedFileTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

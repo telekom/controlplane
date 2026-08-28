@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -197,6 +198,25 @@ func (_c *ApprovalRequestCreate) SetNillableAPISubscriptionID(id *int) *Approval
 // SetAPISubscription sets the "api_subscription" edge to the ApiSubscription entity.
 func (_c *ApprovalRequestCreate) SetAPISubscription(v *ApiSubscription) *ApprovalRequestCreate {
 	return _c.SetAPISubscriptionID(v.ID)
+}
+
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID.
+func (_c *ApprovalRequestCreate) SetFileSubscriptionID(id int) *ApprovalRequestCreate {
+	_c.mutation.SetFileSubscriptionID(id)
+	return _c
+}
+
+// SetNillableFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID if the given value is not nil.
+func (_c *ApprovalRequestCreate) SetNillableFileSubscriptionID(id *int) *ApprovalRequestCreate {
+	if id != nil {
+		_c = _c.SetFileSubscriptionID(*id)
+	}
+	return _c
+}
+
+// SetFileSubscription sets the "file_subscription" edge to the FileSubscription entity.
+func (_c *ApprovalRequestCreate) SetFileSubscription(v *FileSubscription) *ApprovalRequestCreate {
+	return _c.SetFileSubscriptionID(v.ID)
 }
 
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by ID.
@@ -460,6 +480,23 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.api_subscription_approval_requests = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.FileSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.FileSubscriptionTable,
+			Columns: []string{approvalrequest.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.file_subscription_approval_requests = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.EventSubscriptionIDs(); len(nodes) > 0 {

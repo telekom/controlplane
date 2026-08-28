@@ -130,6 +130,33 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
+// FileExposures is the resolver for the fileExposures field.
+func (r *queryResolver) FileExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) (*ent.FileExposureConnection, error) {
+	return r.client.FileExposure.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileExposureOrder(orderBy),
+			ent.WithFileExposureFilter(where.Filter),
+		)
+}
+
+// FileSubscriptions is the resolver for the fileSubscriptions field.
+func (r *queryResolver) FileSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) (*ent.FileSubscriptionConnection, error) {
+	return r.client.FileSubscription.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileSubscriptionOrder(orderBy),
+			ent.WithFileSubscriptionFilter(where.Filter),
+		)
+}
+
+// FileTypes is the resolver for the fileTypes field.
+func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) (*ent.FileTypeConnection, error) {
+	return r.client.FileType.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileTypeOrder(orderBy),
+			ent.WithFileTypeFilter(where.Filter),
+		)
+}
+
 // PermissionSets is the resolver for the permissionSets field.
 func (r *queryResolver) PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error) {
 	return r.client.PermissionSet.Query().

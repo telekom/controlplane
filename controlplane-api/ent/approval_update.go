@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
@@ -300,6 +301,25 @@ func (_u *ApprovalUpdate) SetAPISubscription(v *ApiSubscription) *ApprovalUpdate
 	return _u.SetAPISubscriptionID(v.ID)
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID.
+func (_u *ApprovalUpdate) SetFileSubscriptionID(id int) *ApprovalUpdate {
+	_u.mutation.SetFileSubscriptionID(id)
+	return _u
+}
+
+// SetNillableFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableFileSubscriptionID(id *int) *ApprovalUpdate {
+	if id != nil {
+		_u = _u.SetFileSubscriptionID(*id)
+	}
+	return _u
+}
+
+// SetFileSubscription sets the "file_subscription" edge to the FileSubscription entity.
+func (_u *ApprovalUpdate) SetFileSubscription(v *FileSubscription) *ApprovalUpdate {
+	return _u.SetFileSubscriptionID(v.ID)
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by ID.
 func (_u *ApprovalUpdate) SetEventSubscriptionID(id int) *ApprovalUpdate {
 	_u.mutation.SetEventSubscriptionID(id)
@@ -327,6 +347,12 @@ func (_u *ApprovalUpdate) Mutation() *ApprovalMutation {
 // ClearAPISubscription clears the "api_subscription" edge to the ApiSubscription entity.
 func (_u *ApprovalUpdate) ClearAPISubscription() *ApprovalUpdate {
 	_u.mutation.ClearAPISubscription()
+	return _u
+}
+
+// ClearFileSubscription clears the "file_subscription" edge to the FileSubscription entity.
+func (_u *ApprovalUpdate) ClearFileSubscription() *ApprovalUpdate {
+	_u.mutation.ClearFileSubscription()
 	return _u
 }
 
@@ -533,6 +559,35 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.FileSubscriptionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.FileSubscriptionTable,
+			Columns: []string{approval.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.FileSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.FileSubscriptionTable,
+			Columns: []string{approval.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -854,6 +909,25 @@ func (_u *ApprovalUpdateOne) SetAPISubscription(v *ApiSubscription) *ApprovalUpd
 	return _u.SetAPISubscriptionID(v.ID)
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID.
+func (_u *ApprovalUpdateOne) SetFileSubscriptionID(id int) *ApprovalUpdateOne {
+	_u.mutation.SetFileSubscriptionID(id)
+	return _u
+}
+
+// SetNillableFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableFileSubscriptionID(id *int) *ApprovalUpdateOne {
+	if id != nil {
+		_u = _u.SetFileSubscriptionID(*id)
+	}
+	return _u
+}
+
+// SetFileSubscription sets the "file_subscription" edge to the FileSubscription entity.
+func (_u *ApprovalUpdateOne) SetFileSubscription(v *FileSubscription) *ApprovalUpdateOne {
+	return _u.SetFileSubscriptionID(v.ID)
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by ID.
 func (_u *ApprovalUpdateOne) SetEventSubscriptionID(id int) *ApprovalUpdateOne {
 	_u.mutation.SetEventSubscriptionID(id)
@@ -881,6 +955,12 @@ func (_u *ApprovalUpdateOne) Mutation() *ApprovalMutation {
 // ClearAPISubscription clears the "api_subscription" edge to the ApiSubscription entity.
 func (_u *ApprovalUpdateOne) ClearAPISubscription() *ApprovalUpdateOne {
 	_u.mutation.ClearAPISubscription()
+	return _u
+}
+
+// ClearFileSubscription clears the "file_subscription" edge to the FileSubscription entity.
+func (_u *ApprovalUpdateOne) ClearFileSubscription() *ApprovalUpdateOne {
+	_u.mutation.ClearFileSubscription()
 	return _u
 }
 
@@ -1117,6 +1197,35 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.FileSubscriptionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.FileSubscriptionTable,
+			Columns: []string{approval.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.FileSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.FileSubscriptionTable,
+			Columns: []string{approval.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

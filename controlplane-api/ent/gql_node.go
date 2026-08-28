@@ -26,6 +26,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
@@ -83,6 +86,21 @@ var eventtypeImplementors = []string{"EventType", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*EventType) IsNode() {}
+
+var fileexposureImplementors = []string{"FileExposure", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*FileExposure) IsNode() {}
+
+var filesubscriptionImplementors = []string{"FileSubscription", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*FileSubscription) IsNode() {}
+
+var filetypeImplementors = []string{"FileType", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*FileType) IsNode() {}
 
 var groupImplementors = []string{"Group", "Node"}
 
@@ -244,6 +262,33 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(eventtype.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, eventtypeImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case fileexposure.Table:
+		query := c.FileExposure.Query().
+			Where(fileexposure.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, fileexposureImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case filesubscription.Table:
+		query := c.FileSubscription.Query().
+			Where(filesubscription.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, filesubscriptionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case filetype.Table:
+		query := c.FileType.Query().
+			Where(filetype.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, filetypeImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -498,6 +543,54 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.EventType.Query().
 			Where(eventtype.IDIn(ids...))
 		query, err := query.CollectFields(ctx, eventtypeImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case fileexposure.Table:
+		query := c.FileExposure.Query().
+			Where(fileexposure.IDIn(ids...))
+		query, err := query.CollectFields(ctx, fileexposureImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case filesubscription.Table:
+		query := c.FileSubscription.Query().
+			Where(filesubscription.IDIn(ids...))
+		query, err := query.CollectFields(ctx, filesubscriptionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case filetype.Table:
+		query := c.FileType.Query().
+			Where(filetype.IDIn(ids...))
+		query, err := query.CollectFields(ctx, filetypeImplementors...)
 		if err != nil {
 			return nil, err
 		}

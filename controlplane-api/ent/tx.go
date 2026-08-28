@@ -33,6 +33,12 @@ type Tx struct {
 	EventSubscription *EventSubscriptionClient
 	// EventType is the client for interacting with the EventType builders.
 	EventType *EventTypeClient
+	// FileExposure is the client for interacting with the FileExposure builders.
+	FileExposure *FileExposureClient
+	// FileSubscription is the client for interacting with the FileSubscription builders.
+	FileSubscription *FileSubscriptionClient
+	// FileType is the client for interacting with the FileType builders.
+	FileType *FileTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// Member is the client for interacting with the Member builders.
@@ -183,6 +189,9 @@ func (tx *Tx) init() {
 	tx.EventExposure = NewEventExposureClient(tx.config)
 	tx.EventSubscription = NewEventSubscriptionClient(tx.config)
 	tx.EventType = NewEventTypeClient(tx.config)
+	tx.FileExposure = NewFileExposureClient(tx.config)
+	tx.FileSubscription = NewFileSubscriptionClient(tx.config)
+	tx.FileType = NewFileTypeClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
 	tx.PermissionSet = NewPermissionSetClient(tx.config)
