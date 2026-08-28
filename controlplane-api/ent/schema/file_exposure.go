@@ -49,11 +49,8 @@ func (FileExposure) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Default(false),
-		field.Text("zone_name").
+		field.Text("zone").
 			NotEmpty(),
-		field.Text("zone_namespace").
-			Optional().
-			Nillable(),
 		field.JSON("sftp_public_keys", []string{}).
 			Default([]string{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),

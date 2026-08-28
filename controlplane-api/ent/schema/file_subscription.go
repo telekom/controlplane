@@ -35,11 +35,8 @@ func (FileSubscription) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("file_type").
 			NotEmpty(),
-		field.Text("zone_name").
+		field.Text("zone").
 			NotEmpty(),
-		field.Text("zone_namespace").
-			Optional().
-			Nillable(),
 		field.JSON("sftp_public_keys", []string{}).
 			Default([]string{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
