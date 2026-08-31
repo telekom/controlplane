@@ -35,7 +35,7 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/gofiber/fiber/v2 v2.52.15
 	github.com/oapi-codegen/fiber-middleware v1.1.0
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.7.0
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/pb33f/libopenapi v0.38.7

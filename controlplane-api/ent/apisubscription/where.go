@@ -658,6 +658,16 @@ func SecurityNotNil() predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldNotNull(FieldSecurity))
 }
 
+// TrafficIsNil applies the IsNil predicate on the "traffic" field.
+func TrafficIsNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIsNull(FieldTraffic))
+}
+
+// TrafficNotNil applies the NotNil predicate on the "traffic" field.
+func TrafficNotNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotNull(FieldTraffic))
+}
+
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.ApiSubscription {
 	return predicate.ApiSubscription(func(s *sql.Selector) {

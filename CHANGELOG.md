@@ -1,3 +1,19 @@
+# [0.24.0](https://github.com/telekom/controlplane/compare/v0.23.0...v0.24.0) (2026-08-27)
+
+
+### Bug Fixes
+
+* **common:** preserve original error when status update fails ([#545](https://github.com/telekom/controlplane/issues/545)) ([02d5164](https://github.com/telekom/controlplane/commit/02d51643d85e3b13c7e4a6e41371b3ff0275fbf4))
+* **rover:** avoid panic if rover namespace is invalid ([#570](https://github.com/telekom/controlplane/issues/570)) ([c2afce1](https://github.com/telekom/controlplane/commit/c2afce1a1023fe4496cfe1456def61d2d661a09f))
+
+
+### Features
+
+* **agentic:** add agent 2 agent support  ([#535](https://github.com/telekom/controlplane/issues/535)) ([2191d79](https://github.com/telekom/controlplane/commit/2191d791500a5388d3ad378bd31d3b2c84abd49e))
+* **cpapi:** add Failover type and resolver for Traffic exposure ([#559](https://github.com/telekom/controlplane/issues/559)) ([8cfa0e8](https://github.com/telekom/controlplane/commit/8cfa0e89de6760142801338b89b9e752fb9190bd))
+* **cpapi:** add permissionsURL and store in db ([#564](https://github.com/telekom/controlplane/issues/564)) ([397e21c](https://github.com/telekom/controlplane/commit/397e21cbaeeff587e55c25bb6114515c038f5680))
+* **cpapi:** add rate limiting to ApiSubscriptions ([#610](https://github.com/telekom/controlplane/issues/610)) ([b69b2e6](https://github.com/telekom/controlplane/commit/b69b2e6d30026e30c3ac6e69f6d31ad16cf52f87))
+
 # [0.23.0](https://github.com/telekom/controlplane/compare/v0.22.1...v0.23.0) (2026-08-17)
 
 

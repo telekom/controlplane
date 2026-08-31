@@ -473,6 +473,11 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, apisubscription.FieldSecurity)
 				fieldSeen[apisubscription.FieldSecurity] = struct{}{}
 			}
+		case "traffic":
+			if _, ok := fieldSeen[apisubscription.FieldTraffic]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldTraffic)
+				fieldSeen[apisubscription.FieldTraffic] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:

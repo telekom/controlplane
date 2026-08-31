@@ -2567,6 +2567,38 @@ func (ec *executionContext) fieldContext_ApiSubscription_security(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiSubscription_traffic(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscription_traffic(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Traffic, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiSubscriptionTraffic) graphql.Marshaler {
+			return ec.marshalOApiSubscriptionTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionTraffic(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscription_traffic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApiSubscriptionTraffic(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApiSubscription_owner(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -22018,6 +22050,11 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			}
 		case "security":
 			out.Values[i] = ec._ApiSubscription_security(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "traffic":
+			out.Values[i] = ec._ApiSubscription_traffic(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
