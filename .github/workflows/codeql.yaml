@@ -1,0 +1,86 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Repo-level CodeQL analysis, replacing the previous per-module CodeQL jobs
+# in reusable-go-ci.yaml (one per each of the 20+ Go modules). Since all
+# modules share largely the same dependency graph, running CodeQL init +
+# analyze once for the whole repository - tracing a build of every module
+# within a single database - gives equivalent coverage for a fraction of
+# the cost (one CodeQL init/analyze pair instead of 20+).
+#
+# Also runs on pull requests targeting main, so findings gate the merge
+# instead of only surfacing afterwards (push to main) or up to a week
+# later (weekly schedule). It's still a single repo-wide init/analyze
+# pair per run - not per module - to keep the pre-merge cost bounded.
+# See .github/workflows.md for the full CI strategy.
+
+name: CodeQL Analysis
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: '30 2 * * 1'  # Weekly, Monday 2:30 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL Analysis (repo-wide)
+    runs-on: ubuntu-latest
+    # Skip while the PR is still a draft - CodeQL only runs once the
+    # author marks it ready for review (or on push/schedule/dispatch).
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # CodeQL requires full history
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "common/go.mod"
+          cache: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          languages: go
+          build-mode: manual # Set to manual as we provide a build step below
+
+      - name: Build all modules for CodeQL
+        shell: bash
+        run: |
+          # Trace a build of every configured module into the single
+          # CodeQL database initialized above. Uses each module's own
+          # `make build` target (not `go build` directly) so CodeQL sees
+          # the same build inputs (generated code, manifests, build flags)
+          # as the rest of CI/release - see AGENTS.md.
+          modules=$(yq -o=json '.modules[].path' .github/ci/modules.yaml | jq -r .)
+          while IFS= read -r module; do
+            [ -z "$module" ] && continue
+            echo "Building $module for CodeQL..."
+            (cd "$module" && make build)
+          done <<<"$modules"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          category: "/language:go"
