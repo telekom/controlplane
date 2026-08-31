@@ -5,6 +5,7 @@ application/internal/handler/application/handler_test.go
   s_ddc1459e8dc1d5::t_7ce7642c8ff483 66,203-204,233
 admin/internal/handler/zone/identity.go
   h_0f030e7424553c 127
+  s_eda337cdb55c4a::t_71dc9df94ce139 120
 admin/internal/handler/zone/handler_test.go
   s_ddc1459e8dc1d5::t_ddcea10a979a59 67
   s_ac5b184baadb88::t_4538ee8ba0159f 89-91,166
@@ -23,6 +24,7 @@ admin/internal/handler/zone/oidc_test.go
 admin/api/v1/zone_types.go
   s_3592ab8d879978::t_41778c33d95659 429-439
   h_0f030e7424553c 163-164,167,169-171,173-175,177-178,180,182,186,450,453,456-461,465-466,470-471
+  s_eda337cdb55c4a::t_71dc9df94ce139 166,168,172
 admin/internal/handler/zone/handler.go
   s_ddc1459e8dc1d5::t_bf683370b60644 167
 admin/api/v1/zone_types_test.go
@@ -30,10 +32,13 @@ admin/api/v1/zone_types_test.go
   s_3592ab8d879978::t_2fc72bffa87b98 88
 admin/internal/handler/util/naming/naming.go
   h_0f030e7424553c 16,19,24,29-30,35,40,45-47,50,55,57-63
+  s_eda337cdb55c4a::t_71dc9df94ce139 41-42,48-49
 admin/api/go.mod
   s_36e92aac06a6ac::t_c5515243c33a58 46
 admin/api/go.sum
   s_36e92aac06a6ac::t_2ee84c29cabf52 18-23
+admin/cmd/main.go
+  s_eda337cdb55c4a::t_71dc9df94ce139 161-163
 ---
 {
   "schema_version": "authorship/3.0.0",
@@ -74,6 +79,14 @@ admin/api/go.sum
       "agent_id": {
         "tool": "opencode",
         "id": "ses_00074180effe7W0L19V1wMaxTr",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_eda337cdb55c4a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fa9498926ffeWyxt31r2Dvmpxa",
         "model": "claude-opus-5"
       },
       "human_author": "Ron Gummich <ron.gummich@telekom.de>"
