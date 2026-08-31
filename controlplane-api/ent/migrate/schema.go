@@ -179,13 +179,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "applications_teams_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[18]},
+				Columns:    []*schema.Column{ApplicationsColumns[19]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "applications_zones_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[19]},
+				Columns:    []*schema.Column{ApplicationsColumns[20]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -194,7 +194,7 @@ var (
 			{
 				Name:    "application_name_team_applications",
 				Unique:  true,
-				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[18]},
+				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[19]},
 			},
 		},
 	}
