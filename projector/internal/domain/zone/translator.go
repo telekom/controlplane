@@ -37,19 +37,19 @@ func (t *Translator) Translate(_ context.Context, obj *adminv1.Zone) (*ZoneData,
 		gatewayURL = &url
 	}
 
-	var issuerURL *string
+	var issuerURL, permissionsURL *string
 	if preset, err := obj.Spec.GetDefaultPreset(); err == nil {
 		status, statusErr := obj.Status.GetPreset(preset.Name)
-		if statusErr == nil && status.Links.Issuer != "" {
-			u := status.Links.Issuer
-			issuerURL = &u
+		if statusErr == nil {
+			if status.Links.Issuer != "" {
+				u := status.Links.Issuer
+				issuerURL = &u
+			}
+			if status.Links.PermissionsUrl != "" {
+				u := status.Links.PermissionsUrl
+				permissionsURL = &u
+			}
 		}
-	}
-
-	var permissionsURL *string
-	if obj.Status.Links.PermissionsUrl != "" {
-		u := obj.Status.Links.PermissionsUrl
-		permissionsURL = &u
 	}
 
 	return &ZoneData{
