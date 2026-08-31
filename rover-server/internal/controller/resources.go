@@ -72,6 +72,7 @@ var resourceKinds = []resourceKind{
 	{apiVersion: roverv1.GroupVersion.String(), kind: "Rover", pathPrefix: "/rovers"},
 	{apiVersion: roverv1.GroupVersion.String(), kind: "ApiSpecification", pathPrefix: "/apispecifications"},
 	{apiVersion: roverv1.GroupVersion.String(), kind: "EventSpecification", pathPrefix: "/eventspecifications"},
+	{apiVersion: roverv1.GroupVersion.String(), kind: "FileSpecification", pathPrefix: "/filespecifications"},
 	{apiVersion: roverv1.GroupVersion.String(), kind: "Roadmap", pathPrefix: "/apiroadmaps"},
 	{apiVersion: roverv1.GroupVersion.String(), kind: "ApiChangelog", pathPrefix: "/apichangelogs"},
 	{apiVersion: roverv1.GroupVersion.String(), kind: "McpSpecification", pathPrefix: "/mcpspecifications"},
@@ -227,10 +228,12 @@ func (r *ResourcesControllerImpl) collectResourcePage(
 	case 2:
 		return collectResourcePage(ctx, prefix, r.stores.EventSpecificationStore, rk, limit, cursor.Cursor)
 	case 3:
-		return collectResourcePage(ctx, prefix, r.stores.RoadmapStore, rk, limit, cursor.Cursor)
+		return collectResourcePage(ctx, prefix, r.stores.FileSpecificationStore, rk, limit, cursor.Cursor)
 	case 4:
-		return collectResourcePage(ctx, prefix, r.stores.ApiChangelogStore, rk, limit, cursor.Cursor)
+		return collectResourcePage(ctx, prefix, r.stores.RoadmapStore, rk, limit, cursor.Cursor)
 	case 5:
+		return collectResourcePage(ctx, prefix, r.stores.ApiChangelogStore, rk, limit, cursor.Cursor)
+	case 6:
 		return collectResourcePage(ctx, prefix, r.stores.McpSpecificationStore, rk, limit, cursor.Cursor)
 	default:
 		return nil, "", "", fmt.Errorf("invalid resource kind %d", cursor.Kind)

@@ -31,11 +31,11 @@ import (
 
 var _ = Describe("Resource pagination", func() {
 	It("round trips an aggregate cursor", func() {
-		cursor := resourceCursor{Version: 1, Kind: 5, Cursor: "next:/?team=grüße;offset=7"}
+		cursor := resourceCursor{Version: 1, Kind: 6, Cursor: "next:/?team=grüße;offset=7"}
 
 		encoded, err := encodeResourceCursor(cursor)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(encoded).To(Equal("eyJ2IjoxLCJrIjo1LCJjIjoibmV4dDovP3RlYW09Z3LDvMOfZTtvZmZzZXQ9NyJ9"))
+		Expect(encoded).To(Equal("eyJ2IjoxLCJrIjo2LCJjIjoibmV4dDovP3RlYW09Z3LDvMOfZTtvZmZzZXQ9NyJ9"))
 
 		decoded, err := decodeResourceCursor(encoded)
 		Expect(err).NotTo(HaveOccurred())
@@ -54,7 +54,7 @@ var _ = Describe("Resource pagination", func() {
 		Entry("invalid JSON", encodeJSON(`{`)),
 		Entry("unknown version", encodeJSON(`{"v":2,"k":0,"c":""}`)),
 		Entry("negative kind", encodeJSON(`{"v":1,"k":-1,"c":""}`)),
-		Entry("kind past final store", encodeJSON(`{"v":1,"k":6,"c":""}`)),
+		Entry("kind past final store", encodeJSON(`{"v":1,"k":7,"c":""}`)),
 	)
 
 	It("shares one limit across resource kinds", func() {
@@ -74,6 +74,7 @@ var _ = Describe("Resource pagination", func() {
 			listCall{kind: "Rover", limit: 2},
 			listCall{kind: "ApiSpecification", limit: 1},
 			listCall{kind: "EventSpecification", limit: 1},
+			listCall{kind: "FileSpecification", limit: 1},
 			listCall{kind: "Roadmap", limit: 1},
 			listCall{kind: "ApiChangelog", limit: 1},
 			listCall{kind: "McpSpecification", limit: 1},
@@ -112,6 +113,7 @@ var _ = Describe("Resource pagination", func() {
 			listCall{kind: "Rover", limit: 1},
 			listCall{kind: "ApiSpecification", limit: 1},
 			listCall{kind: "EventSpecification", limit: 1},
+			listCall{kind: "FileSpecification", limit: 1},
 			listCall{kind: "Roadmap", limit: 1},
 			listCall{kind: "ApiChangelog", limit: 1},
 			listCall{kind: "McpSpecification", limit: 1},
@@ -127,7 +129,7 @@ var _ = Describe("Resource pagination", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(response.Items).To(HaveLen(1))
 		Expect(response.UnderscoreLinks.Next).To(BeEmpty())
-		Expect(fixture.calls).To(HaveLen(6))
+		Expect(fixture.calls).To(HaveLen(7))
 	})
 
 	It("continues at the next non-empty kind", func() {
@@ -141,7 +143,7 @@ var _ = Describe("Resource pagination", func() {
 		Expect(err).NotTo(HaveOccurred())
 		cursor, err := decodeResourceCursor(first.UnderscoreLinks.Next)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cursor).To(Equal(resourceCursor{Version: 1, Kind: 5, Cursor: "mcp-self"}))
+		Expect(cursor).To(Equal(resourceCursor{Version: 1, Kind: 6, Cursor: "mcp-self"}))
 
 		second, err := fixture.controller.GetAll(teamContext(), resourceParams(1, first.UnderscoreLinks.Next))
 		Expect(err).NotTo(HaveOccurred())
@@ -157,7 +159,7 @@ var _ = Describe("Resource pagination", func() {
 		Expect(response.Items).To(BeEmpty())
 		Expect(response.UnderscoreLinks.Self).To(BeEmpty())
 		Expect(response.UnderscoreLinks.Next).To(BeEmpty())
-		Expect(fixture.calls).To(HaveLen(6))
+		Expect(fixture.calls).To(HaveLen(7))
 	})
 
 	It("includes MCP specifications", func() {
@@ -168,6 +170,16 @@ var _ = Describe("Resource pagination", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(response.Items).To(ConsistOf(HaveField("Kind", "McpSpecification")))
+	})
+
+	It("includes File specifications", func() {
+		fixture := newResourceFixture()
+		fixture.fileSpecifications = page(fileSpecification("file"))
+
+		response, err := fixture.controller.GetAll(teamContext(), resourceParams(1, ""))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Items).To(ConsistOf(HaveField("Kind", "FileSpecification")))
 	})
 
 	It("uses composite resource IDs in paths", func() {
@@ -249,6 +261,7 @@ var _ = Describe("Resource pagination", func() {
 		Entry("Rover", "Rover", func(f *resourceFixture) { f.rovers = failedPage[*roverv1.Rover] }),
 		Entry("ApiSpecification", "ApiSpecification", func(f *resourceFixture) { f.apiSpecifications = failedPage[*roverv1.ApiSpecification] }),
 		Entry("EventSpecification", "EventSpecification", func(f *resourceFixture) { f.eventSpecifications = failedPage[*roverv1.EventSpecification] }),
+		Entry("FileSpecification", "FileSpecification", func(f *resourceFixture) { f.fileSpecifications = failedPage[*roverv1.FileSpecification] }),
 		Entry("Roadmap", "Roadmap", func(f *resourceFixture) { f.roadmaps = failedPage[*roverv1.Roadmap] }),
 		Entry("ApiChangelog", "ApiChangelog", func(f *resourceFixture) { f.apiChangelogs = failedPage[*roverv1.ApiChangelog] }),
 		Entry("McpSpecification", "McpSpecification", func(f *resourceFixture) { f.mcpSpecifications = failedPage[*roverv1.McpSpecification] }),
@@ -271,6 +284,7 @@ type resourceFixture struct {
 	rovers              func(store.ListOpts) (*store.ListResponse[*roverv1.Rover], error)
 	apiSpecifications   func(store.ListOpts) (*store.ListResponse[*roverv1.ApiSpecification], error)
 	eventSpecifications func(store.ListOpts) (*store.ListResponse[*roverv1.EventSpecification], error)
+	fileSpecifications  func(store.ListOpts) (*store.ListResponse[*roverv1.FileSpecification], error)
 	roadmaps            func(store.ListOpts) (*store.ListResponse[*roverv1.Roadmap], error)
 	apiChangelogs       func(store.ListOpts) (*store.ListResponse[*roverv1.ApiChangelog], error)
 	mcpSpecifications   func(store.ListOpts) (*store.ListResponse[*roverv1.McpSpecification], error)
@@ -281,6 +295,7 @@ func newResourceFixture() *resourceFixture {
 		rovers:              page[*roverv1.Rover](),
 		apiSpecifications:   page[*roverv1.ApiSpecification](),
 		eventSpecifications: page[*roverv1.EventSpecification](),
+		fileSpecifications:  page[*roverv1.FileSpecification](),
 		roadmaps:            page[*roverv1.Roadmap](),
 		apiChangelogs:       page[*roverv1.ApiChangelog](),
 		mcpSpecifications:   page[*roverv1.McpSpecification](),
@@ -292,6 +307,9 @@ func newResourceFixture() *resourceFixture {
 	})
 	stores.EventSpecificationStore = resourceStore(f, "EventSpecification", func(opts store.ListOpts) (*store.ListResponse[*roverv1.EventSpecification], error) {
 		return f.eventSpecifications(opts)
+	})
+	stores.FileSpecificationStore = resourceStore(f, "FileSpecification", func(opts store.ListOpts) (*store.ListResponse[*roverv1.FileSpecification], error) {
+		return f.fileSpecifications(opts)
 	})
 	stores.RoadmapStore = resourceStore(f, "Roadmap", func(opts store.ListOpts) (*store.ListResponse[*roverv1.Roadmap], error) { return f.roadmaps(opts) })
 	stores.ApiChangelogStore = resourceStore(f, "ApiChangelog", func(opts store.ListOpts) (*store.ListResponse[*roverv1.ApiChangelog], error) {
@@ -359,4 +377,8 @@ func apiSpecification(name string) *roverv1.ApiSpecification {
 
 func mcpSpecification(name string) *roverv1.McpSpecification {
 	return &roverv1.McpSpecification{ObjectMeta: objectMeta(name)}
+}
+
+func fileSpecification(name string) *roverv1.FileSpecification {
+	return &roverv1.FileSpecification{ObjectMeta: objectMeta(name)}
 }
