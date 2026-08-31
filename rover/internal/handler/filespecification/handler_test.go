@@ -6,6 +6,7 @@ package filespecification
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -43,6 +44,8 @@ var _ = Describe("FileSpecificationHandler", func() {
 		return &roverv1.FileSpecification{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 			Spec: roverv1.FileSpecificationSpec{
+				Type:          strings.ReplaceAll(name, "-", "."),
+				Version:       "1.0.0",
 				Description:   "demo file type",
 				Specification: "file-id-123",
 				StorageType:   roverv1.FileStorageTypeSFTP,
@@ -110,7 +113,8 @@ var _ = Describe("FileSpecificationHandler", func() {
 	})
 
 	It("should normalize the FileType name derived from the specification name", func() {
-		fileSpec := newFileSpec("De.Telekom.Foo.v1")
+		fileSpec := newFileSpec("de-telekom-foo-v1")
+		fileSpec.Spec.Type = "De.Telekom.Foo.v1"
 
 		Expect(handler.CreateOrUpdate(newContext(), fileSpec)).To(Succeed())
 

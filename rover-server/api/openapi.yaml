@@ -41,6 +41,8 @@ tags:
     description: Manage ApiSpecifications
   - name: EventSpecification
     description: Manage EventSpecifications
+  - name: FileSpecification
+    description: Manage FileSpecifications
   - name: McpSpecification
     description: Manage McpSpecifications
   - name: AgentSpecification
@@ -1056,6 +1058,295 @@ paths:
             - tardis:user:all
             - tardis:user:read
             - tardis:user:obfuscated
+  /filespecifications:
+    get:
+      tags:
+        - FileSpecification
+      summary: Find all FileSpecifications
+      description: Find all FileSpecifications of a Team
+      operationId: getAllFileSpecifications
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              $ref: '#/components/headers/XTotalCount'
+            X-Result-Count:
+              $ref: '#/components/headers/XResultCount'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileSpecificationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+    post:
+      tags:
+        - FileSpecification
+      summary: Create a FileSpecification
+      description: >-
+        Create a FileSpecification. Creating and updating resources is
+        asynchronous, which is why the status is given as an answer to a
+        POST/PUT request, since it is possible that the resource to be created
+        has not yet been processed at the time the response is created. If the
+        status after creation is in state "Processing", the resource must be
+        queried with GET to see whether it was created successfully or whether
+        errors/warnings are written in the status. If the creation/update is
+        incorrect, the processing status will be set to blocked. Otherwise to
+        "failed". Status 201 means, that we accepted the request and there are
+        no syntactic or semantic errors, but there can occur failures in the
+        after processing. That will be shown in the status if you request the
+        appropriate resource.
+      operationId: createFileSpecification
+      deprecated: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileSpecificationCreateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+            - tardis:user:all
+  /filespecifications/{fileSpecificationId}:
+    get:
+      tags:
+        - FileSpecification
+      summary: Find an existing FileSpecification
+      description: Find an existing FileSpecification
+      operationId: getFileSpecification
+      parameters:
+        - name: fileSpecificationId
+          description: The unique id of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+    put:
+      tags:
+        - FileSpecification
+      summary: Update an existing FileSpecification
+      description: >-
+        Update an existing FileSpecification. Creating and updating resources
+        is asynchronous, which is why the status is given as an answer to a
+        POST/PUT request, since it is possible that the resource to be created
+        has not yet been processed at the time the response is created. If the
+        status after creation is in state "Processing", the resource must be
+        queried with GET to see whether it was created successfully or whether
+        errors/warnings are written in the status. If the creation/update is
+        incorrect, the processing status will be set to blocked. Otherwise to
+        "failed". Status 201 means, that we accepted the request and there are
+        no syntactic or semantic errors, but there can occur failures in the
+        after processing. That will be shown in the status if you request the
+        appropriate resource.
+      operationId: updateFileSpecification
+      parameters:
+        - name: fileSpecificationId
+          description: The unique id of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileSpecificationUpdateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+            - tardis:user:all
+    delete:
+      tags:
+        - FileSpecification
+      summary: Delete a FileSpecification
+      description: >
+        **Important:** The deletion is done asynchronously to ensure that the
+        resource was actually deleted, use this or the GET resource until you
+        receive a 404 response.
+
+        Delete a FileSpecification
+      operationId: deleteFileSpecification
+      parameters:
+        - name: fileSpecificationId
+          description: The unique id of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: DELETED
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+            - tardis:user:all
+  /filespecifications/{fileSpecificationId}/status:
+    get:
+      tags:
+        - FileSpecification
+      summary: Find an existing FileSpecification and return its status
+      description: Find an existing FileSpecification and return its status
+      operationId: getFileSpecificationStatus
+      parameters:
+        - name: fileSpecificationId
+          description: The unique id of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
   /apiroadmaps:
     get:
       tags:
@@ -1896,7 +2187,7 @@ paths:
       summary: List all resources for a team
       description: >-
         Returns one aggregate page of Rover, ApiSpecification, EventSpecification,
-        Roadmap, ApiChangelog, and McpSpecification references for exactly one team.
+        FileSpecification, Roadmap, ApiChangelog, and McpSpecification references for exactly one team.
         Team tokens may omit group and team; group and admin callers must provide both.
         The cursor is opaque and the limit applies across all resource kinds.
       operationId: getAllResources
@@ -3399,6 +3690,65 @@ components:
     EventSpecificationCreateRequest:
       allOf:
         - $ref: '#/components/schemas/EventSpecification'
+        - type: object
+          properties:
+            team:
+              type: string
+              example: hyperion
+              description: >-
+                This field is only used for hub-scoped access to control the
+                target team of the resource. For everything else, it can be
+                ignored
+    FileSpecification:
+      type: object
+      required:
+        - type
+        - version
+        - description
+      properties:
+        type:
+          description: The file type identifier. May be dot-separated (normalized to hyphens) or already hyphenated; metadata.name must equal the normalized value.
+          type: string
+          example: demo-invoices-v1
+        version:
+          type: string
+          example: 1.0.0
+        description:
+          description: A short description for this file type
+          type: string
+          example: Used for invoice file exchange
+    FileSpecificationListResponse:
+      type: object
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileSpecificationResponse'
+    FileSpecificationResponse:
+      required:
+        - id
+        - type
+        - version
+        - description
+      allOf:
+        - $ref: '#/components/schemas/FileSpecification'
+        - type: object
+          properties:
+            status:
+              $ref: '#/components/schemas/Status'
+            id:
+              readOnly: true
+              description: Your file type name (normalized, dots replaced with dashes)
+              type: string
+              example: my-hub--my-team--demo-invoices-v1
+    FileSpecificationUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/FileSpecification'
+    FileSpecificationCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/FileSpecification'
         - type: object
           properties:
             team:

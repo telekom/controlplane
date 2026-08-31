@@ -19,7 +19,7 @@ func MakeFileTypeName(fileType string) string {
 
 // MakeFileSpecificationName derives the FileType name from a FileSpecification.
 func MakeFileSpecificationName(fileSpec *FileSpecification) string {
-	return MakeFileTypeName(fileSpec.Name)
+	return MakeFileTypeName(fileSpec.Spec.Type)
 }
 
 // FileStorageType selects the file-transfer backend used to store/exchange files
@@ -37,9 +37,18 @@ func (t FileStorageType) String() string {
 }
 
 // FileSpecificationSpec defines the desired state of FileSpecification.
-// It mirrors the internal Rover-domain form from spec_dcp: only description and the
-// backend selector are stored; the file type identifier lives in metadata.name.
 type FileSpecificationSpec struct {
+	// Type is the file type identifier.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	Type string `json:"type"`
+
+	// Version is the file type specification version.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^\d+.*$`
+	Version string `json:"version"`
+
 	// Description provides a human-readable summary of this file type.
 	// +optional
 	Description string `json:"description,omitempty"`

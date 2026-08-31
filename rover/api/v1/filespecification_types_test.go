@@ -18,6 +18,7 @@ var _ = Describe("FileSpecification Types", func() {
 			func(name, expected string) {
 				fileSpec := &v1.FileSpecification{
 					ObjectMeta: metav1.ObjectMeta{Name: name},
+					Spec:       v1.FileSpecificationSpec{Type: name},
 				}
 				Expect(v1.MakeFileSpecificationName(fileSpec)).To(Equal(expected))
 			},

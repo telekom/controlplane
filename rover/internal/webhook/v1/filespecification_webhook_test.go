@@ -218,29 +218,57 @@ var _ = Describe("File Type (SFTP) Validation", func() {
 			validator = &FileSpecificationCustomValidator{client: k8sClient}
 		})
 
-		newFileSpec := func(name string, storageType roverv1.FileStorageType) *roverv1.FileSpecification {
+		newFileSpec := func(storageType roverv1.FileStorageType) *roverv1.FileSpecification {
 			return &roverv1.FileSpecification{
-				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-				Spec:       roverv1.FileSpecificationSpec{Description: "demo", StorageType: storageType},
+				ObjectMeta: metav1.ObjectMeta{Name: "demo-sftp-spec-v1", Namespace: "default"},
+				Spec: roverv1.FileSpecificationSpec{
+					Type:        "demo.sftp.spec.v1",
+					Version:     "1.0.0",
+					Description: "demo",
+					StorageType: storageType,
+				},
 			}
 		}
 
 		It("should accept a FileSpecification with the sftp storageType", func() {
-			warnings, err := validator.ValidateCreate(ctx, newFileSpec("demo-sftp-spec-v1", roverv1.FileStorageTypeSFTP))
+			warnings, err := validator.ValidateCreate(ctx, newFileSpec(roverv1.FileStorageTypeSFTP))
 			Expect(warnings).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should accept a FileSpecification with an empty storageType (defaulted by CRD)", func() {
-			warnings, err := validator.ValidateCreate(ctx, newFileSpec("demo-sftp-spec-v1", ""))
+			warnings, err := validator.ValidateCreate(ctx, newFileSpec(""))
 			Expect(warnings).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should reject a FileSpecification with an unsupported storageType", func() {
-			_, err := validator.ValidateCreate(ctx, newFileSpec("demo-sftp-spec-v1", "s3"))
+			_, err := validator.ValidateCreate(ctx, newFileSpec("s3"))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("spec.storageType must be"))
+		})
+
+		It("should reject a FileSpecification whose name does not match its type", func() {
+			fileSpec := newFileSpec(roverv1.FileStorageTypeSFTP)
+			fileSpec.Spec.Type = "demo.other.v1"
+
+			_, err := validator.ValidateCreate(ctx, fileSpec)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("metadata.name must match"))
+		})
+
+		It("should validate updates with the same rules as creates", func() {
+			fileSpec := newFileSpec(roverv1.FileStorageTypeSFTP)
+
+			warnings, err := validator.ValidateUpdate(ctx, fileSpec, fileSpec)
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should accept deletion", func() {
+			warnings, err := validator.ValidateDelete(ctx, newFileSpec(roverv1.FileStorageTypeSFTP))
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })

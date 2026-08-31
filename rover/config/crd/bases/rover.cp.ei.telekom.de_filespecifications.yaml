@@ -44,10 +44,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: |-
-              FileSpecificationSpec defines the desired state of FileSpecification.
-              It mirrors the internal Rover-domain form from spec_dcp: only description and the
-              backend selector are stored; the file type identifier lives in metadata.name.
+            description: FileSpecificationSpec defines the desired state of FileSpecification.
             properties:
               description:
                 description: Description provides a human-readable summary of this
@@ -64,6 +61,18 @@ spec:
                 enum:
                 - sftp
                 type: string
+              type:
+                description: Type is the file type identifier.
+                maxLength: 253
+                minLength: 1
+                type: string
+              version:
+                description: Version is the file type specification version.
+                pattern: ^\d+.*$
+                type: string
+            required:
+            - type
+            - version
             type: object
           status:
             description: FileSpecificationStatus defines the observed state of FileSpecification.

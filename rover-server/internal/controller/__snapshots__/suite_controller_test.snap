@@ -1618,3 +1618,167 @@
  "items": null
 }
 ---
+
+[FileSpecification Controller Get FileSpecification resource should return the FileSpecification successfully - 1]
+{
+ "description": "used for dds integration demo",
+ "id": "eni--galatea--demo-invoices-v1",
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "demo.invoices.v1",
+ "version": "1.0.0"
+}
+---
+
+[FileSpecification Controller Get FileSpecification resource should fail to get a non-existent FileSpecification - 1]
+{
+ "detail": "Resource eni--galatea--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[FileSpecification Controller Get FileSpecification resource should fail to get a FileSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[FileSpecification Controller GetAll FileSpecifications resource should return all FileSpecifications successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/filespecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "used for dds integration demo",
+   "id": "eni--galatea--demo-invoices-v1",
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "demo.invoices.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[FileSpecification Controller GetAll FileSpecifications resource should return all FileSpecifications successfully - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/filespecifications?cursor="
+ }
+}
+---
+
+[FileSpecification Controller GetAll FileSpecifications resource should return an empty list if no FileSpecifications exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/filespecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "used for dds integration demo",
+   "id": "eni--galatea--demo-invoices-v1",
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "demo.invoices.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[FileSpecification Controller GetAll FileSpecifications resource should return an empty list if no FileSpecifications exist - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/filespecifications?cursor="
+ }
+}
+---
+
+[FileSpecification Controller Delete FileSpecification resource should fail to delete a non-existent FileSpecification - 1]
+{
+ "detail": "Resource eni--galatea--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[FileSpecification Controller Delete FileSpecification resource should fail to delete a FileSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[FileSpecification Controller GetStatus FileSpecification resource should return the status of the FileSpecification successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[FileSpecification Controller GetStatus FileSpecification resource should fail to get the status of a non-existent FileSpecification - 1]
+{
+ "detail": "Resource eni--galatea--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[FileSpecification Controller GetStatus FileSpecification resource should fail to get the status of a FileSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[FileSpecification Controller Update FileSpecification resource should update the FileSpecification successfully - 1]
+{
+ "description": "used for dds integration demo",
+ "id": "eni--galatea--demo-invoices-v1",
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "demo.invoices.v1",
+ "version": "1.0.0"
+}
+---
+
+[FileSpecification Controller Update FileSpecification resource should fail to update a FileSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---

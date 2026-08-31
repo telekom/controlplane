@@ -7,6 +7,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -65,6 +66,17 @@ func (v *FileSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Co
 			string(st),
 			fmt.Sprintf("spec.storageType must be %q", roverv1.FileStorageTypeSFTP),
 		)
+	}
+	expectedName := roverv1.MakeFileSpecificationName(filespecification)
+	if filespecification.Name != expectedName {
+		valErr.AddInvalidError(
+			field.NewPath("metadata").Child("name"),
+			filespecification.Name,
+			fmt.Sprintf("metadata.name must match the normalized spec.type %q", expectedName),
+		)
+	}
+	if strings.TrimSpace(filespecification.Spec.Type) == "" {
+		valErr.AddRequiredError(field.NewPath("spec").Child("type"), "spec.type is required")
 	}
 
 	return valErr.BuildWarnings(), valErr.BuildError()
