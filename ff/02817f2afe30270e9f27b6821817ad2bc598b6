@@ -1,0 +1,82 @@
+application/internal/controller/application_controller_test.go
+  s_ddc1459e8dc1d5::t_7ce7642c8ff483 102,164
+  s_ddc1459e8dc1d5::t_abbe3e62940f94 93,97-98,160,297
+application/internal/handler/application/handler_test.go
+  s_ddc1459e8dc1d5::t_7ce7642c8ff483 66,203-204,233
+admin/internal/handler/zone/identity.go
+  h_0f030e7424553c 127
+admin/internal/handler/zone/handler_test.go
+  s_ddc1459e8dc1d5::t_ddcea10a979a59 67
+  s_ac5b184baadb88::t_4538ee8ba0159f 89-91,166
+application/internal/handler/application/handler.go
+  s_ddc1459e8dc1d5::t_42f946a68ccdd9 63,66
+admin/config/crd/bases/admin.cp.ei.telekom.de_zones.yaml
+  s_ddc1459e8dc1d5::t_bc51e9e8e60859 722,727,732,737,749-754
+  s_3592ab8d879978::t_5e5f80528c80af 315-316,332-334,337-339,342-343,347-349,353-354
+admin/internal/handler/zone/gateway.go
+  h_0f030e7424553c 131
+admin/internal/handler/zone/links.go
+  s_ddc1459e8dc1d5::t_42f946a68ccdd9 51-52,66
+  s_ddc1459e8dc1d5::t_bdaa7013148337 64
+admin/internal/handler/zone/oidc_test.go
+  s_ddc1459e8dc1d5::t_ddcea10a979a59 166,172,176,180,186,194
+admin/api/v1/zone_types.go
+  s_3592ab8d879978::t_41778c33d95659 429-439
+  h_0f030e7424553c 163-164,167,169-171,173-175,177-178,180,182,186,450,453,456-461,465-466,470-471
+admin/internal/handler/zone/handler.go
+  s_ddc1459e8dc1d5::t_bf683370b60644 167
+admin/api/v1/zone_types_test.go
+  s_3592ab8d879978::t_bf2b1f3890e49f 74
+  s_3592ab8d879978::t_2fc72bffa87b98 88
+admin/internal/handler/util/naming/naming.go
+  h_0f030e7424553c 16,19,24,29-30,35,40,45-47,50,55,57-63
+admin/api/go.mod
+  s_36e92aac06a6ac::t_c5515243c33a58 46
+admin/api/go.sum
+  s_36e92aac06a6ac::t_2ee84c29cabf52 18-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ff02817f2afe30270e9f27b6821817ad2bc598b6",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_3592ab8d879978": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0006bf32affeELfjKB3MGp2KIO",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_36e92aac06a6ac": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00435dfd8ffe2oy2wGmicnd2TL",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ac5b184baadb88": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_000809f96ffe3nbL4Zoz6geiXb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ddc1459e8dc1d5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00074180effe7W0L19V1wMaxTr",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
