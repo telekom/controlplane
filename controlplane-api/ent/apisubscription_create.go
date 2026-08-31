@@ -153,6 +153,12 @@ func (_c *ApiSubscriptionCreate) SetSecurity(v *model.ApiSubscriptionSecurity) *
 	return _c
 }
 
+// SetTraffic sets the "traffic" field.
+func (_c *ApiSubscriptionCreate) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionCreate {
+	_c.mutation.SetTraffic(v)
+	return _c
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_c *ApiSubscriptionCreate) SetOwnerID(id int) *ApiSubscriptionCreate {
 	_c.mutation.SetOwnerID(id)
@@ -408,6 +414,10 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 	if value, ok := _c.mutation.Security(); ok {
 		_spec.SetField(apisubscription.FieldSecurity, field.TypeJSON, value)
 		_node.Security = value
+	}
+	if value, ok := _c.mutation.Traffic(); ok {
+		_spec.SetField(apisubscription.FieldTraffic, field.TypeJSON, value)
+		_node.Traffic = value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -693,6 +703,24 @@ func (u *ApiSubscriptionUpsert) ClearSecurity() *ApiSubscriptionUpsert {
 	return u
 }
 
+// SetTraffic sets the "traffic" field.
+func (u *ApiSubscriptionUpsert) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldTraffic, v)
+	return u
+}
+
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateTraffic() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldTraffic)
+	return u
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiSubscriptionUpsert) ClearTraffic() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldTraffic)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -910,6 +938,27 @@ func (u *ApiSubscriptionUpsertOne) UpdateSecurity() *ApiSubscriptionUpsertOne {
 func (u *ApiSubscriptionUpsertOne) ClearSecurity() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.ClearSecurity()
+	})
+}
+
+// SetTraffic sets the "traffic" field.
+func (u *ApiSubscriptionUpsertOne) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetTraffic(v)
+	})
+}
+
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateTraffic() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateTraffic()
+	})
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiSubscriptionUpsertOne) ClearTraffic() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearTraffic()
 	})
 }
 
@@ -1296,6 +1345,27 @@ func (u *ApiSubscriptionUpsertBulk) UpdateSecurity() *ApiSubscriptionUpsertBulk 
 func (u *ApiSubscriptionUpsertBulk) ClearSecurity() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.ClearSecurity()
+	})
+}
+
+// SetTraffic sets the "traffic" field.
+func (u *ApiSubscriptionUpsertBulk) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetTraffic(v)
+	})
+}
+
+// UpdateTraffic sets the "traffic" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateTraffic() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateTraffic()
+	})
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (u *ApiSubscriptionUpsertBulk) ClearTraffic() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearTraffic()
 	})
 }
 
