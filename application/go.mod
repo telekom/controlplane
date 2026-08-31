@@ -33,7 +33,7 @@ require (
 	github.com/onsi/gomega v1.42.1
 	github.com/stretchr/testify v1.12.1
 	k8s.io/apimachinery v0.36.4
-	k8s.io/client-go v0.36.3
+	k8s.io/client-go v0.36.4
 	sigs.k8s.io/controller-runtime v0.24.1
 )
 
