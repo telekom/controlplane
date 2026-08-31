@@ -1,0 +1,21 @@
+projector/internal/domain/zone/translator_test.go
+  s_a01aef26bcfd78::t_225d4bb1f4b1f3 137-138,142-147
+projector/internal/domain/zone/translator.go
+  s_a01aef26bcfd78::t_11fab434c6723d 40,43-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "dfafee101d364d99ac158bbbaa0386e1ff1be447",
+  "prompts": {},
+  "sessions": {
+    "s_a01aef26bcfd78": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fa8527c81ffeq5YMGFwsoLt5hZ",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
