@@ -219,6 +219,14 @@
       "common-server"
     ]
   },
+  "sftp": {
+    "path": "sftp",
+    "depends_on": [
+      "common",
+      "common-server",
+      "secret-manager"
+    ]
+  },
   "tools-snapshotter": {
     "path": "tools/snapshotter",
     "depends_on": [
