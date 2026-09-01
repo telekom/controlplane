@@ -11,6 +11,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 // Translator maps a FileType CR to a FileTypeData DTO and derives identity keys.
@@ -31,7 +32,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileType) (*FileTy
 	active := obj.Status.FileExposureRef != nil
 	var variant *string
 	if obj.Status.SFTPInstance != nil {
-		variant = &SFTPVariant
+		variant = ptr.To(SFTPVariant)
 	}
 
 	return &FileTypeData{
