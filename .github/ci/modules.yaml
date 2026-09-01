@@ -1,0 +1,165 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Single source of truth for per-module CI configuration.
+#
+# This replaces the hardcoded per-module jobs / matrix entries previously
+# defined directly in .github/workflows/ci.yaml. It is consumed by
+# .github/scripts/select-scope.sh to build the dynamic CI matrix, and by
+# .github/scripts/gen-module-graph.sh to know which module directories to inspect
+# for local go.mod "replace" dependencies.
+#
+# Fields (all optional except name/path):
+#   name                       Display/job name (must be unique).
+#   path                       Module directory, relative to repo root.
+#   packageable                Whether this module has a container image to
+#                              build/scan (default: true). Set to false for
+#                              library-only modules (e.g. "common").
+#   ko_build_path              Path passed to `ko build` (default: cmd/main.go).
+#   run_check_generated_files  Verify `make manifests && make generate`
+#                              produce no diff (default: false).
+#   run_lint                   Run golangci-lint (default: true).
+#   lint_fail_on_issues        Fail the job on lint findings (default: false).
+#   coverage_threshold         Minimum required test coverage % (default: 70).
+
+modules:
+  - name: common
+    path: common
+    packageable: false
+    coverage_threshold: 55
+    lint_fail_on_issues: true
+
+  - name: common-server
+    path: common-server
+    ko_build_path: cmd/server/server.go
+
+  - name: controlplane-api
+    path: controlplane-api
+    ko_build_path: cmd/main.go
+    coverage_threshold: 1
+
+  - name: secret-manager
+    path: secret-manager
+    ko_build_path: cmd/server/server.go
+    coverage_threshold: 50
+
+  - name: approval
+    path: approval
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: file-manager
+    path: file-manager
+    ko_build_path: cmd/server/server.go
+    coverage_threshold: 61
+    lint_fail_on_issues: true
+
+  - name: gateway
+    path: gateway
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    coverage_threshold: 56
+
+  - name: identity
+    path: identity
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: organization
+    path: organization
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: admin
+    path: admin
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: application
+    path: application
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: api
+    path: api
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: rover
+    path: rover
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    coverage_threshold: 66
+
+  - name: rover-server
+    path: rover-server
+    ko_build_path: cmd/main.go
+    coverage_threshold: 41
+
+  - name: rover-ctl
+    path: rover-ctl
+    # rover-ctl/Dockerfile copies the binary from a fixed path
+    # (/ko-app/rover-ctl) in this image, which requires ko to resolve the
+    # import path to the module directory name "rover-ctl" - "." achieves
+    # that, unlike other modules' "cmd/main.go" style paths.
+    ko_build_path: "."
+
+  - name: tools-snapshotter
+    path: tools/snapshotter
+    run_lint: false
+    ko_build_path: main.go
+    coverage_threshold: 3
+
+  - name: notification
+    path: notification
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: agentic
+    path: agentic
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    coverage_threshold: 50
+    lint_fail_on_issues: true
+
+  - name: event
+    path: event
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: discovery-server
+    path: discovery-server
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: organization-server
+    path: organization-server
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: pubsub
+    path: pubsub
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    lint_fail_on_issues: true
+
+  - name: projector
+    path: projector
+    ko_build_path: main.go
+
+  - name: permission
+    path: permission
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    coverage_threshold: 66
+    lint_fail_on_issues: true

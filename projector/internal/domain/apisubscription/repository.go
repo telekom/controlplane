@@ -11,9 +11,12 @@ import (
 	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/metrics"
@@ -88,6 +91,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	// Target exposure is optional — subscription may exist before the target
 	// API is exposed. If not found, store with NULL target FK.
 	var targetExposureID *int
+	var traffic *model.ApiSubscriptionTraffic
 	if id, findErr := r.deps.FindAPIExposureByBasePath(ctx, data.TargetBasePath); findErr != nil {
 		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
 			return fmt.Errorf("find target api_exposure for subscription (basePath %q): %w",
@@ -96,6 +100,9 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		// Not found — leave targetExposureID as nil.
 	} else {
 		targetExposureID = &id
+		if traffic, err = r.resolveSubscriberTraffic(ctx, id, ownerAppID, data); err != nil {
+			return err
+		}
 	}
 
 	create := r.client.ApiSubscription.Create().
@@ -109,7 +116,8 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		SetStatusMessage(data.StatusMessage).
 		SetOwnerID(ownerAppID).
 		SetNillableTargetID(targetExposureID).
-		SetGatewayURL(data.GatewayUrl)
+		SetGatewayURL(data.GatewayUrl).
+		SetTraffic(traffic)
 
 	subscriptionID, upsertErr := create.
 		OnConflictColumns(apisubscription.FieldBasePath, apisubscription.OwnerColumn).
@@ -147,6 +155,51 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	et, lk := cachekeys.APISubscriptionMeta(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, subscriptionID)
 	return nil
+}
+
+// resolveSubscriberTraffic reads the target exposure's rate-limit config and
+// derives the denormalized traffic for this subscriber. Overrides are keyed by
+// the owner's client id (what the gateway enforces), so it is resolved only
+// when overrides actually exist.
+func (r *Repository) resolveSubscriberTraffic(ctx context.Context, exposureID, ownerAppID int, data *APISubscriptionData) (*model.ApiSubscriptionTraffic, error) {
+	// Read only the traffic column to derive subscriber rate limits.
+	exposure, err := r.client.ApiExposure.Query().
+		Where(apiexposure.IDEQ(exposureID)).
+		Select(apiexposure.FieldTraffic).
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get target api_exposure for subscription (id %d,basePath %q): %w",
+			exposureID, data.TargetBasePath, err)
+	}
+
+	rl := exposure.Traffic.RateLimit
+	if len(shared.SubscriberOverrideIDs(rl)) == 0 {
+		return shared.DefaultSubscriptionTraffic(rl), nil
+	}
+
+	clientID, err := r.ownerClientID(ctx, ownerAppID)
+	if err != nil {
+		return nil, fmt.Errorf("get owner client id for subscription (app %q): %w", data.OwnerAppName, err)
+	}
+	return shared.DeriveSubscriptionTraffic(rl, clientID), nil
+}
+
+// ownerClientID returns the stored client id of the owner Application, or an
+// empty string when it has not been assigned yet (client ids are populated
+// asynchronously). The client id is the identifier subscriber rate-limit
+// overrides are keyed by.
+func (r *Repository) ownerClientID(ctx context.Context, appID int) (string, error) {
+	app, err := r.client.Application.Query().
+		Where(application.IDEQ(appID)).
+		Select(application.FieldClientID).
+		Only(ctx)
+	if err != nil {
+		return "", err
+	}
+	if app.ClientID == nil {
+		return "", nil
+	}
+	return *app.ClientID, nil
 }
 
 // Delete removes an ApiSubscription entity from the database by owner

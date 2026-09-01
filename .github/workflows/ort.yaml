@@ -7,10 +7,8 @@ name: ORT scanning
 on:
   workflow_dispatch:
 
-
 permissions:
   contents: read
-
 
 jobs:
   ort:
