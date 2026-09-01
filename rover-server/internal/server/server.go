@@ -51,6 +51,15 @@ type EventSpecificationController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
+type FileSpecificationController interface {
+	Create(ctx context.Context, req api.FileSpecificationCreateRequest) (api.FileSpecificationResponse, error)
+	Get(ctx context.Context, resourceId string) (api.FileSpecificationResponse, error)
+	GetAll(ctx context.Context, params api.GetAllFileSpecificationsParams) (*api.FileSpecificationListResponse, error)
+	Update(ctx context.Context, resourceId string, req api.FileSpecificationUpdateRequest) (api.FileSpecificationResponse, error)
+	Delete(ctx context.Context, resourceId string) error
+	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
+}
+
 type ApiRoadmapController interface {
 	Create(ctx context.Context, req api.ApiRoadmapCreateRequest) (api.ApiRoadmapResponse, error)
 	Get(ctx context.Context, resourceId string) (api.ApiRoadmapResponse, error)
@@ -119,6 +128,7 @@ type Server struct {
 	Rovers              RoverController
 	Roadmaps            ApiRoadmapController
 	EventSpecifications EventSpecificationController
+	FileSpecifications  FileSpecificationController
 	ApiChangelogs       ApiChangelogController
 	McpSpecifications   McpSpecificationController
 	AgentSpecifications AgentSpecificationController
@@ -179,6 +189,16 @@ func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
 	router.Add(fiber.MethodGet, "/eventspecifications/:resourceId", cserver.Guarded(guard, s.GetEventSpecification)...)
 	router.Add(fiber.MethodPut, "/eventspecifications/:resourceId", cserver.Guarded(guard, s.UpdateEventSpecification)...)
 	router.Add(fiber.MethodDelete, "/eventspecifications/:resourceId", cserver.Guarded(guard, s.DeleteEventSpecification)...)
+
+	s.Log.Info("Registering filespecifications routes")
+
+	router.Add(fiber.MethodGet, "/filespecifications", cserver.Guarded(guard, s.GetAllFileSpecifications)...)
+	router.Add(fiber.MethodPost, "/filespecifications", cserver.Guarded(guard, s.CreateFileSpecification)...)
+	router.Add(fiber.MethodGet, "/filespecifications/:resourceId/status", cserver.Guarded(guard, s.GetFileSpecificationStatus)...)
+
+	router.Add(fiber.MethodGet, "/filespecifications/:resourceId", cserver.Guarded(guard, s.GetFileSpecification)...)
+	router.Add(fiber.MethodPut, "/filespecifications/:resourceId", cserver.Guarded(guard, s.UpdateFileSpecification)...)
+	router.Add(fiber.MethodDelete, "/filespecifications/:resourceId", cserver.Guarded(guard, s.DeleteFileSpecification)...)
 
 	s.Log.Info("Registering apiroadmaps routes")
 

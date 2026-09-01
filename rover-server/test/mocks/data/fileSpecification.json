@@ -1,0 +1,33 @@
+{
+  "apiVersion": "rover.cp.ei.telekom.de/v1",
+  "kind": "FileSpecification",
+  "metadata": {
+    "name": "demo-invoices-v1",
+    "namespace": "poc--eni--galatea"
+  },
+  "spec": {
+    "type": "demo.invoices.v1",
+    "version": "1.0.0",
+    "description": "used for dds integration demo"
+  },
+  "status": {
+    "fileType": {
+      "name": "demo-invoices-v1",
+      "namespace": "poc--eni--galatea"
+    },
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "FileSpecification is ready"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "FileSpecification created"
+      }
+    ]
+  }
+}
