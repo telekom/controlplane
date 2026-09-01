@@ -18,6 +18,7 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -193,6 +194,16 @@ func (h *ListenerHandler) Delete(ctx context.Context, listener *spectrev1.Listen
 		}
 	}
 	listener.Status.EventSubscriptions = nil
+
+	// Label-based fallback: catch any children the status refs missed
+	// (e.g. child created but status update failed before recording the ref).
+	c := cclient.ClientFromContextOrDie(ctx)
+	if _, err := c.Cleanup(ctx, &gatewayv1.RouteListenerList{}, cclient.OwnedByLabel(listener)); err != nil {
+		return errors.Wrap(err, "failed to cleanup labeled RouteListeners")
+	}
+	if _, err := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedByLabel(listener)); err != nil {
+		return errors.Wrap(err, "failed to cleanup labeled Subscribers")
+	}
 
 	// The shared generic Publisher is intentionally not owned by any single
 	// Listener — it is ref-counted and removed once the last one goes away.
@@ -380,7 +391,7 @@ func (h *ListenerHandler) findRouteByPath(ctx context.Context, namespace, apiBas
 // ensureRouteListener creates or updates the RouteListener CR for this Listener.
 func (h *ListenerHandler) ensureRouteListener(
 	ctx context.Context,
-	_ *spectrev1.Listener,
+	listener *spectrev1.Listener,
 	zone *adminv1.Zone,
 	appId string,
 	consumerId string,
@@ -425,6 +436,10 @@ func (h *ListenerHandler) ensureRouteListener(
 	}
 
 	mutator := func() error {
+		if rl.Labels == nil {
+			rl.Labels = make(map[string]string)
+		}
+		rl.Labels[cconfig.OwnerUidLabelKey] = string(listener.UID)
 		rl.Spec = gatewayv1.RouteListenerSpec{
 			Route: routeRef,
 			Zone: ctypes.ObjectRef{

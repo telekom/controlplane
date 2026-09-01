@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
@@ -81,7 +82,7 @@ func (h *ListenerHandler) ensureBridgeSubscribers(
 
 func (h *ListenerHandler) ensureBridgeSubscriber(
 	ctx context.Context,
-	_ *spectrev1.Listener,
+	listener *spectrev1.Listener,
 	publisher *pubsubv1.Publisher,
 	appId string,
 	callbackURL string,
@@ -102,6 +103,10 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 	}
 
 	mutator := func() error {
+		if subscriber.Labels == nil {
+			subscriber.Labels = make(map[string]string)
+		}
+		subscriber.Labels[cconfig.OwnerUidLabelKey] = string(listener.UID)
 		subscriber.Spec = pubsubv1.SubscriberSpec{
 			Publisher:    *ctypes.ObjectRefFromObject(publisher),
 			SubscriberId: subscriberId,

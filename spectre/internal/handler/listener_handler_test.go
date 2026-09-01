@@ -700,6 +700,14 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetZone()
 
+				// Label-based cleanup fallback for cross-namespace children
+				fakeClient.EXPECT().
+					Cleanup(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Return(0, nil).Maybe()
+				fakeClient.EXPECT().
+					Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Return(0, nil).Maybe()
+
 				// List Listeners — only this one (being deleted)
 				fakeClient.EXPECT().
 					List(ctx, mock.AnythingOfType("*v1.ListenerList"), mock.Anything).
@@ -725,6 +733,14 @@ var _ = Describe("ListenerHandler", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetZone()
+
+				// Label-based cleanup fallback for cross-namespace children
+				fakeClient.EXPECT().
+					Cleanup(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Return(0, nil).Maybe()
+				fakeClient.EXPECT().
+					Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Return(0, nil).Maybe()
 
 				otherListener := newListener()
 				otherListener.Name = "other-listener"
