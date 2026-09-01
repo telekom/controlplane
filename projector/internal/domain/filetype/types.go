@@ -8,7 +8,7 @@ package filetype
 
 import "github.com/telekom/controlplane/projector/internal/domain/shared"
 
-var SFTPVariant = "sftp"
+const SFTPVariant = "sftp"
 
 // FileTypeKey is the composite identity key for FileType catalogue entities.
 // File type identifiers are uniform across the environment, so the type string
