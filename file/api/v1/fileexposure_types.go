@@ -5,44 +5,36 @@
 package v1
 
 import (
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
-// FileExposureSpec defines the desired state of FileExposure.
+// FileExposureSpec defines a provider-side file exposure.
 type FileExposureSpec struct {
-	// Approval configures how subscriptions to this file type are approved.
-	Approval Approval `json:"approval"`
+	// Provider optionally identifies the providing application.
+	// +kubebuilder:validation:Optional
+	Provider string `json:"provider,omitempty"`
 
-	// Visibility defines who can see and subscribe to this file type.
-	// +kubebuilder:default=Enterprise
-	Visibility Visibility `json:"visibility,omitempty"`
-
-	// FileType is the file type identifier this exposure belongs to.
-	// References the FileType CR via MakeFileTypeName() conversion.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
 	FileType string `json:"fileType"`
 
-	// Sftp holds the SFTP storage-backend-specific configuration for this exposure.
-	// Backend-specific settings live under their own sub-object (e.g. sftp) so that
-	// additional storage backends can be added without polluting the spec root.
+	// Zone identifies the zone where this file exposure is provided.
 	// +kubebuilder:validation:Required
-	Sftp SftpExposure `json:"sftp"`
+	Zone *types.ObjectRef `json:"zone"`
 
-	// Zone references the Zone CR where this file type is exposed.
-	// On this layer only the Zone ref is passed; the file domain resolves it to
-	// the zone-scoped service configuration for the backend.
-	Zone ctypes.ObjectRef `json:"zone"`
-}
+	// SFTP configures provider-side SFTP access for this file exposure.
+	// +kubebuilder:validation:Optional
+	SFTP *FileSFTP `json:"sftp,omitempty"`
 
-// SftpExposure holds the SFTP storage-backend-specific configuration for a FileExposure.
-type SftpExposure struct {
-	// PublicKeys are the SSH public keys registered for the provider's SFTP user.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinItems=1
-	PublicKeys []PublicKey `json:"publicKeys"`
+	// Visibility defines who can subscribe to this file exposure.
+	// +kubebuilder:default=Enterprise
+	Visibility Visibility `json:"visibility"`
+
+	// Approval configures how subscriptions to this file exposure are approved.
+	// +kubebuilder:validation:Optional
+	Approval Approval `json:"approval,omitempty"`
 }
 
 // FileExposureStatus defines the observed state of FileExposure.
@@ -54,23 +46,17 @@ type FileExposureStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	// Active indicates whether this exposure has been provisioned.
-	Active bool `json:"active,omitempty"`
-
-	// Subscriptions references the file-domain FileSubscriptions bound to this exposure.
+	// FileTypeRef references the FileType this exposure provides.
 	// +optional
-	Subscriptions []ctypes.ObjectRef `json:"subscriptions,omitempty"`
+	FileTypeRef *types.ObjectRef `json:"fileTypeRef,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="FileType",type="string",JSONPath=".spec.fileType",description="The file type identifier"
-// +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this exposure is provisioned"
-// +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
+// +kubebuilder:printcolumn:name="FileType",type="string",JSONPath=".spec.fileType"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // FileExposure is the Schema for the fileexposures API.
-// It declares that an application exposes a file type. The derived logical
-// Application is created without an Identity client.
 type FileExposure struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -79,7 +65,7 @@ type FileExposure struct {
 	Status FileExposureStatus `json:"status,omitempty"`
 }
 
-var _ ctypes.Object = &FileExposure{}
+var _ types.Object = &FileExposure{}
 
 func (r *FileExposure) GetConditions() []metav1.Condition {
 	return r.Status.Conditions
@@ -98,10 +84,10 @@ type FileExposureList struct {
 	Items           []FileExposure `json:"items"`
 }
 
-var _ ctypes.ObjectList = &FileExposureList{}
+var _ types.ObjectList = &FileExposureList{}
 
-func (r *FileExposureList) GetItems() []ctypes.Object {
-	items := make([]ctypes.Object, len(r.Items))
+func (r *FileExposureList) GetItems() []types.Object {
+	items := make([]types.Object, len(r.Items))
 	for i := range r.Items {
 		items[i] = &r.Items[i]
 	}

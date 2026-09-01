@@ -5,37 +5,25 @@
 package v1
 
 import (
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
-// FileSubscriptionSpec defines the desired state of FileSubscription.
-// It is created in the file domain from a rover-domain Rover subscription (1:1).
+// FileSubscriptionSpec defines a consumer-side subscription to a file type.
 type FileSubscriptionSpec struct {
-	// FileType is the file type identifier this subscription belongs to.
-	// References the FileType CR via MakeFileTypeName() conversion.
+	// FileType references the FileType to subscribe to.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
 	FileType string `json:"fileType"`
 
-	// Sftp holds the SFTP storage-backend-specific configuration for this subscription.
-	// Backend-specific settings live under their own sub-object (e.g. sftp) so that
-	// additional storage backends can be added without polluting the spec root.
+	// Zone identifies the zone where the subscriber is located.
 	// +kubebuilder:validation:Required
-	Sftp SftpSubscription `json:"sftp"`
-}
+	Zone *types.ObjectRef `json:"zone"`
 
-// SftpSubscription holds the SFTP storage-backend-specific configuration for a FileSubscription.
-type SftpSubscription struct {
-	// ClientId identifies the consumer application's client on the SFTP backend.
-	// +optional
-	ClientId string `json:"clientId,omitempty"`
-
-	// PublicKeys are the SSH public keys registered for the consumer's SFTP user.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinItems=1
-	PublicKeys []PublicKey `json:"publicKeys"`
+	// SFTP configures consumer-side SFTP access for this file subscription.
+	// +kubebuilder:validation:Optional
+	SFTP *FileSFTP `json:"sftp,omitempty"`
 }
 
 // FileSubscriptionStatus defines the observed state of FileSubscription.
@@ -46,15 +34,26 @@ type FileSubscriptionStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+
+	// Approval references the Approval CR managing subscription approval.
+	// +optional
+	Approval *types.ObjectRef `json:"approval,omitempty"`
+
+	// ApprovalRequest references the ApprovalRequest CR for this subscription.
+	// +optional
+	ApprovalRequest *types.ObjectRef `json:"approvalRequest,omitempty"`
+
+	// FileTypeRef references the subscribed FileType.
+	// +optional
+	FileTypeRef *types.ObjectRef `json:"fileTypeRef,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="FileType",type="string",JSONPath=".spec.fileType",description="The file type identifier"
-// +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
+// +kubebuilder:printcolumn:name="FileType",type="string",JSONPath=".spec.fileType"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // FileSubscription is the Schema for the filesubscriptions API.
-// It declares that an application consumes a file type.
 type FileSubscription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -63,7 +62,7 @@ type FileSubscription struct {
 	Status FileSubscriptionStatus `json:"status,omitempty"`
 }
 
-var _ ctypes.Object = &FileSubscription{}
+var _ types.Object = &FileSubscription{}
 
 func (r *FileSubscription) GetConditions() []metav1.Condition {
 	return r.Status.Conditions
@@ -82,10 +81,10 @@ type FileSubscriptionList struct {
 	Items           []FileSubscription `json:"items"`
 }
 
-var _ ctypes.ObjectList = &FileSubscriptionList{}
+var _ types.ObjectList = &FileSubscriptionList{}
 
-func (r *FileSubscriptionList) GetItems() []ctypes.Object {
-	items := make([]ctypes.Object, len(r.Items))
+func (r *FileSubscriptionList) GetItems() []types.Object {
+	items := make([]types.Object, len(r.Items))
 	for i := range r.Items {
 		items[i] = &r.Items[i]
 	}
