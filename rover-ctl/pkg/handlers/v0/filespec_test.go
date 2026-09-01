@@ -51,6 +51,10 @@ var _ = Describe("FileSpec Handler", func() {
 		}))
 	})
 
+	It("does nothing for a nil object (e.g. status polling requests)", func() {
+		Expect(v0.PatchFileSpecificationRequest(context.Background(), nil)).To(Succeed())
+	})
+
 	DescribeTable("rejects an invalid FileSpecification body",
 		func(content map[string]any) {
 			obj := &types.UnstructuredObject{Content: content}

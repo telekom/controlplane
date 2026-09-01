@@ -26,7 +26,7 @@ func NewFileSpecHandlerInstance() *FileSpecHandler {
 
 func PatchFileSpecificationRequest(_ context.Context, obj types.Object) error {
 	if obj == nil {
-		return errors.New("FileSpecification object is nil")
+		return nil
 	}
 	spec, ok := obj.GetContent()["spec"]
 	if !ok {
