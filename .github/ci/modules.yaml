@@ -163,3 +163,16 @@ modules:
     ko_build_path: cmd/main.go
     coverage_threshold: 66
     lint_fail_on_issues: true
+
+  - name: sftp
+    path: sftp
+    run_check_generated_files: true
+    ko_build_path: cmd/sftp-operator/main.go
+    coverage_threshold: 66
+    lint_fail_on_issues: true
+
+  - name: file
+    path: file
+    run_check_generated_files: true
+    ko_build_path: cmd/file-operator/main.go
+    lint_fail_on_issues: true
