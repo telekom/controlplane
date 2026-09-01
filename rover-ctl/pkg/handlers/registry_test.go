@@ -157,7 +157,7 @@ var _ = Describe("Registry", func() {
 
 	Describe("RegisterHandlers", func() {
 		Context("when registering the default set of handlers", func() {
-			It("should register ApiSpec and Rover handlers", func() {
+			It("should register ApiSpec, Rover, and FileSpecification handlers", func() {
 				// Register default handlers
 				handlers.RegisterHandlers()
 
@@ -166,12 +166,15 @@ var _ = Describe("Registry", func() {
 
 				// Verify Rover handler is registered
 				roverHandler, roverErr := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
+				fileSpecHandler, fileSpecErr := handlers.GetHandler("FileSpecification", "rover.cp.ei.telekom.de/v1")
 
 				// Verify both handlers are registered
 				Expect(apiSpecErr).NotTo(HaveOccurred())
 				Expect(roverErr).NotTo(HaveOccurred())
+				Expect(fileSpecErr).NotTo(HaveOccurred())
 				Expect(apiSpecHandler).NotTo(BeNil())
 				Expect(roverHandler).NotTo(BeNil())
+				Expect(fileSpecHandler).NotTo(BeNil())
 
 				// Verify they have different priorities (specific values not important)
 				Expect(apiSpecHandler.Priority()).NotTo(Equal(roverHandler.Priority()))
