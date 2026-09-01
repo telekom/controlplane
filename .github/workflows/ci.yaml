@@ -311,7 +311,7 @@ jobs:
       - name: Inject slug vars
         uses: rlespinasse/github-slug-action@ef93b2ea4b6405d06fd8684fc3ff795d262ecae8 # v5.7.0
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Log in to GHCR
         # Needed so buildx can pull the ROVERCTL_IMAGE builder-stage image
         # pushed by the rover_ctl_package job above, regardless of its visibility.
