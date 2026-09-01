@@ -1622,7 +1622,7 @@
 [FileSpecification Controller Get FileSpecification resource should return the FileSpecification successfully - 1]
 {
  "description": "used for dds integration demo",
- "id": "eni--hyperion--demo-invoices-v1",
+ "id": "eni--galatea--demo-invoices-v1",
  "status": {
   "processingState": "done",
   "state": "complete"
@@ -1634,7 +1634,7 @@
 
 [FileSpecification Controller Get FileSpecification resource should fail to get a non-existent FileSpecification - 1]
 {
- "detail": "Resource eni--hyperion--blabla not found",
+ "detail": "Resource eni--galatea--blabla not found",
  "instance": "",
  "status": 404,
  "title": "Not found",
@@ -1661,7 +1661,7 @@
  "items": [
   {
    "description": "used for dds integration demo",
-   "id": "eni--hyperion--demo-invoices-v1",
+   "id": "eni--galatea--demo-invoices-v1",
    "status": {
     "processingState": "done",
     "state": "complete"
@@ -1678,19 +1678,7 @@
  "_links": {
   "next": "",
   "self": "http://example.com/filespecifications?cursor="
- },
- "items": [
-  {
-   "description": "used for dds integration demo",
-   "id": "eni--hyperion--demo-invoices-v1",
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "type": "demo.invoices.v1",
-   "version": "1.0.0"
-  }
- ]
+ }
 }
 ---
 
@@ -1703,7 +1691,7 @@
  "items": [
   {
    "description": "used for dds integration demo",
-   "id": "eni--hyperion--demo-invoices-v1",
+   "id": "eni--galatea--demo-invoices-v1",
    "status": {
     "processingState": "done",
     "state": "complete"
@@ -1720,25 +1708,13 @@
  "_links": {
   "next": "",
   "self": "http://example.com/filespecifications?cursor="
- },
- "items": [
-  {
-   "description": "used for dds integration demo",
-   "id": "eni--hyperion--demo-invoices-v1",
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "type": "demo.invoices.v1",
-   "version": "1.0.0"
-  }
- ]
+ }
 }
 ---
 
 [FileSpecification Controller Delete FileSpecification resource should fail to delete a non-existent FileSpecification - 1]
 {
- "detail": "Resource eni--hyperion--blabla not found",
+ "detail": "Resource eni--galatea--blabla not found",
  "instance": "",
  "status": 404,
  "title": "Not found",
@@ -1766,7 +1742,7 @@
 
 [FileSpecification Controller GetStatus FileSpecification resource should fail to get the status of a non-existent FileSpecification - 1]
 {
- "detail": "Resource eni--hyperion--blabla not found",
+ "detail": "Resource eni--galatea--blabla not found",
  "instance": "",
  "status": 404,
  "title": "Not found",
@@ -1787,7 +1763,7 @@
 [FileSpecification Controller Update FileSpecification resource should update the FileSpecification successfully - 1]
 {
  "description": "used for dds integration demo",
- "id": "eni--hyperion--demo-invoices-v1",
+ "id": "eni--galatea--demo-invoices-v1",
  "status": {
   "processingState": "done",
   "state": "complete"

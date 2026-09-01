@@ -479,9 +479,10 @@ func mapFileExposureInfo(in *filev1.FileExposure) api.FileExposureInfo {
 		}
 	}
 
-	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.Sftp.PublicKeys))
-	for _, key := range in.Spec.Sftp.PublicKeys {
-		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Label: key.Label, Key: key.Key})
+	info.PublicKeys = make([]api.PublicKey, 0, len(sftpPublicKeys(in.Spec.SFTP)))
+	for _, key := range sftpPublicKeys(in.Spec.SFTP) {
+		// The file domain does not carry a human-readable label for SSH keys.
+		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Key: key.Key})
 	}
 
 	return info
@@ -495,12 +496,21 @@ func mapFileSubscriptionInfo(in *filev1.FileSubscription) api.FileSubscriptionIn
 		Type:     "file",
 	}
 
-	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.Sftp.PublicKeys))
-	for _, key := range in.Spec.Sftp.PublicKeys {
-		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Label: key.Label, Key: key.Key})
+	info.PublicKeys = make([]api.PublicKey, 0, len(sftpPublicKeys(in.Spec.SFTP)))
+	for _, key := range sftpPublicKeys(in.Spec.SFTP) {
+		// The file domain does not carry a human-readable label for SSH keys.
+		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Key: key.Key})
 	}
 
 	return info
+}
+
+// sftpPublicKeys safely reads the public keys from an optional FileSFTP pointer.
+func sftpPublicKeys(sftp *filev1.FileSFTP) []filev1.SSHPublicKeySpec {
+	if sftp == nil {
+		return nil
+	}
+	return sftp.PublicKeys
 }
 
 // toApiVisibilityFromFile converts file domain Visibility to API Visibility.

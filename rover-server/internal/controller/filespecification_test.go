@@ -18,13 +18,13 @@ var _ = Describe("FileSpecification Controller", func() {
 
 	Context("Get FileSpecification resource", func() {
 		It("should return the FileSpecification successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--hyperion--demo-invoices-v1", nil)
+			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--galatea--demo-invoices-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 
 		It("should fail to get a non-existent FileSpecification", func() {
-			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--hyperion--blabla", nil)
+			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--galatea--blabla", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
@@ -58,13 +58,13 @@ var _ = Describe("FileSpecification Controller", func() {
 
 	Context("Delete FileSpecification resource", func() {
 		It("should delete the FileSpecification successfully", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/filespecifications/eni--hyperion--demo-invoices-v1", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/filespecifications/eni--galatea--demo-invoices-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
 		})
 
 		It("should fail to delete a non-existent FileSpecification", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/filespecifications/eni--hyperion--blabla", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/filespecifications/eni--galatea--blabla", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
@@ -78,13 +78,13 @@ var _ = Describe("FileSpecification Controller", func() {
 
 	Context("GetStatus FileSpecification resource", func() {
 		It("should return the status of the FileSpecification successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--hyperion--demo-invoices-v1/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--galatea--demo-invoices-v1/status", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 
 		It("should fail to get the status of a non-existent FileSpecification", func() {
-			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--hyperion--blabla/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--galatea--blabla/status", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
@@ -117,7 +117,7 @@ var _ = Describe("FileSpecification Controller", func() {
 				Version:     "1.0.0",
 			})
 
-			req := httptest.NewRequest(http.MethodPut, "/filespecifications/eni--hyperion--demo-invoices-v1",
+			req := httptest.NewRequest(http.MethodPut, "/filespecifications/eni--galatea--demo-invoices-v1",
 				bytes.NewReader(fileSpecification))
 
 			responseGroup, err := ExecuteRequest(req, groupToken)

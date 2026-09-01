@@ -48,13 +48,12 @@ func (h *FileSpecificationHandler) CreateOrUpdate(ctx context.Context, fileSpec 
 		}
 
 		fileType.Labels = map[string]string{
-			filev1.FileTypeLabelKey: labelutil.NormalizeLabelValue(fileSpec.Name),
+			filev1.FileTypeNameLabelKey:      labelutil.NormalizeLabelValue(fileSpec.Name),
+			filev1.FileTypeNamespaceLabelKey: labelutil.NormalizeLabelValue(fileSpec.Namespace),
 		}
 
 		fileType.Spec = filev1.FileTypeSpec{
-			Type:          fileSpec.Name,
-			Description:   fileSpec.Spec.Description,
-			Specification: fileSpec.Spec.Specification,
+			Description: fileSpec.Spec.Description,
 		}
 		return nil
 	}

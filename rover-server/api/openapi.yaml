@@ -3631,49 +3631,6 @@ components:
             $ref: '#/components/schemas/AgentSpecificationResponse'
         _links:
           $ref: '#/components/schemas/Links'
-    AgentSpecification:
-      type: object
-      required:
-        - specification
-      properties:
-        specification:
-          type: object
-          additionalProperties: true
-    AgentSpecificationCreateRequest:
-      $ref: '#/components/schemas/AgentSpecification'
-    AgentSpecificationUpdateRequest:
-      $ref: '#/components/schemas/AgentSpecification'
-    AgentSpecificationResponse:
-      type: object
-      required:
-        - id
-        - name
-        - specification
-        - status
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        category:
-          type: string
-        specification:
-          type: object
-          additionalProperties: true
-        status:
-          $ref: '#/components/schemas/ResourceStatusResponse'
-    AgentSpecificationListResponse:
-      type: object
-      required:
-        - items
-        - _links
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentSpecificationResponse'
-        _links:
-          $ref: '#/components/schemas/Links'
     EventSpecification:
       type: object
       required:

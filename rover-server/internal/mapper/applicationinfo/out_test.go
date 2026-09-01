@@ -209,9 +209,9 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 					Approval: filev1.Approval{
 						Strategy: filev1.ApprovalStrategyAuto,
 					},
-					Sftp: filev1.SftpExposure{
-						PublicKeys: []filev1.PublicKey{
-							{Label: "demo-provider-key", Key: "ssh-rsa AAAA..."},
+					SFTP: &filev1.FileSFTP{
+						PublicKeys: []filev1.SSHPublicKeySpec{
+							{Key: "ssh-rsa AAAA..."},
 						},
 					},
 				},
@@ -245,7 +245,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(fileExpInfo.Approval).To(Equal(api.AUTO))
 			Expect(fileExpInfo.Variant).To(Equal(api.FileExposureInfoVariantSftp))
 			Expect(fileExpInfo.PublicKeys).To(HaveLen(1))
-			Expect(fileExpInfo.PublicKeys[0].Label).To(Equal("demo-provider-key"))
+			Expect(fileExpInfo.PublicKeys[0].Key).To(Equal("ssh-rsa AAAA..."))
 		})
 
 		It("must record error when FileExposureStore.Get fails", func() {
@@ -413,9 +413,9 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "file-sub-1", Namespace: "test-ns"},
 				Spec: filev1.FileSubscriptionSpec{
 					FileType: "demo-invoices-v1",
-					Sftp: filev1.SftpSubscription{
-						PublicKeys: []filev1.PublicKey{
-							{Label: "demo-consumer-key", Key: "ssh-rsa BBBB..."},
+					SFTP: &filev1.FileSFTP{
+						PublicKeys: []filev1.SSHPublicKeySpec{
+							{Key: "ssh-rsa BBBB..."},
 						},
 					},
 				},
@@ -446,7 +446,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(err).To(BeNil())
 			Expect(fileSubInfo.FileType).To(Equal("demo-invoices-v1"))
 			Expect(fileSubInfo.PublicKeys).To(HaveLen(1))
-			Expect(fileSubInfo.PublicKeys[0].Label).To(Equal("demo-consumer-key"))
+			Expect(fileSubInfo.PublicKeys[0].Key).To(Equal("ssh-rsa BBBB..."))
 		})
 
 		It("must record error when FileSubscriptionStore.Get fails", func() {

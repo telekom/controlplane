@@ -83,10 +83,8 @@ var _ = Describe("FileSpecificationHandler", func() {
 		Expect(handler.CreateOrUpdate(newContext(), fileSpec)).To(Succeed())
 
 		fileType := getFileType("demo-sftp-spec-v1")
-		Expect(fileType.Spec.Type).To(Equal("demo-sftp-spec-v1"))
 		Expect(fileType.Spec.Description).To(Equal("demo file type"))
-		Expect(fileType.Spec.Specification).To(Equal("file-id-123"))
-		Expect(fileType.Labels).To(HaveKey(filev1.FileTypeLabelKey))
+		Expect(fileType.Labels).To(HaveKey(filev1.FileTypeNameLabelKey))
 		Expect(fileType.Labels).To(HaveKeyWithValue(config.EnvironmentLabelKey, testEnvironment))
 		Expect(fileType.OwnerReferences).To(HaveLen(1))
 		Expect(fileType.OwnerReferences[0].Name).To(Equal("demo-sftp-spec-v1"))

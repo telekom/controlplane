@@ -15,6 +15,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -39,15 +40,22 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
+		environment := contextutil.EnvFromContextOrDie(ctx)
+		zoneRef := types.ObjectRef{
+			Name:      owner.Spec.Zone,
+			Namespace: environment,
+		}
+
 		fileSubscription.Labels = map[string]string{
-			filev1.FileTypeLabelKey:             labelutil.NormalizeLabelValue(sub.FileType),
-			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(owner.Spec.Zone),
+			filev1.FileTypeNameLabelKey:         labelutil.NormalizeLabelValue(sub.FileType),
+			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}
 
 		fileSubscription.Spec = filev1.FileSubscriptionSpec{
 			FileType: sub.FileType,
-			Sftp: filev1.SftpSubscription{
+			Zone:     &zoneRef,
+			SFTP: &filev1.FileSFTP{
 				PublicKeys: mapPublicKeys(sub.PublicKeys),
 			},
 		}

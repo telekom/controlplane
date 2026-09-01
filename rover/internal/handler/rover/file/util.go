@@ -13,17 +13,17 @@ import (
 // MakeName generates a deterministic resource name for a file exposure or
 // subscription: "<fileType>--<owner>" (spec_dcp naming), normalized.
 func MakeName(fileType, ownerName string) string {
-	return filev1.MakeFileTypeName(fileType) + "--" + labelutil.NormalizeValue(ownerName)
+	return roverv1.MakeFileTypeName(fileType) + "--" + labelutil.NormalizeValue(ownerName)
 }
 
 // mapPublicKeys converts rover-domain public keys to file-domain public keys.
-func mapPublicKeys(in []roverv1.PublicKey) []filev1.PublicKey {
+func mapPublicKeys(in []roverv1.PublicKey) []filev1.SSHPublicKeySpec {
 	if len(in) == 0 {
 		return nil
 	}
-	out := make([]filev1.PublicKey, len(in))
+	out := make([]filev1.SSHPublicKeySpec, len(in))
 	for i, k := range in {
-		out[i] = filev1.PublicKey{Label: k.Label, Key: k.Key}
+		out[i] = filev1.SSHPublicKeySpec{Key: k.Key}
 	}
 	return out
 }
