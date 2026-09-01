@@ -62,10 +62,7 @@ spec:
                 - sftp
                 type: string
               type:
-                description: |-
-                  Type is the file type identifier. It may be dot-separated (normalized to
-                  hyphens) or already hyphenated/lowercase, in which case it is used as-is;
-                  metadata.name must equal the normalized value.
+                description: Type is the file type identifier.
                 maxLength: 253
                 minLength: 1
                 type: string
