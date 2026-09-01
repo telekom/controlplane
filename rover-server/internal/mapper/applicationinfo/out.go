@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -161,7 +162,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		return errors.New("input applicationInfo is nil")
 	}
 
-	totalSubs := len(rover.Status.ApiSubscriptions) + len(rover.Status.EventSubscriptions) + len(rover.Status.AgenticSubscriptions)
+	totalSubs := len(rover.Status.ApiSubscriptions) + len(rover.Status.EventSubscriptions) + len(rover.Status.AgenticSubscriptions) + len(rover.Status.FileSubscriptions)
 	appInfo.Subscriptions = make([]api.SubscriptionInfo, 0, totalSubs)
 
 	// Map API subscriptions
@@ -237,6 +238,28 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
 	}
 
+	// Map file subscriptions
+	for _, sub := range rover.Status.FileSubscriptions {
+		fileSub, err := stores.FileSubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
+		if err != nil {
+			_, gvk := stores.FileSubscriptionStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, sub.Namespace, sub.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(fileSub); err != nil {
+			WriteStatus(fileSub, appInfo, err)
+		}
+
+		subInfo := api.SubscriptionInfo{}
+		fileSubInfo := mapFileSubscriptionInfo(fileSub)
+		if err := subInfo.FromFileSubscriptionInfo(fileSubInfo); err != nil {
+			return errors.Wrap(err, "failed to convert file subscription info")
+		}
+
+		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
+	}
+
 	return nil
 }
 func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
@@ -247,7 +270,7 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 		return errors.New("input applicationInfo is nil")
 	}
 
-	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures) + len(rover.Status.AgenticExposures)
+	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures) + len(rover.Status.AgenticExposures) + len(rover.Status.FileExposures)
 	appInfo.Exposures = make([]api.ExposureInfo, 0, totalExps)
 
 	if err := fillAPIExposures(ctx, rover, appInfo, stores); err != nil {
@@ -257,6 +280,9 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 		return err
 	}
 	if err := fillAiExposures(ctx, rover, appInfo, stores); err != nil {
+		return err
+	}
+	if err := fillFileExposures(ctx, rover, appInfo, stores); err != nil {
 		return err
 	}
 
@@ -359,6 +385,32 @@ func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 	return nil
 }
 
+// fillFileExposures fetches each file exposure referenced by the Rover status,
+// validates its readiness, and appends it to appInfo.Exposures.
+func fillFileExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+	for _, exp := range rover.Status.FileExposures {
+		fileExp, err := stores.FileExposureStore.Get(ctx, exp.Namespace, exp.Name)
+		if err != nil {
+			_, gvk := stores.FileExposureStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, exp.Namespace, exp.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(fileExp); err != nil {
+			WriteStatus(fileExp, appInfo, err)
+		}
+
+		expInfo := api.ExposureInfo{}
+		fileExpInfo := mapFileExposureInfo(fileExp)
+		if err := expInfo.FromFileExposureInfo(fileExpInfo); err != nil {
+			return errors.Wrap(err, "failed to convert file exposure info")
+		}
+
+		appInfo.Exposures = append(appInfo.Exposures, expInfo)
+	}
+	return nil
+}
+
 // mapEventSubscriptionInfo maps an event domain EventSubscription to the API's EventSubscriptionInfo.
 // Only core identifying fields are mapped, matching the pattern of the API subscription info mapper.
 func mapEventSubscriptionInfo(in *eventv1.EventSubscription) api.EventSubscriptionInfo {
@@ -403,6 +455,76 @@ func toApiApprovalStrategyFromEvent(strategy eventv1.ApprovalStrategy) api.Appro
 	case eventv1.ApprovalStrategySimple:
 		return api.SIMPLE
 	case eventv1.ApprovalStrategyFourEyes:
+		return api.FOUREYES
+	default:
+		return api.ApprovalStrategy(strings.ToUpper(string(strategy)))
+	}
+}
+
+// mapFileExposureInfo maps a file domain FileExposure to the API's FileExposureInfo.
+// Only core identifying fields are mapped, matching the pattern of the event exposure info mapper.
+func mapFileExposureInfo(in *filev1.FileExposure) api.FileExposureInfo {
+	info := api.FileExposureInfo{
+		FileType:   in.Spec.FileType,
+		Visibility: toApiVisibilityFromFile(in.Spec.Visibility),
+		Approval:   toApiApprovalStrategyFromFile(in.Spec.Approval.Strategy),
+		Type:       "file",
+		Variant:    api.FileExposureInfoVariantSftp,
+	}
+
+	if len(in.Spec.Approval.TrustedTeams) > 0 {
+		info.TrustedTeams = make([]api.TrustedTeam, 0, len(in.Spec.Approval.TrustedTeams))
+		for _, team := range in.Spec.Approval.TrustedTeams {
+			info.TrustedTeams = append(info.TrustedTeams, api.TrustedTeam{Team: team})
+		}
+	}
+
+	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.Sftp.PublicKeys))
+	for _, key := range in.Spec.Sftp.PublicKeys {
+		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Label: key.Label, Key: key.Key})
+	}
+
+	return info
+}
+
+// mapFileSubscriptionInfo maps a file domain FileSubscription to the API's FileSubscriptionInfo.
+// Only core identifying fields are mapped, matching the pattern of the event subscription info mapper.
+func mapFileSubscriptionInfo(in *filev1.FileSubscription) api.FileSubscriptionInfo {
+	info := api.FileSubscriptionInfo{
+		FileType: in.Spec.FileType,
+		Type:     "file",
+	}
+
+	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.Sftp.PublicKeys))
+	for _, key := range in.Spec.Sftp.PublicKeys {
+		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Label: key.Label, Key: key.Key})
+	}
+
+	return info
+}
+
+// toApiVisibilityFromFile converts file domain Visibility to API Visibility.
+func toApiVisibilityFromFile(visibility filev1.Visibility) api.Visibility {
+	switch visibility {
+	case filev1.VisibilityWorld:
+		return api.WORLD
+	case filev1.VisibilityZone:
+		return api.ZONE
+	case filev1.VisibilityEnterprise:
+		return api.ENTERPRISE
+	default:
+		return api.Visibility(strings.ToUpper(string(visibility)))
+	}
+}
+
+// toApiApprovalStrategyFromFile converts file domain ApprovalStrategy to API ApprovalStrategy.
+func toApiApprovalStrategyFromFile(strategy filev1.ApprovalStrategy) api.ApprovalStrategy {
+	switch strategy {
+	case filev1.ApprovalStrategyAuto:
+		return api.AUTO
+	case filev1.ApprovalStrategySimple:
+		return api.SIMPLE
+	case filev1.ApprovalStrategyFourEyes:
 		return api.FOUREYES
 	default:
 		return api.ApprovalStrategy(strings.ToUpper(string(strategy)))
