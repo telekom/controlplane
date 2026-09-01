@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/ssh"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -330,6 +331,8 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.V
 		return r.ValidateEventExposure(ctx, valErr, environment, exposure, zoneRef, idx)
 	case roverv1.TypeAgentic:
 		return r.ValidateAiExposure(ctx, valErr, environment, exposure, zoneRef, idx)
+	case roverv1.TypeFile:
+		return r.ValidateFileExposure(valErr, exposure, idx)
 	default:
 		valErr.AddInvalidError(
 			field.NewPath("spec").Child("exposures").Index(idx).Child("type"),
@@ -456,6 +459,8 @@ func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bo
 }
 
 // MustNotHaveDuplicates checks if there are no duplicates in the subscriptions and exposures
+//
+//nolint:dupl // subscription and exposure loops mirror each other but operate on different types
 func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subscription, exps []roverv1.Exposure) error {
 	if len(subs) == 0 && len(exps) == 0 {
 		return nil // No subscriptions or exposures, no duplicates to check
@@ -496,6 +501,16 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 				fmt.Sprintf("duplicate subscription for agentic base path %s", sub.Agentic.BasePath),
 			)
 		}
+
+		if sub.File != nil {
+			if _, exists := existingSubs[sub.File.FileType]; exists {
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("subscriptions").Index(idx).Child("file").Child("fileType"),
+					sub.File.FileType, fmt.Sprintf("duplicate subscription for file-type %s", sub.File.FileType),
+				)
+			}
+			existingSubs[sub.File.FileType] = true
+		}
 	}
 
 	existingExps := make(map[string]bool)
@@ -525,6 +540,16 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 				field.NewPath("spec").Child("exposures").Index(idx).Child("agentic").Child("basePath"),
 				fmt.Sprintf("duplicate exposure for agentic base path %s", exposure.Agentic.BasePath),
 			)
+		}
+
+		if exposure.File != nil {
+			if _, exists := existingExps[exposure.File.FileType]; exists {
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("exposures").Index(idx).Child("file").Child("fileType"),
+					exposure.File.FileType, fmt.Sprintf("duplicate exposure for file-type %s", exposure.File.FileType),
+				)
+			}
+			existingExps[exposure.File.FileType] = true
 		}
 	}
 
@@ -774,7 +799,85 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerro
 		return nil
 	case roverv1.TypeAgentic:
 		return nil // AI subscriptions have no special validation at this time
+
+	case roverv1.TypeFile:
+		return r.ValidateFileSubscription(valErr, sub, idx)
 	}
 
 	return nil
+}
+
+func (r *RoverValidator) ValidateFileExposure(valErr *cerrors.ValidationError, exposure roverv1.Exposure, idx int) error {
+	if exposure.File == nil {
+		return nil
+	}
+	validateFilePublicKeys(valErr, exposure.File.PublicKeys, field.NewPath("spec").Child("exposures").Index(idx).Child("file"))
+	return nil
+}
+
+func (r *RoverValidator) ValidateFileSubscription(valErr *cerrors.ValidationError, sub roverv1.Subscription, idx int) error {
+	if sub.File == nil {
+		return nil
+	}
+
+	validateFilePublicKeys(valErr, sub.File.PublicKeys, field.NewPath("spec").Child("subscriptions").Index(idx).Child("file"))
+	return nil
+}
+
+func validateFilePublicKeys(valErr *cerrors.ValidationError, keys []roverv1.PublicKey, filePath *field.Path) {
+	if len(keys) == 0 {
+		valErr.AddRequiredError(filePath.Child("publicKeys"), "at least one public key must be specified")
+		return
+	}
+
+	seenLabels := make(map[string]struct{}, len(keys))
+	seenKeys := make(map[string]struct{}, len(keys))
+	for i, key := range keys {
+		keyPath := filePath.Child("publicKeys").Index(i)
+		if _, exists := seenLabels[key.Label]; exists {
+			valErr.AddInvalidError(
+				keyPath.Child("label"),
+				key.Label,
+				fmt.Sprintf("duplicate public key label '%s'; labels must be unique per fileType", key.Label),
+			)
+		}
+		seenLabels[key.Label] = struct{}{}
+
+		if _, exists := seenKeys[key.Key]; exists {
+			valErr.AddInvalidError(
+				keyPath.Child("key"),
+				key.Label,
+				fmt.Sprintf("duplicate public key value for label '%s'; key values must be unique per fileType", key.Label),
+			)
+		}
+		seenKeys[key.Key] = struct{}{}
+
+		validateSSHPublicKeyFormat(valErr, key, keyPath)
+	}
+}
+
+// validateSSHPublicKeyFormat verifies that a public key value is a well-formed
+// SSH authorized-keys entry ("<type> <base64-key> [comment]") whose algorithm is
+// one of the supported SSHKeyTypes.
+func validateSSHPublicKeyFormat(valErr *cerrors.ValidationError, key roverv1.PublicKey, keyPath *field.Path) {
+	pub, _, _, _, err := ssh.ParseAuthorizedKey([]byte(strings.TrimSpace(key.Key)))
+	if err != nil {
+		valErr.AddInvalidError(
+			keyPath.Child("key"),
+			key.Key,
+			fmt.Sprintf("invalid SSH public key for label '%s': %v", key.Label, err),
+		)
+		return
+	}
+
+	if !roverv1.SSHKeyType(pub.Type()).IsValid() {
+		valErr.AddInvalidError(
+			keyPath.Child("key"),
+			key.Key,
+			fmt.Sprintf(
+				"unsupported key type '%s' for key labelled '%s'; must be one of %v",
+				pub.Type(), key.Label, roverv1.AllSSHKeyTypes,
+			),
+		)
+	}
 }

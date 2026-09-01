@@ -47,6 +47,7 @@
     },
     Event:   (*v1.EventExposure)(nil),
     Agentic: (*v1.AgenticExposure)(nil),
+    File:    (*v1.FileExposure)(nil),
 }
 ---
 
@@ -64,9 +65,26 @@
         AdditionalPublisherIds: nil,
     },
     Agentic: (*v1.AgenticExposure)(nil),
+    File:    (*v1.FileExposure)(nil),
 }
 ---
 
 [Exposure Mapper mapExposure must return an error for unknown exposure type - 1]
 &v1.Exposure{}
+---
+
+[Exposure Mapper mapExposure must map a FileExposure correctly - 1]
+&v1.Exposure{
+    Api:     (*v1.ApiExposure)(nil),
+    Event:   (*v1.EventExposure)(nil),
+    Agentic: (*v1.AgenticExposure)(nil),
+    File:    &v1.FileExposure{
+        FileType:   "demo-sftp-spec-v1",
+        Visibility: "World",
+        Approval:   v1.Approval{},
+        PublicKeys: {
+            {Label:"provider-key", Key:"ssh-ed25519 AAAA-provider"},
+        },
+    },
+}
 ---
