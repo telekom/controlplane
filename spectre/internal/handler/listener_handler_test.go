@@ -452,6 +452,33 @@ var _ = Describe("ListenerHandler", func() {
 	}
 
 	Describe("CreateOrUpdate", func() {
+		// The appId lands in the RouteListener and Subscriber names and in the bridge
+		// callback URL. Those children are cross-namespace, so they carry no owner
+		// reference and Delete only follows the refs in Listener status — a pass that
+		// provisions under an empty appId therefore leaks untracked resources once a
+		// later pass creates the correctly named ones.
+		Context("when the SpectreApplication has not resolved its application id", func() {
+			It("should block and NOT create any RouteListener or Subscriber", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+
+				sa := makeSpectreAppPtr()
+				sa.Status.Id = "" // controller has not reached the assignment yet
+				mockGetSpectreApp(sa)
+
+				// Deliberately no RouteListener/Subscriber expectations: the mock is
+				// strict, so any attempt to create one fails this spec.
+
+				err := h.CreateOrUpdate(ctx, listener)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("has not resolved its application id"))
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
 		Context("when approvals are pending", func() {
 			It("should set Blocked condition and NOT create downstream resources", func() {
 				listener := newListener()

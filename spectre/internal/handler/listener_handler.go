@@ -51,7 +51,17 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve SpectreApplication")
 	}
+	// The appId becomes part of the RouteListener and Subscriber names and of the
+	// bridge callback URL, so it is effectively immutable identity. Those children
+	// live in other namespaces and therefore carry no owner references, and Delete
+	// only removes what the Listener status currently points at — so provisioning
+	// under an empty appId leaves untracked resources behind once a later pass
+	// creates the correctly named ones.
 	appId := spectreApp.Status.Id
+	if appId == "" {
+		return ctrlerrors.BlockedErrorf("SpectreApplication %q has not resolved its application id yet",
+			listener.Spec.Application.String())
+	}
 
 	// Step 3: Resolve zones.
 	consumerZone, err := h.resolveZone(ctx, consumerApp)
