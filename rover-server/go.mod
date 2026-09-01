@@ -12,6 +12,7 @@ require (
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/event/api v0.0.0
+	github.com/telekom/controlplane/file/api v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
 )
 
@@ -24,6 +25,7 @@ replace (
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/event/api => ../event/api
 	github.com/telekom/controlplane/file-manager => ../file-manager
+	github.com/telekom/controlplane/file/api => ../file/api
 	github.com/telekom/controlplane/rover/api => ../rover/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )

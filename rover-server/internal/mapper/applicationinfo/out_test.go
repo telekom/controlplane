@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -187,6 +188,103 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(appInfo.Errors).To(HaveLen(1))
 			Expect(appInfo.Errors[0].Message).To(Equal("event store error"))
 		})
+
+		It("must handle file exposures with SFTP public keys", func() {
+			localStores := &store.Stores{}
+
+			apiExpMock := mocks.NewMockObjectStore[*apiv1.ApiExposure](GinkgoT())
+			apiExpMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+			localStores.APIExposureStore = apiExpMock
+
+			eventExpMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
+			eventExpMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+			localStores.EventExposureStore = eventExpMock
+
+			readyFileExp := &filev1.FileExposure{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "file/v1", Kind: "FileExposure"},
+				ObjectMeta: metav1.ObjectMeta{Name: "file-exp-1", Namespace: "test-ns"},
+				Spec: filev1.FileExposureSpec{
+					FileType:   "demo-invoices-v1",
+					Visibility: filev1.VisibilityWorld,
+					Approval: filev1.Approval{
+						Strategy: filev1.ApprovalStrategyAuto,
+					},
+					Sftp: filev1.SftpExposure{
+						PublicKeys: []filev1.PublicKey{
+							{Label: "demo-provider-key", Key: "ssh-rsa AAAA..."},
+						},
+					},
+				},
+				Status: filev1.FileExposureStatus{
+					Conditions: []metav1.Condition{
+						{Type: "Ready", Status: metav1.ConditionTrue, Reason: "Ready"},
+					},
+				},
+			}
+			fileExpMock := mocks.NewMockObjectStore[*filev1.FileExposure](GinkgoT())
+			fileExpMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(readyFileExp, nil).Maybe()
+			localStores.FileExposureStore = fileExpMock
+
+			roverWithFileExp := rover.DeepCopy()
+			roverWithFileExp.Status.ApiExposures = nil
+			roverWithFileExp.Status.EventExposures = nil
+			roverWithFileExp.Status.FileExposures = []types.ObjectRef{
+				{Name: "file-exp-1", Namespace: "test-ns"},
+			}
+
+			appInfo := &api.ApplicationInfo{}
+			err := FillExposureInfo(ctx, roverWithFileExp, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.Exposures).To(HaveLen(1))
+
+			fileExpInfo, err := appInfo.Exposures[0].AsFileExposureInfo()
+			Expect(err).To(BeNil())
+			Expect(fileExpInfo.FileType).To(Equal("demo-invoices-v1"))
+			Expect(fileExpInfo.Visibility).To(Equal(api.WORLD))
+			Expect(fileExpInfo.Approval).To(Equal(api.AUTO))
+			Expect(fileExpInfo.Variant).To(Equal(api.FileExposureInfoVariantSftp))
+			Expect(fileExpInfo.PublicKeys).To(HaveLen(1))
+			Expect(fileExpInfo.PublicKeys[0].Label).To(Equal("demo-provider-key"))
+		})
+
+		It("must record error when FileExposureStore.Get fails", func() {
+			localStores := &store.Stores{}
+
+			apiExpMock := mocks.NewMockObjectStore[*apiv1.ApiExposure](GinkgoT())
+			localStores.APIExposureStore = apiExpMock
+
+			eventExpMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
+			localStores.EventExposureStore = eventExpMock
+
+			failedExp := &filev1.FileExposure{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "file/v1", Kind: "FileExposure"},
+				ObjectMeta: metav1.ObjectMeta{Name: "file-exp-1", Namespace: "test-ns"},
+				Status: filev1.FileExposureStatus{
+					Conditions: []metav1.Condition{
+						{Type: "Ready", Status: metav1.ConditionFalse, Reason: "Error", Message: "file store error cause"},
+					},
+				},
+			}
+			fileExpMock := mocks.NewMockObjectStore[*filev1.FileExposure](GinkgoT())
+			fileExpMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedExp, fmt.Errorf("file store error")).Maybe()
+			fileExpMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "file.cp.ei.telekom.de", Version: "v1", Kind: "FileExposure"}).Maybe()
+			localStores.FileExposureStore = fileExpMock
+
+			roverWithFileExp := rover.DeepCopy()
+			roverWithFileExp.Status.ApiExposures = nil
+			roverWithFileExp.Status.EventExposures = nil
+			roverWithFileExp.Status.FileExposures = []types.ObjectRef{
+				{Name: "file-exp-1", Namespace: "test-ns"},
+			}
+
+			appInfo := &api.ApplicationInfo{}
+			err := FillExposureInfo(ctx, roverWithFileExp, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.Errors).To(HaveLen(1))
+			Expect(appInfo.Errors[0].Message).To(Equal("file store error"))
+		})
 	})
 
 	Context("FillSubscriptionInfo", func() {
@@ -297,6 +395,96 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(err).To(BeNil())
 			Expect(appInfo.Errors).To(HaveLen(1))
 			Expect(appInfo.Errors[0].Message).To(Equal("event sub error"))
+		})
+
+		It("must handle file subscriptions with SFTP public keys", func() {
+			localStores := &store.Stores{}
+
+			apiSubMock := mocks.NewMockObjectStore[*apiv1.ApiSubscription](GinkgoT())
+			apiSubMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+			localStores.APISubscriptionStore = apiSubMock
+
+			eventSubMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
+			eventSubMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+			localStores.EventSubscriptionStore = eventSubMock
+
+			readyFileSub := &filev1.FileSubscription{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "file/v1", Kind: "FileSubscription"},
+				ObjectMeta: metav1.ObjectMeta{Name: "file-sub-1", Namespace: "test-ns"},
+				Spec: filev1.FileSubscriptionSpec{
+					FileType: "demo-invoices-v1",
+					Sftp: filev1.SftpSubscription{
+						PublicKeys: []filev1.PublicKey{
+							{Label: "demo-consumer-key", Key: "ssh-rsa BBBB..."},
+						},
+					},
+				},
+				Status: filev1.FileSubscriptionStatus{
+					Conditions: []metav1.Condition{
+						{Type: "Ready", Status: metav1.ConditionTrue, Reason: "Ready"},
+					},
+				},
+			}
+			fileSubMock := mocks.NewMockObjectStore[*filev1.FileSubscription](GinkgoT())
+			fileSubMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(readyFileSub, nil).Maybe()
+			localStores.FileSubscriptionStore = fileSubMock
+
+			roverWithFileSub := rover.DeepCopy()
+			roverWithFileSub.Status.ApiSubscriptions = nil
+			roverWithFileSub.Status.EventSubscriptions = nil
+			roverWithFileSub.Status.FileSubscriptions = []types.ObjectRef{
+				{Name: "file-sub-1", Namespace: "test-ns"},
+			}
+
+			appInfo := &api.ApplicationInfo{}
+			err := FillSubscriptionInfo(ctx, roverWithFileSub, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.Subscriptions).To(HaveLen(1))
+
+			fileSubInfo, err := appInfo.Subscriptions[0].AsFileSubscriptionInfo()
+			Expect(err).To(BeNil())
+			Expect(fileSubInfo.FileType).To(Equal("demo-invoices-v1"))
+			Expect(fileSubInfo.PublicKeys).To(HaveLen(1))
+			Expect(fileSubInfo.PublicKeys[0].Label).To(Equal("demo-consumer-key"))
+		})
+
+		It("must record error when FileSubscriptionStore.Get fails", func() {
+			localStores := &store.Stores{}
+
+			apiSubMock := mocks.NewMockObjectStore[*apiv1.ApiSubscription](GinkgoT())
+			localStores.APISubscriptionStore = apiSubMock
+
+			eventSubMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
+			localStores.EventSubscriptionStore = eventSubMock
+
+			failedSub := &filev1.FileSubscription{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "file/v1", Kind: "FileSubscription"},
+				ObjectMeta: metav1.ObjectMeta{Name: "failed-file-sub", Namespace: "test-ns"},
+				Status: filev1.FileSubscriptionStatus{
+					Conditions: []metav1.Condition{
+						{Type: "Ready", Status: metav1.ConditionFalse, Reason: "Error", Message: "file sub error cause"},
+					},
+				},
+			}
+			fileSubMock := mocks.NewMockObjectStore[*filev1.FileSubscription](GinkgoT())
+			fileSubMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(failedSub, fmt.Errorf("file sub error")).Maybe()
+			fileSubMock.EXPECT().Info().Return(schema.GroupVersionResource{}, schema.GroupVersionKind{Group: "file.cp.ei.telekom.de", Version: "v1", Kind: "FileSubscription"}).Maybe()
+			localStores.FileSubscriptionStore = fileSubMock
+
+			roverWithSub := rover.DeepCopy()
+			roverWithSub.Status.ApiSubscriptions = nil
+			roverWithSub.Status.EventSubscriptions = nil
+			roverWithSub.Status.FileSubscriptions = []types.ObjectRef{
+				{Name: "some-file-sub", Namespace: "test-ns"},
+			}
+
+			appInfo := &api.ApplicationInfo{}
+			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.Errors).To(HaveLen(1))
+			Expect(appInfo.Errors[0].Message).To(Equal("file sub error"))
 		})
 	})
 
