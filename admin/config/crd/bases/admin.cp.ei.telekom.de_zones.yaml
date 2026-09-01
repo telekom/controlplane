@@ -358,12 +358,14 @@ spec:
                           zone.
                         properties:
                           basePath:
+                            default: /
                             description: |-
                               BasePath is the base path part of the URL which will be the prefix of all routes exposed on this URL (e.g. "/v1").
                               It is appended to the hostname to construct the full URL (e.g. "https://api.example.com/v1").
                             pattern: ^/.*$
                             type: string
                           hidden:
+                            default: false
                             description: |-
                               Hidden controls whether this URL should be hidden from the Links section in the Zone status.
                               This can be used to hide internal-only URLs that should not be exposed to API consumers.
@@ -391,8 +393,6 @@ spec:
                             - https
                             type: string
                         required:
-                        - basePath
-                        - hidden
                         - hostname
                         type: object
                       maxItems: 5

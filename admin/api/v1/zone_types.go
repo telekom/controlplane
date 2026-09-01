@@ -136,11 +136,14 @@ type UrlConfig struct {
 	Scheme string `json:"scheme,omitempty"`
 	// BasePath is the base path part of the URL which will be the prefix of all routes exposed on this URL (e.g. "/v1").
 	// It is appended to the hostname to construct the full URL (e.g. "https://api.example.com/v1").
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern=`^/.*$`
+	// +kubebuilder:default=/
 	BasePath string `json:"basePath"`
 	// Hidden controls whether this URL should be hidden from the Links section in the Zone status.
 	// This can be used to hide internal-only URLs that should not be exposed to API consumers.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
 	Hidden bool `json:"hidden"`
 }
 
