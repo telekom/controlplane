@@ -54,24 +54,9 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	if err != nil {
 		return err
 	}
-	if app.Spec.Failover.Enabled {
-		app.Status.TokenUrl, err = consumerFailoverTokenURL(zone)
-		if err != nil {
-			return ctrlerrors.BlockedErrorf("zone %q does not contain a valid ConsumerFailover token URL: %s", zone.Name, err.Error())
-		}
-	} else {
-		preset, err := zone.Spec.GetDefaultPreset()
-		if err != nil {
-			return ctrlerrors.BlockedErrorf("zone %q does not contain the selected preset: %s", zone.Name, err.Error())
-		}
-		presetStatus, err := zone.Status.GetPreset(preset.Name)
-		if err != nil {
-			return ctrlerrors.BlockedErrorf("zone %q does not contain status for preset %q", zone.Name, preset.Name)
-		}
-		if presetStatus.Links.TokenUrl == "" {
-			return ctrlerrors.BlockedErrorf("zone %q preset %q does not contain a token URL", zone.Name, preset.Name)
-		}
-		app.Status.TokenUrl = presetStatus.Links.TokenUrl
+	app.Status.TokenUrl, err = resolveTokenURL(zone, app.Spec.Failover.Enabled)
+	if err != nil {
+		return err
 	}
 
 	primaryClient, err := h.ensureIdentityClients(ctx, zone, failoverZones, app)
@@ -116,6 +101,30 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	return nil
 }
 
+// resolveTokenURL returns the shared failover token URL or the default preset's token URL.
+func resolveTokenURL(zone *admin.Zone, failoverEnabled bool) (string, error) {
+	if failoverEnabled {
+		tokenURL, err := consumerFailoverTokenURL(zone)
+		if err != nil {
+			return "", ctrlerrors.BlockedErrorf("zone %q does not contain a valid ConsumerFailover token URL: %s", zone.Name, err.Error())
+		}
+		return tokenURL, nil
+	}
+
+	preset, err := zone.Spec.GetDefaultPreset()
+	if err != nil {
+		return "", ctrlerrors.BlockedErrorf("zone %q does not contain the selected preset: %s", zone.Name, err.Error())
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return "", ctrlerrors.BlockedErrorf("zone %q does not contain status for preset %q", zone.Name, preset.Name)
+	}
+	if presetStatus.Links.TokenUrl == "" {
+		return "", ctrlerrors.BlockedErrorf("zone %q preset %q does not contain a token URL", zone.Name, preset.Name)
+	}
+	return presetStatus.Links.TokenUrl, nil
+}
+
 func consumerFailoverTokenURL(zone *admin.Zone) (string, error) {
 	var tokenURL string
 	// Failover provisioning aggregates presets, but their shared identity endpoint must stay unambiguous.
@@ -152,40 +161,48 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 		return nil, nil, ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
 	}
 
-	// Any API or AI failover preset makes a zone eligible; applications are provisioned for all available traffic types.
-	var failoverZones []*admin.Zone
-	if app.Spec.Failover.Enabled {
-		zoneList := &admin.ZoneList{}
-		if err := c.List(ctx, zoneList); err != nil {
-			return nil, nil, ctrlerrors.RetryableErrorf("failed to list Zones when creating application: %s", err.Error())
-		}
+	if !app.Spec.Failover.Enabled {
+		return zone, nil, nil
+	}
 
-		for i := range zoneList.Items {
-			if types.Equals(zone, &zoneList.Items[i]) {
-				continue
-			}
-			candidate := &zoneList.Items[i]
-			if controller.IsBeingDeleted(candidate) {
-				continue
-			}
-			if _, err := candidate.Spec.MatchingGateways(admin.FeatureConsumerFailover); err != nil {
-				if errors.Is(err, admin.ErrNoMatchingPreset) {
-					continue
-				}
-				return nil, nil, ctrlerrors.BlockedErrorf("failover zone %q is invalid: %s", candidate.Namespace+"/"+candidate.Name, err.Error())
-			}
-			failoverZones = append(failoverZones, candidate)
-		}
-		slices.SortFunc(failoverZones, func(a, b *admin.Zone) int {
-			if namespaceOrder := strings.Compare(a.Namespace, b.Namespace); namespaceOrder != 0 {
-				return namespaceOrder
-			}
-			return strings.Compare(a.Name, b.Name)
-		})
+	failoverZones, err := resolveFailoverZones(ctx, c, zone)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	logger.Info("Resolved zones for application", "primary", zone.Name, "#failover", len(failoverZones))
 	return zone, failoverZones, nil
+}
+
+// resolveFailoverZones returns non-deleting zones with at least one enabled ConsumerFailover preset.
+func resolveFailoverZones(ctx context.Context, c client.ScopedClient, primaryZone *admin.Zone) ([]*admin.Zone, error) {
+	zoneList := &admin.ZoneList{}
+	if err := c.List(ctx, zoneList); err != nil {
+		return nil, ctrlerrors.RetryableErrorf("failed to list Zones when creating application: %s", err.Error())
+	}
+
+	// Any API or AI failover preset makes a zone eligible; applications are provisioned for all available traffic types.
+	var failoverZones []*admin.Zone
+	for i := range zoneList.Items {
+		candidate := &zoneList.Items[i]
+		if types.Equals(primaryZone, candidate) || controller.IsBeingDeleted(candidate) {
+			continue
+		}
+		if _, err := candidate.Spec.MatchingGateways(admin.FeatureConsumerFailover); err != nil {
+			if errors.Is(err, admin.ErrNoMatchingPreset) {
+				continue
+			}
+			return nil, ctrlerrors.BlockedErrorf("failover zone %q is invalid: %s", candidate.Namespace+"/"+candidate.Name, err.Error())
+		}
+		failoverZones = append(failoverZones, candidate)
+	}
+	slices.SortFunc(failoverZones, func(a, b *admin.Zone) int {
+		if namespaceOrder := strings.Compare(a.Namespace, b.Namespace); namespaceOrder != 0 {
+			return namespaceOrder
+		}
+		return strings.Compare(a.Name, b.Name)
+	})
+	return failoverZones, nil
 }
 
 func (h *ApplicationHandler) ensureIdentityClients(ctx context.Context, zone *admin.Zone, failoverZones []*admin.Zone, app *application.Application) (*identity.Client, error) {
