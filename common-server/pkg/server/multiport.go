@@ -7,6 +7,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"net"
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
@@ -86,6 +87,27 @@ func (m *MultiServer) Run(ctx context.Context) error {
 	serveTLSFn := m.serveTLS
 	if serveTLSFn == nil {
 		serveTLSFn = serve.ServeTLS
+	}
+
+	// Bind-check every plain-HTTP address up front, before any serve goroutine
+	// starts. Without this, a listener that fails to bind can cancel ctx while
+	// a sibling hasn't called Listen yet; fiber's Shutdown is a no-op until the
+	// app has actually started serving, so that sibling would then bind and
+	// block in Accept forever, hanging Run. TLS listeners are exempt: serving
+	// is delegated to the injectable serveTLS seam, which tests fake without
+	// touching the network.
+	if m.TLS == nil {
+		network := m.AppConfig.Network
+		if network == "" {
+			network = fiber.NetworkTCP4
+		}
+		for _, l := range listeners {
+			ln, err := net.Listen(network, l.Address)
+			if err != nil {
+				return fmt.Errorf("listener %q: %w", l.Address, err)
+			}
+			_ = ln.Close()
+		}
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
