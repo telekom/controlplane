@@ -223,7 +223,16 @@ jobs:
   package:
     name: "Package (${{ matrix.name }})"
     needs: collect_build_status
-    if: ${{ fromJSON(needs.collect_build_status.outputs.package_matrix)[0] != null }}
+    # `!cancelled()` is required, not cosmetic: without a status function
+    # GitHub applies an implicit success() that walks the *entire* needs
+    # graph, so a single failed `build` matrix entry would skip packaging
+    # for every module - defeating collect_build_status's per-module
+    # filtering. package_matrix already contains only modules that built
+    # successfully, so the failed one is excluded there, not here.
+    # The explicit result check replaces the implicit success() we just
+    # opted out of: package_matrix would be an empty string (not valid
+    # JSON) if collect_build_status itself failed.
+    if: ${{ !cancelled() && needs.collect_build_status.result == 'success' && fromJSON(needs.collect_build_status.outputs.package_matrix)[0] != null }}
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -275,7 +284,8 @@ jobs:
   rover_ctl_package:
     name: "Package (rover-ctl)"
     needs: collect_build_status
-    if: ${{ needs.collect_build_status.outputs.rover_ctl_ready == 'true' }}
+    # See the `package` job above for why `!cancelled()` is required here.
+    if: ${{ !cancelled() && needs.collect_build_status.result == 'success' && needs.collect_build_status.outputs.rover_ctl_ready == 'true' }}
     uses: ./.github/workflows/component-package-build.yaml
     with:
       name: rover-ctl
