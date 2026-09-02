@@ -216,8 +216,8 @@ var _ = Describe("MultiServer shared-TLS wiring", func() {
 			AppConfig: server.NewAppConfig(),
 			TLS:       &server.TLSConfig{CertFile: "/c", KeyFile: "/k"},
 			Listeners: server.Listeners{
-				Internal: &server.Listener{Address: ":1", Family: fam},
-				External: &server.Listener{Address: ":2", Family: fam},
+				Internal: &server.Listener{Address: ":8001", Family: fam},
+				External: &server.Listener{Address: ":8002", Family: fam},
 			},
 			Register: func(r fiber.Router, guard fiber.Handler) {},
 		}
