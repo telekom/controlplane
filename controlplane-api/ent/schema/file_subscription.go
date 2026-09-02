@@ -55,8 +55,7 @@ func (FileSubscription) Edges() []ent.Edge {
 		edge.To("target", FileExposure.Type).
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),
-		edge.From("zone", Zone.Type).
-			Ref("file_subscriptions").
+		edge.To("zone", Zone.Type).
 			Required().
 			Unique(),
 		edge.To("approval", Approval.Type).

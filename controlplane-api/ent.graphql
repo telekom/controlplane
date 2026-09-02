@@ -5991,8 +5991,6 @@ type Zone implements Node {
   permissionsURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
-  fileExposures: [FileExposure!]
-  fileSubscriptions: [FileSubscription!]
 }
 """
 ZoneVisibility is enum for the field visibility
@@ -6120,14 +6118,4 @@ input ZoneWhereInput {
   """
   hasApplications: Boolean
   hasApplicationsWith: [ApplicationWhereInput!]
-  """
-  file_exposures edge predicates
-  """
-  hasFileExposures: Boolean
-  hasFileExposuresWith: [FileExposureWhereInput!]
-  """
-  file_subscriptions edge predicates
-  """
-  hasFileSubscriptions: Boolean
-  hasFileSubscriptionsWith: [FileSubscriptionWhereInput!]
 }

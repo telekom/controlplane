@@ -724,7 +724,7 @@ func HasZone() predicate.FileExposure {
 	return predicate.FileExposure(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, ZoneTable, ZoneColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, ZoneTable, ZoneColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
