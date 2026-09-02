@@ -37,7 +37,10 @@ func (g GatewayConsumerHandler) CreateOrUpdate(ctx context.Context, owner *organ
 		return ctrlerrors.BlockedErrorf("no default preset found in zone object: %v", err)
 	}
 	presetStatus, err := zoneObj.Status.GetPreset(preset.Name)
-	if err != nil || presetStatus.GatewayRef == nil {
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("no status found for default preset %q: %v", preset.Name, err)
+	}
+	if presetStatus.GatewayRef == nil {
 		// this should not happen if the cluster is properly configured
 		return ctrlerrors.BlockedErrorf("no gateway reference found in zone object")
 	}

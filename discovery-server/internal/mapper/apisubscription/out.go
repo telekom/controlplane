@@ -6,7 +6,7 @@ package apisubscription
 
 import (
 	"context"
-	"strings"
+	"net/url"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
@@ -123,6 +123,7 @@ func mapGatewayUrl(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiS
 	if err != nil || zone == nil {
 		return
 	}
+
 	out.GatewayUrl = joinURL(gatewayBaseUrl(zone, in.HasFailover()), in.Spec.ApiBasePath)
 }
 
@@ -175,10 +176,15 @@ func mapApproval(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSub
 	}
 }
 
-// joinURL concatenates a base URL and a path, ensuring exactly one "/" between them.
-// TODO: use url.JoinPath(base, path)
 func joinURL(base, path string) string {
-	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(path, "/")
+	if base == "" {
+		return ""
+	}
+	joined, err := url.JoinPath(base, path)
+	if err != nil {
+		return ""
+	}
+	return joined
 }
 
 // gatewayBaseUrl returns the appropriate gateway base URL for a zone.

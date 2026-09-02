@@ -29,9 +29,12 @@ func TestJoinURL(t *testing.T) {
 		path string
 		want string
 	}{
+		{base: "", path: "/a", want: ""},
 		{base: "https://gw.example", path: "/a", want: "https://gw.example/a"},
 		{base: "https://gw.example/", path: "a", want: "https://gw.example/a"},
 		{base: "https://gw.example/", path: "/a", want: "https://gw.example/a"},
+		{base: "https://gw.example/base?tenant=one", path: "../a", want: "https://gw.example/a?tenant=one"},
+		{base: "https://gw.example/%", path: "a", want: ""},
 	}
 
 	for _, tt := range tests {

@@ -94,8 +94,9 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
-				Gateways: []adminv1.GatewayConfig{{Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
-					Name: "default",
+				Gateways: []adminv1.GatewayConfig{{
+					Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
+					Name:  "default",
 					Admin: adminv1.GatewayAdminConfig{
 						Url: "http://gateway-admin.test.local:8001",
 					},
