@@ -51,12 +51,16 @@ var _ = Describe("FileSpec Handler", func() {
 		}))
 	})
 
+	It("ignores a nil object", func() {
+		Expect(v0.PatchFileSpecificationRequest(context.Background(), nil)).To(Succeed())
+	})
+
 	DescribeTable("rejects an invalid FileSpecification body",
 		func(content map[string]any) {
 			obj := &types.UnstructuredObject{Content: content}
 			Expect(v0.PatchFileSpecificationRequest(context.Background(), obj)).To(HaveOccurred())
 		},
-		Entry("nil object", nil),
+		Entry("nil content", nil),
 		Entry("missing spec", map[string]any{}),
 		Entry("non-object spec", map[string]any{"spec": "invalid"}),
 	)
