@@ -42,7 +42,7 @@ func (h *SubscriberHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.Su
 		return errors.Wrapf(err, "failed to resolve EventStore %q from Publisher %q", publisher.Spec.EventStore.String(), obj.Spec.Publisher.String())
 	}
 
-	if cconfig.FeatureFileManager.IsEnabled() {
+	if cconfig.FeatureFileManager.IsEnabled() && publisher.Spec.JsonSchema != "" {
 		buf := bytes.NewBuffer(nil)
 		res, dlErr := getFileManager().DownloadFile(ctx, publisher.Spec.JsonSchema, buf)
 		if dlErr != nil {

@@ -8,7 +8,7 @@ go 1.26.6
 
 require (
 	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.42.1
+	github.com/onsi/gomega v1.43.0
 	github.com/pkg/errors v0.9.1
 	github.com/telekom/controlplane/common v0.0.0
 	k8s.io/apimachinery v0.37.0

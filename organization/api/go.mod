@@ -7,7 +7,7 @@ module github.com/telekom/controlplane/organization/api
 go 1.26.6
 
 require (
-	github.com/onsi/gomega v1.42.1
+	github.com/onsi/gomega v1.43.0
 	github.com/telekom/controlplane/common v0.0.0
 	k8s.io/apimachinery v0.37.0
 	sigs.k8s.io/controller-runtime v0.24.1
