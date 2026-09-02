@@ -80,7 +80,6 @@ func (r *FileExposureReconciler) MapFileTypeToFileExposure(ctx context.Context, 
 
 	list := &filev1.FileExposureList{}
 	err := r.List(ctx, list,
-		client.InNamespace(fileType.Namespace),
 		client.MatchingFields{index.FieldSpecFileTypeOnExposure: fileType.Name},
 	)
 	if err != nil {
@@ -102,7 +101,6 @@ func (r *FileExposureReconciler) MapZoneServiceConfigToFileExposure(ctx context.
 
 	list := &filev1.FileExposureList{}
 	if err := r.List(ctx, list,
-		client.InNamespace(zoneServiceConfig.Labels[cconfig.EnvironmentLabelKey]),
 		client.MatchingFields{index.FieldSpecZoneOnExposure: zoneServiceConfig.Spec.Zone.String()},
 	); err != nil {
 		return nil

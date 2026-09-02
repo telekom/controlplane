@@ -14,12 +14,19 @@ import (
 )
 
 func ChildLabels(fileTypeRef types.ObjectRef) map[string]string {
+	childLabels := DomainLabel()
+
+	childLabels[filev1.FileTypeNameLabelKey] = labelutil.NormalizeLabelValue(fileTypeRef.Name)
+	childLabels[filev1.FileTypeNamespaceLabelKey] = labelutil.NormalizeLabelValue(fileTypeRef.Namespace)
+	childLabels[config.BuildLabelKey("file.exposure")] = labelutil.NormalizeLabelValue(fileTypeRef.Name)
+	childLabels[config.BuildLabelKey("managed.by")] = "file-operator"
+
+	return childLabels
+}
+
+func DomainLabel() map[string]string {
 	return map[string]string{
-		config.DomainLabelKey:                 "file",
-		filev1.FileTypeNameLabelKey:           labelutil.NormalizeLabelValue(fileTypeRef.Name),
-		filev1.FileTypeNamespaceLabelKey:      labelutil.NormalizeLabelValue(fileTypeRef.Namespace),
-		config.BuildLabelKey("file.exposure"): labelutil.NormalizeLabelValue(fileTypeRef.Name),
-		config.BuildLabelKey("managed.by"):    "file-operator",
+		config.DomainLabelKey: "file",
 	}
 }
 

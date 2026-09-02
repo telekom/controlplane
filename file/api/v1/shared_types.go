@@ -6,25 +6,10 @@ package v1
 
 const (
 	// FileTypeNameLabelKey marks resources related to a FileType name.
-	FileTypeNameLabelKey = "filetype.file.ei.telekom.de/name"
+	FileTypeNameLabelKey = "filetype.file.cp.ei.telekom.de/name"
 	// FileTypeNamespaceLabelKey marks resources related to a FileType namespace.
-	FileTypeNamespaceLabelKey = "filetype.file.ei.telekom.de/namespace"
+	FileTypeNamespaceLabelKey = "filetype.file.cp.ei.telekom.de/namespace"
 )
-
-// FileSolution defines the backing file transfer solution.
-// +kubebuilder:validation:Enum=sftp
-type FileSolution string
-
-const (
-	FileSolutionSFTP FileSolution = "sftp"
-)
-
-func (s FileSolution) OrDefault() FileSolution {
-	if s == "" {
-		return FileSolutionSFTP
-	}
-	return s
-}
 
 // Visibility defines who can see and subscribe to an exposed file type.
 // +kubebuilder:validation:Enum=World;Zone;Enterprise

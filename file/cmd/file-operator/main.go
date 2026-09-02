@@ -9,8 +9,12 @@ import (
 	"flag"
 	"os"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -18,9 +22,12 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/file/internal/controller"
 	"github.com/telekom/controlplane/file/internal/index"
 	webhookv1 "github.com/telekom/controlplane/file/internal/webhook/v1"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -115,6 +122,14 @@ func main() {
 		metricsServerOptions.KeyName = metricsCertKey
 	}
 
+	selector := labels.NewSelector()
+	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.In, []string{"file"})
+	if err != nil {
+		setupLog.Error(err, "unable to create label requirement")
+		os.Exit(1)
+	}
+	selector = selector.Add(*requirement)
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
@@ -122,6 +137,19 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "file.cp.ei.telekom.de",
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
+				&gatewayv1.Route{}: {
+					Label: selector,
+				},
+				&gatewayv1.Consumer{}: {
+					Label: selector,
+				},
+				&identityv1.Client{}: {
+					Label: selector,
+				},
+			},
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

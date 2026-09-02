@@ -44,6 +44,7 @@ var _ = Describe("FileExposure Controller", func() {
 						Namespace: "default",
 					},
 					Spec: filev1.FileExposureSpec{
+						Variant:    "sftp",
 						FileType:   "test-filetype",
 						Visibility: filev1.VisibilityEnterprise,
 						Approval:   filev1.Approval{Strategy: filev1.ApprovalStrategyAuto},

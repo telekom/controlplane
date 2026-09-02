@@ -39,7 +39,7 @@ func GetFileType(ctx context.Context, ref types.ObjectRef) (*filev1.FileType, er
 
 func GetChildResourceRef(obj *filev1.ZoneServiceConfig) types.ObjectRef {
 	return types.ObjectRef{
-		Name:      identityClientNamePrefix + "--" + obj.Name,
+		Name:      identityClientNamePrefix + "-" + obj.Name,
 		Namespace: obj.Namespace,
 	}
 }
