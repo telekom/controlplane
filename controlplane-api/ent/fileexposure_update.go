@@ -532,7 +532,7 @@ func (_u *FileExposureUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if _u.mutation.ZoneCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   fileexposure.ZoneTable,
 			Columns: []string{fileexposure.ZoneColumn},
 			Bidi:    false,
@@ -545,7 +545,7 @@ func (_u *FileExposureUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if nodes := _u.mutation.ZoneIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   fileexposure.ZoneTable,
 			Columns: []string{fileexposure.ZoneColumn},
 			Bidi:    false,
@@ -1148,7 +1148,7 @@ func (_u *FileExposureUpdateOne) sqlSave(ctx context.Context) (_node *FileExposu
 	if _u.mutation.ZoneCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   fileexposure.ZoneTable,
 			Columns: []string{fileexposure.ZoneColumn},
 			Bidi:    false,
@@ -1161,7 +1161,7 @@ func (_u *FileExposureUpdateOne) sqlSave(ctx context.Context) (_node *FileExposu
 	if nodes := _u.mutation.ZoneIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   fileexposure.ZoneTable,
 			Columns: []string{fileexposure.ZoneColumn},
 			Bidi:    false,

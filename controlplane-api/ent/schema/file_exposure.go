@@ -69,8 +69,7 @@ func (FileExposure) Edges() []ent.Edge {
 		edge.From("file_type_def", FileType.Type).
 			Ref("exposures").
 			Unique(),
-		edge.From("zone", Zone.Type).
-			Ref("file_exposures").
+		edge.To("zone", Zone.Type).
 			Required().
 			Unique(),
 		edge.From("subscriptions", FileSubscription.Type).

@@ -458,7 +458,7 @@ func (_c *FileSubscriptionCreate) createSpec() (*FileSubscription, *sqlgraph.Cre
 	if nodes := _c.mutation.ZoneIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   filesubscription.ZoneTable,
 			Columns: []string{filesubscription.ZoneColumn},
 			Bidi:    false,
@@ -469,7 +469,7 @@ func (_c *FileSubscriptionCreate) createSpec() (*FileSubscription, *sqlgraph.Cre
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.zone_file_subscriptions = &nodes[0]
+		_node.file_subscription_zone = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.ApprovalIDs(); len(nodes) > 0 {

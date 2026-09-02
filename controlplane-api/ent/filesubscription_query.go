@@ -159,7 +159,7 @@ func (_q *FileSubscriptionQuery) QueryZone() *ZoneQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(filesubscription.Table, filesubscription.FieldID, selector),
 			sqlgraph.To(zone.Table, zone.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, filesubscription.ZoneTable, filesubscription.ZoneColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, filesubscription.ZoneTable, filesubscription.ZoneColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -756,10 +756,10 @@ func (_q *FileSubscriptionQuery) loadZone(ctx context.Context, query *ZoneQuery,
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*FileSubscription)
 	for i := range nodes {
-		if nodes[i].zone_file_subscriptions == nil {
+		if nodes[i].file_subscription_zone == nil {
 			continue
 		}
-		fk := *nodes[i].zone_file_subscriptions
+		fk := *nodes[i].file_subscription_zone
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -776,7 +776,7 @@ func (_q *FileSubscriptionQuery) loadZone(ctx context.Context, query *ZoneQuery,
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "zone_file_subscriptions" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "file_subscription_zone" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

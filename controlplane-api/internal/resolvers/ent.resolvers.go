@@ -1,4 +1,4 @@
-g// SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
+// SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 package resolvers
@@ -19,170 +19,102 @@ import (
 
 // Features is the resolver for the features field.
 func (r *apiExposureResolver) Features(ctx context.Context, obj *ent.ApiExposure) ([]model.APIExposureFeature, error) {
-	result := make([]model.APIExposureFeature, len(obj.Features))
-	for i, f := range obj.Features {
-		result[i] = model.APIExposureFeature(f)
-	}
-	return result, nil
+	panic(fmt.Errorf("not implemented: Features - features"))
 }
 
 // ClientSecret is the resolver for the clientSecret field.
-// Resolves secret references just-in-time from the secret manager.
-// Returns masked value for obfuscated callers.
 func (r *applicationResolver) ClientSecret(ctx context.Context, obj *ent.Application) (*string, error) {
-	return r.secrets.Resolve(ctx, obj.ClientSecret, "clientSecret")
+	panic(fmt.Errorf("not implemented: ClientSecret - clientSecret"))
 }
 
 // RotatedClientSecret is the resolver for the rotatedClientSecret field.
-// Resolves secret references just-in-time from the secret manager.
-// Returns masked value for obfuscated callers.
 func (r *applicationResolver) RotatedClientSecret(ctx context.Context, obj *ent.Application) (*string, error) {
-	return r.secrets.Resolve(ctx, obj.RotatedClientSecret, "rotatedClientSecret")
+	panic(fmt.Errorf("not implemented: RotatedClientSecret - rotatedClientSecret"))
 }
 
 // Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
-	return r.client.Noder(ctx, id)
+	panic(fmt.Errorf("not implemented: Node - node"))
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
-	return r.client.Noders(ctx, ids)
+	panic(fmt.Errorf("not implemented: Nodes - nodes"))
 }
 
 // AgentCards is the resolver for the agentCards field.
 func (r *queryResolver) AgentCards(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgentCardOrder, where *ent.AgentCardWhereInput) (*ent.AgentCardConnection, error) {
-	return r.client.AgentCard.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithAgentCardOrder(orderBy),
-			ent.WithAgentCardFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: AgentCards - agentCards"))
 }
 
 // AgenticExposures is the resolver for the agenticExposures field.
 func (r *queryResolver) AgenticExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticExposureOrder, where *ent.AgenticExposureWhereInput) (*ent.AgenticExposureConnection, error) {
-	return r.client.AgenticExposure.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithAgenticExposureOrder(orderBy),
-			ent.WithAgenticExposureFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: AgenticExposures - agenticExposures"))
 }
 
 // AgenticSubscriptions is the resolver for the agenticSubscriptions field.
 func (r *queryResolver) AgenticSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticSubscriptionOrder, where *ent.AgenticSubscriptionWhereInput) (*ent.AgenticSubscriptionConnection, error) {
-	return r.client.AgenticSubscription.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithAgenticSubscriptionOrder(orderBy),
-			ent.WithAgenticSubscriptionFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: AgenticSubscriptions - agenticSubscriptions"))
 }
 
 // Apis is the resolver for the apis field.
 func (r *queryResolver) Apis(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) (*ent.ApiConnection, error) {
-	return r.client.Api.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApiOrder(orderBy),
-			ent.WithApiFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: Apis - apis"))
 }
 
 // APIExposures is the resolver for the apiExposures field.
 func (r *queryResolver) APIExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) (*ent.ApiExposureConnection, error) {
-	return r.client.ApiExposure.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApiExposureOrder(orderBy),
-			ent.WithApiExposureFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: APIExposures - apiExposures"))
 }
 
 // APISubscriptions is the resolver for the apiSubscriptions field.
 func (r *queryResolver) APISubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) (*ent.ApiSubscriptionConnection, error) {
-	return r.client.ApiSubscription.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApiSubscriptionOrder(orderBy),
-			ent.WithApiSubscriptionFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: APISubscriptions - apiSubscriptions"))
 }
 
 // Applications is the resolver for the applications field.
 func (r *queryResolver) Applications(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) (*ent.ApplicationConnection, error) {
-	return r.client.Application.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApplicationOrder(orderBy),
-			ent.WithApplicationFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: Applications - applications"))
 }
 
 // Approvals is the resolver for the approvals field.
 func (r *queryResolver) Approvals(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalOrder, where *ent.ApprovalWhereInput) (*ent.ApprovalConnection, error) {
-	return r.client.Approval.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApprovalOrder(orderBy),
-			ent.WithApprovalFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: Approvals - approvals"))
 }
 
 // ApprovalRequests is the resolver for the approvalRequests field.
 func (r *queryResolver) ApprovalRequests(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalRequestOrder, where *ent.ApprovalRequestWhereInput) (*ent.ApprovalRequestConnection, error) {
-	return r.client.ApprovalRequest.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApprovalRequestOrder(orderBy),
-			ent.WithApprovalRequestFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: ApprovalRequests - approvalRequests"))
 }
 
 // EventExposures is the resolver for the eventExposures field.
 func (r *queryResolver) EventExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) (*ent.EventExposureConnection, error) {
-	return r.client.EventExposure.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithEventExposureOrder(orderBy),
-			ent.WithEventExposureFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: EventExposures - eventExposures"))
 }
 
 // EventSubscriptions is the resolver for the eventSubscriptions field.
 func (r *queryResolver) EventSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) (*ent.EventSubscriptionConnection, error) {
-	return r.client.EventSubscription.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithEventSubscriptionOrder(orderBy),
-			ent.WithEventSubscriptionFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: EventSubscriptions - eventSubscriptions"))
 }
 
 // EventTypes is the resolver for the eventTypes field.
 func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) (*ent.EventTypeConnection, error) {
-	return r.client.EventType.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithEventTypeOrder(orderBy),
-			ent.WithEventTypeFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: EventTypes - eventTypes"))
 }
 
 // FileExposures is the resolver for the fileExposures field.
 func (r *queryResolver) FileExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) (*ent.FileExposureConnection, error) {
-	return r.client.FileExposure.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithFileExposureOrder(orderBy),
-			ent.WithFileExposureFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: FileExposures - fileExposures"))
 }
 
 // FileSubscriptions is the resolver for the fileSubscriptions field.
 func (r *queryResolver) FileSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) (*ent.FileSubscriptionConnection, error) {
-	return r.client.FileSubscription.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithFileSubscriptionOrder(orderBy),
-			ent.WithFileSubscriptionFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: FileSubscriptions - fileSubscriptions"))
 }
 
 // FileTypes is the resolver for the fileTypes field.
 func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) (*ent.FileTypeConnection, error) {
-	return r.client.FileType.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithFileTypeOrder(orderBy),
-			ent.WithFileTypeFilter(where.Filter),
-		)
+	panic(fmt.Errorf("not implemented: FileTypes - fileTypes"))
 }
 
 // McpServers is the resolver for the mcpServers field.

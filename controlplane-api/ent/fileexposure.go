@@ -55,8 +55,8 @@ type FileExposure struct {
 	// The values are being populated by the FileExposureQuery when eager-loading is set.
 	Edges                          FileExposureEdges `json:"edges"`
 	application_exposed_file_types *int
+	file_exposure_zone             *int
 	file_type_exposures            *int
-	zone_file_exposures            *int
 	selectValues                   sql.SelectValues
 }
 
@@ -138,9 +138,9 @@ func (*FileExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case fileexposure.ForeignKeys[0]: // application_exposed_file_types
 			values[i] = new(sql.NullInt64)
-		case fileexposure.ForeignKeys[1]: // file_type_exposures
+		case fileexposure.ForeignKeys[1]: // file_exposure_zone
 			values[i] = new(sql.NullInt64)
-		case fileexposure.ForeignKeys[2]: // zone_file_exposures
+		case fileexposure.ForeignKeys[2]: // file_type_exposures
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -259,17 +259,17 @@ func (_m *FileExposure) assignValues(columns []string, values []any) error {
 			}
 		case fileexposure.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field file_exposure_zone", value)
+			} else if value.Valid {
+				_m.file_exposure_zone = new(int)
+				*_m.file_exposure_zone = int(value.Int64)
+			}
+		case fileexposure.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field file_type_exposures", value)
 			} else if value.Valid {
 				_m.file_type_exposures = new(int)
 				*_m.file_type_exposures = int(value.Int64)
-			}
-		case fileexposure.ForeignKeys[2]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field zone_file_exposures", value)
-			} else if value.Valid {
-				_m.zone_file_exposures = new(int)
-				*_m.zone_file_exposures = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

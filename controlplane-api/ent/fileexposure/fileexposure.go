@@ -78,7 +78,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "zone" package.
 	ZoneInverseTable = "zones"
 	// ZoneColumn is the table column denoting the zone relation/edge.
-	ZoneColumn = "zone_file_exposures"
+	ZoneColumn = "file_exposure_zone"
 	// SubscriptionsTable is the table that holds the subscriptions relation/edge.
 	SubscriptionsTable = "file_subscriptions"
 	// SubscriptionsInverseTable is the table name for the FileSubscription entity.
@@ -110,8 +110,8 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"application_exposed_file_types",
+	"file_exposure_zone",
 	"file_type_exposures",
-	"zone_file_exposures",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -324,7 +324,7 @@ func newZoneStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ZoneInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, ZoneTable, ZoneColumn),
+		sqlgraph.Edge(sqlgraph.M2O, false, ZoneTable, ZoneColumn),
 	)
 }
 func newSubscriptionsStep() *sqlgraph.Step {
