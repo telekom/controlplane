@@ -138,7 +138,7 @@ jobs:
           done
       - name: Set up Docker Buildx
         if: steps.semantic_release.outputs.new_release_published == 'true'
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Build and push final roverctl image (bash/jq/yq + binary)
         # GoReleaser's `kos` pipe (run above) publishes the plain roverctl
         # binary image to GHCR (no GPL content). This step layers that
