@@ -1,0 +1,47 @@
+organization/internal/webhook/v1/mutator/mutate_test.go
+  s_fff9e4892c0da6::t_ab11cb844354d6 26-28
+organization/internal/handler/team/handler/gateway_consumer/build_test.go
+  s_fff9e4892c0da6::t_4f3ebd31a98914 65-87
+  s_fff9e4892c0da6::t_861f0651a8f7d9 8,10,12,14-16
+  s_fff9e4892c0da6::t_e5926ae643a8fa 19-21,24-64,88
+discovery-server/internal/mapper/apisubscription/out_test.go
+  s_fff9e4892c0da6::t_d1d4d470417bf9 36-37
+  s_fff9e4892c0da6::t_861f0651a8f7d9 32
+organization/internal/team_webhook_reconciler_test.go
+  s_fff9e4892c0da6::t_ab11cb844354d6 97-99
+organization/internal/controller/team_controller_test.go
+  s_fff9e4892c0da6::t_ab11cb844354d6 89-91,595-597
+discovery-server/internal/mapper/apisubscription/out.go
+  s_fff9e4892c0da6::t_203474881479d9 180-182
+  s_fff9e4892c0da6::t_7e2efe0d70bbe8 9,183-187
+  h_0f030e7424553c 126
+organization/internal/handler/team/handler/gateway_consumer/suite_test.go
+  s_fff9e4892c0da6::t_e5926ae643a8fa 1-17
+organization/internal/webhook/v1/team_webhook_test.go
+  s_fff9e4892c0da6::t_ab11cb844354d6 53-55
+organization/internal/handler/team/handler/gateway_consumer/gateway_consumer.go
+  s_fff9e4892c0da6::t_203474881479d9 40-43
+permission/internal/controller/permissionset_controller_test.go
+  s_fff9e4892c0da6::t_9c4f04968c22a9 161-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0583d14f80f190a261191c8c7a9d5515feedbffd",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_fff9e4892c0da6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fa2fde5b1ffevtiARCRbPY8jHl",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
