@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ServeTLSListener", func() {
+var _ = Describe("ServeTLS", func() {
 	It("serves TLS on a pre-bound listener", func() {
 		certPEM, keyPEM, err := certutil.GenerateSelfSignedCertKey("localhost", []net.IP{net.ParseIP("127.0.0.1")}, nil)
 		Expect(err).NotTo(HaveOccurred())

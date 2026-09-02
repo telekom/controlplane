@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 )
 
-// ServeTLSListener serves TLS traffic on an already-bound listener.
+// ServeTLS serves TLS traffic on an already-bound listener.
 func ServeTLS(ctx context.Context, app *fiber.App, listener net.Listener, certFile, keyFile string) error {
 	tlsConfig, err := newTLSConfig(ctx, certFile, keyFile)
 	if err != nil {
