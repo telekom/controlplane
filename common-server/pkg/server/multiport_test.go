@@ -204,9 +204,9 @@ var _ = Describe("MultiServer shared-TLS wiring", func() {
 			mu    sync.Mutex
 			calls []call
 		)
-		seam := func(ctx context.Context, app *fiber.App, addr, cert, key string) error {
+		seam := func(ctx context.Context, app *fiber.App, listener net.Listener, cert, key string) error {
 			mu.Lock()
-			calls = append(calls, call{addr, cert, key})
+			calls = append(calls, call{listener.Addr().String(), cert, key})
 			mu.Unlock()
 			<-ctx.Done() // block until teardown, like a real serve
 			return nil
@@ -216,8 +216,8 @@ var _ = Describe("MultiServer shared-TLS wiring", func() {
 			AppConfig: server.NewAppConfig(),
 			TLS:       &server.TLSConfig{CertFile: "/c", KeyFile: "/k"},
 			Listeners: server.Listeners{
-				Internal: &server.Listener{Address: ":1", Family: fam},
-				External: &server.Listener{Address: ":2", Family: fam},
+				Internal: &server.Listener{Address: ":8001", Family: fam},
+				External: &server.Listener{Address: ":8002", Family: fam},
 			},
 			Register: func(r fiber.Router, guard fiber.Handler) {},
 		}
