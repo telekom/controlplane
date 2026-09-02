@@ -12,8 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	crhandler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -62,10 +66,45 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&spectrev1.Listener{}).
+		Watches(
+			&spectrev1.SpectreApplication{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapSpectreApplicationToListeners),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Named("listener").
 		Complete(r)
+}
+
+func (r *ListenerReconciler) mapSpectreApplicationToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	app, ok := obj.(*spectrev1.SpectreApplication)
+	if !ok {
+		return nil
+	}
+
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: app.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		if list.Items[i].Spec.Application.Name != app.Name ||
+			list.Items[i].Spec.Application.Namespace != app.Namespace {
+			continue
+		}
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
+	}
+
+	return reqs
 }
