@@ -479,7 +479,7 @@ func (_c *FileExposureCreate) createSpec() (*FileExposure, *sqlgraph.CreateSpec)
 	if nodes := _c.mutation.ZoneIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   fileexposure.ZoneTable,
 			Columns: []string{fileexposure.ZoneColumn},
 			Bidi:    false,
@@ -490,7 +490,7 @@ func (_c *FileExposureCreate) createSpec() (*FileExposure, *sqlgraph.CreateSpec)
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.zone_file_exposures = &nodes[0]
+		_node.file_exposure_zone = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.SubscriptionsIDs(); len(nodes) > 0 {

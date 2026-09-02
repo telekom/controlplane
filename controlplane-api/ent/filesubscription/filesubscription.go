@@ -82,7 +82,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "zone" package.
 	ZoneInverseTable = "zones"
 	// ZoneColumn is the table column denoting the zone relation/edge.
-	ZoneColumn = "zone_file_subscriptions"
+	ZoneColumn = "file_subscription_zone"
 	// ApprovalTable is the table that holds the approval relation/edge.
 	ApprovalTable = "approvals"
 	// ApprovalInverseTable is the table name for the Approval entity.
@@ -119,8 +119,8 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"application_subscribed_file_types",
 	"file_subscription_target",
+	"file_subscription_zone",
 	"file_type_subscriptions",
-	"zone_file_subscriptions",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -315,7 +315,7 @@ func newZoneStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ZoneInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, ZoneTable, ZoneColumn),
+		sqlgraph.Edge(sqlgraph.M2O, false, ZoneTable, ZoneColumn),
 	)
 }
 func newApprovalStep() *sqlgraph.Step {

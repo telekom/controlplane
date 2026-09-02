@@ -10186,14 +10186,6 @@ type ZoneWhereInput struct {
 	// "applications" edge predicates.
 	HasApplications     *bool                    `json:"hasApplications,omitempty"`
 	HasApplicationsWith []*ApplicationWhereInput `json:"hasApplicationsWith,omitempty"`
-
-	// "file_exposures" edge predicates.
-	HasFileExposures     *bool                     `json:"hasFileExposures,omitempty"`
-	HasFileExposuresWith []*FileExposureWhereInput `json:"hasFileExposuresWith,omitempty"`
-
-	// "file_subscriptions" edge predicates.
-	HasFileSubscriptions     *bool                         `json:"hasFileSubscriptions,omitempty"`
-	HasFileSubscriptionsWith []*FileSubscriptionWhereInput `json:"hasFileSubscriptionsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -10495,42 +10487,6 @@ func (i *ZoneWhereInput) P() (predicate.Zone, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, zone.HasApplicationsWith(with...))
-	}
-	if i.HasFileExposures != nil {
-		p := zone.HasFileExposures()
-		if !*i.HasFileExposures {
-			p = zone.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasFileExposuresWith) > 0 {
-		with := make([]predicate.FileExposure, 0, len(i.HasFileExposuresWith))
-		for _, w := range i.HasFileExposuresWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasFileExposuresWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, zone.HasFileExposuresWith(with...))
-	}
-	if i.HasFileSubscriptions != nil {
-		p := zone.HasFileSubscriptions()
-		if !*i.HasFileSubscriptions {
-			p = zone.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasFileSubscriptionsWith) > 0 {
-		with := make([]predicate.FileSubscription, 0, len(i.HasFileSubscriptionsWith))
-		for _, w := range i.HasFileSubscriptionsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasFileSubscriptionsWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, zone.HasFileSubscriptionsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

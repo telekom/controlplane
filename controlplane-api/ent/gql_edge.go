@@ -435,27 +435,3 @@ func (_m *Zone) Applications(ctx context.Context) (result []*Application, err er
 	}
 	return result, err
 }
-
-func (_m *Zone) FileExposures(ctx context.Context) (result []*FileExposure, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedFileExposures(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.FileExposuresOrErr()
-	}
-	if IsNotLoaded(err) {
-		result, err = _m.QueryFileExposures().All(ctx)
-	}
-	return result, err
-}
-
-func (_m *Zone) FileSubscriptions(ctx context.Context) (result []*FileSubscription, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedFileSubscriptions(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.FileSubscriptionsOrErr()
-	}
-	if IsNotLoaded(err) {
-		result, err = _m.QueryFileSubscriptions().All(ctx)
-	}
-	return result, err
-}

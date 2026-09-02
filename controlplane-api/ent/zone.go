@@ -40,19 +40,13 @@ type Zone struct {
 type ZoneEdges struct {
 	// Applications holds the value of the applications edge.
 	Applications []*Application `json:"applications,omitempty"`
-	// FileExposures holds the value of the file_exposures edge.
-	FileExposures []*FileExposure `json:"file_exposures,omitempty"`
-	// FileSubscriptions holds the value of the file_subscriptions edge.
-	FileSubscriptions []*FileSubscription `json:"file_subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [1]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [1]map[string]int
 
-	namedApplications      map[string][]*Application
-	namedFileExposures     map[string][]*FileExposure
-	namedFileSubscriptions map[string][]*FileSubscription
+	namedApplications map[string][]*Application
 }
 
 // ApplicationsOrErr returns the Applications value or an error if the edge
@@ -62,24 +56,6 @@ func (e ZoneEdges) ApplicationsOrErr() ([]*Application, error) {
 		return e.Applications, nil
 	}
 	return nil, &NotLoadedError{edge: "applications"}
-}
-
-// FileExposuresOrErr returns the FileExposures value or an error if the edge
-// was not loaded in eager-loading.
-func (e ZoneEdges) FileExposuresOrErr() ([]*FileExposure, error) {
-	if e.loadedTypes[1] {
-		return e.FileExposures, nil
-	}
-	return nil, &NotLoadedError{edge: "file_exposures"}
-}
-
-// FileSubscriptionsOrErr returns the FileSubscriptions value or an error if the edge
-// was not loaded in eager-loading.
-func (e ZoneEdges) FileSubscriptionsOrErr() ([]*FileSubscription, error) {
-	if e.loadedTypes[2] {
-		return e.FileSubscriptions, nil
-	}
-	return nil, &NotLoadedError{edge: "file_subscriptions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -172,16 +148,6 @@ func (_m *Zone) QueryApplications() *ApplicationQuery {
 	return NewZoneClient(_m.config).QueryApplications(_m)
 }
 
-// QueryFileExposures queries the "file_exposures" edge of the Zone entity.
-func (_m *Zone) QueryFileExposures() *FileExposureQuery {
-	return NewZoneClient(_m.config).QueryFileExposures(_m)
-}
-
-// QueryFileSubscriptions queries the "file_subscriptions" edge of the Zone entity.
-func (_m *Zone) QueryFileSubscriptions() *FileSubscriptionQuery {
-	return NewZoneClient(_m.config).QueryFileSubscriptions(_m)
-}
-
 // Update returns a builder for updating this Zone.
 // Note that you need to call Zone.Unwrap() before calling this method if this Zone
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -250,54 +216,6 @@ func (_m *Zone) appendNamedApplications(name string, edges ...*Application) {
 		_m.Edges.namedApplications[name] = []*Application{}
 	} else {
 		_m.Edges.namedApplications[name] = append(_m.Edges.namedApplications[name], edges...)
-	}
-}
-
-// NamedFileExposures returns the FileExposures named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *Zone) NamedFileExposures(name string) ([]*FileExposure, error) {
-	if _m.Edges.namedFileExposures == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedFileExposures[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *Zone) appendNamedFileExposures(name string, edges ...*FileExposure) {
-	if _m.Edges.namedFileExposures == nil {
-		_m.Edges.namedFileExposures = make(map[string][]*FileExposure)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedFileExposures[name] = []*FileExposure{}
-	} else {
-		_m.Edges.namedFileExposures[name] = append(_m.Edges.namedFileExposures[name], edges...)
-	}
-}
-
-// NamedFileSubscriptions returns the FileSubscriptions named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *Zone) NamedFileSubscriptions(name string) ([]*FileSubscription, error) {
-	if _m.Edges.namedFileSubscriptions == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedFileSubscriptions[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *Zone) appendNamedFileSubscriptions(name string, edges ...*FileSubscription) {
-	if _m.Edges.namedFileSubscriptions == nil {
-		_m.Edges.namedFileSubscriptions = make(map[string][]*FileSubscription)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedFileSubscriptions[name] = []*FileSubscription{}
-	} else {
-		_m.Edges.namedFileSubscriptions[name] = append(_m.Edges.namedFileSubscriptions[name], edges...)
 	}
 }
 

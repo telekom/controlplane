@@ -14,8 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
-	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
-	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
 
@@ -102,36 +100,6 @@ func (_c *ZoneCreate) AddApplications(v ...*Application) *ZoneCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddApplicationIDs(ids...)
-}
-
-// AddFileExposureIDs adds the "file_exposures" edge to the FileExposure entity by IDs.
-func (_c *ZoneCreate) AddFileExposureIDs(ids ...int) *ZoneCreate {
-	_c.mutation.AddFileExposureIDs(ids...)
-	return _c
-}
-
-// AddFileExposures adds the "file_exposures" edges to the FileExposure entity.
-func (_c *ZoneCreate) AddFileExposures(v ...*FileExposure) *ZoneCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddFileExposureIDs(ids...)
-}
-
-// AddFileSubscriptionIDs adds the "file_subscriptions" edge to the FileSubscription entity by IDs.
-func (_c *ZoneCreate) AddFileSubscriptionIDs(ids ...int) *ZoneCreate {
-	_c.mutation.AddFileSubscriptionIDs(ids...)
-	return _c
-}
-
-// AddFileSubscriptions adds the "file_subscriptions" edges to the FileSubscription entity.
-func (_c *ZoneCreate) AddFileSubscriptions(v ...*FileSubscription) *ZoneCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddFileSubscriptionIDs(ids...)
 }
 
 // Mutation returns the ZoneMutation object of the builder.
@@ -252,38 +220,6 @@ func (_c *ZoneCreate) createSpec() (*Zone, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.FileExposuresIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   zone.FileExposuresTable,
-			Columns: []string{zone.FileExposuresColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(fileexposure.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.FileSubscriptionsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   zone.FileSubscriptionsTable,
-			Columns: []string{zone.FileSubscriptionsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

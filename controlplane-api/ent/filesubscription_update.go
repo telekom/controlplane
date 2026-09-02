@@ -543,7 +543,7 @@ func (_u *FileSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if _u.mutation.ZoneCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   filesubscription.ZoneTable,
 			Columns: []string{filesubscription.ZoneColumn},
 			Bidi:    false,
@@ -556,7 +556,7 @@ func (_u *FileSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if nodes := _u.mutation.ZoneIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   filesubscription.ZoneTable,
 			Columns: []string{filesubscription.ZoneColumn},
 			Bidi:    false,
@@ -1198,7 +1198,7 @@ func (_u *FileSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *FileSu
 	if _u.mutation.ZoneCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   filesubscription.ZoneTable,
 			Columns: []string{filesubscription.ZoneColumn},
 			Bidi:    false,
@@ -1211,7 +1211,7 @@ func (_u *FileSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *FileSu
 	if nodes := _u.mutation.ZoneIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   filesubscription.ZoneTable,
 			Columns: []string{filesubscription.ZoneColumn},
 			Bidi:    false,

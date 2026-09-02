@@ -458,8 +458,8 @@ var (
 		{Name: "sftp_public_keys", Type: field.TypeJSON},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "application_exposed_file_types", Type: field.TypeInt},
+		{Name: "file_exposure_zone", Type: field.TypeInt},
 		{Name: "file_type_exposures", Type: field.TypeInt, Nullable: true},
-		{Name: "zone_file_exposures", Type: field.TypeInt},
 	}
 	// FileExposuresTable holds the schema information for the "file_exposures" table.
 	FileExposuresTable = &schema.Table{
@@ -474,16 +474,16 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 			{
-				Symbol:     "file_exposures_file_types_exposures",
+				Symbol:     "file_exposures_zones_zone",
 				Columns:    []*schema.Column{FileExposuresColumns[15]},
-				RefColumns: []*schema.Column{FileTypesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "file_exposures_zones_file_exposures",
-				Columns:    []*schema.Column{FileExposuresColumns[16]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "file_exposures_file_types_exposures",
+				Columns:    []*schema.Column{FileExposuresColumns[16]},
+				RefColumns: []*schema.Column{FileTypesColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -509,8 +509,8 @@ var (
 		{Name: "sftp_public_keys", Type: field.TypeJSON},
 		{Name: "application_subscribed_file_types", Type: field.TypeInt},
 		{Name: "file_subscription_target", Type: field.TypeInt, Nullable: true},
+		{Name: "file_subscription_zone", Type: field.TypeInt},
 		{Name: "file_type_subscriptions", Type: field.TypeInt, Nullable: true},
-		{Name: "zone_file_subscriptions", Type: field.TypeInt},
 	}
 	// FileSubscriptionsTable holds the schema information for the "file_subscriptions" table.
 	FileSubscriptionsTable = &schema.Table{
@@ -531,16 +531,16 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "file_subscriptions_file_types_subscriptions",
+				Symbol:     "file_subscriptions_zones_zone",
 				Columns:    []*schema.Column{FileSubscriptionsColumns[13]},
-				RefColumns: []*schema.Column{FileTypesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "file_subscriptions_zones_file_subscriptions",
-				Columns:    []*schema.Column{FileSubscriptionsColumns[14]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "file_subscriptions_file_types_subscriptions",
+				Columns:    []*schema.Column{FileSubscriptionsColumns[14]},
+				RefColumns: []*schema.Column{FileTypesColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -754,12 +754,12 @@ func init() {
 	EventSubscriptionsTable.ForeignKeys[1].RefTable = EventExposuresTable
 	EventTypesTable.ForeignKeys[0].RefTable = TeamsTable
 	FileExposuresTable.ForeignKeys[0].RefTable = ApplicationsTable
-	FileExposuresTable.ForeignKeys[1].RefTable = FileTypesTable
-	FileExposuresTable.ForeignKeys[2].RefTable = ZonesTable
+	FileExposuresTable.ForeignKeys[1].RefTable = ZonesTable
+	FileExposuresTable.ForeignKeys[2].RefTable = FileTypesTable
 	FileSubscriptionsTable.ForeignKeys[0].RefTable = ApplicationsTable
 	FileSubscriptionsTable.ForeignKeys[1].RefTable = FileExposuresTable
-	FileSubscriptionsTable.ForeignKeys[2].RefTable = FileTypesTable
-	FileSubscriptionsTable.ForeignKeys[3].RefTable = ZonesTable
+	FileSubscriptionsTable.ForeignKeys[2].RefTable = ZonesTable
+	FileSubscriptionsTable.ForeignKeys[3].RefTable = FileTypesTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	PermissionSetsTable.ForeignKeys[0].RefTable = ApplicationsTable
 	TeamsTable.ForeignKeys[0].RefTable = GroupsTable

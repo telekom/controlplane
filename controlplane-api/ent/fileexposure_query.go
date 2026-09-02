@@ -133,7 +133,7 @@ func (_q *FileExposureQuery) QueryZone() *ZoneQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(fileexposure.Table, fileexposure.FieldID, selector),
 			sqlgraph.To(zone.Table, zone.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, fileexposure.ZoneTable, fileexposure.ZoneColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, fileexposure.ZoneTable, fileexposure.ZoneColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -636,10 +636,10 @@ func (_q *FileExposureQuery) loadZone(ctx context.Context, query *ZoneQuery, nod
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*FileExposure)
 	for i := range nodes {
-		if nodes[i].zone_file_exposures == nil {
+		if nodes[i].file_exposure_zone == nil {
 			continue
 		}
-		fk := *nodes[i].zone_file_exposures
+		fk := *nodes[i].file_exposure_zone
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -656,7 +656,7 @@ func (_q *FileExposureQuery) loadZone(ctx context.Context, query *ZoneQuery, nod
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "zone_file_exposures" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "file_exposure_zone" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

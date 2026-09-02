@@ -51,8 +51,8 @@ type FileSubscription struct {
 	Edges                             FileSubscriptionEdges `json:"edges"`
 	application_subscribed_file_types *int
 	file_subscription_target          *int
+	file_subscription_zone            *int
 	file_type_subscriptions           *int
-	zone_file_subscriptions           *int
 	selectValues                      sql.SelectValues
 }
 
@@ -160,9 +160,9 @@ func (*FileSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case filesubscription.ForeignKeys[1]: // file_subscription_target
 			values[i] = new(sql.NullInt64)
-		case filesubscription.ForeignKeys[2]: // file_type_subscriptions
+		case filesubscription.ForeignKeys[2]: // file_subscription_zone
 			values[i] = new(sql.NullInt64)
-		case filesubscription.ForeignKeys[3]: // zone_file_subscriptions
+		case filesubscription.ForeignKeys[3]: // file_type_subscriptions
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -266,17 +266,17 @@ func (_m *FileSubscription) assignValues(columns []string, values []any) error {
 			}
 		case filesubscription.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field file_subscription_zone", value)
+			} else if value.Valid {
+				_m.file_subscription_zone = new(int)
+				*_m.file_subscription_zone = int(value.Int64)
+			}
+		case filesubscription.ForeignKeys[3]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field file_type_subscriptions", value)
 			} else if value.Valid {
 				_m.file_type_subscriptions = new(int)
 				*_m.file_type_subscriptions = int(value.Int64)
-			}
-		case filesubscription.ForeignKeys[3]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field zone_file_subscriptions", value)
-			} else if value.Valid {
-				_m.zone_file_subscriptions = new(int)
-				*_m.zone_file_subscriptions = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

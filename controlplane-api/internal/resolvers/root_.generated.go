@@ -811,16 +811,14 @@ type ComplexityRoot struct {
 	}
 
 	Zone struct {
-		Applications      func(childComplexity int) int
-		Environment       func(childComplexity int) int
-		FileExposures     func(childComplexity int) int
-		FileSubscriptions func(childComplexity int) int
-		GatewayURL        func(childComplexity int) int
-		ID                func(childComplexity int) int
-		IssuerURL         func(childComplexity int) int
-		Name              func(childComplexity int) int
-		TokenURL          func(childComplexity int) int
-		Visibility        func(childComplexity int) int
+		Applications func(childComplexity int) int
+		Environment  func(childComplexity int) int
+		GatewayURL   func(childComplexity int) int
+		ID           func(childComplexity int) int
+		IssuerURL    func(childComplexity int) int
+		Name         func(childComplexity int) int
+		TokenURL     func(childComplexity int) int
+		Visibility   func(childComplexity int) int
 	}
 }
 
@@ -3969,18 +3967,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.Environment(childComplexity), true
-	case "Zone.fileExposures":
-		if e.ComplexityRoot.Zone.FileExposures == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Zone.FileExposures(childComplexity), true
-	case "Zone.fileSubscriptions":
-		if e.ComplexityRoot.Zone.FileSubscriptions == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Zone.FileSubscriptions(childComplexity), true
 	case "Zone.gatewayURL":
 		if e.ComplexityRoot.Zone.GatewayURL == nil {
 			break
@@ -8807,8 +8793,6 @@ type Zone implements Node {
   issuerURL: String
   visibility: ZoneVisibility!
   applications: [Application!]
-  fileExposures: [FileExposure!]
-  fileSubscriptions: [FileSubscription!]
 }
 """
 ZoneVisibility is enum for the field visibility
@@ -8918,16 +8902,6 @@ input ZoneWhereInput {
   """
   hasApplications: Boolean
   hasApplicationsWith: [ApplicationWhereInput!]
-  """
-  file_exposures edge predicates
-  """
-  hasFileExposures: Boolean
-  hasFileExposuresWith: [FileExposureWhereInput!]
-  """
-  file_subscriptions edge predicates
-  """
-  hasFileSubscriptions: Boolean
-  hasFileSubscriptionsWith: [FileSubscriptionWhereInput!]
 }
 `, BuiltIn: false},
 	{Name: "../../mutation.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH
@@ -10882,10 +10856,6 @@ func (ec *executionContext) childFields_Zone(ctx context.Context, field graphql.
 		return ec.fieldContext_Zone_visibility(ctx, field)
 	case "applications":
 		return ec.fieldContext_Zone_applications(ctx, field)
-	case "fileExposures":
-		return ec.fieldContext_Zone_fileExposures(ctx, field)
-	case "fileSubscriptions":
-		return ec.fieldContext_Zone_fileSubscriptions(ctx, field)
 	case "tokenURL":
 		return ec.fieldContext_Zone_tokenURL(ctx, field)
 	}

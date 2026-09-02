@@ -19929,27 +19929,21 @@ func (m *TeamMutation) ResetEdge(name string) error {
 // ZoneMutation represents an operation that mutates the Zone nodes in the graph.
 type ZoneMutation struct {
 	config
-	op                        Op
-	typ                       string
-	id                        *int
-	environment               *string
-	name                      *string
-	gateway_url               *string
-	issuer_url                *string
-	visibility                *zone.Visibility
-	clearedFields             map[string]struct{}
-	applications              map[int]struct{}
-	removedapplications       map[int]struct{}
-	clearedapplications       bool
-	file_exposures            map[int]struct{}
-	removedfile_exposures     map[int]struct{}
-	clearedfile_exposures     bool
-	file_subscriptions        map[int]struct{}
-	removedfile_subscriptions map[int]struct{}
-	clearedfile_subscriptions bool
-	done                      bool
-	oldValue                  func(context.Context) (*Zone, error)
-	predicates                []predicate.Zone
+	op                  Op
+	typ                 string
+	id                  *int
+	environment         *string
+	name                *string
+	gateway_url         *string
+	issuer_url          *string
+	visibility          *zone.Visibility
+	clearedFields       map[string]struct{}
+	applications        map[int]struct{}
+	removedapplications map[int]struct{}
+	clearedapplications bool
+	done                bool
+	oldValue            func(context.Context) (*Zone, error)
+	predicates          []predicate.Zone
 }
 
 var _ ent.Mutation = (*ZoneMutation)(nil)
@@ -20323,114 +20317,6 @@ func (m *ZoneMutation) ResetApplications() {
 	m.removedapplications = nil
 }
 
-// AddFileExposureIDs adds the "file_exposures" edge to the FileExposure entity by ids.
-func (m *ZoneMutation) AddFileExposureIDs(ids ...int) {
-	if m.file_exposures == nil {
-		m.file_exposures = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.file_exposures[ids[i]] = struct{}{}
-	}
-}
-
-// ClearFileExposures clears the "file_exposures" edge to the FileExposure entity.
-func (m *ZoneMutation) ClearFileExposures() {
-	m.clearedfile_exposures = true
-}
-
-// FileExposuresCleared reports if the "file_exposures" edge to the FileExposure entity was cleared.
-func (m *ZoneMutation) FileExposuresCleared() bool {
-	return m.clearedfile_exposures
-}
-
-// RemoveFileExposureIDs removes the "file_exposures" edge to the FileExposure entity by IDs.
-func (m *ZoneMutation) RemoveFileExposureIDs(ids ...int) {
-	if m.removedfile_exposures == nil {
-		m.removedfile_exposures = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.file_exposures, ids[i])
-		m.removedfile_exposures[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedFileExposures returns the removed IDs of the "file_exposures" edge to the FileExposure entity.
-func (m *ZoneMutation) RemovedFileExposuresIDs() (ids []int) {
-	for id := range m.removedfile_exposures {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// FileExposuresIDs returns the "file_exposures" edge IDs in the mutation.
-func (m *ZoneMutation) FileExposuresIDs() (ids []int) {
-	for id := range m.file_exposures {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetFileExposures resets all changes to the "file_exposures" edge.
-func (m *ZoneMutation) ResetFileExposures() {
-	m.file_exposures = nil
-	m.clearedfile_exposures = false
-	m.removedfile_exposures = nil
-}
-
-// AddFileSubscriptionIDs adds the "file_subscriptions" edge to the FileSubscription entity by ids.
-func (m *ZoneMutation) AddFileSubscriptionIDs(ids ...int) {
-	if m.file_subscriptions == nil {
-		m.file_subscriptions = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.file_subscriptions[ids[i]] = struct{}{}
-	}
-}
-
-// ClearFileSubscriptions clears the "file_subscriptions" edge to the FileSubscription entity.
-func (m *ZoneMutation) ClearFileSubscriptions() {
-	m.clearedfile_subscriptions = true
-}
-
-// FileSubscriptionsCleared reports if the "file_subscriptions" edge to the FileSubscription entity was cleared.
-func (m *ZoneMutation) FileSubscriptionsCleared() bool {
-	return m.clearedfile_subscriptions
-}
-
-// RemoveFileSubscriptionIDs removes the "file_subscriptions" edge to the FileSubscription entity by IDs.
-func (m *ZoneMutation) RemoveFileSubscriptionIDs(ids ...int) {
-	if m.removedfile_subscriptions == nil {
-		m.removedfile_subscriptions = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.file_subscriptions, ids[i])
-		m.removedfile_subscriptions[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedFileSubscriptions returns the removed IDs of the "file_subscriptions" edge to the FileSubscription entity.
-func (m *ZoneMutation) RemovedFileSubscriptionsIDs() (ids []int) {
-	for id := range m.removedfile_subscriptions {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// FileSubscriptionsIDs returns the "file_subscriptions" edge IDs in the mutation.
-func (m *ZoneMutation) FileSubscriptionsIDs() (ids []int) {
-	for id := range m.file_subscriptions {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetFileSubscriptions resets all changes to the "file_subscriptions" edge.
-func (m *ZoneMutation) ResetFileSubscriptions() {
-	m.file_subscriptions = nil
-	m.clearedfile_subscriptions = false
-	m.removedfile_subscriptions = nil
-}
-
 // Where appends a list predicates to the ZoneMutation builder.
 func (m *ZoneMutation) Where(ps ...predicate.Zone) {
 	m.predicates = append(m.predicates, ps...)
@@ -20653,15 +20539,9 @@ func (m *ZoneMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ZoneMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 1)
 	if m.applications != nil {
 		edges = append(edges, zone.EdgeApplications)
-	}
-	if m.file_exposures != nil {
-		edges = append(edges, zone.EdgeFileExposures)
-	}
-	if m.file_subscriptions != nil {
-		edges = append(edges, zone.EdgeFileSubscriptions)
 	}
 	return edges
 }
@@ -20676,33 +20556,15 @@ func (m *ZoneMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case zone.EdgeFileExposures:
-		ids := make([]ent.Value, 0, len(m.file_exposures))
-		for id := range m.file_exposures {
-			ids = append(ids, id)
-		}
-		return ids
-	case zone.EdgeFileSubscriptions:
-		ids := make([]ent.Value, 0, len(m.file_subscriptions))
-		for id := range m.file_subscriptions {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ZoneMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 1)
 	if m.removedapplications != nil {
 		edges = append(edges, zone.EdgeApplications)
-	}
-	if m.removedfile_exposures != nil {
-		edges = append(edges, zone.EdgeFileExposures)
-	}
-	if m.removedfile_subscriptions != nil {
-		edges = append(edges, zone.EdgeFileSubscriptions)
 	}
 	return edges
 }
@@ -20717,33 +20579,15 @@ func (m *ZoneMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case zone.EdgeFileExposures:
-		ids := make([]ent.Value, 0, len(m.removedfile_exposures))
-		for id := range m.removedfile_exposures {
-			ids = append(ids, id)
-		}
-		return ids
-	case zone.EdgeFileSubscriptions:
-		ids := make([]ent.Value, 0, len(m.removedfile_subscriptions))
-		for id := range m.removedfile_subscriptions {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ZoneMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 1)
 	if m.clearedapplications {
 		edges = append(edges, zone.EdgeApplications)
-	}
-	if m.clearedfile_exposures {
-		edges = append(edges, zone.EdgeFileExposures)
-	}
-	if m.clearedfile_subscriptions {
-		edges = append(edges, zone.EdgeFileSubscriptions)
 	}
 	return edges
 }
@@ -20754,10 +20598,6 @@ func (m *ZoneMutation) EdgeCleared(name string) bool {
 	switch name {
 	case zone.EdgeApplications:
 		return m.clearedapplications
-	case zone.EdgeFileExposures:
-		return m.clearedfile_exposures
-	case zone.EdgeFileSubscriptions:
-		return m.clearedfile_subscriptions
 	}
 	return false
 }
@@ -20776,12 +20616,6 @@ func (m *ZoneMutation) ResetEdge(name string) error {
 	switch name {
 	case zone.EdgeApplications:
 		m.ResetApplications()
-		return nil
-	case zone.EdgeFileExposures:
-		m.ResetFileExposures()
-		return nil
-	case zone.EdgeFileSubscriptions:
-		m.ResetFileSubscriptions()
 		return nil
 	}
 	return fmt.Errorf("unknown Zone edge %s", name)

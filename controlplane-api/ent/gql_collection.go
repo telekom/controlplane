@@ -3378,32 +3378,6 @@ func (_q *ZoneQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			_q.WithNamedApplications(alias, func(wq *ApplicationQuery) {
 				*wq = *query
 			})
-
-		case "fileExposures":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&FileExposureClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, fileexposureImplementors)...); err != nil {
-				return err
-			}
-			_q.WithNamedFileExposures(alias, func(wq *FileExposureQuery) {
-				*wq = *query
-			})
-
-		case "fileSubscriptions":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&FileSubscriptionClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, filesubscriptionImplementors)...); err != nil {
-				return err
-			}
-			_q.WithNamedFileSubscriptions(alias, func(wq *FileSubscriptionQuery) {
-				*wq = *query
-			})
 		case "environment":
 			if _, ok := fieldSeen[zone.FieldEnvironment]; !ok {
 				selectedFields = append(selectedFields, zone.FieldEnvironment)

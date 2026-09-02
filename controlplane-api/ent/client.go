@@ -2242,7 +2242,7 @@ func (c *FileExposureClient) QueryZone(_m *FileExposure) *ZoneQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(fileexposure.Table, fileexposure.FieldID, id),
 			sqlgraph.To(zone.Table, zone.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, fileexposure.ZoneTable, fileexposure.ZoneColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, fileexposure.ZoneTable, fileexposure.ZoneColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2456,7 +2456,7 @@ func (c *FileSubscriptionClient) QueryZone(_m *FileSubscription) *ZoneQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(filesubscription.Table, filesubscription.FieldID, id),
 			sqlgraph.To(zone.Table, zone.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, filesubscription.ZoneTable, filesubscription.ZoneColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, filesubscription.ZoneTable, filesubscription.ZoneColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -3469,38 +3469,6 @@ func (c *ZoneClient) QueryApplications(_m *Zone) *ApplicationQuery {
 			sqlgraph.From(zone.Table, zone.FieldID, id),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, zone.ApplicationsTable, zone.ApplicationsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryFileExposures queries the file_exposures edge of a Zone.
-func (c *ZoneClient) QueryFileExposures(_m *Zone) *FileExposureQuery {
-	query := (&FileExposureClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(zone.Table, zone.FieldID, id),
-			sqlgraph.To(fileexposure.Table, fileexposure.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, zone.FileExposuresTable, zone.FileExposuresColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryFileSubscriptions queries the file_subscriptions edge of a Zone.
-func (c *ZoneClient) QueryFileSubscriptions(_m *Zone) *FileSubscriptionQuery {
-	query := (&FileSubscriptionClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(zone.Table, zone.FieldID, id),
-			sqlgraph.To(filesubscription.Table, filesubscription.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, zone.FileSubscriptionsTable, zone.FileSubscriptionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
