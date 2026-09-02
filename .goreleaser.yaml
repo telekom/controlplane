@@ -226,10 +226,10 @@ builds:
     goarch:
       - amd64
       - arm64
-  - id: file-operator
+  - id: file
     dir: file
     main: cmd/file-operator/main.go
-    binary: file-operator
+    binary: file
     goos:
       - linux
     goarch:
