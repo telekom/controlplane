@@ -72,11 +72,9 @@ type MultiServer struct {
 
 // SetServeTLS overrides the TLS serving function. It exists so tests can assert
 // the cert/key passed to every TLS listener without real TLS. Production code
-// leaves it unset (defaults to serve.ServeTLSListener).
-func (m *MultiServer) SetServeTLS(fn func(ctx context.Context, app *fiber.App, addr, cert, key string) error) {
-	m.serveTLS = func(ctx context.Context, app *fiber.App, listener net.Listener, cert, key string) error {
-		return fn(ctx, app, listener.Addr().String(), cert, key)
-	}
+// leaves it unset (defaults to serve.ServeTLS).
+func (m *MultiServer) SetServeTLS(fn func(ctx context.Context, app *fiber.App, listener net.Listener, cert, key string) error) {
+	m.serveTLS = fn
 }
 
 // Run builds one app per listener, installs probes + the listener's family +
@@ -90,7 +88,7 @@ func (m *MultiServer) Run(ctx context.Context) error {
 	}
 	serveTLSFn := m.serveTLS
 	if serveTLSFn == nil {
-		serveTLSFn = serve.ServeTLSListener
+		serveTLSFn = serve.ServeTLS
 	}
 
 	// Bind every address up front, before any serve goroutine starts.

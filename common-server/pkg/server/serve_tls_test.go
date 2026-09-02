@@ -41,7 +41,7 @@ var _ = Describe("ServeTLSListener", func() {
 
 		done := make(chan error, 1)
 		go func() {
-			done <- serve.ServeTLSListener(ctx, app, listener, certFile, keyFile)
+			done <- serve.ServeTLS(ctx, app, listener, certFile, keyFile)
 		}()
 
 		certPool := x509.NewCertPool()
@@ -69,7 +69,7 @@ var _ = Describe("ServeTLSListener", func() {
 		Expect(err).NotTo(HaveOccurred())
 		defer listener.Close() //nolint:errcheck // The listener is only test setup cleanup.
 
-		err = serve.ServeTLSListener(context.Background(), fiber.New(), listener, "/missing/tls.crt", "/missing/tls.key")
+		err = serve.ServeTLS(context.Background(), fiber.New(), listener, "/missing/tls.crt", "/missing/tls.key")
 		Expect(err).To(HaveOccurred())
 	})
 })

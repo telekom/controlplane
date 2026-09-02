@@ -12,24 +12,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 )
 
-func ServeTLS(ctx context.Context, app *fiber.App, addr, certFile, keyFile string) error {
-	tlsConfig, err := newTLSConfig(ctx, certFile, keyFile)
-	if err != nil {
-		return err
-	}
-	ln, err := net.Listen("tcp4", addr)
-	if err != nil {
-		return errors.Wrap(err, "failed to listen")
-	}
-	return app.Listener(tls.NewListener(ln, tlsConfig))
-}
-
 // ServeTLSListener serves TLS traffic on an already-bound listener.
-func ServeTLSListener(ctx context.Context, app *fiber.App, listener net.Listener, certFile, keyFile string) error {
+func ServeTLS(ctx context.Context, app *fiber.App, listener net.Listener, certFile, keyFile string) error {
 	tlsConfig, err := newTLSConfig(ctx, certFile, keyFile)
 	if err != nil {
 		return err
