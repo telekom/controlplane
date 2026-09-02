@@ -145,8 +145,11 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 	}
 	appInfo.IrisIssuerUrl = presetStatus.Links.Issuer
 	appInfo.StargateIssuerUrl = presetStatus.Links.LmsIssuer
-	appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
 	appInfo.StargateUrl = preset.GetDefaultURL()
+	appInfo.IrisTokenEndpointUrl = app.Status.TokenUrl
+	if appInfo.IrisTokenEndpointUrl == "" {
+		appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
+	}
 
 	if rover.HasFailoverEnabledOnAnySubscription() {
 		appInfo.FailoverEnabled = true

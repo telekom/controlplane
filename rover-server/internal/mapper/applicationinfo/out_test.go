@@ -314,6 +314,79 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			snaps.MatchJSON(GinkgoT(), applicationInfo)
 		})
 
+		DescribeTable("must map the token endpoint",
+			func(tokenURL, expected string) {
+				localStores := &store.Stores{}
+				app := &applicationv1.Application{Status: applicationv1.ApplicationStatus{TokenUrl: tokenURL}}
+				appMock := mocks.NewMockObjectStore[*applicationv1.Application](GinkgoT())
+				appMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(app, nil).Maybe()
+				localStores.ApplicationSecretStore = appMock
+
+				zone := &adminv1.Zone{
+					Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+					Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
+						Issuer:   "https://idp.example.com/auth/realms/test",
+						TokenUrl: "https://dtc-idp.example.com/auth/realms/test/protocol/openid-connect/token",
+					}}}},
+				}
+				zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+				zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+				localStores.ZoneStore = zoneMock
+
+				appInfo := &api.ApplicationInfo{}
+				err := FillApplicationInfo(ctx, rover, appInfo, localStores)
+
+				Expect(err).To(BeNil())
+				Expect(appInfo.IrisTokenEndpointUrl).To(Equal(expected))
+				Expect(appInfo.IrisIssuerUrl).To(Equal("https://idp.example.com/auth/realms/test"))
+			},
+			Entry("from the reconciled Application status",
+				"https://dtc-idp.example.com/auth/realms/test/protocol/openid-connect/token",
+				"https://dtc-idp.example.com/auth/realms/test/protocol/openid-connect/token"),
+			Entry("from the issuer while the Application status is empty", "",
+				"https://idp.example.com/auth/realms/test/protocol/openid-connect/token"),
+		)
+
+		It("must map the failover gateway and token endpoint together", func() {
+			localStores := &store.Stores{}
+			app := &applicationv1.Application{Status: applicationv1.ApplicationStatus{
+				TokenUrl: "https://failover-idp.example.com/token",
+			}}
+			appMock := mocks.NewMockObjectStore[*applicationv1.Application](GinkgoT())
+			appMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(app, nil).Maybe()
+			localStores.ApplicationSecretStore = appMock
+
+			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Gateways: []adminv1.GatewayConfig{
+					{Name: "default", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}},
+					{Name: "failover", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}},
+				}, Presets: []adminv1.Preset{
+					{Name: "default", Default: true, GatewayRef: "default", Urls: []adminv1.UrlConfig{{Hostname: "default.example.com"}}},
+					{Name: "failover", GatewayRef: "failover", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+				}},
+				Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{
+					{Name: "default", Links: adminv1.Links{TokenUrl: "https://default-idp.example.com/token"}},
+					{Name: "failover", Links: adminv1.Links{TokenUrl: "https://failover-idp.example.com/token"}},
+				}},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			roverWithFailover := rover.DeepCopy()
+			roverWithFailover.Spec.Subscriptions = []roverv1.Subscription{{Api: &roverv1.ApiSubscription{
+				BasePath: "/api",
+				Traffic:  roverv1.SubscriberTraffic{Failover: &roverv1.SubscriberFailover{Enabled: true}},
+			}}}
+
+			appInfo := &api.ApplicationInfo{}
+			err := FillApplicationInfo(ctx, roverWithFailover, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.StargateUrl).To(Equal("https://failover.example.com"))
+			Expect(appInfo.IrisTokenEndpointUrl).To(Equal("https://failover-idp.example.com/token"))
+		})
+
 		It("must return an error if the input rover is nil", func() {
 			var applicationInfo = &api.ApplicationInfo{}
 			err := FillApplicationInfo(ctx, nil, applicationInfo, stores)
