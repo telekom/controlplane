@@ -7,6 +7,9 @@ package application
 
 import (
 	"context"
+	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -23,6 +26,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/reminder"
@@ -50,21 +54,25 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	if err != nil {
 		return err
 	}
-	preset, err := zone.Spec.GetDefaultPreset()
 	if app.Spec.Failover.Enabled {
-		preset, err = zone.Spec.SelectPreset(admin.GatewayTypeAPI, admin.FeatureConsumerFailover)
+		app.Status.TokenUrl, err = consumerFailoverTokenURL(zone)
+		if err != nil {
+			return ctrlerrors.BlockedErrorf("zone %q does not contain a valid ConsumerFailover token URL: %s", zone.Name, err.Error())
+		}
+	} else {
+		preset, err := zone.Spec.GetDefaultPreset()
+		if err != nil {
+			return ctrlerrors.BlockedErrorf("zone %q does not contain the selected preset: %s", zone.Name, err.Error())
+		}
+		presetStatus, err := zone.Status.GetPreset(preset.Name)
+		if err != nil {
+			return ctrlerrors.BlockedErrorf("zone %q does not contain status for preset %q", zone.Name, preset.Name)
+		}
+		if presetStatus.Links.TokenUrl == "" {
+			return ctrlerrors.BlockedErrorf("zone %q preset %q does not contain a token URL", zone.Name, preset.Name)
+		}
+		app.Status.TokenUrl = presetStatus.Links.TokenUrl
 	}
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("zone %q does not contain the selected preset: %s", zone.Name, err.Error())
-	}
-	presetStatus, err := zone.Status.GetPreset(preset.Name)
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("zone %q does not contain status for preset %q", zone.Name, preset.Name)
-	}
-	if presetStatus.Links.TokenUrl == "" {
-		return ctrlerrors.BlockedErrorf("zone %q preset %q does not contain a token URL", zone.Name, preset.Name)
-	}
-	app.Status.TokenUrl = presetStatus.Links.TokenUrl
 
 	primaryClient, err := h.ensureIdentityClients(ctx, zone, failoverZones, app)
 	if err != nil {
@@ -108,6 +116,32 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	return nil
 }
 
+func consumerFailoverTokenURL(zone *admin.Zone) (string, error) {
+	var tokenURL string
+	// Failover provisioning aggregates presets, but their shared identity endpoint must stay unambiguous.
+	for i := range zone.Spec.Presets {
+		preset := &zone.Spec.Presets[i]
+		if !preset.SupportsFeatures([]admin.FeatureName{admin.FeatureConsumerFailover}) {
+			continue
+		}
+		status, err := zone.Status.GetPreset(preset.Name)
+		if err != nil {
+			return "", fmt.Errorf("status for ConsumerFailover preset %q is missing", preset.Name)
+		}
+		if status.Links.TokenUrl == "" {
+			return "", fmt.Errorf("ConsumerFailover preset %q does not contain a token URL", preset.Name)
+		}
+		if tokenURL != "" && tokenURL != status.Links.TokenUrl {
+			return "", fmt.Errorf("ConsumerFailover presets resolve to conflicting token URLs")
+		}
+		tokenURL = status.Links.TokenUrl
+	}
+	if tokenURL == "" {
+		return "", fmt.Errorf("no enabled ConsumerFailover preset was found")
+	}
+	return tokenURL, nil
+}
+
 func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedClient, app *application.Application) (*admin.Zone, []*admin.Zone, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 	zone, err := GetZone(ctx, c, app.Spec.Zone)
@@ -118,7 +152,7 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 		return nil, nil, ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
 	}
 
-	// If failover is enabled, find all zones that support failover and are not the primary zone.
+	// Any API or AI failover preset makes a zone eligible; applications are provisioned for all available traffic types.
 	var failoverZones []*admin.Zone
 	if app.Spec.Failover.Enabled {
 		zoneList := &admin.ZoneList{}
@@ -130,10 +164,24 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 			if types.Equals(zone, &zoneList.Items[i]) {
 				continue
 			}
-			if zoneList.Items[i].Spec.FeaturesSupported(admin.GatewayTypeAPI, admin.FeatureConsumerFailover) {
-				failoverZones = append(failoverZones, &zoneList.Items[i])
+			candidate := &zoneList.Items[i]
+			if controller.IsBeingDeleted(candidate) {
+				continue
 			}
+			if _, err := candidate.Spec.MatchingGateways(admin.FeatureConsumerFailover); err != nil {
+				if errors.Is(err, admin.ErrNoMatchingPreset) {
+					continue
+				}
+				return nil, nil, ctrlerrors.BlockedErrorf("failover zone %q is invalid: %s", candidate.Namespace+"/"+candidate.Name, err.Error())
+			}
+			failoverZones = append(failoverZones, candidate)
 		}
+		slices.SortFunc(failoverZones, func(a, b *admin.Zone) int {
+			if namespaceOrder := strings.Compare(a.Namespace, b.Namespace); namespaceOrder != 0 {
+				return namespaceOrder
+			}
+			return strings.Compare(a.Name, b.Name)
+		})
 	}
 
 	logger.Info("Resolved zones for application", "primary", zone.Name, "#failover", len(failoverZones))
@@ -165,12 +213,27 @@ func (h *ApplicationHandler) ensureGatewayConsumers(ctx context.Context, zone *a
 		return nil
 	}
 
-	if err := CreateGatewayConsumer(ctx, zone, app); err != nil {
+	// Primary credentials cover normal API and AI traffic; Event gateways use separate resources.
+	primaryGateways := slices.Clone(zone.Spec.Gateways)
+	primaryGateways = slices.DeleteFunc(primaryGateways, func(gateway admin.GatewayConfig) bool {
+		return !gateway.HasType(admin.GatewayTypeAPI) && !gateway.HasType(admin.GatewayTypeAI)
+	})
+	slices.SortFunc(primaryGateways, func(a, b admin.GatewayConfig) int { return strings.Compare(a.Name, b.Name) })
+	primaryGatewayRefs := make([]*admin.GatewayConfig, len(primaryGateways))
+	for i := range primaryGateways {
+		primaryGatewayRefs[i] = &primaryGateways[i]
+	}
+	if err := CreateGatewayConsumers(ctx, zone, app, primaryGatewayRefs); err != nil {
 		return errors.Wrap(err, "failed to create Gateway consumer when creating application")
 	}
 
 	for _, failoverZone := range failoverZones {
-		if err := CreateGatewayConsumer(ctx, failoverZone, app, WithFailover()); err != nil {
+		// Failover credentials exist only on gateways exposed through a failover preset.
+		gateways, err := failoverZone.Spec.MatchingGateways(admin.FeatureConsumerFailover)
+		if err != nil {
+			return errors.Wrapf(err, "failed to select Gateway consumers for failover zone %s when creating application", failoverZone.Name)
+		}
+		if err := CreateGatewayConsumers(ctx, failoverZone, app, gateways, WithFailover()); err != nil {
 			return errors.Wrapf(err, "failed to create Gateway consumer for failover zone %s when creating application", failoverZone.Name)
 		}
 	}
@@ -378,11 +441,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 	return idpClient, nil
 }
 
-func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *application.Application, opts ...CreateOption) error {
-	if len(zone.Status.Gateways) == 0 {
-		return ctrlerrors.BlockedErrorf("zone %q does not contain a Gateway", zone.Name)
-	}
-
+func CreateGatewayConsumers(ctx context.Context, zone *admin.Zone, owner *application.Application, gateways []*admin.GatewayConfig, opts ...CreateOption) error {
 	options := &CreateOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -391,7 +450,11 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 
-	for _, gatewayStatus := range zone.Status.Gateways {
+	for _, gatewayConfig := range gateways {
+		gatewayStatus, err := zone.Status.GetGateway(gatewayConfig.Name)
+		if err != nil {
+			return ctrlerrors.BlockedErrorf("zone %q does not contain status for gateway %q", zone.Name, gatewayConfig.Name)
+		}
 		if gatewayStatus.Gateway == nil {
 			return ctrlerrors.BlockedErrorf("zone %q gateway %q has no Gateway reference", zone.Name, gatewayStatus.Name)
 		}
@@ -445,6 +508,12 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 
 		owner.Status.Consumers = append(owner.Status.Consumers, *types.ObjectRefFromObject(consumer))
 	}
+	slices.SortFunc(owner.Status.Consumers, func(a, b types.ObjectRef) int {
+		if namespaceOrder := strings.Compare(a.Namespace, b.Namespace); namespaceOrder != 0 {
+			return namespaceOrder
+		}
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	return nil
 }

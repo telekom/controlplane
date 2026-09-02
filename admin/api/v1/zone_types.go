@@ -5,7 +5,9 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
+	"maps"
 	"path"
 	"slices"
 	"strings"
@@ -16,6 +18,8 @@ import (
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 )
+
+var ErrNoMatchingPreset = errors.New("no matching preset")
 
 type ZoneVisibility string
 
@@ -420,23 +424,7 @@ func (s *ZoneSpec) GetDefaultPreset() (*Preset, error) {
 	return match, nil
 }
 
-// presetsForGatewayType returns, in spec order, the presets whose gateway serves gatewayType.
-func (s *ZoneSpec) presetsForGatewayType(gatewayType GatewayType) []*Preset {
-	var presets []*Preset
-	for i := range s.Presets {
-		gateway, err := s.GetGateway(s.Presets[i].GatewayRef)
-		if err != nil || !gateway.HasType(gatewayType) {
-			continue
-		}
-		presets = append(presets, &s.Presets[i])
-	}
-	return presets
-}
-
-// SelectPreset returns the preset that serves gatewayType with all requested features enabled.
-// The same feature set may be configured on several presets: the default preset wins, otherwise
-// the first match in spec order. All reasons a combination cannot be served are reported at once.
-func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName) (*Preset, error) {
+func (s *ZoneSpec) validateFeatures(features []FeatureName) ([]FeatureName, []string) {
 	var problems []string
 	presetFeatures := make([]FeatureName, 0, len(features))
 	for _, feature := range features {
@@ -451,27 +439,34 @@ func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName
 			problems = append(problems, fmt.Sprintf("feature %q is unknown", feature))
 		}
 	}
+	return presetFeatures, problems
+}
 
-	candidates := s.presetsForGatewayType(gatewayType)
+func (s *ZoneSpec) MatchingPresets(gatewayType GatewayType, features ...FeatureName) ([]*Preset, error) {
+	presetFeatures, problems := s.validateFeatures(features)
+
+	var candidates []*Preset
+	for i := range s.Presets {
+		gateway, err := s.GetGateway(s.Presets[i].GatewayRef)
+		if err != nil {
+			return nil, err
+		}
+		if gateway.HasType(gatewayType) {
+			candidates = append(candidates, &s.Presets[i])
+		}
+	}
 	if len(candidates) == 0 {
 		problems = append(problems, fmt.Sprintf("no preset references a gateway of type %q", gatewayType))
 	}
 
-	var match *Preset
+	var matches []*Preset
 	for _, preset := range candidates {
-		if !preset.SupportsFeatures(presetFeatures) {
-			continue
-		}
-		if preset.Default {
-			match = preset
-			break
-		}
-		if match == nil {
-			match = preset
+		if preset.SupportsFeatures(presetFeatures) {
+			matches = append(matches, preset)
 		}
 	}
 
-	if match == nil && len(candidates) > 0 {
+	if len(matches) == 0 && len(candidates) > 0 {
 		missing := 0
 		for _, feature := range presetFeatures {
 			if !slices.ContainsFunc(candidates, func(p *Preset) bool { return supportsFeatures(p.Features, feature) }) {
@@ -490,11 +485,59 @@ func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName
 		return nil, fmt.Errorf("feature combination %v is not allowed for gateway type %q: %s",
 			features, gatewayType, strings.Join(problems, "; "))
 	}
-	return match, nil
+	return matches, nil
+}
+
+// MatchingGateways aggregates gateways for provisioning, where multiple matching presets are valid.
+// Presets may reference the same combined API/AI gateway, so each gateway is returned only once.
+func (s *ZoneSpec) MatchingGateways(features ...FeatureName) ([]*GatewayConfig, error) {
+	presetFeatures, problems := s.validateFeatures(features)
+	if len(problems) > 0 {
+		return nil, fmt.Errorf("feature combination %v is not allowed: %s", features, strings.Join(problems, "; "))
+	}
+
+	gatewaysByName := make(map[string]*GatewayConfig)
+	for i := range s.Presets {
+		if !s.Presets[i].SupportsFeatures(presetFeatures) {
+			continue
+		}
+		gateway, err := s.GetGateway(s.Presets[i].GatewayRef)
+		if err != nil {
+			return nil, err
+		}
+		gatewaysByName[gateway.Name] = gateway
+	}
+	if len(gatewaysByName) == 0 {
+		for _, feature := range presetFeatures {
+			problems = append(problems, fmt.Sprintf("feature %q is not enabled on any preset", feature))
+		}
+		return nil, fmt.Errorf("%w: feature combination %v is not allowed: %s", ErrNoMatchingPreset, features, strings.Join(problems, "; "))
+	}
+	if len(problems) > 0 {
+		return nil, fmt.Errorf("feature combination %v is not allowed: %s", features, strings.Join(problems, "; "))
+	}
+
+	gateways := slices.Collect(maps.Values(gatewaysByName))
+	slices.SortFunc(gateways, func(a, b *GatewayConfig) int { return strings.Compare(a.Name, b.Name) })
+	return gateways, nil
+}
+
+// SelectPreset returns one routing profile: the default match wins, otherwise spec order decides.
+func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName) (*Preset, error) {
+	presets, err := s.MatchingPresets(gatewayType, features...)
+	if err != nil {
+		return nil, err
+	}
+	for _, preset := range presets {
+		if preset.Default {
+			return preset, nil
+		}
+	}
+	return presets[0], nil
 }
 
 func (s *ZoneSpec) FeaturesSupported(gatewayType GatewayType, features ...FeatureName) bool {
-	_, err := s.SelectPreset(gatewayType, features...)
+	_, err := s.MatchingPresets(gatewayType, features...)
 	return err == nil
 }
 

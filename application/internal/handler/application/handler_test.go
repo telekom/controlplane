@@ -202,17 +202,16 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 		Expect(app.Status.TokenUrl).To(Equal("https://identity.example.com/token"))
 	})
 
-	It("publishes the ConsumerFailover preset token URL from the primary zone", func() {
+	It("publishes the shared failover token URL when several presets match", func() {
 		app.Spec.Failover.Enabled = true
-		zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
-			Name:       "consumer-failover",
-			GatewayRef: "standard",
-			Features:   []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
-		})
-		zone.Status.Presets = append(zone.Status.Presets, adminv1.PresetStatus{
-			Name:  "consumer-failover",
-			Links: adminv1.Links{TokenUrl: "https://failover-identity.example.com/token"},
-		})
+		zone.Spec.Presets = append(zone.Spec.Presets,
+			adminv1.Preset{Name: "api-failover", GatewayRef: "standard", IdentityProviderRef: "primary", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+			adminv1.Preset{Name: "ai-failover", GatewayRef: "standard", IdentityProviderRef: "primary", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+		)
+		zone.Status.Presets = append(zone.Status.Presets,
+			adminv1.PresetStatus{Name: "api-failover", Links: adminv1.Links{TokenUrl: "https://failover-identity.example.com/token"}},
+			adminv1.PresetStatus{Name: "ai-failover", Links: adminv1.Links{TokenUrl: "https://failover-identity.example.com/token"}},
+		)
 
 		mockClient := fake.NewMockJanitorClient(GinkgoT())
 		ctx = client.WithClient(ctx, mockClient)
@@ -221,6 +220,43 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 
 		Expect(handler.CreateOrUpdate(ctx, app)).To(Succeed())
 		Expect(app.Status.TokenUrl).To(Equal("https://failover-identity.example.com/token"))
+	})
+
+	Describe("consumerFailoverTokenURL", func() {
+		BeforeEach(func() {
+			zone.Spec.Presets = append(zone.Spec.Presets,
+				adminv1.Preset{Name: "api-failover", GatewayRef: "standard", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+				adminv1.Preset{Name: "ai-failover", GatewayRef: "standard", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+			)
+			zone.Status.Presets = append(zone.Status.Presets,
+				adminv1.PresetStatus{Name: "api-failover", Links: adminv1.Links{TokenUrl: "https://failover.example.com/token"}},
+				adminv1.PresetStatus{Name: "ai-failover", Links: adminv1.Links{TokenUrl: "https://failover.example.com/token"}},
+			)
+		})
+
+		It("rejects a missing preset status", func() {
+			zone.Status.Presets = zone.Status.Presets[:2]
+
+			_, err := consumerFailoverTokenURL(zone)
+
+			Expect(err).To(MatchError(`status for ConsumerFailover preset "ai-failover" is missing`))
+		})
+
+		It("rejects an empty token URL", func() {
+			zone.Status.Presets[1].Links.TokenUrl = ""
+
+			_, err := consumerFailoverTokenURL(zone)
+
+			Expect(err).To(MatchError(`ConsumerFailover preset "api-failover" does not contain a token URL`))
+		})
+
+		It("rejects conflicting reconciled token URLs", func() {
+			zone.Status.Presets[2].Links.TokenUrl = "https://other.example.com/token"
+
+			_, err := consumerFailoverTokenURL(zone)
+
+			Expect(err).To(MatchError(`ConsumerFailover presets resolve to conflicting token URLs`))
+		})
 	})
 
 	It("blocks when the selected preset status is missing", func() {
@@ -253,6 +289,88 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 		var blockedErr ctrlerrors.BlockedError
 		Expect(errors.As(err, &blockedErr)).To(BeTrue())
 		Expect(err).To(MatchError(`zone "test-zone" preset "default" does not contain a token URL`))
+	})
+})
+
+var _ = Describe("ApplicationHandler - Zone resolution", func() {
+	var (
+		ctx        context.Context
+		mockClient *fake.MockJanitorClient
+		app        *applicationv1.Application
+		primary    *adminv1.Zone
+	)
+
+	failoverZone := func(namespace, name string, gatewayType adminv1.GatewayType, enabled bool) adminv1.Zone {
+		return adminv1.Zone{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+			Spec: adminv1.ZoneSpec{
+				Gateways: []adminv1.GatewayConfig{{Name: "gateway", Types: []adminv1.GatewayType{gatewayType}}},
+				Presets:  []adminv1.Preset{{Name: "failover", GatewayRef: "gateway", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: enabled}}}},
+			},
+		}
+	}
+
+	BeforeEach(func() {
+		ctx = contextutil.WithEnv(context.Background(), "test-env")
+		mockClient = fake.NewMockJanitorClient(GinkgoT())
+		ctx = client.WithClient(ctx, mockClient)
+		app = newTestApp()
+		app.Spec.Failover.Enabled = true
+		primary = newZone()
+
+		mockClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: primary.Name, Namespace: primary.Namespace}, mock.AnythingOfType("*v1.Zone"), mock.Anything).
+			Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+				*obj.(*adminv1.Zone) = *primary
+			}).Return(nil)
+	})
+
+	It("returns API-only and AI-only failover zones in namespace and name order", func() {
+		apiZone := failoverZone("z-ns", "api", adminv1.GatewayTypeAPI, true)
+		aiZone := failoverZone("a-ns", "ai", adminv1.GatewayTypeAI, true)
+		disabledZone := failoverZone("a-ns", "disabled", adminv1.GatewayTypeAPI, false)
+
+		mockClient.EXPECT().List(mock.Anything, mock.AnythingOfType("*v1.ZoneList")).
+			Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
+				list.(*adminv1.ZoneList).Items = []adminv1.Zone{apiZone, *primary, disabledZone, aiZone}
+			}).Return(nil)
+
+		zone, failoverZones, err := (&ApplicationHandler{}).resolveZones(ctx, mockClient, app)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(zone).To(Equal(primary))
+		Expect(failoverZones).To(Equal([]*adminv1.Zone{&aiZone, &apiZone}))
+	})
+
+	It("rejects a failover zone with a broken gateway reference", func() {
+		brokenZone := failoverZone("broken-ns", "broken", adminv1.GatewayTypeAPI, true)
+		brokenZone.Spec.Presets[0].GatewayRef = "missing"
+		mockClient.EXPECT().List(mock.Anything, mock.AnythingOfType("*v1.ZoneList")).
+			Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
+				list.(*adminv1.ZoneList).Items = []adminv1.Zone{brokenZone}
+			}).Return(nil)
+
+		_, _, err := (&ApplicationHandler{}).resolveZones(ctx, mockClient, app)
+
+		var blockedErr ctrlerrors.BlockedError
+		Expect(errors.As(err, &blockedErr)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring(`failover zone "broken-ns/broken" is invalid`)))
+		Expect(err).To(MatchError(ContainSubstring(`gateway "missing" not found`)))
+	})
+
+	It("excludes failover zones being deleted", func() {
+		activeZone := failoverZone("active-ns", "active", adminv1.GatewayTypeAPI, true)
+		deletingZone := failoverZone("deleting-ns", "deleting", adminv1.GatewayTypeAI, true)
+		deletionTime := metav1.Now()
+		deletingZone.DeletionTimestamp = &deletionTime
+		mockClient.EXPECT().List(mock.Anything, mock.AnythingOfType("*v1.ZoneList")).
+			Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
+				list.(*adminv1.ZoneList).Items = []adminv1.Zone{deletingZone, activeZone}
+			}).Return(nil)
+
+		_, failoverZones, err := (&ApplicationHandler{}).resolveZones(ctx, mockClient, app)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(failoverZones).To(Equal([]*adminv1.Zone{&activeZone}))
 	})
 })
 
@@ -535,46 +653,127 @@ var _ = Describe("ApplicationHandler - Gateway consumers", func() {
 		mockClient.EXPECT().Scheme().Return(newScheme()).Maybe()
 	})
 
-	It("creates one Consumer per Gateway, each bound to its own Gateway", func() {
-		created := map[string]commontypes.ObjectRef{}
+	DescribeTable("creates Consumers on the requested distinct gateways",
+		func(gateways []*adminv1.GatewayConfig, expected ...string) {
+			createdNames := []string{}
+			mockClient.EXPECT().
+				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
+				Run(func(_ context.Context, obj pkgclient.Object, fn controllerutil.MutateFn) {
+					Expect(fn()).To(Succeed())
+					consumer := obj.(*gatewayv1.Consumer)
+					createdNames = append(createdNames, consumer.Name)
+					Expect(consumer.Spec.Name).To(Equal("test-team--test-app"))
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Times(len(expected))
+
+			Expect(CreateGatewayConsumers(ctx, zone, app, gateways, WithFailover())).To(Succeed())
+
+			Expect(createdNames).To(ConsistOf(expected))
+			Expect(app.Status.Consumers).To(HaveLen(len(expected)))
+		},
+		Entry("API only", []*adminv1.GatewayConfig{{Name: "standard"}},
+			"test-team--test-app--test-zone--standard"),
+		Entry("AI only", []*adminv1.GatewayConfig{{Name: "ai"}},
+			"test-team--test-app--test-zone--ai"),
+		Entry("API and AI", []*adminv1.GatewayConfig{{Name: "standard"}, {Name: "ai"}},
+			"test-team--test-app--test-zone--standard", "test-team--test-app--test-zone--ai"),
+	)
+
+	It("creates one Consumer when two failover presets reference the same combined gateway", func() {
+		zone.Spec.Gateways = []adminv1.GatewayConfig{{Name: "combined", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI, adminv1.GatewayTypeAI}}}
+		zone.Spec.Presets = []adminv1.Preset{
+			{Name: "api-failover", GatewayRef: "combined", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+			{Name: "ai-failover", GatewayRef: "combined", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+		}
+		zone.Status.Gateways = []adminv1.GatewayStatus{{Name: "combined", Gateway: &commontypes.ObjectRef{Name: "combined-gw", Namespace: "zone-ns"}}}
+		gateways, err := zone.Spec.MatchingGateways(adminv1.FeatureConsumerFailover)
+		Expect(err).NotTo(HaveOccurred())
 		mockClient.EXPECT().
 			CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
 			Run(func(_ context.Context, obj pkgclient.Object, fn controllerutil.MutateFn) {
 				Expect(fn()).To(Succeed())
 				consumer := obj.(*gatewayv1.Consumer)
-				created[consumer.Name] = consumer.Spec.Gateway
-				Expect(consumer.Spec.Name).To(Equal("test-team--test-app"))
+				Expect(consumer.Name).To(Equal("test-team--test-app--test-zone--combined"))
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+
+		Expect(CreateGatewayConsumers(ctx, zone, app, gateways, WithFailover())).To(Succeed())
+		Expect(app.Status.Consumers).To(HaveLen(1))
+	})
+
+	It("orders Consumer status references by namespace and name", func() {
+		mockClient.EXPECT().
+			CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
+			Run(func(_ context.Context, _ pkgclient.Object, fn controllerutil.MutateFn) { Expect(fn()).To(Succeed()) }).
+			Return(controllerutil.OperationResultCreated, nil).Times(2)
+
+		Expect(CreateGatewayConsumers(ctx, zone, app, []*adminv1.GatewayConfig{{Name: "standard"}, {Name: "ai"}})).To(Succeed())
+
+		Expect(app.Status.Consumers).To(Equal([]commontypes.ObjectRef{
+			{Name: "test-team--test-app--test-zone--ai", Namespace: "test-ns"},
+			{Name: "test-team--test-app--test-zone--standard", Namespace: "test-ns"},
+		}))
+	})
+
+	It("blocks when a requested Gateway has no status", func() {
+		err := CreateGatewayConsumers(ctx, zone, app, []*adminv1.GatewayConfig{{Name: "missing"}})
+
+		var blockedErr ctrlerrors.BlockedError
+		Expect(errors.As(err, &blockedErr)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring(`does not contain status for gateway "missing"`)))
+	})
+
+	It("blocks when a requested Gateway status has no Gateway reference", func() {
+		zone.Status.Gateways = []adminv1.GatewayStatus{{Name: "standard"}}
+
+		err := CreateGatewayConsumers(ctx, zone, app, []*adminv1.GatewayConfig{{Name: "standard"}})
+
+		var blockedErr ctrlerrors.BlockedError
+		Expect(errors.As(err, &blockedErr)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring(`gateway "standard" has no Gateway reference`)))
+	})
+
+	It("returns a partial failure after recording only successful Consumers", func() {
+		mockClient.EXPECT().
+			CreateOrUpdate(mock.Anything, mock.MatchedBy(func(obj pkgclient.Object) bool {
+				return obj.GetName() == "test-team--test-app--test-zone--standard"
+			}), mock.Anything).
+			Run(func(_ context.Context, _ pkgclient.Object, fn controllerutil.MutateFn) { Expect(fn()).To(Succeed()) }).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockClient.EXPECT().
+			CreateOrUpdate(mock.Anything, mock.MatchedBy(func(obj pkgclient.Object) bool {
+				return obj.GetName() == "test-team--test-app--test-zone--ai"
+			}), mock.Anything).
+			Return(controllerutil.OperationResultNone, errors.New("creating AI Consumer failed")).Once()
+
+		err := CreateGatewayConsumers(ctx, zone, app, []*adminv1.GatewayConfig{{Name: "standard"}, {Name: "ai"}})
+
+		Expect(err).To(MatchError(ContainSubstring("creating AI Consumer failed")))
+		Expect(app.Status.Consumers).To(Equal([]commontypes.ObjectRef{{
+			Name: "test-team--test-app--test-zone--standard", Namespace: "test-ns",
+		}}))
+	})
+
+	It("excludes Event-only primary gateways", func() {
+		zone.Spec.Gateways = append(zone.Spec.Gateways,
+			adminv1.GatewayConfig{Name: "events", Types: []adminv1.GatewayType{adminv1.GatewayTypeEvent}},
+			adminv1.GatewayConfig{Name: "ai", Types: []adminv1.GatewayType{adminv1.GatewayTypeAI}},
+		)
+		createdNames := []string{}
+		mockClient.EXPECT().
+			CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
+			Run(func(_ context.Context, obj pkgclient.Object, fn controllerutil.MutateFn) {
+				Expect(fn()).To(Succeed())
+				createdNames = append(createdNames, obj.GetName())
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Times(2)
 
-		Expect(CreateGatewayConsumer(ctx, zone, app)).To(Succeed())
+		Expect((&ApplicationHandler{}).ensureGatewayConsumers(ctx, zone, nil, app)).To(Succeed())
 
-		Expect(created).To(HaveLen(2))
-		Expect(created).To(HaveKeyWithValue(
+		Expect(createdNames).To(ConsistOf(
 			"test-team--test-app--test-zone--standard",
-			commontypes.ObjectRef{Name: "standard-gw", Namespace: "zone-ns"}))
-		Expect(created).To(HaveKeyWithValue(
 			"test-team--test-app--test-zone--ai",
-			commontypes.ObjectRef{Name: "ai-gw", Namespace: "zone-ns"}))
-		Expect(app.Status.Consumers).To(HaveLen(2))
-	})
-
-	It("blocks when the zone has no Gateway in its status", func() {
-		zone.Status.Gateways = nil
-
-		err := CreateGatewayConsumer(ctx, zone, app)
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("does not contain a Gateway"))
-	})
-
-	It("blocks when a Gateway status has no Gateway reference", func() {
-		zone.Status.Gateways = []adminv1.GatewayStatus{{Name: "standard"}}
-
-		err := CreateGatewayConsumer(ctx, zone, app)
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring(`gateway "standard"`))
+		))
 	})
 
 	It("blocks before creating a Consumer whose resource name exceeds the Kubernetes limit", func() {
@@ -586,7 +785,7 @@ var _ = Describe("ApplicationHandler - Gateway consumers", func() {
 			Gateway: &commontypes.ObjectRef{Name: "gateway", Namespace: "zone-ns"},
 		}}
 
-		err := CreateGatewayConsumer(ctx, zone, app)
+		err := CreateGatewayConsumers(ctx, zone, app, []*adminv1.GatewayConfig{{Name: zone.Status.Gateways[0].Name}})
 
 		var blockedErr ctrlerrors.BlockedError
 		Expect(errors.As(err, &blockedErr)).To(BeTrue())

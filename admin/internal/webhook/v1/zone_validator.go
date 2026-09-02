@@ -71,11 +71,14 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 		errs = append(errs, field.Invalid(specPath.Child("identityProviders"), len(zone.Spec.IdentityProviders), "exactly one identity provider is required"))
 	}
 	soleIdentityProviderName := ""
+	identityProviderTokenURL := ""
 	if identityProvider, err := zone.Spec.GetIdentityProvider(); err == nil {
 		soleIdentityProviderName = identityProvider.Name
+		identityProviderTokenURL = identityProvider.TokenUrl
 	}
 
 	defaultCount := 0
+	failoverTokenURL := ""
 	errs = append(errs, validateFeatures(specPath.Child("features"), zone.Spec.Features, adminv1.FeatureScopeZone)...)
 	for i := range zone.Spec.Presets {
 		preset := &zone.Spec.Presets[i]
@@ -93,6 +96,18 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 		}
 		if preset.TokenUrl != "" {
 			errs = append(errs, validateTokenURL(presetPath.Child("tokenUrl"), preset.TokenUrl)...)
+		}
+		// API and AI failover presets share the zone's identity client and therefore one token URL.
+		if preset.SupportsFeatures([]adminv1.FeatureName{adminv1.FeatureConsumerFailover}) {
+			effectiveTokenURL := preset.TokenUrl
+			if effectiveTokenURL == "" {
+				effectiveTokenURL = identityProviderTokenURL
+			}
+			if effectiveTokenURL != "" && failoverTokenURL != "" && effectiveTokenURL != failoverTokenURL {
+				errs = append(errs, field.Invalid(presetPath.Child("tokenUrl"), preset.TokenUrl, "all ConsumerFailover presets must use the same token URL"))
+			} else if effectiveTokenURL != "" {
+				failoverTokenURL = effectiveTokenURL
+			}
 		}
 		if preset.GetDefaultURL() == "" {
 			errs = append(errs, field.Invalid(presetPath.Child("urls"), preset.Urls, "at least one non-hidden URL is required"))

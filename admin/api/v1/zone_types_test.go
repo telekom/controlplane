@@ -78,6 +78,63 @@ var _ = Describe("Zone preset resolution", func() {
 		Expect(preset.Name).To(Equal("failover"))
 	})
 
+	It("returns every matching failover preset for a combined gateway", func() {
+		spec := zoneSpec()
+		spec.Gateways[0].Types = []GatewayType{GatewayTypeAPI, GatewayTypeAI}
+		spec.Presets = append(spec.Presets, Preset{
+			Name: "ai-failover", GatewayRef: "standard", IdentityProviderRef: "primary",
+			Features: []Feature{{Name: FeatureConsumerFailover, Enabled: true}},
+		})
+
+		presets, err := spec.MatchingPresets(GatewayTypeAI, FeatureConsumerFailover)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(presets).To(HaveExactElements(&spec.Presets[1], &spec.Presets[3]))
+	})
+
+	It("returns distinct gateways referenced by enabled failover presets", func() {
+		spec := zoneSpec()
+		spec.Presets = append(spec.Presets,
+			Preset{Name: "same-gateway", GatewayRef: "standard", IdentityProviderRef: "primary", Features: []Feature{{Name: FeatureConsumerFailover, Enabled: true}}},
+			Preset{Name: "ai-failover", GatewayRef: "ai", IdentityProviderRef: "primary", Features: []Feature{{Name: FeatureConsumerFailover, Enabled: true}}},
+		)
+
+		gateways, err := spec.MatchingGateways(FeatureConsumerFailover)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(gateways).To(HaveLen(2))
+		Expect([]string{gateways[0].Name, gateways[1].Name}).To(Equal([]string{"ai", "standard"}))
+	})
+
+	It("reports invalid features before broken gateway references", func() {
+		spec := zoneSpec()
+		spec.Presets[0].GatewayRef = "missing"
+
+		gateways, err := spec.MatchingGateways(FeatureName("Unknown"))
+		Expect(err).To(MatchError(ContainSubstring(`feature "Unknown" is unknown`)))
+		Expect(err).NotTo(MatchError(ContainSubstring(`gateway "missing" not found`)))
+		Expect(gateways).To(BeNil())
+	})
+
+	It("ignores disabled failover features", func() {
+		spec := zoneSpec()
+		spec.Presets[1].Features[0].Enabled = false
+
+		gateways, err := spec.MatchingGateways(FeatureConsumerFailover)
+		Expect(err).To(MatchError(ContainSubstring(`feature "ConsumerFailover" is not enabled on any preset`)))
+		Expect(errors.Is(err, ErrNoMatchingPreset)).To(BeTrue())
+		Expect(gateways).To(BeNil())
+	})
+
+	It("does not classify a broken matching gateway reference as no match", func() {
+		spec := zoneSpec()
+		spec.Presets[1].GatewayRef = "missing"
+
+		gateways, err := spec.MatchingGateways(FeatureConsumerFailover)
+
+		Expect(err).To(MatchError(ContainSubstring(`gateway "missing" not found`)))
+		Expect(errors.Is(err, ErrNoMatchingPreset)).To(BeFalse())
+		Expect(gateways).To(BeNil())
+	})
+
 	It("returns the default preset for zone-only features", func() {
 		preset, err := zoneSpec().SelectPreset(GatewayTypeAPI, FeatureBasicAuth)
 		Expect(err).NotTo(HaveOccurred())

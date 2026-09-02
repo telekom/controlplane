@@ -6,6 +6,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,6 +108,59 @@ var _ = Describe("Zone validation", func() {
 	It("allows the same feature set on multiple presets", func() {
 		zone := validZone()
 		zone.Spec.Presets = append(zone.Spec.Presets, failoverPreset("other"))
+		_, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("allows multiple failover presets with one shared override", func() {
+		zone := validZone()
+		zone.Spec.Presets[1].TokenUrl = "https://dtc-login.example.com/token"
+		other := failoverPreset("ai-failover")
+		other.TokenUrl = "https://dtc-login.example.com/token"
+		zone.Spec.Presets = append(zone.Spec.Presets, other)
+
+		_, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("rejects conflicting failover token URL overrides", func() {
+		zone := validZone()
+		zone.Spec.Presets[1].TokenUrl = "https://dtc-api.example.com/token"
+		other := failoverPreset("ai-failover")
+		other.TokenUrl = "https://dtc-ai.example.com/token"
+		zone.Spec.Presets = append(zone.Spec.Presets, other)
+
+		_, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).To(MatchError(ContainSubstring("all ConsumerFailover presets must use the same token URL")))
+		Expect(apierrors.IsInvalid(err)).To(BeTrue())
+		var statusError *apierrors.StatusError
+		Expect(errors.As(err, &statusError)).To(BeTrue())
+		Expect(statusError.ErrStatus.Details.Causes).To(ContainElement(HaveField("Field", "spec.presets[2].tokenUrl")))
+
+		_, err = validator.ValidateUpdate(ctx, validZone(), zone)
+		Expect(err).To(MatchError(ContainSubstring("all ConsumerFailover presets must use the same token URL")))
+		Expect(apierrors.IsInvalid(err)).To(BeTrue())
+	})
+
+	It("rejects mixing an inherited normal URL with a failover override", func() {
+		zone := validZone()
+		zone.Spec.Presets[1].TokenUrl = "https://dtc-failover.example.com/token"
+		other := failoverPreset("ai-failover")
+		other.TokenUrl = ""
+		zone.Spec.Presets = append(zone.Spec.Presets, other)
+
+		_, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).To(MatchError(ContainSubstring("all ConsumerFailover presets must use the same token URL")))
+	})
+
+	It("allows failover token URLs to be discovered", func() {
+		zone := validZone()
+		zone.Spec.IdentityProviders[0].TokenUrl = ""
+		zone.Spec.Presets[1].TokenUrl = ""
+		other := failoverPreset("ai-failover")
+		other.TokenUrl = ""
+		zone.Spec.Presets = append(zone.Spec.Presets, other)
+
 		_, err := validator.ValidateCreate(ctx, zone)
 		Expect(err).NotTo(HaveOccurred())
 	})
