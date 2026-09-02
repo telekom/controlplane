@@ -7,6 +7,7 @@ package application
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/stretchr/testify/mock"
@@ -26,6 +27,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 
@@ -66,6 +68,10 @@ func newZone() *adminv1.Zone {
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "zone-ns",
+			Gateways: []adminv1.GatewayStatus{{
+				Name:    "standard",
+				Gateway: &commontypes.ObjectRef{Name: "test-gateway", Namespace: "zone-ns"},
+			}},
 			Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{TokenUrl: "https://identity.example.com/token"}, GatewayRef: &commontypes.ObjectRef{
 				Name:      "test-gateway",
 				Namespace: "zone-ns",
@@ -504,5 +510,87 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 				Expect(cond.Status).To(Equal(metav1.ConditionTrue))
 			})
 		})
+	})
+})
+
+var _ = Describe("ApplicationHandler - Gateway consumers", func() {
+	var (
+		ctx        context.Context
+		mockClient *fake.MockJanitorClient
+		app        *applicationv1.Application
+		zone       *adminv1.Zone
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		mockClient = fake.NewMockJanitorClient(GinkgoT())
+		ctx = client.WithClient(ctx, mockClient)
+		app = newTestApp()
+		app.Status.ClientId = "test-team--test-app"
+		zone = newZone()
+		zone.Status.Gateways = []adminv1.GatewayStatus{
+			{Name: "standard", Gateway: &commontypes.ObjectRef{Name: "standard-gw", Namespace: "zone-ns"}},
+			{Name: "ai", Gateway: &commontypes.ObjectRef{Name: "ai-gw", Namespace: "zone-ns"}},
+		}
+		mockClient.EXPECT().Scheme().Return(newScheme()).Maybe()
+	})
+
+	It("creates one Consumer per Gateway, each bound to its own Gateway", func() {
+		created := map[string]commontypes.ObjectRef{}
+		mockClient.EXPECT().
+			CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
+			Run(func(_ context.Context, obj pkgclient.Object, fn controllerutil.MutateFn) {
+				Expect(fn()).To(Succeed())
+				consumer := obj.(*gatewayv1.Consumer)
+				created[consumer.Name] = consumer.Spec.Gateway
+				Expect(consumer.Spec.Name).To(Equal("test-team--test-app"))
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Times(2)
+
+		Expect(CreateGatewayConsumer(ctx, zone, app)).To(Succeed())
+
+		Expect(created).To(HaveLen(2))
+		Expect(created).To(HaveKeyWithValue(
+			"test-team--test-app--test-zone--standard",
+			commontypes.ObjectRef{Name: "standard-gw", Namespace: "zone-ns"}))
+		Expect(created).To(HaveKeyWithValue(
+			"test-team--test-app--test-zone--ai",
+			commontypes.ObjectRef{Name: "ai-gw", Namespace: "zone-ns"}))
+		Expect(app.Status.Consumers).To(HaveLen(2))
+	})
+
+	It("blocks when the zone has no Gateway in its status", func() {
+		zone.Status.Gateways = nil
+
+		err := CreateGatewayConsumer(ctx, zone, app)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("does not contain a Gateway"))
+	})
+
+	It("blocks when a Gateway status has no Gateway reference", func() {
+		zone.Status.Gateways = []adminv1.GatewayStatus{{Name: "standard"}}
+
+		err := CreateGatewayConsumer(ctx, zone, app)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring(`gateway "standard"`))
+	})
+
+	It("blocks before creating a Consumer whose resource name exceeds the Kubernetes limit", func() {
+		app.Spec.Team = strings.Repeat("t", 64)
+		app.Name = strings.Repeat("a", 128)
+		zone.Name = strings.Repeat("z", 32)
+		zone.Status.Gateways = []adminv1.GatewayStatus{{
+			Name:    strings.Repeat("g", 24),
+			Gateway: &commontypes.ObjectRef{Name: "gateway", Namespace: "zone-ns"},
+		}}
+
+		err := CreateGatewayConsumer(ctx, zone, app)
+
+		var blockedErr ctrlerrors.BlockedError
+		Expect(errors.As(err, &blockedErr)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring("exceeds the Kubernetes maximum of 253 characters")))
+		Expect(app.Status.Consumers).To(BeEmpty())
 	})
 })

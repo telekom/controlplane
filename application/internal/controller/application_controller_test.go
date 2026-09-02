@@ -91,6 +91,10 @@ var _ = Describe("Application Controller", func() {
 			By("simulating Zone A status (normally set by admin controller)")
 			zoneA.Status = adminv1.ZoneStatus{
 				Namespace: testNamespace,
+				Gateways: []adminv1.GatewayStatus{{
+					Name:    "default",
+					Gateway: &ctypes.ObjectRef{Name: "test-gateway-a", Namespace: testNamespace},
+				}},
 				Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 					Name:      "test-gateway-a",
 					Namespace: testNamespace,
@@ -159,6 +163,10 @@ var _ = Describe("Application Controller", func() {
 			By("simulating Zone B status (normally set by admin controller)")
 			zoneB.Status = adminv1.ZoneStatus{
 				Namespace: testNamespace,
+				Gateways: []adminv1.GatewayStatus{{
+					Name:    "default",
+					Gateway: &ctypes.ObjectRef{Name: "test-gateway-b", Namespace: testNamespace},
+				}},
 				Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 					Name:      "test-gateway-b",
 					Namespace: testNamespace,
@@ -227,7 +235,7 @@ var _ = Describe("Application Controller", func() {
 				CheckStatusOfClient(ctx, g, expectedClientId, expectedResourceName, testNamespace)
 
 				By("Checking if the Gateway-Consumer is created")
-				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName, testNamespace)
+				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--default", testNamespace)
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -283,7 +291,7 @@ var _ = Describe("Application Controller", func() {
 				CheckStatusOfClient(ctx, g, expectedClientId, expectedResourceName, testNamespace)
 
 				By("Checking if the Gateway-Consumer is created")
-				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName, testNamespace)
+				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--default", testNamespace)
 
 				expectedResourceName = expectedClientId + "--zone-b"
 
@@ -291,7 +299,7 @@ var _ = Describe("Application Controller", func() {
 				CheckStatusOfClient(ctx, g, expectedClientId, expectedResourceName, testNamespace)
 
 				By("Checking if the failover Gateway-Consumer is created")
-				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName, testNamespace)
+				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--default", testNamespace)
 			}, timeout, interval).Should(Succeed())
 		})
 

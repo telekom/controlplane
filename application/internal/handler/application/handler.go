@@ -28,6 +28,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
 )
@@ -378,6 +379,10 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 }
 
 func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *application.Application, opts ...CreateOption) error {
+	if len(zone.Status.Gateways) == 0 {
+		return ctrlerrors.BlockedErrorf("zone %q does not contain a Gateway", zone.Name)
+	}
+
 	options := &CreateOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -385,62 +390,61 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
-	resourceName := clientId + "--" + zone.Name
 
-	preset, err := zone.Spec.GetDefaultPreset()
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("zone %q does not contain a default preset", zone.Name)
-	}
-	presetStatus, err := zone.Status.GetPreset(preset.Name)
-	if err != nil || presetStatus.GatewayRef == nil {
-		return ctrlerrors.BlockedErrorf("zone %q does not contain a Gateway", zone.Name)
-	}
-	gatewayRef := *presetStatus.GatewayRef
-
-	consumer := &gateway.Consumer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      resourceName,
-			Namespace: owner.GetNamespace(),
-		},
-	}
-
-	mutator := func() error {
-		consumer.Labels = map[string]string{
-			config.BuildLabelKey("application"): owner.Name,
-			config.BuildLabelKey("team"):        owner.Spec.Team,
-			config.BuildLabelKey("gateway"):     gatewayRef.Name,
-			config.BuildLabelKey("zone"):        zone.Name,
-		}
-		if options.Failover {
-			consumer.Labels[config.BuildLabelKey("failover")] = "true"
+	for _, gatewayStatus := range zone.Status.Gateways {
+		if gatewayStatus.Gateway == nil {
+			return ctrlerrors.BlockedErrorf("zone %q gateway %q has no Gateway reference", zone.Name, gatewayStatus.Name)
 		}
 
-		if refErr := ctrl.SetControllerReference(owner, consumer, c.Scheme()); refErr != nil {
-			return errors.Wrapf(refErr, "failed to set controller reference for gateway consumer %s", resourceName)
+		resourceName := clientId + "--" + zone.Name + "--" + gatewayStatus.Name
+		if len(resourceName) > labelutil.MaxNameLength {
+			return ctrlerrors.BlockedErrorf("Gateway Consumer resource name %q exceeds the Kubernetes maximum of %d characters", resourceName, labelutil.MaxNameLength)
 		}
-		consumer.Spec = gateway.ConsumerSpec{
-			Gateway: gatewayRef,
-			Name:    clientId,
+		gatewayRef := *gatewayStatus.Gateway
+		consumer := &gateway.Consumer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resourceName,
+				Namespace: owner.GetNamespace(),
+			},
 		}
 
-		if owner.Spec.Security != nil && owner.Spec.Security.IpRestrictions != nil {
-			consumer.Spec.Security = &gateway.ConsumerSecurity{
-				IpRestrictions: &gateway.IpRestrictions{
-					Allow: owner.Spec.Security.IpRestrictions.Allow,
-					Deny:  owner.Spec.Security.IpRestrictions.Deny,
-				},
+		mutator := func() error {
+			consumer.Labels = map[string]string{
+				config.BuildLabelKey("application"): owner.Name,
+				config.BuildLabelKey("team"):        owner.Spec.Team,
+				config.BuildLabelKey("gateway"):     gatewayRef.Name,
+				config.BuildLabelKey("zone"):        zone.Name,
 			}
+			if options.Failover {
+				consumer.Labels[config.BuildLabelKey("failover")] = "true"
+			}
+
+			if refErr := ctrl.SetControllerReference(owner, consumer, c.Scheme()); refErr != nil {
+				return errors.Wrapf(refErr, "failed to set controller reference for gateway consumer %s", resourceName)
+			}
+			consumer.Spec = gateway.ConsumerSpec{
+				Gateway: gatewayRef,
+				Name:    clientId,
+			}
+
+			if owner.Spec.Security != nil && owner.Spec.Security.IpRestrictions != nil {
+				consumer.Spec.Security = &gateway.ConsumerSecurity{
+					IpRestrictions: &gateway.IpRestrictions{
+						Allow: owner.Spec.Security.IpRestrictions.Allow,
+						Deny:  owner.Spec.Security.IpRestrictions.Deny,
+					},
+				}
+			}
+
+			return nil
 		}
 
-		return nil
-	}
+		if _, err := c.CreateOrUpdate(ctx, consumer, mutator); err != nil {
+			return errors.Wrapf(err, "failed to create or update Gateway Consumer %s", resourceName)
+		}
 
-	_, err = c.CreateOrUpdate(ctx, consumer, mutator)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create or update Gateway Consumer %s", resourceName)
+		owner.Status.Consumers = append(owner.Status.Consumers, *types.ObjectRefFromObject(consumer))
 	}
-
-	owner.Status.Consumers = append(owner.Status.Consumers, *types.ObjectRefFromObject(consumer))
 
 	return nil
 }
