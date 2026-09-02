@@ -38,7 +38,7 @@ func CreateAgenticRoute(
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// 1. Get AI Gateway preset and gateway ref
-	preset, err := zone.Spec.SelectPreset(adminv1.FeatureAiGateway)
+	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("zone %q has no AI Gateway preset: %v", zone.Name, err)
 	}
@@ -144,7 +144,7 @@ func CreateAgenticProxyRoute(
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// 1. Resolve subscriber zone's AI Gateway preset (for downstream hostnames/paths)
-	subscriberPreset, err := subscriberZone.Spec.SelectPreset(adminv1.FeatureAiGateway)
+	subscriberPreset, err := subscriberZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway preset: %v", subscriberZone.Name, err)
 	}
@@ -154,7 +154,7 @@ func CreateAgenticProxyRoute(
 	}
 
 	// 2. Resolve provider zone's AI Gateway preset (for upstream URL)
-	providerPreset, err := providerZone.Spec.SelectPreset(adminv1.FeatureAiGateway)
+	providerPreset, err := providerZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("provider zone %q has no AI Gateway preset: %v", providerZone.Name, err)
 	}

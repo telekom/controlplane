@@ -49,7 +49,8 @@ func newZone(name string) *adminv1.Zone {
 				TokenUrl:       "https://test-iris.de/auth/realms/test/protocol/openid-connect/token",
 			}},
 			Gateways: []adminv1.GatewayConfig{{
-				Name: "standard",
+				Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
+				Name:  "standard",
 				Admin: adminv1.GatewayAdminConfig{
 					ClientSecret:        &gatewayAdminSecret,
 					Url:                 "https://test-stargate.de/admin-api",

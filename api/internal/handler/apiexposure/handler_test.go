@@ -76,10 +76,14 @@ func makeReadyZone(name, namespace, issuer, lmsIssuer string, presets ...adminv1
 			}},
 		}}
 	}
+	for i := range presets {
+		presets[i].GatewayRef = "standard"
+	}
 	z := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: adminv1.ZoneSpec{
-			Presets: presets,
+			Gateways: []adminv1.GatewayConfig{{Name: "standard", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}}},
+			Presets:  presets,
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: namespace,

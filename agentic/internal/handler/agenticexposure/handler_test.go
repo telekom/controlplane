@@ -84,14 +84,17 @@ func makeReadyZoneWithAiGateway() *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
+			Gateways: []adminv1.GatewayConfig{
+				{Name: "ai", Types: []adminv1.GatewayType{adminv1.GatewayTypeAI}},
+			},
 			Presets: []adminv1.Preset{
 				{
-					Name:    "default",
-					Default: true,
+					Name:       "default",
+					Default:    true,
+					GatewayRef: "ai",
 					Urls: []adminv1.UrlConfig{
 						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
 					},
-					Features: []adminv1.Feature{{Name: adminv1.FeatureAiGateway, Enabled: true}},
 				},
 			},
 		},
@@ -100,9 +103,6 @@ func makeReadyZoneWithAiGateway() *adminv1.Zone {
 			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 				Name: "ai-gateway", Namespace: "default",
 			}, Links: adminv1.Links{Issuer: "https://issuer.example.com"}}},
-			Features: []adminv1.Feature{
-				{Name: adminv1.FeatureAiGateway, Enabled: true},
-			},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{

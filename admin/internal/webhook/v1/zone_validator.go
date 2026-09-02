@@ -76,7 +76,6 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 	}
 
 	defaultCount := 0
-	presetFeatures := make(map[adminv1.FeatureName]struct{})
 	errs = append(errs, validateFeatures(specPath.Child("features"), zone.Spec.Features, adminv1.FeatureScopeZone)...)
 	for i := range zone.Spec.Presets {
 		preset := &zone.Spec.Presets[i]
@@ -104,19 +103,9 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 			errs = append(errs, validateBasePath(urlPath.Child("basePath"), preset.Urls[j].BasePath)...)
 		}
 		errs = append(errs, validateFeatures(presetPath.Child("features"), preset.Features, adminv1.FeatureScopePreset)...)
-		for _, feature := range preset.Features {
-			if feature.Enabled && adminv1.FeatureScopeOf(feature.Name) == adminv1.FeatureScopePreset {
-				presetFeatures[feature.Name] = struct{}{}
-			}
-		}
 	}
 	if defaultCount != 1 {
 		errs = append(errs, field.Invalid(specPath.Child("presets"), defaultCount, "exactly one default preset is required"))
-	}
-	for feature := range presetFeatures {
-		if _, err := zone.Spec.SelectPreset(feature); err != nil {
-			errs = append(errs, field.Invalid(specPath.Child("presets"), feature, err.Error()))
-		}
 	}
 	for i := range zone.Spec.Gateways {
 		gateway := &zone.Spec.Gateways[i]

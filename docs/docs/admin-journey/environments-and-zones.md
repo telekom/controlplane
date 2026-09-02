@@ -68,7 +68,7 @@ kubectl describe zone <name> -n <environment>
 
 ### Creating a Zone
 
-A Zone references the gateway and identity provider to use, along with optional Redis configuration and visibility settings:
+A Zone references the gateways and identity provider to use, along with optional Redis configuration and visibility settings:
 
 ```yaml
 apiVersion: admin.cp.ei.telekom.de/v1
@@ -78,21 +78,30 @@ metadata:
   namespace: dev
 spec:
   visibility: World
-  gateway:
-    admin:
-      url: https://gateway-admin.example.com
-    presets:
-      - name: default
-        default: true
-        urls:
-          - hostname: api.dataplane1.example.com
-            basePath: /
-  identityProvider:
-    url: https://idp.example.com
-    admin:
-      clientId: admin-client
-      userName: admin
-      password: <your-idp-admin-password>
+  gateways:
+    - name: standard
+      types:
+        - API
+        - Event
+      admin:
+        identityProviderRef: primary
+        url: https://gateway-admin.example.com
+  identityProviders:
+    - name: primary
+      issuerHostname: idp.example.com
+      admin:
+        url: https://idp.example.com/auth/admin/realms
+        clientId: admin-client
+        userName: admin
+        password: <your-idp-admin-password>
+  presets:
+    - name: default
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: api.dataplane1.example.com
+          basePath: /
   redis:
     host: redis.example.com
     port: 6379
@@ -100,22 +109,57 @@ spec:
     enableTLS: true
 ```
 
+### Gateway Types
+
+Every entry in `spec.gateways` declares which kinds of traffic it serves through `types`:
+
+| Type | Serves |
+| ---- | ------ |
+| `API` | Synchronous API traffic: exposures, subscriptions and proxy routes. |
+| `AI` | Agentic traffic: MCP servers and agent cards. |
+| `Event` | Asynchronous event traffic. |
+
+A gateway may serve several types at once, and a zone may declare several gateways so that different traffic kinds land on different gateway instances:
+
+```yaml
+  gateways:
+    - name: standard
+      types: [API, Event]
+      admin:
+        identityProviderRef: primary
+        url: https://gateway-admin.example.com
+    - name: ai
+      types: [AI]
+      admin:
+        identityProviderRef: primary
+        url: https://ai-gateway-admin.example.com
+```
+
+Each preset points at one gateway via `gatewayRef`, so the preset inherits that gateway's types. When the Control Plane needs a preset for a given traffic kind — for example an AI Gateway route — it picks the default preset if it serves that type, and otherwise the first preset in `spec.presets` that does. A zone without a gateway serving the requested type cannot host that kind of traffic.
+
+:::note
+A gateway that declares several types passes all of them to every preset referencing it. If the default preset points at such a gateway, it is a valid candidate for each of those types and therefore wins the selection. To route a traffic kind to a dedicated preset, keep that type off the gateway the default preset references.
+:::
+
 :::caution
 Credential values (`clientSecret`, `password`, etc.) should not be committed to version control. See [Zone Secrets](#zone-secrets) below for how the Control Plane onboards these values automatically — in most cases you can leave them empty or use a secret reference instead of a clear-text value.
 :::
 
 ### Gateway Admin Access
 
-To configure routes at runtime, the Control Plane needs to authenticate against your gateway's **admin API**. The `gateway.admin` block holds this connection:
+To configure routes at runtime, the Control Plane needs to authenticate against your gateway's **admin API**. The `admin` block on each gateway holds this connection:
 
 ```yaml
-gateway:
-  admin:
-    url: https://gateway-admin.example.com
-    # clientSecret is optional — see below
+gateways:
+  - name: standard
+    types: [API]
+    admin:
+      identityProviderRef: primary
+      url: https://gateway-admin.example.com
+      # clientSecret is optional — see below
 ```
 
-You only need to provide the `url`. To handle authentication, the Control Plane automatically provisions a dedicated identity client (the `rover` client, described below) and generates its secret. If you want to set the client's secret yourself, provide `clientSecret`; otherwise it is generated for you.
+You only need to provide the `url` and `identityProviderRef`. To handle authentication, the Control Plane automatically provisions a dedicated identity client (the `rover` client, described below) and generates its secret. If you want to set the client's secret yourself, provide `clientSecret`; otherwise it is generated for you.
 
 #### The `rover` realm and client
 

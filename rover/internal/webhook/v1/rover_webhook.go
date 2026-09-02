@@ -122,7 +122,7 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 	}
 
 	// Validate ConsumerFailover: feature must be enabled on this zone if ConsumerFailover is configured
-	if !zone.Spec.FeaturesSupported(adminv1.FeatureConsumerFailover) && rover.HasFailoverEnabledOnAnySubscription() {
+	if !zone.Spec.FeaturesSupported(adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover) && rover.HasFailoverEnabledOnAnySubscription() {
 		valErr.AddInvalidError(
 			field.NewPath("spec").Child("zone"),
 			rover.Spec.Zone,
@@ -192,7 +192,7 @@ func (r *RoverValidator) validatePermissions(valErr *cerrors.ValidationError, ro
 }
 
 func (r *RoverValidator) validateAiGatewaySupport(valErr *cerrors.ValidationError, rover *roverv1.Rover, zone *adminv1.Zone) error {
-	if zone.IsFeatureEnabled(adminv1.FeatureAiGateway) {
+	if zone.Spec.FeaturesSupported(adminv1.GatewayTypeAI) {
 		return nil
 	}
 
@@ -210,7 +210,7 @@ func (r *RoverValidator) validateAiGatewaySupport(valErr *cerrors.ValidationErro
 	valErr.AddInvalidError(
 		field.NewPath("spec").Child("zone"),
 		rover.Spec.Zone,
-		fmt.Sprintf("zone %q does not support the AI Gateway feature. Agentic exposures and subscriptions require the AI Gateway feature to be enabled on the zone", rover.Spec.Zone),
+		fmt.Sprintf("zone %q has no AI gateway. Agentic exposures and subscriptions require a gateway of type %q in the zone", rover.Spec.Zone, adminv1.GatewayTypeAI),
 	)
 	return valErr.BuildError()
 }

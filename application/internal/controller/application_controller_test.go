@@ -51,7 +51,8 @@ var _ = Describe("Application Controller", func() {
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
 					Gateways: []adminv1.GatewayConfig{{
-						Name: "default",
+						Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
+						Name:  "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
@@ -118,7 +119,8 @@ var _ = Describe("Application Controller", func() {
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
 					Gateways: []adminv1.GatewayConfig{{
-						Name: "default",
+						Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
+						Name:  "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},

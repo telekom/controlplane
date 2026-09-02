@@ -50,7 +50,7 @@ var _ = Describe("Team Webhook", func() {
 				Type: adminv1.ManagedRouteTypeTeamAPI,
 			}}},
 			Visibility: adminv1.ZoneVisibilityWorld,
-			Gateways: []adminv1.GatewayConfig{{
+			Gateways: []adminv1.GatewayConfig{{Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
 				Name: "default",
 				Admin: adminv1.GatewayAdminConfig{
 					Url: "http://gateway-admin.test.local:8001",

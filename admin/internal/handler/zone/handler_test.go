@@ -43,11 +43,12 @@ var _ = Describe("Zone Handler", func() {
 	It("reconciles named infrastructure and publishes sorted preset status", func() {
 		secret := "alternate-secret"
 		zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
-			Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api", ClientSecret: &secret},
+			Types: []adminv1.GatewayType{adminv1.GatewayTypeAI},
+			Name:  "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api", ClientSecret: &secret},
 		})
 		zone.Spec.Presets = append(zone.Spec.Presets,
 			adminv1.Preset{Name: "consumer-failover", GatewayRef: "standard", IdentityProviderRef: "primary", TokenUrl: "https://tokens.example.com/failover", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com", BasePath: "/"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
-			adminv1.Preset{Name: "ai", GatewayRef: "ai", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureAiGateway, Enabled: true}}},
+			adminv1.Preset{Name: "ai", GatewayRef: "ai", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}}},
 		)
 
 		handler := &ZoneHandler{}
@@ -68,8 +69,7 @@ var _ = Describe("Zone Handler", func() {
 		ai, err := zone.Status.GetPreset("ai")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ai.GatewayRef.Name).To(Equal(naming.ForGateway(zone, "ai")))
-		Expect(zone.Spec.FeaturesSupported(adminv1.FeatureAiGateway)).To(BeTrue())
-		Expect(zone.Status.Features).NotTo(ContainElement(HaveField("Name", adminv1.FeatureAiGateway)))
+		Expect(zone.Spec.FeaturesSupported(adminv1.GatewayTypeAI)).To(BeTrue())
 
 		idps := &identityapi.IdentityProviderList{}
 		gateways := &gatewayapi.GatewayList{}

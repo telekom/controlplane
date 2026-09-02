@@ -103,6 +103,29 @@ The `AGENTIC_TELECONTEXT_APPLICATION_ID` value is injected at operator startup v
 - **Admin domain** — Zones provide the AI Gateway reference, preset URLs, and identity issuers used to wire up routes and mesh trust.
 - **Approval domain** — Subscriptions trigger approval workflows before `ConsumeRoute` is created.
 
+## The AI Gateway
+
+The AI Gateway is a regular zone gateway that declares `AI` in its `types`:
+
+```yaml
+spec:
+  gateways:
+    - name: ai
+      types: [AI]
+      admin:
+        identityProviderRef: primary
+        url: https://ai-gateway-admin.example.com
+  presets:
+    - name: ai
+      gatewayRef: ai
+      identityProviderRef: primary
+      urls:
+        - hostname: ai.gateway.example.com
+          basePath: /
+```
+
+A single gateway may serve several types, so `types: [API, AI]` is a valid way to run agentic and API traffic on one gateway. The Agentic operator resolves its routes through the preset that references an `AI` gateway; a zone without one rejects agentic exposures and subscriptions during Rover validation. See [Environments and Zones](../admin-journey/environments-and-zones.md#gateway-types) for the full gateway type reference.
+
 ## Related Pages
 
 - [Rover Domain Architecture](./rover.mdx)

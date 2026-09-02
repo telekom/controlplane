@@ -36,11 +36,16 @@ spec:
             repeat: 24h
   gateways:
     - name: standard
+      types:
+        - API
+        - Event
       admin:
         identityProviderRef: primary
         url: https://gateway-admin.example.com/admin-api
         clientId: gateway-admin
     - name: ai
+      types:
+        - AI
       admin:
         identityProviderRef: primary
         url: https://ai-gateway-admin.example.com/admin-api
@@ -75,9 +80,6 @@ spec:
           scheme: https
           basePath: /
           hidden: false
-      features:
-        - name: AiGateway
-          enabled: true
   redis:
     host: redis-master.default.svc.cluster.local
     port: 6379

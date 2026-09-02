@@ -58,7 +58,8 @@ func validZone() *adminv1.Zone {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-zone", Namespace: "default"},
 		Spec: adminv1.ZoneSpec{
 			Gateways: []adminv1.GatewayConfig{{
-				Name: "standard",
+				Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
+				Name:  "standard",
 				Admin: adminv1.GatewayAdminConfig{
 					IdentityProviderRef: "primary",
 					Url:                 "https://gateway.example.com/admin",
@@ -101,8 +102,14 @@ var _ = Describe("Zone validation", func() {
 		Entry("multiple IDPs", func(z *adminv1.Zone) {
 			z.Spec.IdentityProviders = append(z.Spec.IdentityProviders, identityProvider("secondary", "secret"))
 		}, "exactly one identity provider"),
-		Entry("ambiguous feature", func(z *adminv1.Zone) { z.Spec.Presets = append(z.Spec.Presets, failoverPreset("other")) }, "multiple presets"),
 	)
+
+	It("allows the same feature set on multiple presets", func() {
+		zone := validZone()
+		zone.Spec.Presets = append(zone.Spec.Presets, failoverPreset("other"))
+		_, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).NotTo(HaveOccurred())
+	})
 
 	It("allows adding and removing non-default presets", func() {
 		oldZone := validZone()
@@ -189,7 +196,7 @@ var _ = Describe("Zone validation", func() {
 			z.Spec.Presets[0].Features = []adminv1.Feature{{Name: adminv1.FeatureBasicAuth, Enabled: true}}
 		}, "zone-scoped"),
 		Entry("preset feature on zone", func(z *adminv1.Zone) {
-			z.Spec.Features = []adminv1.Feature{{Name: adminv1.FeatureAiGateway, Enabled: true}}
+			z.Spec.Features = []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}
 		}, "preset-scoped"),
 		Entry("unknown zone feature", func(z *adminv1.Zone) {
 			z.Spec.Features = []adminv1.Feature{{Name: adminv1.FeatureName("Unknown"), Enabled: true}}

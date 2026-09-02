@@ -60,7 +60,10 @@ func newZone() *adminv1.Zone {
 			Name:      "test-zone",
 			Namespace: "test-ns",
 		},
-		Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+		Spec: adminv1.ZoneSpec{
+			Gateways: []adminv1.GatewayConfig{{Name: "standard", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}}},
+			Presets:  []adminv1.Preset{{Name: "default", Default: true, GatewayRef: "standard"}},
+		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "zone-ns",
 			Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{TokenUrl: "https://identity.example.com/token"}, GatewayRef: &commontypes.ObjectRef{
@@ -196,8 +199,9 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 	It("publishes the ConsumerFailover preset token URL from the primary zone", func() {
 		app.Spec.Failover.Enabled = true
 		zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
-			Name:     "consumer-failover",
-			Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+			Name:       "consumer-failover",
+			GatewayRef: "standard",
+			Features:   []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
 		})
 		zone.Status.Presets = append(zone.Status.Presets, adminv1.PresetStatus{
 			Name:  "consumer-failover",

@@ -158,7 +158,7 @@ var _ = Describe("PermissionSet Controller", func() {
 							ClientId: "client-id",
 						},
 					}},
-					Gateways: []adminv1.GatewayConfig{{
+					Gateways: []adminv1.GatewayConfig{{Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
 						Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "https://gateway-admin.example.com",

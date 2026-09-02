@@ -151,7 +151,7 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 	if rover.HasFailoverEnabledOnAnySubscription() {
 		appInfo.FailoverEnabled = true
 		// If failover is active for this Application, we need to overwrite the StargateUrl with the new failover URL
-		preset, err := zone.Spec.SelectPreset(adminv1.FeatureConsumerFailover)
+		preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover)
 		if err == nil {
 			appInfo.StargateUrl = preset.GetDefaultURL()
 		}

@@ -10,10 +10,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/telekom/controlplane/common/pkg/reminder"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/reminder"
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 type ZoneVisibility string
@@ -23,9 +24,7 @@ const (
 	ZoneVisibilityEnterprise ZoneVisibility = "Enterprise"
 )
 
-var (
-	ErrNoPresetFound = fmt.Errorf("no preset found with the specified name")
-)
+var ErrNoPresetFound = fmt.Errorf("no preset found with the specified name")
 
 type RedisConfig struct {
 	// Host is the Redis server hostname (e.g. "redis-master.svc.cluster.local").
@@ -194,12 +193,12 @@ type Preset struct {
 
 // ResolveHostnamesAndPaths derives route hostnames and paths from the preset's URL configuration.
 // Each URL contributes one hostname and one path (basePath + routePath).
-func (p *Preset) ResolveHostnamesAndPaths(routePath string) (hostnames []string, paths []string) {
+func (p *Preset) ResolveHostnamesAndPaths(routePath string) (hostnames, paths []string) {
 	for _, u := range p.Urls {
 		hostnames = append(hostnames, u.Hostname)
 		paths = append(paths, path.Join(u.BasePath, routePath))
 	}
-	return
+	return hostnames, paths
 }
 
 // GetDefaultURL returns the full URL of the first non-hidden UrlConfig in this preset, or an empty string if all UrlConfigs are hidden.
@@ -216,10 +215,33 @@ func (p *Preset) SupportsFeatures(featureNames []FeatureName) bool {
 	return supportsFeatures(p.Features, featureNames...)
 }
 
+// GatewayType classifies the kind of traffic a gateway serves.
+// +kubebuilder:validation:Enum=API;AI;Event
+type GatewayType string
+
+const (
+	// GatewayTypeAPI serves synchronous API traffic (exposures, subscriptions, proxy routes).
+	GatewayTypeAPI GatewayType = "API"
+	// GatewayTypeAI serves agentic traffic (MCP servers, agent cards).
+	GatewayTypeAI GatewayType = "AI"
+	// GatewayTypeEvent serves asynchronous event traffic.
+	GatewayTypeEvent GatewayType = "Event"
+)
+
 type GatewayConfig struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
-	Name  string             `json:"name"`
+	Name string `json:"name"`
+	// Types are the kinds of traffic this gateway serves. A single gateway may serve several.
+	// +listType=set
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=3
+	Types []GatewayType      `json:"types"`
 	Admin GatewayAdminConfig `json:"admin"`
+}
+
+// HasType reports whether this gateway serves the given traffic type.
+func (g *GatewayConfig) HasType(gatewayType GatewayType) bool {
+	return slices.Contains(g.Types, gatewayType)
 }
 
 // ManagedRouteType defines the type of a managed route.
@@ -398,54 +420,81 @@ func (s *ZoneSpec) GetDefaultPreset() (*Preset, error) {
 	return match, nil
 }
 
-func (s *ZoneSpec) SelectPreset(features ...FeatureName) (*Preset, error) {
-	if len(features) == 0 {
-		return nil, fmt.Errorf("no features requested")
+// presetsForGatewayType returns, in spec order, the presets whose gateway serves gatewayType.
+func (s *ZoneSpec) presetsForGatewayType(gatewayType GatewayType) []*Preset {
+	var presets []*Preset
+	for i := range s.Presets {
+		gateway, err := s.GetGateway(s.Presets[i].GatewayRef)
+		if err != nil || !gateway.HasType(gatewayType) {
+			continue
+		}
+		presets = append(presets, &s.Presets[i])
 	}
+	return presets
+}
+
+// SelectPreset returns the preset that serves gatewayType with all requested features enabled.
+// The same feature set may be configured on several presets: the default preset wins, otherwise
+// the first match in spec order. All reasons a combination cannot be served are reported at once.
+func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName) (*Preset, error) {
+	var problems []string
 	presetFeatures := make([]FeatureName, 0, len(features))
 	for _, feature := range features {
 		switch FeatureScopeOf(feature) {
 		case FeatureScopeZone:
 			if !supportsFeatures(s.Features, feature) {
-				return nil, fmt.Errorf("zone feature %q is not enabled", feature)
+				problems = append(problems, fmt.Sprintf("zone feature %q is not enabled", feature))
 			}
 		case FeatureScopePreset:
 			presetFeatures = append(presetFeatures, feature)
 		default:
-			return nil, fmt.Errorf("unknown feature %q", feature)
+			problems = append(problems, fmt.Sprintf("feature %q is unknown", feature))
 		}
 	}
-	if len(presetFeatures) == 0 {
-		return s.GetDefaultPreset()
+
+	candidates := s.presetsForGatewayType(gatewayType)
+	if len(candidates) == 0 {
+		problems = append(problems, fmt.Sprintf("no preset references a gateway of type %q", gatewayType))
 	}
+
 	var match *Preset
-	for i := range s.Presets {
-		if !s.Presets[i].SupportsFeatures(presetFeatures) {
+	for _, preset := range candidates {
+		if !preset.SupportsFeatures(presetFeatures) {
 			continue
 		}
-		if match != nil {
-			return nil, fmt.Errorf("multiple presets match features %v", presetFeatures)
+		if preset.Default {
+			match = preset
+			break
 		}
-		match = &s.Presets[i]
+		if match == nil {
+			match = preset
+		}
 	}
-	if match == nil {
-		missing := make([]FeatureName, 0, len(presetFeatures))
+
+	if match == nil && len(candidates) > 0 {
+		missing := 0
 		for _, feature := range presetFeatures {
-			if !slices.ContainsFunc(s.Presets, func(p Preset) bool { return supportsFeatures(p.Features, feature) }) {
-				missing = append(missing, feature)
+			if !slices.ContainsFunc(candidates, func(p *Preset) bool { return supportsFeatures(p.Features, feature) }) {
+				problems = append(problems, fmt.Sprintf("feature %q is not enabled on any %q preset", feature, gatewayType))
+				missing++
 			}
 		}
-		if len(missing) == 0 {
-			// Every feature exists on some preset, just not all on the same one.
-			return nil, fmt.Errorf("no preset matches features %v: they are enabled on different presets, but only one preset can be used at a time", presetFeatures)
+		if missing == 0 {
+			// ponytail: unreachable while ConsumerFailover is the only preset-scoped feature,
+			// but required so we never return (nil, nil) once a second one exists.
+			problems = append(problems, "requested features are enabled on different presets, but only one preset can be used at a time")
 		}
-		return nil, fmt.Errorf("no preset matches features %v: %v not enabled on any preset", presetFeatures, missing)
+	}
+
+	if len(problems) > 0 {
+		return nil, fmt.Errorf("feature combination %v is not allowed for gateway type %q: %s",
+			features, gatewayType, strings.Join(problems, "; "))
 	}
 	return match, nil
 }
 
-func (s *ZoneSpec) FeaturesSupported(features ...FeatureName) bool {
-	_, err := s.SelectPreset(features...)
+func (s *ZoneSpec) FeaturesSupported(gatewayType GatewayType, features ...FeatureName) bool {
+	_, err := s.SelectPreset(gatewayType, features...)
 	return err == nil
 }
 
@@ -611,9 +660,6 @@ const (
 	// FeatureSecretRotation is a reconciled status feature indicating secret rotation is enabled.
 	FeatureSecretRotation FeatureName = "SecretRotation"
 
-	// FeatureAiGateway indicates that the AI Gateway is configured and available for this zone.
-	FeatureAiGateway FeatureName = "AiGateway"
-
 	// FeaturePermissions is a reconciled status feature indicating permission service integration is enabled.
 	FeaturePermissions FeatureName = "Permissions"
 
@@ -638,7 +684,7 @@ func FeatureScopeOf(feature FeatureName) FeatureScope {
 	switch feature {
 	case FeatureBasicAuth:
 		return FeatureScopeZone
-	case FeatureAiGateway, FeatureConsumerFailover:
+	case FeatureConsumerFailover:
 		return FeatureScopePreset
 	default:
 		return FeatureScopeUnknown

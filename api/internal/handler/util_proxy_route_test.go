@@ -35,7 +35,8 @@ func CreateZone(name string) *adminapi.Zone {
 		Spec: adminapi.ZoneSpec{
 			Visibility: adminapi.ZoneVisibilityWorld,
 			Gateways: []adminapi.GatewayConfig{{
-				Name: "default",
+				Types: []adminapi.GatewayType{adminapi.GatewayTypeAPI},
+				Name:  "default",
 				Admin: adminapi.GatewayAdminConfig{
 					Url: "http://gateway-admin.test.local:8001",
 				},

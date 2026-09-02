@@ -137,9 +137,25 @@ spec:
                     name:
                       pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                       type: string
+                    types:
+                      description: Types are the kinds of traffic this gateway serves.
+                        A single gateway may serve several.
+                      items:
+                        description: GatewayType classifies the kind of traffic a
+                          gateway serves.
+                        enum:
+                        - API
+                        - AI
+                        - Event
+                        type: string
+                      maxItems: 3
+                      minItems: 1
+                      type: array
+                      x-kubernetes-list-type: set
                   required:
                   - admin
                   - name
+                  - types
                   type: object
                 maxItems: 5
                 minItems: 1

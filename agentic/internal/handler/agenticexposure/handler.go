@@ -68,7 +68,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	}
 
 	// 4. Check zone supports AI Gateway
-	if !zone.Spec.FeaturesSupported(adminv1.FeatureAiGateway) {
+	if !zone.Spec.FeaturesSupported(adminv1.GatewayTypeAI) {
 		obj.SetCondition(condition.NewNotReadyCondition("AiGatewayNotSupported",
 			"Zone "+zone.Name+" does not support the AI Gateway feature"))
 		return ctrlerrors.BlockedErrorf("zone %q does not support the AI Gateway feature", zone.Name)
@@ -91,7 +91,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		}
 
 		// Collect LMS issuer so the real route trusts traffic forwarded by this proxy gateway
-		subscriberPreset, presetErr := subscriberZone.Spec.SelectPreset(adminv1.FeatureAiGateway)
+		subscriberPreset, presetErr := subscriberZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 		if presetErr != nil {
 			return ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway preset: %v", subscriberZone.Name, presetErr)
 		}
@@ -318,7 +318,7 @@ func ensureTelecontextProxyRoute(
 		return nil, "", errors.Wrapf(err, "failed to create MCP proxy Route for Telecontext zone %q", info.Zone.Name)
 	}
 
-	preset, err := telecontextZone.Spec.SelectPreset(adminv1.FeatureAiGateway)
+	preset, err := telecontextZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 	if err != nil {
 		return nil, "", ctrlerrors.BlockedErrorf("Telecontext zone %q has no AI Gateway preset: %v", info.Zone.Name, err)
 	}

@@ -51,7 +51,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	}
 	preset, err := zone.Spec.GetDefaultPreset()
 	if app.Spec.Failover.Enabled {
-		preset, err = zone.Spec.SelectPreset(admin.FeatureConsumerFailover)
+		preset, err = zone.Spec.SelectPreset(admin.GatewayTypeAPI, admin.FeatureConsumerFailover)
 	}
 	if err != nil {
 		return ctrlerrors.BlockedErrorf("zone %q does not contain the selected preset: %s", zone.Name, err.Error())
@@ -129,7 +129,7 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 			if types.Equals(zone, &zoneList.Items[i]) {
 				continue
 			}
-			if zoneList.Items[i].Spec.FeaturesSupported(admin.FeatureConsumerFailover) {
+			if zoneList.Items[i].Spec.FeaturesSupported(admin.GatewayTypeAPI, admin.FeatureConsumerFailover) {
 				failoverZones = append(failoverZones, &zoneList.Items[i])
 			}
 		}

@@ -186,7 +186,7 @@ func gatewayBaseUrl(zone *adminv1.Zone, failover bool) string {
 	var preset *adminv1.Preset
 	var err error
 	if failover {
-		preset, err = zone.Spec.SelectPreset(adminv1.FeatureConsumerFailover)
+		preset, err = zone.Spec.SelectPreset(adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover)
 	} else {
 		preset, err = zone.Spec.GetDefaultPreset()
 	}

@@ -239,7 +239,7 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 
 // FindFailoverEligibleZones lists all zones and returns those that are eligible for failover for a given zone.
 func FindFailoverEligibleZones(ctx context.Context, myZone types.ObjectRef) ([]types.ObjectRef, error) {
-	allZones, err := FindAllZonesWithFeatureEnabled(ctx, adminapi.FeatureConsumerFailover)
+	allZones, err := FindAllZonesWithFeatureEnabled(ctx, adminapi.GatewayTypeAPI, adminapi.FeatureConsumerFailover)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find zones with consumer failover feature enabled")
 	}
@@ -302,8 +302,8 @@ func FindAllSubscribersForApiExposure(ctx context.Context, apiExp *apiv1.ApiExpo
 	return subscribers, nil
 }
 
-// FindAllZonesWithFeatureEnabled lists all zones and returns those that have the given feature enabled.
-func FindAllZonesWithFeatureEnabled(ctx context.Context, featureName adminapi.FeatureName) ([]*adminapi.Zone, error) {
+// FindAllZonesWithFeatureEnabled lists all zones and returns those that have the given feature enabled on a gateway of the given type.
+func FindAllZonesWithFeatureEnabled(ctx context.Context, gatewayType adminapi.GatewayType, featureName adminapi.FeatureName) ([]*adminapi.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	zoneList := &adminapi.ZoneList{}
@@ -321,7 +321,7 @@ func FindAllZonesWithFeatureEnabled(ctx context.Context, featureName adminapi.Fe
 			continue
 		}
 
-		if zone.Spec.FeaturesSupported(featureName) {
+		if zone.Spec.FeaturesSupported(gatewayType, featureName) {
 			zonesWithFeature = append(zonesWithFeature, zone)
 		}
 	}
