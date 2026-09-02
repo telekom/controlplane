@@ -27,6 +27,7 @@ func (h *FileTypeHandler) CreateOrUpdate(ctx context.Context, obj *filev1.FileTy
 		return err
 	}
 	if !found {
+		obj.Status.Active = false
 		obj.Status.FileExposureRef = nil
 		obj.SetCondition(condition.NewNotReadyCondition("FileExposureNotFound", "No FileExposure found for this FileType"))
 		obj.SetCondition(condition.NewBlockedCondition("FileType will be processed when a FileExposure is registered"))
@@ -50,6 +51,7 @@ func (h *FileTypeHandler) CreateOrUpdate(ctx context.Context, obj *filev1.FileTy
 		return nil
 	}
 
+	obj.Status.Active = true
 	obj.SetCondition(condition.NewReadyCondition("FileTypeProvisioned", "FileType has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("FileType has been provisioned"))
 	return nil

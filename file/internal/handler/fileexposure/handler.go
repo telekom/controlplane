@@ -35,6 +35,7 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 	}
 
 	if found && activeExposure.UID != obj.UID {
+		obj.Status.Active = false
 		obj.Status.FileTypeRef = &fileTypeRef
 		obj.SetCondition(condition.NewNotReadyCondition("FileExposureAlreadyExists", "Another FileExposure already provides this FileType"))
 		obj.SetCondition(condition.NewBlockedCondition("FileExposure will be processed when the active FileExposure is deleted"))
@@ -69,6 +70,7 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 		return nil
 	}
 
+	obj.Status.Active = true
 	obj.SetCondition(condition.NewReadyCondition("FileExposureProvisioned", "FileExposure has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("FileExposure has been provisioned"))
 	return nil

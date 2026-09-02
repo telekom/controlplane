@@ -27,6 +27,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -62,7 +63,7 @@ func buildScheme() *runtime.Scheme {
 
 func newTestContext() (context.Context, *fake.MockJanitorClient) {
 	mockClient := fake.NewMockJanitorClient(GinkgoT())
-	ctx := cclient.WithClient(context.Background(), mockClient)
+	ctx := contextutil.WithEnv(cclient.WithClient(context.Background(), mockClient), testEnv)
 	return ctx, mockClient
 }
 
@@ -129,6 +130,18 @@ func testReadyZone() *adminv1.Zone {
 		Reason: "Ready",
 	})
 	return z
+}
+
+func testReadyClient() identityv1.Client {
+	readyClient := identityv1.Client{
+		ObjectMeta: metav1.ObjectMeta{Name: "sftp-api-" + testZoneName, Namespace: testNamespace},
+	}
+	k8smeta.SetStatusCondition(&readyClient.Status.Conditions, metav1.Condition{
+		Type:   condition.ConditionTypeReady,
+		Status: metav1.ConditionTrue,
+		Reason: "Ready",
+	})
+	return readyClient
 }
 
 var _ = Describe("ZoneServiceConfigHandler", func() {
@@ -204,6 +217,9 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 					*out.(*adminv1.Zone) = *zoneNoRealm
 				}).
 				Return(nil).Once()
+			mockClient.EXPECT().
+				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
+				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api-"+testZoneName)).Once()
 
 			err := handler.CreateOrUpdate(ctx, obj)
 
@@ -226,7 +242,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			secretsapi.API = func() secretsapi.SecretManager { return mockSecretsManager }
 			mockSecretsManager.EXPECT().
 				UpsertEnvironment(mock.Anything, testEnv, mock.Anything, mock.Anything).
-				Return(map[string]string{"zones/" + testZoneName + "/file/" + testNamespace + "/" + testZoneName + "/clientSecret": "secret-id::v1"}, nil).
+				Return(map[string]string{"zones/" + testZoneName + "/file/clientSecret": "secret-id::v1"}, nil).
 				Once()
 
 			mockClient.EXPECT().
@@ -238,7 +254,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			// identity Client Get → not found → will be created
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
-				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api--test-zsc")).
+				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api-test-zsc")).
 				Once()
 			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
 			// CreateOrUpdate for identity Client
@@ -282,12 +298,12 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			Expect(err).To(MatchError(ContainSubstring("connection refused")))
 		})
 
-		It("continues without secret rotation when identity Client is found but not ready", func() {
+		It("returns an error when the identity Client is found but not ready", func() {
 			obj := testZoneServiceConfig()
 			ctx, mockClient := newTestContext()
 			zone := testReadyZone()
 			notReadyClient := identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api--" + testZoneName, Namespace: testNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api-" + testZoneName, Namespace: testNamespace},
 			}
 
 			mockClient.EXPECT().
@@ -302,64 +318,18 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 					*out.(*identityv1.Client) = notReadyClient
 				}).
 				Return(nil).Once()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Route"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
-			mockClient.EXPECT().AllReady().Return(false).Once()
-
 			err := handler.CreateOrUpdate(ctx, obj)
 
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("is not ready")))
 		})
 
-		It("continues without secret rotation when Client is found, ready, and SecretExpiresAt is nil", func() {
-			obj := testZoneServiceConfig()
-			ctx, mockClient := newTestContext()
-			zone := testReadyZone()
-			readyClient := identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api--" + testZoneName, Namespace: testNamespace},
-			}
-			k8smeta.SetStatusCondition(&readyClient.Status.Conditions, metav1.Condition{
-				Type:   condition.ConditionTypeReady,
-				Status: metav1.ConditionTrue,
-				Reason: "Ready",
-			})
-
-			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testZoneName, Namespace: testEnv}, mock.AnythingOfType("*v1.Zone")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*adminv1.Zone) = *zone
-				}).
-				Return(nil).Once()
-			mockClient.EXPECT().
-				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*identityv1.Client) = readyClient
-				}).
-				Return(nil).Once()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Route"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
-			mockClient.EXPECT().AllReady().Return(false).Once()
-
-			err := handler.CreateOrUpdate(ctx, obj)
-
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("continues without secret rotation when Client is found, ready, and secret is far from expiry", func() {
+		It("continues when Client is found, ready", func() {
 			obj := testZoneServiceConfig()
 			ctx, mockClient := newTestContext()
 			zone := testReadyZone()
 			farExpiry := metav1.Time{Time: time.Now().Add(30 * 24 * time.Hour)}
 			readyClient := identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api--" + testZoneName, Namespace: testNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api-" + testZoneName, Namespace: testNamespace},
 				Status:     identityv1.ClientStatus{SecretExpiresAt: &farExpiry},
 			}
 			k8smeta.SetStatusCondition(&readyClient.Status.Conditions, metav1.Condition{
@@ -380,58 +350,6 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 					*out.(*identityv1.Client) = readyClient
 				}).
 				Return(nil).Once()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Route"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
-			mockClient.EXPECT().AllReady().Return(false).Once()
-
-			err := handler.CreateOrUpdate(ctx, obj)
-
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("rotates the Client secret when expiry is within 7 days", func() {
-			obj := testZoneServiceConfig()
-			ctx, mockClient := newTestContext()
-			zone := testReadyZone()
-			nearExpiry := metav1.Time{Time: time.Now().Add(3 * 24 * time.Hour)}
-			readyClient := identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api--" + testZoneName, Namespace: testNamespace},
-				Status:     identityv1.ClientStatus{SecretExpiresAt: &nearExpiry},
-			}
-			k8smeta.SetStatusCondition(&readyClient.Status.Conditions, metav1.Condition{
-				Type:   condition.ConditionTypeReady,
-				Status: metav1.ConditionTrue,
-				Reason: "Ready",
-			})
-
-			origAPI := secretsapi.API
-			DeferCleanup(func() { secretsapi.API = origAPI })
-			mockSecretsManager := fakesecrets.NewMockSecretManager(GinkgoT())
-			secretsapi.API = func() secretsapi.SecretManager { return mockSecretsManager }
-			secretPath := "zones/" + testZoneName + "/file/" + testNamespace + "/" + testZoneName + "/clientSecret"
-			mockSecretsManager.EXPECT().
-				UpsertEnvironment(mock.Anything, testEnv, mock.Anything, mock.Anything).
-				Return(map[string]string{secretPath: "secret-id::v2"}, nil).Once()
-
-			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testZoneName, Namespace: testEnv}, mock.AnythingOfType("*v1.Zone")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*adminv1.Zone) = *zone
-				}).
-				Return(nil).Once()
-			mockClient.EXPECT().
-				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*identityv1.Client) = readyClient
-				}).
-				Return(nil).Once()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Client"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
 				Return(controllerutil.OperationResultNone, nil).Once()
@@ -466,7 +384,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 				Return(nil).Once()
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
-				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api--"+testZoneName)).Once()
+				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api-"+testZoneName)).Once()
 
 			err := handler.CreateOrUpdate(ctx, obj)
 
@@ -494,7 +412,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 				Return(nil).Once()
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
-				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api--"+testZoneName)).Once()
+				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api-"+testZoneName)).Once()
 
 			err := handler.CreateOrUpdate(ctx, obj)
 
@@ -511,7 +429,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			DeferCleanup(func() { secretsapi.API = origAPI })
 			mockSecretsManager := fakesecrets.NewMockSecretManager(GinkgoT())
 			secretsapi.API = func() secretsapi.SecretManager { return mockSecretsManager }
-			secretPath := "zones/" + testZoneName + "/file/" + testNamespace + "/" + testZoneName + "/clientSecret"
+			secretPath := "zones/" + testZoneName + "/file/clientSecret"
 			mockSecretsManager.EXPECT().
 				UpsertEnvironment(mock.Anything, testEnv, mock.Anything, mock.Anything).
 				Return(map[string]string{secretPath: "secret-id::v1"}, nil).Once()
@@ -524,7 +442,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 				Return(nil).Once()
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
-				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api--"+testZoneName)).Once()
+				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api-"+testZoneName)).Once()
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Client"), mock.Anything).
 				Return(controllerutil.OperationResultNone, fmt.Errorf("client creation failed")).Once()
@@ -538,9 +456,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			obj := testZoneServiceConfig()
 			ctx, mockClient := newTestContext()
 			zone := testReadyZone()
-			notReadyClient := identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api--" + testZoneName, Namespace: testNamespace},
-			}
+			readyClient := testReadyClient()
 
 			mockClient.EXPECT().
 				Get(mock.Anything, k8stypes.NamespacedName{Name: testZoneName, Namespace: testEnv}, mock.AnythingOfType("*v1.Zone")).
@@ -551,7 +467,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
 				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*identityv1.Client) = notReadyClient
+					*out.(*identityv1.Client) = readyClient
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -568,9 +484,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			ctx, mockClient := newTestContext()
 			zoneNoPreset := testReadyZone()
 			zoneNoPreset.Spec.Gateway.Presets = nil
-			notReadyClient := identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api--" + testZoneName, Namespace: testNamespace},
-			}
+			readyClient := testReadyClient()
 
 			mockClient.EXPECT().
 				Get(mock.Anything, k8stypes.NamespacedName{Name: testZoneName, Namespace: testEnv}, mock.AnythingOfType("*v1.Zone")).
@@ -581,7 +495,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
 				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*identityv1.Client) = notReadyClient
+					*out.(*identityv1.Client) = readyClient
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -599,9 +513,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			obj := testZoneServiceConfig()
 			ctx, mockClient := newTestContext()
 			zone := testReadyZone()
-			notReadyClient := identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api--" + testZoneName, Namespace: testNamespace},
-			}
+			readyClient := testReadyClient()
 
 			mockClient.EXPECT().
 				Get(mock.Anything, k8stypes.NamespacedName{Name: testZoneName, Namespace: testEnv}, mock.AnythingOfType("*v1.Zone")).
@@ -612,7 +524,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
 				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*identityv1.Client) = notReadyClient
+					*out.(*identityv1.Client) = readyClient
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -631,9 +543,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			obj := testZoneServiceConfig()
 			ctx, mockClient := newTestContext()
 			zone := testReadyZone()
-			notReadyClient := identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "sftp-api--" + testZoneName, Namespace: testNamespace},
-			}
+			readyClient := testReadyClient()
 
 			mockClient.EXPECT().
 				Get(mock.Anything, k8stypes.NamespacedName{Name: testZoneName, Namespace: testEnv}, mock.AnythingOfType("*v1.Zone")).
@@ -644,7 +554,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client")).
 				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*identityv1.Client) = notReadyClient
+					*out.(*identityv1.Client) = readyClient
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
