@@ -49,8 +49,6 @@ func (Zone) Fields() []ent.Field {
 func (Zone) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("applications", Application.Type),
-		edge.To("file_exposures", FileExposure.Type),
-		edge.To("file_subscriptions", FileSubscription.Type),
 	}
 }
 
