@@ -27,6 +27,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
+	common_types "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -110,6 +111,34 @@ var _ = Describe("Controller", func() {
 	}
 
 	Context("NewController", func() {
+		DescribeTable("derives the field owner from the resource type",
+			func(fieldOwner func() string, expected string) {
+				Expect(fieldOwner()).To(Equal(expected))
+			},
+			Entry("single-word interface", func() string { return fieldOwnerFor[common_types.Object]() }, "object-controller"),
+			Entry("multi-word pointer", func() string { return fieldOwnerFor[*test.TestResource]() }, "testresource-controller"),
+		)
+
+		It("uses the resource field owner for writes", func() {
+			var fieldManager string
+			watchClient, err := client.NewWithWatch(cfg, client.Options{Scheme: scheme.Scheme})
+			Expect(err).ToNot(HaveOccurred())
+			interceptedClient := interceptor.NewClient(watchClient, interceptor.Funcs{
+				Update: func(_ context.Context, _ client.WithWatch, _ client.Object, opts ...client.UpdateOption) error {
+					options := &client.UpdateOptions{}
+					for _, opt := range opts {
+						opt.ApplyToUpdate(options)
+					}
+					fieldManager = options.FieldManager
+					return nil
+				},
+			})
+			controller := NewController(handler.NewNopHandler[*test.TestResource](), interceptedClient, &mock.EventRecorder{}).(*ControllerImpl[*test.TestResource])
+
+			Expect(controller.Client.Update(ctx, &test.TestResource{})).To(Succeed())
+			Expect(fieldManager).To(Equal("testresource-controller"))
+		})
+
 		It("should return a new ControllerImpl", func() {
 			controller := NewController(handler.NewNopHandler[*test.TestResource](), k8sClient, &mock.EventRecorder{})
 			Expect(controller).To(BeAssignableToTypeOf(&ControllerImpl[*test.TestResource]{}))
