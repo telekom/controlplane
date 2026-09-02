@@ -1,0 +1,20 @@
+application/internal/handler/application/handler.go
+  s_8ad24bc576fc3f::t_b8bb3a533b32d0 104,177
+  s_8ad24bc576fc3f::t_64a25d2e2f1f39 57-59,105-127,164-176,178-183,186-189,191-192,195,197,199-205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "797696dc172a5c4854a146dd3a83303581991881",
+  "prompts": {},
+  "sessions": {
+    "s_8ad24bc576fc3f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9e1278d5ffesrlsGICgseF1XF",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
