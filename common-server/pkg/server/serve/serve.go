@@ -17,9 +17,30 @@ import (
 )
 
 func ServeTLS(ctx context.Context, app *fiber.App, addr, certFile, keyFile string) error {
-	cw, err := certwatcher.New(certFile, keyFile)
+	tlsConfig, err := newTLSConfig(ctx, certFile, keyFile)
 	if err != nil {
 		return err
+	}
+	ln, err := net.Listen("tcp4", addr)
+	if err != nil {
+		return errors.Wrap(err, "failed to listen")
+	}
+	return app.Listener(tls.NewListener(ln, tlsConfig))
+}
+
+// ServeTLSListener serves TLS traffic on an already-bound listener.
+func ServeTLSListener(ctx context.Context, app *fiber.App, listener net.Listener, certFile, keyFile string) error {
+	tlsConfig, err := newTLSConfig(ctx, certFile, keyFile)
+	if err != nil {
+		return err
+	}
+	return app.Listener(tls.NewListener(listener, tlsConfig))
+}
+
+func newTLSConfig(ctx context.Context, certFile, keyFile string) (*tls.Config, error) {
+	cw, err := certwatcher.New(certFile, keyFile)
+	if err != nil {
+		return nil, err
 	}
 	cw.WithWatchInterval(30 * time.Second)
 	go func() {
@@ -29,14 +50,8 @@ func ServeTLS(ctx context.Context, app *fiber.App, addr, certFile, keyFile strin
 		}
 	}()
 
-	ln, err := net.Listen("tcp4", addr)
-	if err != nil {
-		return errors.Wrap(err, "failed to listen")
-	}
-	ln = tls.NewListener(ln, &tls.Config{
+	return &tls.Config{
 		GetCertificate: cw.GetCertificate,
 		MinVersion:     tls.VersionTLS13,
-	})
-
-	return app.Listener(ln)
+	}, nil
 }

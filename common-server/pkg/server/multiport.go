@@ -6,10 +6,12 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"sync"
 
+	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -63,16 +65,18 @@ type MultiServer struct {
 	Listeners Listeners
 	Register  RegisterFunc
 
-	// serveTLS is an injectable seam (defaults to serve.ServeTLS) so tests can
-	// assert the cert/key passed to every TLS listener without real TLS.
-	serveTLS func(ctx context.Context, app *fiber.App, addr, cert, key string) error
+	// serveTLS is an injectable seam (defaults to serve.ServeTLSListener) so
+	// tests can assert the cert/key passed to every TLS listener without real TLS.
+	serveTLS func(ctx context.Context, app *fiber.App, listener net.Listener, cert, key string) error
 }
 
 // SetServeTLS overrides the TLS serving function. It exists so tests can assert
 // the cert/key passed to every TLS listener without real TLS. Production code
-// leaves it unset (defaults to serve.ServeTLS).
+// leaves it unset (defaults to serve.ServeTLSListener).
 func (m *MultiServer) SetServeTLS(fn func(ctx context.Context, app *fiber.App, addr, cert, key string) error) {
-	m.serveTLS = fn
+	m.serveTLS = func(ctx context.Context, app *fiber.App, listener net.Listener, cert, key string) error {
+		return fn(ctx, app, listener.Addr().String(), cert, key)
+	}
 }
 
 // Run builds one app per listener, installs probes + the listener's family +
@@ -86,27 +90,25 @@ func (m *MultiServer) Run(ctx context.Context) error {
 	}
 	serveTLSFn := m.serveTLS
 	if serveTLSFn == nil {
-		serveTLSFn = serve.ServeTLS
+		serveTLSFn = serve.ServeTLSListener
 	}
 
-	// Bind-check every address up front, before any serve goroutine starts.
+	// Bind every address up front, before any serve goroutine starts.
 	// Without this, a listener that fails to bind can cancel ctx while a
 	// sibling hasn't called Listen/serveTLS yet; fiber's Shutdown is a no-op
-	// until the app has actually started serving, so that sibling would then
-	// bind and block in Accept forever, hanging Run. This applies to TLS
-	// listeners too: serve.ServeTLS binds with net.Listen the same way.
+	// until the app has actually started serving, so that sibling can block in
+	// Accept forever and hang Run.
 	network := m.AppConfig.Network
-	if network == "" {
+	if network == "" || m.TLS != nil {
 		network = fiber.NetworkTCP4
 	}
+	boundListeners := make([]net.Listener, 0, len(listeners))
 	for _, l := range listeners {
 		ln, err := net.Listen(network, l.Address)
 		if err != nil {
-			return fmt.Errorf("listener %q: %w", l.Address, err)
+			return errors.Join(fmt.Errorf("listener %q: %w", l.Address, err), closeListeners(boundListeners))
 		}
-		if err := ln.Close(); err != nil {
-			return fmt.Errorf("closing listener %q after bind check: %w", l.Address, err)
-		}
+		boundListeners = append(boundListeners, ln)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -132,25 +134,28 @@ func (m *MultiServer) Run(ctx context.Context) error {
 	errCh := make(chan error, len(listeners))
 	for i, l := range listeners {
 		wg.Add(1)
-		go func(app *fiber.App, addr string) {
+		go func(app *fiber.App, listener net.Listener, addr string) {
 			defer wg.Done()
 			var err error
 			if m.TLS != nil {
-				err = serveTLSFn(ctx, app, addr, m.TLS.CertFile, m.TLS.KeyFile)
+				err = serveTLSFn(ctx, app, listener, m.TLS.CertFile, m.TLS.KeyFile)
 			} else {
-				err = app.Listen(addr)
+				err = app.Listener(listener)
 			}
-			if err != nil {
+			if err != nil && ctx.Err() == nil {
 				errCh <- fmt.Errorf("listener %q: %w", addr, err)
 				cancel() // bring down siblings
 			}
-		}(apps[i], l.Address)
+		}(apps[i], boundListeners[i], l.Address)
 	}
 
 	// Shut apps down when the context is cancelled (by an error above or by the
 	// caller), then wait for the serve goroutines to unwind.
 	go func() {
 		<-ctx.Done()
+		if err := closeListeners(boundListeners); err != nil {
+			logr.FromContextOrDiscard(ctx).Error(err, "failed to close listeners")
+		}
 		for _, app := range apps {
 			_ = app.Shutdown()
 		}
@@ -164,10 +169,22 @@ func (m *MultiServer) Run(ctx context.Context) error {
 	return nil
 }
 
+func closeListeners(listeners []net.Listener) error {
+	var closeErrs []error
+
+	for _, listener := range listeners {
+		if err := listener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			closeErrs = append(closeErrs, fmt.Errorf("closing listener %q: %w", listener.Addr(), err))
+		}
+	}
+
+	return errors.Join(closeErrs...)
+}
+
 // Guarded prepends guard to h when guard is non-nil, so a route registration
 // works uniformly whether or not the family uses a per-route guard. Servers use
 // it in their RegisterFunc: router.Add(method, path, Guarded(guard, h)...).
-func Guarded(guard fiber.Handler, h fiber.Handler) []fiber.Handler {
+func Guarded(guard, h fiber.Handler) []fiber.Handler {
 	if guard == nil {
 		return []fiber.Handler{h}
 	}
