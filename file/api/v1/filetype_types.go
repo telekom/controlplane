@@ -27,6 +27,10 @@ type FileTypeStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
+	// Active indicates whether this resource is the active singleton for its type.
+	// When multiple resources exist for the same type, only the oldest non-deleted one is active.
+	Active bool `json:"active"`
+
 	// FileExposureRef references the active FileExposure for this file type.
 	// +optional
 	FileExposureRef *types.ObjectRef `json:"fileExposureRef,omitempty"`

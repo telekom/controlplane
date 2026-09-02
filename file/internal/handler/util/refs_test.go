@@ -82,25 +82,32 @@ var _ = Describe("Refs", func() {
 	})
 
 	Describe("GetChildResourceRef", func() {
-		It("prefixes name with 'sftp-api--'", func() {
+		It("prefixes name with 'sftp-api-'", func() {
 			obj := &filev1.ZoneServiceConfig{
 				ObjectMeta: metav1.ObjectMeta{Name: "my-zone", Namespace: "ns"},
 			}
 			ref := GetChildResourceRef(obj)
-			Expect(ref.Name).To(Equal("sftp-api--my-zone"))
+			Expect(ref.Name).To(Equal("sftp-api-my-zone"))
 			Expect(ref.Namespace).To(Equal("ns"))
 		})
 	})
 
 	Describe("Labels", func() {
 		Describe("ChildLabels", func() {
-			It("returns all expected label keys", func() {
-				ft := types.ObjectRef{Name: "my-ft", Namespace: "ns"}
+			It("returns normalized labels for the file type and its children", func() {
+				ft := types.ObjectRef{Name: "My-FT", Namespace: "My-Namespace"}
 				labels := ChildLabels(ft)
+				Expect(labels).To(HaveLen(5))
 				Expect(labels).To(HaveKey(config.DomainLabelKey))
-				Expect(labels[config.DomainLabelKey]).To(Equal("file"))
 				Expect(labels).To(HaveKey(filev1.FileTypeNameLabelKey))
+				Expect(labels).To(HaveKey(filev1.FileTypeNamespaceLabelKey))
+				Expect(labels).To(HaveKey(config.BuildLabelKey("file.exposure")))
+				Expect(labels).To(HaveKey(config.BuildLabelKey("managed.by")))
+				Expect(labels[config.DomainLabelKey]).To(Equal("file"))
 				Expect(labels[filev1.FileTypeNameLabelKey]).To(Equal("my-ft"))
+				Expect(labels[filev1.FileTypeNamespaceLabelKey]).To(Equal("my-namespace"))
+				Expect(labels[config.BuildLabelKey("file.exposure")]).To(Equal("my-ft"))
+				Expect(labels[config.BuildLabelKey("managed.by")]).To(Equal("file-operator"))
 			})
 		})
 

@@ -13,11 +13,13 @@ import (
 
 // FileExposureSpec defines a provider-side file exposure.
 type FileExposureSpec struct {
-	// Provider optionally identifies the providing application.
-	// +kubebuilder:validation:Optional
-	Provider string `json:"provider,omitempty"`
+	// Variant specifies the variant of the file exposure, e.g., "sftp".
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=sftp
+	Variant string `json:"variant"`
 
 	// +kubebuilder:validation:Required
+	// FileType references the FileType to being expose.
 	FileType string `json:"fileType"`
 
 	// Zone identifies the zone where this file exposure is provided.
@@ -39,6 +41,9 @@ type FileExposureSpec struct {
 
 // FileExposureStatus defines the observed state of FileExposure.
 type FileExposureStatus struct {
+	// Active indicates whether this resource is the active one for its type.
+	Active bool `json:"active"`
+
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge
