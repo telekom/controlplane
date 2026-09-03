@@ -63,6 +63,7 @@ The Projector watches resources from the following domains:
 | [Application](./application.mdx) | Application | Applications with their identity and zone assignments |
 | [API](./api.mdx) | ApiExposure, ApiSubscription | Exposed APIs and their subscriptions |
 | [Approval](./approval.mdx) | Approval, ApprovalRequest | Approval workflows and pending requests |
+| [Agentic](./agentic.mdx) | McpServer, AgentCard, McpExposure, McpSubscription | MCP servers and A2A agent cards, their exposures, and subscriptions |
 
 ### Processing Pipeline
 
@@ -115,11 +116,20 @@ erDiagram
     Group ||--o{ Team : "contains"
     Team ||--o{ Application : "owns"
     Team ||--o{ Member : "has"
+    Team ||--o{ McpServer : "owns"
+    Team ||--o{ AgentCard : "owns"
     Application ||--o{ ApiExposure : "exposes"
     Application ||--o{ ApiSubscription : "subscribes"
     ApiExposure ||--o{ ApiSubscription : "target of"
     ApiSubscription ||--o| Approval : "has"
     ApiSubscription ||--o| ApprovalRequest : "has"
+    Application ||--o{ AgenticExposure : "exposes"
+    Application ||--o{ AgenticSubscription : "subscribes"
+    McpServer ||--o{ AgenticExposure : "exposed as"
+    AgentCard ||--o{ AgenticExposure : "exposed as"
+    AgenticExposure ||--o{ AgenticSubscription : "target of"
+    AgenticSubscription ||--o| Approval : "has"
+    AgenticSubscription ||--o| ApprovalRequest : "has"
 ```
 
 Each entity carries common fields such as `id`, `createdAt`, `lastModifiedAt`, `statusPhase` (Ready, Pending, Error, or Unknown), `statusMessage`, `environment`, and `namespace`.
@@ -132,6 +142,8 @@ All top-level queries support **cursor-based pagination** (Relay-style), **filte
 - `applications` — List applications with their zone, exposures, and subscriptions
 - `apiExposures` — List exposed APIs with visibility, upstreams, and approval configuration
 - `apiSubscriptions` — List subscriptions with their target exposure and approval state
+- `mcpServers` / `agentCards` — List registered MCP servers and A2A agent cards in the catalogue (visible to all authenticated callers, like a shared catalogue)
+- `agenticExposures` / `agenticSubscriptions` — List agentic exposures (MCP/A2A/Telecontext variants) and their subscriptions with approval state
 - `approvals` / `approvalRequests` — List approval workflows and pending requests
 - `zones` — List all available zones (no pagination, visible to all users)
 - `node(id)` / `nodes(ids)` — Relay-compatible node lookups for any entity
@@ -152,7 +164,7 @@ For approvals and approval requests, the isolation uses an **OR** rule: a resour
 
 #### Cross-Tenant Safety
 
-When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
+When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`, `AgenticExposureInfo`, `AgenticSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
 
 ### Authentication
 
@@ -171,7 +183,7 @@ See the [Admin Journey: ControlPlane API](../admin-journey/controlplane-api.md) 
 
 ## Domain Interactions
 
-- **All domain operators** — The Projector reads custom resources managed by Admin, Organization, Application, API, and Approval operators. It depends on these operators to create and reconcile the source resources.
+- **All domain operators** — The Projector reads custom resources managed by Admin, Organization, Application, API, Approval, and Agentic operators. It depends on these operators to create and reconcile the source resources.
 - **Identity domain** — The ControlPlane API relies on JWT tokens issued by the identity provider configured in the platform. The token claims determine the caller's team and access scope.
 
 ## Related Pages

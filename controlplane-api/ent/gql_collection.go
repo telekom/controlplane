@@ -13,6 +13,9 @@ import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -23,11 +26,517 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *AgentCardQuery) CollectFields(ctx context.Context, satisfies ...string) (*AgentCardQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *AgentCardQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(agentcard.Columns))
+		selectedFields = []string{agentcard.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "createdAt":
+			if _, ok := fieldSeen[agentcard.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldCreatedAt)
+				fieldSeen[agentcard.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[agentcard.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldLastModifiedAt)
+				fieldSeen[agentcard.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[agentcard.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldStatusPhase)
+				fieldSeen[agentcard.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[agentcard.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldStatusMessage)
+				fieldSeen[agentcard.FieldStatusMessage] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[agentcard.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldNamespace)
+				fieldSeen[agentcard.FieldNamespace] = struct{}{}
+			}
+		case "basePath":
+			if _, ok := fieldSeen[agentcard.FieldBasePath]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldBasePath)
+				fieldSeen[agentcard.FieldBasePath] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[agentcard.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldVersion)
+				fieldSeen[agentcard.FieldVersion] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[agentcard.FieldName]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldName)
+				fieldSeen[agentcard.FieldName] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[agentcard.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldDescription)
+				fieldSeen[agentcard.FieldDescription] = struct{}{}
+			}
+		case "category":
+			if _, ok := fieldSeen[agentcard.FieldCategory]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldCategory)
+				fieldSeen[agentcard.FieldCategory] = struct{}{}
+			}
+		case "oauth2Scopes":
+			if _, ok := fieldSeen[agentcard.FieldOauth2Scopes]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldOauth2Scopes)
+				fieldSeen[agentcard.FieldOauth2Scopes] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[agentcard.FieldActive]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldActive)
+				fieldSeen[agentcard.FieldActive] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type agentcardPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []AgentCardPaginateOption
+}
+
+func newAgentCardPaginateArgs(rv map[string]any) *agentcardPaginateArgs {
+	args := &agentcardPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &AgentCardOrder{Field: &AgentCardOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithAgentCardOrder(order))
+			}
+		case *AgentCardOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithAgentCardOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*AgentCardWhereInput); ok {
+		args.opts = append(args.opts, WithAgentCardFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *AgenticExposureQuery) CollectFields(ctx context.Context, satisfies ...string) (*AgenticExposureQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *AgenticExposureQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(agenticexposure.Columns))
+		selectedFields = []string{agenticexposure.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApplicationClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, applicationImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+
+		case "mcpServer":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&McpServerClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, mcpserverImplementors)...); err != nil {
+				return err
+			}
+			_q.withMcpServer = query
+
+		case "agentCard":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&AgentCardClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, agentcardImplementors)...); err != nil {
+				return err
+			}
+			_q.withAgentCard = query
+		case "createdAt":
+			if _, ok := fieldSeen[agenticexposure.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldCreatedAt)
+				fieldSeen[agenticexposure.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[agenticexposure.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldLastModifiedAt)
+				fieldSeen[agenticexposure.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[agenticexposure.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldStatusPhase)
+				fieldSeen[agenticexposure.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[agenticexposure.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldStatusMessage)
+				fieldSeen[agenticexposure.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[agenticexposure.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldEnvironment)
+				fieldSeen[agenticexposure.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[agenticexposure.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldNamespace)
+				fieldSeen[agenticexposure.FieldNamespace] = struct{}{}
+			}
+		case "basePath":
+			if _, ok := fieldSeen[agenticexposure.FieldBasePath]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldBasePath)
+				fieldSeen[agenticexposure.FieldBasePath] = struct{}{}
+			}
+		case "visibility":
+			if _, ok := fieldSeen[agenticexposure.FieldVisibility]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldVisibility)
+				fieldSeen[agenticexposure.FieldVisibility] = struct{}{}
+			}
+		case "variant":
+			if _, ok := fieldSeen[agenticexposure.FieldVariant]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldVariant)
+				fieldSeen[agenticexposure.FieldVariant] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[agenticexposure.FieldActive]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldActive)
+				fieldSeen[agenticexposure.FieldActive] = struct{}{}
+			}
+		case "upstreams":
+			if _, ok := fieldSeen[agenticexposure.FieldUpstreams]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldUpstreams)
+				fieldSeen[agenticexposure.FieldUpstreams] = struct{}{}
+			}
+		case "approvalConfig":
+			if _, ok := fieldSeen[agenticexposure.FieldApprovalConfig]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldApprovalConfig)
+				fieldSeen[agenticexposure.FieldApprovalConfig] = struct{}{}
+			}
+		case "security":
+			if _, ok := fieldSeen[agenticexposure.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldSecurity)
+				fieldSeen[agenticexposure.FieldSecurity] = struct{}{}
+			}
+		case "traffic":
+			if _, ok := fieldSeen[agenticexposure.FieldTraffic]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldTraffic)
+				fieldSeen[agenticexposure.FieldTraffic] = struct{}{}
+			}
+		case "transformation":
+			if _, ok := fieldSeen[agenticexposure.FieldTransformation]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldTransformation)
+				fieldSeen[agenticexposure.FieldTransformation] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type agenticexposurePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []AgenticExposurePaginateOption
+}
+
+func newAgenticExposurePaginateArgs(rv map[string]any) *agenticexposurePaginateArgs {
+	args := &agenticexposurePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &AgenticExposureOrder{Field: &AgenticExposureOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithAgenticExposureOrder(order))
+			}
+		case *AgenticExposureOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithAgenticExposureOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*AgenticExposureWhereInput); ok {
+		args.opts = append(args.opts, WithAgenticExposureFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *AgenticSubscriptionQuery) CollectFields(ctx context.Context, satisfies ...string) (*AgenticSubscriptionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *AgenticSubscriptionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(agenticsubscription.Columns))
+		selectedFields = []string{agenticsubscription.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApplicationClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, applicationImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+
+		case "approval":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, approvalImplementors)...); err != nil {
+				return err
+			}
+			_q.withApproval = query
+
+		case "approvalRequests":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalRequestClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, approvalrequestImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedApprovalRequests(alias, func(wq *ApprovalRequestQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[agenticsubscription.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldCreatedAt)
+				fieldSeen[agenticsubscription.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[agenticsubscription.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldLastModifiedAt)
+				fieldSeen[agenticsubscription.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[agenticsubscription.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldStatusPhase)
+				fieldSeen[agenticsubscription.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[agenticsubscription.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldStatusMessage)
+				fieldSeen[agenticsubscription.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[agenticsubscription.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldEnvironment)
+				fieldSeen[agenticsubscription.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[agenticsubscription.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldNamespace)
+				fieldSeen[agenticsubscription.FieldNamespace] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[agenticsubscription.FieldName]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldName)
+				fieldSeen[agenticsubscription.FieldName] = struct{}{}
+			}
+		case "basePath":
+			if _, ok := fieldSeen[agenticsubscription.FieldBasePath]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldBasePath)
+				fieldSeen[agenticsubscription.FieldBasePath] = struct{}{}
+			}
+		case "security":
+			if _, ok := fieldSeen[agenticsubscription.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldSecurity)
+				fieldSeen[agenticsubscription.FieldSecurity] = struct{}{}
+			}
+		case "traffic":
+			if _, ok := fieldSeen[agenticsubscription.FieldTraffic]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldTraffic)
+				fieldSeen[agenticsubscription.FieldTraffic] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type agenticsubscriptionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []AgenticSubscriptionPaginateOption
+}
+
+func newAgenticSubscriptionPaginateArgs(rv map[string]any) *agenticsubscriptionPaginateArgs {
+	args := &agenticsubscriptionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &AgenticSubscriptionOrder{Field: &AgenticSubscriptionOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithAgenticSubscriptionOrder(order))
+			}
+		case *AgenticSubscriptionOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithAgenticSubscriptionOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*AgenticSubscriptionWhereInput); ok {
+		args.opts = append(args.opts, WithAgenticSubscriptionFilter(v.Filter))
+	}
+	return args
+}
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *APIQuery) CollectFields(ctx context.Context, satisfies ...string) (*APIQuery, error) {
@@ -927,6 +1436,184 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				query = pager.applyOrder(query)
 			}
 			_q.WithNamedSubscribedEvents(alias, func(wq *EventSubscriptionQuery) {
+				*wq = *query
+			})
+
+		case "exposedAgentics":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&AgenticExposureClient{config: _q.config}).Query()
+			)
+			args := newAgenticExposurePaginateArgs(fieldArgs(ctx, new(AgenticExposureWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newAgenticExposurePager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Application) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"application_exposed_agentics"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(application.ExposedAgenticsColumn), ids...))
+						})
+						if err := query.GroupBy(application.ExposedAgenticsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[5][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.ExposedAgentics)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[5][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, agenticexposureImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(application.ExposedAgenticsColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedExposedAgentics(alias, func(wq *AgenticExposureQuery) {
+				*wq = *query
+			})
+
+		case "subscribedAgentics":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&AgenticSubscriptionClient{config: _q.config}).Query()
+			)
+			args := newAgenticSubscriptionPaginateArgs(fieldArgs(ctx, new(AgenticSubscriptionWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newAgenticSubscriptionPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Application) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"application_subscribed_agentics"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(application.SubscribedAgenticsColumn), ids...))
+						})
+						if err := query.GroupBy(application.SubscribedAgenticsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[6][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.SubscribedAgentics)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[6][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, agenticsubscriptionImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(application.SubscribedAgenticsColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedSubscribedAgentics(alias, func(wq *AgenticSubscriptionQuery) {
 				*wq = *query
 			})
 
@@ -2024,6 +2711,150 @@ func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *McpServerQuery) CollectFields(ctx context.Context, satisfies ...string) (*McpServerQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *McpServerQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(mcpserver.Columns))
+		selectedFields = []string{mcpserver.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "createdAt":
+			if _, ok := fieldSeen[mcpserver.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldCreatedAt)
+				fieldSeen[mcpserver.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[mcpserver.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldLastModifiedAt)
+				fieldSeen[mcpserver.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[mcpserver.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldStatusPhase)
+				fieldSeen[mcpserver.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[mcpserver.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldStatusMessage)
+				fieldSeen[mcpserver.FieldStatusMessage] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[mcpserver.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldNamespace)
+				fieldSeen[mcpserver.FieldNamespace] = struct{}{}
+			}
+		case "basePath":
+			if _, ok := fieldSeen[mcpserver.FieldBasePath]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldBasePath)
+				fieldSeen[mcpserver.FieldBasePath] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[mcpserver.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldVersion)
+				fieldSeen[mcpserver.FieldVersion] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[mcpserver.FieldName]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldName)
+				fieldSeen[mcpserver.FieldName] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[mcpserver.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldDescription)
+				fieldSeen[mcpserver.FieldDescription] = struct{}{}
+			}
+		case "category":
+			if _, ok := fieldSeen[mcpserver.FieldCategory]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldCategory)
+				fieldSeen[mcpserver.FieldCategory] = struct{}{}
+			}
+		case "oauth2Scopes":
+			if _, ok := fieldSeen[mcpserver.FieldOauth2Scopes]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldOauth2Scopes)
+				fieldSeen[mcpserver.FieldOauth2Scopes] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[mcpserver.FieldActive]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldActive)
+				fieldSeen[mcpserver.FieldActive] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type mcpserverPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []McpServerPaginateOption
+}
+
+func newMcpServerPaginateArgs(rv map[string]any) *mcpserverPaginateArgs {
+	args := &mcpserverPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &McpServerOrder{Field: &McpServerOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithMcpServerOrder(order))
+			}
+		case *McpServerOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithMcpServerOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*McpServerWhereInput); ok {
+		args.opts = append(args.opts, WithMcpServerFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *MemberQuery) CollectFields(ctx context.Context, satisfies ...string) (*MemberQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -2540,6 +3371,184 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				query = pager.applyOrder(query)
 			}
 			_q.WithNamedEventTypes(alias, func(wq *EventTypeQuery) {
+				*wq = *query
+			})
+
+		case "mcpServers":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&McpServerClient{config: _q.config}).Query()
+			)
+			args := newMcpServerPaginateArgs(fieldArgs(ctx, new(McpServerWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newMcpServerPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Team) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"team_mcp_servers"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(team.McpServersColumn), ids...))
+						})
+						if err := query.GroupBy(team.McpServersColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[5][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Team) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.McpServers)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[5][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, mcpserverImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(team.McpServersColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedMcpServers(alias, func(wq *McpServerQuery) {
+				*wq = *query
+			})
+
+		case "agentCards":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&AgentCardClient{config: _q.config}).Query()
+			)
+			args := newAgentCardPaginateArgs(fieldArgs(ctx, new(AgentCardWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newAgentCardPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Team) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"team_agent_cards"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(team.AgentCardsColumn), ids...))
+						})
+						if err := query.GroupBy(team.AgentCardsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[6][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Team) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.AgentCards)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[6][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, agentcardImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(team.AgentCardsColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedAgentCards(alias, func(wq *AgentCardQuery) {
 				*wq = *query
 			})
 		case "createdAt":

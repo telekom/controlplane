@@ -195,6 +195,29 @@ type ApiSubscriptionSecurity {
   m2m: SubscriberMachine2MachineAuthentication
 }
 
+type AgenticExposureSecurity {
+  m2m: Machine2MachineAuthentication
+}
+
+type AgenticSubscriptionSecurity {
+  m2m: SubscriberMachine2MachineAuthentication
+}
+
+"Header additions/removals applied to agentic requests or responses."
+type AgenticHeaderTransformation {
+  remove: [String!]
+  add: [String!]
+}
+
+"Request/response transformations applied to an AgenticExposure or AgenticSubscription."
+type AgenticRequestResponseTransformation {
+  headers: AgenticHeaderTransformation!
+}
+
+type AgenticTransformation {
+  request: AgenticRequestResponseTransformation!
+}
+
 # Traffic 
 
 type Limits {
@@ -241,6 +264,16 @@ type Traffic {
   rateLimit: RateLimit
 }
 
+"Opt-in failover flag for an AgenticSubscription (eligible zones are derived automatically)."
+type AgenticSubscriberFailover {
+  enabled: Boolean!
+}
+
+"Traffic config for an AgenticSubscription — unlike the exposure-side Traffic, failover is a simple opt-in flag."
+type AgenticSubscriberTraffic {
+  failover: AgenticSubscriberFailover
+}
+
 type ApiSubscriptionTraffic {
   providerLimits: Limits
   subscriberLimits: Limits
@@ -284,6 +317,33 @@ type EventExposureInfo {
   ownerTeam: TeamInfo!
 }
 
+"Reduced agentic exposure for cross-tenant contexts (e.g., subscription target)."
+type AgenticExposureInfo {
+  id: ID!
+  basePath: String!
+  visibility: AgenticExposureVisibility!
+  variant: AgenticExposureVariant!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  traffic: Traffic
+  "Application name that owns this exposure"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+"Reduced agentic subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type AgenticSubscriptionInfo {
+  id: ID!
+  basePath: String!
+  statusPhase: AgenticSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
 # -- Cross-tenant edge overrides --
 
 extend type Application {
@@ -316,8 +376,18 @@ extend type EventExposure {
   subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
-"A subscription related to an approval — either an API or event subscription."
-union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo
+extend type AgenticSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target MCP server/agent is not yet exposed."
+  target: AgenticExposureInfo @goField(forceResolver: true)
+}
+
+extend type AgenticExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [AgenticSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+"A subscription related to an approval — either an API, event, or agentic subscription."
+union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo | AgenticSubscriptionInfo
 
 extend type Approval {
   "Related subscription (reduced view — cross-tenant boundary)"
@@ -348,6 +418,24 @@ extend type EventType {
   "The currently active exposure of this event type, or null if no exposure is active."
   activeExposure: EventExposureInfo @goField(forceResolver: true)
   "The team that owns this event type."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type McpServer {
+  "URL to download the MCP server specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this MCP server, or null if no exposure is active."
+  activeExposure: AgenticExposureInfo @goField(forceResolver: true)
+  "The team that owns this MCP server."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type AgentCard {
+  "URL to download the agent specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this agent, or null if no exposure is active."
+  activeExposure: AgenticExposureInfo @goField(forceResolver: true)
+  "The team that owns this agent."
   owner: TeamInfo! @goField(forceResolver: true)
 }
 
