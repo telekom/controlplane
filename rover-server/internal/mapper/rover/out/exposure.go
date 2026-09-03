@@ -65,9 +65,11 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 
 func mapFileExposure(in *roverv1.FileExposure) api.FileExposure {
 	return api.FileExposure{
-		FileType:   in.FileType,
-		Visibility: toApiVisibility(in.Visibility),
-		PublicKeys: mapPublicKeys(in.PublicKeys),
+		FileType:     in.FileType,
+		Visibility:   toApiVisibility(in.Visibility),
+		PublicKeys:   mapPublicKeys(in.PublicKeys),
+		Approval:     toApiApprovalStrategy(in.Approval.Strategy),
+		TrustedTeams: mapTrustedTeamList(in.Approval.TrustedTeams),
 	}
 }
 
@@ -383,6 +385,20 @@ func mapExposureTransformation(in *roverv1.ApiExposure, out *api.ApiExposure) {
 	if len(in.Transformation.Request.Headers.Remove) > 0 {
 		out.RemoveHeaders = in.Transformation.Request.Headers.Remove
 	}
+}
+
+func mapTrustedTeamList(in []roverv1.TrustedTeam) []api.TrustedTeam {
+	if in == nil {
+		return nil
+	}
+
+	out := make([]api.TrustedTeam, len(in))
+	for i, team := range in {
+		out[i] = api.TrustedTeam{
+			Team: team.Group + "--" + team.Team,
+		}
+	}
+	return out
 }
 
 func mapTrustedTeams(in *roverv1.ApiExposure, out *api.ApiExposure) {

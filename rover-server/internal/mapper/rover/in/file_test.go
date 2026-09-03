@@ -35,6 +35,46 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 			Expect(output.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA1"))
 		})
 
+		It("must map the approval strategy", func() {
+			input := api.FileExposure{
+				Type:       "file",
+				FileType:   "demo-sftp-spec-v1",
+				Visibility: api.WORLD,
+				Approval:   api.AUTO,
+			}
+
+			output := mapFileExposure(input)
+
+			Expect(output.Approval.Strategy).To(Equal(roverv1.ApprovalStrategyAuto))
+		})
+
+		It("must default the approval strategy to Simple when omitted", func() {
+			input := api.FileExposure{
+				Type:     "file",
+				FileType: "demo-sftp-spec-v1",
+			}
+
+			output := mapFileExposure(input)
+
+			Expect(output.Approval.Strategy).To(Equal(roverv1.ApprovalStrategySimple))
+		})
+
+		It("must map trusted teams", func() {
+			input := api.FileExposure{
+				Type:         "file",
+				FileType:     "demo-sftp-spec-v1",
+				Approval:     api.FOUREYES,
+				TrustedTeams: []api.TrustedTeam{{Team: "group--team"}},
+			}
+
+			output := mapFileExposure(input)
+
+			Expect(output.Approval.Strategy).To(Equal(roverv1.ApprovalStrategyFourEyes))
+			Expect(output.Approval.TrustedTeams).To(HaveLen(1))
+			Expect(output.Approval.TrustedTeams[0].Group).To(Equal("group"))
+			Expect(output.Approval.TrustedTeams[0].Team).To(Equal("team"))
+		})
+
 		It("must default visibility to Enterprise when omitted", func() {
 			// The mapper defaults visibility via the shared toRoverVisibility,
 			// which maps an empty value to Enterprise — consistent with

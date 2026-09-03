@@ -44,6 +44,7 @@ var (
 		Type:       "file",
 		FileType:   "demo-sftp-spec-v1",
 		Visibility: "World",
+		Approval:   api.AUTO,
 		PublicKeys: []api.PublicKey{
 			{Label: "provider-key", Key: "ssh-ed25519 AAAA-provider"},
 		},
