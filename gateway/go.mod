@@ -28,9 +28,9 @@ require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/go-logr/logr v1.4.4
 	github.com/google/uuid v1.6.0
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.7.0
 	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.42.1
+	github.com/onsi/gomega v1.43.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/oauth2 v0.36.0

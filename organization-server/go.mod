@@ -14,7 +14,7 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/gofiber/fiber/v2 v2.52.15
 	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.42.1
+	github.com/onsi/gomega v1.43.0
 	go.uber.org/zap v1.28.0
 )
 

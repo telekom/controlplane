@@ -37,6 +37,10 @@ else
   pre-commit run --all-files || fail "pre-commit"
 fi
 
+# --- 1b. CI module dependency graph up to date ---
+step "ci-graph-check"
+make ci-graph-check || fail "ci-graph-check"
+
 # --- 2. Per-module checks ---
 for mod in "${MODULES[@]}"; do
   pushd "$mod" > /dev/null

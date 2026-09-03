@@ -168,6 +168,12 @@ type Traffic struct {
 	RateLimit *RateLimit `json:"rateLimit,omitempty"` // optional/nillable
 }
 
+// ApiSubscriptionTraffic
+type ApiSubscriptionTraffic struct {
+	ProviderLimits   *Limits `json:"providerLimits,omitempty"`   // optional/nillable
+	SubscriberLimits *Limits `json:"subscriberLimits,omitempty"` // optional/nillable
+}
+
 // RateLimit defines the exporure based rate limiting
 type RateLimit struct {
 	Provider            *RateLimitConfig      `json:"provider,omitempty"`            // optional

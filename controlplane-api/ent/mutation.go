@@ -6674,6 +6674,7 @@ type ApiSubscriptionMutation struct {
 	m2m_auth_method          *apisubscription.M2mAuthMethod
 	gateway_url              *string
 	security                 **model.ApiSubscriptionSecurity
+	traffic                  **model.ApiSubscriptionTraffic
 	clearedFields            map[string]struct{}
 	owner                    *int
 	clearedowner             bool
@@ -7251,6 +7252,55 @@ func (m *ApiSubscriptionMutation) ResetSecurity() {
 	delete(m.clearedFields, apisubscription.FieldSecurity)
 }
 
+// SetTraffic sets the "traffic" field.
+func (m *ApiSubscriptionMutation) SetTraffic(mst *model.ApiSubscriptionTraffic) {
+	m.traffic = &mst
+}
+
+// Traffic returns the value of the "traffic" field in the mutation.
+func (m *ApiSubscriptionMutation) Traffic() (r *model.ApiSubscriptionTraffic, exists bool) {
+	v := m.traffic
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTraffic returns the old "traffic" field's value of the ApiSubscription entity.
+// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiSubscriptionMutation) OldTraffic(ctx context.Context) (v *model.ApiSubscriptionTraffic, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTraffic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
+	}
+	return oldValue.Traffic, nil
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (m *ApiSubscriptionMutation) ClearTraffic() {
+	m.traffic = nil
+	m.clearedFields[apisubscription.FieldTraffic] = struct{}{}
+}
+
+// TrafficCleared returns if the "traffic" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) TrafficCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldTraffic]
+	return ok
+}
+
+// ResetTraffic resets all changes to the "traffic" field.
+func (m *ApiSubscriptionMutation) ResetTraffic() {
+	m.traffic = nil
+	delete(m.clearedFields, apisubscription.FieldTraffic)
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by id.
 func (m *ApiSubscriptionMutation) SetOwnerID(id int) {
 	m.owner = &id
@@ -7510,7 +7560,7 @@ func (m *ApiSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, apisubscription.FieldCreatedAt)
 	}
@@ -7544,6 +7594,9 @@ func (m *ApiSubscriptionMutation) Fields() []string {
 	if m.security != nil {
 		fields = append(fields, apisubscription.FieldSecurity)
 	}
+	if m.traffic != nil {
+		fields = append(fields, apisubscription.FieldTraffic)
+	}
 	return fields
 }
 
@@ -7574,6 +7627,8 @@ func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.GatewayURL()
 	case apisubscription.FieldSecurity:
 		return m.Security()
+	case apisubscription.FieldTraffic:
+		return m.Traffic()
 	}
 	return nil, false
 }
@@ -7605,6 +7660,8 @@ func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldGatewayURL(ctx)
 	case apisubscription.FieldSecurity:
 		return m.OldSecurity(ctx)
+	case apisubscription.FieldTraffic:
+		return m.OldTraffic(ctx)
 	}
 	return nil, fmt.Errorf("unknown ApiSubscription field %s", name)
 }
@@ -7691,6 +7748,13 @@ func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSecurity(v)
 		return nil
+	case apisubscription.FieldTraffic:
+		v, ok := value.(*model.ApiSubscriptionTraffic)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTraffic(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription field %s", name)
 }
@@ -7736,6 +7800,9 @@ func (m *ApiSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(apisubscription.FieldSecurity) {
 		fields = append(fields, apisubscription.FieldSecurity)
 	}
+	if m.FieldCleared(apisubscription.FieldTraffic) {
+		fields = append(fields, apisubscription.FieldTraffic)
+	}
 	return fields
 }
 
@@ -7764,6 +7831,9 @@ func (m *ApiSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case apisubscription.FieldSecurity:
 		m.ClearSecurity()
+		return nil
+	case apisubscription.FieldTraffic:
+		m.ClearTraffic()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription nullable field %s", name)
@@ -7805,6 +7875,9 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case apisubscription.FieldSecurity:
 		m.ResetSecurity()
+		return nil
+	case apisubscription.FieldTraffic:
+		m.ResetTraffic()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription field %s", name)
