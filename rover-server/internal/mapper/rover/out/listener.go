@@ -21,39 +21,11 @@ func mapListeners(in *roverv1.Rover, out *api.Rover) {
 }
 
 func mapListener(in *roverv1.RoverListener) api.RoverListener {
-	out := api.RoverListener{
-		Consumer: in.Consumer,
-		Provider: in.Provider,
+	return api.RoverListener{
+		Consumer:    in.Consumer,
+		Provider:    in.Provider,
+		ApiBasePath: in.ApiBasePath,
 	}
-
-	if in.ApiBasePath != "" {
-		out.ApiBasePath = in.ApiBasePath
-	}
-	if in.EventType != "" {
-		out.EventType = in.EventType
-	}
-	if in.RequestFilter != nil {
-		out.RequestFilter = mapListenerFilter(in.RequestFilter)
-	}
-	if in.ResponseFilter != nil {
-		out.ResponseFilter = mapListenerFilter(in.ResponseFilter)
-	}
-	if in.EventFilter != nil {
-		out.EventFilter = mapListenerFilter(in.EventFilter)
-	}
-
-	return out
-}
-
-func mapListenerFilter(in *roverv1.ListenerFilter) api.ListenerFilter {
-	out := api.ListenerFilter{}
-	if len(in.Trigger) > 0 {
-		out.Trigger = in.Trigger
-	}
-	if len(in.Payload) > 0 {
-		out.Payload = in.Payload
-	}
-	return out
 }
 
 func mapListenerSubscription(in *roverv1.Rover, out *api.Rover) {

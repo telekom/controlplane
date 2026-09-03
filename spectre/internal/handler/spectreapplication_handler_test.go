@@ -136,6 +136,12 @@ func makeReadyEventConfig() eventv1.EventConfig {
 				PublishEventUrl:    "http://publish.local",
 			},
 		},
+		Status: eventv1.EventConfigStatus{
+			EventStore: &ctypes.ObjectRef{
+				Name:      "eventstore-aws",
+				Namespace: testZoneStatusNs,
+			},
+		},
 	}
 	meta.SetStatusCondition(&ec.Status.Conditions, metav1.Condition{
 		Type:   condition.ConditionTypeReady,
@@ -145,8 +151,8 @@ func makeReadyEventConfig() eventv1.EventConfig {
 	return ec
 }
 
-func makeEventStore() pubsubv1.EventStore {
-	return pubsubv1.EventStore{
+func makeEventStore() *pubsubv1.EventStore {
+	es := &pubsubv1.EventStore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "eventstore-aws",
 			Namespace: testZoneStatusNs,
@@ -158,6 +164,12 @@ func makeEventStore() pubsubv1.EventStore {
 			ClientSecret: "client-secret",
 		},
 	}
+	meta.SetStatusCondition(&es.Status.Conditions, metav1.Condition{
+		Type:   condition.ConditionTypeReady,
+		Status: metav1.ConditionTrue,
+		Reason: "Ready",
+	})
+	return es
 }
 
 // --- Tests ---
@@ -202,14 +214,14 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
 				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: items}
 			}).
-			Return(nil).Once()
+			Return(nil).Times(2)
 	}
 
-	mockListEventStores := func(items []pubsubv1.EventStore) {
+	mockGetEventStore := func(es *pubsubv1.EventStore) {
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.EventStoreList"), mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*pubsubv1.EventStoreList) = pubsubv1.EventStoreList{Items: items}
+			Get(ctx, k8stypes.NamespacedName{Name: es.Name, Namespace: es.Namespace}, mock.AnythingOfType("*v1.EventStore")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				*out.(*pubsubv1.EventStore) = *es
 			}).
 			Return(nil).Once()
 	}
@@ -251,7 +263,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 		mockGetApplication(app)
 		mockGetZone(zone)
 		mockListEventConfigs([]eventv1.EventConfig{ec})
-		mockListEventStores([]pubsubv1.EventStore{es})
+		mockGetEventStore(es)
 		mockCreateOrUpdatePublisher()
 		mockCreateOrUpdateSubscriber()
 
@@ -359,7 +371,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockGetApplication(app)
 				mockGetZone(zone)
 				mockListEventConfigs([]eventv1.EventConfig{ec})
-				mockListEventStores([]pubsubv1.EventStore{es})
+				mockGetEventStore(es)
 
 				// Capture the Publisher object
 				var capturedPublisher *pubsubv1.Publisher
@@ -398,7 +410,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockGetApplication(app)
 				mockGetZone(zone)
 				mockListEventConfigs([]eventv1.EventConfig{ec})
-				mockListEventStores([]pubsubv1.EventStore{es})
+				mockGetEventStore(es)
 				mockCreateOrUpdatePublisher()
 
 				// Capture the Subscriber object
@@ -434,7 +446,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockGetApplication(app)
 				mockGetZone(zone)
 				mockListEventConfigs([]eventv1.EventConfig{ec})
-				mockListEventStores([]pubsubv1.EventStore{es})
+				mockGetEventStore(es)
 				mockCreateOrUpdatePublisher()
 
 				var capturedSubscriber *pubsubv1.Subscriber
@@ -469,7 +481,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockGetApplication(app)
 				mockGetZone(zone)
 				mockListEventConfigs([]eventv1.EventConfig{ec})
-				mockListEventStores([]pubsubv1.EventStore{es})
+				mockGetEventStore(es)
 				mockCreateOrUpdatePublisher()
 				mockCreateOrUpdateSubscriber()
 
@@ -517,21 +529,20 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(err.Error()).To(ContainSubstring("not found"))
 			})
 
-			It("should return error when no EventStore found in zone namespace", func() {
+			It("should return error when EventConfig has no EventStore reference", func() {
 				obj := newSpectreApplication("server_sent_event")
 				app := makeReadyApplication()
 				zone := makeReadyZone()
 				ec := makeReadyEventConfig()
+				ec.Status.EventStore = nil
 
 				mockGetApplication(app)
 				mockGetZone(zone)
 				mockListEventConfigs([]eventv1.EventConfig{ec})
-				// Empty EventStore list
-				mockListEventStores([]pubsubv1.EventStore{})
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("no EventStore found"))
+				Expect(err.Error()).To(ContainSubstring("has no EventStore reference"))
 			})
 		})
 	})

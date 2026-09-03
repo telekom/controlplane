@@ -31,13 +31,6 @@ var _ = Describe("Listener Mapper In", func() {
 						Consumer:    "eni--team--consumer",
 						Provider:    "eni--team--provider",
 						ApiBasePath: "/echo/v1",
-						RequestFilter: api.ListenerFilter{
-							Trigger: map[string]string{"method": "GET"},
-							Payload: []string{"name", "id"},
-						},
-						ResponseFilter: api.ListenerFilter{
-							Payload: []string{"status"},
-						},
 					},
 				},
 			}
@@ -50,36 +43,6 @@ var _ = Describe("Listener Mapper In", func() {
 			Expect(output.Spec.Listeners[0].Consumer).To(Equal("eni--team--consumer"))
 			Expect(output.Spec.Listeners[0].Provider).To(Equal("eni--team--provider"))
 			Expect(output.Spec.Listeners[0].ApiBasePath).To(Equal("/echo/v1"))
-			Expect(output.Spec.Listeners[0].RequestFilter).ToNot(BeNil())
-			Expect(output.Spec.Listeners[0].RequestFilter.Trigger).To(HaveKeyWithValue("method", "GET"))
-			Expect(output.Spec.Listeners[0].RequestFilter.Payload).To(ConsistOf("name", "id"))
-			Expect(output.Spec.Listeners[0].ResponseFilter).ToNot(BeNil())
-			Expect(output.Spec.Listeners[0].ResponseFilter.Payload).To(ConsistOf("status"))
-		})
-
-		It("must map listener with eventType and eventFilter", func() {
-			input := &api.Rover{
-				Zone: "aws",
-				Listeners: []api.RoverListener{
-					{
-						Consumer:  "eni--team--consumer",
-						Provider:  "eni--team--provider",
-						EventType: "de.telekom.eni.my-event.v1",
-						EventFilter: api.ListenerFilter{
-							Payload: []string{"data"},
-						},
-					},
-				},
-			}
-			output := &roverv1.Rover{}
-
-			err := MapRover(input, output)
-
-			Expect(err).ToNot(HaveOccurred())
-			Expect(output.Spec.Listeners).To(HaveLen(1))
-			Expect(output.Spec.Listeners[0].EventType).To(Equal("de.telekom.eni.my-event.v1"))
-			Expect(output.Spec.Listeners[0].EventFilter).ToNot(BeNil())
-			Expect(output.Spec.Listeners[0].EventFilter.Payload).To(ConsistOf("data"))
 		})
 
 		It("must not set filter when empty", func() {
@@ -87,8 +50,9 @@ var _ = Describe("Listener Mapper In", func() {
 				Zone: "aws",
 				Listeners: []api.RoverListener{
 					{
-						Consumer: "eni--team--consumer",
-						Provider: "eni--team--provider",
+						Consumer:    "eni--team--consumer",
+						Provider:    "eni--team--provider",
+						ApiBasePath: "/echo/v1",
 					},
 				},
 			}

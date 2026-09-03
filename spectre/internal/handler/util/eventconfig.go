@@ -6,6 +6,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,14 +16,16 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 )
 
 // EventConfigZoneIndex is the field index path used to look up EventConfigs by zone name.
 const EventConfigZoneIndex = ".spec.zone.name"
 
-// GetEventConfig retrieves the EventConfig for the given zone.
+// GetEventConfig retrieves the unique EventConfig for the given zone.
 // It uses the field index on spec.zone.name for efficient lookup.
-// Returns BlockedError if no EventConfig is found or if it is not ready.
+// Returns an error if multiple EventConfigs exist for the zone (ambiguity),
+// BlockedError if no EventConfig is found, and BlockedError if it is not ready.
 func GetEventConfig(ctx context.Context, zone *adminv1.Zone) (*eventv1.EventConfig, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -37,6 +40,10 @@ func GetEventConfig(ctx context.Context, zone *adminv1.Zone) (*eventv1.EventConf
 		return nil, ctrlerrors.BlockedErrorf("no EventConfig found for zone %q", zone.Name)
 	}
 
+	if len(eventConfigList.Items) > 1 {
+		return nil, fmt.Errorf("found %d EventConfigs for zone %q, expected exactly one", len(eventConfigList.Items), zone.Name)
+	}
+
 	eventConfig := &eventConfigList.Items[0]
 
 	if err := condition.EnsureReady(eventConfig); err != nil {
@@ -44,4 +51,32 @@ func GetEventConfig(ctx context.Context, zone *adminv1.Zone) (*eventv1.EventConf
 	}
 
 	return eventConfig, nil
+}
+
+// ResolveEventStore resolves the EventStore for the given zone by following the
+// EventConfig's Status.EventStore reference. It fetches the unique EventConfig,
+// reads the ObjectRef, does a direct Get, and checks readiness.
+func ResolveEventStore(ctx context.Context, zone *adminv1.Zone) (*pubsubv1.EventStore, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	eventConfig, err := GetEventConfig(ctx, zone)
+	if err != nil {
+		return nil, err
+	}
+
+	if eventConfig.Status.EventStore == nil {
+		return nil, ctrlerrors.BlockedErrorf("EventConfig %q has no EventStore reference", eventConfig.Name)
+	}
+
+	eventStore := &pubsubv1.EventStore{}
+	if err := c.Get(ctx, eventConfig.Status.EventStore.K8s(), eventStore); err != nil {
+		return nil, errors.Wrapf(err, "failed to get EventStore %q referenced by EventConfig %q",
+			eventConfig.Status.EventStore.String(), eventConfig.Name)
+	}
+
+	if err := condition.EnsureReady(eventStore); err != nil {
+		return nil, ctrlerrors.BlockedErrorf("EventStore %q is not ready", eventStore.Name)
+	}
+
+	return eventStore, nil
 }

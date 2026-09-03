@@ -211,6 +211,10 @@ func makeListenerEventConfig() eventv1.EventConfig {
 		},
 		Status: eventv1.EventConfigStatus{
 			CallbackURL: testCallbackURL,
+			EventStore: &ctypes.ObjectRef{
+				Name:      "eventstore-aws",
+				Namespace: listenerZoneStatus,
+			},
 		},
 	}
 	meta.SetStatusCondition(&ec.Status.Conditions, metav1.Condition{
@@ -221,8 +225,8 @@ func makeListenerEventConfig() eventv1.EventConfig {
 	return ec
 }
 
-func makeListenerEventStore() pubsubv1.EventStore {
-	return pubsubv1.EventStore{
+func makeListenerEventStore() *pubsubv1.EventStore {
+	es := &pubsubv1.EventStore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "eventstore-aws",
 			Namespace: listenerZoneStatus,
@@ -234,6 +238,12 @@ func makeListenerEventStore() pubsubv1.EventStore {
 			ClientSecret: "client-secret",
 		},
 	}
+	meta.SetStatusCondition(&es.Status.Conditions, metav1.Condition{
+		Type:   condition.ConditionTypeReady,
+		Status: metav1.ConditionTrue,
+		Reason: "Ready",
+	})
+	return es
 }
 
 // --- Tests ---
@@ -323,11 +333,11 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil)
 	}
 
-	mockListEventStores := func(items []pubsubv1.EventStore) {
+	mockGetEventStore := func(es *pubsubv1.EventStore) {
 		fakeClient.EXPECT().
-			List(ctx, mock.AnythingOfType("*v1.EventStoreList"), mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*pubsubv1.EventStoreList) = pubsubv1.EventStoreList{Items: items}
+			Get(ctx, k8stypes.NamespacedName{Name: es.Name, Namespace: es.Namespace}, mock.AnythingOfType("*v1.EventStore")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				*out.(*pubsubv1.EventStore) = *es
 			}).
 			Return(nil).Once()
 	}
@@ -441,7 +451,7 @@ var _ = Describe("ListenerHandler", func() {
 		mockGetSpectreApp(makeSpectreAppPtr())
 		mockGetZone()
 		mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-		mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
+		mockGetEventStore(makeListenerEventStore())
 		mockApprovalGranted()
 		mockCreateOrUpdatePublisher()
 		mockListRoutes()
@@ -487,7 +497,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
+				mockGetEventStore(makeListenerEventStore())
 				mockApprovalPending()
 
 				err := h.CreateOrUpdate(ctx, listener)
@@ -513,7 +523,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
+				mockGetEventStore(makeListenerEventStore())
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
 				mockListRoutes()
@@ -554,7 +564,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
+				mockGetEventStore(makeListenerEventStore())
 				mockApprovalGranted()
 
 				// Capture Publisher
@@ -590,7 +600,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockListEventStores([]pubsubv1.EventStore{makeListenerEventStore()})
+				mockGetEventStore(makeListenerEventStore())
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
 				mockListRoutes()

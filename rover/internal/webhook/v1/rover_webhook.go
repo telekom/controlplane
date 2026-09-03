@@ -158,7 +158,80 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, err
 	}
 
+	if err := r.validateListeners(ctx, valErr, rover, environment, zone); err != nil {
+		return nil, err
+	}
+
 	return valErr.BuildWarnings(), valErr.BuildError()
+}
+
+func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string, zone *adminv1.Zone) error {
+	if len(rover.Spec.Listeners) == 0 {
+		return nil
+	}
+
+	listenersPath := field.NewPath("spec").Child("listeners")
+
+	// Listeners require the Spectre feature to be enabled
+	if !cconfig.FeatureSpectre.IsEnabled() {
+		valErr.AddInvalidError(listenersPath, "", "listeners require the spectre feature to be enabled")
+		return valErr.BuildError()
+	}
+
+	for i, listener := range rover.Spec.Listeners {
+		listenerPath := listenersPath.Index(i)
+
+		// apiBasePath is required (only supported mode)
+		if listener.ApiBasePath == "" {
+			valErr.AddRequiredError(listenerPath.Child("apiBasePath"), "apiBasePath is required")
+		}
+
+		// eventType is not yet supported
+		if listener.EventType != "" {
+			valErr.AddInvalidError(listenerPath.Child("eventType"), listener.EventType, "event listeners are not yet supported")
+		}
+
+		// Filters are not yet supported
+		if listener.RequestFilter != nil {
+			valErr.AddInvalidError(listenerPath.Child("requestFilter"), "", "requestFilter is not yet supported")
+		}
+		if listener.ResponseFilter != nil {
+			valErr.AddInvalidError(listenerPath.Child("responseFilter"), "", "responseFilter is not yet supported")
+		}
+		if listener.EventFilter != nil {
+			valErr.AddInvalidError(listenerPath.Child("eventFilter"), "", "eventFilter is not yet supported")
+		}
+	}
+
+	// Validate listenerSubscription delivery constraints
+	ls := rover.Spec.ListenerSubscription
+	if ls != nil && ls.DeliveryType == "callback" && ls.Callback == "" {
+		valErr.AddRequiredError(
+			field.NewPath("spec").Child("listenerSubscription").Child("callback"),
+			"callback URL is required when deliveryType is \"callback\"",
+		)
+	}
+
+	// SSE delivery on a proxy zone is not supported (SSE requires a local event backend)
+	isSSE := ls == nil || ls.DeliveryType == "" || ls.DeliveryType == "server_sent_event"
+	if isSSE {
+		eventConfigRef := client.ObjectKey{
+			Name:      environment,
+			Namespace: zone.Status.Namespace,
+		}
+		eventConfig := eventv1.EventConfig{}
+		if exists, err := r.ResourceMustExist(ctx, eventConfigRef, &eventConfig); err != nil {
+			return err
+		} else if exists && eventConfig.IsProxy() {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("listenerSubscription").Child("deliveryType"),
+				"server_sent_event",
+				"SSE delivery is only available on zones with a local event backend; this zone is a proxy",
+			)
+		}
+	}
+
+	return nil
 }
 
 func (r *RoverValidator) validateZone(ctx context.Context, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string) (client.ObjectKey, *adminv1.Zone, error) {

@@ -12,7 +12,8 @@ import (
 )
 
 // ListenerSpec defines the desired state of Listener.
-// +kubebuilder:validation:XValidation:rule="has(self.apiListener) || has(self.eventListener)",message="at least one of apiListener or eventListener must be set"
+// +kubebuilder:validation:XValidation:rule="has(self.apiListener)",message="apiListener is required"
+// +kubebuilder:validation:XValidation:rule="!has(self.eventListener)",message="eventListener is not yet supported"
 type ListenerSpec struct {
 	Consumer ctypes.TypedObjectRef `json:"consumer"`
 	Provider ctypes.TypedObjectRef `json:"provider"`
@@ -25,6 +26,8 @@ type ListenerSpec struct {
 }
 
 // ApiListener configures a listener that proxies API requests.
+// +kubebuilder:validation:XValidation:rule="!has(self.requestFilter)",message="requestFilter is not yet supported"
+// +kubebuilder:validation:XValidation:rule="!has(self.responseFilter)",message="responseFilter is not yet supported"
 type ApiListener struct {
 	ApiBasePath string `json:"apiBasePath"`
 	// +optional

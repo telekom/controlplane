@@ -11,9 +11,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -51,9 +53,30 @@ func createTestOwner() *roverv1.Rover {
 
 func newTestScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
+	_ = applicationv1.AddToScheme(s)
 	_ = roverv1.AddToScheme(s)
 	_ = spectrev1.AddToScheme(s)
 	return s
+}
+
+// mockResolveApplication stubs a List call that resolveApplication makes to
+// look up an Application by name. The returned Application has the given name,
+// teamNamespace, and a deterministic UID.
+func mockResolveApplication(fakeClient *fakeclient.MockJanitorClient, ctx context.Context, name string) {
+	fakeClient.EXPECT().
+		List(ctx, mock.AnythingOfType("*v1.ApplicationList"), mock.Anything).
+		Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+			*list.(*applicationv1.ApplicationList) = applicationv1.ApplicationList{
+				Items: []applicationv1.Application{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: teamNamespace,
+						UID:       k8stypes.UID("app-uid-" + name),
+					},
+				}},
+			}
+		}).
+		Return(nil).Once()
 }
 
 var _ = Describe("HandleListeners", func() {
@@ -109,6 +132,8 @@ var _ = Describe("HandleListeners", func() {
 				capturedApp = obj.(*spectrev1.SpectreApplication)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockResolveApplication(fakeClient, ctx, "eni--team--consumer")
+		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
@@ -181,6 +206,10 @@ var _ = Describe("HandleListeners", func() {
 				_ = mutate()
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockResolveApplication(fakeClient, ctx, "eni--team--consumer1")
+		mockResolveApplication(fakeClient, ctx, "eni--team--provider1")
+		mockResolveApplication(fakeClient, ctx, "eni--team--consumer2")
+		mockResolveApplication(fakeClient, ctx, "eni--team--provider2")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
@@ -232,6 +261,11 @@ var _ = Describe("HandleListeners", func() {
 				_ = mutate()
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Maybe()
+		// The first listener entry passes the duplicate check and calls ensureListener,
+		// which resolves consumer and provider via List before the second entry triggers
+		// the duplicate error.
+		mockResolveApplication(fakeClient, ctx, "eni--team--consumer1")
+		mockResolveApplication(fakeClient, ctx, "eni--team--provider1")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
@@ -268,6 +302,8 @@ var _ = Describe("HandleListeners", func() {
 				capturedApp = obj.(*spectrev1.SpectreApplication)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockResolveApplication(fakeClient, ctx, "eni--team--consumer")
+		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
@@ -302,6 +338,8 @@ var _ = Describe("HandleListeners", func() {
 				capturedApp = obj.(*spectrev1.SpectreApplication)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockResolveApplication(fakeClient, ctx, "eni--team--consumer")
+		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
@@ -352,6 +390,8 @@ var _ = Describe("HandleListeners", func() {
 				_ = mutate()
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockResolveApplication(fakeClient, ctx, "eni--team--consumer")
+		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("api server error")).Once()

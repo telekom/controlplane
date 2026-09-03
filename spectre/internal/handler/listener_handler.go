@@ -11,7 +11,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -89,10 +88,10 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return ctrlerrors.BlockedErrorf("EventConfig %q has no CallbackURL in status", eventConfig.Name)
 	}
 
-	// Step 5: Find EventStore in zone namespace.
-	eventStore, err := h.findEventStore(ctx, listeningZone.Status.Namespace)
+	// Step 5: Resolve EventStore via EventConfig reference.
+	eventStore, err := util.ResolveEventStore(ctx, listeningZone)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to resolve EventStore")
 	}
 
 	// Reject event-only Listeners early — creating ApprovalRequests for a
@@ -342,23 +341,6 @@ func (h *ListenerHandler) resolveZone(ctx context.Context, app *applicationv1.Ap
 	}
 
 	return zone, nil
-}
-
-// findEventStore lists EventStore CRs in the zone namespace and returns the single expected one.
-func (h *ListenerHandler) findEventStore(ctx context.Context, zoneNamespace string) (*pubsubv1.EventStore, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-
-	eventStoreList := &pubsubv1.EventStoreList{}
-	err := c.List(ctx, eventStoreList, client.InNamespace(zoneNamespace))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list EventStores in namespace %q", zoneNamespace)
-	}
-
-	if len(eventStoreList.Items) == 0 {
-		return nil, ctrlerrors.BlockedErrorf("no EventStore found in namespace %q", zoneNamespace)
-	}
-
-	return &eventStoreList.Items[0], nil
 }
 
 // findRouteByPath resolves the gateway Route that exposes the given apiBasePath.

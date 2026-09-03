@@ -206,6 +206,10 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		eventConfig.Status = eventv1.EventConfigStatus{
 			CallbackURL: callbackURL,
 			Conditions:  readyConditions(),
+			EventStore: &ctypes.ObjectRef{
+				Name:      "eventstore-aws",
+				Namespace: zoneStatusNs,
+			},
 		}
 		Expect(k8sClient.Status().Update(ctx, eventConfig)).To(Succeed())
 
@@ -224,6 +228,11 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			},
 		}
 		Expect(k8sClient.Create(ctx, eventStore)).To(Succeed())
+
+		eventStore.Status = pubsubv1.EventStoreStatus{
+			Conditions: readyConditions(),
+		}
+		Expect(k8sClient.Status().Update(ctx, eventStore)).To(Succeed())
 
 		By("Creating gateway Route CRs (prerequisites for RouteListener path resolution)")
 		gatewayRoute := &gatewayv1.Route{

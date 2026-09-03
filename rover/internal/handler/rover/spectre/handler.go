@@ -124,6 +124,32 @@ func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.
 	logger := log.FromContext(ctx)
 	logger.V(1).Info("Ensuring Listener", "rover", rover.Name, "listener", makeListenerName(rover.Name, rl))
 
+	// Resolve the consumer Application. If the consumer is the Rover's own
+	// Application, use the already-resolved status ref to avoid a redundant list.
+	var consumerRef *types.TypedObjectRef
+	if rl.Consumer == rover.Name {
+		consumerRef = &types.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+			ObjectRef: types.ObjectRef{
+				Name:      rover.Status.Application.Name,
+				Namespace: rover.Status.Application.Namespace,
+			},
+		}
+	} else {
+		consumerApp, err := resolveApplication(ctx, c, rl.Consumer)
+		if err != nil {
+			return nil, errors.Wrapf(err, "resolving consumer application %q", rl.Consumer)
+		}
+		consumerRef = types.TypedObjectRefFromObject(consumerApp, c.Scheme())
+	}
+
+	// Provider always needs resolution — it belongs to another team.
+	providerApp, err := resolveApplication(ctx, c, rl.Provider)
+	if err != nil {
+		return nil, errors.Wrapf(err, "resolving provider application %q", rl.Provider)
+	}
+	providerRef := types.TypedObjectRefFromObject(providerApp, c.Scheme())
+
 	listener := &spectrev1.Listener{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      makeListenerName(rover.Name, rl),
@@ -137,26 +163,8 @@ func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.
 		}
 
 		listener.Spec = spectrev1.ListenerSpec{
-			Consumer: types.TypedObjectRef{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Application",
-					APIVersion: "application.cp.ei.telekom.de/v1",
-				},
-				ObjectRef: types.ObjectRef{
-					Name:      rl.Consumer,
-					Namespace: rover.Namespace,
-				},
-			},
-			Provider: types.TypedObjectRef{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Application",
-					APIVersion: "application.cp.ei.telekom.de/v1",
-				},
-				ObjectRef: types.ObjectRef{
-					Name:      rl.Provider,
-					Namespace: rover.Namespace,
-				},
-			},
+			Consumer: *consumerRef,
+			Provider: *providerRef,
 			Application: types.ObjectRef{
 				Name:      app.Name,
 				Namespace: app.Namespace,
@@ -183,7 +191,7 @@ func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, listener, mutator)
+	_, err = c.CreateOrUpdate(ctx, listener, mutator)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create or update Listener")
 	}

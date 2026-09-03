@@ -50,9 +50,9 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 		return errors.Wrap(err, "failed to get EventConfig")
 	}
 
-	eventStore, err := h.findEventStore(ctx, zone.Status.Namespace)
+	eventStore, err := util.ResolveEventStore(ctx, zone)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to resolve EventStore")
 	}
 
 	// Step 3: Ensure Publisher.
@@ -196,21 +196,4 @@ func (h *SpectreApplicationHandler) resolveZone(ctx context.Context, app *applic
 	}
 
 	return zone, nil
-}
-
-// findEventStore lists EventStore CRs in the zone namespace and returns the single expected one.
-func (h *SpectreApplicationHandler) findEventStore(ctx context.Context, zoneNamespace string) (*pubsubv1.EventStore, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-
-	eventStoreList := &pubsubv1.EventStoreList{}
-	err := c.List(ctx, eventStoreList, client.InNamespace(zoneNamespace))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list EventStores in namespace %q", zoneNamespace)
-	}
-
-	if len(eventStoreList.Items) == 0 {
-		return nil, ctrlerrors.BlockedErrorf("no EventStore found in namespace %q", zoneNamespace)
-	}
-
-	return &eventStoreList.Items[0], nil
 }

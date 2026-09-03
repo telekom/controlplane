@@ -3581,6 +3581,7 @@ components:
       required:
         - consumer
         - provider
+        - apiBasePath
       properties:
         consumer:
           type: string
@@ -3591,28 +3592,6 @@ components:
         apiBasePath:
           type: string
           description: Base path of the API to listen on
-        eventType:
-          type: string
-          description: Event type to listen on (alternative to apiBasePath)
-        requestFilter:
-          $ref: '#/components/schemas/ListenerFilter'
-        responseFilter:
-          $ref: '#/components/schemas/ListenerFilter'
-        eventFilter:
-          $ref: '#/components/schemas/ListenerFilter'
-    ListenerFilter:
-      type: object
-      properties:
-        trigger:
-          type: object
-          additionalProperties:
-            type: string
-          description: Key-value conditions that must match for the filter to activate
-        payload:
-          type: array
-          items:
-            type: string
-          description: Fields to include in the listener output
     ListenerSubscription:
       type: object
       properties:

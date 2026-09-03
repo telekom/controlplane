@@ -31,14 +31,6 @@ var _ = Describe("Listener Mapper", func() {
 					Consumer:    "eni--team--consumer",
 					Provider:    "eni--team--provider",
 					ApiBasePath: "/echo/v1",
-					RequestFilter: &roverv1.ListenerFilter{
-						Trigger: map[string]string{"method": "GET"},
-						Payload: []string{"name", "id"},
-					},
-					ResponseFilter: &roverv1.ListenerFilter{
-						Trigger: map[string]string{},
-						Payload: []string{"status"},
-					},
 				},
 			}
 			output := &api.Rover{}
@@ -50,31 +42,6 @@ var _ = Describe("Listener Mapper", func() {
 			Expect(output.Listeners[0].Consumer).To(Equal("eni--team--consumer"))
 			Expect(output.Listeners[0].Provider).To(Equal("eni--team--provider"))
 			Expect(output.Listeners[0].ApiBasePath).To(Equal("/echo/v1"))
-			Expect(output.Listeners[0].RequestFilter.Trigger).To(HaveKeyWithValue("method", "GET"))
-			Expect(output.Listeners[0].RequestFilter.Payload).To(ConsistOf("name", "id"))
-			Expect(output.Listeners[0].ResponseFilter.Payload).To(ConsistOf("status"))
-		})
-
-		It("must map listener with eventType", func() {
-			input := rover.DeepCopy()
-			input.Spec.Listeners = []roverv1.RoverListener{
-				{
-					Consumer:  "eni--team--consumer",
-					Provider:  "eni--team--provider",
-					EventType: "de.telekom.eni.my-event.v1",
-					EventFilter: &roverv1.ListenerFilter{
-						Payload: []string{"data"},
-					},
-				},
-			}
-			output := &api.Rover{}
-
-			err := MapRover(input, output)
-
-			Expect(err).ToNot(HaveOccurred())
-			Expect(output.Listeners).To(HaveLen(1))
-			Expect(output.Listeners[0].EventType).To(Equal("de.telekom.eni.my-event.v1"))
-			Expect(output.Listeners[0].EventFilter.Payload).To(ConsistOf("data"))
 		})
 	})
 

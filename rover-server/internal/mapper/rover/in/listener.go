@@ -21,46 +21,11 @@ func mapListenersIn(in *api.Rover, out *roverv1.Rover) {
 }
 
 func mapListenerIn(in *api.RoverListener) roverv1.RoverListener {
-	out := roverv1.RoverListener{
-		Consumer: in.Consumer,
-		Provider: in.Provider,
+	return roverv1.RoverListener{
+		Consumer:    in.Consumer,
+		Provider:    in.Provider,
+		ApiBasePath: in.ApiBasePath,
 	}
-
-	if in.ApiBasePath != "" {
-		out.ApiBasePath = in.ApiBasePath
-	}
-	if in.EventType != "" {
-		out.EventType = in.EventType
-	}
-	if hasListenerFilterContent(&in.RequestFilter) {
-		out.RequestFilter = mapListenerFilterIn(&in.RequestFilter)
-	}
-	if hasListenerFilterContent(&in.ResponseFilter) {
-		out.ResponseFilter = mapListenerFilterIn(&in.ResponseFilter)
-	}
-	if hasListenerFilterContent(&in.EventFilter) {
-		out.EventFilter = mapListenerFilterIn(&in.EventFilter)
-	}
-
-	return out
-}
-
-func hasListenerFilterContent(f *api.ListenerFilter) bool {
-	return len(f.Trigger) > 0 || len(f.Payload) > 0
-}
-
-func mapListenerFilterIn(in *api.ListenerFilter) *roverv1.ListenerFilter {
-	if len(in.Trigger) == 0 && len(in.Payload) == 0 {
-		return nil
-	}
-	out := &roverv1.ListenerFilter{}
-	if len(in.Trigger) > 0 {
-		out.Trigger = in.Trigger
-	}
-	if len(in.Payload) > 0 {
-		out.Payload = in.Payload
-	}
-	return out
 }
 
 func mapListenerSubscriptionIn(in *api.Rover, out *roverv1.Rover) {

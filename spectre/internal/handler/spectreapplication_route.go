@@ -36,7 +36,7 @@ func (h *SpectreApplicationHandler) ensureSSERoute(
 	}
 
 	if !eventConfig.IsLocal() {
-		return nil, ctrlerrors.BlockedErrorf("EventConfig %q is not local; SSE Route requires a local zone", eventConfig.Name)
+		return nil, ctrlerrors.BlockedErrorf("EventConfig %q is a proxy zone; proxy SSE routes are not implemented, SSE is local-zone-only", eventConfig.Name)
 	}
 
 	upstream, err := parseSSEUpstream(eventConfig.Spec.Local.ServerSendEventUrl)
