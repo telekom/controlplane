@@ -115,6 +115,9 @@ var _ = BeforeSuite(func() {
 	Expect(index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.Route{})).To(Succeed())
 	Expect(index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.RouteListener{})).To(Succeed())
 
+	// Register UID indexes required by owned-child mappers.
+	Expect(RegisterIndices(ctx, mgr.GetFieldIndexer())).To(Succeed())
+
 	// Start the manager cache in a goroutine.
 	go func() {
 		defer GinkgoRecover()

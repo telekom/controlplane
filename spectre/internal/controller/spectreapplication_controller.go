@@ -107,10 +107,12 @@ func (r *SpectreApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 
 // mapOwnedChildToSpectreApplication maps an owner-labelled child (Publisher,
 // Subscriber, or Route) back to the owning SpectreApplication via OwnerUidLabelKey.
+// Uses a UID field index instead of a cluster-wide parent scan.
 func (r *SpectreApplicationReconciler) mapOwnedChildToSpectreApplication(
 	ctx context.Context,
 	obj client.Object,
 ) []reconcile.Request {
+	logger := log.FromContext(ctx)
 	labels := obj.GetLabels()
 	if labels == nil {
 		return nil
@@ -122,19 +124,19 @@ func (r *SpectreApplicationReconciler) mapOwnedChildToSpectreApplication(
 	}
 
 	list := &spectrev1.SpectreApplicationList{}
-	if err := r.List(ctx, list); err != nil {
+	if err := r.List(ctx, list, client.MatchingFields{UidIndexKey: ownerUID}); err != nil {
+		logger.Error(err, "Failed to list SpectreApplications for owned child")
 		return nil
 	}
 
+	var reqs []reconcile.Request
 	for i := range list.Items {
-		if string(list.Items[i].UID) == ownerUID {
-			return []reconcile.Request{
-				{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])},
-			}
-		}
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 
-	return nil
+	return reqs
 }
 
 // mapApplicationToSpectreApplications maps an Application change to

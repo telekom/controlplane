@@ -32,6 +32,7 @@ import (
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
+	"github.com/telekom/controlplane/spectre/internal/handler/util"
 )
 
 // ListenerReconciler reconciles a Listener object
@@ -128,6 +129,12 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			crhandler.EnqueueRequestsFromMapFunc(r.mapEventStoreToListeners),
 			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
+		// Shared generic Publisher — readiness changes unblock Listeners waiting for it.
+		Watches(
+			&pubsubv1.Publisher{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapGenericPublisherToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -147,10 +154,13 @@ func (r *ListenerReconciler) mapSpectreApplicationToListeners(
 		return nil
 	}
 
+	logger := log.FromContext(ctx)
+
 	list := &spectrev1.ListenerList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: app.Labels[cconfig.EnvironmentLabelKey],
 	}); err != nil {
+		logger.Error(err, "Failed to list Listeners for SpectreApplication")
 		return nil
 	}
 
@@ -170,12 +180,12 @@ func (r *ListenerReconciler) mapSpectreApplicationToListeners(
 
 // mapOwnedChildToListener maps an owner-labelled child (RouteListener or
 // Subscriber) back to the owning Listener via the OwnerUidLabelKey.
-// This avoids cluster-wide parent scans by reading the UID from the label
-// and looking up the Listener directly.
+// Uses a UID field index instead of a cluster-wide parent scan.
 func (r *ListenerReconciler) mapOwnedChildToListener(
 	ctx context.Context,
 	obj client.Object,
 ) []reconcile.Request {
+	logger := log.FromContext(ctx)
 	labels := obj.GetLabels()
 	if labels == nil {
 		return nil
@@ -187,19 +197,19 @@ func (r *ListenerReconciler) mapOwnedChildToListener(
 	}
 
 	list := &spectrev1.ListenerList{}
-	if err := r.List(ctx, list); err != nil {
+	if err := r.List(ctx, list, client.MatchingFields{UidIndexKey: ownerUID}); err != nil {
+		logger.Error(err, "Failed to list Listeners for owned child")
 		return nil
 	}
 
+	var reqs []reconcile.Request
 	for i := range list.Items {
-		if string(list.Items[i].UID) == ownerUID {
-			return []reconcile.Request{
-				{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])},
-			}
-		}
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 
-	return nil
+	return reqs
 }
 
 // mapRouteToListeners maps a Route change to Listeners whose apiBasePath
@@ -391,6 +401,47 @@ func (r *ListenerReconciler) mapEventConfigToListeners(
 		if _, ok := appRefs[provRef]; ok {
 			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(l)})
 		}
+	}
+
+	return reqs
+}
+
+// mapGenericPublisherToListeners maps a Publisher change to Listeners when the
+// Publisher is the shared generic Spectre Publisher. When it becomes Ready,
+// blocked Listeners in the same environment can proceed.
+func (r *ListenerReconciler) mapGenericPublisherToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	pub, ok := obj.(*pubsubv1.Publisher)
+	if !ok {
+		return nil
+	}
+
+	// Only react to the shared generic Publisher.
+	if pub.Name != util.MakePublisherName(util.GenericEventType) {
+		return nil
+	}
+
+	envLabel := pub.Labels[cconfig.EnvironmentLabelKey]
+	if envLabel == "" {
+		return nil
+	}
+
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: envLabel,
+	}); err != nil {
+		logger.Error(err, "Failed to list Listeners for generic Publisher")
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 
 	return reqs

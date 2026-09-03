@@ -205,4 +205,9 @@ func setupIndexes(mgr ctrl.Manager) {
 			os.Exit(1)
 		}
 	}
+
+	if err := controller.RegisterIndices(ctx, indexer); err != nil {
+		setupLog.Error(err, "Failed to register Spectre UID indexes")
+		os.Exit(1)
+	}
 }
