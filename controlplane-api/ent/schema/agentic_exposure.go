@@ -17,10 +17,6 @@ import (
 )
 
 // AgenticExposure holds the schema definition for an exposed MCP server or A2A agent.
-//
-// NOTE: GraphQL exposure is intentionally not yet enabled (see Annotations()) —
-// this entity is only used by the projector's write path for now. GraphQL
-// query fields/types will be added in a follow-up change.
 type AgenticExposure struct {
 	ent.Schema
 }
@@ -80,16 +76,13 @@ func (AgenticExposure) Edges() []ent.Edge {
 		edge.From("owner", Application.Type).
 			Ref("exposed_agentics").
 			Required().
-			Unique().
-			Annotations(entgql.Skip(entgql.SkipType)),
+			Unique(),
 		edge.From("mcp_server", McpServer.Type).
 			Ref("exposures").
-			Unique().
-			Annotations(entgql.Skip(entgql.SkipType)),
+			Unique(),
 		edge.From("agent_card", AgentCard.Type).
 			Ref("exposures").
-			Unique().
-			Annotations(entgql.Skip(entgql.SkipType)),
+			Unique(),
 		edge.From("subscriptions", AgenticSubscription.Type).
 			Ref("target").
 			Annotations(entgql.Skip(entgql.SkipType)),
@@ -98,7 +91,8 @@ func (AgenticExposure) Edges() []ent.Edge {
 
 func (AgenticExposure) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entgql.Skip(entgql.SkipAll),
+		entgql.QueryField(),
+		entgql.RelayConnection(),
 	}
 }
 

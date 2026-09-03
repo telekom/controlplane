@@ -72,7 +72,7 @@ type TeamEdges struct {
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [5]map[string]int
+	totalCount [7]map[string]int
 
 	namedMembers      map[string][]*Member
 	namedApplications map[string][]*Application

@@ -19,10 +19,6 @@ import (
 
 // AgenticSubscription holds the schema definition for a subscription to an
 // exposed MCP server or A2A agent.
-//
-// NOTE: GraphQL exposure is intentionally not yet enabled (see Annotations()) —
-// this entity is only used by the projector's write path for now. GraphQL
-// query fields/types will be added in a follow-up change.
 type AgenticSubscription struct {
 	ent.Schema
 }
@@ -55,22 +51,21 @@ func (AgenticSubscription) Edges() []ent.Edge {
 		edge.From("owner", Application.Type).
 			Ref("subscribed_agentics").
 			Required().
-			Unique().
-			Annotations(entgql.Skip(entgql.SkipType)),
+			Unique(),
 		edge.To("target", AgenticExposure.Type).
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.To("approval", Approval.Type).
-			Unique().
-			Annotations(entgql.Skip(entgql.SkipType)),
+			Unique(),
 		edge.To("approval_requests", ApprovalRequest.Type).
-			Annotations(entgql.Skip(entgql.SkipType), entsql.OnDelete(entsql.Cascade)),
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 
 func (AgenticSubscription) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entgql.Skip(entgql.SkipAll),
+		entgql.QueryField(),
+		entgql.RelayConnection(),
 	}
 }
 
