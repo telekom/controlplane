@@ -39,16 +39,11 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileSubscription) 
 		}
 	}
 
-	var zoneName string
-	if obj.Spec.Zone != nil {
-		zoneName = obj.Spec.Zone.Name
-	}
-
 	return &FileSubscriptionData{
 		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:    phase,
 		StatusMessage:  message,
-		Zone:           zoneName,
+		Zone:           obj.Spec.Zone.Name,
 		SFTPPublicKeys: publicKeys,
 		OwnerAppName:   obj.Labels[applicationLabelKey],
 		OwnerTeamName:  shared.TeamNameFromNamespace(obj.Namespace),
