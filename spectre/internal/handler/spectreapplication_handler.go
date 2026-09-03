@@ -6,6 +6,7 @@ package handler
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -131,27 +132,61 @@ func (h *SpectreApplicationHandler) Delete(ctx context.Context, obj *spectrev1.S
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
-	// The children live in the zone namespace while this SpectreApplication lives
-	// in the team namespace. Kubernetes ignores cross-namespace owner references,
-	// so nothing garbage collects them — delete them from the refs in status.
+	// Phase 1: Delete all Subscribers (status ref + owner-labelled).
 	if ref := obj.Status.Subscriber; ref != nil {
 		sub := &pubsubv1.Subscriber{}
 		if err := deleteIfExists(ctx, c, ref, sub); err != nil {
 			return errors.Wrapf(err, "failed to delete Subscriber %q", ref.String())
 		}
 		logger.Info("Deleted Subscriber", "subscriber", ref.String())
-		obj.Status.Subscriber = nil
+	}
+	subList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, subList, cclient.OwnedByLabel(obj)...); err != nil {
+		return errors.Wrap(err, "failed to list owned Subscribers")
+	}
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+		if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "failed to delete Subscriber %q", sub.Name)
+		}
+		logger.Info("Deleted owned Subscriber", "subscriber", sub.Name, "namespace", sub.Namespace)
 	}
 
+	// Fresh-list: retry while any Subscribers remain (finalizers still running).
+	remainingSubs := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, remainingSubs, cclient.OwnedByLabel(obj)...); err != nil {
+		return errors.Wrap(err, "failed to re-list owned Subscribers")
+	}
+	if len(remainingSubs.Items) > 0 {
+		return ctrlerrors.RetryableWithDelayErrorf(
+			2*time.Second,
+			"waiting for Subscriber finalization before deleting Publishers",
+		)
+	}
+	obj.Status.Subscriber = nil
+
+	// Phase 2: Delete all Publishers (status ref + owner-labelled).
 	if ref := obj.Status.Publisher; ref != nil {
 		pub := &pubsubv1.Publisher{}
 		if err := deleteIfExists(ctx, c, ref, pub); err != nil {
 			return errors.Wrapf(err, "failed to delete Publisher %q", ref.String())
 		}
 		logger.Info("Deleted Publisher", "publisher", ref.String())
-		obj.Status.Publisher = nil
 	}
+	pubList := &pubsubv1.PublisherList{}
+	if err := c.List(ctx, pubList, cclient.OwnedByLabel(obj)...); err != nil {
+		return errors.Wrap(err, "failed to list owned Publishers")
+	}
+	for i := range pubList.Items {
+		pub := &pubList.Items[i]
+		if err := c.Delete(ctx, pub); err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "failed to delete Publisher %q", pub.Name)
+		}
+		logger.Info("Deleted owned Publisher", "publisher", pub.Name, "namespace", pub.Namespace)
+	}
+	obj.Status.Publisher = nil
 
+	// Phase 3: Delete all Routes (status refs + owner-labelled).
 	for _, ref := range []*ctypes.ObjectRef{obj.Status.ListenerRoute, obj.Status.ProxyRoute} {
 		if ref == nil {
 			continue
@@ -162,20 +197,19 @@ func (h *SpectreApplicationHandler) Delete(ctx context.Context, obj *spectrev1.S
 		}
 		logger.Info("Deleted Route", "route", ref.String())
 	}
+	routeList := &gatewayv1.RouteList{}
+	if err := c.List(ctx, routeList, cclient.OwnedByLabel(obj)...); err != nil {
+		return errors.Wrap(err, "failed to list owned Routes")
+	}
+	for i := range routeList.Items {
+		route := &routeList.Items[i]
+		if err := c.Delete(ctx, route); err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "failed to delete Route %q", route.Name)
+		}
+		logger.Info("Deleted owned Route", "route", route.Name, "namespace", route.Namespace)
+	}
 	obj.Status.ListenerRoute = nil
 	obj.Status.ProxyRoute = nil
-
-	// Label-based fallback: catch any children the status refs missed
-	// (e.g. child created but status update failed before recording the ref).
-	if _, err := c.Cleanup(ctx, &gatewayv1.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
-		return errors.Wrap(err, "failed to cleanup labeled Routes")
-	}
-	if _, err := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedByLabel(obj)); err != nil {
-		return errors.Wrap(err, "failed to cleanup labeled Subscribers")
-	}
-	if _, err := c.Cleanup(ctx, &pubsubv1.PublisherList{}, cclient.OwnedByLabel(obj)); err != nil {
-		return errors.Wrap(err, "failed to cleanup labeled Publishers")
-	}
 
 	return nil
 }

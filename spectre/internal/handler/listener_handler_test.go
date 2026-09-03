@@ -1253,24 +1253,295 @@ var _ = Describe("ListenerHandler", func() {
 	})
 
 	Describe("Delete", func() {
-		Context("when this is the last Listener", func() {
-			It("should delete the generic Publisher", func() {
+		// mockDeleteNamespaceResolution stubs the List calls used by
+		// resolvePublisherNamespace when status refs are nil (owner-label fallback).
+		mockDeleteNamespaceResolution := func(rlItems []gatewayv1.RouteListener, subItems []pubsubv1.Subscriber) {
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{Items: rlItems}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{Items: subItems}
+				}).
+				Return(nil).Once()
+		}
+
+		// mockDeletePhase1 stubs Phase 1 (RouteListener deletion) when no owned
+		// RouteListeners exist beyond the status ref.
+		mockDeletePhase1NoRL := func() {
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+				}).
+				Return(nil).Once()
+		}
+
+		// mockDeletePhase2NoSub stubs Phase 2+3 (Subscriber deletion + fresh-list)
+		// when no owned Subscribers exist.
+		mockDeletePhase2NoSub := func() {
+			// Phase 2: list owned subs — empty.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+				}).
+				Return(nil).Once()
+			// Phase 3: fresh-list — empty.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+				}).
+				Return(nil).Once()
+		}
+
+		// mockDeletePublisherCleanup stubs the Subscriber-usage-based Publisher
+		// orphan check (Phase 5). noSubscribers=true means no Sub references the
+		// generic Publisher, so it will be deleted.
+		mockDeletePublisherCleanup := func(noSubscribers bool) {
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					items := []pubsubv1.Subscriber{}
+					if !noSubscribers {
+						items = append(items, pubsubv1.Subscriber{
+							Spec: pubsubv1.SubscriberSpec{
+								Publisher: ctypes.ObjectRef{
+									Name:      util.MakePublisherName(util.GenericEventType),
+									Namespace: listenerZoneStatus,
+								},
+							},
+						})
+					}
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{Items: items}
+				}).
+				Return(nil).Once()
+		}
+
+		Context("when Subscriber deletion is requested before any Publisher deletion", func() {
+			It("should delete RouteListener first, then Subscribers, then check Publisher", func() {
 				listener := newListener()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "rl-1", Namespace: listenerZoneStatus}
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "sub-rq", Namespace: listenerZoneStatus},
+				}
 
+				// Phase 0: namespace from status refs (rl-1 namespace).
+				// Phase 1: delete RL from status.
 				fakeClient.EXPECT().
-					Cleanup(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Return(0, nil).Maybe()
+					Get(ctx, k8stypes.NamespacedName{Name: "rl-1", Namespace: listenerZoneStatus}, mock.AnythingOfType("*v1.RouteListener")).
+					Return(nil).Once()
 				fakeClient.EXPECT().
-					Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Return(0, nil).Maybe()
+					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+					Return(nil).Once()
+				mockDeletePhase1NoRL()
 
+				// Phase 2: delete Sub from status.
 				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.ListenerList"), mock.Anything).
+					Get(ctx, k8stypes.NamespacedName{Name: "sub-rq", Namespace: listenerZoneStatus}, mock.AnythingOfType("*v1.Subscriber")).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Return(nil).Once()
+				mockDeletePhase2NoSub()
+
+				// Phase 5: Publisher cleanup — no subscribers reference it.
+				mockDeletePublisherCleanup(true)
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.Delete(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeNil())
+			})
+		})
+
+		Context("when Publisher is not deleted while a Subscriber still exists", func() {
+			It("should return RetryableWithDelayError when owned Subscribers remain", func() {
+				listener := newListener()
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "rl-1", Namespace: listenerZoneStatus}
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "sub-rq", Namespace: listenerZoneStatus},
+				}
+
+				// Phase 0: namespace from status.
+				// Phase 1: RL deleted.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "rl-1", Namespace: listenerZoneStatus}, mock.AnythingOfType("*v1.RouteListener")).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+					Return(nil).Once()
+				mockDeletePhase1NoRL()
+
+				// Phase 2: delete Sub from status — sent.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "sub-rq", Namespace: listenerZoneStatus}, mock.AnythingOfType("*v1.Subscriber")).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Return(nil).Once()
+
+				// Phase 2 label-list: empty.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
 					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*spectrev1.ListenerList) = spectrev1.ListenerList{
-							Items: []spectrev1.Listener{*listener},
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// Phase 3: fresh-list — Subscriber still exists (finalizer running).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{ObjectMeta: metav1.ObjectMeta{Name: "sub-rq", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+
+				err := h.Delete(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("waiting for bridge Subscriber finalization"))
+			})
+		})
+
+		Context("when a deleting Subscriber still keeps the Publisher", func() {
+			It("should NOT delete Publisher when a terminating Subscriber references it", func() {
+				listener := newListener()
+				// Status refs already cleared from prior reconcile; use label fallback.
+				mockDeleteNamespaceResolution(nil, []pubsubv1.Subscriber{
+					{ObjectMeta: metav1.ObjectMeta{Name: "sub-rq", Namespace: listenerZoneStatus}},
+				})
+
+				// Phase 1: no RL.
+				mockDeletePhase1NoRL()
+
+				// Phase 2: label-list returns the terminating sub (already deleted, still present).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						now := metav1.Now()
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name:              "sub-rq",
+										Namespace:         listenerZoneStatus,
+										DeletionTimestamp: &now,
+										Finalizers:        []string{"pubsub.cp.ei.telekom.de/finalizer"},
+									},
+								},
+							},
+						}
+					}).
+					Return(nil).Once()
+
+				// Delete issued.
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Return(nil).Once()
+
+				// Phase 3: fresh-list — still present.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						now := metav1.Now()
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name:              "sub-rq",
+										Namespace:         listenerZoneStatus,
+										DeletionTimestamp: &now,
+										Finalizers:        []string{"pubsub.cp.ei.telekom.de/finalizer"},
+									},
+								},
+							},
+						}
+					}).
+					Return(nil).Once()
+
+				err := h.Delete(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("waiting for bridge Subscriber finalization"))
+			})
+		})
+
+		Context("when provider-zone namespace is resolved from status/label instead of consumer-zone fallback", func() {
+			It("should use status RouteListener namespace for Publisher cleanup", func() {
+				listener := newListener()
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "rl-1", Namespace: "provider-zone-ns"}
+
+				// Phase 1.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "rl-1", Namespace: "provider-zone-ns"}, mock.AnythingOfType("*v1.RouteListener")).
+					Return(errors.NewNotFound(schema.GroupResource{}, "")).Once()
+				mockDeletePhase1NoRL()
+
+				// Phase 2+3.
+				mockDeletePhase2NoSub()
+
+				// Phase 5: Publisher cleanup in provider-zone-ns (not consumer zone).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+						return obj.GetNamespace() == "provider-zone-ns"
+					}), mock.Anything).
+					Return(nil).Once()
+
+				err := h.Delete(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("when a Listener in another zone does not retain this zone's generic Publisher", func() {
+			It("should delete Publisher when no Subscriber in the zone references it", func() {
+				listener := newListener()
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "sub-rq", Namespace: listenerZoneStatus},
+				}
+
+				// Phase 1.
+				mockDeletePhase1NoRL()
+
+				// Phase 2: delete sub.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "sub-rq", Namespace: listenerZoneStatus}, mock.AnythingOfType("*v1.Subscriber")).
+					Return(errors.NewNotFound(schema.GroupResource{}, "")).Once()
+				mockDeletePhase2NoSub()
+
+				// Phase 5: List Subscribers in zone — the only Subscriber references a
+				// DIFFERENT Publisher (another zone's event type).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{
+									ObjectMeta: metav1.ObjectMeta{Name: "other-sub", Namespace: listenerZoneStatus},
+									Spec: pubsubv1.SubscriberSpec{
+										Publisher: ctypes.ObjectRef{
+											Name:      "different-publisher",
+											Namespace: listenerZoneStatus,
+										},
+									},
+								},
+							},
 						}
 					}).
 					Return(nil).Once()
@@ -1284,39 +1555,108 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
-		Context("when other Listeners still exist", func() {
-			It("should NOT delete the generic Publisher", func() {
+		Context("when another Subscriber referencing the same generic Publisher retains it", func() {
+			It("should NOT delete Publisher when another Subscriber references it", func() {
 				listener := newListener()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "sub-rq", Namespace: listenerZoneStatus},
+				}
 
-				fakeClient.EXPECT().
-					Cleanup(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Return(0, nil).Maybe()
-				fakeClient.EXPECT().
-					Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Return(0, nil).Maybe()
+				// Phase 1.
+				mockDeletePhase1NoRL()
 
-				otherListener := newListener()
-				otherListener.Name = "other-listener"
-				otherListener.UID = "listener-uid-002"
-				otherListener.Namespace = "other-team-ns"
-
+				// Phase 2: delete sub.
 				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.ListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, opts ...client.ListOption) {
-						for _, opt := range opts {
-							Expect(opt).ToNot(BeAssignableToTypeOf(client.InNamespace("")),
-								"generic Publisher ref-count must span all namespaces")
+					Get(ctx, k8stypes.NamespacedName{Name: "sub-rq", Namespace: listenerZoneStatus}, mock.AnythingOfType("*v1.Subscriber")).
+					Return(errors.NewNotFound(schema.GroupResource{}, "")).Once()
+				mockDeletePhase2NoSub()
+
+				// Phase 5: another Subscriber still references the generic Publisher.
+				mockDeletePublisherCleanup(false)
+
+				err := h.Delete(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("when lost status refs are recovered through owner labels", func() {
+			It("should delete children found via owner labels when status refs are nil", func() {
+				listener := newListener()
+				// No status refs — everything must be found via owner labels.
+
+				// Phase 0: resolve namespace from owner-labelled children.
+				mockDeleteNamespaceResolution(
+					[]gatewayv1.RouteListener{
+						{ObjectMeta: metav1.ObjectMeta{Name: "rl-orphan", Namespace: listenerZoneStatus}},
+					},
+					nil,
+				)
+
+				// Phase 1: label-list RouteListeners (re-listed in delete phase).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "rl-orphan", Namespace: listenerZoneStatus}},
+							},
 						}
-						*list.(*spectrev1.ListenerList) = spectrev1.ListenerList{
-							Items: []spectrev1.Listener{*listener, *otherListener},
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+						return obj.GetName() == "rl-orphan"
+					}), mock.Anything).
+					Return(nil).Once()
+
+				// Phase 2+3: no Subscribers.
+				mockDeletePhase2NoSub()
+
+				// Phase 5: Publisher cleanup.
+				mockDeletePublisherCleanup(true)
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.Delete(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("retry uses RetryableWithDelayErrorf", func() {
+			It("should use RetryableWithDelayErrorf not RequeueAfter", func() {
+				listener := newListener()
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "rl-1", Namespace: listenerZoneStatus}
+
+				// Phase 1.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "rl-1", Namespace: listenerZoneStatus}, mock.AnythingOfType("*v1.RouteListener")).
+					Return(errors.NewNotFound(schema.GroupResource{}, "")).Once()
+				mockDeletePhase1NoRL()
+
+				// Phase 2: label-list empty.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// Phase 3: fresh-list — still has a sub.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{ObjectMeta: metav1.ObjectMeta{Name: "lingering-sub", Namespace: listenerZoneStatus}},
+							},
 						}
 					}).
 					Return(nil).Once()
 
 				err := h.Delete(ctx, listener)
-				Expect(err).ToNot(HaveOccurred())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("waiting for bridge Subscriber finalization"))
 			})
 		})
 	})

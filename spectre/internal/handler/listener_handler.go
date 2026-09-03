@@ -6,6 +6,7 @@ package handler
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -247,44 +248,78 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 }
 
 func (h *ListenerHandler) Delete(ctx context.Context, listener *spectrev1.Listener) error {
+	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
-	// The children live in the zone namespace while this Listener lives in the
-	// team namespace. Kubernetes ignores cross-namespace owner references, so
-	// nothing garbage collects them — they must be deleted explicitly from the
-	// refs recorded in status.
+	// Phase 0: Resolve the publisher namespace BEFORE clearing any status.
+	// The namespace comes from status refs, then owner-labelled children, then
+	// topology as a last resort.
+	zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve publisher namespace")
+	}
+
+	// Phase 1: Delete RouteListener first to stop new capture.
 	if err := h.deleteRouteListener(ctx, listener.Status.RouteListener); err != nil {
 		return err
 	}
+	// Delete any owner-labelled RouteListeners the status missed.
+	rlList := &gatewayv1.RouteListenerList{}
+	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to list owned RouteListeners")
+	}
+	for i := range rlList.Items {
+		rl := &rlList.Items[i]
+		if err := c.Delete(ctx, rl); err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "failed to delete RouteListener %q", rl.Name)
+		}
+		logger.Info("Deleted owned RouteListener", "routeListener", rl.Name, "namespace", rl.Namespace)
+	}
 	listener.Status.RouteListener = nil
 
+	// Phase 2: Request deletion of bridge Subscribers from status refs.
 	for i := range listener.Status.EventSubscriptions {
 		ref := &listener.Status.EventSubscriptions[i]
 		if err := h.deleteSubscriber(ctx, ref); err != nil {
 			return err
 		}
 	}
+	// Delete any owner-labelled Subscribers the status missed.
+	subList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to list owned Subscribers")
+	}
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+		if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "failed to delete Subscriber %q", sub.Name)
+		}
+		logger.Info("Deleted owned Subscriber", "subscriber", sub.Name, "namespace", sub.Namespace)
+	}
+
+	// Phase 3: Fresh-list owner-labelled Subscribers. If any remain (finalizers
+	// still running), retry so the Publisher is not deleted prematurely.
+	remainingList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, remainingList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to re-list owned Subscribers")
+	}
+	if len(remainingList.Items) > 0 {
+		return ctrlerrors.RetryableWithDelayErrorf(
+			2*time.Second,
+			"waiting for bridge Subscriber finalization before deleting generic Publisher",
+		)
+	}
+
+	// Phase 4: All Subscribers gone — clear subscriber status.
 	listener.Status.EventSubscriptions = nil
 
-	// Label-based fallback: catch any children the status refs missed
-	// (e.g. child created but status update failed before recording the ref).
-	c := cclient.ClientFromContextOrDie(ctx)
-	if _, err := c.Cleanup(ctx, &gatewayv1.RouteListenerList{}, cclient.OwnedByLabel(listener)); err != nil {
-		return errors.Wrap(err, "failed to cleanup labeled RouteListeners")
-	}
-	if _, err := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedByLabel(listener)); err != nil {
-		return errors.Wrap(err, "failed to cleanup labeled Subscribers")
-	}
-
-	// The shared generic Publisher is intentionally not owned by any single
-	// Listener — it is ref-counted and removed once the last one goes away.
-	zoneNamespace := h.publisherNamespace(ctx, listener)
+	// Phase 5: Decide whether the shared generic Publisher is unused.
 	if zoneNamespace == "" {
 		logger.V(1).Info("Could not determine zone namespace, skipping generic Publisher cleanup")
 		return nil
 	}
 
-	if err := h.cleanupGenericPublisherIfOrphaned(ctx, listener, zoneNamespace); err != nil {
+	if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
 		return errors.Wrap(err, "failed to cleanup generic Publisher")
 	}
 
@@ -393,33 +428,67 @@ func (h *ListenerHandler) deleteAllOwnedChildren(ctx context.Context, listener *
 	return nil
 }
 
-// publisherNamespace determines the zone namespace holding the shared generic
-// Publisher. It prefers the namespace of an already-recorded child ref, which
-// keeps cleanup working even after the referenced Applications are gone, and
-// falls back to resolving the consumer Application's zone.
-func (h *ListenerHandler) publisherNamespace(ctx context.Context, listener *spectrev1.Listener) string {
+// resolvePublisherNamespace determines the zone namespace holding the shared
+// generic Publisher. It uses a preference order:
+//  1. namespace from status RouteListener/Subscriber refs
+//  2. namespace from owner-labelled children (status-update-failure recovery)
+//  3. current topology resolution as a final fallback
+//
+// Returns an error if owner-labelled children span multiple namespaces.
+func (h *ListenerHandler) resolvePublisherNamespace(ctx context.Context, listener *spectrev1.Listener) (string, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
+	// Preference 1: status refs.
 	if ref := listener.Status.RouteListener; ref != nil && ref.Namespace != "" {
-		return ref.Namespace
+		return ref.Namespace, nil
 	}
 	for i := range listener.Status.EventSubscriptions {
 		if ns := listener.Status.EventSubscriptions[i].Namespace; ns != "" {
-			return ns
+			return ns, nil
 		}
 	}
 
+	// Preference 2: owner-labelled children.
+	namespaces := make(map[string]struct{})
+
+	rlList := &gatewayv1.RouteListenerList{}
+	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
+		return "", errors.Wrap(err, "failed to list owned RouteListeners for namespace resolution")
+	}
+	for i := range rlList.Items {
+		namespaces[rlList.Items[i].Namespace] = struct{}{}
+	}
+
+	subList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
+		return "", errors.Wrap(err, "failed to list owned Subscribers for namespace resolution")
+	}
+	for i := range subList.Items {
+		namespaces[subList.Items[i].Namespace] = struct{}{}
+	}
+
+	if len(namespaces) == 1 {
+		for ns := range namespaces {
+			return ns, nil
+		}
+	}
+	if len(namespaces) > 1 {
+		return "", errors.Errorf("owner-labelled children span multiple namespaces: found %d distinct namespaces", len(namespaces))
+	}
+
+	// Preference 3: topology resolution (consumer zone).
 	consumerApp, err := h.resolveApplication(ctx, &listener.Spec.Consumer)
 	if err != nil {
 		logger.V(1).Info("Could not resolve consumer Application during delete", "error", err)
-		return ""
+		return "", nil
 	}
 	consumerZone, err := h.resolveZone(ctx, consumerApp)
 	if err != nil {
 		logger.V(1).Info("Could not resolve zone during delete", "error", err)
-		return ""
+		return "", nil
 	}
-	return consumerZone.Status.Namespace
+	return consumerZone.Status.Namespace, nil
 }
 
 // deleteRouteListener removes the RouteListener referenced in status, tolerating

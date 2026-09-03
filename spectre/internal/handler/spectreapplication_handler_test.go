@@ -623,50 +623,69 @@ var _ = Describe("SpectreApplicationHandler", func() {
 	})
 
 	Describe("Delete", func() {
-		mockDeleteCleanup := func() {
+		// mockEmptyLabelList stubs a List call returning an empty list of the given type.
+		mockEmptySubList := func() {
 			fakeClient.EXPECT().
-				Cleanup(ctx, mock.AnythingOfType("*v1.RouteList"), mock.Anything).
-				Return(0, nil).Once()
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+				}).
+				Return(nil).Once()
+		}
+		mockEmptyPubList := func() {
 			fakeClient.EXPECT().
-				Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-				Return(0, nil).Once()
+				List(ctx, mock.AnythingOfType("*v1.PublisherList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.PublisherList) = pubsubv1.PublisherList{}
+				}).
+				Return(nil).Once()
+		}
+		mockEmptyRouteList := func() {
 			fakeClient.EXPECT().
-				Cleanup(ctx, mock.AnythingOfType("*v1.PublisherList"), mock.Anything).
-				Return(0, nil).Once()
+				List(ctx, mock.AnythingOfType("*v1.RouteList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteList) = gatewayv1.RouteList{}
+				}).
+				Return(nil).Once()
 		}
 
-		It("should delete status-referenced children and run label-based fallback", func() {
+		It("should delete Subscribers before Publishers and Publishers before Routes", func() {
 			obj := newSpectreApplication("server_sent_event")
 			obj.Status.Publisher = &ctypes.ObjectRef{Name: "pub-1", Namespace: testZoneStatusNs}
 			obj.Status.Subscriber = &ctypes.ObjectRef{Name: "sub-1", Namespace: testZoneStatusNs}
 			obj.Status.ListenerRoute = &ctypes.ObjectRef{Name: "route-1", Namespace: testZoneStatusNs}
 
-			// Subscriber delete
+			// Phase 1: Subscriber delete (status ref).
 			fakeClient.EXPECT().
 				Get(ctx, k8stypes.NamespacedName{Name: "sub-1", Namespace: testZoneStatusNs}, mock.AnythingOfType("*v1.Subscriber")).
 				Return(nil).Once()
 			fakeClient.EXPECT().
 				Delete(ctx, mock.AnythingOfType("*v1.Subscriber")).
 				Return(nil).Once()
+			// Phase 1: label-list — empty.
+			mockEmptySubList()
+			// Phase 1: fresh-list — empty.
+			mockEmptySubList()
 
-			// Publisher delete
+			// Phase 2: Publisher delete (status ref).
 			fakeClient.EXPECT().
 				Get(ctx, k8stypes.NamespacedName{Name: "pub-1", Namespace: testZoneStatusNs}, mock.AnythingOfType("*v1.Publisher")).
 				Return(nil).Once()
 			fakeClient.EXPECT().
 				Delete(ctx, mock.AnythingOfType("*v1.Publisher")).
 				Return(nil).Once()
+			// Phase 2: label-list — empty.
+			mockEmptyPubList()
 
-			// Route delete
+			// Phase 3: Route delete (status ref).
 			fakeClient.EXPECT().
 				Get(ctx, k8stypes.NamespacedName{Name: "route-1", Namespace: testZoneStatusNs}, mock.AnythingOfType("*v1.Route")).
 				Return(nil).Once()
 			fakeClient.EXPECT().
 				Delete(ctx, mock.AnythingOfType("*v1.Route")).
 				Return(nil).Once()
-
-			// Label-based fallback cleanup
-			mockDeleteCleanup()
+			// Phase 3: label-list — empty.
+			mockEmptyRouteList()
 
 			err := h.Delete(ctx, obj)
 			Expect(err).ToNot(HaveOccurred())
@@ -676,10 +695,104 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			Expect(obj.Status.ListenerRoute).To(BeNil())
 		})
 
+		It("should retry while Subscribers remain (finalizers still running)", func() {
+			obj := newSpectreApplication("callback")
+			obj.Status.Subscriber = &ctypes.ObjectRef{Name: "sub-1", Namespace: testZoneStatusNs}
+
+			// Phase 1: Subscriber delete.
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "sub-1", Namespace: testZoneStatusNs}, mock.AnythingOfType("*v1.Subscriber")).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.AnythingOfType("*v1.Subscriber")).
+				Return(nil).Once()
+			// label-list — empty.
+			mockEmptySubList()
+			// fresh-list — sub still present.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+						Items: []pubsubv1.Subscriber{
+							{ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: testZoneStatusNs}},
+						},
+					}
+				}).
+				Return(nil).Once()
+
+			err := h.Delete(ctx, obj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("waiting for Subscriber finalization"))
+		})
+
 		It("should run label-based fallback even when status refs are nil", func() {
 			obj := newSpectreApplication("callback")
-			// No status refs set — only label-based fallback runs.
-			mockDeleteCleanup()
+			// No status refs — label-based lists all empty.
+			mockEmptySubList()
+			mockEmptySubList() // fresh-list
+			mockEmptyPubList()
+			mockEmptyRouteList()
+
+			err := h.Delete(ctx, obj)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should delete owner-labelled children that status refs missed", func() {
+			obj := newSpectreApplication("server_sent_event")
+			// No status refs, but owner-labelled children exist.
+
+			// Phase 1: label-list returns orphaned Sub.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+						Items: []pubsubv1.Subscriber{
+							{ObjectMeta: metav1.ObjectMeta{Name: "orphan-sub", Namespace: testZoneStatusNs}},
+						},
+					}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+					return obj.GetName() == "orphan-sub"
+				}), mock.Anything).
+				Return(nil).Once()
+			// fresh-list — gone.
+			mockEmptySubList()
+
+			// Phase 2: label-list returns orphaned Pub.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.PublisherList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.PublisherList) = pubsubv1.PublisherList{
+						Items: []pubsubv1.Publisher{
+							{ObjectMeta: metav1.ObjectMeta{Name: "orphan-pub", Namespace: testZoneStatusNs}},
+						},
+					}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+					return obj.GetName() == "orphan-pub"
+				}), mock.Anything).
+				Return(nil).Once()
+
+			// Phase 3: label-list returns orphaned Route.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteList) = gatewayv1.RouteList{
+						Items: []gatewayv1.Route{
+							{ObjectMeta: metav1.ObjectMeta{Name: "orphan-route", Namespace: testZoneStatusNs}},
+						},
+					}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+					return obj.GetName() == "orphan-route"
+				}), mock.Anything).
+				Return(nil).Once()
 
 			err := h.Delete(ctx, obj)
 			Expect(err).ToNot(HaveOccurred())
