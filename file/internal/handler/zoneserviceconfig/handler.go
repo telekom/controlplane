@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/file/internal/handler/util"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
@@ -54,9 +54,25 @@ func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *file
 		return nil
 	}
 
-	apiClient, err := createOrUpdateSFTPAPIClient(ctx, obj, zone)
+	apiClientRef := util.GetChildResourceRef(obj)
+
+	apiClient := &identityv1.Client{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      apiClientRef.Name,
+			Namespace: apiClientRef.Namespace,
+		},
+	}
+
+	err = getSFTPAPIClient(ctx, apiClient)
 	if err != nil {
-		return err
+		if !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to get client: %w", err)
+		}
+
+		err = createSFTPAPIClient(ctx, obj, zone, apiClient)
+		if err != nil {
+			return fmt.Errorf("failed to create SFTP API Client: %w", err)
+		}
 	}
 
 	_, err = createConsumer(ctx, obj, zone)
@@ -137,52 +153,34 @@ func getZoneForZoneServiceConfig(ctx context.Context, obj *filev1.ZoneServiceCon
 	return zone, nil
 }
 
-// createOrUpdateSFTPAPIClient creates or updates an identity Client for the SFTP API.
-func createOrUpdateSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *adminv1.Zone) (*identityv1.Client, error) {
+func getSFTPAPIClient(ctx context.Context, obj *identityv1.Client) error {
 	cc := cclient.ClientFromContextOrDie(ctx)
 
-	if zone.Status.InternalIdentityRealm == nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no internal identity realm", zone.Name)
-	}
-
-	apiClientRef := util.GetChildResourceRef(obj)
-
-	apiClient := &identityv1.Client{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      apiClientRef.Name,
-			Namespace: apiClientRef.Namespace,
-		},
-	}
-	err := cc.Get(ctx, client.ObjectKeyFromObject(apiClient), apiClient)
-	found := true
+	err := cc.Get(ctx, client.ObjectKeyFromObject(obj), obj)
 	if err != nil {
-		if !apierrors.IsNotFound(errors.Cause(err)) {
-			return nil, fmt.Errorf("failed to get identity Client %q: %w", apiClient.Name, err)
-		}
-
-		found = false
+		return err
 	}
 
-	if found {
-		if !condition.IsReady(apiClient) {
-			return apiClient, nil
-		}
-
-		if apiClient.Status.SecretExpiresAt == nil {
-			return apiClient, nil
-		}
-
-		weekBeforeExp := apiClient.Status.SecretExpiresAt.Add(-7 * 24 * time.Hour)
-		if time.Now().Before(weekBeforeExp) {
-			return apiClient, nil
-		}
+	if !condition.IsReady(obj) {
+		return fmt.Errorf("SFTP API Client %s/%s is not ready", obj.Namespace, obj.Name)
 	}
 
-	clientSecretPath := fmt.Sprintf("zones/%s/file/%s/%s/clientSecret", zone.Name, obj.Namespace, obj.Name)
+	return nil
+}
+
+// createOrUpdateSFTPAPIClient creates or updates an identity Client for the SFTP API.
+func createSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *adminv1.Zone, apiClient *identityv1.Client) error {
+	if zone.Status.InternalIdentityRealm == nil {
+		return ctrlerrors.BlockedErrorf("zone %q has no internal identity realm", zone.Name)
+	}
+
+	cc := cclient.ClientFromContextOrDie(ctx)
+
+	clientSecretPath := fmt.Sprintf("zones/%s/file/clientSecret", zone.Name)
 
 	secretValue, err := secretsapi.GenerateSecret()
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate secret for SFTP API Client: %w", err)
+		return fmt.Errorf("failed to generate secret for SFTP API Client: %w", err)
 	}
 
 	options := []secretsapi.OnboardingOption{
@@ -190,14 +188,14 @@ func createOrUpdateSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceCon
 		secretsapi.WithSecretValue(clientSecretPath, secretValue),
 	}
 
-	availableSecret, err := secretsapi.API().UpsertEnvironment(ctx, zone.Labels[cconfig.EnvironmentLabelKey], options...)
+	availableSecret, err := secretsapi.API().UpsertEnvironment(ctx, contextutil.EnvFromContextOrDie(ctx), options...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to onboard secrets for SFTP API Client: %w", err)
+		return fmt.Errorf("failed to onboard secrets for SFTP API Client: %w", err)
 	}
 
 	ref, found := secretsapi.FindSecretId(availableSecret, clientSecretPath)
 	if !found {
-		return nil, fmt.Errorf("failed to find secret ID for SFTP API Client at path %q", clientSecretPath)
+		return fmt.Errorf("failed to find secret ID for SFTP API Client at path %q", clientSecretPath)
 	}
 
 	mutator := func() error {
@@ -205,6 +203,8 @@ func createOrUpdateSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceCon
 		if locErr != nil {
 			return fmt.Errorf("failed to set controller reference for apiClient: %w", locErr)
 		}
+
+		apiClient.Labels = util.DomainLabel()
 
 		apiClient.Spec.ClientId = apiClient.Name
 		apiClient.Spec.ClientSecret = ref
@@ -214,10 +214,10 @@ func createOrUpdateSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceCon
 	}
 
 	if _, err := cc.CreateOrUpdate(ctx, apiClient, mutator); err != nil {
-		return nil, fmt.Errorf("failed to create or update identity Client %q: %w", apiClient.Name, err)
+		return fmt.Errorf("failed to create or update identity Client %q: %w", apiClient.Name, err)
 	}
 
-	return apiClient, nil
+	return nil
 }
 
 func createConsumer(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *adminv1.Zone) (*gatewayapi.Consumer, error) {
@@ -237,6 +237,8 @@ func createConsumer(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *ad
 		if locErr != nil {
 			return fmt.Errorf("failed to set controller reference for consumer: %w", locErr)
 		}
+
+		consumer.Labels = util.DomainLabel()
 
 		consumer.Spec = gatewayapi.ConsumerSpec{
 			Gateway: *zone.Status.Gateway,
@@ -319,6 +321,8 @@ func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.Zon
 		if locErr != nil {
 			return ctrlerrors.BlockedErrorf("cannot parse upstream url of internal route %s: %s", routeConfig.Url, locErr)
 		}
+
+		route.Labels = util.DomainLabel()
 
 		upstream := gatewayapi.Upstream{
 			Scheme:   upstreamUrl.Scheme,

@@ -20,6 +20,13 @@ import (
 	"github.com/telekom/controlplane/sftp/internal/service"
 )
 
+var events = []service.RoverSftpUserModelHorizonNotificationEvents{
+	service.Delete,
+	service.Download,
+	service.Upload,
+	service.Rename,
+}
+
 var _ handler.Handler[*sftpv1.Instance] = &InstanceHandler{}
 
 type InstanceHandler struct {
@@ -74,7 +81,7 @@ func (h *InstanceHandler) Delete(ctx context.Context, obj *sftpv1.Instance) erro
 	}
 
 	err = sftpService.DeleteSFTPUser(ctx, obj.Name)
-	if err != nil {
+	if err != nil && !errors.Is(err, service.ErrNotFound) {
 		return fmt.Errorf("deleting SFTP user %q: %w", obj.Name, err)
 	}
 
@@ -82,11 +89,8 @@ func (h *InstanceHandler) Delete(ctx context.Context, obj *sftpv1.Instance) erro
 }
 
 func (h *InstanceHandler) createOrUpdateServiceUser(ctx context.Context, sftpService service.Service, instance *sftpv1.Instance) error {
-	events := []service.RoverSftpUserModelHorizonNotificationEvents{}
-
 	sftpUser := service.RoverSftpUserModel{
-		SftpUserName: instance.Name,
-		// nil creates invalid user in an external service
+		SftpUserName:              instance.Name,
 		HorizonNotificationEvents: &events,
 	}
 

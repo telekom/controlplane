@@ -55,6 +55,11 @@ spec:
           status:
             description: FileTypeStatus defines the observed state of FileType.
             properties:
+              active:
+                description: |-
+                  Active indicates whether this resource is the active singleton for its type.
+                  When multiple resources exist for the same type, only the oldest non-deleted one is active.
+                type: boolean
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current
@@ -150,6 +155,8 @@ spec:
                 - name
                 - namespace
                 type: object
+            required:
+            - active
             type: object
         type: object
     served: true

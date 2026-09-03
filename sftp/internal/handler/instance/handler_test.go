@@ -7,6 +7,7 @@ package instance
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -62,13 +63,12 @@ var _ = Describe("InstanceHandler", func() {
 
 	It("retries when the referenced SFTPServiceConfig service is unavailable", func() {
 		handler, ctx, instance, _ := newTestHandlerWithFactory(recordingFactory{
-			err: ctrlerrors.RetryableErrorf("SFTP client for SFTPServiceConfig %q is not initialized", "test/test-sftpServiceConfig"),
+			err: fmt.Errorf("SFTP client for SFTPServiceConfig %q is not initialized", "test/test-sftpServiceConfig"),
 		})
 
 		err := handler.CreateOrUpdate(ctx, instance)
 
-		var retryable ctrlerrors.RetryableError
-		Expect(errors.As(err, &retryable)).To(BeTrue())
+		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError(ContainSubstring("SFTPServiceConfig")))
 		Expect(err).To(MatchError(ContainSubstring("not initialized")))
 	})
@@ -85,7 +85,12 @@ var _ = Describe("InstanceHandler", func() {
 		Expect(createdModel.Description).NotTo(BeNil())
 		Expect(*createdModel.Description).To(Equal("Team transfer user"))
 		Expect(createdModel.HorizonNotificationEvents).NotTo(BeNil())
-		Expect(*createdModel.HorizonNotificationEvents).To(BeEmpty())
+		Expect(*createdModel.HorizonNotificationEvents).To(Equal([]service.RoverSftpUserModelHorizonNotificationEvents{
+			service.Delete,
+			service.Download,
+			service.Upload,
+			service.Rename,
+		}))
 	})
 
 	It("skips service user provisioning when the Ready condition observed generation is current", func() {
@@ -137,6 +142,13 @@ var _ = Describe("InstanceHandler", func() {
 		err := handler.Delete(ctx, instance)
 
 		Expect(err).To(MatchError("service unavailable"))
+	})
+
+	It("does not fail delete when SFTP user does not exist in external service", func() {
+		handler, ctx, instance, mockService := newTestHandler()
+		expectDeleteSFTPUser(mockService, service.ErrNotFound)
+
+		Expect(handler.Delete(ctx, instance)).To(Succeed())
 	})
 
 	It("wraps service user deletion errors", func() {
