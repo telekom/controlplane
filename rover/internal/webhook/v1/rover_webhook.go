@@ -673,6 +673,10 @@ func (r *RoverValidator) GetTeam(ctx context.Context, teamRef client.ObjectKey) 
 	return team, err
 }
 
+// reservedEventTypePrefix is the namespace used internally by Spectre for
+// listener event types. User-created event types must not start with it.
+const reservedEventTypePrefix = "de.telekom.ei.listener"
+
 func (r *RoverValidator) ValidateEventExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
 	if exposure.Event == nil {
 		return nil
@@ -680,6 +684,14 @@ func (r *RoverValidator) ValidateEventExposure(ctx context.Context, valErr *cerr
 
 	if !cconfig.FeaturePubSub.IsEnabled() {
 		return nil
+	}
+
+	if strings.HasPrefix(exposure.Event.EventType, reservedEventTypePrefix) {
+		valErr.AddInvalidError(
+			field.NewPath("spec").Child("exposures").Index(idx).Child("event").Child("eventType"),
+			exposure.Event.EventType,
+			fmt.Sprintf("the %q event-type prefix is reserved for internal Spectre use", reservedEventTypePrefix),
+		)
 	}
 
 	if err := r.validateApproval(ctx, valErr, environment, exposure.Event.Approval); err != nil {
@@ -849,6 +861,13 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerro
 		return nil
 
 	case roverv1.TypeEvent:
+		if strings.HasPrefix(sub.Event.EventType, reservedEventTypePrefix) {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("subscriptions").Index(idx).Child("event").Child("eventType"),
+				sub.Event.EventType,
+				fmt.Sprintf("the %q event-type prefix is reserved for internal Spectre use", reservedEventTypePrefix),
+			)
+		}
 		if sub.Event.Delivery.Callback != "" {
 			validateExternalURL(valErr,
 				field.NewPath("spec").Child("subscriptions").Index(idx).Child("event").Child("delivery").Child("callback"),

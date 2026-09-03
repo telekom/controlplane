@@ -95,6 +95,9 @@ spec:
             - message: major version in "version" must match the version suffix (e.g.
                 "vN") in "type"
               rule: self.type.endsWith('.v' + self.version.split('.')[0])
+            - message: the 'de.telekom.ei.listener' event-type prefix is reserved
+                for internal Spectre use
+              rule: '!self.type.startsWith(''de.telekom.ei.listener'')'
           status:
             description: EventTypeStatus defines the observed state of EventType.
             properties:
