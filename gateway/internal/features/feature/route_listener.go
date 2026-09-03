@@ -72,6 +72,11 @@ func (f *RouteListenerFeature) Apply(_ context.Context, builder features.Feature
 	for _, rl := range routeListeners {
 		cid := plugin.ConsumerId(rl.Spec.Consumer)
 		if existing, ok := jc.RouteListener[cid]; ok {
+			// Two observers watching the same consumer+route produce identical
+			// entries — that is not a conflict, just a duplicate to skip.
+			if existing.Issue == rl.Spec.Issue && existing.ServiceOwner == rl.Spec.ServiceOwner {
+				continue
+			}
 			return errors.Errorf("conflicting RouteListeners for consumer %q: issue %q vs %q (jumper supports one listener entry per consumer per route)",
 				cid, existing.Issue, rl.Spec.Issue)
 		}
@@ -90,9 +95,11 @@ func (f *RouteListenerFeature) Apply(_ context.Context, builder features.Feature
 		// Secret is intentionally left unset: it must be resolved through
 		// secret-manager (secrets.Get) rather than carried literally in a CR spec,
 		// and RouteListenerSpec.GatewayClient does not hold a secret reference yet.
-		jc.GatewayClient = &plugin.GatewayClient{
-			Id:     rl.Spec.GatewayClient.ClientId,
-			Issuer: rl.Spec.GatewayClient.Issuer,
+		if jc.GatewayClient == nil || (jc.GatewayClient.Id == rl.Spec.GatewayClient.ClientId && jc.GatewayClient.Issuer == rl.Spec.GatewayClient.Issuer) {
+			jc.GatewayClient = &plugin.GatewayClient{
+				Id:     rl.Spec.GatewayClient.ClientId,
+				Issuer: rl.Spec.GatewayClient.Issuer,
+			}
 		}
 	}
 

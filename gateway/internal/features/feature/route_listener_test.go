@@ -203,14 +203,51 @@ var _ = Describe("RouteListenerFeature", func() {
 			})
 		})
 
-		Context("when two RouteListeners target the same consumer", func() {
-			It("returns an error naming the conflicting consumer instead of silently discarding one", func() {
+		Context("when two RouteListeners target the same consumer with identical config", func() {
+			It("deduplicates silently and produces a single entry", func() {
+				rls := []*gatewayv1.RouteListener{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-observer-a", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-app",
+							Issue:        "/api/v1/events",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-observer-b", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-app",
+							Issue:        "/api/v1/events",
+						},
+					},
+				}
+
+				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
+				builder.EXPECT().GetRouteListeners().Return(rls)
+				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return()
+
+				err := f.Apply(ctx, builder)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(jc.RouteListener).To(HaveLen(1))
+				entry := jc.RouteListener[plugin.ConsumerId("consumer-shared")]
+				Expect(entry.Issue).To(Equal("/api/v1/events"))
+				Expect(entry.ServiceOwner).To(Equal("provider-app"))
+			})
+		})
+
+		Context("when two RouteListeners target the same consumer with different issue", func() {
+			It("returns an error for the actual conflict", func() {
 				rls := []*gatewayv1.RouteListener{
 					{
 						ObjectMeta: metav1.ObjectMeta{Name: "rl-b", Namespace: "test-ns"},
 						Spec: gatewayv1.RouteListenerSpec{
 							Consumer:     "consumer-shared",
-							ServiceOwner: "provider-b",
+							ServiceOwner: "provider-app",
 							Issue:        "/api/v2/notifications",
 						},
 					},
@@ -218,7 +255,7 @@ var _ = Describe("RouteListenerFeature", func() {
 						ObjectMeta: metav1.ObjectMeta{Name: "rl-a", Namespace: "test-ns"},
 						Spec: gatewayv1.RouteListenerSpec{
 							Consumer:     "consumer-shared",
-							ServiceOwner: "provider-a",
+							ServiceOwner: "provider-app",
 							Issue:        "/api/v1/events",
 						},
 					},
@@ -235,6 +272,39 @@ var _ = Describe("RouteListenerFeature", func() {
 				Expect(err.Error()).To(ContainSubstring("consumer-shared"))
 				Expect(err.Error()).To(ContainSubstring("/api/v1/events"))
 				Expect(err.Error()).To(ContainSubstring("/api/v2/notifications"))
+			})
+		})
+
+		Context("when two RouteListeners target the same consumer with different serviceOwner", func() {
+			It("returns an error for the actual conflict", func() {
+				rls := []*gatewayv1.RouteListener{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-a", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-a",
+							Issue:        "/api/v1/events",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-b", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-b",
+							Issue:        "/api/v1/events",
+						},
+					},
+				}
+
+				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
+				builder.EXPECT().GetRouteListeners().Return(rls)
+				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return().Maybe()
+
+				err := f.Apply(ctx, builder)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer-shared"))
 			})
 		})
 
