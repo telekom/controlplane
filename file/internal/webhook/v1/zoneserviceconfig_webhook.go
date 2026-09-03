@@ -65,11 +65,12 @@ func (v *ZoneServiceConfigValidator) ValidateCreateOrUpdate(ctx context.Context,
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
 
-	if obj.Name != obj.Spec.Zone.Name || obj.Namespace != util.GetZoneNamespace(obj.Spec.Zone) {
+	namespace := util.GetZoneNamespace(obj.Spec.Zone)
+	if obj.Name != obj.Spec.Zone.Name || obj.Namespace != namespace {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("metadata").Child("name"),
 			obj.GetName(),
-			fmt.Sprintf("ZoneServiceConfig name and namespace must match the admin Zone it configures. Expected name: %q, namespace: %q", obj.Spec.Zone.Name, obj.Spec.Zone.Namespace),
+			fmt.Sprintf("ZoneServiceConfig name must match the Zone name and it must be in the namespace of the Zone it configures. Expected name: %q, namespace: %q", obj.Spec.Zone.Name, namespace),
 		))
 	}
 
@@ -79,7 +80,7 @@ func (v *ZoneServiceConfigValidator) ValidateCreateOrUpdate(ctx context.Context,
 		if apierrors.IsNotFound(err) {
 			allErrs = append(allErrs, field.Required(
 				field.NewPath("metadata").Child("name"),
-				fmt.Sprintf("Zone with name %q not found in namespace %q. ZoneServiceConfig must use the same name and namespace as the admin Zone it configures", obj.GetName(), obj.GetNamespace()),
+				fmt.Sprintf("Zone with name %q not found in namespace %q", obj.GetName(), obj.GetNamespace()),
 			))
 		} else {
 			return nil, apierrors.NewInternalError(fmt.Errorf("failed to get Zone: %w", err))
