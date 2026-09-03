@@ -104,11 +104,11 @@ func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
 		aet, alk := cachekeys.ActiveMcpServer(data.BasePath)
 		r.cache.Set(aet, alk, mcpServerID)
 	} else {
-		// If this McpServer is not active, clear the active cache in case it
-		// was previously active (should not happen in practice due to
-		// oldest-wins, but handles edge cases during resync).
+		// Only clear the active cache entry if it currently points to this McpServer.
 		aet, alk := cachekeys.ActiveMcpServer(data.BasePath)
-		r.cache.Del(aet, alk)
+		if cachedID, ok := r.cache.Get(aet, alk); ok && cachedID == mcpServerID {
+			r.cache.Del(aet, alk)
+		}
 	}
 	return nil
 }
