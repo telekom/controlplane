@@ -93,7 +93,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 
 			_, err := validator.ValidateCreate(ctx, cfg)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("must match the admin Zone it configures"))
+			Expect(err.Error()).To(ContainSubstring("must match the Zone name and it must be in the namespace of the Zone it configures"))
 		})
 
 		It("rejects a ZoneServiceConfig when the namespace does not match the Zone", func() {
@@ -105,7 +105,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 
 			_, err := validator.ValidateCreate(ctx, cfg)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("must match the admin Zone it configures"))
+			Expect(err.Error()).To(ContainSubstring("must match the Zone name and it must be in the namespace of the Zone it configures"))
 		})
 
 		It("accepts with valid service endpoint configuration", func() {
