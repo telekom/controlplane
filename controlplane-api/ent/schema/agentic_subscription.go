@@ -53,7 +53,7 @@ func (AgenticSubscription) Fields() []ent.Field {
 func (AgenticSubscription) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", Application.Type).
-			Ref("agentic_subscriptions").
+			Ref("subscribed_agentics").
 			Required().
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),

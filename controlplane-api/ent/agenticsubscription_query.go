@@ -574,10 +574,10 @@ func (_q *AgenticSubscriptionQuery) loadOwner(ctx context.Context, query *Applic
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*AgenticSubscription)
 	for i := range nodes {
-		if nodes[i].application_agentic_subscriptions == nil {
+		if nodes[i].application_subscribed_agentics == nil {
 			continue
 		}
-		fk := *nodes[i].application_agentic_subscriptions
+		fk := *nodes[i].application_subscribed_agentics
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -594,7 +594,7 @@ func (_q *AgenticSubscriptionQuery) loadOwner(ctx context.Context, query *Applic
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "application_agentic_subscriptions" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "application_subscribed_agentics" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

@@ -7977,55 +7977,55 @@ func (m *ApiSubscriptionMutation) ResetEdge(name string) error {
 // ApplicationMutation represents an operation that mutates the Application nodes in the graph.
 type ApplicationMutation struct {
 	config
-	op                           Op
-	typ                          string
-	id                           *int
-	created_at                   *time.Time
-	last_modified_at             *time.Time
-	status_phase                 *application.StatusPhase
-	status_message               *string
-	environment                  *string
-	namespace                    *string
-	name                         *string
-	client_id                    *string
-	client_secret                *string
-	rotated_client_secret        *string
-	rotated_expires_at           *time.Time
-	current_expires_at           *time.Time
-	secret_rotation_phase        *application.SecretRotationPhase
-	secret_rotation_message      *string
-	external_ids                 *[]model.ExternalId
-	appendexternal_ids           []model.ExternalId
-	ip_restrictions              *model.IpRestrictions
-	permissions_url              *string
-	clearedFields                map[string]struct{}
-	zone                         *int
-	clearedzone                  bool
-	owner_team                   *int
-	clearedowner_team            bool
-	exposed_apis                 map[int]struct{}
-	removedexposed_apis          map[int]struct{}
-	clearedexposed_apis          bool
-	subscribed_apis              map[int]struct{}
-	removedsubscribed_apis       map[int]struct{}
-	clearedsubscribed_apis       bool
-	exposed_events               map[int]struct{}
-	removedexposed_events        map[int]struct{}
-	clearedexposed_events        bool
-	subscribed_events            map[int]struct{}
-	removedsubscribed_events     map[int]struct{}
-	clearedsubscribed_events     bool
-	agentic_exposures            map[int]struct{}
-	removedagentic_exposures     map[int]struct{}
-	clearedagentic_exposures     bool
-	agentic_subscriptions        map[int]struct{}
-	removedagentic_subscriptions map[int]struct{}
-	clearedagentic_subscriptions bool
-	permission_set               *int
-	clearedpermission_set        bool
-	done                         bool
-	oldValue                     func(context.Context) (*Application, error)
-	predicates                   []predicate.Application
+	op                         Op
+	typ                        string
+	id                         *int
+	created_at                 *time.Time
+	last_modified_at           *time.Time
+	status_phase               *application.StatusPhase
+	status_message             *string
+	environment                *string
+	namespace                  *string
+	name                       *string
+	client_id                  *string
+	client_secret              *string
+	rotated_client_secret      *string
+	rotated_expires_at         *time.Time
+	current_expires_at         *time.Time
+	secret_rotation_phase      *application.SecretRotationPhase
+	secret_rotation_message    *string
+	external_ids               *[]model.ExternalId
+	appendexternal_ids         []model.ExternalId
+	ip_restrictions            *model.IpRestrictions
+	permissions_url            *string
+	clearedFields              map[string]struct{}
+	zone                       *int
+	clearedzone                bool
+	owner_team                 *int
+	clearedowner_team          bool
+	exposed_apis               map[int]struct{}
+	removedexposed_apis        map[int]struct{}
+	clearedexposed_apis        bool
+	subscribed_apis            map[int]struct{}
+	removedsubscribed_apis     map[int]struct{}
+	clearedsubscribed_apis     bool
+	exposed_events             map[int]struct{}
+	removedexposed_events      map[int]struct{}
+	clearedexposed_events      bool
+	subscribed_events          map[int]struct{}
+	removedsubscribed_events   map[int]struct{}
+	clearedsubscribed_events   bool
+	exposed_agentics           map[int]struct{}
+	removedexposed_agentics    map[int]struct{}
+	clearedexposed_agentics    bool
+	subscribed_agentics        map[int]struct{}
+	removedsubscribed_agentics map[int]struct{}
+	clearedsubscribed_agentics bool
+	permission_set             *int
+	clearedpermission_set      bool
+	done                       bool
+	oldValue                   func(context.Context) (*Application, error)
+	predicates                 []predicate.Application
 }
 
 var _ ent.Mutation = (*ApplicationMutation)(nil)
@@ -9204,112 +9204,112 @@ func (m *ApplicationMutation) ResetSubscribedEvents() {
 	m.removedsubscribed_events = nil
 }
 
-// AddAgenticExposureIDs adds the "agentic_exposures" edge to the AgenticExposure entity by ids.
-func (m *ApplicationMutation) AddAgenticExposureIDs(ids ...int) {
-	if m.agentic_exposures == nil {
-		m.agentic_exposures = make(map[int]struct{})
+// AddExposedAgenticIDs adds the "exposed_agentics" edge to the AgenticExposure entity by ids.
+func (m *ApplicationMutation) AddExposedAgenticIDs(ids ...int) {
+	if m.exposed_agentics == nil {
+		m.exposed_agentics = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.agentic_exposures[ids[i]] = struct{}{}
+		m.exposed_agentics[ids[i]] = struct{}{}
 	}
 }
 
-// ClearAgenticExposures clears the "agentic_exposures" edge to the AgenticExposure entity.
-func (m *ApplicationMutation) ClearAgenticExposures() {
-	m.clearedagentic_exposures = true
+// ClearExposedAgentics clears the "exposed_agentics" edge to the AgenticExposure entity.
+func (m *ApplicationMutation) ClearExposedAgentics() {
+	m.clearedexposed_agentics = true
 }
 
-// AgenticExposuresCleared reports if the "agentic_exposures" edge to the AgenticExposure entity was cleared.
-func (m *ApplicationMutation) AgenticExposuresCleared() bool {
-	return m.clearedagentic_exposures
+// ExposedAgenticsCleared reports if the "exposed_agentics" edge to the AgenticExposure entity was cleared.
+func (m *ApplicationMutation) ExposedAgenticsCleared() bool {
+	return m.clearedexposed_agentics
 }
 
-// RemoveAgenticExposureIDs removes the "agentic_exposures" edge to the AgenticExposure entity by IDs.
-func (m *ApplicationMutation) RemoveAgenticExposureIDs(ids ...int) {
-	if m.removedagentic_exposures == nil {
-		m.removedagentic_exposures = make(map[int]struct{})
+// RemoveExposedAgenticIDs removes the "exposed_agentics" edge to the AgenticExposure entity by IDs.
+func (m *ApplicationMutation) RemoveExposedAgenticIDs(ids ...int) {
+	if m.removedexposed_agentics == nil {
+		m.removedexposed_agentics = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.agentic_exposures, ids[i])
-		m.removedagentic_exposures[ids[i]] = struct{}{}
+		delete(m.exposed_agentics, ids[i])
+		m.removedexposed_agentics[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedAgenticExposures returns the removed IDs of the "agentic_exposures" edge to the AgenticExposure entity.
-func (m *ApplicationMutation) RemovedAgenticExposuresIDs() (ids []int) {
-	for id := range m.removedagentic_exposures {
+// RemovedExposedAgentics returns the removed IDs of the "exposed_agentics" edge to the AgenticExposure entity.
+func (m *ApplicationMutation) RemovedExposedAgenticsIDs() (ids []int) {
+	for id := range m.removedexposed_agentics {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// AgenticExposuresIDs returns the "agentic_exposures" edge IDs in the mutation.
-func (m *ApplicationMutation) AgenticExposuresIDs() (ids []int) {
-	for id := range m.agentic_exposures {
+// ExposedAgenticsIDs returns the "exposed_agentics" edge IDs in the mutation.
+func (m *ApplicationMutation) ExposedAgenticsIDs() (ids []int) {
+	for id := range m.exposed_agentics {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetAgenticExposures resets all changes to the "agentic_exposures" edge.
-func (m *ApplicationMutation) ResetAgenticExposures() {
-	m.agentic_exposures = nil
-	m.clearedagentic_exposures = false
-	m.removedagentic_exposures = nil
+// ResetExposedAgentics resets all changes to the "exposed_agentics" edge.
+func (m *ApplicationMutation) ResetExposedAgentics() {
+	m.exposed_agentics = nil
+	m.clearedexposed_agentics = false
+	m.removedexposed_agentics = nil
 }
 
-// AddAgenticSubscriptionIDs adds the "agentic_subscriptions" edge to the AgenticSubscription entity by ids.
-func (m *ApplicationMutation) AddAgenticSubscriptionIDs(ids ...int) {
-	if m.agentic_subscriptions == nil {
-		m.agentic_subscriptions = make(map[int]struct{})
+// AddSubscribedAgenticIDs adds the "subscribed_agentics" edge to the AgenticSubscription entity by ids.
+func (m *ApplicationMutation) AddSubscribedAgenticIDs(ids ...int) {
+	if m.subscribed_agentics == nil {
+		m.subscribed_agentics = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.agentic_subscriptions[ids[i]] = struct{}{}
+		m.subscribed_agentics[ids[i]] = struct{}{}
 	}
 }
 
-// ClearAgenticSubscriptions clears the "agentic_subscriptions" edge to the AgenticSubscription entity.
-func (m *ApplicationMutation) ClearAgenticSubscriptions() {
-	m.clearedagentic_subscriptions = true
+// ClearSubscribedAgentics clears the "subscribed_agentics" edge to the AgenticSubscription entity.
+func (m *ApplicationMutation) ClearSubscribedAgentics() {
+	m.clearedsubscribed_agentics = true
 }
 
-// AgenticSubscriptionsCleared reports if the "agentic_subscriptions" edge to the AgenticSubscription entity was cleared.
-func (m *ApplicationMutation) AgenticSubscriptionsCleared() bool {
-	return m.clearedagentic_subscriptions
+// SubscribedAgenticsCleared reports if the "subscribed_agentics" edge to the AgenticSubscription entity was cleared.
+func (m *ApplicationMutation) SubscribedAgenticsCleared() bool {
+	return m.clearedsubscribed_agentics
 }
 
-// RemoveAgenticSubscriptionIDs removes the "agentic_subscriptions" edge to the AgenticSubscription entity by IDs.
-func (m *ApplicationMutation) RemoveAgenticSubscriptionIDs(ids ...int) {
-	if m.removedagentic_subscriptions == nil {
-		m.removedagentic_subscriptions = make(map[int]struct{})
+// RemoveSubscribedAgenticIDs removes the "subscribed_agentics" edge to the AgenticSubscription entity by IDs.
+func (m *ApplicationMutation) RemoveSubscribedAgenticIDs(ids ...int) {
+	if m.removedsubscribed_agentics == nil {
+		m.removedsubscribed_agentics = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.agentic_subscriptions, ids[i])
-		m.removedagentic_subscriptions[ids[i]] = struct{}{}
+		delete(m.subscribed_agentics, ids[i])
+		m.removedsubscribed_agentics[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedAgenticSubscriptions returns the removed IDs of the "agentic_subscriptions" edge to the AgenticSubscription entity.
-func (m *ApplicationMutation) RemovedAgenticSubscriptionsIDs() (ids []int) {
-	for id := range m.removedagentic_subscriptions {
+// RemovedSubscribedAgentics returns the removed IDs of the "subscribed_agentics" edge to the AgenticSubscription entity.
+func (m *ApplicationMutation) RemovedSubscribedAgenticsIDs() (ids []int) {
+	for id := range m.removedsubscribed_agentics {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// AgenticSubscriptionsIDs returns the "agentic_subscriptions" edge IDs in the mutation.
-func (m *ApplicationMutation) AgenticSubscriptionsIDs() (ids []int) {
-	for id := range m.agentic_subscriptions {
+// SubscribedAgenticsIDs returns the "subscribed_agentics" edge IDs in the mutation.
+func (m *ApplicationMutation) SubscribedAgenticsIDs() (ids []int) {
+	for id := range m.subscribed_agentics {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetAgenticSubscriptions resets all changes to the "agentic_subscriptions" edge.
-func (m *ApplicationMutation) ResetAgenticSubscriptions() {
-	m.agentic_subscriptions = nil
-	m.clearedagentic_subscriptions = false
-	m.removedagentic_subscriptions = nil
+// ResetSubscribedAgentics resets all changes to the "subscribed_agentics" edge.
+func (m *ApplicationMutation) ResetSubscribedAgentics() {
+	m.subscribed_agentics = nil
+	m.clearedsubscribed_agentics = false
+	m.removedsubscribed_agentics = nil
 }
 
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by id.
@@ -9850,11 +9850,11 @@ func (m *ApplicationMutation) AddedEdges() []string {
 	if m.subscribed_events != nil {
 		edges = append(edges, application.EdgeSubscribedEvents)
 	}
-	if m.agentic_exposures != nil {
-		edges = append(edges, application.EdgeAgenticExposures)
+	if m.exposed_agentics != nil {
+		edges = append(edges, application.EdgeExposedAgentics)
 	}
-	if m.agentic_subscriptions != nil {
-		edges = append(edges, application.EdgeAgenticSubscriptions)
+	if m.subscribed_agentics != nil {
+		edges = append(edges, application.EdgeSubscribedAgentics)
 	}
 	if m.permission_set != nil {
 		edges = append(edges, application.EdgePermissionSet)
@@ -9898,15 +9898,15 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case application.EdgeAgenticExposures:
-		ids := make([]ent.Value, 0, len(m.agentic_exposures))
-		for id := range m.agentic_exposures {
+	case application.EdgeExposedAgentics:
+		ids := make([]ent.Value, 0, len(m.exposed_agentics))
+		for id := range m.exposed_agentics {
 			ids = append(ids, id)
 		}
 		return ids
-	case application.EdgeAgenticSubscriptions:
-		ids := make([]ent.Value, 0, len(m.agentic_subscriptions))
-		for id := range m.agentic_subscriptions {
+	case application.EdgeSubscribedAgentics:
+		ids := make([]ent.Value, 0, len(m.subscribed_agentics))
+		for id := range m.subscribed_agentics {
 			ids = append(ids, id)
 		}
 		return ids
@@ -9933,11 +9933,11 @@ func (m *ApplicationMutation) RemovedEdges() []string {
 	if m.removedsubscribed_events != nil {
 		edges = append(edges, application.EdgeSubscribedEvents)
 	}
-	if m.removedagentic_exposures != nil {
-		edges = append(edges, application.EdgeAgenticExposures)
+	if m.removedexposed_agentics != nil {
+		edges = append(edges, application.EdgeExposedAgentics)
 	}
-	if m.removedagentic_subscriptions != nil {
-		edges = append(edges, application.EdgeAgenticSubscriptions)
+	if m.removedsubscribed_agentics != nil {
+		edges = append(edges, application.EdgeSubscribedAgentics)
 	}
 	return edges
 }
@@ -9970,15 +9970,15 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case application.EdgeAgenticExposures:
-		ids := make([]ent.Value, 0, len(m.removedagentic_exposures))
-		for id := range m.removedagentic_exposures {
+	case application.EdgeExposedAgentics:
+		ids := make([]ent.Value, 0, len(m.removedexposed_agentics))
+		for id := range m.removedexposed_agentics {
 			ids = append(ids, id)
 		}
 		return ids
-	case application.EdgeAgenticSubscriptions:
-		ids := make([]ent.Value, 0, len(m.removedagentic_subscriptions))
-		for id := range m.removedagentic_subscriptions {
+	case application.EdgeSubscribedAgentics:
+		ids := make([]ent.Value, 0, len(m.removedsubscribed_agentics))
+		for id := range m.removedsubscribed_agentics {
 			ids = append(ids, id)
 		}
 		return ids
@@ -10007,11 +10007,11 @@ func (m *ApplicationMutation) ClearedEdges() []string {
 	if m.clearedsubscribed_events {
 		edges = append(edges, application.EdgeSubscribedEvents)
 	}
-	if m.clearedagentic_exposures {
-		edges = append(edges, application.EdgeAgenticExposures)
+	if m.clearedexposed_agentics {
+		edges = append(edges, application.EdgeExposedAgentics)
 	}
-	if m.clearedagentic_subscriptions {
-		edges = append(edges, application.EdgeAgenticSubscriptions)
+	if m.clearedsubscribed_agentics {
+		edges = append(edges, application.EdgeSubscribedAgentics)
 	}
 	if m.clearedpermission_set {
 		edges = append(edges, application.EdgePermissionSet)
@@ -10035,10 +10035,10 @@ func (m *ApplicationMutation) EdgeCleared(name string) bool {
 		return m.clearedexposed_events
 	case application.EdgeSubscribedEvents:
 		return m.clearedsubscribed_events
-	case application.EdgeAgenticExposures:
-		return m.clearedagentic_exposures
-	case application.EdgeAgenticSubscriptions:
-		return m.clearedagentic_subscriptions
+	case application.EdgeExposedAgentics:
+		return m.clearedexposed_agentics
+	case application.EdgeSubscribedAgentics:
+		return m.clearedsubscribed_agentics
 	case application.EdgePermissionSet:
 		return m.clearedpermission_set
 	}
@@ -10084,11 +10084,11 @@ func (m *ApplicationMutation) ResetEdge(name string) error {
 	case application.EdgeSubscribedEvents:
 		m.ResetSubscribedEvents()
 		return nil
-	case application.EdgeAgenticExposures:
-		m.ResetAgenticExposures()
+	case application.EdgeExposedAgentics:
+		m.ResetExposedAgentics()
 		return nil
-	case application.EdgeAgenticSubscriptions:
-		m.ResetAgenticSubscriptions()
+	case application.EdgeSubscribedAgentics:
+		m.ResetSubscribedAgentics()
 		return nil
 	case application.EdgePermissionSet:
 		m.ResetPermissionSet()

@@ -57,11 +57,11 @@ type AgenticExposure struct {
 	Transformation model.AgenticTransformation `json:"transformation,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AgenticExposureQuery when eager-loading is set.
-	Edges                         AgenticExposureEdges `json:"edges"`
-	agent_card_exposures          *int
-	application_agentic_exposures *int
-	mcp_server_exposures          *int
-	selectValues                  sql.SelectValues
+	Edges                        AgenticExposureEdges `json:"edges"`
+	agent_card_exposures         *int
+	application_exposed_agentics *int
+	mcp_server_exposures         *int
+	selectValues                 sql.SelectValues
 }
 
 // AgenticExposureEdges holds the relations/edges for other nodes in the graph.
@@ -140,7 +140,7 @@ func (*AgenticExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case agenticexposure.ForeignKeys[0]: // agent_card_exposures
 			values[i] = new(sql.NullInt64)
-		case agenticexposure.ForeignKeys[1]: // application_agentic_exposures
+		case agenticexposure.ForeignKeys[1]: // application_exposed_agentics
 			values[i] = new(sql.NullInt64)
 		case agenticexposure.ForeignKeys[2]: // mcp_server_exposures
 			values[i] = new(sql.NullInt64)
@@ -278,10 +278,10 @@ func (_m *AgenticExposure) assignValues(columns []string, values []any) error {
 			}
 		case agenticexposure.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field application_agentic_exposures", value)
+				return fmt.Errorf("unexpected type %T for edge-field application_exposed_agentics", value)
 			} else if value.Valid {
-				_m.application_agentic_exposures = new(int)
-				*_m.application_agentic_exposures = int(value.Int64)
+				_m.application_exposed_agentics = new(int)
+				*_m.application_exposed_agentics = int(value.Int64)
 			}
 		case agenticexposure.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {

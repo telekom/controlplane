@@ -57,7 +57,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "application" package.
 	OwnerInverseTable = "applications"
 	// OwnerColumn is the table column denoting the owner relation/edge.
-	OwnerColumn = "application_agentic_subscriptions"
+	OwnerColumn = "application_subscribed_agentics"
 	// TargetTable is the table that holds the target relation/edge.
 	TargetTable = "agentic_subscriptions"
 	// TargetInverseTable is the table name for the AgenticExposure entity.
@@ -100,7 +100,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"agentic_subscription_target",
-	"application_agentic_subscriptions",
+	"application_subscribed_agentics",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

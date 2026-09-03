@@ -1166,21 +1166,21 @@ func HasSubscribedEventsWith(preds ...predicate.EventSubscription) predicate.App
 	})
 }
 
-// HasAgenticExposures applies the HasEdge predicate on the "agentic_exposures" edge.
-func HasAgenticExposures() predicate.Application {
+// HasExposedAgentics applies the HasEdge predicate on the "exposed_agentics" edge.
+func HasExposedAgentics() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, AgenticExposuresTable, AgenticExposuresColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, ExposedAgenticsTable, ExposedAgenticsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasAgenticExposuresWith applies the HasEdge predicate on the "agentic_exposures" edge with a given conditions (other predicates).
-func HasAgenticExposuresWith(preds ...predicate.AgenticExposure) predicate.Application {
+// HasExposedAgenticsWith applies the HasEdge predicate on the "exposed_agentics" edge with a given conditions (other predicates).
+func HasExposedAgenticsWith(preds ...predicate.AgenticExposure) predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
-		step := newAgenticExposuresStep()
+		step := newExposedAgenticsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -1189,21 +1189,21 @@ func HasAgenticExposuresWith(preds ...predicate.AgenticExposure) predicate.Appli
 	})
 }
 
-// HasAgenticSubscriptions applies the HasEdge predicate on the "agentic_subscriptions" edge.
-func HasAgenticSubscriptions() predicate.Application {
+// HasSubscribedAgentics applies the HasEdge predicate on the "subscribed_agentics" edge.
+func HasSubscribedAgentics() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, AgenticSubscriptionsTable, AgenticSubscriptionsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubscribedAgenticsTable, SubscribedAgenticsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasAgenticSubscriptionsWith applies the HasEdge predicate on the "agentic_subscriptions" edge with a given conditions (other predicates).
-func HasAgenticSubscriptionsWith(preds ...predicate.AgenticSubscription) predicate.Application {
+// HasSubscribedAgenticsWith applies the HasEdge predicate on the "subscribed_agentics" edge with a given conditions (other predicates).
+func HasSubscribedAgenticsWith(preds ...predicate.AgenticSubscription) predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
-		step := newAgenticSubscriptionsStep()
+		step := newSubscribedAgenticsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -410,34 +410,34 @@ func (_u *ApplicationUpdate) AddSubscribedEvents(v ...*EventSubscription) *Appli
 	return _u.AddSubscribedEventIDs(ids...)
 }
 
-// AddAgenticExposureIDs adds the "agentic_exposures" edge to the AgenticExposure entity by IDs.
-func (_u *ApplicationUpdate) AddAgenticExposureIDs(ids ...int) *ApplicationUpdate {
-	_u.mutation.AddAgenticExposureIDs(ids...)
+// AddExposedAgenticIDs adds the "exposed_agentics" edge to the AgenticExposure entity by IDs.
+func (_u *ApplicationUpdate) AddExposedAgenticIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.AddExposedAgenticIDs(ids...)
 	return _u
 }
 
-// AddAgenticExposures adds the "agentic_exposures" edges to the AgenticExposure entity.
-func (_u *ApplicationUpdate) AddAgenticExposures(v ...*AgenticExposure) *ApplicationUpdate {
+// AddExposedAgentics adds the "exposed_agentics" edges to the AgenticExposure entity.
+func (_u *ApplicationUpdate) AddExposedAgentics(v ...*AgenticExposure) *ApplicationUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddAgenticExposureIDs(ids...)
+	return _u.AddExposedAgenticIDs(ids...)
 }
 
-// AddAgenticSubscriptionIDs adds the "agentic_subscriptions" edge to the AgenticSubscription entity by IDs.
-func (_u *ApplicationUpdate) AddAgenticSubscriptionIDs(ids ...int) *ApplicationUpdate {
-	_u.mutation.AddAgenticSubscriptionIDs(ids...)
+// AddSubscribedAgenticIDs adds the "subscribed_agentics" edge to the AgenticSubscription entity by IDs.
+func (_u *ApplicationUpdate) AddSubscribedAgenticIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.AddSubscribedAgenticIDs(ids...)
 	return _u
 }
 
-// AddAgenticSubscriptions adds the "agentic_subscriptions" edges to the AgenticSubscription entity.
-func (_u *ApplicationUpdate) AddAgenticSubscriptions(v ...*AgenticSubscription) *ApplicationUpdate {
+// AddSubscribedAgentics adds the "subscribed_agentics" edges to the AgenticSubscription entity.
+func (_u *ApplicationUpdate) AddSubscribedAgentics(v ...*AgenticSubscription) *ApplicationUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddAgenticSubscriptionIDs(ids...)
+	return _u.AddSubscribedAgenticIDs(ids...)
 }
 
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
@@ -560,46 +560,46 @@ func (_u *ApplicationUpdate) RemoveSubscribedEvents(v ...*EventSubscription) *Ap
 	return _u.RemoveSubscribedEventIDs(ids...)
 }
 
-// ClearAgenticExposures clears all "agentic_exposures" edges to the AgenticExposure entity.
-func (_u *ApplicationUpdate) ClearAgenticExposures() *ApplicationUpdate {
-	_u.mutation.ClearAgenticExposures()
+// ClearExposedAgentics clears all "exposed_agentics" edges to the AgenticExposure entity.
+func (_u *ApplicationUpdate) ClearExposedAgentics() *ApplicationUpdate {
+	_u.mutation.ClearExposedAgentics()
 	return _u
 }
 
-// RemoveAgenticExposureIDs removes the "agentic_exposures" edge to AgenticExposure entities by IDs.
-func (_u *ApplicationUpdate) RemoveAgenticExposureIDs(ids ...int) *ApplicationUpdate {
-	_u.mutation.RemoveAgenticExposureIDs(ids...)
+// RemoveExposedAgenticIDs removes the "exposed_agentics" edge to AgenticExposure entities by IDs.
+func (_u *ApplicationUpdate) RemoveExposedAgenticIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.RemoveExposedAgenticIDs(ids...)
 	return _u
 }
 
-// RemoveAgenticExposures removes "agentic_exposures" edges to AgenticExposure entities.
-func (_u *ApplicationUpdate) RemoveAgenticExposures(v ...*AgenticExposure) *ApplicationUpdate {
+// RemoveExposedAgentics removes "exposed_agentics" edges to AgenticExposure entities.
+func (_u *ApplicationUpdate) RemoveExposedAgentics(v ...*AgenticExposure) *ApplicationUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveAgenticExposureIDs(ids...)
+	return _u.RemoveExposedAgenticIDs(ids...)
 }
 
-// ClearAgenticSubscriptions clears all "agentic_subscriptions" edges to the AgenticSubscription entity.
-func (_u *ApplicationUpdate) ClearAgenticSubscriptions() *ApplicationUpdate {
-	_u.mutation.ClearAgenticSubscriptions()
+// ClearSubscribedAgentics clears all "subscribed_agentics" edges to the AgenticSubscription entity.
+func (_u *ApplicationUpdate) ClearSubscribedAgentics() *ApplicationUpdate {
+	_u.mutation.ClearSubscribedAgentics()
 	return _u
 }
 
-// RemoveAgenticSubscriptionIDs removes the "agentic_subscriptions" edge to AgenticSubscription entities by IDs.
-func (_u *ApplicationUpdate) RemoveAgenticSubscriptionIDs(ids ...int) *ApplicationUpdate {
-	_u.mutation.RemoveAgenticSubscriptionIDs(ids...)
+// RemoveSubscribedAgenticIDs removes the "subscribed_agentics" edge to AgenticSubscription entities by IDs.
+func (_u *ApplicationUpdate) RemoveSubscribedAgenticIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.RemoveSubscribedAgenticIDs(ids...)
 	return _u
 }
 
-// RemoveAgenticSubscriptions removes "agentic_subscriptions" edges to AgenticSubscription entities.
-func (_u *ApplicationUpdate) RemoveAgenticSubscriptions(v ...*AgenticSubscription) *ApplicationUpdate {
+// RemoveSubscribedAgentics removes "subscribed_agentics" edges to AgenticSubscription entities.
+func (_u *ApplicationUpdate) RemoveSubscribedAgentics(v ...*AgenticSubscription) *ApplicationUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveAgenticSubscriptionIDs(ids...)
+	return _u.RemoveSubscribedAgenticIDs(ids...)
 }
 
 // ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
@@ -1035,12 +1035,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.AgenticExposuresCleared() {
+	if _u.mutation.ExposedAgenticsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticExposuresTable,
-			Columns: []string{application.AgenticExposuresColumn},
+			Table:   application.ExposedAgenticsTable,
+			Columns: []string{application.ExposedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticexposure.FieldID, field.TypeInt),
@@ -1048,12 +1048,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedAgenticExposuresIDs(); len(nodes) > 0 && !_u.mutation.AgenticExposuresCleared() {
+	if nodes := _u.mutation.RemovedExposedAgenticsIDs(); len(nodes) > 0 && !_u.mutation.ExposedAgenticsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticExposuresTable,
-			Columns: []string{application.AgenticExposuresColumn},
+			Table:   application.ExposedAgenticsTable,
+			Columns: []string{application.ExposedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticexposure.FieldID, field.TypeInt),
@@ -1064,12 +1064,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.AgenticExposuresIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ExposedAgenticsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticExposuresTable,
-			Columns: []string{application.AgenticExposuresColumn},
+			Table:   application.ExposedAgenticsTable,
+			Columns: []string{application.ExposedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticexposure.FieldID, field.TypeInt),
@@ -1080,12 +1080,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.AgenticSubscriptionsCleared() {
+	if _u.mutation.SubscribedAgenticsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticSubscriptionsTable,
-			Columns: []string{application.AgenticSubscriptionsColumn},
+			Table:   application.SubscribedAgenticsTable,
+			Columns: []string{application.SubscribedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
@@ -1093,12 +1093,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedAgenticSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.AgenticSubscriptionsCleared() {
+	if nodes := _u.mutation.RemovedSubscribedAgenticsIDs(); len(nodes) > 0 && !_u.mutation.SubscribedAgenticsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticSubscriptionsTable,
-			Columns: []string{application.AgenticSubscriptionsColumn},
+			Table:   application.SubscribedAgenticsTable,
+			Columns: []string{application.SubscribedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
@@ -1109,12 +1109,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.AgenticSubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SubscribedAgenticsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticSubscriptionsTable,
-			Columns: []string{application.AgenticSubscriptionsColumn},
+			Table:   application.SubscribedAgenticsTable,
+			Columns: []string{application.SubscribedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
@@ -1542,34 +1542,34 @@ func (_u *ApplicationUpdateOne) AddSubscribedEvents(v ...*EventSubscription) *Ap
 	return _u.AddSubscribedEventIDs(ids...)
 }
 
-// AddAgenticExposureIDs adds the "agentic_exposures" edge to the AgenticExposure entity by IDs.
-func (_u *ApplicationUpdateOne) AddAgenticExposureIDs(ids ...int) *ApplicationUpdateOne {
-	_u.mutation.AddAgenticExposureIDs(ids...)
+// AddExposedAgenticIDs adds the "exposed_agentics" edge to the AgenticExposure entity by IDs.
+func (_u *ApplicationUpdateOne) AddExposedAgenticIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.AddExposedAgenticIDs(ids...)
 	return _u
 }
 
-// AddAgenticExposures adds the "agentic_exposures" edges to the AgenticExposure entity.
-func (_u *ApplicationUpdateOne) AddAgenticExposures(v ...*AgenticExposure) *ApplicationUpdateOne {
+// AddExposedAgentics adds the "exposed_agentics" edges to the AgenticExposure entity.
+func (_u *ApplicationUpdateOne) AddExposedAgentics(v ...*AgenticExposure) *ApplicationUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddAgenticExposureIDs(ids...)
+	return _u.AddExposedAgenticIDs(ids...)
 }
 
-// AddAgenticSubscriptionIDs adds the "agentic_subscriptions" edge to the AgenticSubscription entity by IDs.
-func (_u *ApplicationUpdateOne) AddAgenticSubscriptionIDs(ids ...int) *ApplicationUpdateOne {
-	_u.mutation.AddAgenticSubscriptionIDs(ids...)
+// AddSubscribedAgenticIDs adds the "subscribed_agentics" edge to the AgenticSubscription entity by IDs.
+func (_u *ApplicationUpdateOne) AddSubscribedAgenticIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.AddSubscribedAgenticIDs(ids...)
 	return _u
 }
 
-// AddAgenticSubscriptions adds the "agentic_subscriptions" edges to the AgenticSubscription entity.
-func (_u *ApplicationUpdateOne) AddAgenticSubscriptions(v ...*AgenticSubscription) *ApplicationUpdateOne {
+// AddSubscribedAgentics adds the "subscribed_agentics" edges to the AgenticSubscription entity.
+func (_u *ApplicationUpdateOne) AddSubscribedAgentics(v ...*AgenticSubscription) *ApplicationUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddAgenticSubscriptionIDs(ids...)
+	return _u.AddSubscribedAgenticIDs(ids...)
 }
 
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
@@ -1692,46 +1692,46 @@ func (_u *ApplicationUpdateOne) RemoveSubscribedEvents(v ...*EventSubscription) 
 	return _u.RemoveSubscribedEventIDs(ids...)
 }
 
-// ClearAgenticExposures clears all "agentic_exposures" edges to the AgenticExposure entity.
-func (_u *ApplicationUpdateOne) ClearAgenticExposures() *ApplicationUpdateOne {
-	_u.mutation.ClearAgenticExposures()
+// ClearExposedAgentics clears all "exposed_agentics" edges to the AgenticExposure entity.
+func (_u *ApplicationUpdateOne) ClearExposedAgentics() *ApplicationUpdateOne {
+	_u.mutation.ClearExposedAgentics()
 	return _u
 }
 
-// RemoveAgenticExposureIDs removes the "agentic_exposures" edge to AgenticExposure entities by IDs.
-func (_u *ApplicationUpdateOne) RemoveAgenticExposureIDs(ids ...int) *ApplicationUpdateOne {
-	_u.mutation.RemoveAgenticExposureIDs(ids...)
+// RemoveExposedAgenticIDs removes the "exposed_agentics" edge to AgenticExposure entities by IDs.
+func (_u *ApplicationUpdateOne) RemoveExposedAgenticIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.RemoveExposedAgenticIDs(ids...)
 	return _u
 }
 
-// RemoveAgenticExposures removes "agentic_exposures" edges to AgenticExposure entities.
-func (_u *ApplicationUpdateOne) RemoveAgenticExposures(v ...*AgenticExposure) *ApplicationUpdateOne {
+// RemoveExposedAgentics removes "exposed_agentics" edges to AgenticExposure entities.
+func (_u *ApplicationUpdateOne) RemoveExposedAgentics(v ...*AgenticExposure) *ApplicationUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveAgenticExposureIDs(ids...)
+	return _u.RemoveExposedAgenticIDs(ids...)
 }
 
-// ClearAgenticSubscriptions clears all "agentic_subscriptions" edges to the AgenticSubscription entity.
-func (_u *ApplicationUpdateOne) ClearAgenticSubscriptions() *ApplicationUpdateOne {
-	_u.mutation.ClearAgenticSubscriptions()
+// ClearSubscribedAgentics clears all "subscribed_agentics" edges to the AgenticSubscription entity.
+func (_u *ApplicationUpdateOne) ClearSubscribedAgentics() *ApplicationUpdateOne {
+	_u.mutation.ClearSubscribedAgentics()
 	return _u
 }
 
-// RemoveAgenticSubscriptionIDs removes the "agentic_subscriptions" edge to AgenticSubscription entities by IDs.
-func (_u *ApplicationUpdateOne) RemoveAgenticSubscriptionIDs(ids ...int) *ApplicationUpdateOne {
-	_u.mutation.RemoveAgenticSubscriptionIDs(ids...)
+// RemoveSubscribedAgenticIDs removes the "subscribed_agentics" edge to AgenticSubscription entities by IDs.
+func (_u *ApplicationUpdateOne) RemoveSubscribedAgenticIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.RemoveSubscribedAgenticIDs(ids...)
 	return _u
 }
 
-// RemoveAgenticSubscriptions removes "agentic_subscriptions" edges to AgenticSubscription entities.
-func (_u *ApplicationUpdateOne) RemoveAgenticSubscriptions(v ...*AgenticSubscription) *ApplicationUpdateOne {
+// RemoveSubscribedAgentics removes "subscribed_agentics" edges to AgenticSubscription entities.
+func (_u *ApplicationUpdateOne) RemoveSubscribedAgentics(v ...*AgenticSubscription) *ApplicationUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveAgenticSubscriptionIDs(ids...)
+	return _u.RemoveSubscribedAgenticIDs(ids...)
 }
 
 // ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
@@ -2197,12 +2197,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.AgenticExposuresCleared() {
+	if _u.mutation.ExposedAgenticsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticExposuresTable,
-			Columns: []string{application.AgenticExposuresColumn},
+			Table:   application.ExposedAgenticsTable,
+			Columns: []string{application.ExposedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticexposure.FieldID, field.TypeInt),
@@ -2210,12 +2210,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedAgenticExposuresIDs(); len(nodes) > 0 && !_u.mutation.AgenticExposuresCleared() {
+	if nodes := _u.mutation.RemovedExposedAgenticsIDs(); len(nodes) > 0 && !_u.mutation.ExposedAgenticsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticExposuresTable,
-			Columns: []string{application.AgenticExposuresColumn},
+			Table:   application.ExposedAgenticsTable,
+			Columns: []string{application.ExposedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticexposure.FieldID, field.TypeInt),
@@ -2226,12 +2226,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.AgenticExposuresIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ExposedAgenticsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticExposuresTable,
-			Columns: []string{application.AgenticExposuresColumn},
+			Table:   application.ExposedAgenticsTable,
+			Columns: []string{application.ExposedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticexposure.FieldID, field.TypeInt),
@@ -2242,12 +2242,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.AgenticSubscriptionsCleared() {
+	if _u.mutation.SubscribedAgenticsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticSubscriptionsTable,
-			Columns: []string{application.AgenticSubscriptionsColumn},
+			Table:   application.SubscribedAgenticsTable,
+			Columns: []string{application.SubscribedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
@@ -2255,12 +2255,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedAgenticSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.AgenticSubscriptionsCleared() {
+	if nodes := _u.mutation.RemovedSubscribedAgenticsIDs(); len(nodes) > 0 && !_u.mutation.SubscribedAgenticsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticSubscriptionsTable,
-			Columns: []string{application.AgenticSubscriptionsColumn},
+			Table:   application.SubscribedAgenticsTable,
+			Columns: []string{application.SubscribedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
@@ -2271,12 +2271,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.AgenticSubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SubscribedAgenticsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.AgenticSubscriptionsTable,
-			Columns: []string{application.AgenticSubscriptionsColumn},
+			Table:   application.SubscribedAgenticsTable,
+			Columns: []string{application.SubscribedAgenticsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),

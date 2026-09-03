@@ -68,7 +68,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "application" package.
 	OwnerInverseTable = "applications"
 	// OwnerColumn is the table column denoting the owner relation/edge.
-	OwnerColumn = "application_agentic_exposures"
+	OwnerColumn = "application_exposed_agentics"
 	// McpServerTable is the table that holds the mcp_server relation/edge.
 	McpServerTable = "agentic_exposures"
 	// McpServerInverseTable is the table name for the McpServer entity.
@@ -116,7 +116,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"agent_card_exposures",
-	"application_agentic_exposures",
+	"application_exposed_agentics",
 	"mcp_server_exposures",
 }
 
