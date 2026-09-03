@@ -105,4 +105,45 @@ var _ = Describe("File Type (SFTP) Exposure Mapper", func() {
 			Expect(fileExposure.PublicKeys).To(HaveLen(1))
 		})
 	})
+
+	Context("mapFileSubscription", func() {
+		It("must map a FileSubscription correctly", func() {
+			input := &roverv1.FileSubscription{
+				FileType: "demo-sftp-spec-v1",
+				PublicKeys: []roverv1.PublicKey{
+					{Label: "consumer-key", Key: "ssh-ed25519 AAAA2"},
+				},
+			}
+
+			output := mapFileSubscription(input)
+
+			Expect(output.FileType).To(Equal("demo-sftp-spec-v1"))
+			Expect(output.PublicKeys).To(HaveLen(1))
+			Expect(output.PublicKeys[0].Label).To(Equal("consumer-key"))
+			Expect(output.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA2"))
+		})
+	})
+
+	Context("mapSubscription dispatch", func() {
+		It("must map a FileSubscription via the discriminator", func() {
+			input := &roverv1.Subscription{
+				File: &roverv1.FileSubscription{
+					FileType: "demo-sftp-spec-v1",
+					PublicKeys: []roverv1.PublicKey{
+						{Label: "consumer-key", Key: "ssh-ed25519 AAAA2"},
+					},
+				},
+			}
+			output := &api.Subscription{}
+
+			err := mapSubscription(input, output)
+			Expect(err).To(BeNil())
+
+			fileSubscription, err := output.AsFileSubscription()
+			Expect(err).To(BeNil())
+			Expect(fileSubscription.Type).To(Equal("file"))
+			Expect(fileSubscription.FileType).To(Equal("demo-sftp-spec-v1"))
+			Expect(fileSubscription.PublicKeys).To(HaveLen(1))
+		})
+	})
 })

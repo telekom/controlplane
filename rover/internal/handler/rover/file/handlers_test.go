@@ -80,6 +80,8 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 			Expect(fakeClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, fileExposure)).To(Succeed())
 
 			Expect(fileExposure.Spec.FileType).To(Equal("demo-sftp-spec-v1"))
+			// Required by the FileExposure CRD (+kubebuilder:validation:Enum=sftp).
+			Expect(fileExposure.Spec.Variant).To(Equal("sftp"))
 			Expect(fileExposure.Spec.Visibility).To(Equal(filev1.Visibility("World")))
 			Expect(fileExposure.Spec.Approval.Strategy).To(Equal(filev1.ApprovalStrategy("Auto")))
 			Expect(fileExposure.Spec.SFTP.PublicKeys).To(HaveLen(1))
