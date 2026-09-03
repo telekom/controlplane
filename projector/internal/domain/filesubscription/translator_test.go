@@ -64,19 +64,22 @@ var _ = Describe("FileSubscription Translator", func() {
 			Expect(data.Meta.Environment).To(Equal("prod"))
 		})
 
-		It("should handle nil zone and nil sftp", func() {
+		It("should handle nil sftp", func() {
 			obj := &filev1.FileSubscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sub-b",
 					Namespace: "prod--platform--narvi",
 					Labels:    map[string]string{"cp.ei.telekom.de/application": "consumer-app"},
 				},
-				Spec: filev1.FileSubscriptionSpec{FileType: "orders"},
+				Spec: filev1.FileSubscriptionSpec{
+					FileType: "orders",
+					Zone:     &commontypes.ObjectRef{Name: "caas"},
+				},
 			}
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.Zone).To(BeEmpty())
+			Expect(data.Zone).To(Equal("caas"))
 			Expect(data.SFTPPublicKeys).To(BeEmpty())
 			Expect(data.StatusPhase).To(Equal("UNKNOWN"))
 		})
