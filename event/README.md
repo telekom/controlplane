@@ -85,4 +85,5 @@ spec:
 ## References
 
 - PubSub Domain: [PubSub Documentation](../pubsub/README.md)
+- Spectre Domain (peer): [Spectre Documentation](../spectre/README.md)
 - Rover Domain: [Rover Documentation](../rover/README.md)

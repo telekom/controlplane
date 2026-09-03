@@ -134,7 +134,8 @@ graph LR
 The Event domain has the broadest cross-domain interaction surface in the platform:
 
 - **Rover domain** — Rover files create EventExposure and EventSubscription resources.
-- **PubSub domain** — The Event domain creates EventStore, Publisher, and Subscriber resources.
+- **PubSub domain** — The Event domain creates EventStore, Publisher, and Subscriber resources. The Spectre domain also creates Publishers and Subscribers as a peer business-logic domain.
+- **Spectre domain** — A peer domain that independently creates PubSub resources (Publishers and Subscribers) for application listeners. Both domains share the same EventStore, which is owned exclusively by EventConfig.
 - **Gateway domain** — Creates routes for publishing, SSE delivery, and cross-zone proxy communication.
 - **Identity domain** — Creates clients for OAuth2 token exchange between zones.
 - **Application domain** — Reads Application resources for publisher and subscriber metadata.
@@ -146,3 +147,4 @@ The Event domain has the broadest cross-domain interaction surface in the platfo
 - [User Journey: Exposing Events](../user-journey/exposing-events.mdx)
 - [User Journey: Subscribing to Events](../user-journey/subscribing-to-events.mdx)
 - [Architecture: PubSub Domain](./pubsub.mdx)
+- [Architecture: Spectre Domain](./spectre.mdx)

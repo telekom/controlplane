@@ -13,7 +13,8 @@ import (
 
 // SubscriberSpec defines the desired state of Subscriber.
 // Subscriber represents an event subscription registration in the configuration backend.
-// It is created by the EventSubscription handler in the event domain.
+// It is created by the EventSubscription handler in the event domain or by the
+// Listener handler in the spectre domain.
 type SubscriberSpec struct {
 	// Publisher references the Publisher CR that this subscriber subscribes to.
 	// The Subscriber controller resolves the Publisher at runtime to obtain
@@ -62,7 +63,8 @@ type SubscriberStatus struct {
 
 // Subscriber is the Schema for the subscribers API.
 // It represents an event subscription registration in the configuration backend.
-// Subscriber resources are created and managed by the EventSubscription handler in the event domain.
+// Subscriber resources are created and managed by the EventSubscription handler in the event domain
+// or by the Listener handler in the spectre domain.
 type Subscriber struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
