@@ -20,6 +20,7 @@ import (
 const (
 	TargetKindAPISubscription   = "ApiSubscription"
 	TargetKindEventSubscription = "EventSubscription"
+	TargetKindFileSubscription  = "FileSubscription"
 )
 
 // ApprovalKey is the composite identity key for Approval entities.
@@ -46,9 +47,10 @@ type ApprovalData struct {
 	Decider              model.DeciderInfo
 	Decisions            []model.Decision
 	AvailableTransitions []model.AvailableTransition
-	// TargetKind indicates whether the approval targets an ApiSubscription
-	// or EventSubscription. Used by the repository to resolve the correct FK.
-	TargetKind string // "ApiSubscription" or "EventSubscription"
+	// TargetKind indicates whether the approval targets an ApiSubscription,
+	// EventSubscription, or FileSubscription. Used by the repository to
+	// resolve the correct FK.
+	TargetKind string // "ApiSubscription", "EventSubscription", or "FileSubscription"
 	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string

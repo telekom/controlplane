@@ -68,7 +68,7 @@ var _ = Describe("Approval Translator", func() {
 			}
 			skip, reason := t.ShouldSkip(obj)
 			Expect(skip).To(BeTrue())
-			Expect(reason).To(ContainSubstring("ApiSubscription or EventSubscription"))
+			Expect(reason).To(ContainSubstring("ApiSubscription, EventSubscription, or FileSubscription"))
 		})
 
 		It("should not skip a valid Approval CR targeting ApiSubscription", func() {
@@ -105,6 +105,23 @@ var _ = Describe("Approval Translator", func() {
 			Expect(skip).To(BeFalse())
 			Expect(reason).To(BeEmpty())
 		})
+
+		It("should not skip a valid Approval CR targeting FileSubscription", func() {
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "FileSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-file-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+
 		It("should skip EventSubscription target when pubsub feature is disabled", func() {
 			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
 
@@ -253,6 +270,38 @@ var _ = Describe("Approval Translator", func() {
 			Expect(data.TargetKind).To(Equal("EventSubscription"))
 			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
 			Expect(data.SubscriptionName).To(Equal("my-event-sub"))
+		})
+
+		It("should set TargetKind to FileSubscription when target kind is FileSubscription", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "filesubscription--my-file-sub",
+					Namespace: "prod--platform--narvi",
+					Labels: map[string]string{
+						"cp.ei.telekom.de/environment": "prod",
+					},
+				},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{Kind: "FileSubscription"},
+						ObjectRef: ctypes.ObjectRef{
+							Namespace: "prod--platform--narvi",
+							Name:      "my-file-sub",
+						},
+					},
+					Requester: approvalv1.Requester{TeamName: "narvi"},
+					Decider:   approvalv1.Decider{TeamName: "provider"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.TargetKind).To(Equal("FileSubscription"))
+			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+			Expect(data.SubscriptionName).To(Equal("my-file-sub"))
 		})
 
 		It("should fall back to own namespace when target namespace is empty", func() {

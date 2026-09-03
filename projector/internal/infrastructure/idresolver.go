@@ -428,6 +428,14 @@ func (r *IDResolver) EvictEventSubscription(namespace, name string) {
 	r.clearNegCache(et + ":" + lk)
 }
 
+// EvictFileSubscription removes the cached DB primary key for a
+// FileSubscription identified by namespace + name.
+func (r *IDResolver) EvictFileSubscription(namespace, name string) {
+	et, lk := cachekeys.FileSubscriptionMeta(namespace, name)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
+}
+
 // FindEventExposureID looks up the DB primary key for an EventExposure by event
 // type, application name, and team name. Event types are unique per application,
 // and applications per team, so all three are required.
