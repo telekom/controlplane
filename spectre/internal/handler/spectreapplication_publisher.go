@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
@@ -18,7 +19,7 @@ import (
 )
 
 // ensurePublisher creates or updates the pubsub Publisher for this SpectreApplication.
-func (h *SpectreApplicationHandler) ensurePublisher(ctx context.Context, _ *spectrev1.SpectreApplication, eventStore *pubsubv1.EventStore, appId string) (*pubsubv1.Publisher, error) {
+func (h *SpectreApplicationHandler) ensurePublisher(ctx context.Context, obj *spectrev1.SpectreApplication, eventStore *pubsubv1.EventStore, appId string) (*pubsubv1.Publisher, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	eventType := util.BuildListenerEventType(appId)
@@ -30,6 +31,10 @@ func (h *SpectreApplicationHandler) ensurePublisher(ctx context.Context, _ *spec
 	}
 
 	mutator := func() error {
+		if publisher.Labels == nil {
+			publisher.Labels = make(map[string]string)
+		}
+		publisher.Labels[cconfig.OwnerUidLabelKey] = string(obj.UID)
 		publisher.Spec = pubsubv1.PublisherSpec{
 			EventStore:  *ctypes.ObjectRefFromObject(eventStore),
 			EventType:   eventType,
@@ -58,6 +63,10 @@ func (h *SpectreApplicationHandler) ensureSubscriber(ctx context.Context, obj *s
 	}
 
 	mutator := func() error {
+		if subscriber.Labels == nil {
+			subscriber.Labels = make(map[string]string)
+		}
+		subscriber.Labels[cconfig.OwnerUidLabelKey] = string(obj.UID)
 		subscriber.Spec = pubsubv1.SubscriberSpec{
 			Publisher:    *ctypes.ObjectRefFromObject(publisher),
 			SubscriberId: appId,

@@ -73,12 +73,25 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 
 	// Step 5: If SSE delivery, ensure SSE Route.
 	if obj.Spec.DeliveryType == "server_sent_event" {
-		route, err := h.ensureSSERoute(ctx, zone, eventConfig, appId)
+		route, err := h.ensureSSERoute(ctx, obj, zone, eventConfig, appId)
 		if err != nil {
 			return errors.Wrap(err, "failed to ensure SSE Route")
 		}
 		obj.Status.ListenerRoute = ctypes.ObjectRefFromObject(route)
 		logger.Info("Ensured SSE Route", "route", route.Name)
+	}
+
+	// Step 5.5: Cleanup obsolete children that were not touched in this reconcile.
+	// Order: Routes first (stop stale SSE access), then Subscribers, then Publishers.
+	// Route cleanup runs for all delivery types — this handles SSE→callback transition.
+	if _, err := c.Cleanup(ctx, &gatewayv1.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrap(err, "failed to cleanup obsolete Routes")
+	}
+	if _, err := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrap(err, "failed to cleanup obsolete Subscribers")
+	}
+	if _, err := c.Cleanup(ctx, &pubsubv1.PublisherList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrap(err, "failed to cleanup obsolete Publishers")
 	}
 
 	// Step 6: Set Ready condition.
@@ -145,6 +158,18 @@ func (h *SpectreApplicationHandler) Delete(ctx context.Context, obj *spectrev1.S
 	}
 	obj.Status.ListenerRoute = nil
 	obj.Status.ProxyRoute = nil
+
+	// Label-based fallback: catch any children the status refs missed
+	// (e.g. child created but status update failed before recording the ref).
+	if _, err := c.Cleanup(ctx, &gatewayv1.RouteList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrap(err, "failed to cleanup labeled Routes")
+	}
+	if _, err := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrap(err, "failed to cleanup labeled Subscribers")
+	}
+	if _, err := c.Cleanup(ctx, &pubsubv1.PublisherList{}, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrap(err, "failed to cleanup labeled Publishers")
+	}
 
 	return nil
 }

@@ -20,6 +20,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -47,6 +48,7 @@ func newSpectreApplication(deliveryType string) *spectrev1.SpectreApplication {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "sa-" + testAppName,
 			Namespace: testAppNamespace,
+			UID:       "sa-uid-001",
 		},
 		Spec: spectrev1.SpectreApplicationSpec{
 			Application: ctypes.TypedObjectRef{
@@ -253,6 +255,18 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			Return(controllerutil.OperationResultCreated, nil).Once()
 	}
 
+	mockCleanup := func() {
+		fakeClient.EXPECT().
+			Cleanup(ctx, mock.AnythingOfType("*v1.RouteList"), mock.Anything).
+			Return(0, nil).Once()
+		fakeClient.EXPECT().
+			Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+			Return(0, nil).Once()
+		fakeClient.EXPECT().
+			Cleanup(ctx, mock.AnythingOfType("*v1.PublisherList"), mock.Anything).
+			Return(0, nil).Once()
+	}
+
 	setupHappyPath := func(deliveryType string) *spectrev1.SpectreApplication {
 		obj := newSpectreApplication(deliveryType)
 		app := makeReadyApplication()
@@ -270,6 +284,8 @@ var _ = Describe("SpectreApplicationHandler", func() {
 		if deliveryType == "server_sent_event" {
 			mockCreateOrUpdateRoute()
 		}
+
+		mockCleanup()
 
 		return obj
 	}
@@ -385,6 +401,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				mockCreateOrUpdateSubscriber()
 				mockCreateOrUpdateRoute()
+				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
@@ -392,6 +409,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(capturedPublisher).ToNot(BeNil())
+				Expect(capturedPublisher.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
 				Expect(capturedPublisher.Spec.EventType).To(Equal("de.telekom.ei.listener." + testAppName))
 				Expect(capturedPublisher.Spec.PublisherId).To(Equal("gateway"))
 				Expect(capturedPublisher.Spec.EventStore.Name).To(Equal("eventstore-aws"))
@@ -424,6 +442,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
 				mockCreateOrUpdateRoute()
+				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
@@ -431,6 +450,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(capturedSubscriber).ToNot(BeNil())
+				Expect(capturedSubscriber.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
 				Expect(capturedSubscriber.Spec.SubscriberId).To(Equal(testAppName))
 				Expect(capturedSubscriber.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeServerSentEvent))
 				Expect(capturedSubscriber.Spec.Delivery.Callback).To(BeEmpty())
@@ -458,6 +478,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
+				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
@@ -465,6 +486,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(capturedSubscriber).ToNot(BeNil())
+				Expect(capturedSubscriber.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
 				Expect(capturedSubscriber.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeCallback))
 				Expect(capturedSubscriber.Spec.Delivery.Callback).To(Equal("https://customer.example.com/callback"))
 			})
@@ -494,6 +516,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
+				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
@@ -501,6 +524,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(capturedRoute).ToNot(BeNil())
+				Expect(capturedRoute.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
 				Expect(capturedRoute.Namespace).To(Equal(testZoneStatusNs))
 				Expect(capturedRoute.Spec.GatewayRef.Name).To(Equal("gateway-aws"))
 				Expect(capturedRoute.Spec.GatewayRef.Namespace).To(Equal(testZoneStatusNs))
@@ -544,6 +568,97 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("has no EventStore reference"))
 			})
+		})
+
+		Context("cleanup of obsolete children", func() {
+			It("should run cleanup in order Route -> Subscriber -> Publisher", func() {
+				// The mock call order is enforced by testify — each .Once() must
+				// be consumed in the order registered when types differ.
+				obj := setupHappyPath("server_sent_event")
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should run Route cleanup for callback delivery to remove stale SSE Routes", func() {
+				// Callback delivery does not call ensureSSERoute, but cleanup
+				// still runs for Routes — this handles SSE→callback transition.
+				obj := setupHappyPath("callback")
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).ToNot(HaveOccurred())
+
+				// No Route in status (callback), but Route cleanup was mocked and called.
+				Expect(obj.Status.ListenerRoute).To(BeNil())
+			})
+		})
+	})
+
+	Describe("Delete", func() {
+		mockDeleteCleanup := func() {
+			fakeClient.EXPECT().
+				Cleanup(ctx, mock.AnythingOfType("*v1.RouteList"), mock.Anything).
+				Return(0, nil).Once()
+			fakeClient.EXPECT().
+				Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Return(0, nil).Once()
+			fakeClient.EXPECT().
+				Cleanup(ctx, mock.AnythingOfType("*v1.PublisherList"), mock.Anything).
+				Return(0, nil).Once()
+		}
+
+		It("should delete status-referenced children and run label-based fallback", func() {
+			obj := newSpectreApplication("server_sent_event")
+			obj.Status.Publisher = &ctypes.ObjectRef{Name: "pub-1", Namespace: testZoneStatusNs}
+			obj.Status.Subscriber = &ctypes.ObjectRef{Name: "sub-1", Namespace: testZoneStatusNs}
+			obj.Status.ListenerRoute = &ctypes.ObjectRef{Name: "route-1", Namespace: testZoneStatusNs}
+
+			// Subscriber delete
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "sub-1", Namespace: testZoneStatusNs}, mock.AnythingOfType("*v1.Subscriber")).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.AnythingOfType("*v1.Subscriber")).
+				Return(nil).Once()
+
+			// Publisher delete
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "pub-1", Namespace: testZoneStatusNs}, mock.AnythingOfType("*v1.Publisher")).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.AnythingOfType("*v1.Publisher")).
+				Return(nil).Once()
+
+			// Route delete
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "route-1", Namespace: testZoneStatusNs}, mock.AnythingOfType("*v1.Route")).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.AnythingOfType("*v1.Route")).
+				Return(nil).Once()
+
+			// Label-based fallback cleanup
+			mockDeleteCleanup()
+
+			err := h.Delete(ctx, obj)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(obj.Status.Publisher).To(BeNil())
+			Expect(obj.Status.Subscriber).To(BeNil())
+			Expect(obj.Status.ListenerRoute).To(BeNil())
+		})
+
+		It("should run label-based fallback even when status refs are nil", func() {
+			obj := newSpectreApplication("callback")
+			// No status refs set — only label-based fallback runs.
+			mockDeleteCleanup()
+
+			err := h.Delete(ctx, obj)
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 })

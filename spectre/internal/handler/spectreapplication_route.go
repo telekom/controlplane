@@ -19,12 +19,14 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
 )
 
 // ensureSSERoute creates or updates the gateway Route for SSE delivery of a Spectre listener.
 func (h *SpectreApplicationHandler) ensureSSERoute(
 	ctx context.Context,
+	obj *spectrev1.SpectreApplication,
 	zone *adminv1.Zone,
 	eventConfig *eventv1.EventConfig,
 	appId string,
@@ -65,6 +67,7 @@ func (h *SpectreApplicationHandler) ensureSSERoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
+			config.OwnerUidLabelKey:      string(obj.UID),
 			config.DomainLabelKey:        "spectre",
 			config.BuildLabelKey("zone"): zone.Name,
 			config.BuildLabelKey("type"): "sse",
