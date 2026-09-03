@@ -322,7 +322,7 @@ func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.Zon
 			return ctrlerrors.BlockedErrorf("cannot parse upstream url of internal route %s: %s", routeConfig.Url, locErr)
 		}
 
-		obj.Labels = util.DomainLabel()
+		route.Labels = util.DomainLabel()
 
 		upstream := gatewayapi.Upstream{
 			Scheme:   upstreamUrl.Scheme,
