@@ -211,7 +211,7 @@ func (_m *Application) SubscribedEvents(
 	return _m.QuerySubscribedEvents().Paginate(ctx, after, first, before, last, opts...)
 }
 
-func (_m *Application) AgenticExposures(
+func (_m *Application) ExposedAgentics(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *AgenticExposureOrder, where *AgenticExposureWhereInput,
 ) (*AgenticExposureConnection, error) {
 	opts := []AgenticExposurePaginateOption{
@@ -220,7 +220,7 @@ func (_m *Application) AgenticExposures(
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
-	if nodes, err := _m.NamedAgenticExposures(alias); err == nil || hasTotalCount {
+	if nodes, err := _m.NamedExposedAgentics(alias); err == nil || hasTotalCount {
 		pager, err := newAgenticExposurePager(opts, last != nil)
 		if err != nil {
 			return nil, err
@@ -229,10 +229,10 @@ func (_m *Application) AgenticExposures(
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}
-	return _m.QueryAgenticExposures().Paginate(ctx, after, first, before, last, opts...)
+	return _m.QueryExposedAgentics().Paginate(ctx, after, first, before, last, opts...)
 }
 
-func (_m *Application) AgenticSubscriptions(
+func (_m *Application) SubscribedAgentics(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *AgenticSubscriptionOrder, where *AgenticSubscriptionWhereInput,
 ) (*AgenticSubscriptionConnection, error) {
 	opts := []AgenticSubscriptionPaginateOption{
@@ -241,7 +241,7 @@ func (_m *Application) AgenticSubscriptions(
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
-	if nodes, err := _m.NamedAgenticSubscriptions(alias); err == nil || hasTotalCount {
+	if nodes, err := _m.NamedSubscribedAgentics(alias); err == nil || hasTotalCount {
 		pager, err := newAgenticSubscriptionPager(opts, last != nil)
 		if err != nil {
 			return nil, err
@@ -250,7 +250,7 @@ func (_m *Application) AgenticSubscriptions(
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}
-	return _m.QueryAgenticSubscriptions().Paginate(ctx, after, first, before, last, opts...)
+	return _m.QuerySubscribedAgentics().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Application) PermissionSet(ctx context.Context) (*PermissionSet, error) {

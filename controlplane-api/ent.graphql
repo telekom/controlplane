@@ -1104,6 +1104,7 @@ type ApiSubscription implements Node {
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
   security: ApiSubscriptionSecurity
+  traffic: ApiSubscriptionTraffic
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
@@ -1679,7 +1680,7 @@ type Application implements Node {
     """
     where: EventSubscriptionWhereInput
   ): EventSubscriptionConnection!
-  agenticExposures(
+  exposedAgentics(
     """
     Returns the elements in the list that come after the specified cursor.
     """
@@ -1710,7 +1711,7 @@ type Application implements Node {
     """
     where: AgenticExposureWhereInput
   ): AgenticExposureConnection!
-  agenticSubscriptions(
+  subscribedAgentics(
     """
     Returns the elements in the list that come after the specified cursor.
     """
@@ -2031,15 +2032,15 @@ input ApplicationWhereInput {
   hasSubscribedEvents: Boolean
   hasSubscribedEventsWith: [EventSubscriptionWhereInput!]
   """
-  agentic_exposures edge predicates
+  exposed_agentics edge predicates
   """
-  hasAgenticExposures: Boolean
-  hasAgenticExposuresWith: [AgenticExposureWhereInput!]
+  hasExposedAgentics: Boolean
+  hasExposedAgenticsWith: [AgenticExposureWhereInput!]
   """
-  agentic_subscriptions edge predicates
+  subscribed_agentics edge predicates
   """
-  hasAgenticSubscriptions: Boolean
-  hasAgenticSubscriptionsWith: [AgenticSubscriptionWhereInput!]
+  hasSubscribedAgentics: Boolean
+  hasSubscribedAgenticsWith: [AgenticSubscriptionWhereInput!]
   """
   permission_set edge predicates
   """

@@ -274,6 +274,11 @@ type AgenticSubscriberTraffic {
   failover: AgenticSubscriberFailover
 }
 
+type ApiSubscriptionTraffic {
+  providerLimits: Limits
+  subscriberLimits: Limits
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
 type ApiSubscriptionInfo {
   id: ID!

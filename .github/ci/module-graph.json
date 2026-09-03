@@ -1,0 +1,232 @@
+{
+  "admin": {
+    "path": "admin",
+    "depends_on": [
+      "common",
+      "common-server",
+      "gateway",
+      "identity",
+      "secret-manager"
+    ]
+  },
+  "agentic": {
+    "path": "agentic",
+    "depends_on": [
+      "admin",
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "gateway",
+      "identity"
+    ]
+  },
+  "api": {
+    "path": "api",
+    "depends_on": [
+      "admin",
+      "application",
+      "approval",
+      "common",
+      "gateway",
+      "identity",
+      "organization"
+    ]
+  },
+  "application": {
+    "path": "application",
+    "depends_on": [
+      "admin",
+      "common",
+      "common-server",
+      "gateway",
+      "identity",
+      "notification",
+      "secret-manager"
+    ]
+  },
+  "approval": {
+    "path": "approval",
+    "depends_on": [
+      "common",
+      "notification"
+    ]
+  },
+  "common": {
+    "path": "common",
+    "depends_on": []
+  },
+  "common-server": {
+    "path": "common-server",
+    "depends_on": [
+      "secret-manager"
+    ]
+  },
+  "controlplane-api": {
+    "path": "controlplane-api",
+    "depends_on": [
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "organization",
+      "secret-manager"
+    ]
+  },
+  "discovery-server": {
+    "path": "discovery-server",
+    "depends_on": [
+      "admin",
+      "api",
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "event",
+      "secret-manager"
+    ]
+  },
+  "event": {
+    "path": "event",
+    "depends_on": [
+      "admin",
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "gateway",
+      "identity",
+      "pubsub",
+      "secret-manager"
+    ]
+  },
+  "file-manager": {
+    "path": "file-manager",
+    "depends_on": [
+      "common-server",
+      "secret-manager"
+    ]
+  },
+  "gateway": {
+    "path": "gateway",
+    "depends_on": [
+      "common",
+      "common-server",
+      "secret-manager"
+    ]
+  },
+  "identity": {
+    "path": "identity",
+    "depends_on": [
+      "common",
+      "common-server",
+      "secret-manager"
+    ]
+  },
+  "notification": {
+    "path": "notification",
+    "depends_on": [
+      "common"
+    ]
+  },
+  "organization": {
+    "path": "organization",
+    "depends_on": [
+      "admin",
+      "common",
+      "common-server",
+      "gateway",
+      "identity",
+      "notification",
+      "secret-manager"
+    ]
+  },
+  "organization-server": {
+    "path": "organization-server",
+    "depends_on": [
+      "common-server"
+    ]
+  },
+  "permission": {
+    "path": "permission",
+    "depends_on": [
+      "admin",
+      "common"
+    ]
+  },
+  "projector": {
+    "path": "projector",
+    "depends_on": [
+      "admin",
+      "agentic",
+      "api",
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "controlplane-api",
+      "event",
+      "organization",
+      "permission",
+      "secret-manager"
+    ]
+  },
+  "pubsub": {
+    "path": "pubsub",
+    "depends_on": [
+      "common",
+      "common-server",
+      "file-manager",
+      "secret-manager"
+    ]
+  },
+  "rover": {
+    "path": "rover",
+    "depends_on": [
+      "admin",
+      "agentic",
+      "api",
+      "application",
+      "common",
+      "common-server",
+      "event",
+      "organization",
+      "permission",
+      "secret-manager"
+    ]
+  },
+  "rover-ctl": {
+    "path": "rover-ctl",
+    "depends_on": []
+  },
+  "rover-server": {
+    "path": "rover-server",
+    "depends_on": [
+      "admin",
+      "agentic",
+      "api",
+      "application",
+      "common",
+      "common-server",
+      "event",
+      "file-manager",
+      "rover",
+      "secret-manager"
+    ]
+  },
+  "secret-manager": {
+    "path": "secret-manager",
+    "depends_on": [
+      "common-server"
+    ]
+  },
+  "tools-snapshotter": {
+    "path": "tools/snapshotter",
+    "depends_on": [
+      "common",
+      "common-server",
+      "gateway",
+      "secret-manager"
+    ]
+  }
+}

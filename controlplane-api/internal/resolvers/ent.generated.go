@@ -127,7 +127,7 @@ type ZoneResolver interface {
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Application_agenticExposures_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Application_exposedAgentics_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after",
@@ -173,60 +173,6 @@ func (ec *executionContext) field_Application_agenticExposures_args(ctx context.
 	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where",
 		func(ctx context.Context, v any) (*ent.AgenticExposureWhereInput, error) {
 			return ec.unmarshalOAgenticExposureWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐAgenticExposureWhereInput(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["where"] = arg5
-	return args, nil
-}
-
-func (ec *executionContext) field_Application_agenticSubscriptions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after",
-		func(ctx context.Context, v any) (*entgql.Cursor[int], error) {
-			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["after"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first",
-		func(ctx context.Context, v any) (*int, error) {
-			return ec.unmarshalOInt2ᚖint(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before",
-		func(ctx context.Context, v any) (*entgql.Cursor[int], error) {
-			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["before"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last",
-		func(ctx context.Context, v any) (*int, error) {
-			return ec.unmarshalOInt2ᚖint(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["last"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy",
-		func(ctx context.Context, v any) (*ent.AgenticSubscriptionOrder, error) {
-			return ec.unmarshalOAgenticSubscriptionOrder2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐAgenticSubscriptionOrder(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["orderBy"] = arg4
-	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where",
-		func(ctx context.Context, v any) (*ent.AgenticSubscriptionWhereInput, error) {
-			return ec.unmarshalOAgenticSubscriptionWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐAgenticSubscriptionWhereInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -335,6 +281,60 @@ func (ec *executionContext) field_Application_exposedEvents_args(ctx context.Con
 	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where",
 		func(ctx context.Context, v any) (*ent.EventExposureWhereInput, error) {
 			return ec.unmarshalOEventExposureWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEventExposureWhereInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_Application_subscribedAgentics_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after",
+		func(ctx context.Context, v any) (*entgql.Cursor[int], error) {
+			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first",
+		func(ctx context.Context, v any) (*int, error) {
+			return ec.unmarshalOInt2ᚖint(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before",
+		func(ctx context.Context, v any) (*entgql.Cursor[int], error) {
+			return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last",
+		func(ctx context.Context, v any) (*int, error) {
+			return ec.unmarshalOInt2ᚖint(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy",
+		func(ctx context.Context, v any) (*ent.AgenticSubscriptionOrder, error) {
+			return ec.unmarshalOAgenticSubscriptionOrder2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐAgenticSubscriptionOrder(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where",
+		func(ctx context.Context, v any) (*ent.AgenticSubscriptionWhereInput, error) {
+			return ec.unmarshalOAgenticSubscriptionWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐAgenticSubscriptionWhereInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -4775,6 +4775,38 @@ func (ec *executionContext) fieldContext_ApiSubscription_security(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiSubscription_traffic(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscription_traffic(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Traffic, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiSubscriptionTraffic) graphql.Marshaler {
+			return ec.marshalOApiSubscriptionTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionTraffic(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscription_traffic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApiSubscriptionTraffic(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApiSubscription_owner(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5717,17 +5749,17 @@ func (ec *executionContext) fieldContext_Application_subscribedEvents(ctx contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Application_agenticExposures(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+func (ec *executionContext) _Application_exposedAgentics(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Application_agenticExposures(ctx, field)
+			return ec.fieldContext_Application_exposedAgentics(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return obj.AgenticExposures(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.AgenticExposureOrder), fc.Args["where"].(*ent.AgenticExposureWhereInput))
+			return obj.ExposedAgentics(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.AgenticExposureOrder), fc.Args["where"].(*ent.AgenticExposureWhereInput))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *ent.AgenticExposureConnection) graphql.Marshaler {
@@ -5737,7 +5769,7 @@ func (ec *executionContext) _Application_agenticExposures(ctx context.Context, f
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_Application_agenticExposures(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Application_exposedAgentics(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Application",
 		Field:      field,
@@ -5754,24 +5786,24 @@ func (ec *executionContext) fieldContext_Application_agenticExposures(ctx contex
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Application_agenticExposures_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Application_exposedAgentics_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Application_agenticSubscriptions(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+func (ec *executionContext) _Application_subscribedAgentics(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Application_agenticSubscriptions(ctx, field)
+			return ec.fieldContext_Application_subscribedAgentics(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return obj.AgenticSubscriptions(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.AgenticSubscriptionOrder), fc.Args["where"].(*ent.AgenticSubscriptionWhereInput))
+			return obj.SubscribedAgentics(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.AgenticSubscriptionOrder), fc.Args["where"].(*ent.AgenticSubscriptionWhereInput))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *ent.AgenticSubscriptionConnection) graphql.Marshaler {
@@ -5781,7 +5813,7 @@ func (ec *executionContext) _Application_agenticSubscriptions(ctx context.Contex
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_Application_agenticSubscriptions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Application_subscribedAgentics(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Application",
 		Field:      field,
@@ -5798,7 +5830,7 @@ func (ec *executionContext) fieldContext_Application_agenticSubscriptions(ctx co
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Application_agenticSubscriptions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Application_subscribedAgentics_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -17667,7 +17699,7 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDIsNil", "clientIDNotNil", "clientIDEqualFold", "clientIDContainsFold", "rotatedExpiresAt", "rotatedExpiresAtNEQ", "rotatedExpiresAtIn", "rotatedExpiresAtNotIn", "rotatedExpiresAtGT", "rotatedExpiresAtGTE", "rotatedExpiresAtLT", "rotatedExpiresAtLTE", "rotatedExpiresAtIsNil", "rotatedExpiresAtNotNil", "currentExpiresAt", "currentExpiresAtNEQ", "currentExpiresAtIn", "currentExpiresAtNotIn", "currentExpiresAtGT", "currentExpiresAtGTE", "currentExpiresAtLT", "currentExpiresAtLTE", "currentExpiresAtIsNil", "currentExpiresAtNotNil", "secretRotationPhase", "secretRotationPhaseNEQ", "secretRotationPhaseIn", "secretRotationPhaseNotIn", "secretRotationMessage", "secretRotationMessageNEQ", "secretRotationMessageIn", "secretRotationMessageNotIn", "secretRotationMessageGT", "secretRotationMessageGTE", "secretRotationMessageLT", "secretRotationMessageLTE", "secretRotationMessageContains", "secretRotationMessageHasPrefix", "secretRotationMessageHasSuffix", "secretRotationMessageIsNil", "secretRotationMessageNotNil", "secretRotationMessageEqualFold", "secretRotationMessageContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith", "hasExposedEvents", "hasExposedEventsWith", "hasSubscribedEvents", "hasSubscribedEventsWith", "hasAgenticExposures", "hasAgenticExposuresWith", "hasAgenticSubscriptions", "hasAgenticSubscriptionsWith", "hasPermissionSet", "hasPermissionSetWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDIsNil", "clientIDNotNil", "clientIDEqualFold", "clientIDContainsFold", "rotatedExpiresAt", "rotatedExpiresAtNEQ", "rotatedExpiresAtIn", "rotatedExpiresAtNotIn", "rotatedExpiresAtGT", "rotatedExpiresAtGTE", "rotatedExpiresAtLT", "rotatedExpiresAtLTE", "rotatedExpiresAtIsNil", "rotatedExpiresAtNotNil", "currentExpiresAt", "currentExpiresAtNEQ", "currentExpiresAtIn", "currentExpiresAtNotIn", "currentExpiresAtGT", "currentExpiresAtGTE", "currentExpiresAtLT", "currentExpiresAtLTE", "currentExpiresAtIsNil", "currentExpiresAtNotNil", "secretRotationPhase", "secretRotationPhaseNEQ", "secretRotationPhaseIn", "secretRotationPhaseNotIn", "secretRotationMessage", "secretRotationMessageNEQ", "secretRotationMessageIn", "secretRotationMessageNotIn", "secretRotationMessageGT", "secretRotationMessageGTE", "secretRotationMessageLT", "secretRotationMessageLTE", "secretRotationMessageContains", "secretRotationMessageHasPrefix", "secretRotationMessageHasSuffix", "secretRotationMessageIsNil", "secretRotationMessageNotNil", "secretRotationMessageEqualFold", "secretRotationMessageContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith", "hasExposedEvents", "hasExposedEventsWith", "hasSubscribedEvents", "hasSubscribedEventsWith", "hasExposedAgentics", "hasExposedAgenticsWith", "hasSubscribedAgentics", "hasSubscribedAgenticsWith", "hasPermissionSet", "hasPermissionSetWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -18759,34 +18791,34 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.HasSubscribedEventsWith = data
-		case "hasAgenticExposures":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAgenticExposures"))
+		case "hasExposedAgentics":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasExposedAgentics"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.HasAgenticExposures = data
-		case "hasAgenticExposuresWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAgenticExposuresWith"))
+			it.HasExposedAgentics = data
+		case "hasExposedAgenticsWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasExposedAgenticsWith"))
 			data, err := ec.unmarshalOAgenticExposureWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐAgenticExposureWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.HasAgenticExposuresWith = data
-		case "hasAgenticSubscriptions":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAgenticSubscriptions"))
+			it.HasExposedAgenticsWith = data
+		case "hasSubscribedAgentics":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSubscribedAgentics"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.HasAgenticSubscriptions = data
-		case "hasAgenticSubscriptionsWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAgenticSubscriptionsWith"))
+			it.HasSubscribedAgentics = data
+		case "hasSubscribedAgenticsWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSubscribedAgenticsWith"))
 			data, err := ec.unmarshalOAgenticSubscriptionWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐAgenticSubscriptionWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.HasAgenticSubscriptionsWith = data
+			it.HasSubscribedAgenticsWith = data
 		case "hasPermissionSet":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPermissionSet"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -30106,6 +30138,11 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "traffic":
+			out.Values[i] = ec._ApiSubscription_traffic(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "owner":
 			field := field
 
@@ -30766,7 +30803,7 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "agenticExposures":
+		case "exposedAgentics":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -30775,7 +30812,7 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Application_agenticExposures(ctx, field, obj)
+				res = ec._Application_exposedAgentics(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -30804,7 +30841,7 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "agenticSubscriptions":
+		case "subscribedAgentics":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -30813,7 +30850,7 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Application_agenticSubscriptions(ctx, field, obj)
+				res = ec._Application_subscribedAgentics(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

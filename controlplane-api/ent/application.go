@@ -81,10 +81,10 @@ type ApplicationEdges struct {
 	ExposedEvents []*EventExposure `json:"exposed_events,omitempty"`
 	// SubscribedEvents holds the value of the subscribed_events edge.
 	SubscribedEvents []*EventSubscription `json:"subscribed_events,omitempty"`
-	// AgenticExposures holds the value of the agentic_exposures edge.
-	AgenticExposures []*AgenticExposure `json:"agentic_exposures,omitempty"`
-	// AgenticSubscriptions holds the value of the agentic_subscriptions edge.
-	AgenticSubscriptions []*AgenticSubscription `json:"agentic_subscriptions,omitempty"`
+	// ExposedAgentics holds the value of the exposed_agentics edge.
+	ExposedAgentics []*AgenticExposure `json:"exposed_agentics,omitempty"`
+	// SubscribedAgentics holds the value of the subscribed_agentics edge.
+	SubscribedAgentics []*AgenticSubscription `json:"subscribed_agentics,omitempty"`
 	// PermissionSet holds the value of the permission_set edge.
 	PermissionSet *PermissionSet `json:"permission_set,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -93,12 +93,12 @@ type ApplicationEdges struct {
 	// totalCount holds the count of the edges above.
 	totalCount [8]map[string]int
 
-	namedExposedApis          map[string][]*ApiExposure
-	namedSubscribedApis       map[string][]*ApiSubscription
-	namedExposedEvents        map[string][]*EventExposure
-	namedSubscribedEvents     map[string][]*EventSubscription
-	namedAgenticExposures     map[string][]*AgenticExposure
-	namedAgenticSubscriptions map[string][]*AgenticSubscription
+	namedExposedApis        map[string][]*ApiExposure
+	namedSubscribedApis     map[string][]*ApiSubscription
+	namedExposedEvents      map[string][]*EventExposure
+	namedSubscribedEvents   map[string][]*EventSubscription
+	namedExposedAgentics    map[string][]*AgenticExposure
+	namedSubscribedAgentics map[string][]*AgenticSubscription
 }
 
 // ZoneOrErr returns the Zone value or an error if the edge
@@ -159,22 +159,22 @@ func (e ApplicationEdges) SubscribedEventsOrErr() ([]*EventSubscription, error) 
 	return nil, &NotLoadedError{edge: "subscribed_events"}
 }
 
-// AgenticExposuresOrErr returns the AgenticExposures value or an error if the edge
+// ExposedAgenticsOrErr returns the ExposedAgentics value or an error if the edge
 // was not loaded in eager-loading.
-func (e ApplicationEdges) AgenticExposuresOrErr() ([]*AgenticExposure, error) {
+func (e ApplicationEdges) ExposedAgenticsOrErr() ([]*AgenticExposure, error) {
 	if e.loadedTypes[6] {
-		return e.AgenticExposures, nil
+		return e.ExposedAgentics, nil
 	}
-	return nil, &NotLoadedError{edge: "agentic_exposures"}
+	return nil, &NotLoadedError{edge: "exposed_agentics"}
 }
 
-// AgenticSubscriptionsOrErr returns the AgenticSubscriptions value or an error if the edge
+// SubscribedAgenticsOrErr returns the SubscribedAgentics value or an error if the edge
 // was not loaded in eager-loading.
-func (e ApplicationEdges) AgenticSubscriptionsOrErr() ([]*AgenticSubscription, error) {
+func (e ApplicationEdges) SubscribedAgenticsOrErr() ([]*AgenticSubscription, error) {
 	if e.loadedTypes[7] {
-		return e.AgenticSubscriptions, nil
+		return e.SubscribedAgentics, nil
 	}
-	return nil, &NotLoadedError{edge: "agentic_subscriptions"}
+	return nil, &NotLoadedError{edge: "subscribed_agentics"}
 }
 
 // PermissionSetOrErr returns the PermissionSet value or an error if the edge
@@ -399,14 +399,14 @@ func (_m *Application) QuerySubscribedEvents() *EventSubscriptionQuery {
 	return NewApplicationClient(_m.config).QuerySubscribedEvents(_m)
 }
 
-// QueryAgenticExposures queries the "agentic_exposures" edge of the Application entity.
-func (_m *Application) QueryAgenticExposures() *AgenticExposureQuery {
-	return NewApplicationClient(_m.config).QueryAgenticExposures(_m)
+// QueryExposedAgentics queries the "exposed_agentics" edge of the Application entity.
+func (_m *Application) QueryExposedAgentics() *AgenticExposureQuery {
+	return NewApplicationClient(_m.config).QueryExposedAgentics(_m)
 }
 
-// QueryAgenticSubscriptions queries the "agentic_subscriptions" edge of the Application entity.
-func (_m *Application) QueryAgenticSubscriptions() *AgenticSubscriptionQuery {
-	return NewApplicationClient(_m.config).QueryAgenticSubscriptions(_m)
+// QuerySubscribedAgentics queries the "subscribed_agentics" edge of the Application entity.
+func (_m *Application) QuerySubscribedAgentics() *AgenticSubscriptionQuery {
+	return NewApplicationClient(_m.config).QuerySubscribedAgentics(_m)
 }
 
 // QueryPermissionSet queries the "permission_set" edge of the Application entity.
@@ -607,51 +607,51 @@ func (_m *Application) appendNamedSubscribedEvents(name string, edges ...*EventS
 	}
 }
 
-// NamedAgenticExposures returns the AgenticExposures named value or an error if the edge was not
+// NamedExposedAgentics returns the ExposedAgentics named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *Application) NamedAgenticExposures(name string) ([]*AgenticExposure, error) {
-	if _m.Edges.namedAgenticExposures == nil {
+func (_m *Application) NamedExposedAgentics(name string) ([]*AgenticExposure, error) {
+	if _m.Edges.namedExposedAgentics == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := _m.Edges.namedAgenticExposures[name]
+	nodes, ok := _m.Edges.namedExposedAgentics[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (_m *Application) appendNamedAgenticExposures(name string, edges ...*AgenticExposure) {
-	if _m.Edges.namedAgenticExposures == nil {
-		_m.Edges.namedAgenticExposures = make(map[string][]*AgenticExposure)
+func (_m *Application) appendNamedExposedAgentics(name string, edges ...*AgenticExposure) {
+	if _m.Edges.namedExposedAgentics == nil {
+		_m.Edges.namedExposedAgentics = make(map[string][]*AgenticExposure)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedAgenticExposures[name] = []*AgenticExposure{}
+		_m.Edges.namedExposedAgentics[name] = []*AgenticExposure{}
 	} else {
-		_m.Edges.namedAgenticExposures[name] = append(_m.Edges.namedAgenticExposures[name], edges...)
+		_m.Edges.namedExposedAgentics[name] = append(_m.Edges.namedExposedAgentics[name], edges...)
 	}
 }
 
-// NamedAgenticSubscriptions returns the AgenticSubscriptions named value or an error if the edge was not
+// NamedSubscribedAgentics returns the SubscribedAgentics named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *Application) NamedAgenticSubscriptions(name string) ([]*AgenticSubscription, error) {
-	if _m.Edges.namedAgenticSubscriptions == nil {
+func (_m *Application) NamedSubscribedAgentics(name string) ([]*AgenticSubscription, error) {
+	if _m.Edges.namedSubscribedAgentics == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := _m.Edges.namedAgenticSubscriptions[name]
+	nodes, ok := _m.Edges.namedSubscribedAgentics[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (_m *Application) appendNamedAgenticSubscriptions(name string, edges ...*AgenticSubscription) {
-	if _m.Edges.namedAgenticSubscriptions == nil {
-		_m.Edges.namedAgenticSubscriptions = make(map[string][]*AgenticSubscription)
+func (_m *Application) appendNamedSubscribedAgentics(name string, edges ...*AgenticSubscription) {
+	if _m.Edges.namedSubscribedAgentics == nil {
+		_m.Edges.namedSubscribedAgentics = make(map[string][]*AgenticSubscription)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedAgenticSubscriptions[name] = []*AgenticSubscription{}
+		_m.Edges.namedSubscribedAgentics[name] = []*AgenticSubscription{}
 	} else {
-		_m.Edges.namedAgenticSubscriptions[name] = append(_m.Edges.namedAgenticSubscriptions[name], edges...)
+		_m.Edges.namedSubscribedAgentics[name] = append(_m.Edges.namedSubscribedAgentics[name], edges...)
 	}
 }
 

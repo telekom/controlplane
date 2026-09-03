@@ -12,7 +12,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.42.1
+	github.com/onsi/gomega v1.43.0
 	github.com/pb33f/libopenapi v0.38.7
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2

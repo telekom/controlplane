@@ -434,6 +434,7 @@ var _ = Describe("ApprovalRequest Repository", func() {
 				SubscriptionName:      "my-sub",
 			}
 			Expect(repo.Delete(ctx, key)).To(Succeed())
+			cache.Wait()
 
 			// Verify deleted from DB.
 			count, err := client.ApprovalRequest.Query().

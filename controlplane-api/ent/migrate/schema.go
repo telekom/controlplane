@@ -69,7 +69,7 @@ var (
 		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "transformation", Type: field.TypeJSON, Nullable: true},
 		{Name: "agent_card_exposures", Type: field.TypeInt, Nullable: true},
-		{Name: "application_agentic_exposures", Type: field.TypeInt},
+		{Name: "application_exposed_agentics", Type: field.TypeInt},
 		{Name: "mcp_server_exposures", Type: field.TypeInt, Nullable: true},
 	}
 	// AgenticExposuresTable holds the schema information for the "agentic_exposures" table.
@@ -85,7 +85,7 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "agentic_exposures_applications_agentic_exposures",
+				Symbol:     "agentic_exposures_applications_exposed_agentics",
 				Columns:    []*schema.Column{AgenticExposuresColumns[17]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
@@ -99,7 +99,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "agenticexposure_base_path_application_agentic_exposures",
+				Name:    "agenticexposure_base_path_application_exposed_agentics",
 				Unique:  true,
 				Columns: []*schema.Column{AgenticExposuresColumns[7], AgenticExposuresColumns[17]},
 			},
@@ -119,7 +119,7 @@ var (
 		{Name: "security", Type: field.TypeJSON, Nullable: true},
 		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "agentic_subscription_target", Type: field.TypeInt, Nullable: true},
-		{Name: "application_agentic_subscriptions", Type: field.TypeInt},
+		{Name: "application_subscribed_agentics", Type: field.TypeInt},
 	}
 	// AgenticSubscriptionsTable holds the schema information for the "agentic_subscriptions" table.
 	AgenticSubscriptionsTable = &schema.Table{
@@ -134,7 +134,7 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "agentic_subscriptions_applications_agentic_subscriptions",
+				Symbol:     "agentic_subscriptions_applications_subscribed_agentics",
 				Columns:    []*schema.Column{AgenticSubscriptionsColumns[12]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
@@ -147,7 +147,7 @@ var (
 				Columns: []*schema.Column{AgenticSubscriptionsColumns[6], AgenticSubscriptionsColumns[7]},
 			},
 			{
-				Name:    "agenticsubscription_base_path_application_agentic_subscriptions",
+				Name:    "agenticsubscription_base_path_application_subscribed_agentics",
 				Unique:  true,
 				Columns: []*schema.Column{AgenticSubscriptionsColumns[8], AgenticSubscriptionsColumns[12]},
 			},
@@ -253,6 +253,7 @@ var (
 		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
 		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "security", Type: field.TypeJSON, Nullable: true},
+		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "api_subscription_target", Type: field.TypeInt, Nullable: true},
 		{Name: "application_subscribed_apis", Type: field.TypeInt},
 	}
@@ -264,13 +265,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_subscriptions_api_exposures_target",
-				Columns:    []*schema.Column{APISubscriptionsColumns[12]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[13]},
 				RefColumns: []*schema.Column{APIExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_subscriptions_applications_subscribed_apis",
-				Columns:    []*schema.Column{APISubscriptionsColumns[13]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[14]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -284,7 +285,7 @@ var (
 			{
 				Name:    "apisubscription_base_path_application_subscribed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[13]},
+				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[14]},
 			},
 		},
 	}

@@ -4086,13 +4086,13 @@ type ApplicationWhereInput struct {
 	HasSubscribedEvents     *bool                          `json:"hasSubscribedEvents,omitempty"`
 	HasSubscribedEventsWith []*EventSubscriptionWhereInput `json:"hasSubscribedEventsWith,omitempty"`
 
-	// "agentic_exposures" edge predicates.
-	HasAgenticExposures     *bool                        `json:"hasAgenticExposures,omitempty"`
-	HasAgenticExposuresWith []*AgenticExposureWhereInput `json:"hasAgenticExposuresWith,omitempty"`
+	// "exposed_agentics" edge predicates.
+	HasExposedAgentics     *bool                        `json:"hasExposedAgentics,omitempty"`
+	HasExposedAgenticsWith []*AgenticExposureWhereInput `json:"hasExposedAgenticsWith,omitempty"`
 
-	// "agentic_subscriptions" edge predicates.
-	HasAgenticSubscriptions     *bool                            `json:"hasAgenticSubscriptions,omitempty"`
-	HasAgenticSubscriptionsWith []*AgenticSubscriptionWhereInput `json:"hasAgenticSubscriptionsWith,omitempty"`
+	// "subscribed_agentics" edge predicates.
+	HasSubscribedAgentics     *bool                            `json:"hasSubscribedAgentics,omitempty"`
+	HasSubscribedAgenticsWith []*AgenticSubscriptionWhereInput `json:"hasSubscribedAgenticsWith,omitempty"`
 
 	// "permission_set" edge predicates.
 	HasPermissionSet     *bool                      `json:"hasPermissionSet,omitempty"`
@@ -4699,41 +4699,41 @@ func (i *ApplicationWhereInput) P() (predicate.Application, error) {
 		}
 		predicates = append(predicates, application.HasSubscribedEventsWith(with...))
 	}
-	if i.HasAgenticExposures != nil {
-		p := application.HasAgenticExposures()
-		if !*i.HasAgenticExposures {
+	if i.HasExposedAgentics != nil {
+		p := application.HasExposedAgentics()
+		if !*i.HasExposedAgentics {
 			p = application.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasAgenticExposuresWith) > 0 {
-		with := make([]predicate.AgenticExposure, 0, len(i.HasAgenticExposuresWith))
-		for _, w := range i.HasAgenticExposuresWith {
+	if len(i.HasExposedAgenticsWith) > 0 {
+		with := make([]predicate.AgenticExposure, 0, len(i.HasExposedAgenticsWith))
+		for _, w := range i.HasExposedAgenticsWith {
 			p, err := w.P()
 			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasAgenticExposuresWith'", err)
+				return nil, fmt.Errorf("%w: field 'HasExposedAgenticsWith'", err)
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, application.HasAgenticExposuresWith(with...))
+		predicates = append(predicates, application.HasExposedAgenticsWith(with...))
 	}
-	if i.HasAgenticSubscriptions != nil {
-		p := application.HasAgenticSubscriptions()
-		if !*i.HasAgenticSubscriptions {
+	if i.HasSubscribedAgentics != nil {
+		p := application.HasSubscribedAgentics()
+		if !*i.HasSubscribedAgentics {
 			p = application.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasAgenticSubscriptionsWith) > 0 {
-		with := make([]predicate.AgenticSubscription, 0, len(i.HasAgenticSubscriptionsWith))
-		for _, w := range i.HasAgenticSubscriptionsWith {
+	if len(i.HasSubscribedAgenticsWith) > 0 {
+		with := make([]predicate.AgenticSubscription, 0, len(i.HasSubscribedAgenticsWith))
+		for _, w := range i.HasSubscribedAgenticsWith {
 			p, err := w.P()
 			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasAgenticSubscriptionsWith'", err)
+				return nil, fmt.Errorf("%w: field 'HasSubscribedAgenticsWith'", err)
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, application.HasAgenticSubscriptionsWith(with...))
+		predicates = append(predicates, application.HasSubscribedAgenticsWith(with...))
 	}
 	if i.HasPermissionSet != nil {
 		p := application.HasPermissionSet()

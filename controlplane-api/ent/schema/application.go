@@ -95,9 +95,9 @@ func (Application) Edges() []ent.Edge {
 			Annotations(entgql.RelayConnection()),
 		edge.To("subscribed_events", EventSubscription.Type).
 			Annotations(entgql.RelayConnection()),
-		edge.To("agentic_exposures", AgenticExposure.Type).
+		edge.To("exposed_agentics", AgenticExposure.Type).
 			Annotations(entgql.RelayConnection()),
-		edge.To("agentic_subscriptions", AgenticSubscription.Type).
+		edge.To("subscribed_agentics", AgenticSubscription.Type).
 			Annotations(entgql.RelayConnection()),
 		edge.To("permission_set", PermissionSet.Type).
 			Unique(),

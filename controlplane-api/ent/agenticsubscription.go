@@ -47,10 +47,10 @@ type AgenticSubscription struct {
 	Traffic model.AgenticSubscriberTraffic `json:"traffic,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AgenticSubscriptionQuery when eager-loading is set.
-	Edges                             AgenticSubscriptionEdges `json:"edges"`
-	agentic_subscription_target       *int
-	application_agentic_subscriptions *int
-	selectValues                      sql.SelectValues
+	Edges                           AgenticSubscriptionEdges `json:"edges"`
+	agentic_subscription_target     *int
+	application_subscribed_agentics *int
+	selectValues                    sql.SelectValues
 }
 
 // AgenticSubscriptionEdges holds the relations/edges for other nodes in the graph.
@@ -129,7 +129,7 @@ func (*AgenticSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case agenticsubscription.ForeignKeys[0]: // agentic_subscription_target
 			values[i] = new(sql.NullInt64)
-		case agenticsubscription.ForeignKeys[1]: // application_agentic_subscriptions
+		case agenticsubscription.ForeignKeys[1]: // application_subscribed_agentics
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -228,10 +228,10 @@ func (_m *AgenticSubscription) assignValues(columns []string, values []any) erro
 			}
 		case agenticsubscription.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field application_agentic_subscriptions", value)
+				return fmt.Errorf("unexpected type %T for edge-field application_subscribed_agentics", value)
 			} else if value.Valid {
-				_m.application_agentic_subscriptions = new(int)
-				*_m.application_agentic_subscriptions = int(value.Int64)
+				_m.application_subscribed_agentics = new(int)
+				*_m.application_subscribed_agentics = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

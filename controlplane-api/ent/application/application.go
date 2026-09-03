@@ -67,10 +67,10 @@ const (
 	EdgeExposedEvents = "exposed_events"
 	// EdgeSubscribedEvents holds the string denoting the subscribed_events edge name in mutations.
 	EdgeSubscribedEvents = "subscribed_events"
-	// EdgeAgenticExposures holds the string denoting the agentic_exposures edge name in mutations.
-	EdgeAgenticExposures = "agentic_exposures"
-	// EdgeAgenticSubscriptions holds the string denoting the agentic_subscriptions edge name in mutations.
-	EdgeAgenticSubscriptions = "agentic_subscriptions"
+	// EdgeExposedAgentics holds the string denoting the exposed_agentics edge name in mutations.
+	EdgeExposedAgentics = "exposed_agentics"
+	// EdgeSubscribedAgentics holds the string denoting the subscribed_agentics edge name in mutations.
+	EdgeSubscribedAgentics = "subscribed_agentics"
 	// EdgePermissionSet holds the string denoting the permission_set edge name in mutations.
 	EdgePermissionSet = "permission_set"
 	// Table holds the table name of the application in the database.
@@ -117,20 +117,20 @@ const (
 	SubscribedEventsInverseTable = "event_subscriptions"
 	// SubscribedEventsColumn is the table column denoting the subscribed_events relation/edge.
 	SubscribedEventsColumn = "application_subscribed_events"
-	// AgenticExposuresTable is the table that holds the agentic_exposures relation/edge.
-	AgenticExposuresTable = "agentic_exposures"
-	// AgenticExposuresInverseTable is the table name for the AgenticExposure entity.
+	// ExposedAgenticsTable is the table that holds the exposed_agentics relation/edge.
+	ExposedAgenticsTable = "agentic_exposures"
+	// ExposedAgenticsInverseTable is the table name for the AgenticExposure entity.
 	// It exists in this package in order to avoid circular dependency with the "agenticexposure" package.
-	AgenticExposuresInverseTable = "agentic_exposures"
-	// AgenticExposuresColumn is the table column denoting the agentic_exposures relation/edge.
-	AgenticExposuresColumn = "application_agentic_exposures"
-	// AgenticSubscriptionsTable is the table that holds the agentic_subscriptions relation/edge.
-	AgenticSubscriptionsTable = "agentic_subscriptions"
-	// AgenticSubscriptionsInverseTable is the table name for the AgenticSubscription entity.
+	ExposedAgenticsInverseTable = "agentic_exposures"
+	// ExposedAgenticsColumn is the table column denoting the exposed_agentics relation/edge.
+	ExposedAgenticsColumn = "application_exposed_agentics"
+	// SubscribedAgenticsTable is the table that holds the subscribed_agentics relation/edge.
+	SubscribedAgenticsTable = "agentic_subscriptions"
+	// SubscribedAgenticsInverseTable is the table name for the AgenticSubscription entity.
 	// It exists in this package in order to avoid circular dependency with the "agenticsubscription" package.
-	AgenticSubscriptionsInverseTable = "agentic_subscriptions"
-	// AgenticSubscriptionsColumn is the table column denoting the agentic_subscriptions relation/edge.
-	AgenticSubscriptionsColumn = "application_agentic_subscriptions"
+	SubscribedAgenticsInverseTable = "agentic_subscriptions"
+	// SubscribedAgenticsColumn is the table column denoting the subscribed_agentics relation/edge.
+	SubscribedAgenticsColumn = "application_subscribed_agentics"
 	// PermissionSetTable is the table that holds the permission_set relation/edge.
 	PermissionSetTable = "permission_sets"
 	// PermissionSetInverseTable is the table name for the PermissionSet entity.
@@ -417,31 +417,31 @@ func BySubscribedEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 	}
 }
 
-// ByAgenticExposuresCount orders the results by agentic_exposures count.
-func ByAgenticExposuresCount(opts ...sql.OrderTermOption) OrderOption {
+// ByExposedAgenticsCount orders the results by exposed_agentics count.
+func ByExposedAgenticsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newAgenticExposuresStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newExposedAgenticsStep(), opts...)
 	}
 }
 
-// ByAgenticExposures orders the results by agentic_exposures terms.
-func ByAgenticExposures(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByExposedAgentics orders the results by exposed_agentics terms.
+func ByExposedAgentics(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newAgenticExposuresStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newExposedAgenticsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
-// ByAgenticSubscriptionsCount orders the results by agentic_subscriptions count.
-func ByAgenticSubscriptionsCount(opts ...sql.OrderTermOption) OrderOption {
+// BySubscribedAgenticsCount orders the results by subscribed_agentics count.
+func BySubscribedAgenticsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newAgenticSubscriptionsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newSubscribedAgenticsStep(), opts...)
 	}
 }
 
-// ByAgenticSubscriptions orders the results by agentic_subscriptions terms.
-func ByAgenticSubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// BySubscribedAgentics orders the results by subscribed_agentics terms.
+func BySubscribedAgentics(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newAgenticSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newSubscribedAgenticsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -493,18 +493,18 @@ func newSubscribedEventsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedEventsTable, SubscribedEventsColumn),
 	)
 }
-func newAgenticExposuresStep() *sqlgraph.Step {
+func newExposedAgenticsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(AgenticExposuresInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, AgenticExposuresTable, AgenticExposuresColumn),
+		sqlgraph.To(ExposedAgenticsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ExposedAgenticsTable, ExposedAgenticsColumn),
 	)
 }
-func newAgenticSubscriptionsStep() *sqlgraph.Step {
+func newSubscribedAgenticsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(AgenticSubscriptionsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, AgenticSubscriptionsTable, AgenticSubscriptionsColumn),
+		sqlgraph.To(SubscribedAgenticsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedAgenticsTable, SubscribedAgenticsColumn),
 	)
 }
 func newPermissionSetStep() *sqlgraph.Step {

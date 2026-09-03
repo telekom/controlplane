@@ -200,6 +200,9 @@ models:
   Traffic:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.Traffic
+  ApiSubscriptionTraffic:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionTraffic
   RateLimit:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimit

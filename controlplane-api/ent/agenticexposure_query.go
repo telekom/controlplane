@@ -574,10 +574,10 @@ func (_q *AgenticExposureQuery) loadOwner(ctx context.Context, query *Applicatio
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*AgenticExposure)
 	for i := range nodes {
-		if nodes[i].application_agentic_exposures == nil {
+		if nodes[i].application_exposed_agentics == nil {
 			continue
 		}
-		fk := *nodes[i].application_agentic_exposures
+		fk := *nodes[i].application_exposed_agentics
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -594,7 +594,7 @@ func (_q *AgenticExposureQuery) loadOwner(ctx context.Context, query *Applicatio
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "application_agentic_exposures" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "application_exposed_agentics" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

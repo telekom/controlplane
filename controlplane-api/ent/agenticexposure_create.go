@@ -509,7 +509,7 @@ func (_c *AgenticExposureCreate) createSpec() (*AgenticExposure, *sqlgraph.Creat
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.application_agentic_exposures = &nodes[0]
+		_node.application_exposed_agentics = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.McpServerIDs(); len(nodes) > 0 {

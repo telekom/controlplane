@@ -1680,15 +1680,15 @@ func (c *ApplicationClient) QuerySubscribedEvents(_m *Application) *EventSubscri
 	return query
 }
 
-// QueryAgenticExposures queries the agentic_exposures edge of a Application.
-func (c *ApplicationClient) QueryAgenticExposures(_m *Application) *AgenticExposureQuery {
+// QueryExposedAgentics queries the exposed_agentics edge of a Application.
+func (c *ApplicationClient) QueryExposedAgentics(_m *Application) *AgenticExposureQuery {
 	query := (&AgenticExposureClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(application.Table, application.FieldID, id),
 			sqlgraph.To(agenticexposure.Table, agenticexposure.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, application.AgenticExposuresTable, application.AgenticExposuresColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ExposedAgenticsTable, application.ExposedAgenticsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1696,15 +1696,15 @@ func (c *ApplicationClient) QueryAgenticExposures(_m *Application) *AgenticExpos
 	return query
 }
 
-// QueryAgenticSubscriptions queries the agentic_subscriptions edge of a Application.
-func (c *ApplicationClient) QueryAgenticSubscriptions(_m *Application) *AgenticSubscriptionQuery {
+// QuerySubscribedAgentics queries the subscribed_agentics edge of a Application.
+func (c *ApplicationClient) QuerySubscribedAgentics(_m *Application) *AgenticSubscriptionQuery {
 	query := (&AgenticSubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(application.Table, application.FieldID, id),
 			sqlgraph.To(agenticsubscription.Table, agenticsubscription.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, application.AgenticSubscriptionsTable, application.AgenticSubscriptionsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedAgenticsTable, application.SubscribedAgenticsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

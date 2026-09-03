@@ -385,7 +385,7 @@ func (_c *AgenticSubscriptionCreate) createSpec() (*AgenticSubscription, *sqlgra
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.application_agentic_subscriptions = &nodes[0]
+		_node.application_subscribed_agentics = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.TargetIDs(); len(nodes) > 0 {

@@ -315,6 +315,7 @@ type ComplexityRoot struct {
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
 		Target           func(childComplexity int) int
+		Traffic          func(childComplexity int) int
 	}
 
 	ApiSubscriptionConnection struct {
@@ -341,14 +342,18 @@ type ComplexityRoot struct {
 		M2M func(childComplexity int) int
 	}
 
+	ApiSubscriptionTraffic struct {
+		ProviderLimits   func(childComplexity int) int
+		SubscriberLimits func(childComplexity int) int
+	}
+
 	Application struct {
-		AgenticExposures      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticExposureOrder, where *ent.AgenticExposureWhereInput) int
-		AgenticSubscriptions  func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticSubscriptionOrder, where *ent.AgenticSubscriptionWhereInput) int
 		ClientID              func(childComplexity int) int
 		ClientSecret          func(childComplexity int) int
 		CreatedAt             func(childComplexity int) int
 		CurrentExpiresAt      func(childComplexity int) int
 		Environment           func(childComplexity int) int
+		ExposedAgentics       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticExposureOrder, where *ent.AgenticExposureWhereInput) int
 		ExposedApis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
 		ExposedEvents         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
 		ExternalIds           func(childComplexity int) int
@@ -366,6 +371,7 @@ type ComplexityRoot struct {
 		SecretRotationPhase   func(childComplexity int) int
 		StatusMessage         func(childComplexity int) int
 		StatusPhase           func(childComplexity int) int
+		SubscribedAgentics    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticSubscriptionOrder, where *ent.AgenticSubscriptionWhereInput) int
 		SubscribedApis        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
 		SubscribedEvents      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
 		Zone                  func(childComplexity int) int
@@ -1979,6 +1985,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Target(childComplexity), true
+	case "ApiSubscription.traffic":
+		if e.ComplexityRoot.ApiSubscription.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.Traffic(childComplexity), true
 
 	case "ApiSubscriptionConnection.edges":
 		if e.ComplexityRoot.ApiSubscriptionConnection.Edges == nil {
@@ -2056,28 +2068,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscriptionSecurity.M2M(childComplexity), true
 
-	case "Application.agenticExposures":
-		if e.ComplexityRoot.Application.AgenticExposures == nil {
+	case "ApiSubscriptionTraffic.providerLimits":
+		if e.ComplexityRoot.ApiSubscriptionTraffic.ProviderLimits == nil {
 			break
 		}
 
-		args, err := ec.field_Application_agenticExposures_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Application.AgenticExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgenticExposureOrder), args["where"].(*ent.AgenticExposureWhereInput)), true
-	case "Application.agenticSubscriptions":
-		if e.ComplexityRoot.Application.AgenticSubscriptions == nil {
+		return e.ComplexityRoot.ApiSubscriptionTraffic.ProviderLimits(childComplexity), true
+	case "ApiSubscriptionTraffic.subscriberLimits":
+		if e.ComplexityRoot.ApiSubscriptionTraffic.SubscriberLimits == nil {
 			break
 		}
 
-		args, err := ec.field_Application_agenticSubscriptions_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
+		return e.ComplexityRoot.ApiSubscriptionTraffic.SubscriberLimits(childComplexity), true
 
-		return e.ComplexityRoot.Application.AgenticSubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgenticSubscriptionOrder), args["where"].(*ent.AgenticSubscriptionWhereInput)), true
 	case "Application.clientID":
 		if e.ComplexityRoot.Application.ClientID == nil {
 			break
@@ -2108,6 +2111,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.Environment(childComplexity), true
+	case "Application.exposedAgentics":
+		if e.ComplexityRoot.Application.ExposedAgentics == nil {
+			break
+		}
+
+		args, err := ec.field_Application_exposedAgentics_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.ExposedAgentics(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgenticExposureOrder), args["where"].(*ent.AgenticExposureWhereInput)), true
 	case "Application.exposedApis":
 		if e.ComplexityRoot.Application.ExposedApis == nil {
 			break
@@ -2220,6 +2234,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.StatusPhase(childComplexity), true
+	case "Application.subscribedAgentics":
+		if e.ComplexityRoot.Application.SubscribedAgentics == nil {
+			break
+		}
+
+		args, err := ec.field_Application_subscribedAgentics_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.SubscribedAgentics(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgenticSubscriptionOrder), args["where"].(*ent.AgenticSubscriptionWhereInput)), true
 	case "Application.subscribedApis":
 		if e.ComplexityRoot.Application.SubscribedApis == nil {
 			break
@@ -5863,6 +5888,7 @@ type ApiSubscription implements Node {
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
   security: ApiSubscriptionSecurity
+  traffic: ApiSubscriptionTraffic
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
@@ -6438,7 +6464,7 @@ type Application implements Node {
     """
     where: EventSubscriptionWhereInput
   ): EventSubscriptionConnection!
-  agenticExposures(
+  exposedAgentics(
     """
     Returns the elements in the list that come after the specified cursor.
     """
@@ -6469,7 +6495,7 @@ type Application implements Node {
     """
     where: AgenticExposureWhereInput
   ): AgenticExposureConnection!
-  agenticSubscriptions(
+  subscribedAgentics(
     """
     Returns the elements in the list that come after the specified cursor.
     """
@@ -6790,15 +6816,15 @@ input ApplicationWhereInput {
   hasSubscribedEvents: Boolean
   hasSubscribedEventsWith: [EventSubscriptionWhereInput!]
   """
-  agentic_exposures edge predicates
+  exposed_agentics edge predicates
   """
-  hasAgenticExposures: Boolean
-  hasAgenticExposuresWith: [AgenticExposureWhereInput!]
+  hasExposedAgentics: Boolean
+  hasExposedAgenticsWith: [AgenticExposureWhereInput!]
   """
-  agentic_subscriptions edge predicates
+  subscribed_agentics edge predicates
   """
-  hasAgenticSubscriptions: Boolean
-  hasAgenticSubscriptionsWith: [AgenticSubscriptionWhereInput!]
+  hasSubscribedAgentics: Boolean
+  hasSubscribedAgenticsWith: [AgenticSubscriptionWhereInput!]
   """
   permission_set edge predicates
   """
@@ -10422,6 +10448,11 @@ type AgenticSubscriberTraffic {
   failover: AgenticSubscriberFailover
 }
 
+type ApiSubscriptionTraffic {
+  providerLimits: Limits
+  subscriberLimits: Limits
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
 type ApiSubscriptionInfo {
   id: ID!
@@ -11092,6 +11123,8 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_gatewayURL(ctx, field)
 	case "security":
 		return ec.fieldContext_ApiSubscription_security(ctx, field)
+	case "traffic":
+		return ec.fieldContext_ApiSubscription_traffic(ctx, field)
 	case "owner":
 		return ec.fieldContext_ApiSubscription_owner(ctx, field)
 	case "failoverZones":
@@ -11154,6 +11187,16 @@ func (ec *executionContext) childFields_ApiSubscriptionSecurity(ctx context.Cont
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionSecurity", field.Name)
 }
 
+func (ec *executionContext) childFields_ApiSubscriptionTraffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "providerLimits":
+		return ec.fieldContext_ApiSubscriptionTraffic_providerLimits(ctx, field)
+	case "subscriberLimits":
+		return ec.fieldContext_ApiSubscriptionTraffic_subscriberLimits(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionTraffic", field.Name)
+}
+
 func (ec *executionContext) childFields_Application(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -11202,10 +11245,10 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_exposedEvents(ctx, field)
 	case "subscribedEvents":
 		return ec.fieldContext_Application_subscribedEvents(ctx, field)
-	case "agenticExposures":
-		return ec.fieldContext_Application_agenticExposures(ctx, field)
-	case "agenticSubscriptions":
-		return ec.fieldContext_Application_agenticSubscriptions(ctx, field)
+	case "exposedAgentics":
+		return ec.fieldContext_Application_exposedAgentics(ctx, field)
+	case "subscribedAgentics":
+		return ec.fieldContext_Application_subscribedAgentics(ctx, field)
 	case "permissionSet":
 		return ec.fieldContext_Application_permissionSet(ctx, field)
 	case "ownerTeam":

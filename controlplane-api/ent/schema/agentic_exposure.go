@@ -74,7 +74,7 @@ func (AgenticExposure) Fields() []ent.Field {
 func (AgenticExposure) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", Application.Type).
-			Ref("agentic_exposures").
+			Ref("exposed_agentics").
 			Required().
 			Unique(),
 		edge.From("mcp_server", McpServer.Type).

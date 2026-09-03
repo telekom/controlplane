@@ -982,6 +982,11 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, apisubscription.FieldSecurity)
 				fieldSeen[apisubscription.FieldSecurity] = struct{}{}
 			}
+		case "traffic":
+			if _, ok := fieldSeen[apisubscription.FieldTraffic]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldTraffic)
+				fieldSeen[apisubscription.FieldTraffic] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:
@@ -1434,7 +1439,7 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				*wq = *query
 			})
 
-		case "agenticExposures":
+		case "exposedAgentics":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
@@ -1462,13 +1467,13 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 							ids[i] = nodes[i].ID
 						}
 						var v []struct {
-							NodeID int `sql:"application_agentic_exposures"`
+							NodeID int `sql:"application_exposed_agentics"`
 							Count  int `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {
-							s.Where(sql.InValues(s.C(application.AgenticExposuresColumn), ids...))
+							s.Where(sql.InValues(s.C(application.ExposedAgenticsColumn), ids...))
 						})
-						if err := query.GroupBy(application.AgenticExposuresColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+						if err := query.GroupBy(application.ExposedAgenticsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
 							return err
 						}
 						m := make(map[int]int, len(v))
@@ -1487,7 +1492,7 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				} else {
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
 						for i := range nodes {
-							n := len(nodes[i].Edges.AgenticExposures)
+							n := len(nodes[i].Edges.ExposedAgentics)
 							if nodes[i].Edges.totalCount[5] == nil {
 								nodes[i].Edges.totalCount[5] = make(map[string]int)
 							}
@@ -1513,17 +1518,17 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				if oneNode {
 					pager.applyOrder(query.Limit(limit))
 				} else {
-					modify := entgql.LimitPerRow(application.AgenticExposuresColumn, limit, pager.orderExpr(query))
+					modify := entgql.LimitPerRow(application.ExposedAgenticsColumn, limit, pager.orderExpr(query))
 					query.modifiers = append(query.modifiers, modify)
 				}
 			} else {
 				query = pager.applyOrder(query)
 			}
-			_q.WithNamedAgenticExposures(alias, func(wq *AgenticExposureQuery) {
+			_q.WithNamedExposedAgentics(alias, func(wq *AgenticExposureQuery) {
 				*wq = *query
 			})
 
-		case "agenticSubscriptions":
+		case "subscribedAgentics":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
@@ -1551,13 +1556,13 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 							ids[i] = nodes[i].ID
 						}
 						var v []struct {
-							NodeID int `sql:"application_agentic_subscriptions"`
+							NodeID int `sql:"application_subscribed_agentics"`
 							Count  int `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {
-							s.Where(sql.InValues(s.C(application.AgenticSubscriptionsColumn), ids...))
+							s.Where(sql.InValues(s.C(application.SubscribedAgenticsColumn), ids...))
 						})
-						if err := query.GroupBy(application.AgenticSubscriptionsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+						if err := query.GroupBy(application.SubscribedAgenticsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
 							return err
 						}
 						m := make(map[int]int, len(v))
@@ -1576,7 +1581,7 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				} else {
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
 						for i := range nodes {
-							n := len(nodes[i].Edges.AgenticSubscriptions)
+							n := len(nodes[i].Edges.SubscribedAgentics)
 							if nodes[i].Edges.totalCount[6] == nil {
 								nodes[i].Edges.totalCount[6] = make(map[string]int)
 							}
@@ -1602,13 +1607,13 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				if oneNode {
 					pager.applyOrder(query.Limit(limit))
 				} else {
-					modify := entgql.LimitPerRow(application.AgenticSubscriptionsColumn, limit, pager.orderExpr(query))
+					modify := entgql.LimitPerRow(application.SubscribedAgenticsColumn, limit, pager.orderExpr(query))
 					query.modifiers = append(query.modifiers, modify)
 				}
 			} else {
 				query = pager.applyOrder(query)
 			}
-			_q.WithNamedAgenticSubscriptions(alias, func(wq *AgenticSubscriptionQuery) {
+			_q.WithNamedSubscribedAgentics(alias, func(wq *AgenticSubscriptionQuery) {
 				*wq = *query
 			})
 
