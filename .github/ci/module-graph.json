@@ -158,6 +158,7 @@
     "path": "projector",
     "depends_on": [
       "admin",
+      "agentic",
       "api",
       "application",
       "approval",
