@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/stretchr/testify/mock"
@@ -240,11 +241,11 @@ var _ = Describe("PublisherHandler", func() {
 			obj.Namespace = "team-a"
 
 			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.MatchedBy(func(opt client.MatchingFields) bool {
+					val, ok := opt["subscriberPublisherIndex"]
+					return ok && strings.Contains(val, "team-a/test-publisher")
+				})).
 				Run(func(_ context.Context, list client.ObjectList, opts ...client.ListOption) {
-					// The index query uses the full namespace/name reference,
-					// so a Subscriber in team-b referencing the same publisher name
-					// would not match. The mock returns an empty list for team-a/test-publisher.
 					sl := list.(*pubsubv1.SubscriberList)
 					sl.Items = nil
 				}).
