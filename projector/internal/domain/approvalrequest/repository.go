@@ -52,7 +52,7 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps App
 }
 
 // resolveSubscriptionID resolves the parent subscription FK based on the
-// target kind (ApiSubscription or EventSubscription).
+// target kind (ApiSubscription, EventSubscription, or FileSubscription).
 func (r *Repository) resolveSubscriptionID(ctx context.Context, data *ApprovalRequestData) (int, error) {
 	switch data.TargetKind {
 	case TargetKindEventSubscription:
@@ -63,6 +63,17 @@ func (r *Repository) resolveSubscriptionID(ctx context.Context, data *ApprovalRe
 					data.SubscriptionNamespace+"/"+data.SubscriptionName)
 			}
 			return 0, fmt.Errorf("find event_subscription %s/%s: %w",
+				data.SubscriptionNamespace, data.SubscriptionName, err)
+		}
+		return id, nil
+	case TargetKindFileSubscription:
+		id, err := r.deps.FindFileSubscriptionByMeta(ctx, data.SubscriptionNamespace, data.SubscriptionName)
+		if err != nil {
+			if errors.Is(err, infrastructure.ErrEntityNotFound) {
+				return 0, runtime.WrapDependencyMissing("file_subscription",
+					data.SubscriptionNamespace+"/"+data.SubscriptionName)
+			}
+			return 0, fmt.Errorf("find file_subscription %s/%s: %w",
 				data.SubscriptionNamespace, data.SubscriptionName, err)
 		}
 		return id, nil
@@ -119,9 +130,12 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		SetRequestedScopes(data.AccessScopes)
 
 	// Set the correct subscription FK based on target kind.
-	if data.TargetKind == TargetKindEventSubscription {
+	switch data.TargetKind {
+	case TargetKindEventSubscription:
 		create = create.SetEventSubscriptionID(subID)
-	} else {
+	case TargetKindFileSubscription:
+		create = create.SetFileSubscriptionID(subID)
+	default:
 		create = create.SetAPISubscriptionID(subID)
 	}
 
@@ -132,7 +146,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 	if upsertErr != nil {
 		if infrastructure.IsFKViolation(upsertErr, "") {
 			r.evictSubscriptionCache(data)
-			return runtime.WrapDependencyMissing("api_subscription",
+			return runtime.WrapDependencyMissing(targetKindLabel(data.TargetKind),
 				data.SubscriptionNamespace+"/"+data.SubscriptionName)
 		}
 		return fmt.Errorf("upsert approval_request %s/%s (sub %s/%s): %w",
@@ -146,15 +160,18 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 	// is set correctly via the edge spec, but on subsequent upserts the old
 	// value would be preserved without this.
 	update := r.client.ApprovalRequest.UpdateOneID(arID)
-	if data.TargetKind == TargetKindEventSubscription {
-		update = update.SetEventSubscriptionID(subID).ClearAPISubscription()
-	} else {
-		update = update.SetAPISubscriptionID(subID).ClearEventSubscription()
+	switch data.TargetKind {
+	case TargetKindEventSubscription:
+		update = update.SetEventSubscriptionID(subID).ClearAPISubscription().ClearFileSubscription()
+	case TargetKindFileSubscription:
+		update = update.SetFileSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription()
+	default:
+		update = update.SetAPISubscriptionID(subID).ClearEventSubscription().ClearFileSubscription()
 	}
 	if err := update.Exec(ctx); err != nil {
 		if infrastructure.IsFKViolation(err, "") {
 			r.evictSubscriptionCache(data)
-			return runtime.WrapDependencyMissing("api_subscription",
+			return runtime.WrapDependencyMissing(targetKindLabel(data.TargetKind),
 				data.SubscriptionNamespace+"/"+data.SubscriptionName)
 		}
 		return fmt.Errorf("update subscription FK for approval_request %d (%s/%s): %w",
@@ -166,12 +183,27 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 	return nil
 }
 
+// targetKindLabel returns the dependency-missing label for the given target kind.
+func targetKindLabel(kind string) string {
+	switch kind {
+	case TargetKindEventSubscription:
+		return "event_subscription"
+	case TargetKindFileSubscription:
+		return "file_subscription"
+	default:
+		return "api_subscription"
+	}
+}
+
 // evictSubscriptionCache removes the stale cached subscription ID so the
 // next reconcile attempt performs a fresh DB lookup.
 func (r *Repository) evictSubscriptionCache(data *ApprovalRequestData) {
-	if data.TargetKind == TargetKindEventSubscription {
+	switch data.TargetKind {
+	case TargetKindEventSubscription:
 		r.deps.EvictEventSubscription(data.SubscriptionNamespace, data.SubscriptionName)
-	} else {
+	case TargetKindFileSubscription:
+		r.deps.EvictFileSubscription(data.SubscriptionNamespace, data.SubscriptionName)
+	default:
 		r.deps.EvictAPISubscription(data.SubscriptionNamespace, data.SubscriptionName)
 	}
 }

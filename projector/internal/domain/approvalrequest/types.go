@@ -18,6 +18,7 @@ import (
 const (
 	TargetKindAPISubscription   = "ApiSubscription"
 	TargetKindEventSubscription = "EventSubscription"
+	TargetKindFileSubscription  = "FileSubscription"
 )
 
 // ApprovalRequestKey is the composite identity key for ApprovalRequest
@@ -46,9 +47,9 @@ type ApprovalRequestData struct {
 	Decisions            []model.Decision
 	AvailableTransitions []model.AvailableTransition
 	// TargetKind indicates whether the approval request targets an
-	// ApiSubscription or EventSubscription. Used by the repository to
-	// resolve the correct FK.
-	TargetKind string // "ApiSubscription" or "EventSubscription"
+	// ApiSubscription, EventSubscription, or FileSubscription. Used by the
+	// repository to resolve the correct FK.
+	TargetKind string // "ApiSubscription", "EventSubscription", or "FileSubscription"
 	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string
