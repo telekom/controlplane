@@ -101,6 +101,7 @@ func makeConsumerApp() *applicationv1.Application {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      consumerAppName,
 			Namespace: listenerNamespace,
+			UID:       "consumer-uid-001",
 		},
 		Spec: applicationv1.ApplicationSpec{
 			Team:      consumerTeam,
@@ -124,6 +125,7 @@ func makeProviderApp() *applicationv1.Application {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      providerAppName,
 			Namespace: listenerNamespace,
+			UID:       "provider-uid-001",
 		},
 		Spec: applicationv1.ApplicationSpec{
 			Team:      providerTeam,
@@ -342,11 +344,28 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 	}
 
+	// mockNoStaleChildren stubs the List calls for stale-child removal,
+	// returning empty lists (no existing children to clean up).
+	mockNoStaleChildren := func() {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+			}).
+			Return(nil).Once()
+
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+			}).
+			Return(nil).Once()
+	}
+
 	// mockApprovalGranted sets up the approval builder mock chain for an auto-granted approval.
 	mockApprovalGranted := func() {
 		// The ApprovalBuilder calls CreateOrUpdate (for ApprovalRequest), Cleanup, then Get (for Approval).
 		// For auto-approved (same team), the builder sets state to Granted internally.
-		// We mock two approval builds (provider + consumer).
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
@@ -394,9 +413,59 @@ var _ = Describe("ListenerHandler", func() {
 			Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, ""))
 	}
 
-	// mockListRoutes stubs the gateway Route lookup. The Route is fetched by its
-	// derived name (util.MakeRouteName(apiBasePath)) rather than by matching
-	// Spec.Paths, because Spec.Paths holds preset-joined paths.
+	// mockApprovalDenied sets up mock chain where approval is rejected.
+	mockApprovalDenied := func() {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil)
+
+		fakeClient.EXPECT().
+			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(0, nil)
+
+		// Get Approval — return rejected
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+			Run(func(_ context.Context, key k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				approval := out.(*approvalv1.Approval)
+				approval.Name = key.Name
+				approval.Namespace = key.Namespace
+				approval.Spec.State = approvalv1.ApprovalStateRejected
+			}).
+			Return(nil)
+	}
+
+	// mockApprovalRequestDenied sets up mock chain where ApprovalRequest itself is rejected.
+	mockApprovalRequestDenied := func() {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				req := obj.(*approvalv1.ApprovalRequest)
+				_ = mutate()
+				req.Spec.State = approvalv1.ApprovalStateRejected
+			}).
+			Return(controllerutil.OperationResultNone, nil)
+
+		fakeClient.EXPECT().
+			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(0, nil)
+
+		// Get Approval — exists and not denied (so RequestDenied branch is reached)
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+			Run(func(_ context.Context, key k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				approval := out.(*approvalv1.Approval)
+				approval.Name = key.Name
+				approval.Namespace = key.Namespace
+				approval.Spec.State = approvalv1.ApprovalStateGranted
+			}).
+			Return(nil)
+	}
+
+	// mockListRoutes stubs the gateway Route lookup.
 	mockListRoutes := func() {
 		routeName := util.MakeRouteName(testApiBasePath)
 		fakeClient.EXPECT().
@@ -409,7 +478,6 @@ var _ = Describe("ListenerHandler", func() {
 						Namespace: listenerZoneStatus,
 					},
 					Spec: gatewayv1.RouteSpec{
-						// As stored by the gateway: preset basePath + apiBasePath.
 						Paths: []string{"/gateway" + testApiBasePath},
 					},
 				}
@@ -444,6 +512,17 @@ var _ = Describe("ListenerHandler", func() {
 			Return(controllerutil.OperationResultCreated, nil)
 	}
 
+	// mockJanitorCleanup stubs the Cleanup calls that happen after provisioning
+	// on the Granted path (for RouteListenerList and SubscriberList).
+	mockJanitorCleanup := func() {
+		fakeClient.EXPECT().
+			Cleanup(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+			Return(0, nil).Once()
+		fakeClient.EXPECT().
+			Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+			Return(0, nil).Once()
+	}
+
 	setupFullHappyPath := func() *spectrev1.Listener {
 		listener := newListener()
 		mockGetConsumerApp(makeConsumerApp())
@@ -452,21 +531,18 @@ var _ = Describe("ListenerHandler", func() {
 		mockGetZone()
 		mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 		mockGetEventStore(makeListenerEventStore())
+		mockNoStaleChildren()
 		mockApprovalGranted()
 		mockCreateOrUpdatePublisher()
 		mockListRoutes()
 		mockGetRealm()
 		mockCreateOrUpdateRouteListener()
 		mockCreateOrUpdateSubscriber()
+		mockJanitorCleanup()
 		return listener
 	}
 
 	Describe("CreateOrUpdate", func() {
-		// The appId lands in the RouteListener and Subscriber names and in the bridge
-		// callback URL. Those children are cross-namespace, so they carry no owner
-		// reference and Delete only follows the refs in Listener status — a pass that
-		// provisions under an empty appId therefore leaks untracked resources once a
-		// later pass creates the correctly named ones.
 		Context("when the SpectreApplication has not resolved its application id", func() {
 			It("should block and NOT create any RouteListener or Subscriber", func() {
 				listener := newListener()
@@ -474,11 +550,8 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetProviderApp(makeProviderApp())
 
 				sa := makeSpectreAppPtr()
-				sa.Status.Id = "" // controller has not reached the assignment yet
+				sa.Status.Id = ""
 				mockGetSpectreApp(sa)
-
-				// Deliberately no RouteListener/Subscriber expectations: the mock is
-				// strict, so any attempt to create one fails this spec.
 
 				err := h.CreateOrUpdate(ctx, listener)
 
@@ -498,25 +571,84 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockNoStaleChildren()
 				mockApprovalPending()
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
-				// Should have Blocked condition
 				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
 				Expect(procCond).ToNot(BeNil())
 				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
 
-				// Should NOT have RouteListener
 				Expect(listener.Status.RouteListener).To(BeNil())
-				// Should NOT have EventSubscriptions
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
 			})
 		})
 
-		Context("when approvals are granted", func() {
-			It("should create RouteListener with correct fields", func() {
+		Context("when approval is denied", func() {
+			It("should delete all owner-labelled capture children and clear status", func() {
+				listener := newListener()
+				// Pre-populate status refs to verify they are cleared.
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "old-sub-rq", Namespace: listenerZoneStatus},
+				}
+
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockNoStaleChildren()
+				mockApprovalDenied()
+
+				// Denial cleanup: List + Delete for RouteListeners and Subscribers.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+					Return(nil).Once()
+
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				// Status must be cleared.
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+
+				// AccessDenied condition must be set.
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+			})
+		})
+
+		Context("when ApprovalRequest is denied (RequestDenied)", func() {
+			It("should not delete same-fingerprint active children", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
@@ -524,6 +656,29 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockNoStaleChildren()
+				mockApprovalRequestDenied()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				// AccessDenied condition must be set.
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+			})
+		})
+
+		Context("when approvals are granted", func() {
+			It("should create RouteListener with correct fields and fingerprint label", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockNoStaleChildren()
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
 				mockListRoutes()
@@ -540,6 +695,7 @@ var _ = Describe("ListenerHandler", func() {
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
 				mockCreateOrUpdateSubscriber()
+				mockJanitorCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
@@ -552,9 +708,12 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(capturedRL.Spec.ServiceOwner).To(Equal(providerClientId))
 				Expect(capturedRL.Spec.Issue).To(Equal(testApiBasePath))
 				Expect(capturedRL.Spec.Zone.Name).To(Equal(listenerZoneName))
-				// Verify Route reference points to the resolved Route, not to RouteListener itself
 				Expect(capturedRL.Spec.Route.Name).To(Equal(util.MakeRouteName(testApiBasePath)))
 				Expect(capturedRL.Spec.Route.Namespace).To(Equal(listenerZoneStatus))
+
+				// Verify authorization fingerprint label is present.
+				Expect(capturedRL.Labels).To(HaveKey(handler.AuthorizationFingerprintLabelKey))
+				Expect(capturedRL.Labels[handler.AuthorizationFingerprintLabelKey]).ToNot(BeEmpty())
 			})
 
 			It("should create generic Publisher with correct event type", func() {
@@ -565,9 +724,9 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockNoStaleChildren()
 				mockApprovalGranted()
 
-				// Capture Publisher
 				var capturedPub *pubsubv1.Publisher
 				fakeClient.EXPECT().
 					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
@@ -581,6 +740,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
+				mockJanitorCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
@@ -593,7 +753,7 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(capturedPub.Spec.EventStore.Name).To(Equal("eventstore-aws"))
 			})
 
-			It("should create two bridge Subscribers with correct selection filters", func() {
+			It("should create two bridge Subscribers with correct selection filters and fingerprint", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
@@ -601,13 +761,13 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockNoStaleChildren()
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
 				mockListRoutes()
 				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 
-				// Capture both Subscribers
 				var capturedSubs []*pubsubv1.Subscriber
 				fakeClient.EXPECT().
 					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
@@ -618,6 +778,7 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Times(2)
 
+				mockJanitorCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 
@@ -626,7 +787,6 @@ var _ = Describe("ListenerHandler", func() {
 
 				Expect(capturedSubs).To(HaveLen(2))
 
-				// First subscriber (rq)
 				rqSub := capturedSubs[0]
 				Expect(rqSub.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeCallback))
 				Expect(rqSub.Spec.Delivery.Callback).To(ContainSubstring(testCallbackURL))
@@ -638,9 +798,12 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(rqSub.Spec.Trigger.SelectionFilter.Attributes["provider"]).To(Equal(providerClientId))
 				Expect(rqSub.Spec.Trigger.SelectionFilter.Attributes["kind"]).To(Equal("REQUEST"))
 
-				// Second subscriber (rp)
+				// Verify fingerprint label on both Subscribers.
+				Expect(rqSub.Labels).To(HaveKey(handler.AuthorizationFingerprintLabelKey))
+
 				rpSub := capturedSubs[1]
 				Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["kind"]).To(Equal("RESPONSE"))
+				Expect(rpSub.Labels).To(HaveKey(handler.AuthorizationFingerprintLabelKey))
 			})
 
 			It("should set Ready condition when all children are ready", func() {
@@ -658,10 +821,6 @@ var _ = Describe("ListenerHandler", func() {
 			})
 
 			It("should set NotReady when a sub-resource was just created or updated", func() {
-				// A freshly created child has no conditions yet, so AllReady() is
-				// still true. Ready must not be reported until the next pass
-				// confirms the children — otherwise the CR claims success before
-				// anything is provisioned.
 				listener := setupFullHappyPath()
 				fakeClient.EXPECT().AnyChanged().Return(true).Once()
 
@@ -689,6 +848,219 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
+		Context("approval properties", func() {
+			It("should expose consumer, provider, path, listener app, directions, delivery, and filter scope", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockNoStaleChildren()
+
+				// Capture the ApprovalRequest to inspect properties.
+				var capturedReq *approvalv1.ApprovalRequest
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+					Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+						req := obj.(*approvalv1.ApprovalRequest)
+						_ = mutate()
+						if req.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
+							req.Spec.State = approvalv1.ApprovalStateGranted
+						}
+						capturedReq = req.DeepCopy()
+					}).
+					Return(controllerutil.OperationResultCreated, nil)
+
+				fakeClient.EXPECT().
+					Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+					Return(0, nil)
+
+				fakeClient.EXPECT().
+					Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, key k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						approval := out.(*approvalv1.Approval)
+						approval.Name = key.Name
+						approval.Namespace = key.Namespace
+						approval.Spec.State = approvalv1.ApprovalStateGranted
+					}).
+					Return(nil)
+
+				mockCreateOrUpdatePublisher()
+				mockListRoutes()
+				mockGetRealm()
+				mockCreateOrUpdateRouteListener()
+				mockCreateOrUpdateSubscriber()
+				mockJanitorCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(capturedReq).ToNot(BeNil())
+				props, propErr := capturedReq.Spec.Requester.GetProperties()
+				Expect(propErr).ToNot(HaveOccurred())
+				Expect(props).To(HaveKey("consumer"))
+				Expect(props).To(HaveKey("provider"))
+				Expect(props).To(HaveKey("apiBasePath"))
+				Expect(props).To(HaveKey("listenerApplication"))
+				Expect(props).To(HaveKey("captureRequest"))
+				Expect(props).To(HaveKey("captureResponse"))
+				Expect(props).To(HaveKey("deliveryType"))
+				Expect(props).To(HaveKey("requestFilter"))
+				Expect(props).To(HaveKey("responseFilter"))
+
+				// Requester and Decider ApplicationRefs must be set.
+				Expect(capturedReq.Spec.Requester.ApplicationRef).ToNot(BeNil())
+				Expect(capturedReq.Spec.Requester.ApplicationRef.Name).To(Equal(consumerAppName))
+				Expect(capturedReq.Spec.Decider.ApplicationRef).ToNot(BeNil())
+				Expect(capturedReq.Spec.Decider.ApplicationRef.Name).To(Equal(providerAppName))
+			})
+		})
+
+		Context("provider changes (stale children)", func() {
+			It("should delete old-fingerprint children before evaluating the replacement grant", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+
+				// Simulate existing children with a different fingerprint (stale).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name:      "stale-rl",
+										Namespace: listenerZoneStatus,
+										Labels: map[string]string{
+											handler.AuthorizationFingerprintLabelKey: "old-fingerprint",
+										},
+									},
+								},
+							},
+						}
+					}).
+					Return(nil).Once()
+
+				// Expect stale RouteListener deletion.
+				fakeClient.EXPECT().
+					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+						return obj.GetName() == "stale-rl"
+					}), mock.Anything).
+					Return(nil).Once()
+
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name:      "stale-sub",
+										Namespace: listenerZoneStatus,
+										Labels: map[string]string{
+											handler.AuthorizationFingerprintLabelKey: "old-fingerprint",
+										},
+									},
+								},
+							},
+						}
+					}).
+					Return(nil).Once()
+
+				// Expect stale Subscriber deletion.
+				fakeClient.EXPECT().
+					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+						return obj.GetName() == "stale-sub"
+					}), mock.Anything).
+					Return(nil).Once()
+
+				// After stale cleanup, proceed with approval (pending to stop here).
+				mockApprovalPending()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				// Confirm blocked condition (pending).
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+			})
+		})
+
+		Context("legacy children without a fingerprint", func() {
+			It("should remove unlabelled legacy children (fail-closed migration)", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+
+				// Simulate existing children WITHOUT fingerprint label (pre-migration).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name:      "legacy-rl",
+										Namespace: listenerZoneStatus,
+										Labels:    map[string]string{},
+									},
+								},
+							},
+						}
+					}).
+					Return(nil).Once()
+
+				fakeClient.EXPECT().
+					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+						return obj.GetName() == "legacy-rl"
+					}), mock.Anything).
+					Return(nil).Once()
+
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name:      "legacy-sub",
+										Namespace: listenerZoneStatus,
+										Labels:    map[string]string{},
+									},
+								},
+							},
+						}
+					}).
+					Return(nil).Once()
+
+				fakeClient.EXPECT().
+					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+						return obj.GetName() == "legacy-sub"
+					}), mock.Anything).
+					Return(nil).Once()
+
+				// After stale cleanup, approval proceeds (pending).
+				mockApprovalPending()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
 		Context("error handling", func() {
 			It("should return error when consumer Application is not found", func() {
 				listener := newListener()
@@ -710,7 +1082,6 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetZone()
 
-				// Label-based cleanup fallback for cross-namespace children
 				fakeClient.EXPECT().
 					Cleanup(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
 					Return(0, nil).Maybe()
@@ -718,7 +1089,6 @@ var _ = Describe("ListenerHandler", func() {
 					Cleanup(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
 					Return(0, nil).Maybe()
 
-				// List Listeners — only this one (being deleted)
 				fakeClient.EXPECT().
 					List(ctx, mock.AnythingOfType("*v1.ListenerList"), mock.Anything).
 					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
@@ -728,7 +1098,6 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(nil).Once()
 
-				// Expect Delete call for the Publisher
 				fakeClient.EXPECT().
 					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
 					Return(nil).Once()
@@ -744,7 +1113,6 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetZone()
 
-				// Label-based cleanup fallback for cross-namespace children
 				fakeClient.EXPECT().
 					Cleanup(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
 					Return(0, nil).Maybe()
@@ -754,18 +1122,9 @@ var _ = Describe("ListenerHandler", func() {
 
 				otherListener := newListener()
 				otherListener.Name = "other-listener"
-				// Distinct UID: the ref-count excludes the Listener being deleted
-				// by UID, since names are only unique within a namespace.
 				otherListener.UID = "listener-uid-002"
-				// Different team namespace: the generic Publisher is shared across
-				// ALL teams in a zone, so a Listener in another namespace must
-				// still keep it alive.
 				otherListener.Namespace = "other-team-ns"
 
-				// List Listeners — this one + another one. The list must NOT be
-				// namespace-scoped: the Publisher is shared zone-wide, so scoping
-				// to the deleted Listener's namespace would miss other teams'
-				// Listeners and delete a Publisher still in use.
 				fakeClient.EXPECT().
 					List(ctx, mock.AnythingOfType("*v1.ListenerList"), mock.Anything).
 					Run(func(_ context.Context, list client.ObjectList, opts ...client.ListOption) {
@@ -779,7 +1138,6 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(nil).Once()
 
-				// No Delete call expected
 				err := h.Delete(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 			})

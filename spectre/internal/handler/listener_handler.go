@@ -15,6 +15,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -101,25 +102,58 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return ctrlerrors.BlockedErrorf("Listener %q has no ApiListener configured (event-only listeners are not yet supported)", listener.Name)
 	}
 
-	// Step 6: Create the provider approval (gate).
-	listenerTeam := consumerApp.Spec.Team
-	listenerEmail := consumerApp.Spec.TeamEmail
+	// Step 5.5: Compute the canonical authorization intent and fingerprint.
+	intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp)
+	fingerprint := intent.fingerprint()
 
-	approval, err := h.ensureApprovals(ctx, listener,
-		listenerTeam, listenerEmail,
-		providerApp.Spec.Team, providerApp.Spec.TeamEmail)
+	// Step 5.6: Remove stale children whose fingerprint differs from the current
+	// intent BEFORE evaluating the replacement grant. This ensures a provider,
+	// application, path, delivery, or capture-scope change stops the old capture
+	// immediately. Unlabelled children (pre-migration) are treated as stale.
+	if err := h.removeStaleChildren(ctx, listener, fingerprint); err != nil {
+		return errors.Wrap(err, "failed to remove stale children")
+	}
+
+	// Step 6: Create the provider approval (gate).
+	approval, err := h.ensureApprovals(ctx, listener, consumerApp, providerApp, &intent)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure approvals")
 	}
 
 	listener.Status.ProviderApproval = approval.providerApproval
 
-	// Step 7: Gate — if NOT both granted, return early.
-	if !approval.granted {
+	// Step 7: Handle approval states explicitly.
+	switch approval.result {
+	case builder.ApprovalResultGranted:
+		// Continue to provisioning below.
+
+	case builder.ApprovalResultDenied:
+		// Delete all owner-labelled capture children: RouteListeners first (stop
+		// new traffic), then Subscribers.
+		if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
+			return errors.Wrap(err, "failed to cleanup children after denial")
+		}
+		listener.Status.RouteListener = nil
+		listener.Status.EventSubscriptions = nil
 		return nil
+
+	case builder.ApprovalResultPending:
+		// Do not provision; stale children already removed above.
+		return nil
+
+	case builder.ApprovalResultRequestDenied:
+		// Do not provision; retain same-intent children (matching the builder
+		// "do not touch current children" contract). Stale children were already
+		// removed in step 5.6.
+		return nil
+
+	default:
+		// ensureApprovals already returns an error for unknown results, but
+		// defend against future additions.
+		return errors.Errorf("unhandled approval result %q", approval.result)
 	}
 
-	logger.Info("Both approvals granted, provisioning downstream resources")
+	logger.Info("Approval granted, provisioning downstream resources")
 
 	// Step 8: Ensure shared generic Publisher.
 	publisher, err := h.ensureGenericPublisher(ctx, eventStore)
@@ -131,7 +165,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	// Step 9: Create RouteListener.
 	apiBasePath := listener.Spec.ApiListener.ApiBasePath
 
-	routeListener, err := h.ensureRouteListener(ctx, listener, listeningZone, appId, consumerId, providerId, apiBasePath)
+	routeListener, err := h.ensureRouteListener(ctx, listener, listeningZone, appId, consumerId, providerId, apiBasePath, fingerprint)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure RouteListener")
 	}
@@ -140,14 +174,23 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 
 	// Step 10: Create bridge Subscribers.
 	subRefs, err := h.ensureBridgeSubscribers(ctx, listener, publisher, appId,
-		eventConfig.Status.CallbackURL, apiBasePath, consumerId, providerId)
+		eventConfig.Status.CallbackURL, apiBasePath, consumerId, providerId, fingerprint)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bridge Subscribers")
 	}
 	listener.Status.EventSubscriptions = subRefs
 	logger.Info("Ensured bridge Subscribers", "count", len(subRefs))
 
-	// Step 11: Set Ready condition.
+	// Step 11: Janitor cleanup — remove any extra owner-labelled children that
+	// were not touched during this reconcile (e.g. leftover from a name change).
+	if _, err := c.Cleanup(ctx, &gatewayv1.RouteListenerList{}, cclient.OwnedByLabel(listener)); err != nil {
+		return errors.Wrap(err, "failed to cleanup extra RouteListeners")
+	}
+	if _, err := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedByLabel(listener)); err != nil {
+		return errors.Wrap(err, "failed to cleanup extra Subscribers")
+	}
+
+	// Step 12: Set Ready condition.
 	// AllReady() only turns false once a child reports Ready=False. A child that
 	// was just created has no conditions at all, so check AnyChanged() first —
 	// otherwise the first reconcile reports Ready before anything is confirmed.
@@ -214,6 +257,108 @@ func (h *ListenerHandler) Delete(ctx context.Context, listener *spectrev1.Listen
 
 	if err := h.cleanupGenericPublisherIfOrphaned(ctx, listener, zoneNamespace); err != nil {
 		return errors.Wrap(err, "failed to cleanup generic Publisher")
+	}
+
+	return nil
+}
+
+// removeStaleChildren lists all Listener-owned RouteListeners and Subscribers
+// and deletes those whose authorization fingerprint differs from the current
+// intent. Resources without the fingerprint label (pre-migration) are treated
+// as stale to enforce fail-closed migration.
+//
+// RouteListeners are deleted before Subscribers so no new traffic is captured
+// while the replacement approval is pending.
+func (h *ListenerHandler) removeStaleChildren(ctx context.Context, listener *spectrev1.Listener, currentFingerprint string) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	// List all owner-labelled RouteListeners.
+	rlList := &gatewayv1.RouteListenerList{}
+	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to list owned RouteListeners")
+	}
+	for i := range rlList.Items {
+		rl := &rlList.Items[i]
+		if isStaleChild(rl.Labels, currentFingerprint) {
+			logger.Info("Deleting stale RouteListener", "routeListener", rl.Name, "namespace", rl.Namespace)
+			if err := c.Delete(ctx, rl); err != nil && !apierrors.IsNotFound(err) {
+				return errors.Wrapf(err, "failed to delete stale RouteListener %q", rl.Name)
+			}
+			// Clear status ref if it points to this stale child.
+			if listener.Status.RouteListener != nil && listener.Status.RouteListener.Name == rl.Name && listener.Status.RouteListener.Namespace == rl.Namespace {
+				listener.Status.RouteListener = nil
+			}
+		}
+	}
+
+	// List all owner-labelled Subscribers.
+	subList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to list owned Subscribers")
+	}
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+		if isStaleChild(sub.Labels, currentFingerprint) {
+			logger.Info("Deleting stale Subscriber", "subscriber", sub.Name, "namespace", sub.Namespace)
+			if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
+				return errors.Wrapf(err, "failed to delete stale Subscriber %q", sub.Name)
+			}
+		}
+	}
+	// Clear status refs that pointed to stale Subscribers.
+	if len(subList.Items) > 0 {
+		var kept []ctypes.ObjectRef
+		for _, ref := range listener.Status.EventSubscriptions {
+			stale := false
+			for i := range subList.Items {
+				sub := &subList.Items[i]
+				if ref.Name == sub.Name && ref.Namespace == sub.Namespace && isStaleChild(sub.Labels, currentFingerprint) {
+					stale = true
+					break
+				}
+			}
+			if !stale {
+				kept = append(kept, ref)
+			}
+		}
+		listener.Status.EventSubscriptions = kept
+	}
+
+	return nil
+}
+
+// deleteAllOwnedChildren removes all owner-labelled RouteListeners and
+// Subscribers. Used on the Denied path where capture must stop entirely.
+// RouteListeners are deleted first so no new traffic is captured.
+func (h *ListenerHandler) deleteAllOwnedChildren(ctx context.Context, listener *spectrev1.Listener) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	// Delete RouteListeners first.
+	rlList := &gatewayv1.RouteListenerList{}
+	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to list owned RouteListeners for denial cleanup")
+	}
+	for i := range rlList.Items {
+		rl := &rlList.Items[i]
+		logger.Info("Deleting RouteListener after denial", "routeListener", rl.Name, "namespace", rl.Namespace)
+		if err := c.Delete(ctx, rl); err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "failed to delete RouteListener %q after denial", rl.Name)
+		}
+	}
+
+	// Then Subscribers.
+	subList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to list owned Subscribers for denial cleanup")
+	}
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+		logger.Info("Deleting Subscriber after denial", "subscriber", sub.Name, "namespace", sub.Namespace)
+		if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "failed to delete Subscriber %q after denial", sub.Name)
+		}
 	}
 
 	return nil
@@ -379,6 +524,7 @@ func (h *ListenerHandler) ensureRouteListener(
 	consumerId string,
 	providerId string,
 	apiBasePath string,
+	fingerprint string,
 ) (*gatewayv1.RouteListener, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
@@ -422,6 +568,7 @@ func (h *ListenerHandler) ensureRouteListener(
 			rl.Labels = make(map[string]string)
 		}
 		rl.Labels[cconfig.OwnerUidLabelKey] = string(listener.UID)
+		rl.Labels[AuthorizationFingerprintLabelKey] = fingerprint
 		rl.Spec = gatewayv1.RouteListenerSpec{
 			Route: routeRef,
 			Zone: ctypes.ObjectRef{

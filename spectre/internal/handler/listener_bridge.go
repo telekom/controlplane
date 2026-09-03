@@ -63,13 +63,14 @@ func (h *ListenerHandler) ensureBridgeSubscribers(
 	apiBasePath string,
 	consumerId string,
 	providerId string,
+	fingerprint string,
 ) ([]ctypes.ObjectRef, error) {
-	rqSub, err := h.ensureBridgeSubscriber(ctx, listener, publisher, appId, callbackURL, apiBasePath, consumerId, providerId, "rq", "REQUEST")
+	rqSub, err := h.ensureBridgeSubscriber(ctx, listener, publisher, appId, callbackURL, apiBasePath, consumerId, providerId, "rq", "REQUEST", fingerprint)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ensure bridge subscriber (rq)")
 	}
 
-	rpSub, err := h.ensureBridgeSubscriber(ctx, listener, publisher, appId, callbackURL, apiBasePath, consumerId, providerId, "rp", "RESPONSE")
+	rpSub, err := h.ensureBridgeSubscriber(ctx, listener, publisher, appId, callbackURL, apiBasePath, consumerId, providerId, "rp", "RESPONSE", fingerprint)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ensure bridge subscriber (rp)")
 	}
@@ -91,6 +92,7 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 	providerId string,
 	kindSuffix string,
 	kindValue string,
+	fingerprint string,
 ) (*pubsubv1.Subscriber, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -107,6 +109,7 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 			subscriber.Labels = make(map[string]string)
 		}
 		subscriber.Labels[cconfig.OwnerUidLabelKey] = string(listener.UID)
+		subscriber.Labels[AuthorizationFingerprintLabelKey] = fingerprint
 		subscriber.Spec = pubsubv1.SubscriberSpec{
 			Publisher:    *ctypes.ObjectRefFromObject(publisher),
 			SubscriberId: subscriberId,
