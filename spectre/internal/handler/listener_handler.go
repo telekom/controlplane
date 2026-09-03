@@ -89,7 +89,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 5: Resolve EventStore via EventConfig reference.
-	eventStore, err := util.ResolveEventStore(ctx, listeningZone)
+	eventStore, err := util.ResolveEventStore(ctx, eventConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve EventStore")
 	}

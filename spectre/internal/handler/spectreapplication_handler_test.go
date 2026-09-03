@@ -214,7 +214,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
 				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: items}
 			}).
-			Return(nil).Times(2)
+			Return(nil).Once()
 	}
 
 	mockGetEventStore := func(es *pubsubv1.EventStore) {

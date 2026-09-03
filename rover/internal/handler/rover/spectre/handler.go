@@ -133,6 +133,7 @@ func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.
 			ObjectRef: types.ObjectRef{
 				Name:      rover.Status.Application.Name,
 				Namespace: rover.Status.Application.Namespace,
+				UID:       rover.Status.Application.UID,
 			},
 		}
 	} else {

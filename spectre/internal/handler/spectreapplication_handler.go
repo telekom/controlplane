@@ -50,7 +50,7 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 		return errors.Wrap(err, "failed to get EventConfig")
 	}
 
-	eventStore, err := util.ResolveEventStore(ctx, zone)
+	eventStore, err := util.ResolveEventStore(ctx, eventConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve EventStore")
 	}

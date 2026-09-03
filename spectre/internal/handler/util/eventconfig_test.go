@@ -6,7 +6,6 @@ package util_test
 
 import (
 	"context"
-	"fmt"
 
 	mock "github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -98,28 +97,18 @@ var _ = Describe("ResolveEventStore", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
-		zone       *adminv1.Zone
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
-		zone = makeZone("zone-a")
 	})
 
 	It("should return EventStore when EventConfig references a ready EventStore", func() {
 		esRef := &ctypes.ObjectRef{Name: "es-zone-a", Namespace: "test-env--zone-a"}
 		ec := makeReadyEventConfigWithEventStore("ec-zone-a", "zone-a", esRef)
 		es := makeReadyEventStore("es-zone-a", "test-env--zone-a")
-
-		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{ec}}
-			}).
-			Return(nil).
-			Once()
 
 		fakeClient.EXPECT().
 			Get(mock.Anything, mock.Anything, mock.Anything).
@@ -129,90 +118,17 @@ var _ = Describe("ResolveEventStore", func() {
 			Return(nil).
 			Once()
 
-		result, err := util.ResolveEventStore(ctx, zone)
+		result, err := util.ResolveEventStore(ctx, &ec)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result).ToNot(BeNil())
 		Expect(result.Name).To(Equal("es-zone-a"))
-	})
-
-	It("should return BlockedError when no EventConfig exists for zone", func() {
-		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{}}
-			}).
-			Return(nil).
-			Once()
-
-		result, err := util.ResolveEventStore(ctx, zone)
-		Expect(err).To(HaveOccurred())
-		Expect(result).To(BeNil())
-		Expect(err).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("no EventConfig found"))
-	})
-
-	It("should return error when duplicate EventConfigs exist for zone", func() {
-		ec1 := makeReadyEventConfig("ec-1", "zone-a")
-		ec2 := makeReadyEventConfig("ec-2", "zone-a")
-
-		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{ec1, ec2}}
-			}).
-			Return(nil).
-			Once()
-
-		result, err := util.ResolveEventStore(ctx, zone)
-		Expect(err).To(HaveOccurred())
-		Expect(result).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("found %d EventConfigs", 2)))
-	})
-
-	It("should return BlockedError when EventConfig is not ready", func() {
-		ec := eventv1.EventConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "ec-zone-a",
-				Namespace: "test-env--zone-a",
-			},
-			Spec: eventv1.EventConfigSpec{
-				Zone: ctypes.ObjectRef{Name: "zone-a", Namespace: "test-env"},
-				Local: &eventv1.LocalBackend{
-					Admin:              eventv1.AdminConfig{Url: "http://admin.local"},
-					ServerSendEventUrl: "http://sse.local",
-					PublishEventUrl:    "http://publish.local",
-				},
-			},
-		}
-
-		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{ec}}
-			}).
-			Return(nil).
-			Once()
-
-		result, err := util.ResolveEventStore(ctx, zone)
-		Expect(err).To(HaveOccurred())
-		Expect(result).To(BeNil())
-		Expect(err).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not ready"))
 	})
 
 	It("should return BlockedError when EventConfig has no Status.EventStore", func() {
 		ec := makeReadyEventConfig("ec-zone-a", "zone-a")
 		// Status.EventStore is nil by default from makeReadyEventConfig
 
-		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{ec}}
-			}).
-			Return(nil).
-			Once()
-
-		result, err := util.ResolveEventStore(ctx, zone)
+		result, err := util.ResolveEventStore(ctx, &ec)
 		Expect(err).To(HaveOccurred())
 		Expect(result).To(BeNil())
 		Expect(err).To(Satisfy(isBlockedError))
@@ -224,19 +140,11 @@ var _ = Describe("ResolveEventStore", func() {
 		ec := makeReadyEventConfigWithEventStore("ec-zone-a", "zone-a", esRef)
 
 		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{ec}}
-			}).
-			Return(nil).
-			Once()
-
-		fakeClient.EXPECT().
 			Get(mock.Anything, mock.Anything, mock.Anything).
 			Return(apierrors.NewNotFound(schema.GroupResource{Group: "pubsub.2.2.2.2", Resource: "eventstores"}, "es-zone-a")).
 			Once()
 
-		result, err := util.ResolveEventStore(ctx, zone)
+		result, err := util.ResolveEventStore(ctx, &ec)
 		Expect(err).To(HaveOccurred())
 		Expect(result).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("failed to get EventStore"))
@@ -261,14 +169,6 @@ var _ = Describe("ResolveEventStore", func() {
 		}
 
 		fakeClient.EXPECT().
-			List(mock.Anything, mock.Anything, mock.Anything).
-			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{ec}}
-			}).
-			Return(nil).
-			Once()
-
-		fakeClient.EXPECT().
 			Get(mock.Anything, mock.Anything, mock.Anything).
 			Run(func(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) {
 				*obj.(*pubsubv1.EventStore) = *esNotReady
@@ -276,7 +176,7 @@ var _ = Describe("ResolveEventStore", func() {
 			Return(nil).
 			Once()
 
-		result, err := util.ResolveEventStore(ctx, zone)
+		result, err := util.ResolveEventStore(ctx, &ec)
 		Expect(err).To(HaveOccurred())
 		Expect(result).To(BeNil())
 		Expect(err).To(Satisfy(isBlockedError))

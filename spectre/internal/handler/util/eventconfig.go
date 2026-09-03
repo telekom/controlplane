@@ -54,15 +54,10 @@ func GetEventConfig(ctx context.Context, zone *adminv1.Zone) (*eventv1.EventConf
 }
 
 // ResolveEventStore resolves the EventStore for the given zone by following the
-// EventConfig's Status.EventStore reference. It fetches the unique EventConfig,
-// reads the ObjectRef, does a direct Get, and checks readiness.
-func ResolveEventStore(ctx context.Context, zone *adminv1.Zone) (*pubsubv1.EventStore, error) {
+// EventConfig's Status.EventStore reference. Callers that already fetched the
+// EventConfig via GetEventConfig should pass it directly to avoid a duplicate List.
+func ResolveEventStore(ctx context.Context, eventConfig *eventv1.EventConfig) (*pubsubv1.EventStore, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-
-	eventConfig, err := GetEventConfig(ctx, zone)
-	if err != nil {
-		return nil, err
-	}
 
 	if eventConfig.Status.EventStore == nil {
 		return nil, ctrlerrors.BlockedErrorf("EventConfig %q has no EventStore reference", eventConfig.Name)

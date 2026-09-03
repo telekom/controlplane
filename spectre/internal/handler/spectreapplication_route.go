@@ -36,6 +36,7 @@ func (h *SpectreApplicationHandler) ensureSSERoute(
 	}
 
 	if !eventConfig.IsLocal() {
+		// TODO: proxy SSE routes need a follow-up implementation to support cross-zone SSE delivery
 		return nil, ctrlerrors.BlockedErrorf("EventConfig %q is a proxy zone; proxy SSE routes are not implemented, SSE is local-zone-only", eventConfig.Name)
 	}
 
