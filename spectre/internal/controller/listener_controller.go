@@ -10,17 +10,26 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	crhandler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
 )
@@ -64,12 +73,60 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("listener-controller")
 	r.Controller = cc.NewController(&handler.ListenerHandler{}, r.Client, r.Recorder)
 
+	owns := builder.WithPredicates(cc.Count("listener", cc.RoleOwns))
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&spectrev1.Listener{}).
+		// Approval children — same pattern as ApiSubscription and EventSubscription.
+		Owns(&approvalv1.ApprovalRequest{}, owns).
+		Owns(&approvalv1.Approval{}, owns).
+		// SpectreApplication status changes (e.g. Id becomes populated).
 		Watches(
 			&spectrev1.SpectreApplication{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapSpectreApplicationToListeners),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		// Owner-labelled RouteListeners (readiness changes update parent readiness).
+		Watches(
+			&gatewayv1.RouteListener{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapOwnedChildToListener),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		// Owner-labelled bridge Subscribers (readiness changes update parent readiness).
+		Watches(
+			&pubsubv1.Subscriber{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapOwnedChildToListener),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		// Target Routes — creation after a Listener block, or mode changes (pass-through/failover).
+		Watches(
+			&gatewayv1.Route{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapRouteToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		// Consumer and provider Applications.
+		Watches(
+			&applicationv1.Application{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapApplicationToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		// Zones — readiness changes affect blocked Listeners.
+		Watches(
+			&adminv1.Zone{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapZoneToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		// EventConfigs — readiness or CallbackURL changes.
+		Watches(
+			&eventv1.EventConfig{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapEventConfigToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		// EventStores — readiness changes unblock parents.
+		Watches(
+			&pubsubv1.EventStore{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapEventStoreToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
@@ -79,6 +136,8 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+// mapSpectreApplicationToListeners maps a SpectreApplication change to all
+// Listeners that reference it via spec.application.
 func (r *ListenerReconciler) mapSpectreApplicationToListeners(
 	ctx context.Context,
 	obj client.Object,
@@ -104,6 +163,268 @@ func (r *ListenerReconciler) mapSpectreApplicationToListeners(
 		reqs = append(reqs, reconcile.Request{
 			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 		})
+	}
+
+	return reqs
+}
+
+// mapOwnedChildToListener maps an owner-labelled child (RouteListener or
+// Subscriber) back to the owning Listener via the OwnerUidLabelKey.
+// This avoids cluster-wide parent scans by reading the UID from the label
+// and looking up the Listener directly.
+func (r *ListenerReconciler) mapOwnedChildToListener(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	labels := obj.GetLabels()
+	if labels == nil {
+		return nil
+	}
+
+	ownerUID := labels[cconfig.OwnerUidLabelKey]
+	if ownerUID == "" {
+		return nil
+	}
+
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list); err != nil {
+		return nil
+	}
+
+	for i := range list.Items {
+		if string(list.Items[i].UID) == ownerUID {
+			return []reconcile.Request{
+				{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])},
+			}
+		}
+	}
+
+	return nil
+}
+
+// mapRouteToListeners maps a Route change to Listeners whose apiBasePath
+// matches the Route. This ensures a Listener blocked before Route creation
+// or whose Route changes mode reconciles immediately.
+func (r *ListenerReconciler) mapRouteToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	route, ok := obj.(*gatewayv1.Route)
+	if !ok {
+		return nil
+	}
+
+	// Extract the apiBasePath from the Route name. The Route name is derived
+	// deterministically from the apiBasePath via labelutil.NormalizeValue.
+	// We need to find Listeners whose apiBasePath would produce this Route name.
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		return nil
+	}
+
+	routeName := route.Name
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		if list.Items[i].Spec.ApiListener == nil {
+			continue
+		}
+		if labelutil.NormalizeValue(list.Items[i].Spec.ApiListener.ApiBasePath) == routeName {
+			reqs = append(reqs, reconcile.Request{
+				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+			})
+		}
+	}
+
+	return reqs
+}
+
+// mapApplicationToListeners maps an Application change to Listeners that
+// reference it as consumer or provider.
+func (r *ListenerReconciler) mapApplicationToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	app, ok := obj.(*applicationv1.Application)
+	if !ok {
+		return nil
+	}
+
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: app.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list Listeners for Application")
+		return nil
+	}
+
+	appRef := types.NamespacedName{Name: app.Name, Namespace: app.Namespace}
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		l := &list.Items[i]
+		if (l.Spec.Consumer.Name == appRef.Name && l.Spec.Consumer.Namespace == appRef.Namespace) ||
+			(l.Spec.Provider.Name == appRef.Name && l.Spec.Provider.Namespace == appRef.Namespace) {
+			reqs = append(reqs, reconcile.Request{
+				NamespacedName: client.ObjectKeyFromObject(l),
+			})
+		}
+	}
+
+	return reqs
+}
+
+// mapZoneToListeners maps a Zone change to Listeners whose consumer or
+// provider Application references that Zone.
+func (r *ListenerReconciler) mapZoneToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	zone, ok := obj.(*adminv1.Zone)
+	if !ok {
+		return nil
+	}
+
+	// Find Applications in this Zone.
+	appList := &applicationv1.ApplicationList{}
+	if err := r.List(ctx, appList, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: zone.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list Applications for Zone")
+		return nil
+	}
+
+	// Collect Application refs that reference this Zone.
+	zoneRef := types.NamespacedName{Name: zone.Name, Namespace: zone.Namespace}
+	appRefs := make(map[types.NamespacedName]struct{})
+	for i := range appList.Items {
+		a := &appList.Items[i]
+		if a.Spec.Zone.Name == zoneRef.Name && a.Spec.Zone.Namespace == zoneRef.Namespace {
+			appRefs[types.NamespacedName{Name: a.Name, Namespace: a.Namespace}] = struct{}{}
+		}
+	}
+
+	if len(appRefs) == 0 {
+		return nil
+	}
+
+	// Find Listeners that reference any of these Applications.
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: zone.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list Listeners for Zone")
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		l := &list.Items[i]
+		consRef := types.NamespacedName{Name: l.Spec.Consumer.Name, Namespace: l.Spec.Consumer.Namespace}
+		provRef := types.NamespacedName{Name: l.Spec.Provider.Name, Namespace: l.Spec.Provider.Namespace}
+		if _, ok := appRefs[consRef]; ok {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(l)})
+			continue
+		}
+		if _, ok := appRefs[provRef]; ok {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(l)})
+		}
+	}
+
+	return reqs
+}
+
+// mapEventConfigToListeners maps an EventConfig change to Listeners that
+// depend on EventConfigs via their zone. EventConfig is keyed by zone,
+// so a change can affect any Listener in that zone.
+func (r *ListenerReconciler) mapEventConfigToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	ec, ok := obj.(*eventv1.EventConfig)
+	if !ok {
+		return nil
+	}
+
+	// Find all Applications in the EventConfig's zone.
+	appList := &applicationv1.ApplicationList{}
+	if err := r.List(ctx, appList, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: ec.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list Applications for EventConfig")
+		return nil
+	}
+
+	zoneRef := types.NamespacedName{Name: ec.Spec.Zone.Name, Namespace: ec.Spec.Zone.Namespace}
+	appRefs := make(map[types.NamespacedName]struct{})
+	for i := range appList.Items {
+		a := &appList.Items[i]
+		if a.Spec.Zone.Name == zoneRef.Name && a.Spec.Zone.Namespace == zoneRef.Namespace {
+			appRefs[types.NamespacedName{Name: a.Name, Namespace: a.Namespace}] = struct{}{}
+		}
+	}
+
+	if len(appRefs) == 0 {
+		return nil
+	}
+
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: ec.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list Listeners for EventConfig")
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		l := &list.Items[i]
+		consRef := types.NamespacedName{Name: l.Spec.Consumer.Name, Namespace: l.Spec.Consumer.Namespace}
+		provRef := types.NamespacedName{Name: l.Spec.Provider.Name, Namespace: l.Spec.Provider.Namespace}
+		if _, ok := appRefs[consRef]; ok {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(l)})
+			continue
+		}
+		if _, ok := appRefs[provRef]; ok {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(l)})
+		}
+	}
+
+	return reqs
+}
+
+// mapEventStoreToListeners maps an EventStore change to Listeners that
+// depend on it via EventConfig. An EventStore becoming Ready unblocks
+// parents that were waiting for it.
+func (r *ListenerReconciler) mapEventStoreToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	es, ok := obj.(*pubsubv1.EventStore)
+	if !ok {
+		return nil
+	}
+
+	// Find EventConfigs that reference this EventStore.
+	ecList := &eventv1.EventConfigList{}
+	if err := r.List(ctx, ecList, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: es.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list EventConfigs for EventStore")
+		return nil
+	}
+
+	// For each matching EventConfig, delegate to the EventConfig mapper.
+	var reqs []reconcile.Request
+	for i := range ecList.Items {
+		ec := &ecList.Items[i]
+		if ec.Status.EventStore != nil && ec.Status.EventStore.Name == es.Name && ec.Status.EventStore.Namespace == es.Namespace {
+			reqs = append(reqs, r.mapEventConfigToListeners(ctx, ec)...)
+		}
 	}
 
 	return reqs

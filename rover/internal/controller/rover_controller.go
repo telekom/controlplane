@@ -28,6 +28,7 @@ import (
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	rover_handler "github.com/telekom/controlplane/rover/internal/handler/rover"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
 // RoverReconciler reconciles a Rover object
@@ -93,6 +94,11 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		b = b.Owns(&agenticv1.AgenticExposure{}, owns).
 			Owns(&agenticv1.AgenticSubscription{}, owns)
+	}
+
+	if cconfig.FeatureSpectre.IsEnabled() {
+		b = b.Owns(&spectrev1.SpectreApplication{}, owns).
+			Owns(&spectrev1.Listener{}, owns)
 	}
 
 	b = b.Watches(&organizationv1.Team{},
