@@ -296,7 +296,9 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 		remoteApiSubscription.Spec.TargetOrganization = remoteOrgId
 
 		By("Creating the Zone")
-		CreateZone(zoneName)
+		zone := CreateZone(zoneName)
+		zone.Status.RealmName = zoneName + "-realm"
+		Expect(k8sClient.Status().Update(ctx, zone)).To(Succeed())
 
 		By("Creating the RemoteOrganization")
 		remoteOrg = CreateRemoteOrganisation(remoteOrgId, zoneName)
@@ -353,6 +355,9 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 				testutil.ExpectConditionToMatch(g, meta.FindStatusCondition(remoteApiSubscription.Status.Conditions, condition.ConditionTypeReady), "RemoteApiSubscriptionReady", true)
 
 				g.Expect(remoteApiSubscription.Status.Route).ToNot(BeNil())
+				route := &gatewayapi.Route{}
+				g.Expect(k8sClient.Get(ctx, remoteApiSubscription.Status.Route.K8s(), route)).To(Succeed())
+				g.Expect(route.Spec.Security.RealmName).To(Equal("remoteapisub-test-cons-realm"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

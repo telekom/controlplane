@@ -91,6 +91,7 @@ func makeReadyZone() *adminv1.Zone {
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
+			RealmName: "provider-realm",
 			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
 				Name:      "gw",
 				Namespace: "default",
@@ -657,6 +658,59 @@ var _ = Describe("EventExposureHandler", func() {
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Done"))
+		})
+
+		It("should use each route-owning zone realm for cross-zone SSE routes", func() {
+			et := makeReadyEventType()
+			providerZone := makeReadyZone()
+			subscriberZone := makeReadyZone()
+			subscriberZone.Name = "subscriber-zone"
+			subscriberZone.Status.Namespace = "subscriber-ns"
+			subscriberZone.Status.RealmName = "subscriber-realm"
+			subscriberZone.Status.Presets[0].GatewayRef.Namespace = "subscriber-ns"
+			ec := makeReadyEventConfig()
+
+			mockListEventTypes([]eventv1.EventType{et})
+			mockListEventExposures([]eventv1.EventExposure{})
+			mockGetZone(providerZone)
+			mockListEventConfigs([]eventv1.EventConfig{ec}, 2)
+			mockGetEventStore(makeReadyEventStore())
+			mockGetApplication(makeReadyApplication())
+			mockCreateOrUpdatePublisher(controllerutil.OperationResultCreated, nil)
+			subscription := eventv1.EventSubscription{
+				Spec: eventv1.EventSubscriptionSpec{
+					EventType: obj.Spec.EventType,
+					Delivery:  eventv1.Delivery{Type: eventv1.DeliveryTypeServerSentEvent},
+					Zone:      ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
+				},
+				Status: eventv1.EventSubscriptionStatus{Conditions: []metav1.Condition{{
+					Type: "ApprovalGranted", Status: metav1.ConditionTrue, Reason: "Approved",
+				}}},
+			}
+			mockListEventSubscriptions([]eventv1.EventSubscription{subscription})
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "subscriber-zone", Namespace: "default"}, mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*adminv1.Zone) = *subscriberZone
+				}).Return(nil).Once()
+
+			var proxyRoute, primaryRoute gatewayv1.Route
+			fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					proxyRoute = *route.(*gatewayv1.Route)
+				}).Return(controllerutil.OperationResultCreated, nil).Once()
+			fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					primaryRoute = *route.(*gatewayv1.Route)
+				}).Return(controllerutil.OperationResultCreated, nil).Once()
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+			Expect(proxyRoute.Spec.Security.RealmName).To(Equal("subscriber-realm"))
+			Expect(primaryRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
 		})
 
 		It("should not panic and route via backend zone when exposure zone is a proxy zone", func() {

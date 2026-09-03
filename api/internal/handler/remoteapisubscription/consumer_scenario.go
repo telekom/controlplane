@@ -96,6 +96,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 		route.Spec = gatewayapi.RouteSpec{
 			GatewayRef: *presetStatus.GatewayRef,
 			Type:       gatewayapi.RouteTypePrimary,
+			Security:   gatewayapi.Security{RealmName: zone.Status.RealmName},
 			Backend: gatewayapi.Backend{
 				Upstreams: []gatewayapi.Upstream{
 					{

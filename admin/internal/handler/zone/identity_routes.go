@@ -132,6 +132,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 			Hostnames:   hostnames,
 			Paths:       paths,
 			PassThrough: true,
+			Security:    gatewayapi.Security{RealmName: hc.Zone.Status.RealmName},
 		}
 
 		return nil

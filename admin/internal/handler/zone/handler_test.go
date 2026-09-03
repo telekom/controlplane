@@ -17,6 +17,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	config "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -106,6 +107,31 @@ var _ = Describe("Zone Handler", func() {
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: zone.Status.Namespace, Name: naming.ForGateway(zone, "standard") + "--proxy"}, route)).To(Succeed())
 		Expect(route.Spec.GatewayRef.Name).To(Equal(naming.ForGateway(zone, "standard")))
 		Expect(route.Spec.Hostnames).To(Equal([]string{"test-stargate.de"}))
+	})
+
+	It("uses the owning zone realm for every route", func() {
+		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{
+			{Name: "team-api", Path: "/team-api", Url: "https://team.example.com", Type: adminv1.ManagedRouteTypeTeamAPI},
+			{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com", Type: adminv1.ManagedRouteTypeProxy},
+		}}
+		handler := &ZoneHandler{}
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		routes := &gatewayapi.RouteList{}
+		Expect(k8sClient.List(ctx, routes, client.InNamespace(zone.Status.Namespace), client.MatchingLabels{
+			config.OwnerUidLabelKey: string(zone.UID),
+		})).To(Succeed())
+		Expect(routes.Items).NotTo(BeEmpty())
+		for _, route := range routes.Items {
+			Expect(route.Spec.Security.RealmName).To(Equal(zone.Status.RealmName), route.Name)
+		}
+
+		teamRoute := &gatewayapi.Route{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: zone.Status.Namespace, Name: naming.ForGateway(zone, "standard") + "--team-api"}, teamRoute)).To(Succeed())
+		Expect(teamRoute.Spec.Security.TrustedIssuers).To(ContainElement(ContainSubstring(zone.Status.TeamApiIdentityRealm.Name)))
+		Expect(teamRoute.Spec.Security.RealmName).NotTo(Equal(zone.Status.TeamApiIdentityRealm.Name))
 	})
 
 	It("is ready after identity resources are ready and reconciliation is unchanged", func() {

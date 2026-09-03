@@ -128,8 +128,6 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 // reconcileSSERoutes manages SSE Route creation for cross-zone proxy routes and the primary route.
 func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *eventv1.EventExposure, zone *adminv1.Zone, eventConfig *eventv1.EventConfig) error {
 	logger := log.FromContext(ctx)
-	realmName := zone.Status.RealmName
-
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil
 	obj.Status.SseURLs = make(map[string]string)
@@ -151,7 +149,7 @@ func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *even
 	// Subscriber proxy Routes forward to the backend zone (not the exposure zone,
 	// which may itself be a proxy). The backend zone is served directly by the
 	// primary Route below, so it is skipped inside createProxySSERoutes.
-	subscriberZones, err := h.createProxySSERoutes(ctx, obj, backendZone, crossZones, realmName)
+	subscriberZones, err := h.createProxySSERoutes(ctx, obj, backendZone, crossZones)
 	if err != nil {
 		return err
 	}
@@ -173,7 +171,7 @@ func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *even
 		}
 		ownProxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, zone, backendZone,
 			util.WithTrustedIssuers(proxyTrustedIssuers),
-			util.WithRealmName(realmName),
+			util.WithRealmName(zone.Status.RealmName),
 		)
 		if routeErr != nil {
 			return errors.Wrap(routeErr, "failed to create own-zone proxy SSE Route")
@@ -243,7 +241,7 @@ func (h *EventExposureHandler) resolveSSEBackendZone(ctx context.Context, zone *
 
 // createProxySSERoutes creates proxy SSE routes for cross-zone subscribers and returns the subscriber zones.
 // backendZone is the zone running the SSE backend that all proxy routes forward to.
-func (h *EventExposureHandler) createProxySSERoutes(ctx context.Context, obj *eventv1.EventExposure, backendZone *adminv1.Zone, crossZones []types.ObjectRef, realmName string) ([]*adminv1.Zone, error) {
+func (h *EventExposureHandler) createProxySSERoutes(ctx context.Context, obj *eventv1.EventExposure, backendZone *adminv1.Zone, crossZones []types.ObjectRef) ([]*adminv1.Zone, error) {
 	logger := log.FromContext(ctx)
 
 	var subscriberZones []*adminv1.Zone
@@ -273,7 +271,7 @@ func (h *EventExposureHandler) createProxySSERoutes(ctx context.Context, obj *ev
 
 		proxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, subscriberZone, backendZone,
 			util.WithTrustedIssuers(proxyTrustedIssuers),
-			util.WithRealmName(realmName),
+			util.WithRealmName(subscriberZone.Status.RealmName),
 		)
 		if routeErr != nil {
 			return nil, errors.Wrapf(routeErr, "failed to create SSE proxy Route for zone %q", subscriberZoneRef.Name)

@@ -40,7 +40,7 @@ type routingState struct {
 	// Determined up front by determineRoutingState
 	// -------------------------------------------------------------------------
 
-	// realmName is the environment/realm name used for token validation on all routes.
+	// realmName is the exposure zone realm used for token validation on the real route.
 	realmName string
 
 	// subscribers is the full list of approved, non-deleted ApiSubscriptions for this exposure.

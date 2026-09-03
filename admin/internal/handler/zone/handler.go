@@ -68,11 +68,11 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		// identity provider, which rejects clients and tokens for a realm that
 		// is not active yet.
 		waitForSubResources,
+		populateRealmName,
 		reconcileGateways,
 		reconcileInternalRoutes,
 		createIdentityRoutes,
 		cleanupStaleRoutes,
-		populateRealmName,
 		populatePresetStatus,
 	}
 

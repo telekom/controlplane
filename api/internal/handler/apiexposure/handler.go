@@ -239,7 +239,7 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 		logger.V(1).Info("Creating/updating proxy route for subscriber zone", "zone", subscriberZoneRef.Name)
 
 		options := []util.CreateRouteOption{
-			util.WithRealmName(state.realmName),
+			util.WithRealmName(subscriberZone.Status.RealmName),
 			util.WithOwner(apiExp),
 		}
 
@@ -300,7 +300,7 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 		}
 
 		options := []util.CreateRouteOption{
-			util.WithRealmName(state.realmName),
+			util.WithRealmName(providerFailoverZone.Status.RealmName),
 			util.WithOwner(apiExp),
 		}
 

@@ -164,9 +164,9 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 			route.Spec.Security = gatewayapi.Security{
 				DisableAccessControl: true,
 				TrustedIssuers:       []string{trustedIssuer},
-				RealmName:            hc.TeamApiIdentityRealm.Name,
 			}
 		}
+		route.Spec.Security.RealmName = hc.Zone.Status.RealmName
 
 		return nil
 	}

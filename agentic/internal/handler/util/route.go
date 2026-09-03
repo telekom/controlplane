@@ -92,6 +92,7 @@ func CreateAgenticRoute(
 		} else {
 			route.Spec.Security = gatewayapi.Security{}
 		}
+		route.Spec.Security.RealmName = zone.Status.RealmName
 
 		// Set trusted issuers: only add the exposure zone's own IDP issuer when
 		// there are local subscribers (direct callers). Cross-zone proxy gateways
@@ -196,6 +197,7 @@ func CreateAgenticProxyRoute(
 			Paths:      paths,
 			Security: gatewayapi.Security{
 				DefaultConsumers: []string{GatewayConsumerName},
+				RealmName:        subscriberZone.Status.RealmName,
 			},
 			Traffic: gatewayapi.Traffic{},
 			// Critical: disable buffering for MCP streaming
