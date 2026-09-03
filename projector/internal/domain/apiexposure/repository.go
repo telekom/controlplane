@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -16,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/metrics"
@@ -83,6 +85,19 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 		}
 	}
 
+	// Capture the currently-persisted rate limit so subscriber propagation can
+	// be skipped when it is unchanged (the common case for exposure reconciles).
+	var oldRateLimit *model.RateLimit
+	if existing, qErr := r.client.ApiExposure.Query().
+		Where(apiexposure.BasePathEQ(data.BasePath), apiexposure.HasOwnerWith(application.IDEQ(appID))).
+		Select(apiexposure.FieldTraffic).
+		Only(ctx); qErr == nil {
+		oldRateLimit = existing.Traffic.RateLimit
+	} else if !ent.IsNotFound(qErr) {
+		return fmt.Errorf("read current traffic for api_exposure %q (app %q, team %q): %w",
+			data.BasePath, data.AppName, data.TeamName, qErr)
+	}
+
 	create := r.client.ApiExposure.Create().
 		SetBasePath(data.BasePath).
 		SetVisibility(apiexposure.Visibility(data.Visibility)).
@@ -134,16 +149,79 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 	// was stored with a NULL target FK and nothing re-links it when the exposure
 	// later appears — the subscription CR is not re-reconciled. Here we adopt any
 	// such orphaned subscriptions so their target resolves.
+	var newlyLinked int
 	if data.Active {
-		if err := r.client.ApiSubscription.Update().
+		newlyLinked, err = r.client.ApiSubscription.Update().
 			Where(
 				apisubscription.BasePathEQ(data.BasePath),
 				apisubscription.Not(apisubscription.HasTarget()),
 			).
 			SetTargetID(exposureID).
-			Exec(ctx); err != nil {
+			Save(ctx)
+		if err != nil {
 			return fmt.Errorf("back-link subscriptions to api_exposure %q (app %q, team %q): %w",
 				data.BasePath, data.AppName, data.TeamName, err)
+		}
+	}
+
+	// Refresh the denormalized subscriber traffic on this active exposure's
+	// subscriptions, but only when the rate limit actually changed or orphans were
+	// just adopted. Nothing else re-projects those subscriptions when the exposure
+	// changes, so without this their traffic would go stale. Restricted to active
+	// exposures because base_path identifies the active exposure's subscribers.
+	var newRateLimit *model.RateLimit
+	if data.Traffic != nil {
+		newRateLimit = data.Traffic.RateLimit
+	}
+	if data.Active && (newlyLinked > 0 || !reflect.DeepEqual(oldRateLimit, newRateLimit)) {
+		if err := r.propagateSubscriberTraffic(ctx, data.BasePath, newRateLimit); err != nil {
+			return fmt.Errorf("propagate traffic to subscriptions of api_exposure %q (app %q, team %q): %w",
+				data.BasePath, data.AppName, data.TeamName, err)
+		}
+	}
+	return nil
+}
+
+// propagateSubscriberTraffic refreshes the denormalized traffic on the active
+// exposure's subscriptions. They share its base_path (unique per active
+// exposure), so it filters on the indexed base_path column: one UPDATE for the
+// default cohort followed by one targeted UPDATE per subscriber override. The
+// statement count is bounded by the number of overrides; the
+// default UPDATE still rewrites every targeting subscription.
+func (r *Repository) propagateSubscriberTraffic(ctx context.Context, basePath string, rl *model.RateLimit) error {
+	// Default cohort applies to all targeting subscriptions; overridden
+	// subscribers are corrected by the per-override updates below.
+	defaultTraffic := shared.DefaultSubscriptionTraffic(rl)
+	baseUpdate := r.client.ApiSubscription.Update().
+		Where(apisubscription.BasePathEQ(basePath), apisubscription.HasTarget())
+	if defaultTraffic == nil {
+		baseUpdate.ClearTraffic()
+	} else {
+		baseUpdate.SetTraffic(defaultTraffic)
+	}
+	if _, err := baseUpdate.Save(ctx); err != nil {
+		return fmt.Errorf("update default-cohort traffic: %w", err)
+	}
+
+	if rl == nil || rl.SubscriberRateLimit == nil {
+		return nil
+	}
+	for i := range rl.SubscriberRateLimit.Overrides {
+		subscriberID := rl.SubscriberRateLimit.Overrides[i].Subscriber
+		val := shared.DeriveSubscriptionTraffic(rl, subscriberID)
+		update := r.client.ApiSubscription.Update().
+			Where(
+				apisubscription.BasePathEQ(basePath),
+				apisubscription.HasTarget(),
+				apisubscription.HasOwnerWith(application.ClientIDEQ(subscriberID)),
+			)
+		if val == nil {
+			update.ClearTraffic()
+		} else {
+			update.SetTraffic(val)
+		}
+		if _, err := update.Save(ctx); err != nil {
+			return fmt.Errorf("update override traffic for subscriber %q: %w", subscriberID, err)
 		}
 	}
 	return nil

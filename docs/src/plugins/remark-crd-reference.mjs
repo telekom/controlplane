@@ -393,6 +393,55 @@ function mkTable(headerLabels, dataRows) {
   };
 }
 
+function buildSchemaList(indexPath) {
+  let index;
+  try {
+    index = JSON.parse(fs.readFileSync(indexPath, "utf-8"));
+  } catch (err) {
+    throw new Error(`Failed to read schema index at "${indexPath}": ${err.message}`);
+  }
+
+  if (
+    !Array.isArray(index.schemas) ||
+    index.schemas.some(
+      (schema) =>
+        !schema ||
+        ![schema.group, schema.kind, schema.schema].every(
+          (value) => typeof value === "string" && value.length > 0,
+        ),
+    )
+  ) {
+    throw new Error(`Invalid schema index at "${indexPath}"`);
+  }
+
+  const groups = new Map();
+  for (const schema of index.schemas) {
+    if (!groups.has(schema.group)) groups.set(schema.group, []);
+    groups.get(schema.group).push(schema);
+  }
+
+  const labels = { api: "API", pubsub: "PubSub" };
+  const nodes = [];
+  for (const [group, schemas] of groups) {
+    const domain = group.split(".")[0];
+    const label = labels[domain] || toPascalCase(domain);
+    const rows = schemas.map((schema) => {
+      const fileName = schema.schema.split("/").at(-1);
+      return mkTableRow([
+        mkTableCell(mkStrong(schema.kind)),
+        mkTableCell(
+          mkLink(`pathname:///schemas/${schema.schema}`, [mkInlineCode(fileName)]),
+        ),
+      ]);
+    });
+
+    if (nodes.length > 0) nodes.push({ type: "thematicBreak" });
+    nodes.push(mkHeading(3, label), mkTable(["Kind", "Schema"], rows));
+  }
+
+  return nodes;
+}
+
 // ---------------------------------------------------------------------------
 // Build AST nodes for types / CRDs
 // ---------------------------------------------------------------------------
@@ -566,7 +615,11 @@ function buildAllNodes(viewModel) {
 // Remark plugin
 // ---------------------------------------------------------------------------
 
-export default function remarkCrdReference() {
+export default function remarkCrdReference(options = {}) {
+  const schemaIndexPath =
+    options.schemaIndexPath ||
+    path.resolve(__dirname, "../../static/schemas/index.json");
+
   return (tree) => {
     // We cannot use visit's own splice helpers because we are replacing one
     // node with *multiple* nodes.  Collect replacements, then apply them
@@ -574,6 +627,17 @@ export default function remarkCrdReference() {
     const replacements = [];
 
     visit(tree, "mdxJsxFlowElement", (node, index, parent) => {
+      if (node.name === "CRDSchemaList") {
+        if (index != null && parent) {
+          replacements.push({
+            parent,
+            index,
+            nodes: buildSchemaList(schemaIndexPath),
+          });
+        }
+        return;
+      }
+
       if (node.name !== "CRDReference") return;
       if (index == null || !parent) return;
 
