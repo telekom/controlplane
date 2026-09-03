@@ -6,7 +6,10 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"reflect"
 
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,6 +65,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		}
 		return HandleError(ctx, err, object, c.Recorder)
 	}
+	original := object.DeepCopyObject()
 
 	if changed, setupErr := FirstSetup(ctx, c.Client, object); setupErr != nil {
 		return HandleError(ctx, setupErr, object, c.Recorder)
@@ -104,9 +108,9 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	if err != nil {
 		EnsureNotReadyOnError(ctx, c.Client, object, err)
 		result, retryErr := HandleError(ctx, err, object, c.Recorder)
-		StampObservedGeneration(object)
-		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
-			return HandleError(ctx, statusErr, object, c.Recorder)
+		if statusErr := c.updateStatusIfChanged(ctx, original, object); statusErr != nil {
+			result, statusErr = HandleError(ctx, statusErr, object, c.Recorder)
+			retryErr = errors.Join(retryErr, statusErr)
 		}
 		return result, retryErr
 	}
@@ -119,8 +123,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		c.Event(ctx, object, "Warning", "UnknownReady", "Resource has an unknown ready status")
 	}
 
-	StampObservedGeneration(object)
-	if err = c.Client.Status().Update(ctx, object); err != nil {
+	if err = c.updateStatusIfChanged(ctx, original, object); err != nil {
 		return HandleError(ctx, err, object, c.Recorder)
 	}
 
@@ -132,6 +135,41 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	return reconcile.Result{
 		RequeueAfter: requeueAfter,
 	}, nil
+}
+
+// updateStatusIfChanged persists the status only when it differs from the state
+// fetched at the start of the reconciliation; a converged resource would
+// otherwise pay a status write on every requeue for a no-op update.
+//
+// ObservedGeneration is stamped before the comparison so a spec change is
+// persisted even when the conditions are unchanged.
+func (c *ControllerImpl[T]) updateStatusIfChanged(ctx context.Context, original runtime.Object, object T) error {
+	StampObservedGeneration(object)
+
+	before, ok := statusValue(original)
+	after, hasStatus := statusValue(object)
+	if ok && hasStatus && apiequality.Semantic.DeepEqual(before, after) {
+		recordStatusUpdate(statusUpdateResultSkipped, object, c.Scheme)
+		return nil
+	}
+
+	if err := c.Client.Status().Update(ctx, object); err != nil {
+		recordStatusUpdate(statusUpdateResultError, object, c.Scheme)
+		return err
+	}
+
+	recordStatusUpdate(statusUpdateResultUpdated, object, c.Scheme)
+	return nil
+}
+
+// statusValue returns the object's Status field. Objects without a Status field
+// report false, so the caller falls back to writing rather than comparing.
+func statusValue(object any) (any, bool) {
+	field := reflect.ValueOf(object).Elem().FieldByName("Status")
+	if !field.IsValid() {
+		return nil, false
+	}
+	return field.Interface(), true
 }
 
 func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (reconcile.Result, error) {
@@ -149,7 +187,8 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 		result, retryErr := HandleError(ctx, err, object, c.Recorder)
 		StampObservedGeneration(object)
 		if statusErr := c.Client.Status().Update(ctx, object); statusErr != nil {
-			return HandleError(ctx, statusErr, object, c.Recorder)
+			result, statusErr = HandleError(ctx, statusErr, object, c.Recorder)
+			retryErr = errors.Join(retryErr, statusErr)
 		}
 		return result, retryErr
 	}

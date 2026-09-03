@@ -36,7 +36,7 @@ The Permission Domain consists of two main operators:
 2. **Permission Operator**: Manages internal PermissionSets and creates corresponding external PermissionSets consumed by permission services
 
 > [!NOTE]
-> The permission domain requires the `FEATURE_PERMISSION_ENABLED=true` flag to be set on both the rover operator and rover-server.
+> The Permission component enables the required feature flag for all workloads automatically.
 
 ## Features
 
@@ -57,16 +57,18 @@ As this is an optional feature, it must be explicitly enabled before use.
 
 ### Enabling the Permission Domain
 
-1. **Deploy the Permission Operator** to your Control Plane cluster with the CRDs and RBAC configured
+1. **Select the Permission component** in your downstream Kustomize overlay:
 
-2. **Enable the Feature Flag** on both the rover operator and rover-server:
    ```yaml
-   env:
-     - name: FEATURE_PERMISSION_ENABLED
-       value: "true"
+   components:
+     - https://github.com/telekom/controlplane//install/components/permission/?ref=v0.22.0
    ```
 
-3. **Configure your Zone** to support permissions (zones must have a target namespace configured)
+   The component installs the Permission Operator and sets `FEATURE_PERMISSION_ENABLED=true` in the global configuration. Do not patch Deployment environment variables or duplicate the flag manually.
+
+   Permission uses application-owned defaults and consumes optional `controlplane-env` followed by `permission-env`. Create `permission-env` as a unique top-level generator for operator-specific values; do not merge or replace a nested component generator.
+
+2. **Configure your Zone** to support permissions (zones must have a target namespace configured)
 
 ### Defining Permissions in Rover
 

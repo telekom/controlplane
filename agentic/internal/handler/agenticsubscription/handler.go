@@ -39,22 +39,30 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// 1. Validate McpServer exists and is active
-	found, mcpServer, findErr := util.FindActiveMcpServer(ctx, obj.Spec.BasePath)
+	// 1. Validate server (McpServer or AgentCard) exists and is active
+	serverInfo, caseConflict, findErr := util.ServerMustExist(ctx, obj.Spec.BasePath)
 	if findErr != nil {
 		return findErr
 	}
-	if !found {
-		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
-			"No active McpServer found for basePath "+obj.Spec.BasePath))
-		obj.SetCondition(condition.NewBlockedCondition(
-			"McpServer " + obj.Spec.BasePath + " does not exist or is not active. " +
-				"AgenticSubscription will be automatically processed when the McpServer is registered"))
+	if serverInfo == nil {
+		if caseConflict {
+			obj.SetCondition(condition.NewNotReadyCondition("CaseConflict",
+				"Agentic server (McpServer, AgentCard) is registered but the basePath case does not match"))
+			obj.SetCondition(condition.NewBlockedCondition(
+				"Agentic server for " + obj.Spec.BasePath + " exists but with a different case. " +
+					"Please resolve the conflict by changing the BasePath of either the specification or the subscription"))
+		} else {
+			obj.SetCondition(condition.NewNotReadyCondition("ServerNotFound",
+				"No active agentic server (McpServer, AgentCard) found for basePath "+obj.Spec.BasePath))
+			obj.SetCondition(condition.NewBlockedCondition(
+				"Agentic server for " + obj.Spec.BasePath + " does not exist or is not active. " +
+					"AgenticSubscription will be automatically processed when the specification is registered"))
+		}
 		return nil
 	}
 
-	// 1b. Validate subscription scopes against McpServer's declared scopes
-	if !validateSubscriptionScopes(mcpServer, obj) {
+	// 1b. Validate subscription scopes against server's declared scopes
+	if !validateSubscriptionScopes(serverInfo, obj) {
 		return nil
 	}
 
@@ -119,13 +127,13 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		TeamName:       requestorApp.Spec.Team,
 		TeamEmail:      requestorApp.Spec.TeamEmail,
 		ApplicationRef: types.TypedObjectRefFromObject(requestorApp, c.Scheme()),
-		Reason: fmt.Sprintf("Team %s requested MCP subscription to %s from zone %s",
-			requestorApp.Spec.Team, obj.Spec.BasePath, obj.Spec.Zone.Name),
+		Reason: fmt.Sprintf("Team %s requested %s subscription to %s from zone %s",
+			requestorApp.Spec.Team, exposure.Spec.Variant.DisplayType(), obj.Spec.BasePath, obj.Spec.Zone.Name),
 	}
 
 	properties := map[string]any{
 		"mcpBasePath":   obj.Spec.BasePath,
-		"resource_type": "MCP",
+		"resource_type": exposure.Spec.Variant.DisplayType(),
 		"resource_name": obj.Spec.BasePath,
 	}
 	if err = requester.SetProperties(properties); err != nil {
@@ -336,24 +344,24 @@ func validateVisibility(exposure *agenticv1.AgenticExposure, sub *agenticv1.Agen
 	}
 }
 
-// validateSubscriptionScopes checks that the M2M scopes in the AgenticSubscription are a valid subset of the McpServer's scopes.
+// validateSubscriptionScopes checks that the M2M scopes in the AgenticSubscription are a valid subset of the server's scopes.
 // It sets blocking conditions on the subscription and returns false if processing should stop.
-func validateSubscriptionScopes(mcpServer *agenticv1.McpServer, obj *agenticv1.AgenticSubscription) bool {
+func validateSubscriptionScopes(server *util.ServerInfo, obj *agenticv1.AgenticSubscription) bool {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil {
 		return true
 	}
-	if len(mcpServer.Spec.Oauth2Scopes) == 0 {
-		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "McpServer does not define any OAuth2 scopes"))
-		obj.SetCondition(condition.NewBlockedCondition("McpServer does not define any OAuth2 scopes. AgenticSubscription will be automatically processed, if the McpServer will be updated with scopes"))
+	if len(server.Oauth2Scopes) == 0 {
+		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Server does not define any OAuth2 scopes"))
+		obj.SetCondition(condition.NewBlockedCondition("Server does not define any OAuth2 scopes. AgenticSubscription will be automatically processed, if the server will be updated with scopes"))
 		return false
 	}
-	scopesExist, invalidScopes := util.IsSubsetOfScopes(mcpServer.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
+	scopesExist, invalidScopes := util.IsSubsetOfScopes(server.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
 	if !scopesExist {
 		message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
-			strings.Join(mcpServer.Spec.Oauth2Scopes, ", "),
+			strings.Join(server.Oauth2Scopes, ", "),
 			strings.Join(invalidScopes, ", "),
 		)
-		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in AgenticSubscription are not defined in the McpServer"))
+		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in AgenticSubscription are not defined in the server"))
 		obj.SetCondition(condition.NewBlockedCondition(message))
 		return false
 	}

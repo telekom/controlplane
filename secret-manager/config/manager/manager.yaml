@@ -50,7 +50,11 @@ spec:
           env: []
           envFrom:
             - configMapRef:
+                name: controlplane-env
+                optional: true
+            - configMapRef:
                 name: secret-manager-env
+                optional: true
           ports:
             - name: https
               containerPort: 8443

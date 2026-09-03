@@ -179,6 +179,9 @@ func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager
 
 	// TODO: Get team ID from rover or context
 	parts := strings.SplitN(rover.GetNamespace(), "--", 2)
+	if len(parts) != 2 {
+		return apierrors.NewBadRequest("namespace must be in the format <envName>--<teamId>>")
+	}
 	teamId := parts[1]
 	appId := rover.GetName()
 

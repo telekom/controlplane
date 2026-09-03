@@ -110,9 +110,23 @@ var _ = Describe("Team Webhook", func() {
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, zone)).NotTo(HaveOccurred())
+		Eventually(func(g Gomega) {
+			freshZone := &adminv1.Zone{}
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), freshZone)
+			g.Expect(errors.IsNotFound(err)).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
 	})
 
 	Context("When CreateOrUpdate a valid team", Ordered, func() {
+		It("should skip defaulting when the team is being deleted", func() {
+			teamBeingDeleted := teamObj.DeepCopy()
+			now := metav1.Now()
+			teamBeingDeleted.DeletionTimestamp = &now
+
+			defaulter := TeamCustomDefaulter{client: k8sClient}
+			Expect(defaulter.Default(ctx, teamBeingDeleted)).To(Succeed())
+		})
+
 		It("should return no error on valid settings", func() {
 			By("Creating a team with name: spec.group--spec.name")
 			teamObj = &organizationv1.Team{

@@ -43,6 +43,8 @@ tags:
     description: Manage EventSpecifications
   - name: McpSpecification
     description: Manage McpSpecifications
+  - name: AgentSpecification
+    description: Manage AgentSpecifications
   - name: Changelog
     description: Manage Changelogs
   - name: Rover
@@ -1689,6 +1691,204 @@ paths:
             - tardis:hub:read
             - tardis:team:all
             - tardis:team:read
+  /agentspecifications:
+    get:
+      tags:
+        - AgentSpecification
+      summary: Get all agent specifications
+      operationId: getAllAgentSpecifications
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSpecificationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    post:
+      tags:
+        - AgentSpecification
+      summary: Create an agent specification
+      operationId: createAgentSpecification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentSpecificationCreateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /agentspecifications/{resourceId}:
+    parameters:
+      - name: resourceId
+        description: The unique id of this resource following the pattern group--team--resourceName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - AgentSpecification
+      summary: Get an agent specification
+      operationId: getAgentSpecification
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    put:
+      tags:
+        - AgentSpecification
+      summary: Update an agent specification
+      operationId: updateAgentSpecification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentSpecificationUpdateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSpecificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+    delete:
+      tags:
+        - AgentSpecification
+      summary: Delete an agent specification
+      operationId: deleteAgentSpecification
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /agentspecifications/{resourceId}/status:
+    parameters:
+      - name: resourceId
+        description: The unique id of this resource following the pattern group--team--resourceName
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - AgentSpecification
+      summary: Get the status of an agent specification
+      operationId: getAgentSpecificationStatus
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
   /resources:
     get:
       tags:
@@ -2005,7 +2205,8 @@ components:
           enum:
             - MCP
             - TELECONTEXTMCP
-          description: "The MCP exposure variant"
+            - AGENT
+          description: "The agentic exposure variant"
         upstream:
           type: string
         security:
@@ -3012,6 +3213,49 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/McpSpecificationResponse'
+        _links:
+          $ref: '#/components/schemas/Links'
+    AgentSpecification:
+      type: object
+      required:
+        - specification
+      properties:
+        specification:
+          type: object
+          additionalProperties: true
+    AgentSpecificationCreateRequest:
+      $ref: '#/components/schemas/AgentSpecification'
+    AgentSpecificationUpdateRequest:
+      $ref: '#/components/schemas/AgentSpecification'
+    AgentSpecificationResponse:
+      type: object
+      required:
+        - id
+        - name
+        - specification
+        - status
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        specification:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/ResourceStatusResponse'
+    AgentSpecificationListResponse:
+      type: object
+      required:
+        - items
+        - _links
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentSpecificationResponse'
         _links:
           $ref: '#/components/schemas/Links'
     EventSpecification:

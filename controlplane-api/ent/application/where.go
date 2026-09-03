@@ -118,6 +118,11 @@ func SecretRotationMessage(v string) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldSecretRotationMessage, v))
 }
 
+// PermissionsURL applies equality check predicate on the "permissions_url" field. It's identical to PermissionsURLEQ.
+func PermissionsURL(v string) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldPermissionsURL, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldCreatedAt, v))
@@ -946,6 +951,81 @@ func IPRestrictionsIsNil() predicate.Application {
 // IPRestrictionsNotNil applies the NotNil predicate on the "ip_restrictions" field.
 func IPRestrictionsNotNil() predicate.Application {
 	return predicate.Application(sql.FieldNotNull(FieldIPRestrictions))
+}
+
+// PermissionsURLEQ applies the EQ predicate on the "permissions_url" field.
+func PermissionsURLEQ(v string) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldPermissionsURL, v))
+}
+
+// PermissionsURLNEQ applies the NEQ predicate on the "permissions_url" field.
+func PermissionsURLNEQ(v string) predicate.Application {
+	return predicate.Application(sql.FieldNEQ(FieldPermissionsURL, v))
+}
+
+// PermissionsURLIn applies the In predicate on the "permissions_url" field.
+func PermissionsURLIn(vs ...string) predicate.Application {
+	return predicate.Application(sql.FieldIn(FieldPermissionsURL, vs...))
+}
+
+// PermissionsURLNotIn applies the NotIn predicate on the "permissions_url" field.
+func PermissionsURLNotIn(vs ...string) predicate.Application {
+	return predicate.Application(sql.FieldNotIn(FieldPermissionsURL, vs...))
+}
+
+// PermissionsURLGT applies the GT predicate on the "permissions_url" field.
+func PermissionsURLGT(v string) predicate.Application {
+	return predicate.Application(sql.FieldGT(FieldPermissionsURL, v))
+}
+
+// PermissionsURLGTE applies the GTE predicate on the "permissions_url" field.
+func PermissionsURLGTE(v string) predicate.Application {
+	return predicate.Application(sql.FieldGTE(FieldPermissionsURL, v))
+}
+
+// PermissionsURLLT applies the LT predicate on the "permissions_url" field.
+func PermissionsURLLT(v string) predicate.Application {
+	return predicate.Application(sql.FieldLT(FieldPermissionsURL, v))
+}
+
+// PermissionsURLLTE applies the LTE predicate on the "permissions_url" field.
+func PermissionsURLLTE(v string) predicate.Application {
+	return predicate.Application(sql.FieldLTE(FieldPermissionsURL, v))
+}
+
+// PermissionsURLContains applies the Contains predicate on the "permissions_url" field.
+func PermissionsURLContains(v string) predicate.Application {
+	return predicate.Application(sql.FieldContains(FieldPermissionsURL, v))
+}
+
+// PermissionsURLHasPrefix applies the HasPrefix predicate on the "permissions_url" field.
+func PermissionsURLHasPrefix(v string) predicate.Application {
+	return predicate.Application(sql.FieldHasPrefix(FieldPermissionsURL, v))
+}
+
+// PermissionsURLHasSuffix applies the HasSuffix predicate on the "permissions_url" field.
+func PermissionsURLHasSuffix(v string) predicate.Application {
+	return predicate.Application(sql.FieldHasSuffix(FieldPermissionsURL, v))
+}
+
+// PermissionsURLIsNil applies the IsNil predicate on the "permissions_url" field.
+func PermissionsURLIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldPermissionsURL))
+}
+
+// PermissionsURLNotNil applies the NotNil predicate on the "permissions_url" field.
+func PermissionsURLNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldPermissionsURL))
+}
+
+// PermissionsURLEqualFold applies the EqualFold predicate on the "permissions_url" field.
+func PermissionsURLEqualFold(v string) predicate.Application {
+	return predicate.Application(sql.FieldEqualFold(FieldPermissionsURL, v))
+}
+
+// PermissionsURLContainsFold applies the ContainsFold predicate on the "permissions_url" field.
+func PermissionsURLContainsFold(v string) predicate.Application {
+	return predicate.Application(sql.FieldContainsFold(FieldPermissionsURL, v))
 }
 
 // HasZone applies the HasEdge predicate on the "zone" edge.

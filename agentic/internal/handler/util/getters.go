@@ -6,6 +6,7 @@ package util
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 
@@ -68,8 +69,8 @@ func GetApplication(ctx context.Context, ref ctypes.ObjectRef) (*applicationapi.
 
 // FindActiveMcpServer finds the active McpServer for a given basePath.
 // Returns (found, mcpServer, error).
-// If found is false and mcpServer is non-nil, a server exists but with a different case
-// (e.g. /MyMcp vs /mymcp) — the caller should treat this as a conflict, not a missing server.
+//
+//nolint:dupl // parallel structure with FindActiveAgentCard; operates on different types
 func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1.McpServer, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -80,24 +81,17 @@ func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1
 		return false, nil, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
 	}
 
-	// Filter to exact basePath match AND active; also detect case-only mismatches.
+	// Filter to active servers with exact basePath match.
 	var candidates []agenticv1.McpServer
-	var caseConflict *agenticv1.McpServer
 	for i := range serverList.Items {
 		server := &serverList.Items[i]
-		if !server.Status.Active {
-			continue
-		}
-		if server.Spec.BasePath == basePath {
+		if server.Status.Active && server.Spec.BasePath == basePath {
 			candidates = append(candidates, *server)
-		} else if strings.EqualFold(server.Spec.BasePath, basePath) && caseConflict == nil {
-			caseConflict = server
 		}
 	}
 
 	if len(candidates) == 0 {
-		// Return the case-conflict server (if any) so callers can surface a helpful error.
-		return false, caseConflict, nil
+		return false, nil, nil
 	}
 
 	// Sort by CreationTimestamp ascending and return the oldest active one
@@ -224,5 +218,140 @@ func FindCrossZoneAgenticSubscriptionZones(ctx context.Context, basePath, exposu
 		}
 	}
 
+	// Cache List order is unstable; this feeds status, so an unsorted result
+	// rewrites the status every reconcile and re-triggers the watch.
+	slices.SortFunc(zones, func(a, b ctypes.ObjectRef) int {
+		return strings.Compare(a.String(), b.String())
+	})
+
 	return zones, hasLocalSubs, nil
+}
+
+// ServerInfo holds the essential fields shared between McpServer and AgentCard.
+// It abstracts the "server" concept so handlers don't need to know which CRD backs the basePath.
+type ServerInfo struct {
+	BasePath     string
+	Oauth2Scopes []string
+}
+
+// FindActiveAgentCard finds the active AgentCard for a given basePath.
+// Returns (found, agentCard, error).
+//
+//nolint:dupl // parallel structure with FindActiveMcpServer; operates on different types
+func FindActiveAgentCard(ctx context.Context, basePath string) (bool, *agenticv1.AgentCard, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	cardList := &agenticv1.AgentCardList{}
+	if err := c.List(ctx, cardList, client.MatchingLabels{
+		agenticv1.AgentBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+	}); err != nil {
+		return false, nil, errors.Wrapf(err, "failed to list AgentCards for basePath %q", basePath)
+	}
+
+	// Filter to active cards with exact basePath match.
+	var candidates []agenticv1.AgentCard
+	for i := range cardList.Items {
+		card := &cardList.Items[i]
+		if card.Status.Active && card.Spec.BasePath == basePath {
+			candidates = append(candidates, *card)
+		}
+	}
+
+	if len(candidates) == 0 {
+		return false, nil, nil
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].CreationTimestamp.Before(&candidates[j].CreationTimestamp)
+	})
+
+	activeCard := &candidates[0]
+	if err := condition.EnsureReady(activeCard); err != nil {
+		return false, activeCard, ctrlerrors.BlockedErrorf("AgentCard %q is not ready", basePath)
+	}
+
+	return true, activeCard, nil
+}
+
+// FindActiveServer looks up the active server (McpServer or AgentCard) for a basePath.
+// It tries McpServer first; if not found, tries AgentCard.
+// Returns (found, serverInfo, error). The serverInfo is nil when found is false.
+//
+// Note: case-conflict detection is handled at the CR handler level (McpServer/AgentCard handlers),
+// not here. For exposure/subscription case-conflict checks, use ServerMustExist.
+func FindActiveServer(ctx context.Context, basePath string) (bool, *ServerInfo, error) {
+	// Try McpServer first
+	mcpFound, mcpServer, err := FindActiveMcpServer(ctx, basePath)
+	if err != nil {
+		return false, nil, err
+	}
+	if mcpFound {
+		return true, &ServerInfo{
+			BasePath:     mcpServer.Spec.BasePath,
+			Oauth2Scopes: mcpServer.Spec.Oauth2Scopes,
+		}, nil
+	}
+
+	// Try AgentCard
+	agentFound, agentCard, err := FindActiveAgentCard(ctx, basePath)
+	if err != nil {
+		return false, nil, err
+	}
+	if agentFound {
+		return true, &ServerInfo{
+			BasePath:     agentCard.Spec.BasePath,
+			Oauth2Scopes: agentCard.Spec.Oauth2Scopes,
+		}, nil
+	}
+
+	return false, nil, nil
+}
+
+// ServerMustExist checks that an active server (McpServer or AgentCard) exists for the given basePath.
+// Like the API domain's ApiMustExist, it also detects case-only mismatches by doing a label-based
+// (normalized/case-insensitive) lookup when the exact-match lookup fails.
+// Returns (serverInfo, caseConflict, error):
+//   - serverInfo is non-nil when an exact-match active server was found
+//   - caseConflict is true when no exact match but a case-different server exists
+func ServerMustExist(ctx context.Context, basePath string) (*ServerInfo, bool, error) {
+	found, serverInfo, err := FindActiveServer(ctx, basePath)
+	if err != nil {
+		return nil, false, err
+	}
+	if found {
+		return serverInfo, false, nil
+	}
+
+	// Not found — check for case-only conflict via normalized label lookup.
+	c := cclient.ClientFromContextOrDie(ctx)
+	normalizedLabel := labelutil.NormalizeLabelValue(basePath)
+
+	// Check McpServers
+	mcpList := &agenticv1.McpServerList{}
+	if err := c.List(ctx, mcpList, client.MatchingLabels{
+		agenticv1.AgenticBasePathLabelKey: normalizedLabel,
+	}); err != nil {
+		return nil, false, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
+	}
+	for i := range mcpList.Items {
+		if mcpList.Items[i].Status.Active && strings.EqualFold(mcpList.Items[i].Spec.BasePath, basePath) {
+			return nil, true, nil
+		}
+	}
+
+	// Check AgentCards
+	agentList := &agenticv1.AgentCardList{}
+	if err := c.List(ctx, agentList, client.MatchingLabels{
+		agenticv1.AgentBasePathLabelKey: normalizedLabel,
+	}); err != nil {
+		return nil, false, errors.Wrapf(err, "failed to list AgentCards for basePath %q", basePath)
+	}
+	for i := range agentList.Items {
+		if agentList.Items[i].Status.Active && strings.EqualFold(agentList.Items[i].Spec.BasePath, basePath) {
+			return nil, true, nil
+		}
+	}
+
+	// Truly not found
+	return nil, false, nil
 }

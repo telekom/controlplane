@@ -140,17 +140,16 @@ var _ = Describe("McpServerHandler", func() {
 			Expect(obj.Status.Active).To(BeTrue())
 		})
 
-		It("should ignore McpServers with different basePaths", func() {
+		It("should treat McpServers with different basePaths as case conflicts", func() {
 			now := time.Now()
 			obj := newMcpServer("mcp-1", "/mcp/weather/v1", "uid-1", now)
-			different := newMcpServer("mcp-other", "/mcp/other/v1", "uid-other", now.Add(-time.Hour))
-			different.Spec.BasePath = "/mcp/other/v1"
+			caseConflict := newMcpServer("mcp-other", "/Mcp/Weather/V1", "uid-other", now.Add(-time.Hour))
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
 					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{
-						Items: []agenticv1.McpServer{*different, *obj},
+						Items: []agenticv1.McpServer{*caseConflict, *obj},
 					}
 				}).
 				Return(nil)
@@ -158,7 +157,10 @@ var _ = Describe("McpServerHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Status.Active).To(BeTrue())
+			Expect(obj.Status.Active).To(BeFalse())
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).NotTo(BeNil())
+			Expect(readyCond.Message).To(ContainSubstring("case conflict"))
 		})
 	})
 

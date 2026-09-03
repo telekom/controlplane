@@ -1,3 +1,54 @@
+# [0.23.0](https://github.com/telekom/controlplane/compare/v0.22.1...v0.23.0) (2026-08-17)
+
+
+### Bug Fixes
+
+* **admin:** npe when redis is not configured ([#566](https://github.com/telekom/controlplane/issues/566)) ([c3a7f5f](https://github.com/telekom/controlplane/commit/c3a7f5ffc9e4044401285679ccb78ea4c06c2c23))
+* **api:** should reduce flakyness of tests ([9a4a059](https://github.com/telekom/controlplane/commit/9a4a05927f0b10519d46f03f83c101e01b69cebf))
+* **org:** should reduce flakyness of tests ([#542](https://github.com/telekom/controlplane/issues/542)) ([6c8a8ed](https://github.com/telekom/controlplane/commit/6c8a8ed1825f4e823783191e1a8922df46ae02ce))
+* **rover:** ignored webhook-validation for deletion ([#565](https://github.com/telekom/controlplane/issues/565)) ([8200c55](https://github.com/telekom/controlplane/commit/8200c5586767e6a9b7447b26c7f091c60143eed7))
+
+
+### Features
+
+* **install:** improved config-management; added rustfs ([32896b8](https://github.com/telekom/controlplane/commit/32896b8ffd2bfc93c57cd9a374164bb0a1775fb9))
+
+## [0.22.1](https://github.com/telekom/controlplane/compare/v0.22.0...v0.22.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **releasing:** add missing entries for some operators for releases ([#558](https://github.com/telekom/controlplane/issues/558)) ([31e6323](https://github.com/telekom/controlplane/commit/31e6323c2fa42109031ba38b4104761d1c988934))
+
+# [0.22.0](https://github.com/telekom/controlplane/compare/v0.21.0...v0.22.0) (2026-08-10)
+
+
+### Bug Fixes
+
+* **api:** apiexposure must watch application to avoid not-ready-block ([#534](https://github.com/telekom/controlplane/issues/534)) ([82f9d0a](https://github.com/telekom/controlplane/commit/82f9d0a160f84c3fa27b476dcb78e5202b559b42))
+* **api:** clean up stale ApiExposure routes on zone change ([#512](https://github.com/telekom/controlplane/issues/512)) ([4f11b38](https://github.com/telekom/controlplane/commit/4f11b38b589e22a14f948200dfe7a5ffd9a616fb))
+* **common:** always requeue reconcilation after FirstSetup ([#544](https://github.com/telekom/controlplane/issues/544)) ([1b76780](https://github.com/telekom/controlplane/commit/1b767808b8320bfa7b60c65fc8ce93990624824a))
+* **controller:** use rate-limited retries for reconciliation errors ([#532](https://github.com/telekom/controlplane/issues/532)) ([6125b10](https://github.com/telekom/controlplane/commit/6125b1028798a7aae2d66f4a5e640280982d7bae))
+* **file-manager:** remove obsolete address arg ([#518](https://github.com/telekom/controlplane/issues/518)) ([94ea1e6](https://github.com/telekom/controlplane/commit/94ea1e652231a087ef428bf970435d9621b887d9))
+* **perf:** bump resources to reasonable values ([#511](https://github.com/telekom/controlplane/issues/511)) ([8e8024d](https://github.com/telekom/controlplane/commit/8e8024d0d64f8f980b11d330d45f10a6ef2cc010))
+* **rover-ctl:** ignore placeholders in yaml comments ([#520](https://github.com/telekom/controlplane/issues/520)) ([fb751af](https://github.com/telekom/controlplane/commit/fb751af290ca0025352031a41e1b84b3cbc5d572))
+* **servers:** register logger with controller-runtime in rover/discovery servers ([#515](https://github.com/telekom/controlplane/issues/515)) ([800fb89](https://github.com/telekom/controlplane/commit/800fb892ad7bed1429f82f41d23cf8ddd2b136d1))
+* we must not rely on readiness for uniqueness check in the singleton logic ([#471](https://github.com/telekom/controlplane/issues/471)) ([0ca4c70](https://github.com/telekom/controlplane/commit/0ca4c7074d211e3a6de853eef7960480c76a10e6))
+
+
+### Features
+
+* add organization-server ([#485](https://github.com/telekom/controlplane/issues/485)) ([3ff1bb3](https://github.com/telekom/controlplane/commit/3ff1bb3cdefa9bb64e66239e2366356d17c276b3))
+* **rover-server:** improve rover defaults ([#530](https://github.com/telekom/controlplane/issues/530)) ([c6cdbe9](https://github.com/telekom/controlplane/commit/c6cdbe9493d5d9db714c3b3ce668660296429dba))
+* **roverctl:** Added proper bash, jq and yq support ([#509](https://github.com/telekom/controlplane/issues/509)) ([6229b85](https://github.com/telekom/controlplane/commit/6229b8564f6aaf355e8e9919d4ae8ebc192c4447))
+* **tls:** use shared internal certificate authority ([#541](https://github.com/telekom/controlplane/issues/541)) ([456796c](https://github.com/telekom/controlplane/commit/456796c7fa2d24e25904918553bcce6aba025997))
+* watcher metrics ([#513](https://github.com/telekom/controlplane/issues/513)) ([8268e8f](https://github.com/telekom/controlplane/commit/8268e8f2c801ed4e46008795659c29999e28c66a))
+
+
+### Performance Improvements
+
+* **controller:** skip noop status writes ([#538](https://github.com/telekom/controlplane/issues/538)) ([fa325e9](https://github.com/telekom/controlplane/commit/fa325e93cea1176b4f87a0e7b754f624d4b0df98))
+
 # [0.21.0](https://github.com/telekom/controlplane/compare/v0.20.0...v0.21.0) (2026-07-30)
 
 

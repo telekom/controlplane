@@ -28,6 +28,8 @@ const (
 	FieldGatewayURL = "gateway_url"
 	// FieldIssuerURL holds the string denoting the issuer_url field in the database.
 	FieldIssuerURL = "issuer_url"
+	// FieldPermissionsURL holds the string denoting the permissions_url field in the database.
+	FieldPermissionsURL = "permissions_url"
 	// FieldVisibility holds the string denoting the visibility field in the database.
 	FieldVisibility = "visibility"
 	// EdgeApplications holds the string denoting the applications edge name in mutations.
@@ -50,6 +52,7 @@ var Columns = []string{
 	FieldName,
 	FieldGatewayURL,
 	FieldIssuerURL,
+	FieldPermissionsURL,
 	FieldVisibility,
 }
 
@@ -138,6 +141,11 @@ func ByGatewayURL(opts ...sql.OrderTermOption) OrderOption {
 // ByIssuerURL orders the results by the issuer_url field.
 func ByIssuerURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIssuerURL, opts...).ToFunc()
+}
+
+// ByPermissionsURL orders the results by the permissions_url field.
+func ByPermissionsURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPermissionsURL, opts...).ToFunc()
 }
 
 // ByVisibility orders the results by the visibility field.
