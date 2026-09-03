@@ -16,6 +16,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 )
 
@@ -77,6 +78,19 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.AgenticSubscription{})
 		if err != nil {
 			ctrl.Log.Error(err, "unable to create ownerIndex for AgenticSubscription")
+			os.Exit(1)
+		}
+	}
+
+	if cconfig.FeatureFile.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &filev1.FileExposure{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for FileExposure")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &filev1.FileSubscription{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for FileSubscription")
 			os.Exit(1)
 		}
 	}
