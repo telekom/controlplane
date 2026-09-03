@@ -843,8 +843,10 @@ var _ = Describe("ListenerHandler", func() {
 
 				rqSub := capturedSubs[0]
 				Expect(rqSub.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeCallback))
+				// The callback must route through the Gateway, not raw localhost.
 				Expect(rqSub.Spec.Delivery.Callback).To(ContainSubstring(testCallbackURL))
-				Expect(rqSub.Spec.Delivery.Callback).To(ContainSubstring("listener=" + testAppId))
+				Expect(rqSub.Spec.Delivery.Callback).To(ContainSubstring("callback="))
+				Expect(rqSub.Spec.Delivery.Callback).To(ContainSubstring(testAppId))
 				Expect(rqSub.Spec.Trigger).ToNot(BeNil())
 				Expect(rqSub.Spec.Trigger.SelectionFilter).ToNot(BeNil())
 				Expect(rqSub.Spec.Trigger.SelectionFilter.Attributes["issue"]).To(Equal(testApiBasePath))

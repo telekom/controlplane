@@ -52,8 +52,13 @@ func (h *SpectreApplicationHandler) ensurePublisher(ctx context.Context, obj *sp
 }
 
 // ensureSubscriber creates or updates the pubsub Subscriber for this SpectreApplication.
-func (h *SpectreApplicationHandler) ensureSubscriber(ctx context.Context, obj *spectrev1.SpectreApplication, publisher *pubsubv1.Publisher, appId string) (*pubsubv1.Subscriber, error) {
+func (h *SpectreApplicationHandler) ensureSubscriber(ctx context.Context, obj *spectrev1.SpectreApplication, publisher *pubsubv1.Publisher, appId, gatewayCallbackURL string) (*pubsubv1.Subscriber, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
+
+	delivery, err := mapDelivery(obj, gatewayCallbackURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build delivery spec")
+	}
 
 	subscriber := &pubsubv1.Subscriber{
 		ObjectMeta: metav1.ObjectMeta{
@@ -70,12 +75,12 @@ func (h *SpectreApplicationHandler) ensureSubscriber(ctx context.Context, obj *s
 		subscriber.Spec = pubsubv1.SubscriberSpec{
 			Publisher:    *ctypes.ObjectRefFromObject(publisher),
 			SubscriberId: appId,
-			Delivery:     mapDelivery(obj),
+			Delivery:     delivery,
 		}
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, subscriber, mutator)
+	_, err = c.CreateOrUpdate(ctx, subscriber, mutator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create or update Subscriber %q", subscriber.Name)
 	}
@@ -84,7 +89,9 @@ func (h *SpectreApplicationHandler) ensureSubscriber(ctx context.Context, obj *s
 }
 
 // mapDelivery converts a SpectreApplication's delivery config into a pubsub SubscriptionDelivery.
-func mapDelivery(obj *spectrev1.SpectreApplication) pubsubv1.SubscriptionDelivery {
+// For callback delivery the raw customer callback is routed through the Gateway
+// so that Horizon never contacts the external endpoint directly.
+func mapDelivery(obj *spectrev1.SpectreApplication, gatewayCallbackURL string) (pubsubv1.SubscriptionDelivery, error) {
 	delivery := pubsubv1.SubscriptionDelivery{
 		Payload: pubsubv1.PayloadTypeData,
 	}
@@ -94,10 +101,14 @@ func mapDelivery(obj *spectrev1.SpectreApplication) pubsubv1.SubscriptionDeliver
 		delivery.Type = pubsubv1.DeliveryTypeServerSentEvent
 	case "callback":
 		delivery.Type = pubsubv1.DeliveryTypeCallback
-		delivery.Callback = obj.Spec.Callback
+		cb, err := util.BuildGatewayCallbackURL(gatewayCallbackURL, obj.Spec.Callback)
+		if err != nil {
+			return delivery, errors.Wrap(err, "failed to build gateway callback URL")
+		}
+		delivery.Callback = cb
 	default:
 		delivery.Type = pubsubv1.DeliveryTypeServerSentEvent
 	}
 
-	return delivery
+	return delivery, nil
 }

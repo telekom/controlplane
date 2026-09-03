@@ -6,6 +6,7 @@ package util
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 )
@@ -45,9 +46,11 @@ func BuildListenerEventType(applicationId string) string {
 }
 
 // BuildBridgeCallbackURL constructs the full callback URL for a bridge subscription.
-// It wraps the EventConfig's callback route URL with the autoevent endpoint.
-func BuildBridgeCallbackURL(callbackRouteURL, appId string) string {
-	return callbackRouteURL + "?callback=http://localhost:8080/autoevent?listener=" + appId
+// It routes through the Gateway by encoding the autoevent target as the callback
+// query parameter on the gateway callback route URL.
+func BuildBridgeCallbackURL(callbackRouteURL, appId string) (string, error) {
+	target := "http://localhost:8080/autoevent?listener=" + url.QueryEscape(appId)
+	return BuildGatewayCallbackURL(callbackRouteURL, target)
 }
 
 // MakeRouteName derives the gateway Route CR name for an API base path. It

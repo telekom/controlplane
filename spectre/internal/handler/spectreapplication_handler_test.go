@@ -35,12 +35,14 @@ import (
 // --- Test fixtures ---
 
 const (
-	testAppName      = "my-app"
-	testAppNamespace = "team-ns"
-	testZoneName     = "aws"
-	testZoneNs       = "env-ns"
-	testZoneStatusNs = "env-ns--aws"
-	testSSEUrl       = "https://horizon-sse.internal:443/api/v1/sse"
+	testAppName             = "my-app"
+	testAppNamespace        = "team-ns"
+	testZoneName            = "aws"
+	testZoneNs              = "env-ns"
+	testZoneStatusNs        = "env-ns--aws"
+	testSSEUrl              = "https://horizon-sse.internal:443/api/v1/sse"
+	testGatewayCallbackURL  = "https://callback.gateway.example.com/callback"
+	testCustomerCallbackURL = "https://customer.example.com/callback"
 )
 
 func newSpectreApplication(deliveryType string) *spectrev1.SpectreApplication {
@@ -139,6 +141,7 @@ func makeReadyEventConfig() eventv1.EventConfig {
 			},
 		},
 		Status: eventv1.EventConfigStatus{
+			CallbackURL: testGatewayCallbackURL,
 			EventStore: &ctypes.ObjectRef{
 				Name:      "eventstore-aws",
 				Namespace: testZoneStatusNs,
@@ -456,7 +459,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(capturedSubscriber.Spec.Delivery.Callback).To(BeEmpty())
 			})
 
-			It("should create Subscriber with callback URL for callback delivery", func() {
+			It("should create Subscriber with gateway-mediated callback URL for callback delivery", func() {
 				obj := newSpectreApplication("callback")
 				app := makeReadyApplication()
 				zone := makeReadyZone()
@@ -488,7 +491,10 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(capturedSubscriber).ToNot(BeNil())
 				Expect(capturedSubscriber.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
 				Expect(capturedSubscriber.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeCallback))
-				Expect(capturedSubscriber.Spec.Delivery.Callback).To(Equal("https://customer.example.com/callback"))
+				// The callback must route through the Gateway, not use the raw customer URL.
+				Expect(capturedSubscriber.Spec.Delivery.Callback).To(ContainSubstring(testGatewayCallbackURL))
+				Expect(capturedSubscriber.Spec.Delivery.Callback).To(ContainSubstring("callback="))
+				Expect(capturedSubscriber.Spec.Delivery.Callback).ToNot(Equal(testCustomerCallbackURL))
 			})
 		})
 
@@ -567,6 +573,24 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("has no EventStore reference"))
+			})
+
+			It("should return blocked error when callback delivery but EventConfig has no CallbackURL", func() {
+				obj := newSpectreApplication("callback")
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				ec := makeReadyEventConfig()
+				ec.Status.CallbackURL = ""
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("no CallbackURL"))
 			})
 		})
 

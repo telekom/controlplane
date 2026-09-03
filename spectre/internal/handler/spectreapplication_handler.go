@@ -16,7 +16,7 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
@@ -55,6 +55,12 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 		return errors.Wrap(err, "failed to resolve EventStore")
 	}
 
+	// Step 2.5: Validate CallbackURL when callback delivery is configured.
+	gatewayCallbackURL := eventConfig.Status.CallbackURL
+	if obj.Spec.DeliveryType == "callback" && gatewayCallbackURL == "" {
+		return ctrlerrors.BlockedErrorf("EventConfig %q has no CallbackURL in status — required for callback delivery", eventConfig.Name)
+	}
+
 	// Step 3: Ensure Publisher.
 	publisher, err := h.ensurePublisher(ctx, obj, eventStore, appId)
 	if err != nil {
@@ -64,7 +70,7 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 	logger.Info("Ensured Publisher", "publisher", publisher.Name)
 
 	// Step 4: Ensure Subscriber.
-	subscriber, err := h.ensureSubscriber(ctx, obj, publisher, appId)
+	subscriber, err := h.ensureSubscriber(ctx, obj, publisher, appId, gatewayCallbackURL)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure Subscriber")
 	}

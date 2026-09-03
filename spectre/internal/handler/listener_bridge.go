@@ -104,6 +104,11 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 		},
 	}
 
+	gatewayCallback, err := util.BuildBridgeCallbackURL(callbackURL, appId)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build bridge callback URL for subscriber %q", subscriberId)
+	}
+
 	mutator := func() error {
 		if subscriber.Labels == nil {
 			subscriber.Labels = make(map[string]string)
@@ -116,7 +121,7 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 			Delivery: pubsubv1.SubscriptionDelivery{
 				Type:     pubsubv1.DeliveryTypeCallback,
 				Payload:  pubsubv1.PayloadTypeData,
-				Callback: util.BuildBridgeCallbackURL(callbackURL, appId),
+				Callback: gatewayCallback,
 			},
 			Trigger: &pubsubv1.Trigger{
 				SelectionFilter: &pubsubv1.SelectionFilter{
@@ -132,7 +137,7 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, subscriber, mutator)
+	_, err = c.CreateOrUpdate(ctx, subscriber, mutator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create or update bridge Subscriber %q", subscriber.Name)
 	}

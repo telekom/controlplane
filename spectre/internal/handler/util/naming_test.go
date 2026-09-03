@@ -93,14 +93,24 @@ var _ = Describe("Naming helpers", func() {
 	})
 
 	Describe("BuildBridgeCallbackURL", func() {
-		It("should wrap callback URL with autoevent endpoint", func() {
-			result := util.BuildBridgeCallbackURL("https://gateway.example.com/horizon/callback/v1", "my-app")
-			Expect(result).To(Equal("https://gateway.example.com/horizon/callback/v1?callback=http://localhost:8080/autoevent?listener=my-app"))
+		It("should route through the gateway with autoevent target", func() {
+			result, err := util.BuildBridgeCallbackURL("https://gateway.example.com/horizon/callback/v1", "my-app")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(result).To(ContainSubstring("gateway.example.com"))
+			Expect(result).To(ContainSubstring("callback="))
+			Expect(result).To(ContainSubstring("listener%3Dmy-app"))
 		})
 
 		It("should handle different app IDs", func() {
-			result := util.BuildBridgeCallbackURL("https://gw.local/cb", "app-xyz-123")
-			Expect(result).To(Equal("https://gw.local/cb?callback=http://localhost:8080/autoevent?listener=app-xyz-123"))
+			result, err := util.BuildBridgeCallbackURL("https://gw.local/cb", "app-xyz-123")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(result).To(ContainSubstring("gw.local"))
+			Expect(result).To(ContainSubstring("listener%3Dapp-xyz-123"))
+		})
+
+		It("should return error for invalid gateway URL", func() {
+			_, err := util.BuildBridgeCallbackURL("not-a-url", "my-app")
+			Expect(err).To(HaveOccurred())
 		})
 	})
 
