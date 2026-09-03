@@ -24,3 +24,7 @@ bindings:
     type: time.Time
   Cursor:
     type: string
+  GroupWhereInput:
+    type: github.com/telekom/controlplane/organization-server/internal/graphqlinputs.GroupWhereInput
+  TeamWhereInput:
+    type: github.com/telekom/controlplane/organization-server/internal/graphqlinputs.TeamWhereInput
