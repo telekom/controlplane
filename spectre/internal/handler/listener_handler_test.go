@@ -56,7 +56,7 @@ const (
 	listenerZoneStatus = "env-ns--aws"
 	testApiBasePath    = "/api/v1/orders"
 	testCallbackURL    = "https://callback.gateway.example.com/callback"
-	testAppId          = "consumer-app"
+	testAppId          = "team-alpha--consumer-app"
 	testRealmName      = "test-realm"
 	testRealmIssuer    = "https://iris.example.com/auth/realms/test"
 )
@@ -608,6 +608,29 @@ var _ = Describe("ListenerHandler", func() {
 
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("has not resolved its application id"))
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		Context("when consumer does not match SpectreApplication's Application", func() {
+			It("should block with consumer identity mismatch", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+
+				// SpectreApplication references a different Application than the Listener's consumer.
+				sa := makeSpectreAppPtr()
+				sa.Spec.Application.ObjectRef = ctypes.ObjectRef{
+					Name:      "different-app",
+					Namespace: listenerNamespace,
+				}
+				mockGetSpectreApp(sa)
+
+				err := h.CreateOrUpdate(ctx, listener)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("does not match SpectreApplication"))
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
 			})

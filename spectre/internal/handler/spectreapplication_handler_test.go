@@ -306,7 +306,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				// Verify status refs are set
 				Expect(obj.Status.Publisher).ToNot(BeNil())
 				Expect(obj.Status.Publisher.Namespace).To(Equal(testZoneStatusNs))
-				Expect(obj.Status.Id).To(Equal(testAppName))
+				Expect(obj.Status.Id).To(Equal("pandora--my-app"))
 			})
 
 			It("should create Subscriber referencing Publisher", func() {
@@ -413,7 +413,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				Expect(capturedPublisher).ToNot(BeNil())
 				Expect(capturedPublisher.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
-				Expect(capturedPublisher.Spec.EventType).To(Equal("de.telekom.ei.listener." + testAppName))
+				Expect(capturedPublisher.Spec.EventType).To(Equal("de.telekom.ei.listener.pandora--my-app"))
 				Expect(capturedPublisher.Spec.PublisherId).To(Equal("gateway"))
 				Expect(capturedPublisher.Spec.EventStore.Name).To(Equal("eventstore-aws"))
 				Expect(capturedPublisher.Spec.EventStore.Namespace).To(Equal(testZoneStatusNs))
@@ -454,7 +454,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				Expect(capturedSubscriber).ToNot(BeNil())
 				Expect(capturedSubscriber.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
-				Expect(capturedSubscriber.Spec.SubscriberId).To(Equal(testAppName))
+				Expect(capturedSubscriber.Spec.SubscriberId).To(Equal("pandora--my-app"))
 				Expect(capturedSubscriber.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeServerSentEvent))
 				Expect(capturedSubscriber.Spec.Delivery.Callback).To(BeEmpty())
 			})
@@ -542,7 +542,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(capturedRoute.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
 				// Path should contain the event type
 				Expect(capturedRoute.Spec.Paths).ToNot(BeEmpty())
-				Expect(capturedRoute.Spec.Paths[0]).To(ContainSubstring("/sse/v1/de.telekom.ei.listener." + testAppName))
+				Expect(capturedRoute.Spec.Paths[0]).To(ContainSubstring("/sse/v1/de.telekom.ei.listener.pandora--my-app"))
 			})
 		})
 

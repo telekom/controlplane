@@ -56,7 +56,7 @@ const (
 
 	// SpectreApplication
 	spectreAppName = "sa-consumer-app"
-	appId          = "consumer-app"
+	appId          = consumerClientID
 
 	// Listener
 	integrationListenerName = "test-listener"

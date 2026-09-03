@@ -36,7 +36,7 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 	if err != nil {
 		return err
 	}
-	appId := application.Name
+	appId := application.Status.ClientId
 	obj.Status.Id = appId
 	logger.Info("Resolved Application", "appId", appId)
 

@@ -65,6 +65,18 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 			listener.Spec.Application.String())
 	}
 
+	// Defense in depth: the Listener's consumer Application must match the
+	// SpectreApplication's own Application reference. A mismatch means the
+	// Listener is trying to capture traffic on behalf of a different team's
+	// identity — the webhook should already reject this, but guard at runtime too.
+	saAppRef := spectreApp.Spec.Application.ObjectRef
+	consumerRef := listener.Spec.Consumer.ObjectRef
+	if consumerRef.Name != saAppRef.Name || consumerRef.Namespace != saAppRef.Namespace {
+		return ctrlerrors.BlockedErrorf(
+			"Listener consumer %q does not match SpectreApplication's Application %q",
+			consumerRef.String(), saAppRef.String())
+	}
+
 	// Step 3: Resolve zones.
 	consumerZone, err := h.resolveZone(ctx, consumerApp)
 	if err != nil {
