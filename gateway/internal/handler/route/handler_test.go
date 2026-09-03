@@ -224,6 +224,43 @@ var _ = Describe("RouteHandler", func() {
 			})
 		})
 
+		Context("failover route", func() {
+			It("does not list RouteListeners for the feature builder", func() {
+				route.Spec.Traffic.Failover = &gatewayv1.Failover{
+					TargetZoneName: "other-zone",
+					Targets: []gatewayv1.FailoverTarget{
+						{ZoneName: "other-zone", Upstream: gatewayv1.Upstream{
+							Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/api",
+						}},
+					},
+				}
+
+				setupReadyGatewayGet()
+				setupFeatureBuilderOverrides()
+
+				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).Maybe()
+				mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
+				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+
+				// Only ConsumeRouteList should be listed — no RouteListenerList.
+				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
+					Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
+						switch l := list.(type) {
+						case *gatewayv1.ConsumeRouteList:
+							l.Items = []gatewayv1.ConsumeRoute{}
+						default:
+							Fail("unexpected List call for failover route — RouteListenerList should be skipped")
+						}
+					}).Return(nil)
+
+				err := handler.CreateOrUpdate(ctx, route)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+			})
+		})
+
 		Context("error handling", func() {
 			It("returns error when NewFeatureBuilder fails (gateway not ready)", func() {
 				setupNotReadyGatewayGet()

@@ -22,7 +22,7 @@ var _ handler.Handler[*v1.RouteListener] = &RouteListenerHandler{}
 type RouteListenerHandler struct{}
 
 func (h *RouteListenerHandler) CreateOrUpdate(ctx context.Context, routeListener *v1.RouteListener) error {
-	ready, _, err := route.GetRouteByRef(ctx, routeListener.Spec.Route)
+	ready, resolvedRoute, err := route.GetRouteByRef(ctx, routeListener.Spec.Route)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			routeListener.SetCondition(condition.NewBlockedCondition("Route not found"))
@@ -34,6 +34,21 @@ func (h *RouteListenerHandler) CreateOrUpdate(ctx context.Context, routeListener
 	if !ready {
 		routeListener.SetCondition(condition.NewBlockedCondition("Route not ready"))
 		routeListener.SetCondition(condition.NewNotReadyCondition("RouteNotReady", "Route is not ready"))
+		return nil
+	}
+
+	// Reject pass-through and failover routes: pass-through skips
+	// authentication (the route handler excludes RouteListeners inside
+	// `if !route.Spec.PassThrough`), and failover overwrites /listener
+	// upstream to /proxy (priority 109 > 103).
+	if resolvedRoute.Spec.PassThrough {
+		routeListener.SetCondition(condition.NewBlockedCondition("Route is pass-through — listener capture is not supported"))
+		routeListener.SetCondition(condition.NewNotReadyCondition("RouteUnsupported", "Route is pass-through — listener capture is not supported"))
+		return nil
+	}
+	if resolvedRoute.Spec.Traffic.Failover != nil {
+		routeListener.SetCondition(condition.NewBlockedCondition("Route has failover — listener capture is not supported"))
+		routeListener.SetCondition(condition.NewNotReadyCondition("RouteUnsupported", "Route has failover — listener capture is not supported"))
 		return nil
 	}
 

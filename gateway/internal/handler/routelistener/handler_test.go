@@ -150,6 +150,83 @@ var _ = Describe("RouteListenerHandler", func() {
 			})
 		})
 
+		Context("when route is pass-through", func() {
+			BeforeEach(func() {
+				mockClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).
+					Run(func(_ context.Context, _ pkgclient.ObjectKey, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+						r := obj.(*gatewayv1.Route)
+						r.Name = "test-route"
+						r.Namespace = "test-ns"
+						r.Spec.PassThrough = true
+						meta.SetStatusCondition(&r.Status.Conditions, metav1.Condition{
+							Type:   condition.ConditionTypeReady,
+							Status: metav1.ConditionTrue,
+							Reason: "Ready",
+						})
+					}).
+					Return(nil)
+			})
+
+			It("sets Blocked and NotReady with RouteUnsupported reason", func() {
+				err := h.CreateOrUpdate(ctx, routeListener)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(meta.IsStatusConditionFalse(routeListener.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+
+				readyCond := meta.FindStatusCondition(routeListener.GetConditions(), condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal("RouteUnsupported"))
+				Expect(readyCond.Message).To(ContainSubstring("pass-through"))
+
+				processingCond := meta.FindStatusCondition(routeListener.GetConditions(), condition.ConditionTypeProcessing)
+				Expect(processingCond).ToNot(BeNil())
+				Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(processingCond.Reason).To(Equal(condition.ReasonBlocked))
+			})
+		})
+
+		Context("when route has failover config", func() {
+			BeforeEach(func() {
+				mockClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).
+					Run(func(_ context.Context, _ pkgclient.ObjectKey, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+						r := obj.(*gatewayv1.Route)
+						r.Name = "test-route"
+						r.Namespace = "test-ns"
+						r.Spec.Traffic.Failover = &gatewayv1.Failover{
+							TargetZoneName: "other-zone",
+							Targets: []gatewayv1.FailoverTarget{
+								{ZoneName: "other-zone", Upstream: gatewayv1.Upstream{
+									Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/api",
+								}},
+							},
+						}
+						meta.SetStatusCondition(&r.Status.Conditions, metav1.Condition{
+							Type:   condition.ConditionTypeReady,
+							Status: metav1.ConditionTrue,
+							Reason: "Ready",
+						})
+					}).
+					Return(nil)
+			})
+
+			It("sets Blocked and NotReady with RouteUnsupported reason", func() {
+				err := h.CreateOrUpdate(ctx, routeListener)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(meta.IsStatusConditionFalse(routeListener.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+
+				readyCond := meta.FindStatusCondition(routeListener.GetConditions(), condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal("RouteUnsupported"))
+				Expect(readyCond.Message).To(ContainSubstring("failover"))
+
+				processingCond := meta.FindStatusCondition(routeListener.GetConditions(), condition.ConditionTypeProcessing)
+				Expect(processingCond).ToNot(BeNil())
+				Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(processingCond.Reason).To(Equal(condition.ReasonBlocked))
+			})
+		})
+
 		Context("when getting route fails with unknown error", func() {
 			BeforeEach(func() {
 				mockClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).

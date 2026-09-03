@@ -44,6 +44,18 @@ func (f *RouteListenerFeature) IsUsed(_ context.Context, builder features.Featur
 
 // Apply implements features.Feature.
 func (f *RouteListenerFeature) Apply(_ context.Context, builder features.FeaturesBuilder) error {
+	// Defensive: reject unsupported route modes even if a RouteListener was
+	// attached manually or via another builder path. Pass-through routes skip
+	// authentication, and failover routes overwrite /listener upstream to /proxy.
+	if route, ok := builder.GetRoute(); ok {
+		if route.Spec.PassThrough {
+			return errors.New("RouteListener feature is not compatible with pass-through routes")
+		}
+		if route.Spec.Traffic.Failover != nil {
+			return errors.New("RouteListener feature is not compatible with failover routes")
+		}
+	}
+
 	jc := builder.JumperConfig()
 	if jc.RouteListener == nil {
 		jc.RouteListener = make(map[plugin.ConsumerId]plugin.RouteListenerEntry)

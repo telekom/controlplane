@@ -21,15 +21,20 @@ import (
 var _ = Describe("RouteListenerFeature", func() {
 
 	var (
-		ctx     context.Context
-		f       *feature.RouteListenerFeature
-		builder *featmock.MockFeaturesBuilder
+		ctx         context.Context
+		f           *feature.RouteListenerFeature
+		builder     *featmock.MockFeaturesBuilder
+		normalRoute *gatewayv1.Route
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
 		f = feature.InstanceRouteListenerFeature
 		builder = featmock.NewMockFeaturesBuilder(GinkgoT())
+		normalRoute = &gatewayv1.Route{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+			Spec:       gatewayv1.RouteSpec{},
+		}
 	})
 
 	Describe("Name()", func() {
@@ -109,6 +114,7 @@ var _ = Describe("RouteListenerFeature", func() {
 				}
 
 				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
 				builder.EXPECT().GetRouteListeners().Return([]*gatewayv1.RouteListener{rl})
 				builder.EXPECT().JumperConfig().Return(jc)
 				builder.EXPECT().SetUpstream(mock.Anything).Return()
@@ -138,6 +144,7 @@ var _ = Describe("RouteListenerFeature", func() {
 				}
 
 				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
 				builder.EXPECT().GetRouteListeners().Return([]*gatewayv1.RouteListener{rl})
 				builder.EXPECT().JumperConfig().Return(jc)
 				builder.EXPECT().SetUpstream(mock.Anything).Return()
@@ -176,6 +183,7 @@ var _ = Describe("RouteListenerFeature", func() {
 				}
 
 				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
 				builder.EXPECT().GetRouteListeners().Return(rls)
 				builder.EXPECT().JumperConfig().Return(jc)
 				builder.EXPECT().SetUpstream(mock.Anything).Return()
@@ -217,6 +225,7 @@ var _ = Describe("RouteListenerFeature", func() {
 				}
 
 				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
 				builder.EXPECT().GetRouteListeners().Return(rls)
 				builder.EXPECT().JumperConfig().Return(jc)
 				builder.EXPECT().SetUpstream(mock.Anything).Return().Maybe()
@@ -226,6 +235,47 @@ var _ = Describe("RouteListenerFeature", func() {
 				Expect(err.Error()).To(ContainSubstring("consumer-shared"))
 				Expect(err.Error()).To(ContainSubstring("/api/v1/events"))
 				Expect(err.Error()).To(ContainSubstring("/api/v2/notifications"))
+			})
+		})
+
+		Context("when route is pass-through", func() {
+			It("returns an error rejecting the combination", func() {
+				ptRoute := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+					Spec:       gatewayv1.RouteSpec{PassThrough: true},
+				}
+
+				builder.EXPECT().GetRoute().Return(ptRoute, true)
+
+				err := f.Apply(ctx, builder)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("pass-through"))
+			})
+		})
+
+		Context("when route has failover config", func() {
+			It("returns an error rejecting the combination", func() {
+				foRoute := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							Failover: &gatewayv1.Failover{
+								TargetZoneName: "other-zone",
+								Targets: []gatewayv1.FailoverTarget{
+									{ZoneName: "other-zone", Upstream: gatewayv1.Upstream{
+										Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/api",
+									}},
+								},
+							},
+						},
+					},
+				}
+
+				builder.EXPECT().GetRoute().Return(foRoute, true)
+
+				err := f.Apply(ctx, builder)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("failover"))
 			})
 		})
 
@@ -245,6 +295,7 @@ var _ = Describe("RouteListenerFeature", func() {
 					"existing-consumer": {Issue: "/existing", ServiceOwner: "existing-provider"},
 				}
 
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
 				builder.EXPECT().GetRouteListeners().Return([]*gatewayv1.RouteListener{rl})
 				builder.EXPECT().JumperConfig().Return(jc)
 				builder.EXPECT().SetUpstream(mock.Anything).Return()

@@ -101,12 +101,43 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	if listener.Spec.ApiListener == nil {
 		return ctrlerrors.BlockedErrorf("Listener %q has no ApiListener configured (event-only listeners are not yet supported)", listener.Name)
 	}
+	apiBasePath := listener.Spec.ApiListener.ApiBasePath
 
-	// Step 5.5: Compute the canonical authorization intent and fingerprint.
+	// Step 5.5: Resolve the gateway Route early so unsupported modes
+	// (pass-through, failover) are rejected before creating approvals.
+	route, err := h.findRouteByPath(ctx, listeningZone.Status.Namespace, apiBasePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to find Route for apiBasePath")
+	}
+	if route == nil {
+		return ctrlerrors.BlockedErrorf("no Route found with path %q in namespace %q", apiBasePath, listeningZone.Status.Namespace)
+	}
+
+	// Step 5.6: Reject routes whose mode is incompatible with listener capture.
+	// Pass-through routes skip authentication entirely (the route handler wraps
+	// RouteListener collection in `if !route.Spec.PassThrough`), and failover
+	// routes overwrite the /listener upstream to /proxy (priority 109 > 103).
+	// In either case, clean up any existing children first — this handles a
+	// previously-supported Route that changed to an unsupported mode.
+	if route.Spec.PassThrough || route.Spec.Traffic.Failover != nil {
+		if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
+			return errors.Wrap(err, "failed to cleanup children for unsupported route mode")
+		}
+		listener.Status.RouteListener = nil
+		listener.Status.EventSubscriptions = nil
+
+		mode := "pass-through"
+		if route.Spec.Traffic.Failover != nil {
+			mode = "failover"
+		}
+		return ctrlerrors.BlockedErrorf("Route %q is %s — listener capture is not supported for this route mode", route.Name, mode)
+	}
+
+	// Step 5.7: Compute the canonical authorization intent and fingerprint.
 	intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp)
 	fingerprint := intent.fingerprint()
 
-	// Step 5.6: Remove stale children whose fingerprint differs from the current
+	// Step 5.8: Remove stale children whose fingerprint differs from the current
 	// intent BEFORE evaluating the replacement grant. This ensures a provider,
 	// application, path, delivery, or capture-scope change stops the old capture
 	// immediately. Unlabelled children (pre-migration) are treated as stale.
@@ -163,9 +194,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	logger.Info("Ensured generic Publisher", "publisher", publisher.Name)
 
 	// Step 9: Create RouteListener.
-	apiBasePath := listener.Spec.ApiListener.ApiBasePath
-
-	routeListener, err := h.ensureRouteListener(ctx, listener, listeningZone, appId, consumerId, providerId, apiBasePath, fingerprint)
+	routeListener, err := h.ensureRouteListener(ctx, listener, listeningZone, route, appId, consumerId, providerId, apiBasePath, fingerprint)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure RouteListener")
 	}
@@ -516,10 +545,13 @@ func (h *ListenerHandler) findRouteByPath(ctx context.Context, namespace, apiBas
 }
 
 // ensureRouteListener creates or updates the RouteListener CR for this Listener.
+// The Route is resolved and validated by the caller (CreateOrUpdate) before
+// approval evaluation, so this method receives it pre-resolved.
 func (h *ListenerHandler) ensureRouteListener(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 	zone *adminv1.Zone,
+	route *gatewayv1.Route,
 	appId string,
 	consumerId string,
 	providerId string,
@@ -529,23 +561,8 @@ func (h *ListenerHandler) ensureRouteListener(
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
-	// Resolve the actual gateway Route for this apiBasePath so the RouteListener
-	// references the correct Route CR (the gateway handler queries by spec.route index).
-	route, err := h.findRouteByPath(ctx, zone.Status.Namespace, apiBasePath)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to find Route for apiBasePath")
-	}
-
-	var routeRef ctypes.ObjectRef
-	if route != nil {
-		routeRef = *ctypes.ObjectRefFromObject(route)
-		logger.V(1).Info("Resolved Route for apiBasePath", "route", routeRef.String(), "apiBasePath", apiBasePath)
-	} else {
-		// Route not yet provisioned — block until it exists so the RouteListener
-		// can be properly linked. The gateway handler uses a field index on spec.route
-		// to discover RouteListeners, so a wrong reference means silent failure.
-		return nil, ctrlerrors.BlockedErrorf("no Route found with path %q in namespace %q", apiBasePath, zone.Status.Namespace)
-	}
+	routeRef := *ctypes.ObjectRefFromObject(route)
+	logger.V(1).Info("Resolved Route for apiBasePath", "route", routeRef.String(), "apiBasePath", apiBasePath)
 
 	// Resolve the zone-level gateway client credentials. The jumper requires a
 	// top-level gatewayClient with {id, issuer} derived from the zone's default

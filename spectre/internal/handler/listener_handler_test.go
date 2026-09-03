@@ -485,6 +485,57 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 	}
 
+	// mockPassThroughRoute stubs the gateway Route lookup returning a pass-through route.
+	mockPassThroughRoute := func() {
+		routeName := util.MakeRouteName(testApiBasePath)
+		fakeClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: routeName, Namespace: listenerZoneStatus},
+				mock.AnythingOfType("*v1.Route")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, obj client.Object, _ ...client.GetOption) {
+				*obj.(*gatewayv1.Route) = gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      routeName,
+						Namespace: listenerZoneStatus,
+					},
+					Spec: gatewayv1.RouteSpec{
+						Paths:       []string{"/gateway" + testApiBasePath},
+						PassThrough: true,
+					},
+				}
+			}).
+			Return(nil).Once()
+	}
+
+	// mockFailoverRoute stubs the gateway Route lookup returning a failover route.
+	mockFailoverRoute := func() {
+		routeName := util.MakeRouteName(testApiBasePath)
+		fakeClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: routeName, Namespace: listenerZoneStatus},
+				mock.AnythingOfType("*v1.Route")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, obj client.Object, _ ...client.GetOption) {
+				*obj.(*gatewayv1.Route) = gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      routeName,
+						Namespace: listenerZoneStatus,
+					},
+					Spec: gatewayv1.RouteSpec{
+						Paths: []string{"/gateway" + testApiBasePath},
+						Traffic: gatewayv1.Traffic{
+							Failover: &gatewayv1.Failover{
+								TargetZoneName: "other-zone",
+								Targets: []gatewayv1.FailoverTarget{
+									{ZoneName: "other-zone", Upstream: gatewayv1.Upstream{
+										Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/api",
+									}},
+								},
+							},
+						},
+					},
+				}
+			}).
+			Return(nil).Once()
+	}
+
 	mockCreateOrUpdatePublisher := func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
@@ -531,10 +582,10 @@ var _ = Describe("ListenerHandler", func() {
 		mockGetZone()
 		mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 		mockGetEventStore(makeListenerEventStore())
+		mockListRoutes()
 		mockNoStaleChildren()
 		mockApprovalGranted()
 		mockCreateOrUpdatePublisher()
-		mockListRoutes()
 		mockGetRealm()
 		mockCreateOrUpdateRouteListener()
 		mockCreateOrUpdateSubscriber()
@@ -571,6 +622,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 				mockNoStaleChildren()
 				mockApprovalPending()
 
@@ -601,6 +653,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 				mockNoStaleChildren()
 				mockApprovalDenied()
 
@@ -656,6 +709,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 				mockNoStaleChildren()
 				mockApprovalRequestDenied()
 
@@ -678,10 +732,10 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 				mockNoStaleChildren()
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
-				mockListRoutes()
 				mockGetRealm()
 
 				// Capture RouteListener
@@ -724,6 +778,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 				mockNoStaleChildren()
 				mockApprovalGranted()
 
@@ -736,7 +791,6 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
-				mockListRoutes()
 				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
@@ -761,10 +815,10 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 				mockNoStaleChildren()
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
-				mockListRoutes()
 				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 
@@ -857,6 +911,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 				mockNoStaleChildren()
 
 				// Capture the ApprovalRequest to inspect properties.
@@ -888,7 +943,6 @@ var _ = Describe("ListenerHandler", func() {
 					Return(nil)
 
 				mockCreateOrUpdatePublisher()
-				mockListRoutes()
 				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
@@ -929,6 +983,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 
 				// Simulate existing children with a different fingerprint (stale).
 				fakeClient.EXPECT().
@@ -1005,6 +1060,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
 
 				// Simulate existing children WITHOUT fingerprint label (pre-migration).
 				fakeClient.EXPECT().
@@ -1058,6 +1114,125 @@ var _ = Describe("ListenerHandler", func() {
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("unsupported route modes", func() {
+			It("should block with pass-through route and NOT create ApprovalRequest or children", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockPassThroughRoute()
+
+				// deleteAllOwnedChildren: no existing children.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("pass-through"))
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+
+			It("should block with failover route and NOT create ApprovalRequest or children", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockFailoverRoute()
+
+				// deleteAllOwnedChildren: no existing children.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("failover"))
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+
+			It("should remove existing children when Route transitions to pass-through", func() {
+				listener := newListener()
+				// Pre-populate status refs to verify they are cleared.
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "old-sub-rq", Namespace: listenerZoneStatus},
+				}
+
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockPassThroughRoute()
+
+				// deleteAllOwnedChildren: existing children returned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+					Return(nil).Once()
+
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("pass-through"))
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
 			})
 		})
 
