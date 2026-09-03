@@ -82,6 +82,7 @@ func (r *FileSubscriptionReconciler) MapFileTypeToFileSubscription(ctx context.C
 		client.MatchingFields{index.FieldSpecFileTypeOnSubscription: fileType.Name},
 	)
 	if err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "failed to obtain list of FileSubscription")
 		return nil
 	}
 

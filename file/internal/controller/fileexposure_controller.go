@@ -83,6 +83,7 @@ func (r *FileExposureReconciler) MapFileTypeToFileExposure(ctx context.Context, 
 		client.MatchingFields{index.FieldSpecFileTypeOnExposure: fileType.Name},
 	)
 	if err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "failed to obtain list of FileExposure")
 		return nil
 	}
 
@@ -103,6 +104,7 @@ func (r *FileExposureReconciler) MapZoneServiceConfigToFileExposure(ctx context.
 	if err := r.List(ctx, list,
 		client.MatchingFields{index.FieldSpecZoneOnExposure: zoneServiceConfig.Spec.Zone.String()},
 	); err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "failed to obtain list of FileExposure")
 		return nil
 	}
 
