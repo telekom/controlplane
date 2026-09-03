@@ -78,14 +78,11 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 	obj.Status.Subscriber = ctypes.ObjectRefFromObject(subscriber)
 	logger.Info("Ensured Subscriber", "subscriber", subscriber.Name)
 
-	// Step 5: If SSE delivery, ensure SSE Route.
+	// Step 5: If SSE delivery, reconcile SSE Routes (primary + optional proxy).
 	if obj.Spec.DeliveryType == "server_sent_event" {
-		route, err := h.ensureSSERoute(ctx, obj, zone, eventConfig, appId)
-		if err != nil {
-			return errors.Wrap(err, "failed to ensure SSE Route")
+		if err := h.reconcileSSERoutes(ctx, obj, zone, eventConfig, appId); err != nil {
+			return errors.Wrap(err, "failed to reconcile SSE Routes")
 		}
-		obj.Status.ListenerRoute = ctypes.ObjectRefFromObject(route)
-		logger.Info("Ensured SSE Route", "route", route.Name)
 	}
 
 	// Step 5.5: Cleanup obsolete children that were not touched in this reconcile.

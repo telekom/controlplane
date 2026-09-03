@@ -222,25 +222,6 @@ func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.
 		)
 	}
 
-	// SSE delivery on a proxy zone is not supported (SSE requires a local event backend)
-	isSSE := ls == nil || ls.DeliveryType == "" || ls.DeliveryType == "server_sent_event"
-	if isSSE {
-		eventConfigRef := client.ObjectKey{
-			Name:      environment,
-			Namespace: zone.Status.Namespace,
-		}
-		eventConfig := eventv1.EventConfig{}
-		if exists, err := r.ResourceMustExist(ctx, eventConfigRef, &eventConfig); err != nil {
-			return err
-		} else if exists && eventConfig.IsProxy() {
-			valErr.AddInvalidError(
-				field.NewPath("spec").Child("listenerSubscription").Child("deliveryType"),
-				"server_sent_event",
-				"SSE delivery is only available on zones with a local event backend; this zone is a proxy",
-			)
-		}
-	}
-
 	return nil
 }
 
