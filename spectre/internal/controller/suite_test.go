@@ -118,6 +118,22 @@ var _ = BeforeSuite(func() {
 	// Register UID indexes required by owned-child mappers.
 	Expect(RegisterIndices(ctx, mgr.GetFieldIndexer())).To(Succeed())
 
+	// Register controllers with the manager so watches fire automatically.
+	// The existing manual-reconcile tests construct their own reconciler
+	// instances and are unaffected by this; the watch-driven integration
+	// tests depend on it.
+	err = (&SpectreApplicationReconciler{
+		Client: mgr.GetClient(),
+		Scheme: testScheme,
+	}).SetupWithManager(mgr)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = (&ListenerReconciler{
+		Client: mgr.GetClient(),
+		Scheme: testScheme,
+	}).SetupWithManager(mgr)
+	Expect(err).NotTo(HaveOccurred())
+
 	// Start the manager cache in a goroutine.
 	go func() {
 		defer GinkgoRecover()

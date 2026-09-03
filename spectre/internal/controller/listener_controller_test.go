@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -85,10 +86,13 @@ var _ = Describe("Listener Controller", func() {
 		AfterEach(func() {
 			resource := &spectrev1.Listener{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
+			if errors.IsNotFound(err) {
+				return // Already cleaned up by the controller or a previous test.
+			}
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Cleanup the specific resource instance Listener")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, resource))).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
@@ -100,10 +104,15 @@ var _ = Describe("Listener Controller", func() {
 			}
 			controllerReconciler.Controller = cc.NewController(&handler.ListenerHandler{}, k8sClient, recorder)
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedName,
-			})
-			Expect(err).NotTo(HaveOccurred())
+			// The manager-registered controller may reconcile the same object
+			// concurrently, causing a conflict on the status update. Retry
+			// until the cache catches up and no conflict occurs.
+			Eventually(func(g Gomega) {
+				_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+					NamespacedName: typeNamespacedName,
+				})
+				g.Expect(err).NotTo(HaveOccurred())
+			}, testTimeout, testInterval).Should(Succeed())
 		})
 	})
 })
