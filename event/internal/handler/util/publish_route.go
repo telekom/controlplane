@@ -13,7 +13,6 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
@@ -114,14 +113,14 @@ func CreatePublishProxyRoute(
 		return nil, err
 	}
 
-	targetPreset, err := targetZone.Spec.GetDefaultPreset()
+	tgtPreset, err := targetPreset(targetZone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
+		return nil, err
 	}
 
 	// Upstream is the target zone's gateway publish-events path. The proxy forwards to
 	// the target's primary publish Route at /horizon/events/v1.
-	upstream, err := gatewayUpstream(targetPreset, makePublishEventsRoutePath())
+	upstream, err := gatewayUpstream(tgtPreset, makePublishEventsRoutePath())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create upstream for proxy publish Route")
 	}

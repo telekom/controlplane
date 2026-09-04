@@ -12,23 +12,31 @@ metadata:
   name: dataplane2
   namespace: controlplane
 spec:
-  identityProvider:
-    admin:
-      clientId: admin-cli
-      userName: admin
-      password: somePassword
-    url: https://my-idp.example.com/
-  gateway:
-    admin:
-      url: https://my-gateway-admin.example.com/admin-api
-    presets:
-      - name: default
-        default: true
-        urls:
-          - hostname: my-gateway.example.com
-            basePath: /
+  visibility: Enterprise
+  identityProviders:
+    - name: primary
+      url: https://my-idp.example.com/
+      issuerHostname: my-idp.example.com
+      admin:
+        clientId: admin-cli
+        userName: admin
+        password: somePassword
+  gateways:
+    - name: standard
+      admin:
+        identityProviderRef: primary
+        url: https://my-gateway-admin.example.com/admin-api
+        clientId: gateway-admin
+  presets:
+    - name: default
+      type: API
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: my-gateway.example.com
+          basePath: /
   redis:
     host: my-redis-host
     port: 6379
     password: somePassword
-  visibility: Enterprise

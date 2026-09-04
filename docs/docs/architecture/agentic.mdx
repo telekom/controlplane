@@ -105,18 +105,35 @@ The `AGENTIC_TELECONTEXT_APPLICATION_ID` value is injected at operator startup v
 
 ## The AI Gateway
 
-The AI Gateway is a regular zone gateway that declares `AI` in its `types`:
+The AI Gateway is a regular zone gateway that an `AI`-typed preset points at:
 
 ```yaml
+# Excerpt: spec.gateways and spec.presets only. A complete Zone also needs
+# visibility and identityProviders — see Environments and Zones below.
 spec:
   gateways:
+    - name: standard
+      admin:
+        identityProviderRef: primary
+        url: https://gateway-admin.example.com
     - name: ai
-      types: [AI]
       admin:
         identityProviderRef: primary
         url: https://ai-gateway-admin.example.com
   presets:
+    # Every zone needs an API preset: it is the representative profile for
+    # callers that carry no traffic type of their own.
+    - name: default
+      type: API
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: api.gateway.example.com
+          basePath: /
     - name: ai
+      type: AI
+      default: true
       gatewayRef: ai
       identityProviderRef: primary
       urls:
@@ -124,7 +141,13 @@ spec:
           basePath: /
 ```
 
-A single gateway may serve several types, so `types: [API, AI]` is a valid way to run agentic and API traffic on one gateway. The Agentic operator resolves its routes through the preset that references an `AI` gateway; a zone without one rejects agentic exposures and subscriptions during Rover validation. See [Environments and Zones](../admin-journey/environments-and-zones.md#gateway-types) for the full gateway type reference.
+The type lives on the preset, not on the gateway: a gateway serves the union of the types of the
+presets referencing it. The two presets above could equally point at the same gateway, which is
+how you run agentic and API traffic on one gateway instance. The Agentic operator resolves its
+routes through the `AI` preset of the zone; a zone with no `AI` preset rejects agentic exposures
+and subscriptions during Rover validation. See
+[Environments and Zones](../admin-journey/environments-and-zones.md#traffic-types) for the full
+traffic type reference and the rules the admission webhook enforces.
 
 ## Related Pages
 

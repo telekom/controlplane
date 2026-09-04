@@ -10,4 +10,5 @@ admin/zones/dataplane1.yaml
 admin/zones/dataplane2.yaml
 
 # local event configs copied from *.example.yaml templates (may contain secrets)
-admin/eventconfigs/dataplane*.yaml
+admin/eventconfigs/dataplane1.yaml
+admin/eventconfigs/dataplane2.yaml

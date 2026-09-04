@@ -127,11 +127,23 @@ func makeReadyZoneWithAiGateway(name string) *adminv1.Zone {
 		},
 		Spec: adminv1.ZoneSpec{
 			Gateways: []adminv1.GatewayConfig{
-				{Name: "ai", Types: []adminv1.GatewayType{adminv1.GatewayTypeAI}},
+				{Name: "ai"},
 			},
 			Presets: []adminv1.Preset{
 				{
 					Name:       "default",
+					Type:       adminv1.GatewayTypeAI,
+					Default:    true,
+					GatewayRef: "ai",
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
+					},
+				},
+				// Every zone needs an API preset as its representative profile; agentic
+				// selection never resolves through it.
+				{
+					Name:       "api-default",
+					Type:       adminv1.GatewayTypeAPI,
 					Default:    true,
 					GatewayRef: "ai",
 					Urls: []adminv1.UrlConfig{

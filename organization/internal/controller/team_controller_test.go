@@ -87,14 +87,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
 				Gateways: []adminv1.GatewayConfig{{
-					Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
-					Name:  "default",
+					Name: "default",
 					Admin: adminv1.GatewayAdminConfig{
 						Url: "http://gateway-admin.test.local:8001",
 					},
 				}},
 				Presets: []adminv1.Preset{{
 					Name:                "default",
+					Type:                adminv1.GatewayTypeAPI,
 					Default:             true,
 					GatewayRef:          "default",
 					IdentityProviderRef: "default",
@@ -593,14 +593,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 			Spec: adminv1.ZoneSpec{
 				Visibility: adminv1.ZoneVisibilityWorld,
 				Gateways: []adminv1.GatewayConfig{{
-					Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
-					Name:  "default",
+					Name: "default",
 					Admin: adminv1.GatewayAdminConfig{
 						Url: "http://gateway-admin.test.local:8001",
 					},
 				}},
 				Presets: []adminv1.Preset{{
 					Name:                "default",
+					Type:                adminv1.GatewayTypeAPI,
 					Default:             true,
 					GatewayRef:          "default",
 					IdentityProviderRef: "default",

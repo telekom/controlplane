@@ -158,7 +158,7 @@ func (h *EventExposureHandler) reconcileSSERoutes(ctx context.Context, obj *even
 	// This is the same shape as a cross-zone subscriber proxy Route (proxy Route in
 	// the zone's namespace, upstream = backend zone's gateway SSE path).
 	if eventConfig.IsProxy() {
-		presetStatus, statusErr := util.DefaultPresetStatus(zone)
+		presetStatus, statusErr := util.EventPresetStatus(zone)
 		if statusErr != nil {
 			return statusErr
 		}
@@ -256,7 +256,7 @@ func (h *EventExposureHandler) createProxySSERoutes(ctx context.Context, obj *ev
 			return nil, errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
 		}
 		subscriberZones = append(subscriberZones, subscriberZone)
-		presetStatus, statusErr := util.DefaultPresetStatus(subscriberZone)
+		presetStatus, statusErr := util.EventPresetStatus(subscriberZone)
 		if statusErr != nil {
 			return nil, statusErr
 		}
@@ -287,7 +287,7 @@ func (h *EventExposureHandler) createProxySSERoutes(ctx context.Context, obj *ev
 // collectPrimaryTrustedIssuers builds the trusted issuer list for the primary SSE route.
 func collectPrimaryTrustedIssuers(zone *adminv1.Zone, subscriberZones []*adminv1.Zone, isProxyTarget bool) ([]string, error) {
 	var issuers []string
-	presetStatus, err := util.DefaultPresetStatus(zone)
+	presetStatus, err := util.EventPresetStatus(zone)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func collectPrimaryTrustedIssuers(zone *adminv1.Zone, subscriberZones []*adminv1
 	}
 	if isProxyTarget {
 		for _, subZone := range subscriberZones {
-			subscriberPresetStatus, statusErr := util.DefaultPresetStatus(subZone)
+			subscriberPresetStatus, statusErr := util.EventPresetStatus(subZone)
 			if statusErr != nil {
 				return nil, statusErr
 			}

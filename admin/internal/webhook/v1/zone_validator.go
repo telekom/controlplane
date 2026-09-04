@@ -8,6 +8,7 @@ import (
 	"context"
 	"net"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -28,17 +29,34 @@ type ZoneCustomValidator struct{}
 var _ admission.Validator[*adminv1.Zone] = &ZoneCustomValidator{}
 
 func (v *ZoneCustomValidator) ValidateCreate(_ context.Context, zone *adminv1.Zone) (admission.Warnings, error) {
-	return nil, validateZone(zone)
+	return failoverWarnings(zone), validateZone(zone)
 }
 
 func (v *ZoneCustomValidator) ValidateUpdate(_ context.Context, oldZone, newZone *adminv1.Zone) (admission.Warnings, error) {
 	errs := validateRetainedNames(oldZone, newZone)
 	errs = append(errs, validateZoneFields(newZone)...)
-	return nil, invalidZone(newZone.Name, errs)
+	return failoverWarnings(newZone), invalidZone(newZone.Name, errs)
 }
 
 func (v *ZoneCustomValidator) ValidateDelete(_ context.Context, _ *adminv1.Zone) (admission.Warnings, error) {
 	return nil, nil
+}
+
+// failoverWarnings flags ConsumerFailover on a non-API preset. The model permits it on
+// every traffic type, but only the API domain implements failover routing today.
+func failoverWarnings(zone *adminv1.Zone) admission.Warnings {
+	var warnings admission.Warnings
+	for i := range zone.Spec.Presets {
+		preset := &zone.Spec.Presets[i]
+		if preset.Type == adminv1.GatewayTypeAPI {
+			continue
+		}
+		if preset.SupportsFeatures([]adminv1.FeatureName{adminv1.FeatureConsumerFailover}) {
+			warnings = append(warnings, "preset "+strconv.Quote(preset.Name)+" enables ConsumerFailover for gateway type "+
+				strconv.Quote(string(preset.Type))+", but failover routing is currently implemented for API traffic only")
+		}
+	}
+	return warnings
 }
 
 func validateZone(zone *adminv1.Zone) error {
@@ -77,15 +95,11 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 		identityProviderTokenURL = identityProvider.TokenUrl
 	}
 
-	defaultCount := 0
 	failoverTokenURL := ""
 	errs = append(errs, validateFeatures(specPath.Child("features"), zone.Spec.Features, adminv1.FeatureScopeZone)...)
 	for i := range zone.Spec.Presets {
 		preset := &zone.Spec.Presets[i]
 		presetPath := specPath.Child("presets").Index(i)
-		if preset.Default {
-			defaultCount++
-		}
 		if _, err := zone.Spec.GetGateway(preset.GatewayRef); err != nil {
 			errs = append(errs, field.Invalid(presetPath.Child("gatewayRef"), preset.GatewayRef, err.Error()))
 		}
@@ -119,9 +133,6 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 		}
 		errs = append(errs, validateFeatures(presetPath.Child("features"), preset.Features, adminv1.FeatureScopePreset)...)
 	}
-	if defaultCount != 1 {
-		errs = append(errs, field.Invalid(specPath.Child("presets"), defaultCount, "exactly one default preset is required"))
-	}
 	for i := range zone.Spec.Gateways {
 		gateway := &zone.Spec.Gateways[i]
 		gatewayPath := specPath.Child("gateways").Index(i)
@@ -149,6 +160,111 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 		}
 	}
 
+	errs = append(errs, validatePresetTypes(zone)...)
+	errs = append(errs, validateGatewayReferences(zone)...)
+
+	return errs
+}
+
+// enabledFeature is a preset-scoped feature that a preset turns on, carrying its index in
+// the preset's feature list so an error can point at the entry rather than the whole list.
+type enabledFeature struct {
+	name  adminv1.FeatureName
+	index int
+}
+
+// validatePresetTypes enforces the per-type preset rules that make selection single-valued:
+// one feature-free default per type, every other preset carrying at least one enabled
+// preset-scoped feature, and no enabled feature repeated within a type.
+func validatePresetTypes(zone *adminv1.Zone) field.ErrorList {
+	presetsPath := field.NewPath("spec", "presets")
+	var errs field.ErrorList
+
+	defaults := make(map[adminv1.GatewayType]int)
+	featureOwners := make(map[adminv1.GatewayType]map[adminv1.FeatureName]string)
+	types := make([]adminv1.GatewayType, 0, len(zone.Spec.Presets))
+
+	for i := range zone.Spec.Presets {
+		preset := &zone.Spec.Presets[i]
+		presetPath := presetsPath.Index(i)
+		if preset.Type == "" {
+			// The API server rejects this; skip so the remaining rules stay meaningful.
+			continue
+		}
+		if !slices.Contains(types, preset.Type) {
+			types = append(types, preset.Type)
+		}
+
+		var enabled []enabledFeature
+		for j, feature := range preset.Features {
+			if feature.Enabled && adminv1.FeatureScopeOf(feature.Name) == adminv1.FeatureScopePreset {
+				enabled = append(enabled, enabledFeature{name: feature.Name, index: j})
+			}
+		}
+
+		if preset.Default {
+			defaults[preset.Type]++
+			if len(enabled) > 0 {
+				errs = append(errs, field.Invalid(presetPath.Child("features"), preset.Features,
+					"default preset must not enable preset-scoped features, otherwise normal traffic uses a feature profile"))
+			}
+			continue
+		}
+
+		if len(enabled) == 0 {
+			errs = append(errs, field.Invalid(presetPath.Child("features"), preset.Features,
+				"a non-default preset must enable at least one preset-scoped feature, otherwise it can never be selected"))
+		}
+		for _, feature := range enabled {
+			owners, ok := featureOwners[preset.Type]
+			if !ok {
+				owners = make(map[adminv1.FeatureName]string)
+				featureOwners[preset.Type] = owners
+			}
+			if owner, found := owners[feature.name]; found {
+				errs = append(errs, field.Duplicate(presetPath.Child("features").Index(feature.index).Child("name"),
+					"feature "+strconv.Quote(string(feature.name))+" is already enabled on preset "+strconv.Quote(owner)+
+						" for gateway type "+strconv.Quote(string(preset.Type))))
+				continue
+			}
+			owners[feature.name] = preset.Name
+		}
+	}
+
+	for _, gatewayType := range types {
+		if defaults[gatewayType] != 1 {
+			errs = append(errs, field.Invalid(presetsPath, defaults[gatewayType],
+				"exactly one default preset is required for gateway type "+strconv.Quote(string(gatewayType))))
+		}
+	}
+
+	// The API type carries the zone's representative profile: GetDefaultPreset, and every
+	// caller that has no traffic type of its own, resolves through it. Without one the zone
+	// cannot be reconciled at all, so reject it here instead of at reconcile time.
+	if !slices.Contains(types, adminv1.GatewayTypeAPI) {
+		errs = append(errs, field.Required(presetsPath,
+			"at least one preset of gateway type "+strconv.Quote(string(adminv1.GatewayTypeAPI))+
+				" is required: it is the zone's representative profile for callers that carry no gateway type"))
+	}
+
+	return errs
+}
+
+// validateGatewayReferences rejects a gateway no preset uses. Preset references are the
+// only reachability signal now, and an unused gateway still provisions a Gateway, an admin
+// client and a consumer.
+func validateGatewayReferences(zone *adminv1.Zone) field.ErrorList {
+	var errs field.ErrorList
+	for i := range zone.Spec.Gateways {
+		gateway := &zone.Spec.Gateways[i]
+		used := slices.ContainsFunc(zone.Spec.Presets, func(preset adminv1.Preset) bool {
+			return preset.GatewayRef == gateway.Name
+		})
+		if !used {
+			errs = append(errs, field.Invalid(field.NewPath("spec", "gateways").Index(i).Child("name"), gateway.Name,
+				"gateway is not referenced by any preset and would serve no traffic"))
+		}
+	}
 	return errs
 }
 

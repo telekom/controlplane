@@ -11,6 +11,7 @@
   "spec": {
     "presets": [{
       "name": "default",
+      "type": "API",
       "default": true,
       "gatewayRef": "default",
       "identityProviderRef": "default",

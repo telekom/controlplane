@@ -113,7 +113,17 @@ func makeReadyZone() *adminv1.Zone {
 		},
 		Spec: adminv1.ZoneSpec{
 			Presets: []adminv1.Preset{{
-				Name:    "default",
+				Name:    "event",
+				Type:    adminv1.GatewayTypeEvent,
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
+				}},
+			}, {
+				Name:    "api",
+				Type:    adminv1.GatewayTypeAPI,
 				Default: true,
 				Urls: []adminv1.UrlConfig{{
 					Hostname: "gateway.example.com",
@@ -125,7 +135,10 @@ func makeReadyZone() *adminv1.Zone {
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
 			Presets: []adminv1.PresetStatus{{
-				Name:       "default",
+				Name:       "event",
+				GatewayRef: &ctypes.ObjectRef{Name: "gw", Namespace: "default"},
+			}, {
+				Name:       "api",
 				GatewayRef: &ctypes.ObjectRef{Name: "gw", Namespace: "default"},
 			}},
 			Gateways: []adminv1.GatewayStatus{{

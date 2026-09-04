@@ -36,22 +36,18 @@ spec:
             repeat: 24h
   gateways:
     - name: standard
-      types:
-        - API
-        - Event
       admin:
         identityProviderRef: primary
         url: https://gateway-admin.example.com/admin-api
         clientId: gateway-admin
     - name: ai
-      types:
-        - AI
       admin:
         identityProviderRef: primary
         url: https://ai-gateway-admin.example.com/admin-api
         clientId: ai-gateway-admin
   presets:
     - name: default
+      type: API
       default: true
       gatewayRef: standard
       identityProviderRef: primary
@@ -61,6 +57,7 @@ spec:
           basePath: /
           hidden: false
     - name: consumer-failover
+      type: API
       gatewayRef: standard
       identityProviderRef: primary
       tokenUrl: https://dtc.identity.example.com/auth/realms/default/protocol/openid-connect/token
@@ -72,7 +69,19 @@ spec:
       features:
         - name: ConsumerFailover
           enabled: true
+    - name: events
+      type: Event
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: events.gateway.example.com
+          scheme: https
+          basePath: /
+          hidden: false
     - name: ai
+      type: AI
+      default: true
       gatewayRef: ai
       identityProviderRef: primary
       urls:

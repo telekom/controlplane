@@ -16,11 +16,16 @@ import (
 func zoneWithIssuers(name, issuer, lmsIssuer string) *adminv1.Zone {
 	z := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Spec:       adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
-		Status:     adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
+		Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+			{Name: "api", Type: adminv1.GatewayTypeAPI, Default: true},
+			{Name: "event", Type: adminv1.GatewayTypeEvent, Default: true},
+		}},
+		// Event routing reads the Event preset, so the issuers under test live there.
+		Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{
+			{Name: "api"},
+			{Name: "event", Links: adminv1.Links{Issuer: issuer, LmsIssuer: lmsIssuer}},
+		}},
 	}
-	z.Status.Presets[0].Links.Issuer = issuer
-	z.Status.Presets[0].Links.LmsIssuer = lmsIssuer
 	return z
 }
 
@@ -37,19 +42,20 @@ var _ = Describe("collectPrimaryTrustedIssuers", func() {
 		Entry("empty subscriber LMS issuer", zoneWithIssuers("zone-a", "idp-a", "lms-a"), []*adminv1.Zone{zoneWithIssuers("zone-b", "idp-b", ""), zoneWithIssuers("zone-c", "idp-c", "lms-c")}, true, []string{"idp-a", "lms-c"}),
 	)
 
-	It("uses the matching default preset status rather than the first status", func() {
-		zone := zoneWithIssuers("zone-a", "default-idp", "default-lms")
-		zone.Spec.Presets = append([]adminv1.Preset{{Name: "alpha"}}, zone.Spec.Presets...)
-		zone.Status.Presets = append([]adminv1.PresetStatus{{Name: "alpha", Links: adminv1.Links{Issuer: "wrong-idp"}}}, zone.Status.Presets...)
+	It("uses the Event preset status rather than the API one", func() {
+		zone := zoneWithIssuers("zone-a", "event-idp", "event-lms")
+		apiStatus, err := zone.Status.GetPreset("api")
+		Expect(err).NotTo(HaveOccurred())
+		apiStatus.Links.Issuer = "wrong-idp"
 
 		issuers, err := collectPrimaryTrustedIssuers(zone, nil, false)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(issuers).To(Equal([]string{"default-idp"}))
+		Expect(issuers).To(Equal([]string{"event-idp"}))
 	})
 
-	It("returns an error when the default preset status is missing", func() {
-		zone := zoneWithIssuers("zone-a", "default-idp", "default-lms")
+	It("returns an error when the Event preset status is missing", func() {
+		zone := zoneWithIssuers("zone-a", "event-idp", "event-lms")
 		zone.Status.Presets = nil
 
 		issuers, err := collectPrimaryTrustedIssuers(zone, nil, false)

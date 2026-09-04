@@ -19,7 +19,32 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 )
 
-var ErrNoMatchingPreset = errors.New("no matching preset")
+// Preset resolution sentinels. Downstream callers branch on these, so the distinction
+// between "the zone offers nothing" and "the zone is broken" must stay sharp.
+var (
+	// ErrNoMatchingPreset means the request was well-formed but this zone offers no preset
+	// providing it. The zone is valid, so callers may treat it as "skip this zone". It must
+	// never wrap a malformed request or a misconfigured zone.
+	ErrNoMatchingPreset = errors.New("no matching preset")
+
+	// ErrInvalidFeatures means the request itself is malformed: a feature is unknown, or is
+	// zone-scoped and not enabled. Callers must not skip on it — the caller, not the zone,
+	// is at fault.
+	ErrInvalidFeatures = errors.New("invalid features")
+
+	// ErrAmbiguousPreset means the zone is misconfigured: several presets of one traffic type
+	// are marked default, or several carry the same enabled feature, so selection cannot be
+	// single-valued. Callers must not skip on it; surface it as a blocking error.
+	ErrAmbiguousPreset = errors.New("ambiguous preset")
+
+	// ErrNoDefaultPreset means presets of the requested traffic type exist but none is marked
+	// default. The zone is misconfigured, so callers must not skip on it.
+	ErrNoDefaultPreset = errors.New("no default preset")
+
+	// ErrNoPresetFound means no preset exists with the requested name. It belongs to lookup by
+	// name, not to selection.
+	ErrNoPresetFound = errors.New("no preset found with the specified name")
+)
 
 type ZoneVisibility string
 
@@ -27,8 +52,6 @@ const (
 	ZoneVisibilityWorld      ZoneVisibility = "World"
 	ZoneVisibilityEnterprise ZoneVisibility = "Enterprise"
 )
-
-var ErrNoPresetFound = fmt.Errorf("no preset found with the specified name")
 
 type RedisConfig struct {
 	// Host is the Redis server hostname (e.g. "redis-master.svc.cluster.local").
@@ -170,6 +193,10 @@ type Preset struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
 	Name string `json:"name"`
+	// Type is the kind of traffic this preset routes. It selects which domain's
+	// routes use this preset; a gateway serves the union of its presets' types.
+	// +kubebuilder:validation:Required
+	Type GatewayType `json:"type"`
 	// +kubebuilder:validation:Optional
 	Default bool `json:"default,omitempty"`
 	// GatewayRef is the name of the gateway to used for this preset.
@@ -234,18 +261,8 @@ const (
 
 type GatewayConfig struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
-	Name string `json:"name"`
-	// Types are the kinds of traffic this gateway serves. A single gateway may serve several.
-	// +listType=set
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=3
-	Types []GatewayType      `json:"types"`
+	Name  string             `json:"name"`
 	Admin GatewayAdminConfig `json:"admin"`
-}
-
-// HasType reports whether this gateway serves the given traffic type.
-func (g *GatewayConfig) HasType(gatewayType GatewayType) bool {
-	return slices.Contains(g.Types, gatewayType)
 }
 
 // ManagedRouteType defines the type of a managed route.
@@ -341,7 +358,7 @@ type ZoneSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=5
+	// +kubebuilder:validation:MaxItems=10
 	Gateways []GatewayConfig `json:"gateways"`
 	// +listType=map
 	// +listMapKey=name
@@ -351,7 +368,7 @@ type ZoneSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=5
+	// +kubebuilder:validation:MaxItems=10
 	Presets       []Preset             `json:"presets"`
 	Redis         *RedisConfig         `json:"redis,omitempty"`
 	ManagedRoutes *ManagedRoutesConfig `json:"managedRoutes,omitempty"`
@@ -407,21 +424,11 @@ func (s *ZoneSpec) GetPreset(name string) (*Preset, error) {
 	return nil, fmt.Errorf("preset %q: %w", name, ErrNoPresetFound)
 }
 
+// GetDefaultPreset returns the zone's representative profile: the API type default.
+// Callers that carry no traffic type (projector, team routes, team consumers) use this
+// rather than inventing one. It is equivalent to SelectPreset(GatewayTypeAPI).
 func (s *ZoneSpec) GetDefaultPreset() (*Preset, error) {
-	var match *Preset
-	for i := range s.Presets {
-		if !s.Presets[i].Default {
-			continue
-		}
-		if match != nil {
-			return nil, fmt.Errorf("multiple default presets")
-		}
-		match = &s.Presets[i]
-	}
-	if match == nil {
-		return nil, fmt.Errorf("default preset: %w", ErrNoPresetFound)
-	}
-	return match, nil
+	return s.SelectPreset(GatewayTypeAPI)
 }
 
 func (s *ZoneSpec) validateFeatures(features []FeatureName) ([]FeatureName, []string) {
@@ -442,21 +449,57 @@ func (s *ZoneSpec) validateFeatures(features []FeatureName) ([]FeatureName, []st
 	return presetFeatures, problems
 }
 
-func (s *ZoneSpec) MatchingPresets(gatewayType GatewayType, features ...FeatureName) ([]*Preset, error) {
-	presetFeatures, problems := s.validateFeatures(features)
-
-	var candidates []*Preset
+// presetsOfType returns the presets serving one traffic type, in spec order.
+func (s *ZoneSpec) presetsOfType(gatewayType GatewayType) []*Preset {
+	var presets []*Preset
 	for i := range s.Presets {
-		gateway, err := s.GetGateway(s.Presets[i].GatewayRef)
-		if err != nil {
-			return nil, err
-		}
-		if gateway.HasType(gatewayType) {
-			candidates = append(candidates, &s.Presets[i])
+		if s.Presets[i].Type == gatewayType {
+			presets = append(presets, &s.Presets[i])
 		}
 	}
+	return presets
+}
+
+// explainMissingFeatures reports which requested features no preset of the type enables.
+func (s *ZoneSpec) explainMissingFeatures(gatewayType GatewayType, presetFeatures []FeatureName) []string {
+	candidates := s.presetsOfType(gatewayType)
+	var problems []string
+	for _, feature := range presetFeatures {
+		if !slices.ContainsFunc(candidates, func(p *Preset) bool { return supportsFeatures(p.Features, feature) }) {
+			problems = append(problems, fmt.Sprintf("feature %q is not enabled on any %q preset", feature, gatewayType))
+		}
+	}
+	return problems
+}
+
+// selectionScope names what was asked for, for the aggregate selection errors. The feature
+// clause is dropped when no features were requested: "feature combination []" is pure noise,
+// and the gateway type already appears in the problems it is joined with.
+func selectionScope(gatewayType GatewayType, features []FeatureName) string {
+	if len(features) == 0 {
+		return fmt.Sprintf("gateway type %q", gatewayType)
+	}
+	return fmt.Sprintf("feature combination %v for gateway type %q", features, gatewayType)
+}
+
+// SelectPreset returns the single routing profile for a traffic type and feature set.
+// The webhook is expected to guarantee one feature-free default per type and at most one
+// preset per enabled preset-scoped feature per type; both invariants are re-checked here
+// rather than silently resolved by spec order, because a violation is a misconfiguration.
+func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName) (*Preset, error) {
+	presetFeatures, problems := s.validateFeatures(features)
+	// A malformed request and an unavailable capability are different classes: callers use the
+	// sentinel to tell "this zone does not offer it, skip" from "this is misconfigured, block".
+	sentinel := ErrNoMatchingPreset
+	if len(problems) > 0 {
+		sentinel = ErrInvalidFeatures
+	}
+
+	candidates := s.presetsOfType(gatewayType)
 	if len(candidates) == 0 {
-		problems = append(problems, fmt.Sprintf("no preset references a gateway of type %q", gatewayType))
+		problems = append(problems, fmt.Sprintf("no preset of type %q exists", gatewayType))
+		return nil, fmt.Errorf("%w: %s: %s",
+			sentinel, selectionScope(gatewayType, features), strings.Join(problems, "; "))
 	}
 
 	var matches []*Preset
@@ -466,15 +509,10 @@ func (s *ZoneSpec) MatchingPresets(gatewayType GatewayType, features ...FeatureN
 		}
 	}
 
-	if len(matches) == 0 && len(candidates) > 0 {
-		missing := 0
-		for _, feature := range presetFeatures {
-			if !slices.ContainsFunc(candidates, func(p *Preset) bool { return supportsFeatures(p.Features, feature) }) {
-				problems = append(problems, fmt.Sprintf("feature %q is not enabled on any %q preset", feature, gatewayType))
-				missing++
-			}
-		}
-		if missing == 0 {
+	if len(matches) == 0 {
+		missing := s.explainMissingFeatures(gatewayType, presetFeatures)
+		problems = append(problems, missing...)
+		if len(missing) == 0 && len(presetFeatures) > 1 {
 			// ponytail: unreachable while ConsumerFailover is the only preset-scoped feature,
 			// but required so we never return (nil, nil) once a second one exists.
 			problems = append(problems, "requested features are enabled on different presets, but only one preset can be used at a time")
@@ -482,63 +520,85 @@ func (s *ZoneSpec) MatchingPresets(gatewayType GatewayType, features ...FeatureN
 	}
 
 	if len(problems) > 0 {
-		return nil, fmt.Errorf("feature combination %v is not allowed for gateway type %q: %s",
-			features, gatewayType, strings.Join(problems, "; "))
+		return nil, fmt.Errorf("%w: %s: %s",
+			sentinel, selectionScope(gatewayType, features), strings.Join(problems, "; "))
 	}
-	return matches, nil
+
+	if len(presetFeatures) > 0 {
+		if len(matches) > 1 {
+			return nil, fmt.Errorf("%w: features %v are enabled on %d presets of type %q; exactly one is required",
+				ErrAmbiguousPreset, presetFeatures, len(matches), gatewayType)
+		}
+		if len(matches) == 0 {
+			// Unreachable: explainMissingFeatures shares supportsFeatures, so an
+			// unsatisfied feature always yields a problem above. Guarded anyway
+			// because the invariant spans two functions and this would panic.
+			return nil, fmt.Errorf("%w: %s", ErrNoMatchingPreset, selectionScope(gatewayType, features))
+		}
+		return matches[0], nil
+	}
+
+	var defaults []*Preset
+	for _, preset := range matches {
+		if preset.Default {
+			defaults = append(defaults, preset)
+		}
+	}
+	if len(defaults) > 1 {
+		return nil, fmt.Errorf("%w: %d presets of type %q are marked default; exactly one is required",
+			ErrAmbiguousPreset, len(defaults), gatewayType)
+	}
+	if len(defaults) == 1 {
+		return defaults[0], nil
+	}
+	return nil, fmt.Errorf("%w: no default preset for gateway type %q", ErrNoDefaultPreset, gatewayType)
 }
 
-// MatchingGateways aggregates gateways for provisioning, where multiple matching presets are valid.
-// Presets may reference the same combined API/AI gateway, so each gateway is returned only once.
-func (s *ZoneSpec) MatchingGateways(features ...FeatureName) ([]*GatewayConfig, error) {
+func (s *ZoneSpec) FeaturesSupported(gatewayType GatewayType, features ...FeatureName) bool {
+	_, err := s.SelectPreset(gatewayType, features...)
+	return err == nil
+}
+
+// MatchingGateways returns the distinct gateways reachable for a traffic type and
+// feature set. Selection is single-valued, but callers provision per physical gateway,
+// so the result is deduplicated and sorted for a stable status.
+func (s *ZoneSpec) MatchingGateways(gatewayType GatewayType, features ...FeatureName) ([]*GatewayConfig, error) {
 	presetFeatures, problems := s.validateFeatures(features)
 	if len(problems) > 0 {
-		return nil, fmt.Errorf("feature combination %v is not allowed: %s", features, strings.Join(problems, "; "))
+		return nil, fmt.Errorf("%w: %s: %s",
+			ErrInvalidFeatures, selectionScope(gatewayType, features), strings.Join(problems, "; "))
 	}
 
 	gatewaysByName := make(map[string]*GatewayConfig)
-	for i := range s.Presets {
-		if !s.Presets[i].SupportsFeatures(presetFeatures) {
+	candidates := s.presetsOfType(gatewayType)
+	for _, preset := range candidates {
+		if !preset.SupportsFeatures(presetFeatures) {
 			continue
 		}
-		gateway, err := s.GetGateway(s.Presets[i].GatewayRef)
+		gateway, err := s.GetGateway(preset.GatewayRef)
 		if err != nil {
 			return nil, err
 		}
 		gatewaysByName[gateway.Name] = gateway
 	}
 	if len(gatewaysByName) == 0 {
-		for _, feature := range presetFeatures {
-			problems = append(problems, fmt.Sprintf("feature %q is not enabled on any preset", feature))
+		problems = s.explainMissingFeatures(gatewayType, presetFeatures)
+		if len(problems) == 0 {
+			if len(candidates) == 0 {
+				problems = append(problems, fmt.Sprintf("no preset of type %q exists", gatewayType))
+			} else {
+				// ponytail: unreachable while ConsumerFailover is the only preset-scoped feature,
+				// but required so the reason is never a false "no preset of this type exists".
+				problems = append(problems, "requested features are enabled on different presets, but only one preset can be used at a time")
+			}
 		}
-		return nil, fmt.Errorf("%w: feature combination %v is not allowed: %s", ErrNoMatchingPreset, features, strings.Join(problems, "; "))
-	}
-	if len(problems) > 0 {
-		return nil, fmt.Errorf("feature combination %v is not allowed: %s", features, strings.Join(problems, "; "))
+		return nil, fmt.Errorf("%w: %s: %s",
+			ErrNoMatchingPreset, selectionScope(gatewayType, features), strings.Join(problems, "; "))
 	}
 
 	gateways := slices.Collect(maps.Values(gatewaysByName))
 	slices.SortFunc(gateways, func(a, b *GatewayConfig) int { return strings.Compare(a.Name, b.Name) })
 	return gateways, nil
-}
-
-// SelectPreset returns one routing profile: the default match wins, otherwise spec order decides.
-func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName) (*Preset, error) {
-	presets, err := s.MatchingPresets(gatewayType, features...)
-	if err != nil {
-		return nil, err
-	}
-	for _, preset := range presets {
-		if preset.Default {
-			return preset, nil
-		}
-	}
-	return presets[0], nil
-}
-
-func (s *ZoneSpec) FeaturesSupported(gatewayType GatewayType, features ...FeatureName) bool {
-	_, err := s.MatchingPresets(gatewayType, features...)
-	return err == nil
 }
 
 type Links struct {
@@ -577,7 +637,11 @@ type Links struct {
 }
 
 type GatewayStatus struct {
-	Name        string           `json:"name"`
+	Name string `json:"name"`
+	// Types is the union of the types of the presets referencing this gateway.
+	// +listType=set
+	// +optional
+	Types       []GatewayType    `json:"types,omitempty"`
 	Gateway     *types.ObjectRef `json:"gateway,omitempty"`
 	AdminClient *types.ObjectRef `json:"adminClient,omitempty"`
 	Consumer    *types.ObjectRef `json:"consumer,omitempty"`

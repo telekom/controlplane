@@ -149,13 +149,13 @@ func RouteDownstreamURL(route *gatewayapi.Route) string {
 	return "https://" + route.Spec.Hostnames[0] + route.Spec.Paths[0]
 }
 
-// resolvePreset returns the zone's default gateway preset and verifies the zone
+// resolvePreset returns the zone's Event gateway preset and verifies the zone
 // has a gateway reference in its status. Used for the downstream (own) zone of a
 // Route, where both the preset (hostnames/paths) and the gateway ref are needed.
 func resolvePreset(zone *adminv1.Zone) (*adminv1.Preset, error) {
-	preset, err := zone.Spec.GetDefaultPreset()
+	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeEvent)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no default preset: %s", zone.Name, err)
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no Event preset: %s", zone.Name, err)
 	}
 	status, err := zone.Status.GetPreset(preset.Name)
 	if err != nil || status.GatewayRef == nil {
@@ -164,14 +164,14 @@ func resolvePreset(zone *adminv1.Zone) (*adminv1.Preset, error) {
 	return preset, nil
 }
 
-// targetPreset returns a zone's default preset for use as a proxy Route's
+// targetPreset returns a zone's Event preset for use as a proxy Route's
 // upstream. Unlike resolvePreset it does NOT require Status.Gateway: the target
 // zone of a cross-zone proxy only contributes its public URL, not a GatewayRef,
 // so its gateway status being unpopulated must not block the proxy Route.
 func targetPreset(zone *adminv1.Zone) (*adminv1.Preset, error) {
-	preset, err := zone.Spec.GetDefaultPreset()
+	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeEvent)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", zone.Name, err)
+		return nil, ctrlerrors.BlockedErrorf("target zone %q has no Event preset: %s", zone.Name, err)
 	}
 	return preset, nil
 }
@@ -192,12 +192,12 @@ func gatewayUpstream(preset *adminv1.Preset, path string) (gatewayapi.Upstream, 
 }
 
 func gatewayRef(zone *adminv1.Zone) (*ctypes.ObjectRef, error) {
-	status, err := DefaultPresetStatus(zone)
+	status, err := EventPresetStatus(zone)
 	if err != nil {
 		return nil, err
 	}
 	if status.GatewayRef == nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status for default preset %q", zone.Name, status.Name)
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status for Event preset %q", zone.Name, status.Name)
 	}
 	return status.GatewayRef, nil
 }

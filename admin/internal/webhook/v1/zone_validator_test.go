@@ -36,6 +36,7 @@ func identityProvider(name, password string) adminv1.IdentityProviderConfig {
 func defaultPreset(name string) adminv1.Preset {
 	return adminv1.Preset{
 		Name:                name,
+		Type:                adminv1.GatewayTypeAPI,
 		Default:             true,
 		GatewayRef:          "standard",
 		IdentityProviderRef: "primary",
@@ -54,13 +55,26 @@ func failoverPreset(name string) adminv1.Preset {
 	return preset
 }
 
+// aiDefaultPreset is the AI-typed counterpart of defaultPreset. A second preset carrying the
+// same feature must be of another traffic type now, and every type present needs its default.
+func aiDefaultPreset() adminv1.Preset {
+	preset := defaultPreset("ai")
+	preset.Type = adminv1.GatewayTypeAI
+	return preset
+}
+
+func aiFailoverPreset() adminv1.Preset {
+	preset := failoverPreset("ai-failover")
+	preset.Type = adminv1.GatewayTypeAI
+	return preset
+}
+
 func validZone() *adminv1.Zone {
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-zone", Namespace: "default"},
 		Spec: adminv1.ZoneSpec{
 			Gateways: []adminv1.GatewayConfig{{
-				Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
-				Name:  "standard",
+				Name: "standard",
 				Admin: adminv1.GatewayAdminConfig{
 					IdentityProviderRef: "primary",
 					Url:                 "https://gateway.example.com/admin",
@@ -96,28 +110,92 @@ var _ = Describe("Zone validation", func() {
 			Expect(apierrors.IsInvalid(err)).To(BeTrue())
 		},
 		Entry("no default", func(z *adminv1.Zone) { z.Spec.Presets[0].Default = false }, "exactly one default preset"),
-		Entry("two defaults", func(z *adminv1.Zone) { z.Spec.Presets = append(z.Spec.Presets, defaultPreset("other")) }, "exactly one default preset"),
 		Entry("missing gateway", func(z *adminv1.Zone) { z.Spec.Presets[0].GatewayRef = "missing" }, "gatewayRef"),
 		Entry("missing runtime IDP", func(z *adminv1.Zone) { z.Spec.Presets[0].IdentityProviderRef = "missing" }, "identityProviderRef"),
 		Entry("missing admin IDP", func(z *adminv1.Zone) { z.Spec.Gateways[0].Admin.IdentityProviderRef = "missing" }, "identityProviderRef"),
 		Entry("multiple IDPs", func(z *adminv1.Zone) {
 			z.Spec.IdentityProviders = append(z.Spec.IdentityProviders, identityProvider("secondary", "secret"))
 		}, "exactly one identity provider"),
+		Entry("two defaults for one type", func(z *adminv1.Zone) {
+			extra := z.Spec.Presets[0]
+			extra.Name = "second-default"
+			z.Spec.Presets = append(z.Spec.Presets, extra)
+		}, "exactly one default preset is required for gateway type \"API\""),
+		Entry("type without a default", func(z *adminv1.Zone) {
+			z.Spec.Presets = append(z.Spec.Presets, adminv1.Preset{
+				Name: "ai", Type: adminv1.GatewayTypeAI, GatewayRef: "standard", IdentityProviderRef: "primary",
+				Urls:     []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}},
+				Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+			})
+		}, "exactly one default preset is required for gateway type \"AI\""),
+		Entry("no API preset at all", func(z *adminv1.Zone) {
+			z.Spec.Presets = []adminv1.Preset{aiDefaultPreset()}
+		}, "is required: it is the zone's representative profile"),
+		Entry("default preset enabling a feature", func(z *adminv1.Zone) {
+			z.Spec.Presets[0].Features = []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}
+		}, "default preset must not enable preset-scoped features"),
+		Entry("non-default preset without an enabled feature", func(z *adminv1.Zone) {
+			z.Spec.Presets = append(z.Spec.Presets, adminv1.Preset{
+				Name: "spare", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary",
+				Urls: []adminv1.UrlConfig{{Hostname: "spare.example.com", BasePath: "/"}},
+			})
+		}, "must enable at least one preset-scoped feature"),
+		Entry("duplicate feature within one type", func(z *adminv1.Zone) {
+			for _, name := range []string{"failover-a", "failover-b"} {
+				z.Spec.Presets = append(z.Spec.Presets, adminv1.Preset{
+					Name: name, Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary",
+					Urls:     []adminv1.UrlConfig{{Hostname: name + ".example.com", BasePath: "/"}},
+					Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+				})
+			}
+		}, "already enabled on preset"),
+		Entry("gateway referenced by no preset", func(z *adminv1.Zone) {
+			z.Spec.Gateways = append(z.Spec.Gateways, adminv1.GatewayConfig{
+				Name:  "orphan",
+				Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://orphan.example.com/admin-api"},
+			})
+		}, "is not referenced by any preset"),
 	)
 
-	It("allows the same feature set on multiple presets", func() {
+	// A preset with an empty Type is the shape of a Zone stored before Preset.Type existed.
+	// The API server rejects it on write, so the validator only has to skip it: it must not
+	// panic, and it must not invent a default-preset error for the empty gateway type.
+	It("skips a preset carrying no gateway type", func() {
 		zone := validZone()
-		zone.Spec.Presets = append(zone.Spec.Presets, failoverPreset("other"))
-		_, err := validator.ValidateCreate(ctx, zone)
+		legacy := defaultPreset("legacy")
+		legacy.Type = ""
+		legacy.Default = false
+		zone.Spec.Presets = append(zone.Spec.Presets, legacy)
+
+		warnings, err := validator.ValidateCreate(ctx, zone)
 		Expect(err).NotTo(HaveOccurred())
+		Expect(warnings).To(BeEmpty())
+
+		warnings, err = validator.ValidateUpdate(ctx, validZone(), zone)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(warnings).To(BeEmpty())
+	})
+
+	It("warns about ConsumerFailover outside API traffic", func() {
+		zone := validZone()
+		zone.Spec.Presets = append(zone.Spec.Presets, aiDefaultPreset(), aiFailoverPreset())
+		expected := ConsistOf(ContainSubstring("\"ai-failover\" enables ConsumerFailover for gateway type \"AI\""))
+
+		warnings, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(warnings).To(expected)
+
+		warnings, err = validator.ValidateUpdate(ctx, validZone(), zone)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(warnings).To(expected)
 	})
 
 	It("allows multiple failover presets with one shared override", func() {
 		zone := validZone()
 		zone.Spec.Presets[1].TokenUrl = "https://dtc-login.example.com/token"
-		other := failoverPreset("ai-failover")
+		other := aiFailoverPreset()
 		other.TokenUrl = "https://dtc-login.example.com/token"
-		zone.Spec.Presets = append(zone.Spec.Presets, other)
+		zone.Spec.Presets = append(zone.Spec.Presets, other, aiDefaultPreset())
 
 		_, err := validator.ValidateCreate(ctx, zone)
 		Expect(err).NotTo(HaveOccurred())
@@ -126,9 +204,9 @@ var _ = Describe("Zone validation", func() {
 	It("rejects conflicting failover token URL overrides", func() {
 		zone := validZone()
 		zone.Spec.Presets[1].TokenUrl = "https://dtc-api.example.com/token"
-		other := failoverPreset("ai-failover")
+		other := aiFailoverPreset()
 		other.TokenUrl = "https://dtc-ai.example.com/token"
-		zone.Spec.Presets = append(zone.Spec.Presets, other)
+		zone.Spec.Presets = append(zone.Spec.Presets, other, aiDefaultPreset())
 
 		_, err := validator.ValidateCreate(ctx, zone)
 		Expect(err).To(MatchError(ContainSubstring("all ConsumerFailover presets must use the same token URL")))
@@ -145,9 +223,9 @@ var _ = Describe("Zone validation", func() {
 	It("rejects mixing an inherited normal URL with a failover override", func() {
 		zone := validZone()
 		zone.Spec.Presets[1].TokenUrl = "https://dtc-failover.example.com/token"
-		other := failoverPreset("ai-failover")
+		other := aiFailoverPreset()
 		other.TokenUrl = ""
-		zone.Spec.Presets = append(zone.Spec.Presets, other)
+		zone.Spec.Presets = append(zone.Spec.Presets, other, aiDefaultPreset())
 
 		_, err := validator.ValidateCreate(ctx, zone)
 		Expect(err).To(MatchError(ContainSubstring("all ConsumerFailover presets must use the same token URL")))
@@ -157,9 +235,9 @@ var _ = Describe("Zone validation", func() {
 		zone := validZone()
 		zone.Spec.IdentityProviders[0].TokenUrl = ""
 		zone.Spec.Presets[1].TokenUrl = ""
-		other := failoverPreset("ai-failover")
+		other := aiFailoverPreset()
 		other.TokenUrl = ""
-		zone.Spec.Presets = append(zone.Spec.Presets, other)
+		zone.Spec.Presets = append(zone.Spec.Presets, other, aiDefaultPreset())
 
 		_, err := validator.ValidateCreate(ctx, zone)
 		Expect(err).NotTo(HaveOccurred())
@@ -212,10 +290,17 @@ var _ = Describe("Zone validation", func() {
 		second := oldZone.Spec.Gateways[0]
 		second.Name = "secondary"
 		oldZone.Spec.Gateways = append(oldZone.Spec.Gateways, second)
+		// Every gateway must be reachable through a preset, so move the failover preset onto
+		// the second gateway and give the prepended one an AI preset of its own.
+		oldZone.Spec.Presets[1].GatewayRef = "secondary"
+
 		newZone := oldZone.DeepCopy()
 		prepended := second
 		prepended.Name = "prepended"
 		newZone.Spec.Gateways = []adminv1.GatewayConfig{prepended, second, oldZone.Spec.Gateways[0]}
+		aiPreset := aiDefaultPreset()
+		aiPreset.GatewayRef = "prepended"
+		newZone.Spec.Presets = append(newZone.Spec.Presets, aiPreset)
 
 		_, err := validator.ValidateUpdate(ctx, oldZone, newZone)
 		Expect(err).NotTo(HaveOccurred())

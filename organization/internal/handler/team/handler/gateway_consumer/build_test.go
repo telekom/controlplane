@@ -52,7 +52,7 @@ var _ = Describe("GatewayConsumerHandler", func() {
 				zones.Items = []adminv1.Zone{{
 					Spec: adminv1.ZoneSpec{
 						ManagedRoutes: &adminv1.ManagedRoutesConfig{},
-						Presets:       []adminv1.Preset{{Name: "default", Default: true}},
+						Presets:       []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}},
 					},
 				}}
 			}).
@@ -72,7 +72,7 @@ var _ = Describe("GatewayConsumerHandler", func() {
 				zones.Items = []adminv1.Zone{{
 					Spec: adminv1.ZoneSpec{
 						ManagedRoutes: &adminv1.ManagedRoutesConfig{},
-						Presets:       []adminv1.Preset{{Name: "default", Default: true}},
+						Presets:       []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}},
 					},
 					Status: adminv1.ZoneStatus{
 						Presets: []adminv1.PresetStatus{{Name: "default"}},

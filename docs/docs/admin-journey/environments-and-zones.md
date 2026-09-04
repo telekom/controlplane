@@ -80,9 +80,6 @@ spec:
   visibility: World
   gateways:
     - name: standard
-      types:
-        - API
-        - Event
       admin:
         identityProviderRef: primary
         url: https://gateway-admin.example.com
@@ -96,6 +93,7 @@ spec:
         password: <your-idp-admin-password>
   presets:
     - name: default
+      type: API
       default: true
       gatewayRef: standard
       identityProviderRef: primary
@@ -109,9 +107,9 @@ spec:
     enableTLS: true
 ```
 
-### Gateway Types
+### Traffic Types
 
-Every entry in `spec.gateways` declares which kinds of traffic it serves through `types`:
+Every entry in `spec.presets` declares which kind of traffic it routes through its required `type`:
 
 | Type | Serves |
 | ---- | ------ |
@@ -119,26 +117,65 @@ Every entry in `spec.gateways` declares which kinds of traffic it serves through
 | `AI` | Agentic traffic: MCP servers and agent cards. |
 | `Event` | Asynchronous event traffic. |
 
-A gateway may serve several types at once, and a zone may declare several gateways so that different traffic kinds land on different gateway instances:
+A preset has exactly one type. A gateway has no type of its own — it serves the union of the
+types of the presets that reference it. To send different traffic kinds to different gateway
+instances, point their presets at different gateways:
 
 ```yaml
+  # Excerpt: spec.gateways and spec.presets only. Preset urls and
+  # identityProviderRef are omitted for brevity; both are required.
   gateways:
     - name: standard
-      types: [API, Event]
       admin:
         identityProviderRef: primary
         url: https://gateway-admin.example.com
     - name: ai
-      types: [AI]
       admin:
         identityProviderRef: primary
         url: https://ai-gateway-admin.example.com
+  presets:
+    - name: default
+      type: API
+      default: true
+      gatewayRef: standard
+    - name: events
+      type: Event
+      default: true
+      gatewayRef: standard
+    - name: ai
+      type: AI
+      default: true
+      gatewayRef: ai
 ```
 
-Each preset points at one gateway via `gatewayRef`, so the preset inherits that gateway's types. When the Control Plane needs a preset for a given traffic kind — for example an AI Gateway route — it picks the default preset if it serves that type, and otherwise the first preset in `spec.presets` that does. A zone without a gateway serving the requested type cannot host that kind of traffic.
+Here `standard` serves API and Event traffic because two presets of those types reference it,
+while `ai` serves only AI traffic.
+
+When the Control Plane needs a preset for a traffic kind — for example an AI Gateway route — it
+selects among the presets of that type only. Selection is single-valued: the default preset of
+that type is used, unless the caller requests a feature, in which case the preset enabling that
+feature is used.
+
+#### Rules the webhook enforces
+
+A Zone is rejected at admission unless:
+
+- **At least one `API` preset exists.** The API type carries the zone's representative profile
+  and is used by every caller that has no traffic type of its own.
+- **Exactly one preset per present type is `default`.** If a zone has AI presets, exactly one of
+  them must be the AI default. Types you do not use need no preset at all.
+- **A default preset enables no preset-scoped features**, so ordinary traffic never accidentally
+  runs under a feature profile.
+- **A non-default preset enables at least one preset-scoped feature**, otherwise it can never be
+  selected.
+- **A preset-scoped feature is enabled at most once per type**, so selection stays unambiguous.
+- **Every gateway is referenced by at least one preset.** An unreferenced gateway would still
+  provision a Gateway, an admin client and a consumer for traffic that can never reach it.
 
 :::note
-A gateway that declares several types passes all of them to every preset referencing it. If the default preset points at such a gateway, it is a valid candidate for each of those types and therefore wins the selection. To route a traffic kind to a dedicated preset, keep that type off the gateway the default preset references.
+Because a gateway's types are derived from its presets, adding a preset of a new type to an
+existing gateway is enough to make that gateway serve the new traffic kind — no change to the
+gateway entry is needed.
 :::
 
 :::caution
@@ -152,7 +189,6 @@ To configure routes at runtime, the Control Plane needs to authenticate against 
 ```yaml
 gateways:
   - name: standard
-    types: [API]
     admin:
       identityProviderRef: primary
       url: https://gateway-admin.example.com
@@ -286,6 +322,16 @@ Every `EventConfig` describes one of two kinds of zone, and you must set **exact
 
 - **Local zone** (`local:`) — a zone that runs its own event backend (Horizon). This is the common case.
 - **Proxy zone** (`proxy:`) — a zone that runs *no* event backend of its own and forwards all publish, subscribe, and configuration traffic to a target zone. See [Proxy zones](#proxy-zones) below.
+
+:::caution Every zone that routes events needs an `Event`-typed preset
+A zone that routes events must declare a preset with `type: Event` in `spec.presets`. The
+admission webhook does **not** enforce this — a zone without one is accepted, and the failure
+only appears when the `EventConfig` is reconciled.
+
+In a full mesh this break is not local. Every meshed peer must have an `Event`-typed preset: a
+single zone missing it blocks event reconciliation in *every* peer, not just in itself. Migrate
+all meshed zones together; migrating them one at a time does not converge.
+:::
 
 ### Creating an `EventConfig` for a local zone
 

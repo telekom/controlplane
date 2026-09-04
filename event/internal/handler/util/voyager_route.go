@@ -13,7 +13,6 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
@@ -124,13 +123,13 @@ func CreateProxyLocalVoyagerRoute(
 		return nil, err
 	}
 
-	targetPreset, err := targetZone.Spec.GetDefaultPreset()
+	tgtPreset, err := targetPreset(targetZone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
+		return nil, err
 	}
 
 	// Upstream: target zone's gateway Voyager path (the target's primary Route).
-	upstream, err := gatewayUpstream(targetPreset, makeVoyagerRoutePath(targetZone.Name))
+	upstream, err := gatewayUpstream(tgtPreset, makeVoyagerRoutePath(targetZone.Name))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create upstream for proxy local voyager Route")
 	}

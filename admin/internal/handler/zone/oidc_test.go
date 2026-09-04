@@ -124,10 +124,10 @@ var _ = Describe("Preset OIDC status", func() {
 		zone := &adminv1.Zone{
 			Spec: adminv1.ZoneSpec{
 				IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "issuer.example.com"}},
-				Gateways:          []adminv1.GatewayConfig{{Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}, Name: "standard"}},
+				Gateways:          []adminv1.GatewayConfig{{Name: "standard"}},
 				Presets: []adminv1.Preset{
-					{Name: "default", Default: true, GatewayRef: "standard", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "api.example.com", BasePath: "/"}}},
-					{Name: "failover", GatewayRef: "standard", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com", BasePath: "/"}}},
+					{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "standard", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "api.example.com", BasePath: "/"}}},
+					{Name: "failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com", BasePath: "/"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
 				},
 			},
 			Status: adminv1.ZoneStatus{

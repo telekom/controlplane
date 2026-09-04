@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: fmt vet test
+.PHONY: build fmt vet test
 
 fmt:
 	go fmt ./...

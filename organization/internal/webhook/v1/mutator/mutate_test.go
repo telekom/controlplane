@@ -24,13 +24,13 @@ func TestMutateSecret(t *testing.T) {
 	zone := &adminv1.Zone{
 		Spec: adminv1.ZoneSpec{
 			Gateways: []adminv1.GatewayConfig{{
-				Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
-				Name:  "default",
+				Name: "default",
 				Admin: adminv1.GatewayAdminConfig{
 					Url: "https://example.com/gateway",
 				},
 			}}, Presets: []adminv1.Preset{{
 				Name:       "default",
+				Type:       adminv1.GatewayTypeAPI,
 				Default:    true,
 				GatewayRef: "default", IdentityProviderRef: "default",
 				Urls: []adminv1.UrlConfig{{

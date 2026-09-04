@@ -42,12 +42,12 @@ metadata:
 spec:
   gateways:
     - name: standard
-      types: [API]
       admin:
         identityProviderRef: primary
         url: https://gateway-admin.aws-zone.example.com
   presets:
     - name: default
+      type: API
       default: true
       gatewayRef: standard
       identityProviderRef: primary
@@ -55,6 +55,7 @@ spec:
         - hostname: api.aws-zone.example.com
           basePath: /
     - name: consumer-failover
+      type: API
       default: false
       gatewayRef: standard
       identityProviderRef: primary
@@ -72,11 +73,28 @@ spec:
 | Field | Description |
 | ----- | ----------- |
 | `presets[].name` | Must be a valid identifier. The preset that enables consumer failover is typically named `consumer-failover`. |
-| `presets[].gatewayRef` | Must reference a gateway whose `types` include `API`. |
+| `presets[].type` | The traffic kind this preset routes. Failover routing is implemented for `API` only; see the note below. |
+| `presets[].gatewayRef` | Must reference a gateway declared in `spec.gateways`. |
 | `presets[].features` | Must include `{name: "ConsumerFailover", enabled: true}` for the zone to participate in consumer failover. |
 | `presets[].urls` | Defines the hostnames used by consumers redirected via DTC. These hostnames are added to all routes that need to accept failover traffic. |
 
-Several presets in the same zone may carry the same feature set. When more than one preset matches, the Control Plane uses the default preset if it qualifies, and otherwise the first matching preset in `spec.presets` order.
+:::note Failover routing is implemented for API only
+The data model permits `ConsumerFailover` on a preset of any traffic type, and the admission
+webhook accepts one on an `AI` or `Event` preset. The implementation is narrower:
+
+- An **`API`** failover preset is fully supported — credentials, route enrichment, additional
+  hostnames, trusted issuers and proxy routes.
+- An **`AI`** failover preset provisions consumer credentials on its gateway but **no routing**.
+  No exposure or subscription is enriched for it, because failover routing is API-specific.
+- An **`Event`** failover preset provisions **nothing**. An Application carries no traffic kind
+  and is provisioned only on `API` and `AI` gateways, so an `Event` failover preset yields no
+  consumer and does not by itself make its zone a failover target.
+
+This is a current implementation limit, not a rule of the model — AI and Event failover can be
+added later without a schema change.
+:::
+
+A preset-scoped feature such as `ConsumerFailover` may be enabled on at most one preset **per traffic type** — the webhook rejects a zone that enables it twice for the same type, because selection could not then be single-valued. Enabling it once for `API` and once for `AI` is accepted by the webhook (with a warning), but only the `API` one produces failover routing.
 
 ### What Happens Automatically
 

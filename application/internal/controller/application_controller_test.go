@@ -51,19 +51,20 @@ var _ = Describe("Application Controller", func() {
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
 					Gateways: []adminv1.GatewayConfig{{
-						Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}, Name: "default",
+						Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
 					}, {
-						Types: []adminv1.GatewayType{adminv1.GatewayTypeAI}, Name: "ai",
+						Name:  "ai",
 						Admin: adminv1.GatewayAdminConfig{Url: "http://ai-gateway-admin.test.local:8001"},
 					}, {
-						Types: []adminv1.GatewayType{adminv1.GatewayTypeEvent}, Name: "event",
+						Name:  "event",
 						Admin: adminv1.GatewayAdminConfig{Url: "http://event-gateway-admin.test.local:8001"},
 					}}, Presets: []adminv1.Preset{
 						{
 							Name:       "default",
+							Type:       adminv1.GatewayTypeAPI,
 							Default:    true,
 							GatewayRef: "default", IdentityProviderRef: "default",
 							Urls: []adminv1.UrlConfig{
@@ -74,12 +75,24 @@ var _ = Describe("Application Controller", func() {
 							},
 						},
 						{
-							Name: "consumer-failover", GatewayRef: "default", IdentityProviderRef: "default",
+							Name: "ai-default", Type: adminv1.GatewayTypeAI, Default: true,
+							GatewayRef: "ai", IdentityProviderRef: "default",
+							Urls: []adminv1.UrlConfig{{Hostname: "ai-gateway.test.local", BasePath: "/"}},
+						},
+						{
+							Name: "event-default", Type: adminv1.GatewayTypeEvent, Default: true,
+							GatewayRef: "event", IdentityProviderRef: "default",
+							Urls: []adminv1.UrlConfig{{Hostname: "event-gateway.test.local", BasePath: "/"}},
+						},
+						{
+							Name: "consumer-failover", Type: adminv1.GatewayTypeAPI,
+							GatewayRef: "default", IdentityProviderRef: "default",
 							Urls:     []adminv1.UrlConfig{{Hostname: "gateway.test.local", BasePath: "/"}},
 							Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
 						},
 						{
-							Name: "ai-consumer-failover", GatewayRef: "ai", IdentityProviderRef: "default",
+							Name: "ai-consumer-failover", Type: adminv1.GatewayTypeAI,
+							GatewayRef: "ai", IdentityProviderRef: "default",
 							Urls:     []adminv1.UrlConfig{{Hostname: "ai-gateway.test.local", BasePath: "/"}},
 							Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
 						},
@@ -142,13 +155,14 @@ var _ = Describe("Application Controller", func() {
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
 					Gateways: []adminv1.GatewayConfig{{
-						Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI, adminv1.GatewayTypeAI}, Name: "default",
+						Name: "default",
 						Admin: adminv1.GatewayAdminConfig{
 							Url: "http://gateway-admin.test.local:8001",
 						},
 					}}, Presets: []adminv1.Preset{
 						{
 							Name:       "default",
+							Type:       adminv1.GatewayTypeAPI,
 							Default:    true,
 							GatewayRef: "default", IdentityProviderRef: "default",
 							Urls: []adminv1.UrlConfig{
@@ -159,12 +173,19 @@ var _ = Describe("Application Controller", func() {
 							},
 						},
 						{
-							Name: "consumer-failover", GatewayRef: "default", IdentityProviderRef: "default",
+							Name: "ai-default", Type: adminv1.GatewayTypeAI, Default: true,
+							GatewayRef: "default", IdentityProviderRef: "default",
+							Urls: []adminv1.UrlConfig{{Hostname: "gateway-b.test.local", BasePath: "/"}},
+						},
+						{
+							Name: "consumer-failover", Type: adminv1.GatewayTypeAPI,
+							GatewayRef: "default", IdentityProviderRef: "default",
 							Urls:     []adminv1.UrlConfig{{Hostname: "gateway-b.test.local", BasePath: "/"}},
 							Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
 						},
 						{
-							Name: "ai-consumer-failover", GatewayRef: "default", IdentityProviderRef: "default",
+							Name: "ai-consumer-failover", Type: adminv1.GatewayTypeAI,
+							GatewayRef: "default", IdentityProviderRef: "default",
 							Urls:     []adminv1.UrlConfig{{Hostname: "gateway-b.test.local", BasePath: "/"}},
 							Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
 						},
@@ -250,7 +271,7 @@ var _ = Describe("Application Controller", func() {
 				g.Expect(application.Status.TokenUrl).To(Equal("https://identity.example.com/token"))
 
 				g.Expect(application.Status.Clients).To(HaveLen(1))
-				g.Expect(application.Status.Consumers).To(HaveLen(2))
+				g.Expect(application.Status.Consumers).To(HaveLen(3))
 
 				expectedResourceName := expectedClientId + "--zone-a"
 
@@ -260,6 +281,7 @@ var _ = Describe("Application Controller", func() {
 				By("Checking if the Gateway-Consumer is created")
 				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--default", testNamespace)
 				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--ai", testNamespace)
+				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--event", testNamespace)
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -316,6 +338,7 @@ var _ = Describe("Application Controller", func() {
 				}, Equal([]string{
 					testNamespace + "/" + expectedClientId + "--zone-a--ai",
 					testNamespace + "/" + expectedClientId + "--zone-a--default",
+					testNamespace + "/" + expectedClientId + "--zone-a--event",
 					testNamespace + "/" + expectedClientId + "--zone-b--default",
 				})))
 
@@ -327,6 +350,7 @@ var _ = Describe("Application Controller", func() {
 				By("Checking if the Gateway-Consumer is created")
 				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--default", testNamespace)
 				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--ai", testNamespace)
+				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName+"--event", testNamespace)
 
 				expectedResourceName = expectedClientId + "--zone-b"
 

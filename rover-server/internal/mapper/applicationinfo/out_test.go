@@ -123,7 +123,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			// Zone mock
 			zone := &adminv1.Zone{
 				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{
-					Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "stargate.example.com"}},
+					Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "stargate.example.com"}},
 				}}},
 				Status: adminv1.ZoneStatus{
 					Namespace: "zone-ns",
@@ -323,7 +323,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				localStores.ApplicationSecretStore = appMock
 
 				zone := &adminv1.Zone{
-					Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+					Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
 					Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						Issuer:   "https://idp.example.com/auth/realms/test",
 						TokenUrl: "https://dtc-idp.example.com/auth/realms/test/protocol/openid-connect/token",
@@ -358,11 +358,11 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 			zone := &adminv1.Zone{
 				Spec: adminv1.ZoneSpec{Gateways: []adminv1.GatewayConfig{
-					{Name: "default", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}},
-					{Name: "failover", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}},
+					{Name: "default"},
+					{Name: "failover"},
 				}, Presets: []adminv1.Preset{
-					{Name: "default", Default: true, GatewayRef: "default", Urls: []adminv1.UrlConfig{{Hostname: "default.example.com"}}},
-					{Name: "failover", GatewayRef: "failover", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+					{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "default", Urls: []adminv1.UrlConfig{{Hostname: "default.example.com"}}},
+					{Name: "failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "failover", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
 				}},
 				Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{
 					{Name: "default", Links: adminv1.Links{TokenUrl: "https://default-idp.example.com/token"}},
@@ -519,7 +519,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
-				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
 				Status: adminv1.ZoneStatus{
 					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",
@@ -569,7 +569,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
-				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
 				Status: adminv1.ZoneStatus{
 					Presets: []adminv1.PresetStatus{{Name: "default"}}, // No PermissionsUrl
 				},
@@ -619,7 +619,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
-				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
 				Status: adminv1.ZoneStatus{
 					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",
@@ -651,7 +651,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
-				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
 				Status: adminv1.ZoneStatus{
 					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						// Base URL already has query params
@@ -686,7 +686,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
-				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
 				Status: adminv1.ZoneStatus{
 					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						// Invalid URL scheme
@@ -716,7 +716,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores := &store.Stores{}
 
 			zone := &adminv1.Zone{
-				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Default: true}}},
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
 				Status: adminv1.ZoneStatus{
 					Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",

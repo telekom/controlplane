@@ -225,8 +225,14 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 	var preset *adminapi.Preset
 	if apiSub.HasFailover() {
-		// fallback to default preset if no failover preset is found
-		preset, _ = zone.Spec.SelectPreset(adminapi.GatewayTypeAPI, adminapi.FeatureConsumerFailover) //nolint:errcheck // fallback to default preset below
+		// Only "this zone offers no API failover profile" may fall back to the default preset.
+		// A malformed or ambiguous selection must block: falling back would write standard
+		// endpoints into the status while the rest of the pipeline provisions failover.
+		selected, selErr := zone.Spec.SelectPreset(adminapi.GatewayTypeAPI, adminapi.FeatureConsumerFailover)
+		if selErr != nil && !stderrors.Is(selErr, adminapi.ErrNoMatchingPreset) {
+			return errors.Wrapf(selErr, "failed to select failover preset for zone %s", apiSub.Spec.Zone.Name)
+		}
+		preset = selected
 	}
 	if preset == nil {
 		// always fallback to default preset

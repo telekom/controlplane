@@ -63,8 +63,8 @@ func newZone() *adminv1.Zone {
 			Namespace: "test-ns",
 		},
 		Spec: adminv1.ZoneSpec{
-			Gateways: []adminv1.GatewayConfig{{Name: "standard", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}}},
-			Presets:  []adminv1.Preset{{Name: "default", Default: true, GatewayRef: "standard"}},
+			Gateways: []adminv1.GatewayConfig{{Name: "standard"}},
+			Presets:  []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "standard"}},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "zone-ns",
@@ -205,8 +205,9 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 	It("publishes the shared failover token URL when several presets match", func() {
 		app.Spec.Failover.Enabled = true
 		zone.Spec.Presets = append(zone.Spec.Presets,
-			adminv1.Preset{Name: "api-failover", GatewayRef: "standard", IdentityProviderRef: "primary", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
-			adminv1.Preset{Name: "ai-failover", GatewayRef: "standard", IdentityProviderRef: "primary", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+			adminv1.Preset{Name: "ai-default", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "standard", IdentityProviderRef: "primary"},
+			adminv1.Preset{Name: "api-failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+			adminv1.Preset{Name: "ai-failover", Type: adminv1.GatewayTypeAI, GatewayRef: "standard", IdentityProviderRef: "primary", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
 		)
 		zone.Status.Presets = append(zone.Status.Presets,
 			adminv1.PresetStatus{Name: "api-failover", Links: adminv1.Links{TokenUrl: "https://failover-identity.example.com/token"}},
@@ -224,9 +225,12 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 
 	Describe("consumerFailoverTokenURL", func() {
 		BeforeEach(func() {
+			// ai-default satisfies the webhook rule that every present type has exactly one
+			// default preset; it carries no feature, so token resolution ignores it.
 			zone.Spec.Presets = append(zone.Spec.Presets,
-				adminv1.Preset{Name: "api-failover", GatewayRef: "standard", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
-				adminv1.Preset{Name: "ai-failover", GatewayRef: "standard", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+				adminv1.Preset{Name: "ai-default", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "standard"},
+				adminv1.Preset{Name: "api-failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+				adminv1.Preset{Name: "ai-failover", Type: adminv1.GatewayTypeAI, GatewayRef: "standard", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
 			)
 			zone.Status.Presets = append(zone.Status.Presets,
 				adminv1.PresetStatus{Name: "api-failover", Links: adminv1.Links{TokenUrl: "https://failover.example.com/token"}},
@@ -257,6 +261,21 @@ var _ = Describe("ApplicationHandler - Token URL", func() {
 
 			Expect(err).To(MatchError(`ConsumerFailover presets resolve to conflicting token URLs`))
 		})
+	})
+
+	It("resolves the token URL from an Event-typed failover preset", func() {
+		zone.Spec.Presets = append(zone.Spec.Presets,
+			adminv1.Preset{Name: "event-default", Type: adminv1.GatewayTypeEvent, Default: true, GatewayRef: "standard"},
+			adminv1.Preset{Name: "event-failover", Type: adminv1.GatewayTypeEvent, GatewayRef: "standard", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+		)
+		zone.Status.Presets = append(zone.Status.Presets,
+			adminv1.PresetStatus{Name: "event-failover", Links: adminv1.Links{TokenUrl: "https://failover.example.com/token"}},
+		)
+
+		tokenURL, err := consumerFailoverTokenURL(zone)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(tokenURL).To(Equal("https://failover.example.com/token"))
 	})
 
 	It("blocks when the selected preset status is missing", func() {
@@ -300,12 +319,26 @@ var _ = Describe("ApplicationHandler - Zone resolution", func() {
 		primary    *adminv1.Zone
 	)
 
+	// failoverZone builds a zone the webhook would admit: an API default preset, a default for
+	// the requested type, and — when enabled — a failover preset of that type.
 	failoverZone := func(namespace, name string, gatewayType adminv1.GatewayType, enabled bool) adminv1.Zone {
+		presets := []adminv1.Preset{
+			{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "gateway"},
+		}
+		if gatewayType != adminv1.GatewayTypeAPI {
+			presets = append(presets, adminv1.Preset{Name: "typed-default", Type: gatewayType, Default: true, GatewayRef: "gateway"})
+		}
+		if enabled {
+			presets = append(presets, adminv1.Preset{
+				Name: "failover", Type: gatewayType, GatewayRef: "gateway",
+				Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+			})
+		}
 		return adminv1.Zone{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 			Spec: adminv1.ZoneSpec{
-				Gateways: []adminv1.GatewayConfig{{Name: "gateway", Types: []adminv1.GatewayType{gatewayType}}},
-				Presets:  []adminv1.Preset{{Name: "failover", GatewayRef: "gateway", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: enabled}}}},
+				Gateways: []adminv1.GatewayConfig{{Name: "gateway"}},
+				Presets:  presets,
 			},
 		}
 	}
@@ -343,13 +376,15 @@ var _ = Describe("ApplicationHandler - Zone resolution", func() {
 
 	It("rejects a failover zone with a broken gateway reference", func() {
 		brokenZone := failoverZone("broken-ns", "broken", adminv1.GatewayTypeAPI, true)
-		brokenZone.Spec.Presets[0].GatewayRef = "missing"
+		brokenPreset, err := brokenZone.Spec.GetPreset("failover")
+		Expect(err).NotTo(HaveOccurred())
+		brokenPreset.GatewayRef = "missing"
 		mockClient.EXPECT().List(mock.Anything, mock.AnythingOfType("*v1.ZoneList")).
 			Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
 				list.(*adminv1.ZoneList).Items = []adminv1.Zone{brokenZone}
 			}).Return(nil)
 
-		_, _, err := (&ApplicationHandler{}).resolveZones(ctx, mockClient, app)
+		_, _, err = (&ApplicationHandler{}).resolveZones(ctx, mockClient, app)
 
 		var blockedErr ctrlerrors.BlockedError
 		Expect(errors.As(err, &blockedErr)).To(BeTrue())
@@ -680,13 +715,15 @@ var _ = Describe("ApplicationHandler - Gateway consumers", func() {
 	)
 
 	It("creates one Consumer when two failover presets reference the same combined gateway", func() {
-		zone.Spec.Gateways = []adminv1.GatewayConfig{{Name: "combined", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI, adminv1.GatewayTypeAI}}}
+		zone.Spec.Gateways = []adminv1.GatewayConfig{{Name: "combined"}}
 		zone.Spec.Presets = []adminv1.Preset{
-			{Name: "api-failover", GatewayRef: "combined", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
-			{Name: "ai-failover", GatewayRef: "combined", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+			{Name: "api-default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "combined"},
+			{Name: "ai-default", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "combined"},
+			{Name: "api-failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "combined", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+			{Name: "ai-failover", Type: adminv1.GatewayTypeAI, GatewayRef: "combined", Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
 		}
 		zone.Status.Gateways = []adminv1.GatewayStatus{{Name: "combined", Gateway: &commontypes.ObjectRef{Name: "combined-gw", Namespace: "zone-ns"}}}
-		gateways, err := zone.Spec.MatchingGateways(adminv1.FeatureConsumerFailover)
+		gateways, err := consumerGateways(zone, adminv1.FeatureConsumerFailover)
 		Expect(err).NotTo(HaveOccurred())
 		mockClient.EXPECT().
 			CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
@@ -754,10 +791,17 @@ var _ = Describe("ApplicationHandler - Gateway consumers", func() {
 		}}))
 	})
 
-	It("excludes Event-only primary gateways", func() {
+	It("creates primary Consumers on API, AI, and Event gateways", func() {
 		zone.Spec.Gateways = append(zone.Spec.Gateways,
-			adminv1.GatewayConfig{Name: "events", Types: []adminv1.GatewayType{adminv1.GatewayTypeEvent}},
-			adminv1.GatewayConfig{Name: "ai", Types: []adminv1.GatewayType{adminv1.GatewayTypeAI}},
+			adminv1.GatewayConfig{Name: "events"},
+			adminv1.GatewayConfig{Name: "ai"},
+		)
+		zone.Spec.Presets = append(zone.Spec.Presets,
+			adminv1.Preset{Name: "event", Type: adminv1.GatewayTypeEvent, Default: true, GatewayRef: "events"},
+			adminv1.Preset{Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai"},
+		)
+		zone.Status.Gateways = append(zone.Status.Gateways,
+			adminv1.GatewayStatus{Name: "events", Gateway: &commontypes.ObjectRef{Name: "events-gw", Namespace: "zone-ns"}},
 		)
 		createdNames := []string{}
 		mockClient.EXPECT().
@@ -766,14 +810,30 @@ var _ = Describe("ApplicationHandler - Gateway consumers", func() {
 				Expect(fn()).To(Succeed())
 				createdNames = append(createdNames, obj.GetName())
 			}).
-			Return(controllerutil.OperationResultCreated, nil).Times(2)
+			Return(controllerutil.OperationResultCreated, nil).Times(3)
 
 		Expect((&ApplicationHandler{}).ensureGatewayConsumers(ctx, zone, nil, app)).To(Succeed())
 
 		Expect(createdNames).To(ConsistOf(
 			"test-team--test-app--test-zone--standard",
 			"test-team--test-app--test-zone--ai",
+			"test-team--test-app--test-zone--events",
 		))
+	})
+
+	// Selecting the primary gateways can now fail, which it could not when the set was a
+	// filter over zone.Spec.Gateways. The webhook rejects such a zone, so this is defence
+	// in depth rather than a reachable state.
+	It("blocks when the zone has no consumer traffic preset", func() {
+		zone.Spec.Gateways = nil
+		zone.Spec.Presets = nil
+
+		err := (&ApplicationHandler{}).ensureGatewayConsumers(ctx, zone, nil, app)
+
+		var blockedErr ctrlerrors.BlockedError
+		Expect(errors.As(err, &blockedErr)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring(`zone "test-zone" consumer gateways cannot be resolved`)))
+		Expect(app.Status.Consumers).To(BeEmpty())
 	})
 
 	It("blocks before creating a Consumer whose resource name exceeds the Kubernetes limit", func() {
@@ -791,5 +851,98 @@ var _ = Describe("ApplicationHandler - Gateway consumers", func() {
 		Expect(errors.As(err, &blockedErr)).To(BeTrue())
 		Expect(err).To(MatchError(ContainSubstring("exceeds the Kubernetes maximum of 253 characters")))
 		Expect(app.Status.Consumers).To(BeEmpty())
+	})
+})
+
+var _ = Describe("consumerGateways", func() {
+	var zone *adminv1.Zone
+
+	BeforeEach(func() {
+		zone = newZone()
+		zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{Name: "ai"})
+		zone.Spec.Presets = append(zone.Spec.Presets,
+			adminv1.Preset{Name: "ai-default", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai"},
+		)
+	})
+
+	gatewayNames := func(gateways []*adminv1.GatewayConfig) []string {
+		names := make([]string, 0, len(gateways))
+		for _, gateway := range gateways {
+			names = append(names, gateway.Name)
+		}
+		return names
+	}
+
+	It("deduplicates a gateway shared by two traffic types", func() {
+		zone.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard"}}
+		zone.Spec.Presets[1].GatewayRef = "standard"
+
+		gateways, err := consumerGateways(zone)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(gatewayNames(gateways)).To(Equal([]string{"standard"}))
+	})
+
+	It("returns the gateways of both types in name order", func() {
+		gateways, err := consumerGateways(zone)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(gatewayNames(gateways)).To(Equal([]string{"ai", "standard"}))
+	})
+
+	// The union is the whole point of I4: a type that offers nothing must not veto the others,
+	// or an AI-only failover gateway would silently lose its consumer.
+	It("includes an AI-only failover gateway when the API type offers no failover preset", func() {
+		zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
+			Name: "ai-failover", Type: adminv1.GatewayTypeAI, GatewayRef: "ai",
+			Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+		})
+
+		gateways, err := consumerGateways(zone, adminv1.FeatureConsumerFailover)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(gatewayNames(gateways)).To(Equal([]string{"ai"}))
+	})
+
+	It("includes an Event-typed failover preset in the union", func() {
+		zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{Name: "events"})
+		zone.Spec.Presets = append(zone.Spec.Presets,
+			adminv1.Preset{Name: "event-default", Type: adminv1.GatewayTypeEvent, Default: true, GatewayRef: "events"},
+			adminv1.Preset{
+				Name: "api-failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard",
+				Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+			},
+			adminv1.Preset{
+				Name: "event-failover", Type: adminv1.GatewayTypeEvent, GatewayRef: "events",
+				Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
+			},
+		)
+
+		gateways, err := consumerGateways(zone, adminv1.FeatureConsumerFailover)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(gatewayNames(gateways)).To(Equal([]string{"events", "standard"}))
+	})
+
+	It("reports ErrNoMatchingPreset only when no traffic type matches", func() {
+		_, err := consumerGateways(zone, adminv1.FeatureConsumerFailover)
+
+		Expect(err).To(MatchError(adminv1.ErrNoMatchingPreset))
+	})
+
+	It("propagates a malformed request instead of skipping the zone", func() {
+		_, err := consumerGateways(zone, adminv1.FeatureName("Bogus"))
+
+		Expect(err).To(MatchError(adminv1.ErrInvalidFeatures))
+		Expect(err).NotTo(MatchError(adminv1.ErrNoMatchingPreset))
+	})
+
+	It("propagates a dangling gatewayRef instead of skipping the zone", func() {
+		zone.Spec.Presets[1].GatewayRef = "missing"
+
+		_, err := consumerGateways(zone)
+
+		Expect(err).To(MatchError(ContainSubstring(`gateway "missing" not found`)))
+		Expect(err).NotTo(MatchError(adminv1.ErrNoMatchingPreset))
 	})
 })

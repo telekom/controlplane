@@ -83,8 +83,7 @@ func newValidZone() *adminv1.Zone {
 				TokenUrl: "https://idp.example.com/token",
 			}},
 			Gateways: []adminv1.GatewayConfig{{
-				Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
-				Name:  "standard",
+				Name: "standard",
 				Admin: adminv1.GatewayAdminConfig{
 					IdentityProviderRef: "primary",
 					Url:                 "https://gateway.example.com/admin",
@@ -92,6 +91,7 @@ func newValidZone() *adminv1.Zone {
 			}},
 			Presets: []adminv1.Preset{{
 				Name:                "default",
+				Type:                adminv1.GatewayTypeAPI,
 				Default:             true,
 				GatewayRef:          "standard",
 				IdentityProviderRef: "primary",
@@ -235,7 +235,7 @@ var _ = Describe("Zone Webhook", func() {
 			It("preserves gateway secrets by name when gateway order changes", func() {
 				oldObj := newValidZone()
 				oldObj.Spec.Gateways[0].Admin.ClientSecret = ptr("standard-secret")
-				ai := adminv1.GatewayConfig{Types: []adminv1.GatewayType{adminv1.GatewayTypeAI}, Name: "ai", Admin: adminv1.GatewayAdminConfig{ClientSecret: ptr("ai-secret")}}
+				ai := adminv1.GatewayConfig{Name: "ai", Admin: adminv1.GatewayAdminConfig{ClientSecret: ptr("ai-secret")}}
 				oldObj.Spec.Gateways = append(oldObj.Spec.Gateways, ai)
 
 				newObj := oldObj.DeepCopy()
@@ -251,7 +251,7 @@ var _ = Describe("Zone Webhook", func() {
 			It("rotates only the named gateway carrying rotate", func() {
 				oldObj := newValidZone()
 				oldObj.Spec.Gateways[0].Admin.ClientSecret = ptr("standard-secret")
-				ai := adminv1.GatewayConfig{Types: []adminv1.GatewayType{adminv1.GatewayTypeAI}, Name: "ai", Admin: adminv1.GatewayAdminConfig{ClientSecret: ptr("ai-secret")}}
+				ai := adminv1.GatewayConfig{Name: "ai", Admin: adminv1.GatewayAdminConfig{ClientSecret: ptr("ai-secret")}}
 				oldObj.Spec.Gateways = append(oldObj.Spec.Gateways, ai)
 
 				newObj := oldObj.DeepCopy()
@@ -347,8 +347,7 @@ var _ = Describe("Zone Webhook", func() {
 				obj := newValidZone()
 				obj.Spec.Gateways[0].Admin.ClientSecret = ptr("standard-secret")
 				obj.Spec.Gateways = append(obj.Spec.Gateways, adminv1.GatewayConfig{
-					Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
-					Name:  "ai",
+					Name: "ai",
 					Admin: adminv1.GatewayAdminConfig{
 						IdentityProviderRef: "primary",
 						Url:                 "https://ai-gateway.example.com/admin",

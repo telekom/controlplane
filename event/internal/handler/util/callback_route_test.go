@@ -26,75 +26,78 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// makeZone creates a Zone with a default gateway preset and gateway status reference.
+// gatewayUrls is the URL config shared by the preset fixtures below.
+func gatewayUrls() []adminv1.UrlConfig {
+	return []adminv1.UrlConfig{{
+		Hostname: "gateway.example.com",
+		Port:     443,
+		Scheme:   "https",
+	}}
+}
+
+// makeZone creates a Zone with an Event preset (used by every event route) plus the
+// API preset every admitted Zone must carry, and a gateway status reference for both.
 func makeZone(name, statusNs string) *adminv1.Zone {
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 		Spec: adminv1.ZoneSpec{
-			Presets: []adminv1.Preset{{
-				Name:    "default",
-				Default: true,
-				Urls: []adminv1.UrlConfig{{
-					Hostname: "gateway.example.com",
-					Port:     443,
-					Scheme:   "https",
-				}},
-			}},
+			Presets: []adminv1.Preset{
+				{Name: "event", Type: adminv1.GatewayTypeEvent, Default: true, Urls: gatewayUrls()},
+				{Name: "api", Type: adminv1.GatewayTypeAPI, Default: true, Urls: gatewayUrls()},
+			},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: statusNs,
-			Presets:   []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"}}},
+			Presets: []adminv1.PresetStatus{
+				{Name: "event", GatewayRef: &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"}},
+				{Name: "api", GatewayRef: &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"}},
+			},
 		},
 	}
 }
 
-// makeZoneNoPreset creates a Zone whose gateway config has no default preset.
+// makeZoneNoPreset creates an API-only Zone: valid, but with no Event preset, so it
+// cannot route events.
 func makeZoneNoPreset(name, statusNs string) *adminv1.Zone {
 	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 		Spec: adminv1.ZoneSpec{
-			Presets: []adminv1.Preset{{
-				Name:    "non-default",
-				Default: false,
-				Urls: []adminv1.UrlConfig{{
-					Hostname: "gateway.example.com",
-					Port:     443,
-					Scheme:   "https",
-				}},
-			}},
+			Presets: []adminv1.Preset{
+				{Name: "api", Type: adminv1.GatewayTypeAPI, Default: true, Urls: gatewayUrls()},
+			},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: statusNs,
-			Presets:   []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"}}},
+			Presets:   []adminv1.PresetStatus{{Name: "api", GatewayRef: &ctypes.ObjectRef{Name: "gateway-" + name, Namespace: "default"}}},
 		},
 	}
 }
 
-// makeZoneNoGateway creates a Zone with a default preset but no gateway status reference.
+// makeZoneNoGateway creates a Zone with an Event preset but no gateway status reference.
 func makeZoneNoGateway(name, statusNs string) *adminv1.Zone {
-	return &adminv1.Zone{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-		Spec: adminv1.ZoneSpec{
-			Presets: []adminv1.Preset{{
-				Name:    "default",
-				Default: true,
-				Urls: []adminv1.UrlConfig{{
-					Hostname: "gateway.example.com",
-					Port:     443,
-					Scheme:   "https",
-				}},
-			}},
-		},
-		Status: adminv1.ZoneStatus{
-			Namespace: statusNs,
-			Presets:   nil,
-		},
-	}
+	zone := makeZone(name, statusNs)
+	zone.Status.Presets = nil
+	return zone
+}
+
+// presetByName returns the named spec preset, so fixtures that tweak one preset never
+// depend on the order presets happen to be listed in.
+func presetByName(zone *adminv1.Zone, name string) *adminv1.Preset {
+	preset, err := zone.Spec.GetPreset(name)
+	Expect(err).NotTo(HaveOccurred())
+	return preset
+}
+
+// presetStatusByName is presetByName for the status side.
+func presetStatusByName(zone *adminv1.Zone, name string) *adminv1.PresetStatus {
+	status, err := zone.Status.GetPreset(name)
+	Expect(err).NotTo(HaveOccurred())
+	return status
 }
 
 func makeZoneNilGateway(name, statusNs string) *adminv1.Zone {
 	zone := makeZone(name, statusNs)
-	zone.Status.Presets[0].GatewayRef = nil
+	presetStatusByName(zone, "event").GatewayRef = nil
 	return zone
 }
 
@@ -114,7 +117,7 @@ var _ = Describe("CreateCallbackRoute", func() {
 		zone = makeZone("zone-a", "zone-a-ns")
 	})
 
-	It("should return BlockedError when zone has no default preset", func() {
+	It("should return BlockedError when zone has no Event preset", func() {
 		zoneNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
 		route, err := util.CreateCallbackRoute(ctx, zoneNoPreset)
@@ -122,7 +125,7 @@ var _ = Describe("CreateCallbackRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should return BlockedError when zone has no gateway reference in status", func() {
@@ -241,7 +244,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		targetZone = makeZone("zone-b", "zone-b-ns")
 	})
 
-	It("should return BlockedError when source zone has no default preset", func() {
+	It("should return BlockedError when source zone has no Event preset", func() {
 		sourceNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
 		route, err := util.CreateProxyCallbackRoute(ctx, sourceNoPreset, targetZone)
@@ -249,7 +252,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should return BlockedError when source zone has no gateway reference", func() {
@@ -263,7 +266,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 
-	It("should return BlockedError when target zone has no default preset", func() {
+	It("should return BlockedError when target zone has no Event preset", func() {
 		targetNoPreset := makeZoneNoPreset("zone-b", "zone-b-ns")
 
 		route, err := util.CreateProxyCallbackRoute(ctx, sourceZone, targetNoPreset)
@@ -271,7 +274,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should create proxy callback route successfully", func() {

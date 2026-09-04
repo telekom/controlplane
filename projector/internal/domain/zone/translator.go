@@ -8,6 +8,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/go-logr/logr"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -29,18 +30,27 @@ func (t *Translator) ShouldSkip(_ *adminv1.Zone) (bool, string) {
 // Translate converts a Zone CR into a ZoneData DTO.
 // Visibility is converted from title case ("World"/"Enterprise") to
 // upper case ("WORLD"/"ENTERPRISE") to match the ent enum.
-// GatewayURL is taken from the default preset's first URL; nil if no preset is configured.
-func (t *Translator) Translate(_ context.Context, obj *adminv1.Zone) (*ZoneData, error) {
-	var gatewayURL *string
-	if preset, err := obj.Spec.GetDefaultPreset(); err == nil {
+// The URLs come from the zone's representative (API-typed default) profile — ZoneData
+// carries no traffic kind. They stay nil when the zone has no such profile, whether
+// because no preset is configured, none is API-typed, or none of those is the default.
+// This is a read model, so a bad zone degrades to a partial row rather than blocking the
+// projection; the miss is logged because ambiguous or missing defaults mean misconfiguration.
+func (t *Translator) Translate(ctx context.Context, obj *adminv1.Zone) (*ZoneData, error) {
+	var gatewayURL, issuerURL, permissionsURL *string
+
+	preset, err := obj.Spec.GetDefaultPreset()
+	if err != nil {
+		logr.FromContextOrDiscard(ctx).V(1).Info("Zone has no representative preset, projecting URLs as null",
+			"zone", obj.Name, "reason", err.Error())
+	} else {
 		url := preset.GetDefaultURL()
 		gatewayURL = &url
-	}
 
-	var issuerURL, permissionsURL *string
-	if preset, err := obj.Spec.GetDefaultPreset(); err == nil {
 		status, statusErr := obj.Status.GetPreset(preset.Name)
-		if statusErr == nil {
+		if statusErr != nil {
+			logr.FromContextOrDiscard(ctx).V(1).Info("Zone has no status for its representative preset, projecting issuer URLs as null",
+				"zone", obj.Name, "preset", preset.Name, "reason", statusErr.Error())
+		} else {
 			if status.Links.Issuer != "" {
 				u := status.Links.Issuer
 				issuerURL = &u

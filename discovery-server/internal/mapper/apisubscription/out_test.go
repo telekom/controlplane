@@ -63,23 +63,23 @@ func TestMapResponse_ResolvedReferences(t *testing.T) {
 	zonePrimary.Name = "dataplane1"
 	zonePrimary.Namespace = "poc"
 	zonePrimary.Status.Namespace = "dp1-ns"
-	zonePrimary.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}}}
+	zonePrimary.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard"}}
 	zonePrimary.Spec.Presets = []adminv1.Preset{{
-		Name: "failover", GatewayRef: "standard",
+		Name: "failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard",
 		Urls:     []adminv1.UrlConfig{{Hostname: "gw-primary.example", Scheme: "https"}},
 		Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
-	}, {Name: "default", GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-primary-default.example", Scheme: "https"}}}}
+	}, {Name: "default", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-primary-default.example", Scheme: "https"}}}}
 
 	zoneFailover := &adminv1.Zone{}
 	zoneFailover.Name = "dataplane2"
 	zoneFailover.Namespace = "poc"
 	zoneFailover.Status.Namespace = "dp2-ns"
-	zoneFailover.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}}}
+	zoneFailover.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard"}}
 	zoneFailover.Spec.Presets = []adminv1.Preset{{
-		Name: "failover", GatewayRef: "standard",
+		Name: "failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard",
 		Urls:     []adminv1.UrlConfig{{Hostname: "gw-failover.example", Scheme: "https"}},
 		Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
-	}, {Name: "default", GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-failover-default.example", Scheme: "https"}}}}
+	}, {Name: "default", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-failover-default.example", Scheme: "https"}}}}
 
 	app := &applicationv1.Application{}
 	app.Name = "my-app"
@@ -173,9 +173,9 @@ func TestMapResponse_NoApprovalReference(t *testing.T) {
 	zone := &adminv1.Zone{}
 	zone.Name = "dataplane1"
 	zone.Namespace = "poc"
-	zone.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}}}
+	zone.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard"}}
 	zone.Spec.Presets = []adminv1.Preset{{
-		Name: "default", GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-primary.example", Scheme: "https"}},
+		Name: "default", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-primary.example", Scheme: "https"}},
 	}}
 
 	app := &applicationv1.Application{}

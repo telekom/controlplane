@@ -89,7 +89,7 @@ var _ = Describe("Zone Integration", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
-					Presets:    []adminv1.Preset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.integration.test"}}}},
+					Presets:    []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.integration.test"}}}},
 				},
 			}
 			buildReconciler(zoneObj)
@@ -120,7 +120,7 @@ var _ = Describe("Zone Integration", func() {
 				},
 				Spec: adminv1.ZoneSpec{
 					Visibility: adminv1.ZoneVisibilityWorld,
-					Presets:    []adminv1.Preset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw1.test"}}}},
+					Presets:    []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw1.test"}}}},
 				},
 			}
 			buildReconciler(zoneObj)

@@ -322,7 +322,7 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 	if err != nil {
 		return err
 	}
-	myPresetStatus, err := util.DefaultPresetStatus(myZone)
+	myPresetStatus, err := util.EventPresetStatus(myZone)
 	if err != nil {
 		return err
 	}
@@ -377,7 +377,7 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 
 func (h *EventConfigHandler) createPublishRoute(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone) error {
 	realmName := myZone.Status.RealmName
-	myPresetStatus, err := util.DefaultPresetStatus(myZone)
+	myPresetStatus, err := util.EventPresetStatus(myZone)
 	if err != nil {
 		return err
 	}
@@ -396,7 +396,7 @@ func (h *EventConfigHandler) createPublishRoute(ctx context.Context, obj *eventv
 		return err
 	}
 	for _, pz := range proxySourceZones {
-		presetStatus, statusErr := util.DefaultPresetStatus(pz)
+		presetStatus, statusErr := util.EventPresetStatus(pz)
 		if statusErr != nil {
 			return statusErr
 		}
@@ -461,7 +461,7 @@ func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *event
 	if err != nil {
 		return err
 	}
-	myPresetStatus, err := util.DefaultPresetStatus(myZone)
+	myPresetStatus, err := util.EventPresetStatus(myZone)
 	if err != nil {
 		return err
 	}
@@ -542,7 +542,7 @@ func (h *EventConfigHandler) createProxyVoyagerRoutes(ctx context.Context, obj *
 	if err != nil {
 		return errors.Wrapf(err, "failed to get target zone %q", targetZoneName)
 	}
-	myPresetStatus, err := util.DefaultPresetStatus(myZone)
+	myPresetStatus, err := util.EventPresetStatus(myZone)
 	if err != nil {
 		return err
 	}
@@ -725,7 +725,7 @@ func (h *EventConfigHandler) createProxyPublishRoute(ctx context.Context, obj *e
 	}
 
 	realmName := myZone.Status.RealmName
-	myPresetStatus, err := util.DefaultPresetStatus(myZone)
+	myPresetStatus, err := util.EventPresetStatus(myZone)
 	if err != nil {
 		return err
 	}
@@ -755,7 +755,7 @@ func (h *EventConfigHandler) createProxyPublishRoute(ctx context.Context, obj *e
 // all cross-zone proxy zones (for mesh-client access from proxy routes).
 func collectPrimaryTrustedIssuers(myZone *adminv1.Zone, otherZones []*adminv1.Zone, isProxyTarget bool) ([]string, error) {
 	var issuers []string
-	myPresetStatus, err := util.DefaultPresetStatus(myZone)
+	myPresetStatus, err := util.EventPresetStatus(myZone)
 	if err != nil {
 		return nil, err
 	}
@@ -769,7 +769,7 @@ func collectPrimaryTrustedIssuers(myZone *adminv1.Zone, otherZones []*adminv1.Zo
 	// to this primary route, they present LMS tokens from their respective zones
 	if isProxyTarget {
 		for _, otherZone := range otherZones {
-			presetStatus, statusErr := util.DefaultPresetStatus(otherZone)
+			presetStatus, statusErr := util.EventPresetStatus(otherZone)
 			if statusErr != nil {
 				return nil, statusErr
 			}

@@ -7,6 +7,7 @@ package zone
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -45,7 +46,8 @@ func reconcileGateways(ctx context.Context, hc *HandlingContext) error {
 		hc.Gateways[config.Name] = gateway
 		hc.GatewayConsumers[config.Name] = consumer
 		hc.Zone.Status.Gateways = append(hc.Zone.Status.Gateways, adminapi.GatewayStatus{
-			Name: config.Name, Gateway: types.ObjectRefFromObject(gateway), AdminClient: types.ObjectRefFromObject(adminClient), Consumer: types.ObjectRefFromObject(consumer),
+			Name: config.Name, Types: gatewayTypes(&hc.Zone.Spec, config.Name),
+			Gateway: types.ObjectRefFromObject(gateway), AdminClient: types.ObjectRefFromObject(adminClient), Consumer: types.ObjectRefFromObject(consumer),
 		})
 	}
 	return nil
@@ -138,4 +140,19 @@ func createGatewayConsumer(ctx context.Context, hc *HandlingContext, gatewayName
 		return nil, ctrlerrors.RetryableErrorf("failed to create or update Gateway Consumer %s in zone %s: %s", naming.ForGatewayConsumer(hc.Zone, gatewayName), hc.Zone.Name, err)
 	}
 	return gatewayConsumer, nil
+}
+
+// gatewayTypes returns the traffic types a gateway serves, derived from the presets
+// referencing it. Sorted for a canonical status order independent of how presets are
+// written in the spec.
+func gatewayTypes(spec *adminapi.ZoneSpec, gatewayName string) []adminapi.GatewayType {
+	var gwTypes []adminapi.GatewayType
+	for i := range spec.Presets {
+		preset := &spec.Presets[i]
+		if preset.GatewayRef == gatewayName && !slices.Contains(gwTypes, preset.Type) {
+			gwTypes = append(gwTypes, preset.Type)
+		}
+	}
+	slices.Sort(gwTypes)
+	return gwTypes
 }

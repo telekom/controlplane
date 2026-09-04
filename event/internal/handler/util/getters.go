@@ -50,14 +50,17 @@ func GetZone(ctx context.Context, ref client.ObjectKey) (*adminv1.Zone, error) {
 	return zone, nil
 }
 
-func DefaultPresetStatus(zone *adminv1.Zone) (*adminv1.PresetStatus, error) {
-	preset, err := zone.Spec.GetDefaultPreset()
+// EventPresetStatus returns the status of the zone's Event routing profile.
+// Event traffic never uses the zone's representative (API) profile, so a zone
+// without an Event-typed preset cannot route events at all.
+func EventPresetStatus(zone *adminv1.Zone) (*adminv1.PresetStatus, error) {
+	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeEvent)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no default preset: %s", zone.Name, err)
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no Event preset: %s", zone.Name, err)
 	}
 	status, err := zone.Status.GetPreset(preset.Name)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no status for default preset %q", zone.Name, preset.Name)
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no status for Event preset %q", zone.Name, preset.Name)
 	}
 	return status, nil
 }

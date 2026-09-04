@@ -82,11 +82,15 @@ func makeReadyZone(name, namespace, realmName, issuer, lmsIssuer string, presets
 	}
 	for i := range presets {
 		presets[i].GatewayRef = "standard"
+		// This suite only exercises API traffic; callers may still set a type explicitly.
+		if presets[i].Type == "" {
+			presets[i].Type = adminv1.GatewayTypeAPI
+		}
 	}
 	z := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: adminv1.ZoneSpec{
-			Gateways: []adminv1.GatewayConfig{{Name: "standard", Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI}}},
+			Gateways: []adminv1.GatewayConfig{{Name: "standard"}},
 			Presets:  presets,
 		},
 		Status: adminv1.ZoneStatus{
@@ -98,9 +102,9 @@ func makeReadyZone(name, namespace, realmName, issuer, lmsIssuer string, presets
 			}}},
 		},
 	}
-	for _, preset := range presets[1:] {
+	for i := 1; i < len(presets); i++ {
 		z.Status.Presets = append(z.Status.Presets, adminv1.PresetStatus{
-			Name: preset.Name, GatewayRef: &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace},
+			Name: presets[i].Name, GatewayRef: &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace},
 			Links: adminv1.Links{Issuer: issuer, LmsIssuer: lmsIssuer},
 		})
 	}

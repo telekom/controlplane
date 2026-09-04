@@ -80,7 +80,17 @@ func makeReadyZone() *adminv1.Zone {
 		},
 		Spec: adminv1.ZoneSpec{
 			Presets: []adminv1.Preset{{
-				Name:    "default",
+				Name:    "event",
+				Type:    adminv1.GatewayTypeEvent,
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
+				}},
+			}, {
+				Name:    "api",
+				Type:    adminv1.GatewayTypeAPI,
 				Default: true,
 				Urls: []adminv1.UrlConfig{{
 					Hostname: "gateway.example.com",
@@ -92,12 +102,15 @@ func makeReadyZone() *adminv1.Zone {
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
 			RealmName: "provider-realm",
-			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
+			Presets: []adminv1.PresetStatus{{Name: "event", GatewayRef: &ctypes.ObjectRef{
 				Name:      "gw",
 				Namespace: "default",
 			}, Links: adminv1.Links{
 				Issuer:    "https://idp.test-zone.example.com",
 				LmsIssuer: "https://lms.test-zone.example.com",
+			}}, {Name: "api", GatewayRef: &ctypes.ObjectRef{
+				Name:      "gw",
+				Namespace: "default",
 			}}},
 		},
 	}
@@ -185,13 +198,22 @@ func makeReadyApplication() *applicationv1.Application {
 	return app
 }
 
+// eventPresetStatus resolves the Event preset's status by name, so fixtures never depend
+// on the order the presets happen to be listed in.
+func eventPresetStatus(zone *adminv1.Zone) *adminv1.PresetStatus {
+	status, err := zone.Status.GetPreset("event")
+	Expect(err).NotTo(HaveOccurred())
+	return status
+}
+
 // makeReadyTargetZone builds the ready local zone that a proxy zone forwards to.
 func makeReadyTargetZone() *adminv1.Zone {
 	z := makeReadyZone()
 	z.Name = "target-zone"
 	z.Status.Namespace = "target-ns"
-	z.Status.Presets[0].GatewayRef = &ctypes.ObjectRef{Name: "target-gw", Namespace: "default"}
-	z.Status.Presets[0].Links = adminv1.Links{
+	targetStatus := eventPresetStatus(z)
+	targetStatus.GatewayRef = &ctypes.ObjectRef{Name: "target-gw", Namespace: "default"}
+	targetStatus.Links = adminv1.Links{
 		Issuer:    "https://idp.target-zone.example.com",
 		LmsIssuer: "https://lms.target-zone.example.com",
 	}
@@ -667,7 +689,7 @@ var _ = Describe("EventExposureHandler", func() {
 			subscriberZone.Name = "subscriber-zone"
 			subscriberZone.Status.Namespace = "subscriber-ns"
 			subscriberZone.Status.RealmName = "subscriber-realm"
-			subscriberZone.Status.Presets[0].GatewayRef.Namespace = "subscriber-ns"
+			eventPresetStatus(subscriberZone).GatewayRef.Namespace = "subscriber-ns"
 			ec := makeReadyEventConfig()
 
 			mockListEventTypes([]eventv1.EventType{et})

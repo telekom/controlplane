@@ -8,6 +8,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -127,9 +128,12 @@ func resolveTokenURL(zone *admin.Zone, failoverEnabled bool) (string, error) {
 
 func consumerFailoverTokenURL(zone *admin.Zone) (string, error) {
 	var tokenURL string
-	// Failover provisioning aggregates presets, but their shared identity endpoint must stay unambiguous.
+	// Failover provisioning aggregates consumer presets, but their shared identity endpoint must stay unambiguous.
 	for i := range zone.Spec.Presets {
 		preset := &zone.Spec.Presets[i]
+		if !slices.Contains(consumerTrafficTypes, preset.Type) {
+			continue
+		}
 		if !preset.SupportsFeatures([]admin.FeatureName{admin.FeatureConsumerFailover}) {
 			continue
 		}
@@ -174,7 +178,9 @@ func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedCl
 	return zone, failoverZones, nil
 }
 
-// resolveFailoverZones returns non-deleting zones with at least one enabled ConsumerFailover preset.
+// resolveFailoverZones returns non-deleting zones with at least one enabled ConsumerFailover
+// preset of a consumer traffic type (API or AI). A zone whose only failover preset is Event-typed
+// is not a failover target for an Application.
 func resolveFailoverZones(ctx context.Context, c client.ScopedClient, primaryZone *admin.Zone) ([]*admin.Zone, error) {
 	zoneList := &admin.ZoneList{}
 	if err := c.List(ctx, zoneList); err != nil {
@@ -188,7 +194,8 @@ func resolveFailoverZones(ctx context.Context, c client.ScopedClient, primaryZon
 		if types.Equals(primaryZone, candidate) || controller.IsBeingDeleted(candidate) {
 			continue
 		}
-		if _, err := candidate.Spec.MatchingGateways(admin.FeatureConsumerFailover); err != nil {
+		if _, err := consumerGateways(candidate, admin.FeatureConsumerFailover); err != nil {
+			// The zone is well-formed but offers no failover on any consumer traffic type.
 			if errors.Is(err, admin.ErrNoMatchingPreset) {
 				continue
 			}
@@ -231,22 +238,20 @@ func (h *ApplicationHandler) ensureGatewayConsumers(ctx context.Context, zone *a
 	}
 
 	// Primary credentials cover normal API and AI traffic; Event gateways use separate resources.
-	primaryGateways := slices.Clone(zone.Spec.Gateways)
-	primaryGateways = slices.DeleteFunc(primaryGateways, func(gateway admin.GatewayConfig) bool {
-		return !gateway.HasType(admin.GatewayTypeAPI) && !gateway.HasType(admin.GatewayTypeAI)
-	})
-	slices.SortFunc(primaryGateways, func(a, b admin.GatewayConfig) int { return strings.Compare(a.Name, b.Name) })
-	primaryGatewayRefs := make([]*admin.GatewayConfig, len(primaryGateways))
-	for i := range primaryGateways {
-		primaryGatewayRefs[i] = &primaryGateways[i]
+	primaryGateways, err := consumerGateways(zone)
+	if err != nil {
+		// BlockedErrorf formats into a plain string and does not Unwrap, so the sentinel is
+		// not recoverable upstream. That is acceptable here: the controller classifies on the
+		// CtrlError itself, and every blocking site in this handler reports the same way.
+		return ctrlerrors.BlockedErrorf("zone %q consumer gateways cannot be resolved: %s", zone.Name, err.Error())
 	}
-	if err := CreateGatewayConsumers(ctx, zone, app, primaryGatewayRefs); err != nil {
+	if err := CreateGatewayConsumers(ctx, zone, app, primaryGateways); err != nil {
 		return errors.Wrap(err, "failed to create Gateway consumer when creating application")
 	}
 
 	for _, failoverZone := range failoverZones {
 		// Failover credentials exist only on gateways exposed through a failover preset.
-		gateways, err := failoverZone.Spec.MatchingGateways(admin.FeatureConsumerFailover)
+		gateways, err := consumerGateways(failoverZone, admin.FeatureConsumerFailover)
 		if err != nil {
 			return errors.Wrapf(err, "failed to select Gateway consumers for failover zone %s when creating application", failoverZone.Name)
 		}
@@ -256,6 +261,51 @@ func (h *ApplicationHandler) ensureGatewayConsumers(ctx context.Context, zone *a
 	}
 
 	return nil
+}
+
+// consumerTrafficTypes are the traffic types an Application provisions consumer credentials for.
+// An Application carries no traffic kind, so it is provisioned for every type it could serve;
+var consumerTrafficTypes = []admin.GatewayType{admin.GatewayTypeAPI, admin.GatewayTypeAI, admin.GatewayTypeEvent}
+
+// consumerGateways returns the distinct gateways a zone exposes for the given features across
+// all consumer traffic types, deduplicated by name and sorted for a stable status.
+//
+// Preset selection is per traffic type, but an Application needs the union: a zone offering
+// API failover but no AI presets is still a valid failover target, and an AI-only failover
+// gateway must still receive a consumer. So ErrNoMatchingPreset from one type is skipped and
+// only reported when no type matched at all. Every other error — a malformed request
+// (ErrInvalidFeatures) or a dangling gatewayRef — is returned unchanged, because those must
+// block rather than silently narrow the result.
+//
+// The rule is written as "only ErrNoMatchingPreset may be skipped" rather than a list of
+// errors that block, so any sentinel added later blocks by default. ErrAmbiguousPreset and
+// ErrNoDefaultPreset are therefore covered without being named, but they are unreachable here:
+// MatchingGateways is a union over a type, so it never calls SelectPreset and never inspects
+// Default. A Zone violating those invariants can exist — it is over-provisioned here rather
+// than blocked. Admission is the only thing preventing that state.
+func consumerGateways(zone *admin.Zone, features ...admin.FeatureName) ([]*admin.GatewayConfig, error) {
+	gatewaysByName := make(map[string]*admin.GatewayConfig)
+	for _, gatewayType := range consumerTrafficTypes {
+		gateways, err := zone.Spec.MatchingGateways(gatewayType, features...)
+		if err != nil {
+			if errors.Is(err, admin.ErrNoMatchingPreset) {
+				continue
+			}
+			return nil, err
+		}
+		for _, gateway := range gateways {
+			gatewaysByName[gateway.Name] = gateway
+		}
+	}
+
+	if len(gatewaysByName) == 0 {
+		return nil, fmt.Errorf("%w: no preset of type %v provides features %v",
+			admin.ErrNoMatchingPreset, consumerTrafficTypes, features)
+	}
+
+	gateways := slices.Collect(maps.Values(gatewaysByName))
+	slices.SortFunc(gateways, func(a, b *admin.GatewayConfig) int { return strings.Compare(a.Name, b.Name) })
+	return gateways, nil
 }
 
 // initiateRotationIfNeeded checks if a new secret rotation should be started and returns whether rotation is in progress.

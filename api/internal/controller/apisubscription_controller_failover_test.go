@@ -68,6 +68,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		By("Enabling ConsumerFailover feature on failover zone")
 		failoverZone.Spec.Presets = append(failoverZone.Spec.Presets, adminapi.Preset{
 			Name:       "consumer-failover",
+			Type:       adminapi.GatewayTypeAPI,
 			GatewayRef: "default",
 			Urls: []adminapi.UrlConfig{{
 				Hostname: "failover." + failoverZoneName + ".de",
@@ -278,6 +279,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			for _, zone := range []*adminapi.Zone{multiFailoverZone1, multiFailoverZone2} {
 				zone.Spec.Presets = append(zone.Spec.Presets, adminapi.Preset{
 					Name:       "consumer-failover",
+					Type:       adminapi.GatewayTypeAPI,
 					GatewayRef: "default",
 					Urls: []adminapi.UrlConfig{{
 						Hostname: "failover." + zone.Name + ".de",
@@ -737,6 +739,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Enabling ConsumerFailover feature on same-zone failover zone")
 			sameZoneFailoverZone.Spec.Presets = append(sameZoneFailoverZone.Spec.Presets, adminapi.Preset{
 				Name:       "consumer-failover",
+				Type:       adminapi.GatewayTypeAPI,
 				GatewayRef: "default",
 				Urls: []adminapi.UrlConfig{{
 					Hostname: "failover." + sameZoneFailoverZoneName + ".de",
@@ -898,6 +901,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Enabling ConsumerFailover feature on shared failover zone")
 			sharedFailoverZone.Spec.Presets = append(sharedFailoverZone.Spec.Presets, adminapi.Preset{
 				Name:       "consumer-failover",
+				Type:       adminapi.GatewayTypeAPI,
 				GatewayRef: "default",
 				Urls: []adminapi.UrlConfig{{
 					Hostname: "failover." + sharedFailoverZoneName + ".de",
@@ -1291,6 +1295,7 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 		By("Enabling ConsumerFailover feature on provider failover zone")
 		providerFailoverZone.Spec.Presets = append(providerFailoverZone.Spec.Presets, adminapi.Preset{
 			Name:       "consumer-failover",
+			Type:       adminapi.GatewayTypeAPI,
 			GatewayRef: "default",
 			Urls: []adminapi.UrlConfig{{
 				Hostname: "failover." + providerFailoverZoneName + ".de",

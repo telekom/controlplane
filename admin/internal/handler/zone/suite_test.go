@@ -144,7 +144,7 @@ func newTestZone(name string) *adminv1.Zone {
 				IssuerHostname: "test-iris.de",
 				TokenUrl:       "https://test-iris.de/auth/realms/test/protocol/openid-connect/token",
 			}},
-			Gateways: []adminv1.GatewayConfig{{Types: []adminv1.GatewayType{adminv1.GatewayTypeAPI},
+			Gateways: []adminv1.GatewayConfig{{
 				Name: "standard",
 				Admin: adminv1.GatewayAdminConfig{
 					ClientSecret:        &gatewayAdminSecret,
@@ -153,7 +153,7 @@ func newTestZone(name string) *adminv1.Zone {
 				},
 			}},
 			Presets: []adminv1.Preset{{
-				Name: "default", Default: true, GatewayRef: "standard", IdentityProviderRef: "primary",
+				Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "standard", IdentityProviderRef: "primary",
 				Urls: []adminv1.UrlConfig{{Hostname: "test-stargate.de", BasePath: "/"}},
 			}},
 			Redis: &adminv1.RedisConfig{

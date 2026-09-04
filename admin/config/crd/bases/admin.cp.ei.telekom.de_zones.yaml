@@ -137,27 +137,11 @@ spec:
                     name:
                       pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                       type: string
-                    types:
-                      description: Types are the kinds of traffic this gateway serves.
-                        A single gateway may serve several.
-                      items:
-                        description: GatewayType classifies the kind of traffic a
-                          gateway serves.
-                        enum:
-                        - API
-                        - AI
-                        - Event
-                        type: string
-                      maxItems: 3
-                      minItems: 1
-                      type: array
-                      x-kubernetes-list-type: set
                   required:
                   - admin
                   - name
-                  - types
                   type: object
-                maxItems: 5
+                maxItems: 10
                 minItems: 1
                 type: array
                 x-kubernetes-list-map-keys:
@@ -365,6 +349,15 @@ spec:
                         By default it is derived from the identity provider's issuer URL, but can be overridden here if needed.
                       format: uri
                       type: string
+                    type:
+                      description: |-
+                        Type is the kind of traffic this preset routes. It selects which domain's
+                        routes use this preset; a gateway serves the union of its presets' types.
+                      enum:
+                      - API
+                      - AI
+                      - Event
+                      type: string
                     urls:
                       description: Urls is the list of URLs (hostnames + base paths)
                         exposed by the gateway for this preset.
@@ -418,9 +411,10 @@ spec:
                   - gatewayRef
                   - identityProviderRef
                   - name
+                  - type
                   - urls
                   type: object
-                maxItems: 5
+                maxItems: 10
                 minItems: 1
                 type: array
                 x-kubernetes-list-map-keys:
@@ -603,6 +597,19 @@ spec:
                       type: object
                     name:
                       type: string
+                    types:
+                      description: Types is the union of the types of the presets
+                        referencing this gateway.
+                      items:
+                        description: GatewayType classifies the kind of traffic a
+                          gateway serves.
+                        enum:
+                        - API
+                        - AI
+                        - Event
+                        type: string
+                      type: array
+                      x-kubernetes-list-type: set
                   required:
                   - name
                   type: object
