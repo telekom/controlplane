@@ -240,6 +240,178 @@ var _ = Describe("RouteListenerFeature", func() {
 			})
 		})
 
+		Context("when two RouteListeners for the same consumer have identical config but different GatewayClient issuer", func() {
+			It("returns a conflicting GatewayClient error", func() {
+				rls := []*gatewayv1.RouteListener{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-observer-a", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-app",
+							Issue:        "/api/v1/events",
+							GatewayClient: gatewayv1.GatewayClientConfig{
+								ClientId: "gateway",
+								Issuer:   "https://iris.example.com/auth/realms/zone-a",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-observer-b", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-app",
+							Issue:        "/api/v1/events",
+							GatewayClient: gatewayv1.GatewayClientConfig{
+								ClientId: "gateway",
+								Issuer:   "https://iris.example.com/auth/realms/zone-b",
+							},
+						},
+					},
+				}
+
+				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
+				builder.EXPECT().GetRouteListeners().Return(rls)
+				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return().Maybe()
+
+				err := f.Apply(ctx, builder)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("conflicting GatewayClient"))
+				Expect(err.Error()).To(ContainSubstring("consumer-shared"))
+			})
+		})
+
+		Context("when different consumers have conflicting route-wide GatewayClient", func() {
+			It("returns a conflicting route-wide GatewayClient error", func() {
+				rls := []*gatewayv1.RouteListener{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-a", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-a",
+							ServiceOwner: "provider-app",
+							Issue:        "/api/v1/events",
+							GatewayClient: gatewayv1.GatewayClientConfig{
+								ClientId: "gateway-zone-a",
+								Issuer:   "https://iris.example.com/auth/realms/zone-a",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-b", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-b",
+							ServiceOwner: "other-provider",
+							Issue:        "/api/v2/notifications",
+							GatewayClient: gatewayv1.GatewayClientConfig{
+								ClientId: "gateway-zone-b",
+								Issuer:   "https://iris.example.com/auth/realms/zone-b",
+							},
+						},
+					},
+				}
+
+				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
+				builder.EXPECT().GetRouteListeners().Return(rls)
+				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return().Maybe()
+
+				err := f.Apply(ctx, builder)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("conflicting route-wide GatewayClient"))
+			})
+		})
+
+		Context("when two RouteListeners for the same consumer have fully identical config and GatewayClient", func() {
+			It("deduplicates successfully", func() {
+				rls := []*gatewayv1.RouteListener{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-observer-a", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-app",
+							Issue:        "/api/v1/events",
+							GatewayClient: gatewayv1.GatewayClientConfig{
+								ClientId: "gateway",
+								Issuer:   "https://iris.example.com/auth/realms/test",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-observer-b", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-shared",
+							ServiceOwner: "provider-app",
+							Issue:        "/api/v1/events",
+							GatewayClient: gatewayv1.GatewayClientConfig{
+								ClientId: "gateway",
+								Issuer:   "https://iris.example.com/auth/realms/test",
+							},
+						},
+					},
+				}
+
+				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
+				builder.EXPECT().GetRouteListeners().Return(rls)
+				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return()
+
+				err := f.Apply(ctx, builder)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(jc.RouteListener).To(HaveLen(1))
+				Expect(jc.GatewayClient).ToNot(BeNil())
+				Expect(jc.GatewayClient.Id).To(Equal("gateway"))
+				Expect(jc.GatewayClient.Issuer).To(Equal("https://iris.example.com/auth/realms/test"))
+			})
+		})
+
+		Context("when different consumers share the same GatewayClient", func() {
+			It("succeeds without error", func() {
+				rls := []*gatewayv1.RouteListener{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-a", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-a",
+							ServiceOwner: "provider-app",
+							Issue:        "/api/v1/events",
+							GatewayClient: gatewayv1.GatewayClientConfig{
+								ClientId: "gateway",
+								Issuer:   "https://iris.example.com/auth/realms/test",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "rl-b", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteListenerSpec{
+							Consumer:     "consumer-b",
+							ServiceOwner: "other-provider",
+							Issue:        "/api/v2/notifications",
+							GatewayClient: gatewayv1.GatewayClientConfig{
+								ClientId: "gateway",
+								Issuer:   "https://iris.example.com/auth/realms/test",
+							},
+						},
+					},
+				}
+
+				jc := plugin.NewJumperConfig()
+				builder.EXPECT().GetRoute().Return(normalRoute, true)
+				builder.EXPECT().GetRouteListeners().Return(rls)
+				builder.EXPECT().JumperConfig().Return(jc)
+				builder.EXPECT().SetUpstream(mock.Anything).Return()
+
+				err := f.Apply(ctx, builder)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(jc.RouteListener).To(HaveLen(2))
+				Expect(jc.GatewayClient).ToNot(BeNil())
+				Expect(jc.GatewayClient.Id).To(Equal("gateway"))
+			})
+		})
+
 		Context("when two RouteListeners target the same consumer with different issue", func() {
 			It("returns an error for the actual conflict", func() {
 				rls := []*gatewayv1.RouteListener{
