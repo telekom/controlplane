@@ -118,6 +118,27 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 		return nil
 	}
 
+	// Guard: AllReady() treats children with no conditions as ready (it only
+	// flips on Ready=False). Explicitly verify each required child carries an
+	// actual Ready=True condition before declaring the parent ready.
+	if err := ensureChildReady(ctx, obj.Status.Publisher, &pubsubv1.Publisher{}); err != nil {
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, err.Error()))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, err.Error()))
+		return nil
+	}
+	if err := ensureChildReady(ctx, obj.Status.Subscriber, &pubsubv1.Subscriber{}); err != nil {
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, err.Error()))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, err.Error()))
+		return nil
+	}
+	if obj.Spec.DeliveryType == "server_sent_event" {
+		if err := ensureChildReady(ctx, obj.Status.ListenerRoute, &gatewayv1.Route{}); err != nil {
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, err.Error()))
+			obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, err.Error()))
+			return nil
+		}
+	}
+
 	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"SpectreApplication has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("SpectreApplication has been provisioned"))
@@ -208,6 +229,23 @@ func (h *SpectreApplicationHandler) Delete(ctx context.Context, obj *spectrev1.S
 	obj.Status.ListenerRoute = nil
 	obj.Status.ProxyRoute = nil
 
+	return nil
+}
+
+// ensureChildReady re-fetches the object pointed to by ref and verifies it
+// carries an explicit Ready=True condition. This closes the gap where
+// AllReady() treats children with no conditions as ready.
+func ensureChildReady(ctx context.Context, ref *ctypes.ObjectRef, into client.Object) error {
+	if ref == nil {
+		return nil
+	}
+	c := cclient.ClientFromContextOrDie(ctx)
+	if err := c.Get(ctx, ref.K8s(), into); err != nil {
+		return errors.Wrapf(err, "failed to verify readiness of %s %q", into.GetObjectKind().GroupVersionKind().Kind, ref.String())
+	}
+	if cobj, ok := into.(ctypes.Object); ok {
+		return condition.EnsureReady(cobj)
+	}
 	return nil
 }
 

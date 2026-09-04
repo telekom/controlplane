@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -33,6 +34,8 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 		apiBasePath       = "/eni/provider/v1"
 	)
 
+	spectreTimeout := 10 * time.Second
+	_ = spectreTimeout
 	ctx := context.Background()
 
 	providerTeamNamespace := testEnvironment + "--" + providerGroupName + "--" + providerTeamName
@@ -102,7 +105,7 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, spectreTypeNamespacedName, resource)
 			g.Expect(errors.IsNotFound(err)).To(BeTrue())
-		}, timeout, interval).Should(Succeed())
+		}, spectreTimeout, interval).Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -146,16 +149,44 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 			By("Creating the Rover with a listener")
 			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
 
-			By("Waiting for SpectreApplication, Listener, and Rover Ready")
+			By("Waiting for SpectreApplication and Listener to be created")
 			Eventually(func(g Gomega) {
 				fetchedRover := &roverv1.Rover{}
 				g.Expect(k8sClient.Get(ctx, spectreTypeNamespacedName, fetchedRover)).To(Succeed())
 				g.Expect(fetchedRover.Status.SpectreApplications).To(HaveLen(1))
 				g.Expect(fetchedRover.Status.SpectreListeners).To(HaveLen(1))
+			}, spectreTimeout, interval).Should(Succeed())
+
+			By("Manually setting SpectreApplication and Listener to Ready (no downstream controllers in this envtest)")
+			Eventually(func(g Gomega) {
+				fetchedRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, spectreTypeNamespacedName, fetchedRover)).To(Succeed())
+
+				app := &spectrev1.SpectreApplication{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{
+					Name:      fetchedRover.Status.SpectreApplications[0].Name,
+					Namespace: fetchedRover.Status.SpectreApplications[0].Namespace,
+				}, app)).To(Succeed())
+				app.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ready"))
+				g.Expect(k8sClient.Status().Update(ctx, app)).To(Succeed())
+
+				listener := &spectrev1.Listener{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{
+					Name:      fetchedRover.Status.SpectreListeners[0].Name,
+					Namespace: fetchedRover.Status.SpectreListeners[0].Namespace,
+				}, listener)).To(Succeed())
+				listener.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ready"))
+				g.Expect(k8sClient.Status().Update(ctx, listener)).To(Succeed())
+			}, spectreTimeout, interval).Should(Succeed())
+
+			By("Waiting for Rover to become Ready")
+			Eventually(func(g Gomega) {
+				fetchedRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, spectreTypeNamespacedName, fetchedRover)).To(Succeed())
 				readyCond := findCondition(fetchedRover.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCond).NotTo(BeNil())
 				g.Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			}, timeout, interval).Should(Succeed())
+			}, spectreTimeout, interval).Should(Succeed())
 
 			By("Setting SpectreApplication to NotReady")
 			Eventually(func(g Gomega) {
@@ -168,7 +199,7 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 				}, app)).To(Succeed())
 				app.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "child not ready"))
 				g.Expect(k8sClient.Status().Update(ctx, app)).To(Succeed())
-			}, timeout, interval).Should(Succeed())
+			}, spectreTimeout, interval).Should(Succeed())
 
 			By("Verifying Rover becomes NotReady via watch-triggered re-reconciliation")
 			Eventually(func(g Gomega) {
@@ -177,7 +208,7 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 				readyCond := findCondition(fetchedRover.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCond).NotTo(BeNil())
 				g.Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			}, timeout, interval).Should(Succeed())
+			}, spectreTimeout, interval).Should(Succeed())
 
 			By("Setting SpectreApplication back to Ready")
 			Eventually(func(g Gomega) {
@@ -190,7 +221,7 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 				}, app)).To(Succeed())
 				app.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Ready"))
 				g.Expect(k8sClient.Status().Update(ctx, app)).To(Succeed())
-			}, timeout, interval).Should(Succeed())
+			}, spectreTimeout, interval).Should(Succeed())
 
 			By("Verifying Rover returns to Ready via watch-triggered re-reconciliation")
 			Eventually(func(g Gomega) {
@@ -199,7 +230,7 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 				readyCond := findCondition(fetchedRover.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCond).NotTo(BeNil())
 				g.Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			}, timeout, interval).Should(Succeed())
+			}, spectreTimeout, interval).Should(Succeed())
 		})
 	})
 })

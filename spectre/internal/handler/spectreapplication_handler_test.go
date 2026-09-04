@@ -270,6 +270,43 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			Return(0, nil).Once()
 	}
 
+	// mockExplicitReadinessChecks stubs the Get calls that ensureChildReady
+	// makes after AllReady() returns true. Each child is returned with Ready=True.
+	mockExplicitReadinessChecks := func(deliveryType string) {
+		// Publisher readiness check.
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Publisher")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				pub := out.(*pubsubv1.Publisher)
+				meta.SetStatusCondition(&pub.Status.Conditions, metav1.Condition{
+					Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+				})
+			}).
+			Return(nil).Once()
+		// Subscriber readiness check.
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Subscriber")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				sub := out.(*pubsubv1.Subscriber)
+				meta.SetStatusCondition(&sub.Status.Conditions, metav1.Condition{
+					Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+				})
+			}).
+			Return(nil).Once()
+		// Route readiness check (SSE only).
+		if deliveryType == "server_sent_event" {
+			fakeClient.EXPECT().
+				Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Route")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					route := out.(*gatewayv1.Route)
+					meta.SetStatusCondition(&route.Status.Conditions, metav1.Condition{
+						Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+					})
+				}).
+				Return(nil).Once()
+		}
+	}
+
 	setupHappyPath := func(deliveryType string) *spectrev1.SpectreApplication {
 		obj := newSpectreApplication(deliveryType)
 		app := makeReadyApplication()
@@ -299,6 +336,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("server_sent_event")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -313,6 +351,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("server_sent_event")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -325,6 +364,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("server_sent_event")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -337,6 +377,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("server_sent_event")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -367,6 +408,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("callback")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("callback")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -407,6 +449,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -448,6 +491,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -484,6 +528,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("callback")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -525,6 +570,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -601,6 +647,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("server_sent_event")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -612,6 +659,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("callback")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("callback")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -756,6 +804,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("server_sent_event")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -828,6 +877,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				mockCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -937,6 +987,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := setupHappyPath("server_sent_event")
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())

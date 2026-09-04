@@ -574,6 +574,32 @@ var _ = Describe("ListenerHandler", func() {
 			Return(0, nil).Once()
 	}
 
+	// mockExplicitReadinessChecks stubs the Get calls that ensureChildReady
+	// makes after AllReady() returns true. RouteListener and bridge Subscribers
+	// are returned with Ready=True.
+	mockListenerReadinessChecks := func() {
+		// RouteListener readiness check.
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.RouteListener")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				rl := out.(*gatewayv1.RouteListener)
+				meta.SetStatusCondition(&rl.Status.Conditions, metav1.Condition{
+					Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+				})
+			}).
+			Return(nil).Once()
+		// Bridge Subscriber readiness checks (2 subscribers: request + response).
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Subscriber")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				sub := out.(*pubsubv1.Subscriber)
+				meta.SetStatusCondition(&sub.Status.Conditions, metav1.Condition{
+					Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+				})
+			}).
+			Return(nil).Times(2)
+	}
+
 	setupFullHappyPath := func() *spectrev1.Listener {
 		listener := newListener()
 		mockGetConsumerApp(makeConsumerApp())
@@ -806,6 +832,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockJanitorCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
@@ -851,6 +878,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockJanitorCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
@@ -889,6 +917,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockJanitorCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
@@ -920,6 +949,7 @@ var _ = Describe("ListenerHandler", func() {
 				listener := setupFullHappyPath()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
@@ -1005,6 +1035,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockJanitorCleanup()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())

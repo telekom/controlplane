@@ -282,6 +282,23 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return nil
 	}
 
+	// Guard: AllReady() treats children with no conditions as ready (it only
+	// flips on Ready=False). Explicitly verify each required child carries an
+	// actual Ready=True condition before declaring the parent ready.
+	if err := ensureChildReady(ctx, listener.Status.RouteListener, &gatewayv1.RouteListener{}); err != nil {
+		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, err.Error()))
+		listener.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, err.Error()))
+		return nil
+	}
+	for i := range listener.Status.EventSubscriptions {
+		ref := &listener.Status.EventSubscriptions[i]
+		if err := ensureChildReady(ctx, ref, &pubsubv1.Subscriber{}); err != nil {
+			listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, err.Error()))
+			listener.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, err.Error()))
+			return nil
+		}
+	}
+
 	listener.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"Listener has been provisioned"))
 	listener.SetCondition(condition.NewDoneProcessingCondition("Listener has been provisioned"))
