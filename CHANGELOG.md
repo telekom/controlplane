@@ -1,3 +1,11 @@
+## [0.24.1](https://github.com/telekom/controlplane/compare/v0.24.0...v0.24.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* pin jq to upstream binary release instead of Alpine package ([#652](https://github.com/telekom/controlplane/issues/652)) ([785e098](https://github.com/telekom/controlplane/commit/785e09857ae1f11dd0aa6905659a12a7892e44ac))
+* **pubsub:** only downfile json-schema if configured ([#647](https://github.com/telekom/controlplane/issues/647)) ([b86b038](https://github.com/telekom/controlplane/commit/b86b03806769d19bf01d55ce26a93431b5c7c19b))
+
 # [0.24.0](https://github.com/telekom/controlplane/compare/v0.23.0...v0.24.0) (2026-08-27)
 
 
