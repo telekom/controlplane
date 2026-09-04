@@ -14,6 +14,7 @@
 # behavior between roverctl releases. Bump these pins deliberately.
 ARG YQ_VERSION=4.44.3
 ARG JQ_VERSION=1.8.1
+ARG JQ_SHA256=020468de7539ce70ef1bceaf7cde2e8c4f2ca6c3afb84642aabc5c97d9fc2a0d
 
 # yq is not packaged for Alpine. Build it from source via `go install` against
 # the Go module proxy (GOPROXY) rather than downloading the GitHub release
@@ -27,16 +28,18 @@ RUN go install "github.com/mikefarah/yq/v4@v${YQ_VERSION}"
 FROM alpine:3.24
 
 ARG JQ_VERSION
+ARG JQ_SHA256
 ARG BASH_VERSION=5.3.9-r1
 
 RUN apk add --no-cache \
         bash="${BASH_VERSION}" \
         ca-certificates \
-        curl \
-    && curl -L https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-linux-amd64 -o /usr/local/bin/jq \
+    && apk add --no-cache --virtual .jq-build-deps curl \
+    && curl -fsSL "https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-linux-amd64" -o /usr/local/bin/jq \
+    && echo "${JQ_SHA256}  /usr/local/bin/jq" | sha256sum -c - \
     && chmod +x /usr/local/bin/jq \
     && jq --version \
-    && rm -rf /var/cache/apk/*
+    && apk del .jq-build-deps
 
 COPY --from=yq-builder /go/bin/yq /usr/local/bin/yq
 
